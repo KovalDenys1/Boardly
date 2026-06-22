@@ -144,4 +144,30 @@ describe('GET /api/friends', () => {
     expect(mockEnsureUserHasPublicProfileId).toHaveBeenCalledWith('friend-1')
     expect(payload.friends[0].publicProfileId).toBe('generated-public-friend')
   })
+
+  it('prefers the custom-uploaded avatarUrl over the OAuth image, and never leaves avatar undefined', async () => {
+    const friendship = createFriendship(true)
+    friendship.user2.avatarUrl = 'https://cdn.example.com/custom-avatar.png'
+    friendship.user2.image = 'https://lh3.googleusercontent.com/oauth-photo.jpg'
+    mockPrisma.friendships.findMany.mockResolvedValue([friendship] as any)
+    mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+    const response = await GET(buildRequest())
+    const payload = await response.json()
+
+    expect(payload.friends[0].avatar).toBe('https://cdn.example.com/custom-avatar.png')
+  })
+
+  it('falls back to the OAuth image when there is no custom avatarUrl', async () => {
+    const friendship = createFriendship(true)
+    friendship.user2.avatarUrl = null
+    friendship.user2.image = 'https://lh3.googleusercontent.com/oauth-photo.jpg'
+    mockPrisma.friendships.findMany.mockResolvedValue([friendship] as any)
+    mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+    const response = await GET(buildRequest())
+    const payload = await response.json()
+
+    expect(payload.friends[0].avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
+  })
 })

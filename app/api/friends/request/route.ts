@@ -250,7 +250,8 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         },
@@ -258,7 +259,8 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         }
@@ -272,7 +274,19 @@ export async function GET(req: NextRequest) {
       count: requests.length
     })
 
-    return NextResponse.json({ requests })
+    const requestsWithAvatar = requests.map(({ sender, receiver, ...request }) => ({
+      ...request,
+      sender: sender && {
+        ...sender,
+        avatar: sender.avatarUrl ?? sender.image ?? null,
+      },
+      receiver: receiver && {
+        ...receiver,
+        avatar: receiver.avatarUrl ?? receiver.image ?? null,
+      },
+    }))
+
+    return NextResponse.json({ requests: requestsWithAvatar })
 
   } catch (error) {
     log.error('Error fetching friend requests', error as Error)

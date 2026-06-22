@@ -6,7 +6,7 @@
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
-import { POST } from '@/app/api/friends/request/route'
+import { GET, POST } from '@/app/api/friends/request/route'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 
 jest.mock('@/lib/db', () => ({
@@ -19,6 +19,7 @@ jest.mock('@/lib/db', () => ({
     },
     friendRequests: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
     },
   },
@@ -134,5 +135,54 @@ describe('POST /api/friends/request', () => {
         type: 'friend_request',
       })
     )
+  })
+})
+
+function buildGetRequest(type: string) {
+  return new NextRequest(`http://localhost:3000/api/friends/request?type=${type}`)
+}
+
+describe('GET /api/friends/request', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockGetServerSession.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        emailVerified: new Date('2026-03-01T00:00:00.000Z'),
+      },
+    } as any)
+  })
+
+  it('resolves sender/receiver avatar (custom avatarUrl over OAuth image), never leaving it undefined', async () => {
+    mockPrisma.friendRequests.findMany.mockResolvedValue([
+      {
+        id: 'request-1',
+        senderId: 'sender-1',
+        receiverId: 'user-1',
+        status: 'pending',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        sender: {
+          id: 'sender-1',
+          username: 'sender-user',
+          image: 'https://lh3.googleusercontent.com/oauth-photo.jpg',
+          avatarUrl: 'https://cdn.example.com/custom-avatar.png',
+          email: 'sender@example.com',
+        },
+        receiver: {
+          id: 'user-1',
+          username: 'me',
+          image: null,
+          avatarUrl: null,
+          email: 'me@example.com',
+        },
+      },
+    ] as any)
+
+    const response = await GET(buildGetRequest('received'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.requests[0].sender.avatar).toBe('https://cdn.example.com/custom-avatar.png')
+    expect(payload.requests[0].receiver.avatar).toBeNull()
   })
 })
