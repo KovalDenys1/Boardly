@@ -66,6 +66,7 @@ interface SpyGameBoardProps {
   onRequestRematch?: () => void
   isRequestingRematch?: boolean
   onBackToLobby?: () => void
+  onLeave?: () => void
   registerUrl?: string
 }
 
@@ -107,6 +108,7 @@ export default function SpyGameBoard({
   onRequestRematch,
   isRequestingRematch = false,
   onBackToLobby,
+  onLeave,
   registerUrl = '/auth/register',
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
@@ -386,6 +388,15 @@ export default function SpyGameBoard({
               >
                 {t('spy.refresh')}
               </button>
+              {onLeave && phase !== SpyGamePhase.RESULTS && (
+                <button
+                  type="button"
+                  onClick={onLeave}
+                  className="bd-btn bd-btn-soft px-3 py-2 text-sm"
+                >
+                  {t('lobby.leave')}
+                </button>
+              )}
             </div>
             {(phase === SpyGamePhase.QUESTIONING || phase === SpyGamePhase.VOTING) && (
               <div className="spy-header-timer">

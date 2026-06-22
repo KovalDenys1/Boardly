@@ -2582,6 +2582,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              onLeave={() => setShowLeaveConfirmModal(true)}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (
