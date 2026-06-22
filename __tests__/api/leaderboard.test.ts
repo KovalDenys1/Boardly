@@ -78,4 +78,12 @@ describe('GET /api/leaderboard', () => {
     expect(sql).toContain("result->>'userId' = p.\"userId\"")
     expect(sql).toContain("result->>'isWinner' = 'true'")
   })
+
+  it('caches for a short window only, so profile changes (username, etc.) show up quickly (#638)', async () => {
+    const response = await GET(buildRequest())
+
+    // Was s-maxage=300/stale-while-revalidate=600 — let a stale username/avatar
+    // linger on the leaderboard for up to ~15 minutes despite a live DB query.
+    expect(response.headers.get('Cache-Control')).toBe('public, s-maxage=20, stale-while-revalidate=60')
+  })
 })
