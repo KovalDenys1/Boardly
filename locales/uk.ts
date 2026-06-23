@@ -2138,6 +2138,7 @@ const uk: Translation = {
     botMoveFailed: 'Бот не зміг зробити хід',
     notYourTurnRoll: '🚫 Зараз не ваша черга кидати кубики!',
     noRollsLeft: '🚫 Кидків не залишилось! Оберіть категорію.',
+    allDiceHeld: '🚫 Усі кубики зафіксовані — звільніть один або запишіть результат!',
     notYourTurn: '🚫 Зараз не ваша черга!',
     gameOver: '🎉 Гра завершена! {{player}} перемагає!',
     playerTurn: 'Черга {{player}}!',

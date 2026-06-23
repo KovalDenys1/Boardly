@@ -186,6 +186,13 @@ export function useGameActions(props: UseGameActionsProps) {
       return null
     }
 
+    if (preMoveHeld.every(Boolean)) {
+      if (!isAutoAction) {
+        showToast.error('toast.allDiceHeld')
+      }
+      return null
+    }
+
     setIsMoveInProgress(true)
     setIsRolling(true)
 

@@ -2136,6 +2136,7 @@ const en = {
     botMoveFailed: 'Bot failed to make a move',
     notYourTurnRoll: '🚫 It\'s not your turn to roll the dice!',
     noRollsLeft: '🚫 No rolls left! Choose a category to score.',
+    allDiceHeld: '🚫 All dice are held — release one or score your roll!',
     notYourTurn: '🚫 It\'s not your turn!',
     gameOver: '🎉 Game Over! {{player}} wins!',
     playerTurn: '{{player}}\'s turn!',

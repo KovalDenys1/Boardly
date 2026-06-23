@@ -2124,6 +2124,7 @@ const no = {
     botMoveFailed: 'Boten klarte ikke å gjøre et trekk',
     notYourTurnRoll: '🚫 Det er ikke din tur til å kaste terningene!',
     noRollsLeft: '🚫 Ingen kast igjen! Velg en kategori for poeng.',
+    allDiceHeld: '🚫 Alle terningene er holdt fast — slipp en eller skriv inn poeng!',
     notYourTurn: '🚫 Det er ikke din tur!',
     gameOver: '🎉 Spillet er over! {{player}} vinner!',
     playerTurn: '{{player}} sin tur!',

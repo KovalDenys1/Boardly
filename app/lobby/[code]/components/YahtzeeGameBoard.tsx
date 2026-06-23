@@ -203,16 +203,17 @@ export default function GameBoard({
             disabled={
               !isMyTurn ||
               rollsLeft === 0 ||
+              heldCount === 5 ||
               isMoveInProgress ||
               isRolling
             }
             className={`w-full overflow-hidden px-3 sm:px-5 py-3 min-h-[52px] sm:min-h-[56px] rounded-2xl font-bold text-sm sm:text-base transition-all duration-200
-              ${!isMyTurn || rollsLeft === 0 || isMoveInProgress || isRolling
+              ${!isMyTurn || rollsLeft === 0 || heldCount === 5 || isMoveInProgress || isRolling
                 ? 'text-bd-ink-muted cursor-not-allowed'
                 : 'text-[var(--bd-bg)] active:translate-y-[2px]'
               }`}
             style={
-              !isMyTurn || rollsLeft === 0 || isMoveInProgress || isRolling
+              !isMyTurn || rollsLeft === 0 || heldCount === 5 || isMoveInProgress || isRolling
                 ? {
                     background: 'var(--bd-bg2)',
                     border: '1.5px solid var(--bd-line)',

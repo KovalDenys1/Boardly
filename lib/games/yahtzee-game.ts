@@ -46,8 +46,12 @@ export class YahtzeeGame extends GameEngine {
           if (!Array.isArray(held) || held.length !== 5) {
             return false
           }
+          // Reject no-op rolls: if every die is held, there's nothing to roll
+          if (held.every(Boolean)) {
+            return false
+          }
         }
-        
+
         return gameData.rollsLeft > 0 && this.state.status === 'playing'
 
       case 'hold':
