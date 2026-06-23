@@ -53,17 +53,41 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
   const activeGame = lobby.games[0]
   const isPlaying = activeGame?.status === 'playing'
   const playerCount = activeGame?._count?.players ?? 0
-  const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
+  const isOwner = Boolean(currentUserId && lobby.creatorId === currentUserId)
+  // Non-owners can't join a game already in progress — the only thing they can
+  // do is watch (the spectate page itself shows "unavailable" if the host has
+  // spectating turned off, so this is always the right destination).
+  const shouldWatch = isPlaying && !isOwner
   const creatorName = lobby.creator?.username || t('lobby.ownerFallback')
   const game = getGamePresentation(lobby.gameType)
   const occupancyPercent = lobby.maxPlayers > 0 ? Math.min(100, Math.round((playerCount / lobby.maxPlayers) * 100)) : 0
 
+  const primaryLabel = isOwner
+    ? (isPlaying ? t('game.ui.returnToLobby') : t('lobby.openLobby'))
+    : (shouldWatch ? t('lobby.watch') : t('lobby.openLobby'))
+  const handlePrimaryAction = () => {
+    if (shouldWatch) {
+      onWatchLobby(lobby.code)
+    } else {
+      onOpenLobby(lobby.code)
+    }
+  }
+
   return (
     <article
+      role="button"
+      tabIndex={0}
+      onClick={handlePrimaryAction}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handlePrimaryAction()
+        }
+      }}
       style={{
         background: 'var(--bd-card-warm)', borderRadius: 18, border: '1.5px solid var(--bd-line)',
         boxShadow: '0 4px 14px rgba(31,27,22,0.07)', padding: '16px 20px',
-        display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
+        display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer',
         transition: 'transform 0.15s, box-shadow 0.15s', animationDelay: `${index * 0.05}s`,
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)'; }}
@@ -116,13 +140,16 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        {canSpectate && (
-          <button type="button" onClick={() => onWatchLobby(lobby.code)} className="bd-btn bd-btn-soft" style={{ padding: '10px 16px', fontSize: 13 }}>
-            {t('lobby.watch')}
-          </button>
-        )}
-        <button type="button" onClick={() => onOpenLobby(lobby.code)} className="bd-btn bd-btn-coral" style={{ padding: '10px 16px', fontSize: 13 }}>
-          {currentUserId && lobby.creatorId === currentUserId ? t('game.ui.returnToLobby') : t('lobby.openLobby')} →
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            handlePrimaryAction()
+          }}
+          className="bd-btn bd-btn-coral"
+          style={{ padding: '10px 16px', fontSize: 13 }}
+        >
+          {primaryLabel} →
         </button>
       </div>
     </article>
