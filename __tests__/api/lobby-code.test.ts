@@ -446,6 +446,65 @@ describe('PATCH /api/lobby/[code]', () => {
     expect(data.code).toBe('LOBBY_UPDATE_FAILED')
     expect(data.details).toBeUndefined()
   })
+
+  it('returns 403 when a non-premium creator enables allowSpectators', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({ ...mockUser, premiumUntil: null } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      creatorId: 'user-123',
+      gameType: 'yahtzee',
+      maxPlayers: 4,
+      games: [],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ allowSpectators: true }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Premium required to enable spectators')
+    expect(mockPrisma.lobbies.update).not.toHaveBeenCalled()
+  })
+
+  it('allows a premium creator to enable allowSpectators', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      ...mockUser,
+      premiumUntil: new Date(Date.now() + 86400000),
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      creatorId: 'user-123',
+      gameType: 'yahtzee',
+      maxPlayers: 4,
+      games: [],
+    } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      maxPlayers: 4,
+      allowSpectators: true,
+      maxSpectators: 0,
+      turnTimer: 60,
+      theme: 'default',
+      gameType: 'yahtzee',
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ allowSpectators: true }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.lobbies.update).toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/lobby/[code]/leave', () => {
