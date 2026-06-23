@@ -1009,6 +1009,8 @@ const ru = {
       soundOff: '🔇 Звук выключен',
       enableSound: 'Включить звуковые эффекты',
       disableSound: 'Выключить звуковые эффекты',
+      sound: 'Звук',
+      yourScore: 'Ваш счёт',
       playerFallback: 'Игрок',
       startGame: 'Начать игру',
       addBotPlayer: 'Добавить бота',

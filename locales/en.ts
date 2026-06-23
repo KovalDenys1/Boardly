@@ -1009,6 +1009,8 @@ const en = {
       soundOff: '🔇 Sound disabled',
       enableSound: 'Enable sound effects',
       disableSound: 'Disable sound effects',
+      sound: 'Sound',
+      yourScore: 'Your Score',
       playerFallback: 'Player',
       startGame: 'Start Game',
       addBotPlayer: 'Add Bot Player',

@@ -1011,6 +1011,8 @@ const uk: Translation = {
       soundOff: '🔇 Звук вимкнено',
       enableSound: 'Увімкнути звукові ефекти',
       disableSound: 'Вимкнути звукові ефекти',
+      sound: 'Звук',
+      yourScore: 'Ваш рахунок',
       playerFallback: 'Гравець',
       startGame: 'Почати гру',
       addBotPlayer: 'Додати бота',

@@ -1009,6 +1009,8 @@ const no = {
       soundOff: '🔇 Lyd av',
       enableSound: 'Aktiver lydeffekter',
       disableSound: 'Deaktiver lydeffekter',
+      sound: 'Lyd',
+      yourScore: 'Din poengsum',
       playerFallback: 'Spiller',
       startGame: 'Start spill',
       addBotPlayer: 'Legg til bot-spiller',
