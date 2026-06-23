@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const schema = z.object({ count: z.number().int().min(0).max(500) })
@@ -12,6 +13,13 @@ export async function PATCH(
 ) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
+
+  // Only a resolved identity (session or guest) may report a spectator count —
+  // the spectate page itself never calls this without one already resolved.
+  const requestUser = await getRequestAuthUser(request)
+  if (!requestUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const { code } = await params
 
