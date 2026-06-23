@@ -1600,6 +1600,16 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: rgba(255,196,77,0.95) !important;
   box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
 }
+
+/* ============ YAHTZEE SCORECARD ============ */
+
+@keyframes scorecard-just-scored {
+  0%   { background: rgba(79,201,166,0.55); box-shadow: 0 0 0 3px rgba(79,201,166,0.45); }
+  100% { background: rgba(79,201,166,0); box-shadow: 0 0 0 0 rgba(79,201,166,0); }
+}
+.scorecard-row-flash {
+  animation: scorecard-just-scored 0.9s ease-out forwards;
+}
 .ttt-cell-coord {
   position: absolute;
   top: 6px;
