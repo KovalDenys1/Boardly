@@ -21,6 +21,35 @@ describe('spectator state sanitization', () => {
     expect(sanitized.data.players[0].role).toBe('Spy')
   })
 
+  it('strips the playerRoles map (the actual engine field, not just legacy isSpy/spyId keys)', () => {
+    const input = {
+      data: {
+        spyPlayerId: 'p1',
+        playerRoles: { p1: 'Spy', p2: 'Photographer', p3: 'Beach Cleaner' },
+        location: 'Beach',
+      },
+    }
+
+    const sanitized = sanitizeGameStateForSpectator('guess_the_spy', input) as any
+
+    expect(sanitized.data.playerRoles).toBeUndefined()
+    expect(sanitized.data.spyPlayerId).toBeUndefined()
+    expect(sanitized.data.location).toBe('Beach')
+  })
+
+  it('reveals playerRoles when game status is finished', () => {
+    const input = {
+      data: {
+        spyPlayerId: 'p1',
+        playerRoles: { p1: 'Spy', p2: 'Photographer' },
+      },
+    }
+
+    const sanitized = sanitizeGameStateForSpectator('guess_the_spy', input, 'finished') as any
+
+    expect(sanitized.data.playerRoles).toEqual({ p1: 'Spy', p2: 'Photographer' })
+  })
+
   it('reveals spy identity when game status is finished', () => {
     const input = {
       data: {

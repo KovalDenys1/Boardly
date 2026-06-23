@@ -31,7 +31,8 @@ function scrubSpyIdentity(value: unknown): unknown {
       lowerKey === 'spyid' ||
       lowerKey === 'spyuserid' ||
       lowerKey === 'spyplayerid' ||
-      lowerKey === 'spyindex'
+      lowerKey === 'spyindex' ||
+      lowerKey === 'playerroles'
     ) {
       continue
     }
