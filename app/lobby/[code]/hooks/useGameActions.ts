@@ -280,7 +280,19 @@ export function useGameActions(props: UseGameActionsProps) {
 
         const currentPlayer = newEngine.getCurrentPlayer()
         const rollNumber = 3 - newEngine.getRollsLeft()
-        const parsedServerState = (() => { try { return JSON.parse(data.game.state) } catch { return null } })()
+        // data.game.state is already a parsed object by this point (the whole
+        // response went through a single res.json() round-trip) - it is NOT a
+        // JSON string to re-parse. JSON.parse on an object throws, silently
+        // falling back to a random id below and breaking the deterministic
+        // dedup match against LobbyPageClient's broadcast handler, which
+        // already gets this right (see its typeof state === 'string' check).
+        const parsedServerState = (() => {
+          try {
+            return typeof data.game.state === 'string' ? JSON.parse(data.game.state) : data.game.state
+          } catch {
+            return null
+          }
+        })()
         const serverTs = parsedServerState?.data?.lastRoll?.timestamp
         const newEntry: RollHistoryEntry = {
           id: serverTs ? `${userId || guestId}-${serverTs}` : `${Date.now()}_${Math.random()}`,
