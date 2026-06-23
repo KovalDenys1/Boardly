@@ -113,6 +113,7 @@ export default function GameBoard({
             held={isMyTurn ? held : gameEngine.getHeld()}
             onToggleHold={onToggleHold}
             disabled={!isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
+            isRolling={isRolling}
             isMyTurn={isMyTurn}
           />
         </div>
@@ -168,14 +169,14 @@ export default function GameBoard({
           {/* Turn Indicator */}
           {isMyTurn ? (
             timeLeft <= 10 ? (
-              <div className="text-center px-3 py-2 rounded-2xl shadow-sm text-white animate-pulse bg-gradient-to-r from-red-500 to-pink-500">
+              <div className="text-center px-3 py-2 rounded-2xl shadow-sm text-white animate-pulse bg-gradient-to-r from-red-500 to-pink-500 transition-all duration-200">
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                   <span className="text-base sm:text-xl">⚠️</span>
                   <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.hurry')}</p>
                 </div>
               </div>
             ) : (
-              <div className="text-center px-3 py-2 rounded-2xl shadow-sm text-bd-ink" style={{ background: 'rgba(79,201,166,0.2)', border: '1px solid rgba(79,201,166,0.28)' }}>
+              <div className="bd-pulse text-center px-3 py-2 rounded-2xl shadow-sm text-bd-ink transition-all duration-200" style={{ background: 'rgba(79,201,166,0.2)', border: '1px solid rgba(79,201,166,0.28)' }}>
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                   <span className="text-base sm:text-xl">🎯</span>
                   <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.yourTurn')}</p>
@@ -183,7 +184,7 @@ export default function GameBoard({
               </div>
             )
           ) : (
-            <div className="text-center px-3 py-2 rounded-2xl border" style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}>
+            <div className="text-center px-3 py-2 rounded-2xl border transition-all duration-200" style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}>
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-xl">⏳</span>
                 <p className="text-sm text-bd-ink-muted font-medium">
