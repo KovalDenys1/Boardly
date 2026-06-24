@@ -811,6 +811,13 @@ body {
   animation: shake-roll 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+@keyframes dice-hold-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.18) rotate(-4deg); }
+  65%  { transform: scale(0.92) rotate(3deg); }
+  100% { transform: scale(0.95) rotate(0deg); }
+}
+
 @keyframes fade-out {
   from {
     opacity: 1;
@@ -1592,6 +1599,16 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell.ttt-win {
   background: rgba(255,196,77,0.95) !important;
   box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
+}
+
+/* ============ YAHTZEE SCORECARD ============ */
+
+@keyframes scorecard-just-scored {
+  0%   { background: rgba(79,201,166,0.55); box-shadow: 0 0 0 3px rgba(79,201,166,0.45); }
+  100% { background: rgba(79,201,166,0); box-shadow: 0 0 0 0 rgba(79,201,166,0); }
+}
+.scorecard-row-flash {
+  animation: scorecard-just-scored 0.9s ease-out forwards;
 }
 .ttt-cell-coord {
   position: absolute;

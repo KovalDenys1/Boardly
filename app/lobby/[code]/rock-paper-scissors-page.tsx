@@ -259,7 +259,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
     }, [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect])
 
     useEffect(() => {
-        if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
+        if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
         if (isGuest && !guestToken) return
         void loadLobbyData()
     }, [status, isGuest, guestToken, loadLobbyData])
@@ -276,7 +276,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     const { isConnected: socketConnected } = useRealtimeConnection({
         code,
-        shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
+        shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
         onGameUpdate: handleGameUpdate,
         onLobbyUpdate: handleLobbyUpdate,
         onGameAbandoned: handleGameAbandoned,

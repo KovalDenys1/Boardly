@@ -127,10 +127,11 @@ interface ClaimScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onSubmitClaim: (claim: string, isBluff: boolean) => void
+  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onSubmitClaim, t }: ClaimScreenProps) {
+function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onSubmitClaim, onLeave, t }: ClaimScreenProps) {
   const [claimText, setClaimText] = useState('')
   const [isBluffSelected, setIsBluffSelected] = useState<boolean | null>(null)
   const isClaimant = data.currentClaimantId === currentUserId
@@ -190,6 +191,9 @@ function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRema
       ) : (
         <p className="text-white text-xl">{t('liarsParty.isClaimingFor', { name: claimantName })}</p>
       )}
+      <button onClick={onLeave} className="text-sm text-white/70 underline">
+        {t('lobby.leave')}
+      </button>
     </div>
   )
 }
@@ -199,10 +203,11 @@ interface EliminatedClaimScreenProps {
   players: GamePlayer[]
   currentUserId: string
   timerRemaining: number
+  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t }: EliminatedClaimScreenProps) {
+function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, onLeave, t }: EliminatedClaimScreenProps) {
   const claimantPlayer = players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId)
   const claimantName = claimantPlayer?.name ?? data.currentClaimantId
   const eliminatedRound = data.eliminatedAtRound[currentUserId]
@@ -224,6 +229,9 @@ function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t
       </div>
       <div className="text-white text-2xl font-mono font-bold">{t('liarsParty.timeLeft', { seconds: timerRemaining })}</div>
       <p className="text-white text-xl">{t('liarsParty.isClaimingFor', { name: claimantName })}</p>
+      <button onClick={onLeave} className="text-sm text-white/70 underline">
+        {t('lobby.leave')}
+      </button>
     </div>
   )
 }
@@ -235,10 +243,11 @@ interface ChallengeScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onVote: (decision: 'challenge' | 'believe') => void
+  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onVote, t }: ChallengeScreenProps) {
+function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onVote, onLeave, t }: ChallengeScreenProps) {
   const isClaimant = data.currentClaimantId === currentUserId
   const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
   const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
@@ -289,6 +298,9 @@ function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timer
       {isClaimant && (
         <p className="text-white/80 text-sm">{t('liarsParty.waitingForVotes')}</p>
       )}
+      <button onClick={onLeave} className="text-sm text-white/70 underline">
+        {t('lobby.leave')}
+      </button>
     </div>
   )
 }
@@ -297,10 +309,11 @@ interface EliminatedChallengeScreenProps {
   data: LiarsPartyGameData
   currentUserId: string
   timerRemaining: number
+  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: EliminatedChallengeScreenProps) {
+function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, onLeave, t }: EliminatedChallengeScreenProps) {
   const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
   const votedCount = data.challengeVotes.length
   const eliminatedRound = data.eliminatedAtRound[currentUserId]
@@ -325,6 +338,9 @@ function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: E
         <div className="text-xl text-white/90 italic mb-4">&ldquo;{data.claim?.text}&rdquo;</div>
         <div className="text-sm text-white/70">{t('liarsParty.voted', { done: votedCount, total: totalVoters })}</div>
       </div>
+      <button onClick={onLeave} className="text-sm text-white/70 underline">
+        {t('lobby.leave')}
+      </button>
     </div>
   )
 }
@@ -332,13 +348,13 @@ function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: E
 interface RevealScreenProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
-  isHost: boolean
   isMoveSubmitting: boolean
   onAdvanceRound: () => void
+  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function RevealScreen({ data, players, isHost, isMoveSubmitting, onAdvanceRound, t }: RevealScreenProps) {
+function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave, t }: RevealScreenProps) {
   const lastResult: LiarsPartyRoundResult | undefined = data.roundResults[data.roundResults.length - 1]
   const isLastRound = data.currentRound >= data.maxRounds
   const eliminatedThisRound = lastResult
@@ -415,17 +431,22 @@ function RevealScreen({ data, players, isHost, isMoveSubmitting, onAdvanceRound,
         </div>
       )}
 
-      {isHost ? (
-        <button
-          onClick={onAdvanceRound}
-          disabled={isMoveSubmitting}
-          className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
-        >
-          {isLastRound ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
-        </button>
-      ) : (
-        <p className="text-white/80 text-sm">{t('liarsParty.waitingForHost')}</p>
-      )}
+      {/*
+        Open to every player, not just the host — the engine's validateMove for
+        advance-round has no player-ownership check (any known player can legally
+        advance). Gating this to isHost made the game permanently soft-lock for
+        everyone else whenever the host didn't click through. See #642.
+      */}
+      <button
+        onClick={onAdvanceRound}
+        disabled={isMoveSubmitting}
+        className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
+      >
+        {isLastRound ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
+      </button>
+      <button onClick={onLeave} className="text-sm text-white/70 underline">
+        {t('lobby.leave')}
+      </button>
     </div>
   )
 }
@@ -605,7 +626,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }, [game?.id])
 
   useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
+    if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
     if (isGuest && !guestToken) return
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
@@ -642,7 +663,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   useRealtimeConnection({
     code,
-    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
@@ -791,6 +812,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
             players={players}
             currentUserId={currentUserId}
             timerRemaining={timerRemaining}
+            onLeave={() => router.push('/games')}
             t={t}
           />
         )
@@ -805,6 +827,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
             isMoveSubmitting={isMoveSubmitting}
             timerRemaining={timerRemaining}
             onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
+            onLeave={() => router.push('/games')}
             t={t}
           />
         </>
@@ -818,6 +841,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
             data={data}
             currentUserId={currentUserId}
             timerRemaining={timerRemaining}
+            onLeave={() => router.push('/games')}
             t={t}
           />
         )
@@ -832,6 +856,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
             isMoveSubmitting={isSpectator || isMoveSubmitting}
             timerRemaining={timerRemaining}
             onVote={(decision) => handleMove('submit-challenge', { decision })}
+            onLeave={() => router.push('/games')}
             t={t}
           />
         </>
@@ -845,9 +870,9 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           <RevealScreen
             data={data}
             players={players}
-            isHost={!isSpectator && isHost}
             isMoveSubmitting={isMoveSubmitting}
             onAdvanceRound={() => handleMove('advance-round', {})}
+            onLeave={() => router.push('/games')}
             t={t}
           />
         </>

@@ -68,11 +68,19 @@ const makeRestoreEngine = () => {
 }
 
 const SERVER_TS = 'server-ts-1234'
+// IMPORTANT: data.game.state arrives as an already-parsed object here, NOT a
+// JSON string - the whole response went through a single res.json() round
+// trip. A previous version of this mock used JSON.stringify(...), which let
+// a real bug slip through undetected: useGameActions blindly called
+// JSON.parse(data.game.state), which throws on an object and silently fell
+// back to a random id, breaking the deterministic dedup match against
+// LobbyPageClient's broadcast handler (which gets the object/string check
+// right). Keep this mock shaped like the real API response.
 const makeOkRollResponse = () => ({
   ok: true,
   status: 200,
   json: async () => ({
-    game: { state: JSON.stringify({ data: { lastRoll: { timestamp: SERVER_TS } } }) },
+    game: { state: { data: { lastRoll: { timestamp: SERVER_TS } } } },
     serverBroadcasted: true,
   }),
 })
@@ -165,7 +173,7 @@ describe('useGameActions', () => {
         ok: true,
         status: 200,
         json: async () => ({
-          game: { state: JSON.stringify({}) },
+          game: { state: {} },
           serverBroadcasted: true,
         }),
       })
@@ -223,6 +231,33 @@ describe('useGameActions', () => {
 
       expect(firstInsert).toHaveLength(1)
       expect(secondInsert).toBe(firstInsert) // dedup: returns same reference
+    })
+
+    it('id is deterministic (matches LobbyPageClient broadcast handler id), not random', async () => {
+      // Regression test: data.game.state arrives as an object, not a JSON
+      // string. If handleRollDice ever goes back to blindly JSON.parse-ing
+      // it, that throws, the id silently falls back to a random
+      // `${Date.now()}_${Math.random()}` value, and this same roll's entry
+      // from the HTTP response and from the realtime broadcast (which
+      // computes `${playerId}-${timestamp}` directly) stop matching - the
+      // exact bug that caused a player's own first roll to render twice in
+      // the Recent Activity panel every time they let a turn time out.
+      const restoredEngine = makeRestoreEngine()
+      mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue(makeOkRollResponse())
+
+      const setRollHistory = jest.fn()
+      const props = makeProps({ setRollHistory, userId: 'player-1', guestId: null })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+
+      const updater = setRollHistory.mock.calls[0][0] as (prev: RollHistoryEntry[]) => RollHistoryEntry[]
+      const [entry] = updater([])
+
+      // Must match the broadcast handler's `${lastRoll.playerId}-${lastRoll.timestamp}`
+      // construction exactly - playerId here is userId for an authenticated player.
+      expect(entry.id).toBe(`player-1-${SERVER_TS}`)
     })
   })
 })

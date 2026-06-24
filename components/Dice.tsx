@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { sounds } from '@/lib/sounds'
 
 interface DiceProps {
@@ -11,6 +12,19 @@ interface DiceProps {
 }
 
 export default function Dice({ value, held, onToggleHold, isRolling = false, disabled = false }: DiceProps) {
+  const [isPopping, setIsPopping] = useState(false)
+  const prevHeldRef = useRef(held)
+
+  useEffect(() => {
+    if (held && !prevHeldRef.current) {
+      setIsPopping(true)
+      const timeout = setTimeout(() => setIsPopping(false), 280)
+      prevHeldRef.current = held
+      return () => clearTimeout(timeout)
+    }
+    prevHeldRef.current = held
+  }, [held])
+
   const getDotPositions = (num: number) => {
     const positions: string[] = []
     
@@ -67,13 +81,13 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
           ? 'scale-95 ring-4 ring-[rgba(255,196,77,0.35)]'
           : 'hover:-translate-y-0.5 active:scale-95'
         }
-        ${isRolling ? 'animate-shake-roll' : ''}
+        ${isRolling && !held ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none
         transform-gpu
       `}
-      style={
-        held
+      style={{
+        ...(held
           ? {
               background: 'linear-gradient(180deg, rgba(255,196,77,0.92) 0%, rgba(255,168,46,0.98) 100%)',
               border: '3px solid var(--bd-ink)',
@@ -83,8 +97,9 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
               background: 'rgba(255,255,255,0.72)',
               border: '1.5px solid rgba(0,0,0,0.12)',
               boxShadow: '0 4px 0 0 rgba(0,0,0,0.18)',
-            }
-      }
+            }),
+        ...(isPopping ? { animation: 'dice-hold-pop 0.28s cubic-bezier(0.2,1.6,0.4,1) both' } : {}),
+      }}
     >
       {/* Dots */}
       {getDotPositions(value).map((position, index) => (

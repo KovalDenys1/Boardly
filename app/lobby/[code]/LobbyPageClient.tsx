@@ -2173,35 +2173,32 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
                   }}
                 >
-                  {/* Mobile: Compact 2-row layout */}
-                  <div className="lg:hidden">
-                    {/* Row 1: Game Info */}
-                    <div className="mb-2 flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--bd-line)' }}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <span className="text-base">🎯</span>
-                          <span className="text-sm font-bold text-bd-ink">
-                            {t('game.ui.round')}: {roundInfo.current}/{roundInfo.total}
-                          </span>
-                        </div>
-                        <div className="h-4 w-px" style={{ background: 'var(--bd-line)' }}></div>
-                        <div className="flex items-center gap-1 max-w-[120px]">
-                          <span className="text-base">👤</span>
-                          <span className="truncate text-sm font-bold text-bd-ink">
-                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
-                          </span>
-                        </div>
+                  {/* Single responsive row: stacks below sm, one row from sm up */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    {/* Stats group - wraps internally, no hard-coded row break */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-xl">🎯</span>
+                        <span className="text-sm sm:text-base font-bold text-bd-ink">
+                          {roundInfo.current}/{roundInfo.total}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-base">🏆</span>
-                        <span className="text-sm font-bold text-bd-ink">
+                      <div className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[150px]">
+                        <span className="text-base sm:text-xl">👤</span>
+                        <span className="truncate text-sm sm:text-base font-bold text-bd-ink">
+                          {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base sm:text-xl">🏆</span>
+                        <span className="text-sm sm:text-base font-bold text-bd-ink">
                           {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                         </span>
                       </div>
                     </div>
 
-                    {/* Row 2: Actions */}
-                    <div className="flex items-center justify-between">
+                    {/* Actions group */}
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
                       <button
                         onClick={() => {
                           sounds.play('click', { force: true })
@@ -2213,10 +2210,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           })
                         }}
                         aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="bd-btn bd-btn-soft !rounded-xl !px-2.5 !py-1.5 !text-sm flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+                        className="bd-btn bd-btn-soft bd-btn-icon sm:!w-auto sm:!aspect-auto sm:!px-3 sm:!py-1.5 !rounded-xl flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
-                        <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
+                        <span className="text-base sm:text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
+                        <span className="hidden sm:inline text-xs">{t('game.ui.sound')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -2224,76 +2222,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
-                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                      >
-                        <span className="text-base">🚪</span>
-                        <span>{t('game.ui.leave')}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Desktop/Tablet: Original layout */}
-                  <div className="hidden lg:flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl">🎯</span>
-                        <div>
-                          <div className="bd-kicker leading-tight">{t('game.ui.round')}</div>
-                          <div className="text-base font-bold leading-tight text-bd-ink">
-                            {roundInfo.current}/{roundInfo.total}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-6 w-px" style={{ background: 'var(--bd-line)' }}></div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl">👤</span>
-                        <div>
-                          <div className="bd-kicker leading-tight">{t('game.ui.turn')}</div>
-                          <div className="max-w-[100px] truncate text-base font-bold leading-tight text-bd-ink sm:max-w-[150px]">
-                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-6 w-px" style={{ background: 'var(--bd-line)' }}></div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl">🏆</span>
-                        <div>
-                          <div className="bd-kicker leading-tight">Your Score</div>
-                          <div className="text-base font-bold leading-tight text-bd-ink">
-                            {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          sounds.play('click', { force: true })
-                          const newState = sounds.toggle()
-                          setSoundEnabled(newState)
-                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-                            duration: 2000,
-                            position: 'top-center',
-                          })
-                        }}
-                        aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
-                        className="bd-btn bd-btn-soft !rounded-xl !px-3 !py-1.5 !text-base flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                        title={soundEnabled ? 'Disable sound' : 'Enable sound'}
-                      >
-                        <span className="text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
-                        <span className="hidden sm:inline text-xs">Sound</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          sounds.play('click', { force: true })
-                          setShowLeaveConfirmModal(true)
-                        }}
-                        aria-label="Leave game"
                         className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
-                        <span>Leave</span>
+                        <span>{t('game.ui.leave')}</span>
                       </button>
                     </div>
                   </div>
@@ -2582,6 +2514,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              onLeave={() => setShowLeaveConfirmModal(true)}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (

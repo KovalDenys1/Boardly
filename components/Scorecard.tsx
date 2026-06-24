@@ -102,6 +102,24 @@ const Scorecard = React.memo(function Scorecard({
 }: ScorecardProps) {
   const { t } = useTranslation()
 
+  // Track which category just transitioned from unfilled to filled so its row
+  // can get a brief "just scored" flash instead of an instant, silent re-render.
+  const [justScoredCategory, setJustScoredCategory] = React.useState<YahtzeeCategory | null>(null)
+  const prevScorecardRef = React.useRef(scorecard)
+
+  React.useEffect(() => {
+    const prev = prevScorecardRef.current
+    const newlyFilled = [...upperSection, ...lowerSection].find(
+      (category) => prev[category] === undefined && scorecard[category] !== undefined
+    )
+    prevScorecardRef.current = scorecard
+    if (newlyFilled) {
+      setJustScoredCategory(newlyFilled)
+      const timeout = setTimeout(() => setJustScoredCategory(null), 900)
+      return () => clearTimeout(timeout)
+    }
+  }, [scorecard])
+
   const upperTotal = upperSection.reduce((sum, cat) => sum + (scorecard[cat] ?? 0), 0)
   const bonus = upperTotal >= 63 ? 35 : 0
   const lowerTotal = lowerSection.reduce((sum, cat) => sum + (scorecard[cat] ?? 0), 0)
@@ -197,7 +215,7 @@ const Scorecard = React.memo(function Scorecard({
             ? `+${potentialScore}`
             : t('yahtzee.ui.notAvailable')
         }`}
-        className={`${rowBase} ${rowVariants[state]} ${isBestOption ? 'ring-1 ring-emerald-300 dark:ring-emerald-700' : ''} ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+        className={`${rowBase} ${rowVariants[state]} ${isBestOption ? 'ring-1 ring-emerald-300 dark:ring-emerald-700' : ''} ${isLoading ? 'opacity-50 cursor-wait' : ''} ${category === justScoredCategory ? 'scorecard-row-flash' : ''}`}
       >
         {/* Icon */}
         <span className="text-base sm:text-lg shrink-0 leading-none">{icon}</span>

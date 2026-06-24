@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
             id: true,
             username: true,
             image: true,
+            avatarUrl: true,
             email: true,
             publicProfileId: true,
             premiumUntil: true,
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest) {
             id: true,
             username: true,
             image: true,
+            avatarUrl: true,
             email: true,
             publicProfileId: true,
             premiumUntil: true,
@@ -86,9 +88,10 @@ export async function GET(req: NextRequest) {
     // Map to return the friend (not the current user)
     const friends = friendships.map(friendship => {
       const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
-      const { accountPreferences, premiumUntil, ...friendFields } = friend
+      const { accountPreferences, premiumUntil, image, avatarUrl, ...friendFields } = friend
       return {
         ...friendFields,
+        avatar: avatarUrl ?? image ?? null,
         isPremium: !!premiumUntil && premiumUntil > now,
         showOnlineStatus: accountPreferences?.showOnlineStatus ?? true,
         friendshipId: friendship.id,

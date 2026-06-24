@@ -101,8 +101,44 @@ describe('YahtzeeGame', () => {
         data: { held: [true, false] }, // wrong length
         timestamp: new Date()
       }
-      
+
       expect(game.validateMove(move)).toBe(false)
+    })
+
+    it('should reject roll when all dice are held (nothing to roll)', () => {
+      const move = {
+        playerId: 'player1',
+        type: 'roll' as const,
+        data: { held: [true, true, true, true, true] },
+        timestamp: new Date()
+      }
+
+      expect(game.validateMove(move)).toBe(false)
+    })
+
+    it('should allow roll when at least one die is unheld', () => {
+      const move = {
+        playerId: 'player1',
+        type: 'roll' as const,
+        data: { held: [true, true, true, true, false] },
+        timestamp: new Date()
+      }
+
+      expect(game.validateMove(move)).toBe(true)
+    })
+
+    it('should not decrement rollsLeft when an all-held roll is rejected via makeMove', () => {
+      const rollsLeftBefore = getGameData(game).rollsLeft
+
+      const result = game.makeMove({
+        playerId: 'player1',
+        type: 'roll' as const,
+        data: { held: [true, true, true, true, true] },
+        timestamp: new Date()
+      })
+
+      expect(result).toBe(false)
+      expect(getGameData(game).rollsLeft).toBe(rollsLeftBefore)
     })
   })
 

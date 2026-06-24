@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         },
@@ -147,7 +148,8 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         }
@@ -180,9 +182,22 @@ export async function POST(req: NextRequest) {
       requestId: friendRequest.id
     })
 
-    return NextResponse.json({ 
-      success: true, 
-      friendRequest 
+    const { sender, receiver: requestReceiver, ...friendRequestFields } = friendRequest
+    const friendRequestWithAvatar = {
+      ...friendRequestFields,
+      sender: {
+        ...sender,
+        avatar: sender.avatarUrl ?? sender.image ?? null,
+      },
+      receiver: {
+        ...requestReceiver,
+        avatar: requestReceiver.avatarUrl ?? requestReceiver.image ?? null,
+      },
+    }
+
+    return NextResponse.json({
+      success: true,
+      friendRequest: friendRequestWithAvatar
     })
 
   } catch (error) {
@@ -250,7 +265,8 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         },
@@ -258,7 +274,8 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         }
@@ -272,7 +289,19 @@ export async function GET(req: NextRequest) {
       count: requests.length
     })
 
-    return NextResponse.json({ requests })
+    const requestsWithAvatar = requests.map(({ sender, receiver, ...request }) => ({
+      ...request,
+      sender: sender && {
+        ...sender,
+        avatar: sender.avatarUrl ?? sender.image ?? null,
+      },
+      receiver: receiver && {
+        ...receiver,
+        avatar: receiver.avatarUrl ?? receiver.image ?? null,
+      },
+    }))
+
+    return NextResponse.json({ requests: requestsWithAvatar })
 
   } catch (error) {
     log.error('Error fetching friend requests', error as Error)

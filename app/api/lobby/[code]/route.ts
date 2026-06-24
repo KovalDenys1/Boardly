@@ -696,6 +696,20 @@ export async function PATCH(
 
     const updates = parsedBody.data
 
+    if (updates.allowSpectators === true) {
+      let isPremium = false
+      if (!requestUser.isGuest) {
+        const dbUser = await prisma.users.findUnique({
+          where: { id: requestUser.id },
+          select: { premiumUntil: true },
+        })
+        isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+      }
+      if (!isPremium) {
+        return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
+      }
+    }
+
     // Validate theme if provided
     if (typeof updates.theme === 'string' && !LOBBY_THEME_IDS.includes(updates.theme as typeof LOBBY_THEME_IDS[number])) {
       return NextResponse.json({ error: 'Invalid theme' }, { status: 400 })
