@@ -1101,7 +1101,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     }
 
     const sendChat = () => {
-        if (!chatInput.trim()) return
+        if (isSpectator || !chatInput.trim()) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
@@ -1112,6 +1112,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     }
 
     const quickReact = (emoji: string) => {
+        if (isSpectator) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
@@ -1315,21 +1316,25 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 }
             </div>
             <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
-                <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
-                    {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
-                        <button key={e} onClick={() => quickReact(e)} style={{ padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit' }}>{e}</button>
-                    ))}
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                        style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
-                        placeholder={t('game.ui.chatPlaceholder')}
-                        value={chatInput}
-                        onChange={e => setChatInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && sendChat()}
-                    />
-                    <button onClick={sendChat} aria-label={t('chat.send')} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
-                </div>
+                {!isSpectator && (
+                    <>
+                        <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
+                            {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
+                                <button key={e} onClick={() => quickReact(e)} style={{ padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit' }}>{e}</button>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            <input
+                                style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
+                                placeholder={t('game.ui.chatPlaceholder')}
+                                value={chatInput}
+                                onChange={e => setChatInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && sendChat()}
+                            />
+                            <button onClick={sendChat} aria-label={t('chat.send')} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     )
