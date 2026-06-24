@@ -577,7 +577,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id])
 
   useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
+    if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
     if (isGuest && !guestToken) return
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
@@ -606,7 +606,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
   const { emitWhenConnected } = useRealtimeConnection({
     code,
-    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
