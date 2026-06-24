@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GAME_SVG_PATHS } from '@/components/GameIcon'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import AdminWatchModal from '@/components/AdminWatchModal'
 
 export interface LobbyCardData {
   id: string
@@ -35,10 +38,14 @@ interface LobbyCardProps {
   currentUserId?: string | null
   onOpenLobby: (code: string) => void
   onWatchLobby: (code: string) => void
+  onAdminWatchLobby?: (code: string) => void
 }
 
-export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, onWatchLobby }: LobbyCardProps) {
+export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, onWatchLobby, onAdminWatchLobby }: LobbyCardProps) {
   const { t } = useTranslation()
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
+  const [showAdminModal, setShowAdminModal] = useState(false)
 
   const getGamePresentation = (gameType: string | undefined): { svgId: string; label: string; accent: string } => {
     const meta = gameType ? getGameMetadata(gameType) : null
@@ -67,6 +74,10 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
     : (shouldWatch ? t('lobby.watch') : t('lobby.openLobby'))
   const handlePrimaryAction = () => {
     if (shouldWatch) {
+      if (isAdmin && onAdminWatchLobby) {
+        setShowAdminModal(true)
+        return
+      }
       onWatchLobby(lobby.code)
     } else {
       onOpenLobby(lobby.code)
@@ -74,6 +85,16 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
   }
 
   return (
+    <>
+    {isAdmin && onAdminWatchLobby && (
+      <AdminWatchModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        onWatchAsSpectator={() => onWatchLobby(lobby.code)}
+        onWatchAsAdmin={() => onAdminWatchLobby(lobby.code)}
+        spectatorsDisabled={!lobby.allowSpectators}
+      />
+    )}
     <article
       role="button"
       tabIndex={0}
@@ -147,11 +168,12 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
             handlePrimaryAction()
           }}
           className="bd-btn bd-btn-coral"
-          style={{ padding: '10px 16px', fontSize: 13 }}
+          style={{ padding: '10px 16px', fontSize: 13, minWidth: 172, justifyContent: 'center' }}
         >
           {primaryLabel} →
         </button>
       </div>
     </article>
+    </>
   )
 }

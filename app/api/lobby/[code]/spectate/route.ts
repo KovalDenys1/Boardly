@@ -16,7 +16,9 @@ export async function GET(
   if (rateLimitResult) return rateLimitResult
 
   const { code } = await params
-  const includeFinished = new URL(request.url).searchParams.get('includeFinished') === 'true'
+  const url = new URL(request.url)
+  const includeFinished = url.searchParams.get('includeFinished') === 'true'
+  const adminViewRequested = url.searchParams.get('adminView') === 'true'
 
   const lobby = await prisma.lobbies.findUnique({
     where: { code },
@@ -73,21 +75,34 @@ export async function GET(
     return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
   }
 
-  if (!lobby.allowSpectators) {
-    return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
+  // Resolve identity early — an admin requesting admin-view bypasses the
+  // allowSpectators/maxSpectators gates below (but never the PLAYER_IN_GAME check).
+  const requestUser = await getRequestAuthUser(request)
+  let isAdminView = false
+  if (adminViewRequested && requestUser && !requestUser.isGuest) {
+    const requesterDbUser = await prisma.users.findUnique({
+      where: { id: requestUser.id },
+      select: { role: true, suspended: true },
+    })
+    isAdminView = requesterDbUser?.role === 'admin' && !requesterDbUser?.suspended
   }
 
-  if (lobby.maxSpectators > 0 && lobby.spectatorCount >= lobby.maxSpectators) {
-    return NextResponse.json(
-      { error: 'Spectator limit reached', code: 'SPECTATOR_LIMIT_REACHED' },
-      { status: 403 }
-    )
+  if (!isAdminView) {
+    if (!lobby.allowSpectators) {
+      return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
+    }
+
+    if (lobby.maxSpectators > 0 && lobby.spectatorCount >= lobby.maxSpectators) {
+      return NextResponse.json(
+        { error: 'Spectator limit reached', code: 'SPECTATOR_LIMIT_REACHED' },
+        { status: 403 }
+      )
+    }
   }
 
   const activeGame = pickRelevantLobbyGame(lobby.games, { includeFinished })
 
   // Block players from spectating their own active game
-  const requestUser = await getRequestAuthUser(request)
   if (requestUser && activeGame && Array.isArray(activeGame.players)) {
     const isPlayer = activeGame.players.some((p) => p.user?.id === requestUser.id)
     if (isPlayer) {
@@ -113,6 +128,7 @@ export async function GET(
   const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
   const canJoinAsPlayer = (() => {
+    if (isAdminView) return false
     const game = activeGame
     if (!game) return false
     const playerCount = Array.isArray(game.players) ? game.players.length : 0
@@ -128,5 +144,6 @@ export async function GET(
     },
     activeGame: sanitizedActiveGame,
     canJoinAsPlayer,
+    isAdminView,
   })
 }

@@ -2114,6 +2114,17 @@ const en = {
     spyReveal: 'The spy was',
     limitReached: 'Spectator limit reached',
     limitReachedDesc: 'This lobby has reached its maximum number of spectators.',
+    adminViewBanner: '🛡️ Admin View — invisible to players and spectators',
+  },
+  admin: {
+    watchButton: '🛡️ Admin',
+    watchModal: {
+      title: 'How do you want to watch?',
+      spectatorTitle: 'Watch as spectator',
+      spectatorDesc: 'Visible to players and other spectators, like any viewer.',
+      adminTitle: 'Watch as Admin (invisible)',
+      adminDesc: 'See the live game even if spectators are disabled. Nobody will know you\'re watching.',
+    },
   },
   toast: {
     copied: 'Copied to clipboard!',

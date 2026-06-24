@@ -203,6 +203,7 @@ function LobbyListPageContent() {
                   currentUserId={session?.user?.id ?? null}
                   onOpenLobby={(code) => router.push(`/lobby/${code}`)}
                   onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
+                  onAdminWatchLobby={(code) => router.push(`/lobby/${code}/spectate?admin=1`)}
                 />
               ))}
             </div>
