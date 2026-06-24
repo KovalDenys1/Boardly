@@ -10,6 +10,24 @@ export interface TicTacToeMatchState {
   draws: number
 }
 
+/**
+ * Whether a best-of-N match is decided: either the configured round cap is
+ * reached, or one symbol already holds a majority of targetRounds wins
+ * (early stop, e.g. a best-of-3 series ending 2-0 without a 3rd round).
+ * Pure function so client code can mirror the engine's decision without an
+ * engine instance (e.g. from plain JSON game state).
+ */
+export function isTicTacToeMatchComplete(match: TicTacToeMatchState): boolean {
+  if (match.targetRounds === null) {
+    return false
+  }
+  if (match.roundsPlayed >= match.targetRounds) {
+    return true
+  }
+  const winsNeeded = Math.ceil(match.targetRounds / 2)
+  return match.winsBySymbol.X >= winsNeeded || match.winsBySymbol.O >= winsNeeded
+}
+
 export interface TicTacToeMoveRecord {
   playerId: string
   symbol: PlayerSymbol
@@ -461,10 +479,13 @@ export class TicTacToeGame extends GameEngine {
   }
 
   private isMatchComplete(match: TicTacToeMatchState): boolean {
-    if (match.targetRounds === null) {
-      return false
-    }
-    return match.roundsPlayed >= match.targetRounds
+    return isTicTacToeMatchComplete(match)
+  }
+
+  /** Whether the best-of-N series is over (no more rounds will be played). */
+  isSeriesComplete(): boolean {
+    const gameData = this.state.data as TicTacToeGameData
+    return this.isMatchComplete(this.ensureMatchState(gameData))
   }
 
   private recordRoundResult(gameData: TicTacToeGameData, result: PlayerSymbol | 'draw') {

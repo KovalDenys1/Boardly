@@ -11,6 +11,8 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { transitionLobbyToWaitingRoom } from '@/lib/lobby-series-transition'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -516,6 +518,22 @@ export async function POST(
             action: 'state-change',
             payload: currentState,
           })
+
+          if (
+            gameType === 'tic_tac_toe' &&
+            currentState.status === 'finished' &&
+            gameEngine instanceof TicTacToeGame &&
+            gameEngine.isSeriesComplete()
+          ) {
+            void transitionLobbyToWaitingRoom({
+              lobbyId: game.lobby.id,
+              lobbyCode: resolvedLobbyCode,
+              gameType,
+              players: game.players,
+            }).catch((err) => {
+              log.error('Failed to auto-transition completed tic-tac-toe series', err as Error, { gameId })
+            })
+          }
         } catch (dbError) {
           log.error('Critical: Failed to persist bot move state', dbError as Error, {
             gameId,
