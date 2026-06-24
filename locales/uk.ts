@@ -113,6 +113,9 @@ const uk: Translation = {
       sent_other: 'Запрошено {{count}} друзів!',
       linkCopied: 'Посилання на лобі скопійовано! Надішліть його {{count}} другу',
       linkCopied_other: 'Посилання на лобі скопійовано! Надішліть його {{count}} друзям',
+      inviteButton: 'Запросити',
+      invited: 'Запрошено',
+      sentToFriend: 'Запрошення надіслано {{name}}!',
     },
     stats: {
       total: 'Всього лобі',
@@ -1793,6 +1796,11 @@ const uk: Translation = {
       emailVerificationRequired: 'Потрібна верифікація електронної пошти',
       emailVerificationRequiredDesc: 'Будь ласка, підтвердіть вашу електронну пошту, щоб отримати доступ до коду друга та зв\'язатися з друзями.',
       verifyEmail: 'Підтвердити пошту',
+      presence: {
+        inGame: 'У грі',
+        inLobby: 'У лобі',
+        online: 'Онлайн',
+      },
       errors: {
         loadFailed: 'Не вдалося завантажити друзів',
         usernameRequired: 'Ім\'я користувача обов\'язкове',

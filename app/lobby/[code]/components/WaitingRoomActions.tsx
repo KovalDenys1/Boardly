@@ -29,6 +29,7 @@ export default function WaitingRoomActions({
   onStartGame,
   onAddBot,
   onBotDifficultyChange,
+  onInviteFriends,
 }: WaitingRoomActionsProps) {
   const { t } = useTranslation()
   const [showSettings, setShowSettings] = useState(false)
@@ -90,7 +91,7 @@ export default function WaitingRoomActions({
     <div className="flex-shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
       {/* Lobby full badge OR settings toggle */}
       {canAddMorePlayers ? (
-        canConfigureBots && (
+        (canConfigureBots || onInviteFriends) && (
           <button
             onClick={() => {
               sounds.play('click')
@@ -121,6 +122,22 @@ export default function WaitingRoomActions({
       {/* Collapsible settings panel */}
       {showSettings && canAddMorePlayers && (
         <div className="rounded-xl border border-bd-line bg-bd-bg2/60 px-3 py-3 space-y-3">
+          {/* Invite Friends */}
+          {onInviteFriends && (
+            <button
+              onClick={() => {
+                sounds.play('click')
+                onInviteFriends()
+              }}
+              className="bd-btn bd-btn-soft w-full justify-center px-3 py-2.5 text-sm"
+            >
+              <span className="inline-flex items-center justify-center gap-1.5">
+                <span>👥</span>
+                <span>{t('lobby.invite.title')}</span>
+              </span>
+            </button>
+          )}
+
           {/* Add Bot */}
           {supportsBots && (
             <button
