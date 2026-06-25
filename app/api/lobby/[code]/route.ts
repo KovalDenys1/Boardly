@@ -794,11 +794,18 @@ export async function PATCH(
       },
     })
 
-    // If game type changed, also update the waiting game record
+    // If game type changed, regenerate the waiting game's state to match the
+    // new game type — relabeling gameType alone would leave the previous
+    // game's `data` shape in place (e.g. Tic-Tac-Toe's board/currentSymbol
+    // instead of Alias's teams/currentTeamIndex), crashing the new page.
     if (typeof updates.gameType === 'string' && updates.gameType !== lobby.gameType && activeGame) {
+      const freshState = createGameEngine(updates.gameType, 'temp').getState()
       await prisma.games.update({
         where: { id: activeGame.id },
-        data: { gameType: toPersistedGameType(updates.gameType) },
+        data: {
+          gameType: toPersistedGameType(updates.gameType),
+          state: toPersistedGameStateInput(freshState),
+        },
       })
     }
 

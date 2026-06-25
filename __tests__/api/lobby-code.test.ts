@@ -505,6 +505,59 @@ describe('PATCH /api/lobby/[code]', () => {
     expect(response.status).toBe(200)
     expect(mockPrisma.lobbies.update).toHaveBeenCalled()
   })
+
+  it('regenerates the waiting game state (not just the label) when gameType changes', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      creatorId: 'user-123',
+      gameType: 'tic_tac_toe',
+      maxPlayers: 4,
+      games: [
+        {
+          id: 'game-1',
+          status: 'waiting',
+          updatedAt: new Date(),
+          players: [],
+        },
+      ],
+    } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      maxPlayers: 4,
+      allowSpectators: false,
+      maxSpectators: 0,
+      turnTimer: 60,
+      theme: 'default',
+      gameType: 'alias',
+    } as any)
+    mockPrisma.games.update.mockResolvedValue({} as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ gameType: 'alias' }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.games.update).toHaveBeenCalledTimes(1)
+    const updateCall = mockPrisma.games.update.mock.calls[0][0]
+    expect(updateCall.where).toEqual({ id: 'game-1' })
+    expect(updateCall.data.gameType).toBe('alias')
+    // The regression this guards: previously only `gameType` was relabeled,
+    // leaving the old game's `data` shape (e.g. tic-tac-toe's board) in
+    // place, which crashed alias-page.tsx reading data.teams[...].
+    expect(updateCall.data.state).toBeDefined()
+    expect(updateCall.data.state.data).toMatchObject({
+      phase: 'team_assignment',
+      currentTeamIndex: 0,
+    })
+    expect(Array.isArray(updateCall.data.state.data.teams)).toBe(true)
+    expect(updateCall.data.state.data.board).toBeUndefined()
+  })
 })
 
 describe('POST /api/lobby/[code]/leave', () => {
