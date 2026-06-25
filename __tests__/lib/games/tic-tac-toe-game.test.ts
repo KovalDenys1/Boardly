@@ -438,6 +438,43 @@ describe('TicTacToeGame', () => {
             game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
         }
 
+        // Plays a round where whoever currently has the turn (the round's
+        // starting symbol) wins row 0 in 5 moves.
+        const playRoundStarterWins = (g: TicTacToeGame) => {
+            const state = g.getState()
+            const starterId = state.players[state.currentPlayerIndex].id
+            const otherId = state.players[state.currentPlayerIndex === 0 ? 1 : 0].id
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            g.makeMove({ playerId: otherId, type: 'place', data: { row: 1, col: 0 }, timestamp: new Date() })
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            g.makeMove({ playerId: otherId, type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
+        }
+
+        // Plays a round where the player who does NOT start wins row 0,
+        // in 6 moves, without the starter accidentally completing a line first.
+        const playRoundOtherWins = (g: TicTacToeGame) => {
+            const state = g.getState()
+            const starterId = state.players[state.currentPlayerIndex].id
+            const otherId = state.players[state.currentPlayerIndex === 0 ? 1 : 0].id
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 2, col: 0 }, timestamp: new Date() })
+            g.makeMove({ playerId: otherId, type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 2, col: 1 }, timestamp: new Date() })
+            g.makeMove({ playerId: otherId, type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            g.makeMove({ playerId: starterId, type: 'place', data: { row: 1, col: 2 }, timestamp: new Date() })
+            g.makeMove({ playerId: otherId, type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
+        }
+
+        const playNextRound = (g: TicTacToeGame) => {
+            const state = g.getState()
+            g.makeMove({
+                playerId: state.players[0].id,
+                type: 'next-round',
+                data: {},
+                timestamp: new Date(),
+            })
+        }
+
         beforeEach(() => {
             testPlayers.forEach(player => game.addPlayer(player))
             game.startGame()
@@ -510,6 +547,96 @@ describe('TicTacToeGame', () => {
 
             expect(cappedGame.validateMove(nextRoundMove)).toBe(false)
             expect(cappedGame.makeMove(nextRoundMove)).toBe(false)
+        })
+
+        describe('best-of-N early stop', () => {
+            it('ends a best-of-3 series 2-0 without playing the 3rd round', () => {
+                const bo3 = new TicTacToeGame('bo3-sweep', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 3 },
+                })
+                testPlayers.forEach(player => bo3.addPlayer(player))
+                bo3.startGame()
+
+                playRoundStarterWins(bo3) // round 1: X starts and wins -> X:1
+                playNextRound(bo3)
+                playRoundOtherWins(bo3) // round 2: O starts, X (other) wins -> X:2
+
+                expect(bo3.isSeriesComplete()).toBe(true)
+                expect(getGameData(bo3).match.roundsPlayed).toBe(2)
+
+                const nextRoundMove = { playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() }
+                expect(bo3.validateMove(nextRoundMove)).toBe(false)
+
+                const winner = bo3.checkWinCondition()
+                expect(winner?.id).toBe('player-x')
+            })
+
+            it('requires a 3rd round in a best-of-3 series tied 1-1', () => {
+                const bo3 = new TicTacToeGame('bo3-tied', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 3 },
+                })
+                testPlayers.forEach(player => bo3.addPlayer(player))
+                bo3.startGame()
+
+                playRoundStarterWins(bo3) // round 1: X starts and wins -> X:1
+                playNextRound(bo3)
+                playRoundStarterWins(bo3) // round 2: O starts and wins -> O:1
+
+                expect(bo3.isSeriesComplete()).toBe(false)
+                expect(getGameData(bo3).match.roundsPlayed).toBe(2)
+
+                const nextRoundMove = { playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() }
+                expect(bo3.validateMove(nextRoundMove)).toBe(true)
+            })
+
+            it('ends a best-of-5 series 3-0 without playing rounds 4-5', () => {
+                const bo5 = new TicTacToeGame('bo5-sweep', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 5 },
+                })
+                testPlayers.forEach(player => bo5.addPlayer(player))
+                bo5.startGame()
+
+                playRoundStarterWins(bo5) // round 1: X starts and wins -> X:1
+                playNextRound(bo5)
+                playRoundOtherWins(bo5) // round 2: O starts, X (other) wins -> X:2
+                playNextRound(bo5)
+                playRoundStarterWins(bo5) // round 3: X starts and wins -> X:3
+
+                expect(bo5.isSeriesComplete()).toBe(true)
+                expect(getGameData(bo5).match.roundsPlayed).toBe(3)
+            })
+
+            it('does not early-stop a single-game match (targetRounds=1)', () => {
+                const single = new TicTacToeGame('single-game', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 1 },
+                })
+                testPlayers.forEach(player => single.addPlayer(player))
+                single.startGame()
+
+                playRoundStarterWins(single)
+
+                expect(single.isSeriesComplete()).toBe(true)
+                expect(getGameData(single).match.roundsPlayed).toBe(1)
+            })
+
+            it('never early-stops an unlimited-rounds match (targetRounds=null)', () => {
+                playRoundStarterWins(game)
+                playNextRound(game)
+                playRoundOtherWins(game)
+
+                expect(game.isSeriesComplete()).toBe(false)
+
+                const nextRoundMove = { playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() }
+                expect(game.validateMove(nextRoundMove)).toBe(true)
+            })
         })
     })
 

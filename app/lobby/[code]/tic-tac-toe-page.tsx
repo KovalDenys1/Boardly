@@ -10,6 +10,7 @@ import {
     TicTacToePendingRequest,
     PlayerSymbol,
     CellValue,
+    isTicTacToeMatchComplete,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -252,9 +253,10 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isGuest, registerUrl, t }: {
+function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isMatchComplete, isGuest, registerUrl, t }: {
     winnerName: string | null; winnerSymbol: string | null; isDraw: boolean; isMyWin: boolean;
     onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean;
+    isMatchComplete: boolean;
     isGuest: boolean; registerUrl: string;
     t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
@@ -283,7 +285,7 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
                 </div>
             )}
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                {t('games.tictactoe.game.roundOver')}
+                {isMatchComplete ? t('games.tictactoe.game.seriesComplete') : t('games.tictactoe.game.roundOver')}
             </div>
             <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center', marginBottom: 16, lineHeight: 1.1 }}>
                 {isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
@@ -292,7 +294,15 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
                 <button onClick={onInspect} style={ghostBtn}>
                     {t('games.tictactoe.game.viewBoard')}
                 </button>
-                {isHost ? (
+                {isMatchComplete ? (
+                    <div style={{
+                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
+                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                    }}>
+                        {t('games.tictactoe.game.returningToLobby')}
+                    </div>
+                ) : isHost ? (
                     <>
                         <button onClick={onPlayAgain} disabled={isLoading} style={{
                             padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
@@ -834,9 +844,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         if (!userId) { router.push(`/lobby/${code}`); return }
         if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
         const gameData = gameEngine.getState().data as TicTacToeGameData
-        const targetRounds = gameData.match?.targetRounds ?? null
-        const roundsPlayed = gameData.match?.roundsPlayed ?? 0
-        const isMatchComplete = targetRounds !== null && roundsPlayed >= targetRounds
+        const isMatchComplete = isTicTacToeMatchComplete(gameData.match)
         setIsRematchSubmitting(true)
         let nextRoundSubmitStartedAt: number | null = null
         let nextRoundResponseStatus: number | undefined
@@ -968,7 +976,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const match = gameData.match
     const roundsPlayedNum = match?.roundsPlayed ?? 0
     const targetRounds = match?.targetRounds ?? null
-    const isMatchComplete = targetRounds !== null && roundsPlayedNum >= targetRounds
+    const isMatchComplete = isTicTacToeMatchComplete(
+        match ?? { targetRounds: null, roundsPlayed: 0, winsBySymbol: { X: 0, O: 0 }, draws: 0 }
+    )
     const xWins = match?.winsBySymbol?.X ?? 0
     const oWins = match?.winsBySymbol?.O ?? 0
     const drawsCount = match?.draws ?? 0
@@ -1190,6 +1200,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     onInspect={() => setOverlayInspecting(true)}
                     isLoading={isRematchSubmitting}
                     isHost={isLobbyCreator}
+                    isMatchComplete={isMatchComplete}
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     t={t}
@@ -1354,7 +1365,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     )
 
     // Show score summary below player cards when match has results
-    const _ = { myWins, myLosses, drawsCount, mySymbol, isMatchComplete, isLobbyCreator }
+    const _ = { myWins, myLosses }
     void _
 
     const themeStyle = getThemePageStyle(lobby.theme)

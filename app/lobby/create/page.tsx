@@ -98,8 +98,6 @@ function CreateLobbyPage() {
   const gameInfo = GAME_INFO[selectedGameType]
 
   const boardSize = 3
-  const [bestOf, setBestOf] = useState<1 | 3 | 5>(1)
-  const [whoStarts, setWhoStarts] = useState<'host' | 'guest' | 'random'>('random')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -209,8 +207,6 @@ function CreateLobbyPage() {
         ...(formData.gameType === 'tic_tac_toe' ? {
           ticTacToeRounds: formData.ticTacToeRounds,
           boardSize,
-          bestOf,
-          whoStarts,
         } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
       }
@@ -357,23 +353,6 @@ function CreateLobbyPage() {
       </div>
     )
   }
-
-  const SegPicker = <T extends string | number>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; l: string }[] }) => (
-    <div style={{
-      display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '1fr', gap: 4,
-      padding: 4, background: 'var(--bd-card-warm)', borderRadius: 12, border: '1.5px solid var(--bd-line)',
-    }}>
-      {options.map(o => (
-        <button key={String(o.v)} type="button" onClick={() => onChange(o.v)} style={{
-          padding: '8px 10px', borderRadius: 9, fontWeight: 600, fontSize: 13,
-          background: value === o.v ? 'var(--bd-ink)' : 'transparent',
-          color: value === o.v ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
-          border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-          transition: 'all 0.12s',
-        }}>{o.l}</button>
-      ))}
-    </div>
-  )
 
   const GamePreview = () => {
     if (selectedGameType === 'tic_tac_toe') {
@@ -625,7 +604,9 @@ function CreateLobbyPage() {
                   {formData.password ? '🔒 Private' : '🌐 Public'}
                 </span>
                 <span className="bd-chip">👥 {formData.maxPlayers}</span>
-                {isTTT && bestOf > 1 && <span className="bd-chip bd-chip-lav">Bo{bestOf}</span>}
+                {isTTT && formData.ticTacToeRounds && (
+                  <span className="bd-chip bd-chip-lav">Bo{formData.ticTacToeRounds}</span>
+                )}
                 {selectedGameType === 'memory' && (
                   <span className="bd-chip bd-chip-mint capitalize">{formData.memoryDifficulty}</span>
                 )}
@@ -750,20 +731,12 @@ function CreateLobbyPage() {
 
                 {isTTT && (
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-bd-ink">Match length</label>
-                      <SegPicker value={bestOf} onChange={(v) => setBestOf(v as 1 | 3 | 5)} options={[{ v: 1, l: 'Single' }, { v: 3, l: 'Best of 3' }, { v: 5, l: 'Best of 5' }]} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-bd-ink">First move</label>
-                      <SegPicker value={whoStarts} onChange={(v) => setWhoStarts(v as 'host' | 'guest' | 'random')} options={[{ v: 'host', l: 'You (✕)' }, { v: 'guest', l: 'Guest (○)' }, { v: 'random', l: '🎲 Random' }]} />
-                    </div>
                     {gameInfo.settings.hasRoundSelection && (
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-bd-ink">{t('lobby.create.roundsToPlay')}</label>
+                        <label className="block text-sm font-semibold text-bd-ink">{t('lobby.create.bestOf')}</label>
                         <div className="flex gap-2">
                           {[3, 5, 10].map((r) => (
-                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{r}</button>
+                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>Bo{r}</button>
                           ))}
                           <button type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
                         </div>
