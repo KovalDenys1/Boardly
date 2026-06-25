@@ -103,7 +103,10 @@ const ru = {
       sent: 'Приглашён {{count}} друг!',
       sent_other: 'Приглашено {{count}} друзей!',
       linkCopied: 'Ссылка на лобби скопирована! Отправьте её {{count}} другу',
-      linkCopied_other: 'Ссылка на лобби скопирована! Отправьте её {{count}} друзьям'
+      linkCopied_other: 'Ссылка на лобби скопирована! Отправьте её {{count}} друзьям',
+      inviteButton: 'Пригласить',
+      invited: 'Приглашён',
+      sentToFriend: 'Приглашение отправлено {{name}}!',
     },
     filters: {
       title: 'Фильтры',
@@ -1780,6 +1783,11 @@ const ru = {
       emailVerificationRequired: 'Требуется подтверждение эл. почты',
       emailVerificationRequiredDesc: 'Пожалуйста, подтвердите эл. почту, чтобы получить доступ к коду друга и подключаться к друзьям.',
       verifyEmail: 'Подтвердить эл. почту',
+      presence: {
+        inGame: 'В игре',
+        inLobby: 'В лобби',
+        online: 'Онлайн',
+      },
       errors: {
         loadFailed: 'Не удалось загрузить друзей',
         usernameRequired: 'Требуется имя пользователя',

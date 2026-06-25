@@ -4,9 +4,13 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
+import {
+  useOnlinePresence,
+  mergeFriendPresence,
+  sortFriendsByPresence,
+  type FriendPresence,
+} from '@/hooks/useFriendPresence'
 import LoadingSpinner from './LoadingSpinner'
-
-type FriendPresence = 'offline' | 'online' | 'in_lobby' | 'in_game'
 
 interface Friend {
   id: string
@@ -41,11 +45,21 @@ export default function FriendsListModal({
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [inviting, setInviting] = useState(false)
+  const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null)
+  const [invitedFriendIds, setInvitedFriendIds] = useState<Set<string>>(new Set())
+  const onlineUserIds = useOnlinePresence()
+
+  // Only one of onInvite/onSelect is ever passed by callers; onSelect (the
+  // create-lobby party pre-select flow, no lobby exists yet) keeps the
+  // original select-many + confirm-button behavior untouched. onInvite (an
+  // already-existing lobby) gets a dedicated Invite button per friend.
+  const mode: 'select-multi' | 'invite-single' = onSelect ? 'select-multi' : 'invite-single'
 
   useEffect(() => {
     if (!isOpen) return
     loadFriends()
     setSelectedFriends(new Set(initialSelectedFriendIds))
+    setInvitedFriendIds(new Set())
     // initialSelectedFriendIds intentionally omitted: default [] creates a new reference
     // on every render and would cause an infinite loop. We only need this on open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,14 +94,8 @@ export default function FriendsListModal({
     setSelectedFriends(newSelected)
   }
 
-  const resolvePresence = (friend: Friend): FriendPresence => friend.presence || 'offline'
-
-  const presencePriority: Record<FriendPresence, number> = {
-    in_game: 0,
-    in_lobby: 1,
-    online: 2,
-    offline: 3,
-  }
+  const resolvePresence = (friend: Friend): FriendPresence =>
+    mergeFriendPresence(friend.presence, onlineUserIds.has(friend.id))
 
   const handleInvite = async () => {
     if (selectedFriends.size === 0) {
@@ -136,7 +144,43 @@ export default function FriendsListModal({
     }
   }
 
+  const handleInviteSingle = async (friend: Friend) => {
+    if (!onInvite || invitingFriendId || invitedFriendIds.has(friend.id)) return
+
+    setInvitingFriendId(friend.id)
+    try {
+      const result = await onInvite([friend.id])
+      if (result.invitedCount > 0) {
+        setInvitedFriendIds((prev) => new Set(prev).add(friend.id))
+        showToast.success('lobby.invite.sentToFriend', undefined, { name: friend.username || 'Unknown' })
+      } else {
+        showToast.info('toast.inviteSkippedUsers', undefined, { count: 1 })
+      }
+    } catch (error) {
+      clientLogger.error('Error inviting friend:', error)
+      const translationKey =
+        typeof (error as { translationKey?: unknown })?.translationKey === 'string'
+          ? ((error as { translationKey?: string }).translationKey as string)
+          : null
+
+      if (translationKey) {
+        showToast.error(translationKey)
+      } else {
+        showToast.errorFrom(error, 'lobby.invite.failed')
+      }
+    } finally {
+      setInvitingFriendId(null)
+    }
+  }
+
   if (!isOpen) return null
+
+  const presenceLabel = (presence: FriendPresence): string | null => {
+    if (presence === 'in_game') return t('profile.friends.presence.inGame')
+    if (presence === 'in_lobby') return t('profile.friends.presence.inLobby')
+    if (presence === 'online') return t('profile.friends.presence.online')
+    return null
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -182,30 +226,49 @@ export default function FriendsListModal({
             </p>
 
             <div className="space-y-2 mb-6">
-              {[...friends]
-                .sort((a, b) => {
-                  const priorityDiff =
-                    presencePriority[resolvePresence(a)] - presencePriority[resolvePresence(b)]
-                  if (priorityDiff !== 0) return priorityDiff
+              {sortFriendsByPresence(
+                friends,
+                resolvePresence,
+                (friend) => friend.username ?? ''
+              ).map((friend) => {
+                const presence = resolvePresence(friend)
+                const isOnline = presence !== 'offline'
+                const label = presenceLabel(presence)
+                const isSelected = selectedFriends.has(friend.id)
 
-                  const aName = a.username ?? ''
-                  const bName = b.username ?? ''
-                  return aName.localeCompare(bName)
-                })
-                .map((friend) => {
-                  const presence = resolvePresence(friend)
-                  const isOnline = presence !== 'offline'
-                  const presenceLabel =
-                    presence === 'in_game'
-                      ? 'In game'
-                      : presence === 'in_lobby'
-                        ? 'In lobby'
-                        : presence === 'online'
-                          ? 'Online'
-                          : null
+                const avatarBlock = (
+                  <div className="relative">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                      style={{ background: 'var(--bd-ink)' }}
+                    >
+                      {friend.username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    {isOnline && (
+                      <div
+                        className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                        style={{ background: '#22C55E', border: '2px solid var(--bd-card-warm)' }}
+                      />
+                    )}
+                  </div>
+                )
 
-                  const isSelected = selectedFriends.has(friend.id)
+                const nameBlock = (
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium" style={{ color: 'var(--bd-ink)' }}>
+                        {friend.username || 'Unknown'}
+                      </span>
+                      {label && (
+                        <span className="text-xs font-medium" style={{ color: '#22C55E' }}>
+                          {label}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
 
+                if (mode === 'select-multi') {
                   return (
                     <button
                       key={friend.id}
@@ -216,57 +279,71 @@ export default function FriendsListModal({
                         background: isSelected ? '#FFC44D18' : 'var(--bd-bg)',
                       }}
                     >
-                      <div className="relative">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
-                          style={{ background: 'var(--bd-ink)' }}
-                        >
-                          {friend.username?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        {isOnline && (
-                          <div
-                            className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
-                            style={{ background: '#22C55E', border: '2px solid var(--bd-card-warm)' }}
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium" style={{ color: 'var(--bd-ink)' }}>
-                            {friend.username || 'Unknown'}
-                          </span>
-                          {presenceLabel && (
-                            <span className="text-xs font-medium" style={{ color: '#22C55E' }}>
-                              {presenceLabel}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      {avatarBlock}
+                      {nameBlock}
                       {isSelected && (
                         <span style={{ color: 'var(--bd-ink)' }}>✓</span>
                       )}
                     </button>
                   )
-                })}
+                }
+
+                const isInvited = invitedFriendIds.has(friend.id)
+                const isInvitingThisRow = invitingFriendId === friend.id
+
+                return (
+                  <div
+                    key={friend.id}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl"
+                    style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg)' }}
+                  >
+                    {avatarBlock}
+                    {nameBlock}
+                    <button
+                      type="button"
+                      onClick={() => handleInviteSingle(friend)}
+                      disabled={isInvited || isInvitingThisRow || invitingFriendId !== null}
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold transition-opacity disabled:cursor-not-allowed"
+                      style={{
+                        background: isInvited ? 'var(--bd-bg2)' : 'var(--bd-sun)',
+                        color: isInvited ? 'var(--bd-ink-muted)' : 'var(--bd-ink)',
+                        opacity: isInvitingThisRow ? 0.65 : 1,
+                      }}
+                    >
+                      {isInvited
+                        ? `✓ ${t('lobby.invite.invited')}`
+                        : isInvitingThisRow
+                          ? '…'
+                          : t('lobby.invite.inviteButton')}
+                    </button>
+                  </div>
+                )
+              })}
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleInvite}
-                disabled={inviting || selectedFriends.size === 0}
-                className="flex-1 btn btn-primary disabled:opacity-50"
-              >
-                {inviting
-                  ? t('common.loading')
-                  : confirmLabel || (onSelect ? t('common.save') : t('lobby.invite.send', { count: selectedFriends.size }))}
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 btn btn-secondary"
-              >
+            {mode === 'select-multi' ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || selectedFriends.size === 0}
+                  className="flex-1 btn btn-primary disabled:opacity-50"
+                >
+                  {inviting
+                    ? t('common.loading')
+                    : confirmLabel || t('common.save')}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="flex-1 btn btn-secondary"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            ) : (
+              <button onClick={onClose} className="w-full btn btn-secondary">
                 {t('common.cancel')}
               </button>
-            </div>
+            )}
           </>
         )}
       </div>

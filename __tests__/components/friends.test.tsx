@@ -26,6 +26,21 @@ jest.mock('@/lib/client-logger', () => ({
   },
 }))
 
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: () => {
+    const channelObj = {
+      on: function () { return channelObj },
+      subscribe: function (cb?: (status: string) => void) { cb?.('SUBSCRIBED'); return channelObj },
+      presenceState: () => ({}),
+      track: jest.fn().mockResolvedValue(undefined),
+    }
+    return {
+      channel: () => channelObj,
+      removeChannel: jest.fn().mockResolvedValue(undefined),
+    }
+  },
+}))
+
 jest.mock('@/lib/i18n-toast', () => ({
   showToast: {
     success: jest.fn(),

@@ -104,6 +104,9 @@ const en = {
       sent_other: 'Invited {{count}} friends!',
       linkCopied: 'Lobby link copied! Send it to {{count}} friend',
       linkCopied_other: 'Lobby link copied! Send it to {{count}} friends',
+      inviteButton: 'Invite',
+      invited: 'Invited',
+      sentToFriend: 'Invite sent to {{name}}!',
     },
     filters: {
       title: 'Filters',
@@ -1791,6 +1794,11 @@ const en = {
       emailVerificationRequired: 'Email Verification Required',
       emailVerificationRequiredDesc: 'Please verify your email to access your friend code and connect with friends.',
       verifyEmail: 'Verify Email',
+      presence: {
+        inGame: 'In game',
+        inLobby: 'In lobby',
+        online: 'Online',
+      },
       errors: {
         loadFailed: 'Failed to load friends',
         usernameRequired: 'Username is required',

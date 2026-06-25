@@ -18,6 +18,10 @@ const NotificationsMenu = dynamic(
   () => import('./Header/NotificationsMenu').then((mod) => mod.NotificationsMenu),
   { loading: () => null }
 )
+const PresenceTracker = dynamic(
+  () => import('./Header/PresenceTracker').then((mod) => mod.PresenceTracker),
+  { loading: () => null }
+)
 const AudioSettingsButton = dynamic(
   () => import('./Header/AudioSettingsButton').then((mod) => mod.AudioSettingsButton),
   { loading: () => null }
@@ -121,6 +125,7 @@ export default function Header() {
             </div>
 
             {effectiveIsAuthenticated && <NotificationsMenu />}
+            {effectiveIsAuthenticated && <PresenceTracker />}
 
             {!isAuthUiReady ? (
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>

@@ -103,7 +103,10 @@ const no = {
       sent: 'Inviterte {{count}} venn!',
       sent_other: 'Inviterte {{count}} venner!',
       linkCopied: 'Lobbylenke kopiert! Send den til {{count}} venn',
-      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner'
+      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner',
+      inviteButton: 'Inviter',
+      invited: 'Invitert',
+      sentToFriend: 'Invitasjon sendt til {{name}}!',
     },
     filters: {
       title: 'Filtre',
@@ -1780,6 +1783,11 @@ const no = {
       emailVerificationRequired: 'E-postbekreftelse kreves',
       emailVerificationRequiredDesc: 'Vennligst bekreft e-posten din for å få tilgang til vennekoden og koble til venner.',
       verifyEmail: 'Bekreft e-post',
+      presence: {
+        inGame: 'I spill',
+        inLobby: 'I lobby',
+        online: 'Pålogget',
+      },
       errors: {
         loadFailed: 'Kunne ikke laste venner',
         usernameRequired: 'Brukernavn er påkrevd',
