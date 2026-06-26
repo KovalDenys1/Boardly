@@ -1,6 +1,7 @@
 import { prisma } from './db'
 import { logger } from './logger'
 import { pickRelevantLobbyGame } from './lobby-snapshot'
+import { deleteGameTurnReminderNotifications } from './in-app-notifications'
 
 type CleanupStaleLobbyGamesOptions = {
   now?: Date
@@ -178,6 +179,10 @@ export async function cleanupStaleLobbiesAndGames(
       },
     })
     result.abandonedPlayingGames = updated.count
+    // Remove stale turn-reminder notifications for games the cleanup just abandoned
+    await Promise.allSettled(
+      Array.from(playingGamesToAbandon).map(id => deleteGameTurnReminderNotifications(id))
+    )
   }
 
   if (lobbiesToDeactivate.size > 0) {

@@ -9,6 +9,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { getGameMetadata } from '@/lib/game-catalog'
+import { deleteGameTurnReminderNotifications } from '@/lib/in-app-notifications'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -309,6 +310,7 @@ export async function POST(
       })
 
       await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
+      void deleteGameTurnReminderNotifications(activeGame.id)
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -343,6 +345,7 @@ export async function POST(
       })
 
       await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      void deleteGameTurnReminderNotifications(activeGame.id)
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -374,6 +377,7 @@ export async function POST(
       })
       await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
       await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      void deleteGameTurnReminderNotifications(activeGame.id)
       notifyLobbyListUpdate()
       return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
     }
@@ -400,6 +404,7 @@ export async function POST(
           })
           await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
           await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'spy_left' })
+          void deleteGameTurnReminderNotifications(activeGame.id)
           notifyLobbyListUpdate()
           return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
         }
