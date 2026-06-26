@@ -1311,7 +1311,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
-          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
@@ -1361,7 +1361,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </section>
 
             {/* Right column */}
-            <section style={{ display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', minHeight: 0 }}>
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 18, alignSelf: 'start' }}>
               <div style={{
                 ...cardBase, padding: 24,
                 background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
