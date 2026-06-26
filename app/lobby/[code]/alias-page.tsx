@@ -1081,7 +1081,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           />
           <main style={{
             maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'stretch',
             padding: isMobile ? '0 0 16px' : undefined,
           }}>
             {/* Game content */}
@@ -1101,7 +1101,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               {/* Hero word card */}
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '32px 40px 28px', minHeight: 180,
+                padding: '32px 40px 28px', minHeight: 180, flex: 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1218,7 +1218,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           />
           <main style={{
             maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'stretch',
             padding: isMobile ? '0 0 16px' : undefined,
           }}>
             {/* Game content */}
@@ -1236,7 +1236,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '24px 32px 28px', minHeight: 220,
+                padding: '24px 32px 28px', minHeight: 220, flex: 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1311,7 +1311,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
-          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
@@ -1361,7 +1361,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </section>
 
             {/* Right column */}
-            <section style={{ display: 'flex', flexDirection: 'column', gap: 18, alignSelf: 'start' }}>
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', minHeight: 0 }}>
               <div style={{
                 ...cardBase, padding: 24,
                 background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
