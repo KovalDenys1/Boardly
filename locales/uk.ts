@@ -1038,7 +1038,7 @@ const uk: Translation = {
       availableSlots: 'Вільні місця',
       waitingForPlayer: 'Очікування гравця...',
       openSlot: 'Вільне місце',
-      tryBotGamesTitle: 'Все ще чекаєте? У ці гри можна зіграти прямо зараз із комп’ютерним суперником:',
+      tryBotGamesTitle: 'Все ще чекаєте? У ці гри можна зіграти прямо зараз із ботом:',
       howToPlayTitle: 'Як грати',
       howToPlayDescription: 'Короткі інструкції перед початком гри',
       howToPlayReady: 'Дочекайтесь, поки до лобі приєднається достатньо гравців.',
