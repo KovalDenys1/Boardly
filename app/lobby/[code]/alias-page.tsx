@@ -966,7 +966,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     return (
       <div style={pageBg(lobby?.theme)} data-testid="alias-team-assignment">
         <GameContextBar code={code} />
-        <main style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <main style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
@@ -980,23 +980,19 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </p>
           </div>
 
-          {isMobile ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex flex-col gap-4 md:flex-row md:gap-5 md:items-start">
+            <div className="flex-1 min-w-0">
               {renderTeamCard(data.teams[0], 0)}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 0' }}>
-                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-              </div>
-              {data.teams[1] && renderTeamCard(data.teams[1], 1)}
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'start' }}>
-              {renderTeamCard(data.teams[0], 0)}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gridColumn: 2, gridRow: 1 }}>
-                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-              </div>
-              {data.teams[1] && renderTeamCard(data.teams[1], 1)}
+            <div className="flex items-center justify-center py-1 shrink-0 md:pt-20">
+              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
             </div>
-          )}
+            {data.teams[1] && (
+              <div className="flex-1 min-w-0">
+                {renderTeamCard(data.teams[1], 1)}
+              </div>
+            )}
+          </div>
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
