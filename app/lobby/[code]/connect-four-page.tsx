@@ -1269,15 +1269,16 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </a>
         </div>
     ) : (
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
+        <div className="flex flex-col md:flex-row gap-2">
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
-                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5, width: isMobile ? '100%' : undefined }}
+                className="w-full md:w-auto"
+                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
             </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : undefined }}>
+            <button onClick={() => setShowLeaveConfirmModal(true)} className="w-full md:w-auto" style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('games.connect_four.game.leave')}
             </button>
         </div>

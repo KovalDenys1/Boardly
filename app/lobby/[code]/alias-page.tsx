@@ -253,7 +253,7 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
 )
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, isMobile }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId }: {
   guesses: GuessMessage[]
   guessInput: string
   onInputChange: (v: string) => void
@@ -262,15 +262,13 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   canType: boolean
   endRef: React.RefObject<HTMLDivElement | null>
   currentUserId: string | null | undefined
-  isMobile?: boolean
 }) {
   const { t } = useTranslation()
   return (
-    <div style={{
+    <div className="w-full md:w-[280px] md:max-w-[280px] h-[220px] md:h-full md:max-h-[560px]" style={{
       ...cardBase,
       display: 'flex', flexDirection: 'column',
-      width: isMobile ? '100%' : 280, minWidth: 0, maxWidth: isMobile ? '100%' : 280,
-      height: isMobile ? 220 : '100%', maxHeight: isMobile ? 220 : 560,
+      minWidth: 0,
       overflow: 'hidden', flexShrink: 0,
     }}>
       <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--bd-line)' }}>
@@ -800,13 +798,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto 1fr', gap: 20, alignItems: 'stretch' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
             <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
-            {!isMobile && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-              </div>
-            )}
+            <div className="hidden md:flex items-center justify-center">
+              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+            </div>
             <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
           </div>
 
@@ -1056,7 +1052,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
-    isMobile,
   }
 
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
@@ -1095,11 +1090,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Hero word card */}
-              <div style={{
+              <div className="md:flex-1" style={{
                 ...cardBase, width: '100%',
                 padding: isMobile ? '20px 24px' : '32px 40px 28px',
                 minHeight: isMobile ? 140 : 180,
-                flex: isMobile ? undefined : 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1190,8 +1184,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </button>
             </div>
 
-            {/* Chat panel — describer sees guesses read-only; hidden on mobile to save space */}
-            {!isMobile && <GuessChatPanel {...chatProps} canType={false} />}
+            {/* Chat panel — describer sees guesses read-only; hidden on mobile via CSS */}
+            <div className="hidden md:block" style={{ width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}>
+              <GuessChatPanel {...chatProps} canType={false} />
+            </div>
           </main>
         </div>
       </>
@@ -1232,11 +1228,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 }
               </div>
 
-              <div style={{
+              <div className="md:flex-1" style={{
                 ...cardBase, width: '100%',
                 padding: isMobile ? '16px 20px' : '24px 32px 28px',
                 minHeight: isMobile ? 160 : 220,
-                flex: isMobile ? undefined : 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
