@@ -560,8 +560,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         if (authoritativeState) {
           applyAuthoritativeState(game.id, authoritativeState)
         }
+      } else if (res.status === 409) {
+        // STATE_CONFLICT: another player's move already advanced the phase; reconcile silently
+        await loadLobby()
       } else {
-        clientLogger.error('Alias move failed', { type })
+        clientLogger.error('Alias move failed', { type, status: res.status })
         await loadLobby()
       }
     } catch (err) {
@@ -861,6 +864,105 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     const teamsValid = data.teams.every(t => t.playerIds.length >= 1)
 
+    const renderTeamCard = (team: (typeof data.teams)[0], i: number) => {
+      const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
+      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
+      const isMyTeam = myTeamId === team.id
+      return (
+        <div key={team.id} style={{
+          ...cardBase, padding: 24,
+          borderTop: `6px solid ${accent}`,
+          position: 'relative', overflow: 'hidden',
+          outline: isMyTeam ? `2px solid ${accent}` : 'none',
+          outlineOffset: 2,
+        }}>
+          <div aria-hidden style={{
+            position: 'absolute', top: -40, right: -40,
+            width: 140, height: 140, borderRadius: '50%',
+            background: accent, opacity: 0.07,
+          }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
+              <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
+                {team.name}
+              </div>
+            </div>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
+              {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
+            {team.playerIds.length === 0 && (
+              <div style={{
+                padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
+                color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
+              }}>Empty — be the first</div>
+            )}
+            {team.playerIds.map(pid => {
+              const name = getPlayerName(pid)
+              const isYou = pid === currentUserId
+              const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
+              return (
+                <div key={pid} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 12px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.6)',
+                  border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
+                }}>
+                  <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
+                  <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
+                    {name}
+                    {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
+                  </span>
+                  {isYou && (
+                    <span style={{
+                      marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
+                      color: accentDeep, background: 'rgba(255,255,255,0.8)',
+                      padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
+                    }}>YOU</span>
+                  )}
+                  {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
+                    <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {myTeamId !== team.id ? (
+            <button
+              onClick={() => handleMove('assign_team', { teamId: team.id })}
+              disabled={isMoveSubmitting}
+              style={{
+                width: '100%',
+                background: accent, color: 'var(--bd-ink)',
+                border: 'none', borderRadius: 12,
+                padding: '12px 16px', fontWeight: 700, fontSize: 15,
+                cursor: 'pointer',
+                boxShadow: `0 3px 0 ${accentDeep}`,
+                opacity: isMoveSubmitting ? 0.5 : 1,
+              }}
+            >
+              Join {team.name}
+            </button>
+          ) : (
+            <div style={{
+              width: '100%', textAlign: 'center',
+              padding: '12px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.5)',
+              border: `1.5px solid ${accent}`,
+              fontWeight: 600, fontSize: 14,
+              color: accentDeep,
+            }}>
+              ✓ You're on this team
+            </div>
+          )}
+        </div>
+      )
+    }
+
     return (
       <div style={pageBg(lobby?.theme)} data-testid="alias-team-assignment">
         <GameContextBar code={code} />
@@ -878,115 +980,23 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'start' }}>
-            {data.teams.map((team, i) => {
-              const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
-              const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
-              const isMyTeam = myTeamId === team.id
-
-              return (
-                <div key={team.id} style={{
-                  ...cardBase, padding: 24,
-                  borderTop: `6px solid ${accent}`,
-                  position: 'relative', overflow: 'hidden',
-                  outline: isMyTeam ? `2px solid ${accent}` : 'none',
-                  outlineOffset: 2,
-                  gridColumn: i === 0 ? 1 : 3,
-                }}>
-                  <div aria-hidden style={{
-                    position: 'absolute', top: -40, right: -40,
-                    width: 140, height: 140, borderRadius: '50%',
-                    background: accent, opacity: 0.07,
-                  }} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <div>
-                      <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
-                        {team.name}
-                      </div>
-                    </div>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
-                      {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
-                    </span>
-                  </div>
-
-                  {/* Player list */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
-                    {team.playerIds.length === 0 && (
-                      <div style={{
-                        padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
-                        color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
-                      }}>Empty — be the first</div>
-                    )}
-                    {team.playerIds.map(pid => {
-                      const name = getPlayerName(pid)
-                      const isYou = pid === currentUserId
-                      const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
-                      return (
-                        <div key={pid} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '8px 12px', borderRadius: 999,
-                          background: 'rgba(255,255,255,0.6)',
-                          border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
-                        }}>
-                          <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
-                            {name}
-                            {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
-                          </span>
-                          {isYou && (
-                            <span style={{
-                              marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
-                              color: accentDeep, background: 'rgba(255,255,255,0.8)',
-                              padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
-                            }}>YOU</span>
-                          )}
-                          {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
-                            <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Join button */}
-                  {myTeamId !== team.id ? (
-                    <button
-                      onClick={() => handleMove('assign_team', { teamId: team.id })}
-                      disabled={isMoveSubmitting}
-                      style={{
-                        width: '100%',
-                        background: accent, color: 'var(--bd-ink)',
-                        border: 'none', borderRadius: 12,
-                        padding: '12px 16px', fontWeight: 700, fontSize: 15,
-                        cursor: 'pointer',
-                        boxShadow: `0 3px 0 ${accentDeep}`,
-                        opacity: isMoveSubmitting ? 0.5 : 1,
-                      }}
-                    >
-                      Join {team.name}
-                    </button>
-                  ) : (
-                    <div style={{
-                      width: '100%', textAlign: 'center',
-                      padding: '12px 16px', borderRadius: 12,
-                      background: 'rgba(255,255,255,0.5)',
-                      border: `1.5px solid ${accent}`,
-                      fontWeight: 600, fontSize: 14,
-                      color: accentDeep,
-                    }}>
-                      ✓ You're on this team
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* "vs" divider */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gridColumn: 2 }}>
-              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+          {isMobile ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {renderTeamCard(data.teams[0], 0)}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 0' }}>
+                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 28, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+              </div>
+              {data.teams[1] && renderTeamCard(data.teams[1], 1)}
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'start' }}>
+              {renderTeamCard(data.teams[0], 0)}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gridColumn: 2, gridRow: 1 }}>
+                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+              </div>
+              {data.teams[1] && renderTeamCard(data.teams[1], 1)}
+            </div>
+          )}
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1296,6 +1306,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const guessedCount = wordResults.filter(w => w.result === 'guessed').length
     const skippedCount = wordResults.filter(w => w.result === 'skipped').length
     const justPlayedTeamId = result.teamId
+    const nextTeamIdx = (data.currentTeamIndex + 1) % data.teams.length
+    const nextTeam = data.teams[nextTeamIdx]
+    const isNextTeamPlayer = !!nextTeam?.playerIds.includes(currentUserId ?? '')
 
     return (
       <>
@@ -1400,21 +1413,26 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 </div>
               </div>
 
-              {/*
-                Next Turn is open to every player, not just the host — the engine's own
-                validateMove for 'next_turn' has no player-ownership check (any player can
-                legally advance past turn_results). Gating this to isHost made the game
-                permanently soft-lock for everyone else whenever the host didn't click
-                through (closed tab, disconnected, distracted) — see #639.
-              */}
-              <button
-                style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
-                onClick={() => handleMove('next_turn', {})}
-                disabled={isMoveSubmitting}
-              >
-                {t('alias.nextTurn')}
-                <span aria-hidden style={{ fontSize: 18 }}>→</span>
-              </button>
+              {/* Next Turn restricted to the team whose turn is next (#666) */}
+              {!isSpectator && (isNextTeamPlayer ? (
+                <button
+                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
+                  onClick={() => handleMove('next_turn', {})}
+                  disabled={isMoveSubmitting}
+                >
+                  {t('alias.nextTurn')}
+                  <span aria-hidden style={{ fontSize: 18 }}>→</span>
+                </button>
+              ) : (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
+                  borderRadius: 14, padding: '16px 22px',
+                  fontSize: 15, fontWeight: 600, color: 'var(--bd-ink-soft)',
+                }}>
+                  ⏳ Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
+                </div>
+              ))}
               <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => router.push('/games')}>
                 {t('lobby.game.leaveGame')}
               </button>
