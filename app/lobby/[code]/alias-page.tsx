@@ -1079,11 +1079,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             }
           />
-          <main style={{
-            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'stretch',
-            padding: isMobile ? '0 0 16px' : undefined,
-          }}>
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1222,11 +1218,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             }
           />
-          <main style={{
-            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'stretch',
-            padding: isMobile ? '0 0 16px' : undefined,
-          }}>
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1320,13 +1312,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
-          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
             {/* Word list */}
-            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', alignSelf: 'start' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
+            <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
-                  <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, margin: 0 }}>
+                  <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 28, margin: 0 }}>
                     {wordResults.length} {wordResults.length === 1 ? 'word' : 'words'}
                   </h2>
                 </div>
