@@ -99,7 +99,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'tic_tac_toe',
       name: 'Tic Tac Toe',
-      icon: '❌⭕',
+      icon: '❌',
       minPlayers: 2,
       maxPlayers: 2,
       supportsBots: true,
@@ -113,7 +113,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'rock_paper_scissors',
       name: 'Rock Paper Scissors',
-      icon: '✊✋✌️',
+      icon: '✊',
       minPlayers: 2,
       maxPlayers: 2,
       supportsBots: true,

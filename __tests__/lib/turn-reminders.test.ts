@@ -343,4 +343,28 @@ describe('runTurnReminderCycle', () => {
       })
     )
   })
+
+  it('skips alias games (currentPlayerIndex is always 0, not the real describer)', async () => {
+    mockPrisma.games.findMany.mockResolvedValue([
+      buildGame({ lobby: { id: 'l1', code: 'ABCD', name: 'Alias Game', gameType: 'alias' } }),
+    ])
+
+    const result = await runTurnReminderCycle({ now, baseUrl: 'http://localhost:3000' })
+
+    expect(result.scannedGames).toBe(1)
+    expect(result.skipped).toBe(1)
+    expect(result.attempted).toBe(0)
+  })
+
+  it('skips liars_party games (team-turn, currentPlayerIndex is meaningless)', async () => {
+    mockPrisma.games.findMany.mockResolvedValue([
+      buildGame({ lobby: { id: 'l2', code: 'WXYZ', name: "Liar's Party", gameType: 'liars_party' } }),
+    ])
+
+    const result = await runTurnReminderCycle({ now, baseUrl: 'http://localhost:3000' })
+
+    expect(result.scannedGames).toBe(1)
+    expect(result.skipped).toBe(1)
+    expect(result.attempted).toBe(0)
+  })
 })

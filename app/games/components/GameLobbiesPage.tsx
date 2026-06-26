@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import AdminWatchModal from '@/components/AdminWatchModal'
 import RejoinLobbyBanner from '@/components/RejoinLobbyBanner'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
@@ -141,7 +142,8 @@ export default function GameLobbiesPage({
   lobbiesNamespace,
 }: GameLobbiesPageProps) {
   const router = useRouter()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
   const { isGuest } = useGuest()
   const { t } = useTranslation()
   const { lobby: activeLobby, dismiss: dismissActiveLobby } = useMyActiveLobby(status === 'authenticated')
@@ -150,6 +152,7 @@ export default function GameLobbiesPage({
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
   const [authGateDest, setAuthGateDest] = useState<string | null>(null)
+  const [adminWatchModalCode, setAdminWatchModalCode] = useState<string | null>(null)
   const isAuthenticated = status === 'authenticated' || isGuest
   const createLobbyPath = getLobbyCreateRoute(gameType) ?? '/lobby/create'
   const canCreateLobby = !isTemporarilyUnavailableGameType(gameType)
@@ -236,6 +239,14 @@ export default function GameLobbiesPage({
       <AuthGateModal
         dest={authGateDest}
         onClose={() => setAuthGateDest(null)}
+      />
+    )}
+    {isAdmin && (
+      <AdminWatchModal
+        isOpen={adminWatchModalCode !== null}
+        onClose={() => setAdminWatchModalCode(null)}
+        onWatchAsSpectator={() => adminWatchModalCode && router.push(`/lobby/${adminWatchModalCode}/spectate`)}
+        onWatchAsAdmin={() => adminWatchModalCode && router.push(`/lobby/${adminWatchModalCode}/spectate?admin=1`)}
       />
     )}
     <div className="bd-page bd-screen page-shell">
@@ -452,11 +463,27 @@ export default function GameLobbiesPage({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
+                                if (isAdmin) {
+                                  setAdminWatchModalCode(lobby.code)
+                                  return
+                                }
                                 router.push(`/lobby/${lobby.code}/spectate`)
                               }}
                               className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
                             >
                               👁 {t('lobby.watch')}
+                            </button>
+                          )}
+                          {!canSpectate && isPlaying && isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/lobby/${lobby.code}/spectate?admin=1`)
+                              }}
+                              className="bd-btn bd-btn-soft text-xs px-3 py-1.5 whitespace-nowrap"
+                              style={{ background: 'rgba(124,58,237,0.12)', color: 'var(--bd-ink)' }}
+                            >
+                              {t('admin.watchButton')}
                             </button>
                           )}
                           {!canSpectate && (

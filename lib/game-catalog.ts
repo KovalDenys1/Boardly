@@ -114,7 +114,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   tic_tac_toe: {
     type: 'tic_tac_toe',
     name: 'Tic Tac Toe',
-    icon: '❌⭕',
+    icon: '❌',
     svgId: 'tic-tac-toe',
     accentColor: 'var(--bd-coral)',
     minPlayers: 2,
@@ -128,7 +128,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   rock_paper_scissors: {
     type: 'rock_paper_scissors',
     name: 'Rock Paper Scissors',
-    icon: '✊✋✌️',
+    icon: '✊',
     svgId: 'rps',
     accentColor: 'var(--bd-sun)',
     minPlayers: 2,

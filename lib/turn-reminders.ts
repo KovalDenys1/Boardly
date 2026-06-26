@@ -157,7 +157,19 @@ export async function runTurnReminderCycle(
 
   result.scannedGames = games.length
 
+  // Alias and Liar's Party manage turns via team/describer indices, not currentPlayerIndex.
+  // The base GameEngine initialises currentPlayerIndex: 0 and these games never advance it,
+  // so the cron would always ping player[0] regardless of who is actually active.
+  // These are also synchronous group games (turn timer keeps them moving), so async
+  // "it's your turn" reminders make no sense for them.
+  const TEAM_TURN_GAME_TYPES = new Set(['alias', 'liars_party'])
+
   for (const game of games) {
+    if (TEAM_TURN_GAME_TYPES.has(String(game.lobby.gameType))) {
+      result.skipped += 1
+      continue
+    }
+
     const parsedState = parsePersistedGameState<{ currentPlayerIndex?: number }>(game.state)
     const currentPlayerIndex = parsedState?.currentPlayerIndex
     const currentPlayer = typeof currentPlayerIndex === 'number'

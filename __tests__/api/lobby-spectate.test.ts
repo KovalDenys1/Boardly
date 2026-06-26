@@ -14,6 +14,9 @@ jest.mock('@/lib/db', () => ({
     lobbies: {
       findUnique: jest.fn(),
     },
+    users: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -177,5 +180,75 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(queryArgs.select.games.include.players.include.user.select.bot.select.difficulty).toBe(true)
     expect(queryArgs.select.games.include.players.include.user.select.email).toBeUndefined()
     expect(mockSanitizeGameStateForSpectator).toHaveBeenCalledTimes(1)
+  })
+
+  const baseLobby = {
+    id: 'lobby-1',
+    code: 'ABC123',
+    name: 'Test Lobby',
+    maxPlayers: 4,
+    allowSpectators: false,
+    maxSpectators: 0,
+    spectatorCount: 0,
+    turnTimer: 60,
+    isActive: true,
+    gameType: 'yahtzee',
+    createdAt: new Date('2026-02-27T18:00:00.000Z'),
+    creator: { id: 'owner-1', username: 'owner' },
+    games: [],
+  }
+
+  it('an admin requesting adminView bypasses the disabled-spectators 403', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'admin-1', username: 'root', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+    mockPrisma.users.findUnique.mockResolvedValue({ role: 'admin', suspended: false } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate?adminView=true'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.isAdminView).toBe(true)
+  })
+
+  it('a non-admin requesting adminView still gets the normal disabled-spectators 403', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'bob', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+    mockPrisma.users.findUnique.mockResolvedValue({ role: 'user', suspended: false } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate?adminView=true'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+
+    expect(response.status).toBe(403)
+  })
+
+  it('an admin without adminView gets the normal disabled-spectators 403', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'admin-1', username: 'root', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+
+    expect(response.status).toBe(403)
+    expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('a guest cannot use adminView even if adminView=true is requested', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate?adminView=true'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+
+    expect(response.status).toBe(403)
+    expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
   })
 })

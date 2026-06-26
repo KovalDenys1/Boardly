@@ -47,12 +47,14 @@ function SpectatorTopBar({
   joiningAsPlayer,
   onJoinAsPlayer,
   lobbyCode,
+  isAdminView,
 }: {
   spectatorCount: number
   canJoinAsPlayer: boolean
   joiningAsPlayer: boolean
   onJoinAsPlayer: () => void
   lobbyCode: string
+  isAdminView?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -60,7 +62,7 @@ function SpectatorTopBar({
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      background: 'rgba(31,27,22,0.92)',
+      background: isAdminView ? 'rgba(124,58,237,0.92)' : 'rgba(31,27,22,0.92)',
       backdropFilter: 'blur(8px)',
       borderBottom: '1px solid rgba(255,255,255,0.12)',
       display: 'flex',
@@ -74,7 +76,7 @@ function SpectatorTopBar({
         color: 'white', fontSize: 13, fontWeight: 600,
         display: 'flex', alignItems: 'center', gap: 6,
       }}>
-        {t('spectate.watchingCount', { count: spectatorCount })}
+        {isAdminView ? t('spectate.adminViewBanner') : t('spectate.watchingCount', { count: spectatorCount })}
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {canJoinAsPlayer && (
@@ -150,6 +152,7 @@ export default function SpectatorLobbyPage() {
   const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPlayerInGame, setIsPlayerInGame] = useState(false)
   const [isLimitReached, setIsLimitReached] = useState(false)
+  const [isAdminView, setIsAdminView] = useState(false)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -164,7 +167,12 @@ export default function SpectatorLobbyPage() {
   const loadSnapshot = useCallback(async () => {
     if (!code) return
     try {
-      const res = await fetchWithGuest(`/api/lobby/${code}/spectate`, { cache: 'no-store' })
+      // Read at call time (not render time) — on a client-side transition,
+      // window.location.search may not reflect the new URL yet during the
+      // synchronous render pass, but is always settled by the time effects run.
+      const adminViewRequested = new URLSearchParams(window.location.search).get('admin') === '1'
+      const adminQuery = adminViewRequested ? '?adminView=true' : ''
+      const res = await fetchWithGuest(`/api/lobby/${code}/spectate${adminQuery}`, { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) {
         if (json?.code === 'PLAYER_IN_GAME') {
@@ -181,6 +189,7 @@ export default function SpectatorLobbyPage() {
       }
       setData(json)
       setSpectatorCount(json?.lobby?.spectatorCount ?? 0)
+      setIsAdminView(json?.isAdminView === true)
       setError('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load spectator view')
@@ -270,7 +279,9 @@ export default function SpectatorLobbyPage() {
         })
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && userId && username) {
+        // Admin-view never tracks presence — stays invisible to the spectator
+        // count/list while still receiving sync updates for everyone else.
+        if (status === 'SUBSCRIBED' && userId && username && !isAdminView) {
           await channel.track({ userId, username })
         }
       })
@@ -279,13 +290,13 @@ export default function SpectatorLobbyPage() {
       void supabase.removeChannel(channel)
       channelRef.current = null
     }
-  }, [code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName])
+  }, [code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView])
 
   const sendSpectatorChatMessage = useCallback(
     (e: FormEvent) => {
       e.preventDefault()
       const message = chatInput.trim()
-      if (!message) return
+      if (!message || isAdminView) return
       const channel = channelRef.current
       if (!channel) {
         setError('Spectator chat is unavailable while disconnected')
@@ -307,7 +318,7 @@ export default function SpectatorLobbyPage() {
       })
       setChatInput('')
     },
-    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName]
+    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView]
   )
 
   const joinAsPlayer = useCallback(async () => {
@@ -418,6 +429,7 @@ export default function SpectatorLobbyPage() {
           joiningAsPlayer={joiningAsPlayer}
           onJoinAsPlayer={joinAsPlayer}
           lobbyCode={code}
+          isAdminView={isAdminView}
         />
         {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
         {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
@@ -435,6 +447,12 @@ export default function SpectatorLobbyPage() {
   return (
     <div className="bd-page bd-screen min-h-[calc(100dvh-64px)] text-bd-ink">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+
+        {isAdminView && (
+          <div className="mb-4 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+            {t('spectate.adminViewBanner')}
+          </div>
+        )}
 
         {/* Header */}
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -545,23 +563,25 @@ export default function SpectatorLobbyPage() {
                     </div>
                   ))}
                 </div>
-                <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder={t('spectate.chatPlaceholder')}
-                    maxLength={500}
-                    className="bd-input min-w-0 flex-1 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!chatInput.trim()}
-                    className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {t('chat.send')}
-                  </button>
-                </form>
+                {!isAdminView && (
+                  <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={t('spectate.chatPlaceholder')}
+                      maxLength={500}
+                      className="bd-input min-w-0 flex-1 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim()}
+                      className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('chat.send')}
+                    </button>
+                  </form>
+                )}
               </section>
             )}
           </div>

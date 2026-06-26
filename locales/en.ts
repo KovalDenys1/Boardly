@@ -1036,7 +1036,7 @@ const en = {
       availableSlots: 'Open slots',
       waitingForPlayer: 'Waiting for player...',
       openSlot: 'Open slot',
-      tryBotGamesTitle: "Still waiting? These games are ready to play right now with a computer player:",
+      tryBotGamesTitle: "Still waiting? These games are ready to play right now with a bot:",
       howToPlayTitle: 'How to Play',
       howToPlayDescription: 'Quick instructions before the game starts',
       howToPlayReady: 'Wait for enough players to join the lobby.',
@@ -2114,6 +2114,17 @@ const en = {
     spyReveal: 'The spy was',
     limitReached: 'Spectator limit reached',
     limitReachedDesc: 'This lobby has reached its maximum number of spectators.',
+    adminViewBanner: '🛡️ Admin View — invisible to players and spectators',
+  },
+  admin: {
+    watchButton: '🛡️ Admin',
+    watchModal: {
+      title: 'How do you want to watch?',
+      spectatorTitle: 'Watch as spectator',
+      spectatorDesc: 'Visible to players and other spectators, like any viewer.',
+      adminTitle: 'Watch as Admin (invisible)',
+      adminDesc: 'See the live game even if spectators are disabled. Nobody will know you\'re watching.',
+    },
   },
   toast: {
     copied: 'Copied to clipboard!',

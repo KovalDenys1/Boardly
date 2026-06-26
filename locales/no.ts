@@ -1036,7 +1036,7 @@ const no = {
       availableSlots: 'Ledige plasser',
       waitingForPlayer: 'Venter på spiller...',
       openSlot: 'Ledig plass',
-      tryBotGamesTitle: 'Venter du fortsatt? Disse spillene kan du spille akkurat nå mot en datamotstander:',
+      tryBotGamesTitle: 'Venter du fortsatt? Disse spillene kan du spille akkurat nå mot en bot:',
       howToPlayTitle: 'Slik spiller du',
       howToPlayDescription: 'Raske instruksjoner før spillet starter',
       howToPlayReady: 'Vent til nok spillere har blitt med i lobbyen.',
@@ -2102,6 +2102,17 @@ const no = {
     spyReveal: 'Spionen var',
     limitReached: 'Tilskuergrensen er nådd',
     limitReachedDesc: 'Denne lobbyen har nådd maksimalt antall tilskuere.',
+    adminViewBanner: '🛡️ Admin-visning — usynlig for spillere og tilskuere',
+  },
+  admin: {
+    watchButton: '🛡️ Admin',
+    watchModal: {
+      title: 'Hvordan vil du se på?',
+      spectatorTitle: 'Se som tilskuer',
+      spectatorDesc: 'Synlig for spillere og andre tilskuere, som en vanlig seer.',
+      adminTitle: 'Se som admin (usynlig)',
+      adminDesc: 'Se det live spillet selv om tilskuere er deaktivert. Ingen vil vite at du ser på.',
+    },
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',
