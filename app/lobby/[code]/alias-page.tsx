@@ -964,9 +964,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
 
     return (
-      <div style={pageBg(lobby?.theme)} data-testid="alias-team-assignment">
+      <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
         <GameContextBar code={code} />
-        <main style={{ maxWidth: 1600, margin: '0 auto', width: '100%' }}>
+        <main style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
