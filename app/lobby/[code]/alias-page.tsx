@@ -1101,7 +1101,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               {/* Hero word card */}
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '32px 40px 28px', minHeight: 180, flex: 1,
+                padding: isMobile ? '20px 24px' : '32px 40px 28px',
+                minHeight: isMobile ? 140 : 180,
+                flex: isMobile ? undefined : 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1111,7 +1113,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <BdLabel>{t('alias.theSecretWord')}</BdLabel>
                 <span style={{
                   fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: 'clamp(48px, 9vw, 84px)',
+                  fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
                   lineHeight: 1.02, textAlign: 'center',
                   color: 'var(--bd-ink)', letterSpacing: '-0.02em',
                   zIndex: 1, wordBreak: 'break-word',
@@ -1122,8 +1124,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <BdLabel>{t('alias.thisTurnSoFar')}</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1148,20 +1150,22 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%' }}>
                 <button
                   aria-label="Guessed correctly"
                   onClick={() => handleMove('word_action', { action: 'guess' })}
                   disabled={isMoveSubmitting}
                   style={{
                     background: 'var(--bd-mint)', color: '#06322a',
-                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    border: 'none', borderRadius: 18,
+                    padding: isMobile ? '16px 12px' : '22px 16px',
+                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
                     cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-mint-deep)',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
+                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✓</span>
                   {t('alias.guessed')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
                 </button>
@@ -1171,13 +1175,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   disabled={isMoveSubmitting}
                   style={{
                     background: 'var(--bd-sun)', color: '#4a3a09',
-                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    border: 'none', borderRadius: 18,
+                    padding: isMobile ? '16px 12px' : '22px 16px',
+                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
                     cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-sun-deep)',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>✗</span>
+                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✗</span>
                   {t('alias.skip')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
                 </button>
@@ -1188,8 +1194,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </button>
             </div>
 
-            {/* Chat panel — describer sees guesses (read-only) */}
-            <GuessChatPanel {...chatProps} canType={false} />
+            {/* Chat panel — describer sees guesses read-only; hidden on mobile to save space */}
+            {!isMobile && <GuessChatPanel {...chatProps} canType={false} />}
           </main>
         </div>
       </>
@@ -1236,7 +1242,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '24px 32px 28px', minHeight: 220, flex: 1,
+                padding: isMobile ? '16px 20px' : '24px 32px 28px',
+                minHeight: isMobile ? 160 : 220,
+                flex: isMobile ? undefined : 1,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1262,14 +1270,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
                 <span className="bd-float" style={{
                   fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: 'clamp(100px, 16vw, 160px)', lineHeight: 1,
+                  fontSize: isMobile ? 'clamp(72px, 20vw, 100px)' : 'clamp(100px, 16vw, 160px)',
+                  lineHeight: 1,
                   color: 'var(--bd-coral)', textShadow: '0 6px 0 rgba(31,27,22,0.08)', zIndex: 1,
                 }}>?</span>
               </div>
 
               {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <BdLabel>Live tally</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1372,7 +1381,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                   <BdLabel style={{ color: positive ? 'rgba(251,246,238,0.7)' : 'var(--bd-ink-muted)' }}>Turn score</BdLabel>
-                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 56, lineHeight: 1 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1 }}>
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
                   </span>
                 </div>
@@ -1399,7 +1408,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
                           {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>Just played</BdLabel>}
                         </div>
-                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
+                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
                       </div>
                     )
                   })}
