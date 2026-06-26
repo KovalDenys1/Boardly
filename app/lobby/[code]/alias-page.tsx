@@ -253,7 +253,7 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
 )
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, isMobile }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId }: {
   guesses: GuessMessage[]
   guessInput: string
   onInputChange: (v: string) => void
@@ -262,15 +262,13 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   canType: boolean
   endRef: React.RefObject<HTMLDivElement | null>
   currentUserId: string | null | undefined
-  isMobile?: boolean
 }) {
   const { t } = useTranslation()
   return (
-    <div style={{
+    <div className="w-full md:w-[280px] md:max-w-[280px] h-[220px] md:h-full md:max-h-[560px]" style={{
       ...cardBase,
       display: 'flex', flexDirection: 'column',
-      width: isMobile ? '100%' : 280, minWidth: 0, maxWidth: isMobile ? '100%' : 280,
-      height: isMobile ? 220 : '100%', maxHeight: isMobile ? 220 : 560,
+      minWidth: 0,
       overflow: 'hidden', flexShrink: 0,
     }}>
       <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--bd-line)' }}>
@@ -560,8 +558,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         if (authoritativeState) {
           applyAuthoritativeState(game.id, authoritativeState)
         }
+      } else if (res.status === 409) {
+        // STATE_CONFLICT: another player's move already advanced the phase; reconcile silently
+        await loadLobby()
       } else {
-        clientLogger.error('Alias move failed', { type })
+        clientLogger.error('Alias move failed', { type, status: res.status })
         await loadLobby()
       }
     } catch (err) {
@@ -797,13 +798,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto 1fr', gap: 20, alignItems: 'stretch' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
             <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
-            {!isMobile && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-              </div>
-            )}
+            <div className="hidden md:flex items-center justify-center">
+              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+            </div>
             <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
           </div>
 
@@ -861,10 +860,109 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     const teamsValid = data.teams.every(t => t.playerIds.length >= 1)
 
+    const renderTeamCard = (team: (typeof data.teams)[0], i: number) => {
+      const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
+      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
+      const isMyTeam = myTeamId === team.id
+      return (
+        <div key={team.id} style={{
+          ...cardBase, padding: 24,
+          borderTop: `6px solid ${accent}`,
+          position: 'relative', overflow: 'hidden',
+          outline: isMyTeam ? `2px solid ${accent}` : 'none',
+          outlineOffset: 2,
+        }}>
+          <div aria-hidden style={{
+            position: 'absolute', top: -40, right: -40,
+            width: 140, height: 140, borderRadius: '50%',
+            background: accent, opacity: 0.07,
+          }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
+              <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
+                {team.name}
+              </div>
+            </div>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
+              {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
+            {team.playerIds.length === 0 && (
+              <div style={{
+                padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
+                color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
+              }}>Empty — be the first</div>
+            )}
+            {team.playerIds.map(pid => {
+              const name = getPlayerName(pid)
+              const isYou = pid === currentUserId
+              const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
+              return (
+                <div key={pid} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 12px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.6)',
+                  border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
+                }}>
+                  <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
+                  <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
+                    {name}
+                    {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
+                  </span>
+                  {isYou && (
+                    <span style={{
+                      marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
+                      color: accentDeep, background: 'rgba(255,255,255,0.8)',
+                      padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
+                    }}>YOU</span>
+                  )}
+                  {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
+                    <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {myTeamId !== team.id ? (
+            <button
+              onClick={() => handleMove('assign_team', { teamId: team.id })}
+              disabled={isMoveSubmitting}
+              style={{
+                width: '100%',
+                background: accent, color: 'var(--bd-ink)',
+                border: 'none', borderRadius: 12,
+                padding: '12px 16px', fontWeight: 700, fontSize: 15,
+                cursor: 'pointer',
+                boxShadow: `0 3px 0 ${accentDeep}`,
+                opacity: isMoveSubmitting ? 0.5 : 1,
+              }}
+            >
+              Join {team.name}
+            </button>
+          ) : (
+            <div style={{
+              width: '100%', textAlign: 'center',
+              padding: '12px 16px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.5)',
+              border: `1.5px solid ${accent}`,
+              fontWeight: 600, fontSize: 14,
+              color: accentDeep,
+            }}>
+              ✓ You're on this team
+            </div>
+          )}
+        </div>
+      )
+    }
+
     return (
-      <div style={pageBg(lobby?.theme)} data-testid="alias-team-assignment">
-        <GameContextBar code={code} />
-        <main style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
+        <main style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
+          <GameContextBar code={code} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
@@ -878,114 +976,18 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'start' }}>
-            {data.teams.map((team, i) => {
-              const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
-              const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
-              const isMyTeam = myTeamId === team.id
-
-              return (
-                <div key={team.id} style={{
-                  ...cardBase, padding: 24,
-                  borderTop: `6px solid ${accent}`,
-                  position: 'relative', overflow: 'hidden',
-                  outline: isMyTeam ? `2px solid ${accent}` : 'none',
-                  outlineOffset: 2,
-                  gridColumn: i === 0 ? 1 : 3,
-                }}>
-                  <div aria-hidden style={{
-                    position: 'absolute', top: -40, right: -40,
-                    width: 140, height: 140, borderRadius: '50%',
-                    background: accent, opacity: 0.07,
-                  }} />
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <div>
-                      <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
-                        {team.name}
-                      </div>
-                    </div>
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
-                      {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
-                    </span>
-                  </div>
-
-                  {/* Player list */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
-                    {team.playerIds.length === 0 && (
-                      <div style={{
-                        padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
-                        color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
-                      }}>Empty — be the first</div>
-                    )}
-                    {team.playerIds.map(pid => {
-                      const name = getPlayerName(pid)
-                      const isYou = pid === currentUserId
-                      const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
-                      return (
-                        <div key={pid} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '8px 12px', borderRadius: 999,
-                          background: 'rgba(255,255,255,0.6)',
-                          border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
-                        }}>
-                          <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
-                            {name}
-                            {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
-                          </span>
-                          {isYou && (
-                            <span style={{
-                              marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
-                              color: accentDeep, background: 'rgba(255,255,255,0.8)',
-                              padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
-                            }}>YOU</span>
-                          )}
-                          {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
-                            <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Join button */}
-                  {myTeamId !== team.id ? (
-                    <button
-                      onClick={() => handleMove('assign_team', { teamId: team.id })}
-                      disabled={isMoveSubmitting}
-                      style={{
-                        width: '100%',
-                        background: accent, color: 'var(--bd-ink)',
-                        border: 'none', borderRadius: 12,
-                        padding: '12px 16px', fontWeight: 700, fontSize: 15,
-                        cursor: 'pointer',
-                        boxShadow: `0 3px 0 ${accentDeep}`,
-                        opacity: isMoveSubmitting ? 0.5 : 1,
-                      }}
-                    >
-                      Join {team.name}
-                    </button>
-                  ) : (
-                    <div style={{
-                      width: '100%', textAlign: 'center',
-                      padding: '12px 16px', borderRadius: 12,
-                      background: 'rgba(255,255,255,0.5)',
-                      border: `1.5px solid ${accent}`,
-                      fontWeight: 600, fontSize: 14,
-                      color: accentDeep,
-                    }}>
-                      ✓ You're on this team
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* "vs" divider */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gridColumn: 2 }}>
+          <div className="flex flex-col gap-4 md:flex-row md:gap-5 md:items-start">
+            <div className="flex-1 min-w-0">
+              {renderTeamCard(data.teams[0], 0)}
+            </div>
+            <div className="flex items-center justify-center py-1 shrink-0 md:pt-20">
               <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
             </div>
+            {data.teams[1] && (
+              <div className="flex-1 min-w-0">
+                {renderTeamCard(data.teams[1], 1)}
+              </div>
+            )}
           </div>
 
           <div style={{
@@ -1050,7 +1052,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
-    isMobile,
   }
 
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
@@ -1073,11 +1074,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             }
           />
-          <main style={{
-            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
-            padding: isMobile ? '0 0 16px' : undefined,
-          }}>
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1093,9 +1090,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Hero word card */}
-              <div style={{
+              <div className="md:flex-1" style={{
                 ...cardBase, width: '100%',
-                padding: '32px 40px 28px', minHeight: 180,
+                padding: isMobile ? '20px 24px' : '32px 40px 28px',
+                minHeight: isMobile ? 140 : 180,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1105,7 +1103,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <BdLabel>{t('alias.theSecretWord')}</BdLabel>
                 <span style={{
                   fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: 'clamp(48px, 9vw, 84px)',
+                  fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
                   lineHeight: 1.02, textAlign: 'center',
                   color: 'var(--bd-ink)', letterSpacing: '-0.02em',
                   zIndex: 1, wordBreak: 'break-word',
@@ -1116,8 +1114,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <BdLabel>{t('alias.thisTurnSoFar')}</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1142,20 +1140,22 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%' }}>
                 <button
                   aria-label="Guessed correctly"
                   onClick={() => handleMove('word_action', { action: 'guess' })}
                   disabled={isMoveSubmitting}
                   style={{
                     background: 'var(--bd-mint)', color: '#06322a',
-                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    border: 'none', borderRadius: 18,
+                    padding: isMobile ? '16px 12px' : '22px 16px',
+                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
                     cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-mint-deep)',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
+                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✓</span>
                   {t('alias.guessed')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
                 </button>
@@ -1165,13 +1165,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   disabled={isMoveSubmitting}
                   style={{
                     background: 'var(--bd-sun)', color: '#4a3a09',
-                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    border: 'none', borderRadius: 18,
+                    padding: isMobile ? '16px 12px' : '22px 16px',
+                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
                     cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-sun-deep)',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>✗</span>
+                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✗</span>
                   {t('alias.skip')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
                 </button>
@@ -1182,8 +1184,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </button>
             </div>
 
-            {/* Chat panel — describer sees guesses (read-only) */}
-            <GuessChatPanel {...chatProps} canType={false} />
+            {/* Chat panel — describer sees guesses read-only; hidden on mobile via CSS */}
+            <div className="hidden md:block" style={{ width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}>
+              <GuessChatPanel {...chatProps} canType={false} />
+            </div>
           </main>
         </div>
       </>
@@ -1210,11 +1214,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             }
           />
-          <main style={{
-            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
-            padding: isMobile ? '0 0 16px' : undefined,
-          }}>
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1228,9 +1228,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 }
               </div>
 
-              <div style={{
+              <div className="md:flex-1" style={{
                 ...cardBase, width: '100%',
-                padding: '24px 32px 28px', minHeight: 220,
+                padding: isMobile ? '16px 20px' : '24px 32px 28px',
+                minHeight: isMobile ? 160 : 220,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1256,14 +1257,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
                 <span className="bd-float" style={{
                   fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: 'clamp(100px, 16vw, 160px)', lineHeight: 1,
+                  fontSize: isMobile ? 'clamp(72px, 20vw, 100px)' : 'clamp(100px, 16vw, 160px)',
+                  lineHeight: 1,
                   color: 'var(--bd-coral)', textShadow: '0 6px 0 rgba(31,27,22,0.08)', zIndex: 1,
                 }}>?</span>
               </div>
 
               {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <BdLabel>Live tally</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1296,19 +1298,22 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const guessedCount = wordResults.filter(w => w.result === 'guessed').length
     const skippedCount = wordResults.filter(w => w.result === 'skipped').length
     const justPlayedTeamId = result.teamId
+    const nextTeamIdx = (data.currentTeamIndex + 1) % data.teams.length
+    const nextTeam = data.teams[nextTeamIdx]
+    const isNextTeamPlayer = !!nextTeam?.playerIds.includes(currentUserId ?? '')
 
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
-          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
             {/* Word list */}
-            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
+            <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
-                  <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, margin: 0 }}>
+                  <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 28, margin: 0 }}>
                     {wordResults.length} {wordResults.length === 1 ? 'word' : 'words'}
                   </h2>
                 </div>
@@ -1317,7 +1322,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <ScorePill kind="skipped" count={skippedCount} />
                 </div>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, marginRight: -4, paddingRight: 4 }}>
+              <div style={{ marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
                   <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
                 )}
@@ -1363,7 +1368,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                   <BdLabel style={{ color: positive ? 'rgba(251,246,238,0.7)' : 'var(--bd-ink-muted)' }}>Turn score</BdLabel>
-                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 56, lineHeight: 1 }}>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1 }}>
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
                   </span>
                 </div>
@@ -1390,7 +1395,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
                           {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>Just played</BdLabel>}
                         </div>
-                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
+                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
                       </div>
                     )
                   })}
@@ -1400,21 +1405,26 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 </div>
               </div>
 
-              {/*
-                Next Turn is open to every player, not just the host — the engine's own
-                validateMove for 'next_turn' has no player-ownership check (any player can
-                legally advance past turn_results). Gating this to isHost made the game
-                permanently soft-lock for everyone else whenever the host didn't click
-                through (closed tab, disconnected, distracted) — see #639.
-              */}
-              <button
-                style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
-                onClick={() => handleMove('next_turn', {})}
-                disabled={isMoveSubmitting}
-              >
-                {t('alias.nextTurn')}
-                <span aria-hidden style={{ fontSize: 18 }}>→</span>
-              </button>
+              {/* Next Turn restricted to the team whose turn is next (#666) */}
+              {!isSpectator && (isNextTeamPlayer ? (
+                <button
+                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
+                  onClick={() => handleMove('next_turn', {})}
+                  disabled={isMoveSubmitting}
+                >
+                  {t('alias.nextTurn')}
+                  <span aria-hidden style={{ fontSize: 18 }}>→</span>
+                </button>
+              ) : (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
+                  borderRadius: 14, padding: '16px 22px',
+                  fontSize: 15, fontWeight: 600, color: 'var(--bd-ink-soft)',
+                }}>
+                  ⏳ Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
+                </div>
+              ))}
               <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => router.push('/games')}>
                 {t('lobby.game.leaveGame')}
               </button>
