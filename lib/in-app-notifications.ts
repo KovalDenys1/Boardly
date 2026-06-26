@@ -88,6 +88,18 @@ export async function markAllInAppNotificationsRead(userId: string) {
   })
 }
 
+export async function deleteGameTurnReminderNotifications(gameId: string): Promise<void> {
+  await prisma.notifications.deleteMany({
+    where: {
+      type: 'turn_reminder',
+      channel: 'in_app',
+      dedupeKey: {
+        startsWith: `turn_reminder:game:${gameId}:`,
+      },
+    },
+  })
+}
+
 export async function markInAppNotificationReadByDedupeKey(userId: string, dedupeKey: string) {
   const now = new Date()
   return prisma.notifications.updateMany({
