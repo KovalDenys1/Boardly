@@ -1313,7 +1313,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
-            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', alignSelf: 'start' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
@@ -1326,7 +1326,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <ScorePill kind="skipped" count={skippedCount} />
                 </div>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, marginRight: -4, paddingRight: 4 }}>
+              <div style={{ marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
                   <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
                 )}
