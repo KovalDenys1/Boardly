@@ -74,7 +74,15 @@ export default function GamePlayerCard({
         )}
         {cornerBadge}
       </div>
-      <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
+      {/* `minWidth: 0` alone let this resolve to 0px next to the unshrinkable
+          42px avatar, so at 390 and in the 300px landscape side column the name,
+          subline and turn line disappeared entirely instead of truncating — a
+          player card with no player on it (#874). A floor plus `flex: 1 1 auto`
+          means the card gives up characters, not the whole identity. */}
+      <div style={{
+        textAlign: side === 'right' ? 'right' : 'left',
+        flex: '1 1 auto', minWidth: '4.5ch', overflow: 'hidden',
+      }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: justify }}>
           <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
             {name}
@@ -89,15 +97,21 @@ export default function GamePlayerCard({
           )}
         </div>
         {subline !== undefined && (
-          <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>{subline}</div>
+          <div style={{
+            fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{subline}</div>
         )}
         {isActive && (
           <div style={{
             marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
             display: 'flex', gap: 4, alignItems: 'center', justifyContent: justify,
+            whiteSpace: 'nowrap', overflow: 'hidden',
           }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: turnDotColor ?? accentColor, display: 'inline-block' }} />
-            {isMe ? t('game.ui.yourTurn') : t('game.ui.theirTurn')}
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: turnDotColor ?? accentColor, display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {isMe ? t('game.ui.yourTurn') : t('game.ui.theirTurn')}
+            </span>
           </div>
         )}
       </div>
