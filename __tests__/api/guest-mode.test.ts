@@ -17,6 +17,8 @@ jest.mock('@/lib/db', () => ({
     $transaction: jest.fn(),
     lobbies: {
       findUnique: jest.fn(),
+      // #907: the one-open-lobby check runs before every create.
+      findFirst: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
     },

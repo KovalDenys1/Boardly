@@ -8,6 +8,7 @@ import { apiLogger } from '@/lib/logger'
 import { createGameEngine } from '@/lib/game-registry'
 import { hasBotSupport, getAvailableGameTypes, isAvailableGameType, isSupportedGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { checkOpenLobbyLimit } from '@/lib/lobby-limit'
 import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
@@ -227,6 +228,21 @@ export async function POST(req: NextRequest) {
   const initialState = engine.getState()
   const persistedGameType = toPersistedGameType(gameType)
   const minPlayers = engine.getConfig().minPlayers
+  // The same one-open-lobby rule as POST /api/lobby (#907) — and this is the
+  // route the reported case actually came through: four simultaneous bot games
+  // from one guest, every one of them a Play vs Bot quick-play.
+  const limit = await checkOpenLobbyLimit(user.id)
+  if (limit.kind === 'blocked') {
+    return NextResponse.json(
+      {
+        error: 'You already have a game open',
+        code: 'LOBBY_ALREADY_OPEN',
+        lobbyCode: limit.lobbyCode,
+      },
+      { status: 409 }
+    )
+  }
+
   const maxPlayers = engine.getConfig().maxPlayers
 
   let newCode: string | null = null

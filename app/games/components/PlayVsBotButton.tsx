@@ -58,7 +58,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameType, difficulty, forceSolo: true }),
       })
-      const data = await res.json() as { lobbyCode?: string; error?: string }
+      const data = await res.json() as { lobbyCode?: string; error?: string; code?: string }
       if (res.status === 401) {
         // No client-side check can predict this one: a guest token expires or
         // is rejected while `isGuest` is still true locally. The answer is the
@@ -66,6 +66,12 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         // "Unauthorized" toast, which tells a player nothing they can act on.
         setLoading(false)
         setPendingDifficulty(difficulty)
+        return
+      }
+      // Already has a game open (#907): take them to it rather than telling
+      // them no. They can change the game from inside the lobby.
+      if (res.status === 409 && data.code === 'LOBBY_ALREADY_OPEN' && data.lobbyCode) {
+        router.push(`/lobby/${data.lobbyCode}`)
         return
       }
       if (!res.ok) throw new Error(data.error ?? 'Failed')

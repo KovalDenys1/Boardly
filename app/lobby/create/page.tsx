@@ -234,6 +234,14 @@ function CreateLobbyPage() {
       const data = await res.json()
       clientLogger.log('📥 Received response:', { status: res.status, data })
 
+      // One open lobby per person (#907). The answer is not an error — the
+      // player has a room already and almost certainly wants to be in it, and
+      // they can change the game once they are there.
+      if (res.status === 409 && data?.code === 'LOBBY_ALREADY_OPEN' && typeof data?.lobbyCode === 'string') {
+        router.push(`/lobby/${data.lobbyCode}`)
+        return
+      }
+
       if (!res.ok) {
         trackLobbyCreateRequest({
           gameType: formData.gameType as AnalyticsGameType,
