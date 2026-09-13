@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import AdSlot from '@/components/AdSlot'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import type { IconName } from '@/components/icons/names'
 import type { GuideIcon } from '@/lib/guides-catalog'
+import { GUIDES_AD_SLOT } from '@/lib/ad-slots'
 
 interface RelatedGuide {
   href: string
@@ -274,6 +276,10 @@ export default function GuideLayout({
             ))}
           </div>
         </div>
+
+        {/* Last thing on the page, below every CTA, so an ad can never be
+            mistaken for a Boardly action or clicked by accident. */}
+        <AdSlot slot={GUIDES_AD_SLOT} className="mt-8" />
 
       </div>
       <Footer />

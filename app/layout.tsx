@@ -185,7 +185,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
       <head>
-        {/* AdSense site verification + loader (#784). Ad units are gated separately (free users only). */}
+        {/* AdSense site verification + loader (#784). This also delivers Google's
+            EEA/UK consent message, so it stays on regardless of whether any ad
+            unit renders. The units themselves are in components/AdSlot.tsx,
+            gated to free users and off until NEXT_PUBLIC_ADS_ENABLED is set. */}
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044"
