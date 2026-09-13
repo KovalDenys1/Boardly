@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import Footer from '@/components/Footer'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
+import type { IconName } from '@/components/icons/names'
+import type { GuideIcon } from '@/lib/guides-catalog'
 
 interface RelatedGuide {
   href: string
@@ -7,7 +11,8 @@ interface RelatedGuide {
 }
 
 interface GuideLayoutProps {
-  emoji: string
+  /** The guide's mark: a game glyph (catalog id) or a chrome icon – same shape the guides index uses. */
+  icon: GuideIcon
   title: string
   subtitle: string
   breadcrumbLabel: string
@@ -38,17 +43,25 @@ export function GuideSection({ title, children }: { title: string; children: Rea
   )
 }
 
-export function GuideTipList({ items }: { items: { emoji?: string; tip: string; detail: string }[] }) {
+export interface GuideTip {
+  /** Drawn in front of the tip. Omit where the tip needs no mark. */
+  icon?: IconName
+  tip: string
+  detail: string
+}
+
+export function GuideTipList({ items }: { items: GuideTip[] }) {
   return (
     <ul className="space-y-4">
-      {items.map(({ emoji, tip, detail }) => (
+      {items.map(({ icon, tip, detail }) => (
         <li
           key={tip}
           className="border-b pb-4 last:border-0 last:pb-0"
           style={{ borderColor: 'var(--bd-line)' }}
         >
           <strong className="mb-1 block text-sm" style={{ color: 'var(--bd-ink)' }}>
-            {emoji} {tip}
+            {icon ? <Icon name={icon} size={16} weight="bold" className="mr-1.5" /> : null}
+            {tip}
           </strong>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             {detail}
@@ -59,12 +72,52 @@ export function GuideTipList({ items }: { items: { emoji?: string; tip: string; 
   )
 }
 
-export function GuideChecklist({ items }: { items: string[] }) {
+export interface GuideChecklistItem {
+  text: string
+  /** 'yes' a mint check, 'no' a coral cross. */
+  mark?: 'yes' | 'no'
+  /** A descriptive icon instead of a yes/no mark, for lists that state facts rather than advice. */
+  icon?: IconName
+}
+
+/**
+ * `verdict` says whether the marks make a call or just bullet the list. Most of
+ * these lists are requirements ("What You Need") or steps ("How It Works"),
+ * where a check is the bullet the tick used to be and announcing "Recommended"
+ * over it is wrong. Only where a list actually weighs yes against no does the
+ * mark carry meaning a screen reader has to hear.
+ */
+export function GuideChecklist({ items, verdict = false }: { items: GuideChecklistItem[]; verdict?: boolean }) {
   return (
     <ul className="space-y-2">
-      {items.map((item) => (
-        <li key={item} className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-          {item}
+      {items.map(({ text, mark, icon }) => (
+        <li
+          key={text}
+          className="flex items-start gap-2 text-sm leading-relaxed"
+          style={{ color: 'var(--bd-ink-soft)' }}
+        >
+          {mark ? (
+            <Icon
+              name={mark === 'yes' ? 'check' : 'close'}
+              size={16}
+              tone={mark === 'yes' ? 'mint' : 'coral'}
+              label={verdict ? (mark === 'yes' ? 'Recommended' : 'Avoid') : undefined}
+              className="mt-[3px]"
+            />
+          ) : icon ? (
+            <Icon name={icon} size={16} weight="bold" className="mt-[3px]" />
+          ) : (
+            // A list with no mark and no icon still needs a bullet, and a plain
+            // dot is the honest one: it must not look like the check, or a
+            // sequence reads as a recommendation. Drawn rather than an <Icon>
+            // because the set has no dot and a bullet is not an icon.
+            <span
+              aria-hidden
+              className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full"
+              style={{ background: 'var(--bd-ink-muted)' }}
+            />
+          )}
+          <span>{text}</span>
         </li>
       ))}
     </ul>
@@ -132,7 +185,7 @@ export function GuideTable({
 }
 
 export default function GuideLayout({
-  emoji,
+  icon,
   title,
   subtitle,
   breadcrumbLabel,
@@ -166,7 +219,13 @@ export default function GuideLayout({
           />
           <div className="relative">
             <span className="bd-kicker mb-3 block">Guides</span>
-            <div className="mb-3 text-5xl">{emoji}</div>
+            <div className="mb-3">
+              {'game' in icon ? (
+                <GameIcon gameId={icon.game} accentColor={accentColor} size={48} variant="bare" />
+              ) : (
+                <Icon name={icon.glyph} size={48} style={{ color: accentColor }} />
+              )}
+            </div>
             <h1
               className="mb-3 text-[clamp(28px,4vw,44px)] font-extrabold leading-tight"
               style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}

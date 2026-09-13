@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import PlayVsBotButton from './PlayVsBotButton'
@@ -22,10 +23,12 @@ type GameDetailPageProps = {
   gameName: string
   title: string
   description: string
-  icon: string
+  /** Accessible name for the hero glyph. */
   iconLabel: string
-  iconVariant?: 'tic-tac-toe'
-  gameId?: string
+  /** Catalog id from `lib/game-catalog.ts` – the hero glyph always comes from here. */
+  gameId: string
+  /** @deprecated #884 – ignored. Still declared only because TicTacToeDetailContent
+   *  passes them; drop the props and that call site together. */
   accentColor?: string
   accent: string
   lobbiesHref: string
@@ -44,45 +47,11 @@ type GameDetailPageProps = {
   playVsBotGameType?: string
 }
 
-function GameDetailIcon({
-  icon,
-  iconLabel,
-  iconVariant,
-  gameId,
-  accentColor,
-}: {
-  icon: string
-  iconLabel: string
-  iconVariant?: GameDetailPageProps['iconVariant']
-  gameId?: string
-  accentColor?: string
-}) {
-  if (gameId) {
-    return <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={94} />
-  }
-
-  if (iconVariant === 'tic-tac-toe') {
-    return <GameIcon gameId="tic-tac-toe" accentColor="var(--bd-coral)" size={94} />
-  }
-
-  return (
-    <span
-      className="grid h-[94px] w-[94px] place-items-center rounded-[1.4rem] border-2 border-bd-ink bg-bd-sun text-5xl shadow-[4px_4px_0_var(--bd-ink)]"
-      role="img"
-      aria-label={iconLabel}
-    >
-      {icon}
-    </span>
-  )
-}
-
 export default function GameDetailPage({
   gameName,
   title,
   description,
-  icon,
   iconLabel,
-  iconVariant,
   gameId,
   accentColor,
   accent,
@@ -152,13 +121,13 @@ export default function GameDetailPage({
               </div>
               {groupNotice && (
                 <p className="mt-4 rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900 dark:border-amber-600/60 dark:bg-amber-900/20 dark:text-amber-200">
-                  👥 {groupNotice}
+                  <Icon name="users" size={16} weight="bold" /> {groupNotice}
                 </p>
               )}
             </div>
 
             <div className="flex justify-center lg:justify-end">
-              <GameDetailIcon icon={icon} iconLabel={iconLabel} iconVariant={iconVariant} gameId={gameId} accentColor={accentColor} />
+              <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={94} label={iconLabel} />
             </div>
           </div>
         </section>

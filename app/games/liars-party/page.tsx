@@ -71,7 +71,6 @@ export default function LiarsPartyGamePage() {
         gameName="Liar's Party"
         title="Play Liar's Party Online"
         description="A social bluffing game where players make claims, read the room, and vote on who is telling the truth."
-        icon="🎭"
         iconLabel="Liar's Party"
         gameId="liars-party"
         accentColor="var(--bd-lav)"

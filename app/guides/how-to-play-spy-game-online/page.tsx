@@ -52,7 +52,7 @@ export default function HowToPlaySpyGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🕵️"
+        icon={{ game: 'spy' }}
         title="How to Play Guess the Spy Online"
         subtitle="4 min read · Free to play on Boardly · 3–10 players"
         breadcrumbLabel="How to Play Guess the Spy"
@@ -67,10 +67,10 @@ export default function HowToPlaySpyGuide() {
       >
         <GuideSection title="Game Setup">
           <GuideChecklist items={[
-            '👥 3–10 players — works great at any size in this range',
-            '🕐 ~5–8 minutes per round',
-            '🌍 One secret location per round (e.g. Beach, Hospital, Space Station)',
-            '🕵️ One spy — randomly assigned, hidden from other players',
+            { icon: 'users', text: '3–10 players — works great at any size in this range' },
+            { icon: 'clock', text: '~5–8 minutes per round' },
+            { icon: 'globe', text: 'One secret location per round (e.g. Beach, Hospital, Space Station)' },
+            { icon: 'mask', text: 'One spy — randomly assigned, hidden from other players' },
           ]} />
         </GuideSection>
 
@@ -97,19 +97,19 @@ export default function HowToPlaySpyGuide() {
 
         <GuideSection title="Tips for Non-Spy Players — How to Find the Spy">
           <GuideTipList items={[
-            { emoji: '🔍', tip: 'Ask questions that test knowledge without giving the location away', detail: "At a beach: 'How crowded is it?' tests the spy but doesn't tell them where everyone is. Avoid 'What do you smell?' — too easy to fake an answer." },
-            { emoji: '🔍', tip: 'Watch for hesitation and vague answers', detail: 'Players who know the location answer quickly and naturally. The spy tends to pause, give short answers, or use phrases like "it depends" and "maybe."' },
-            { emoji: '🔍', tip: "Don't rush the vote", detail: 'The spy wants you to accuse the wrong person. Let a few rounds of questions reveal patterns before deciding — accusing the wrong player loses the round for your group.' },
-            { emoji: '🔍', tip: 'Compare answers across players', detail: "If most players give similar answers and one gives something completely different — that's likely your spy." },
+            { tip: 'Ask questions that test knowledge without giving the location away', detail: "At a beach: 'How crowded is it?' tests the spy but doesn't tell them where everyone is. Avoid 'What do you smell?' — too easy to fake an answer." },
+            { tip: 'Watch for hesitation and vague answers', detail: 'Players who know the location answer quickly and naturally. The spy tends to pause, give short answers, or use phrases like "it depends" and "maybe."' },
+            { tip: "Don't rush the vote", detail: 'The spy wants you to accuse the wrong person. Let a few rounds of questions reveal patterns before deciding — accusing the wrong player loses the round for your group.' },
+            { tip: 'Compare answers across players', detail: "If most players give similar answers and one gives something completely different — that's likely your spy." },
           ]} />
         </GuideSection>
 
         <GuideSection title="Tips for the Spy — How to Survive">
           <GuideTipList items={[
-            { emoji: '🎭', tip: 'Give confident, vague answers', detail: "The worst thing you can do is sound unsure. Be assertive — 'It's always busier than people expect' works for many locations." },
-            { emoji: '🎭', tip: 'Eliminate locations fast', detail: "Listen closely to others' questions and answers — they're leaking information. By round 3–4, you should be narrowing down your guesses." },
-            { emoji: '🎭', tip: 'Accuse someone early', detail: 'Counterintuitive, but voting to accuse another player shifts suspicion away from you. Pick someone quiet and call them out.' },
-            { emoji: '🎭', tip: 'Know when to guess', detail: "If the vote is swinging toward you and you have a strong guess, fire early. A correct location guess wins even if you're caught." },
+            { tip: 'Give confident, vague answers', detail: "The worst thing you can do is sound unsure. Be assertive — 'It's always busier than people expect' works for many locations." },
+            { tip: 'Eliminate locations fast', detail: "Listen closely to others' questions and answers — they're leaking information. By round 3–4, you should be narrowing down your guesses." },
+            { tip: 'Accuse someone early', detail: 'Counterintuitive, but voting to accuse another player shifts suspicion away from you. Pick someone quiet and call them out.' },
+            { tip: 'Know when to guess', detail: "If the vote is swinging toward you and you have a strong guess, fire early. A correct location guess wins even if you're caught." },
           ]} />
         </GuideSection>
       </GuideLayout>

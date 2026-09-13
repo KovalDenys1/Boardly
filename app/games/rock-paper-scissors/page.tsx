@@ -71,7 +71,6 @@ export default function RockPaperScissorsGamePage() {
         gameName="Rock Paper Scissors"
         title="Play Rock Paper Scissors Online"
         description="The classic game, played in real time. Both players pick simultaneously — no waiting, no guessing what your opponent chose."
-        icon="✊"
         iconLabel="Rock Paper Scissors"
         gameId="rps"
         accentColor="var(--bd-lav)"

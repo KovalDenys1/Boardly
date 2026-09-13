@@ -51,7 +51,7 @@ export default function HowToPlayTicTacToeGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="⭕"
+        icon={{ game: 'tic-tac-toe' }}
         title="How to Play Tic Tac Toe Online"
         subtitle="4 min read · Free to play on Boardly · 2 players or vs AI"
         breadcrumbLabel="How to Play Tic Tac Toe Online"
@@ -66,10 +66,10 @@ export default function HowToPlayTicTacToeGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 2 players — or play solo against AI',
-            '✅ A browser — desktop, tablet, or mobile',
-            '✅ No account required (guest play available)',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '2 players — or play solo against AI' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
@@ -110,11 +110,11 @@ export default function HowToPlayTicTacToeGuide() {
 
         <GuideSection title="Strategy — How to Never Lose">
           <GuideTipList items={[
-            { emoji: '💡', tip: 'Start in the center (as X)', detail: 'The center square is part of 4 winning lines — more than any other cell. Taking it first gives you the most winning options.' },
-            { emoji: '💡', tip: 'Take a corner if center is taken', detail: 'Corners are each part of 3 winning lines. If your opponent takes center, play a corner to set up diagonal threats.' },
-            { emoji: '💡', tip: 'Block before attacking', detail: 'If your opponent has two in a row, block the third cell immediately. Missing a block almost always loses the game.' },
-            { emoji: '💡', tip: 'Set up two winning threats at once', detail: 'If you can put yourself one move away from winning in two different places at the same time, your opponent can only stop one. You win the other.' },
-            { emoji: '💡', tip: 'Stop your opponent from doing the same', detail: "If you notice your opponent building toward two threats at once, block them — either take the square they need, or create your own threat so they have to respond to you." },
+            { tip: 'Start in the center (as X)', detail: 'The center square is part of 4 winning lines — more than any other cell. Taking it first gives you the most winning options.' },
+            { tip: 'Take a corner if center is taken', detail: 'Corners are each part of 3 winning lines. If your opponent takes center, play a corner to set up diagonal threats.' },
+            { tip: 'Block before attacking', detail: 'If your opponent has two in a row, block the third cell immediately. Missing a block almost always loses the game.' },
+            { tip: 'Set up two winning threats at once', detail: 'If you can put yourself one move away from winning in two different places at the same time, your opponent can only stop one. You win the other.' },
+            { tip: 'Stop your opponent from doing the same', detail: "If you notice your opponent building toward two threats at once, block them — either take the square they need, or create your own threat so they have to respond to you." },
           ]} />
         </GuideSection>
 

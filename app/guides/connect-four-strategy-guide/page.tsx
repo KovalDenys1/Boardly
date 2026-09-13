@@ -52,7 +52,7 @@ export default function ConnectFourStrategyGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🔴"
+        icon={{ game: 'connect-four' }}
         title="Connect Four Strategy Guide — How to Win Every Time"
         subtitle="5 min read · Strategy tips for all skill levels · Free on Boardly"
         breadcrumbLabel="Connect Four Strategy Guide"
@@ -72,10 +72,10 @@ export default function ConnectFourStrategyGuide() {
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             Your first disc should almost always go in column 4. If you play second and your opponent takes the center, play column 3 or 5 — never let them build freely from the middle.
           </p>
-          <GuideChecklist items={[
-            '✅ First move: always column 4 (center)',
-            '✅ Second move if center is taken: columns 3 or 5',
-            '⛔ Avoid the edges (columns 1 and 7) early — they connect to fewer lines',
+          <GuideChecklist verdict items={[
+            { mark: 'yes', text: 'First move: always column 4 (center)' },
+            { mark: 'yes', text: 'Second move if center is taken: columns 3 or 5' },
+            { mark: 'no', text: 'Avoid the edges (columns 1 and 7) early — they connect to fewer lines' },
           ]} />
         </GuideSection>
 
@@ -116,27 +116,27 @@ export default function ConnectFourStrategyGuide() {
         <GuideSection title="Key Strategy Tips">
           <GuideTipList items={[
             {
-              emoji: '💡',
+
               tip: 'Build low, not high',
               detail: 'Discs placed in the bottom rows are more flexible — they can be part of horizontal, vertical, and diagonal lines. Stacking high early limits your options and fills columns fast.',
             },
             {
-              emoji: '💡',
+
               tip: 'Check diagonals every turn',
               detail: 'Diagonal wins are the easiest to miss because the eye naturally follows rows and columns. Before you drop a disc, scan both diagonal directions for threats you might be ignoring.',
             },
             {
-              emoji: '💡',
+
               tip: 'Count what your block does for you',
               detail: 'When you block your opponent, make sure your blocking disc also helps your own lines. Wasting a move on a pure block with no value for yourself puts you one move behind.',
             },
             {
-              emoji: '💡',
+
               tip: 'Think about what sits on top',
               detail: 'When a column fills up, every future disc in that column lands on top of the last. If filling a column gives your opponent a winning space on the next row, wait.',
             },
             {
-              emoji: '💡',
+
               tip: 'Force your opponent to help you',
               detail: 'Create a threat that your opponent must block — and place that block so that it falls exactly where your next line needs a disc. You are using their moves to build your win.',
             },
@@ -144,12 +144,12 @@ export default function ConnectFourStrategyGuide() {
         </GuideSection>
 
         <GuideSection title="Common Mistakes to Avoid">
-          <GuideChecklist items={[
-            '⛔ Ignoring the center — the most common beginner mistake',
-            '⛔ Only blocking, never building — you cannot win by only defending',
-            '⛔ Stacking discs in one column too early — fills it up and locks you out',
-            '⛔ Missing diagonal threats — check them every single turn',
-            '⛔ Completing a column that gives your opponent the winning space on top',
+          <GuideChecklist verdict items={[
+            { mark: 'no', text: 'Ignoring the center — the most common beginner mistake' },
+            { mark: 'no', text: 'Only blocking, never building — you cannot win by only defending' },
+            { mark: 'no', text: 'Stacking discs in one column too early — fills it up and locks you out' },
+            { mark: 'no', text: 'Missing diagonal threats — check them every single turn' },
+            { mark: 'no', text: 'Completing a column that gives your opponent the winning space on top' },
           ]} />
         </GuideSection>
       </GuideLayout>

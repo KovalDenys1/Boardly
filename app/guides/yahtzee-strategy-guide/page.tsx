@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideSteps, GuideChecklist } from '../components/GuideLayout'
 
 export const metadata: Metadata = {
   title: 'Yahtzee Strategy Guide — How to Win More Often',
@@ -52,7 +52,7 @@ export default function YahtzeeStrategyGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🎲"
+        icon={{ glyph: 'trophy' }}
         title="Yahtzee Strategy Guide — How to Win More Often"
         subtitle="6 min read · Strategy tips for all skill levels · Free on Boardly"
         breadcrumbLabel="Yahtzee Strategy Guide"
@@ -100,11 +100,11 @@ export default function YahtzeeStrategyGuide() {
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             A Yahtzee scores 50 points, and each extra Yahtzee after the first scores 100 bonus points on top. That makes it one of the highest-value plays in the game — but only if you know when to chase it.
           </p>
-          <GuideChecklist items={[
-            '✅ Go for it — you have 4 of the same number after your first roll',
-            '✅ Go for it — you have 3 of the same number and two rolls left',
-            '⛔ Do not bother — you have 3 of the same number but only one roll left',
-            '⛔ Do not bother — you also need the upper section bonus for that number',
+          <GuideChecklist verdict items={[
+            { mark: 'yes', text: 'Go for it — you have 4 of the same number after your first roll' },
+            { mark: 'yes', text: 'Go for it — you have 3 of the same number and two rolls left' },
+            { mark: 'no', text: 'Do not bother — you have 3 of the same number but only one roll left' },
+            { mark: 'no', text: 'Do not bother — you also need the upper section bonus for that number' },
           ]} />
           <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             Keep in mind: if the Yahtzee box is already filled with a zero, extra Yahtzees still earn you 100 bonus points each. So never give up on rolling five of a kind.
@@ -112,30 +112,25 @@ export default function YahtzeeStrategyGuide() {
         </GuideSection>
 
         <GuideSection title="Which Categories to Fill First">
-          <GuideTipList items={[
+          <GuideSteps steps={[
             {
-              emoji: '1️⃣',
-              tip: 'Fill Aces and Twos early with bad rolls',
+              title: 'Fill Aces and Twos early with bad rolls',
               detail: 'When you roll junk — nothing useful across the board — put the score in Aces or Twos. They are low-value categories worth 3–6 points anyway. Taking a zero here is worse than taking a small score.',
             },
             {
-              emoji: '2️⃣',
-              tip: 'Save Chance for desperate turns',
+              title: 'Save Chance for desperate turns',
               detail: 'Chance scores the sum of all five dice. It has no requirement — any roll qualifies. Save it for turns where nothing fits anywhere else. A good Chance score is 20 or more.',
             },
             {
-              emoji: '3️⃣',
-              tip: 'Use Large Straight before Small Straight',
+              title: 'Use Large Straight before Small Straight',
               detail: 'Large Straight (5 dice in order, 40 points) is worth 10 more than Small Straight (4 dice in order, 30 points). If you roll four dice in order, keep going for five before settling for the smaller score.',
             },
             {
-              emoji: '4️⃣',
-              tip: 'Full House is reliable mid-game',
+              title: 'Full House is reliable mid-game',
               detail: 'Full House (three of one number + two of another, 25 points) is not the highest score, but it is consistent to get. Fill it in the middle of the game when you have a decent roll that does not fit anything better.',
             },
             {
-              emoji: '5️⃣',
-              tip: 'Lock in Four of a Kind when you see it',
+              title: 'Lock in Four of a Kind when you see it',
               detail: 'Four of a Kind scores the total of all five dice. Four sixes plus any other die is at least 26 points. Do not re-roll hoping for five — the risk is not worth it unless your Yahtzee box is still open.',
             },
           ]} />
@@ -178,10 +173,10 @@ export default function YahtzeeStrategyGuide() {
 
         <GuideSection title="Quick Checklist for Every Turn">
           <GuideChecklist items={[
-            '🎲 After roll 1: identify your best path (three of a kind? straight? bonus category?)',
-            '🎲 After roll 2: commit to one goal and re-roll everything that does not support it',
-            '🎲 Before scoring: check if any category gives you more points than you expect',
-            '🎲 Always: track where you are vs the 63-point bonus threshold',
+            { text: 'After roll 1: identify your best path (three of a kind? straight? bonus category?)' },
+            { text: 'After roll 2: commit to one goal and re-roll everything that does not support it' },
+            { text: 'Before scoring: check if any category gives you more points than you expect' },
+            { text: 'Always: track where you are vs the 63-point bonus threshold' },
           ]} />
         </GuideSection>
       </GuideLayout>

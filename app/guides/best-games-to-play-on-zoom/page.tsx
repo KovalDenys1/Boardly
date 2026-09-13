@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best Games to Play on Zoom — Free, No Download',
@@ -49,27 +50,27 @@ const breadcrumbJsonLd = {
 
 const games = [
   {
-    rank: 1, emoji: '🕵️', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
+    rank: 1, gameId: 'spy', accent: 'var(--bd-lav)', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
     why: 'Made for video calls. Players ask each other questions out loud — the conversation happens on Zoom, the roles happen in the browser. Nobody needs to share screens. Everyone just opens the same lobby link.',
     zoom: 'Ask questions verbally on the call, vote by speaking up',
   },
   {
-    rank: 2, emoji: '🗣️', name: 'Alias', players: '4–16 players', href: '/games/alias',
+    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '4–16 players', href: '/games/alias',
     why: 'The Describer talks, the team yells guesses — all of it happens naturally on the call. The browser just handles the words and the score. Great for groups who want something loud and energetic.',
     zoom: 'Describer talks, team shouts guesses — all on the call',
   },
   {
-    rank: 3, emoji: '🎲', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
+    rank: 3, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
     why: 'Each player controls their own dice on their own screen. No screen sharing needed. You can chat between turns, which is the best part of Yahtzee anyway. Works well for 2–4 people on a casual call.',
     zoom: 'Everyone plays on their own screen, chat between turns',
   },
   {
-    rank: 4, emoji: '🧠', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
+    rank: 4, gameId: 'memory', accent: 'var(--bd-mint)', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
     why: 'Everyone sees the same board in their browser. When someone flips cards, you can react out loud on the call. Short rounds mean you can easily fit multiple games into a call.',
     zoom: 'React to each other\'s moves out loud — the game is in the browser',
   },
   {
-    rank: 5, emoji: '⭕', name: 'Tic Tac Toe', players: '2 players', href: '/games/tic-tac-toe',
+    rank: 5, gameId: 'tic-tac-toe', accent: 'var(--bd-coral)', name: 'Tic Tac Toe', players: '2 players', href: '/games/tic-tac-toe',
     why: 'Quick 1v1 rounds while everyone else watches on the call. Play a best-of-5 series and let the winner take on the next challenger. Each round takes under a minute.',
     zoom: 'Quick 1v1 while others watch and comment on the call',
   },
@@ -82,7 +83,7 @@ export default function BestGamesToPlayOnZoomGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="💻"
+        icon={{ glyph: 'laptop' }}
         title="Best Games to Play on Zoom — Free, No Download"
         subtitle="4 min read · Works with Zoom, Google Meet, FaceTime, and any video call"
         breadcrumbLabel="Best Games to Play on Zoom"
@@ -106,7 +107,7 @@ export default function BestGamesToPlayOnZoomGuide() {
 
         <GuideSection title="The Best Games for Zoom Calls">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, players, href, why, zoom }) => (
+            {games.map(({ rank, gameId, accent, name, players, href, why, zoom }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -119,7 +120,7 @@ export default function BestGamesToPlayOnZoomGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                   <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{players}</span>
                 </div>
@@ -141,11 +142,11 @@ export default function BestGamesToPlayOnZoomGuide() {
 
         <GuideSection title="How to Start Playing on a Zoom Call">
           <GuideChecklist items={[
-            '1. Open boardly.online and pick a game',
-            '2. Create a lobby — takes about 10 seconds',
-            '3. Copy the lobby link and paste it into your Zoom chat',
-            '4. Everyone clicks the link and joins in their browser',
-            '5. Start the game — no accounts, no downloads for anyone',
+            { text: '1. Open boardly.online and pick a game' },
+            { text: '2. Create a lobby — takes about 10 seconds' },
+            { text: '3. Copy the lobby link and paste it into your Zoom chat' },
+            { text: '4. Everyone clicks the link and joins in their browser' },
+            { text: '5. Start the game — no accounts, no downloads for anyone' },
           ]} />
         </GuideSection>
       </GuideLayout>

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
 import { signIn } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import {
   buildAuthUrl,
   resolveReturnUrlFromSearchParams,
@@ -38,15 +39,6 @@ function OAuthErrorContent() {
       case 'github': return 'GitHub'
       case 'discord': return 'Discord'
       default: return provider
-    }
-  }
-
-  const getProviderIcon = () => {
-    switch (provider) {
-      case 'google': return '🔵'
-      case 'github': return '⚫'
-      case 'discord': return '🟣'
-      default: return '🔗'
     }
   }
 
@@ -90,8 +82,8 @@ function OAuthErrorContent() {
     return (
       <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
         <div className="bd-card w-full max-w-md p-8 text-center">
-          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
-            {getProviderIcon()}
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_#1F1B16]">
+            <Icon name="link" size={32} tone="on-accent" />
           </div>
           <h1
             className="mb-3 text-2xl font-extrabold text-bd-ink"
@@ -105,13 +97,13 @@ function OAuthErrorContent() {
 
           <div className="mb-6 space-y-3 text-left">
             <div className="rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
-              <p className="text-sm font-bold text-bd-lav-deep">1️⃣ Sign in with {getProviderName()}</p>
+              <p className="text-sm font-bold text-bd-lav-deep">1. Sign in with {getProviderName()}</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
                 If this is your {getProviderName()} account, sign in to access your profile
               </p>
             </div>
             <div className="rounded-xl border border-bd-mint/40 bg-bd-mint/10 p-4">
-              <p className="text-sm font-bold text-bd-mint-deep">2️⃣ Sign in with your existing account</p>
+              <p className="text-sm font-bold text-bd-mint-deep">2. Sign in with your existing account</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
                 Then link {getProviderName()} from your profile settings
               </p>
@@ -140,8 +132,8 @@ function OAuthErrorContent() {
     <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
       <div className="bd-card w-full max-w-md p-8">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-3xl shadow-[3px_3px_0_#1F1B16]">
-            ⚠️
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 shadow-[3px_3px_0_#1F1B16]">
+            <Icon name="warning" size={32} tone="coral" />
           </div>
           <h1
             className="text-2xl font-extrabold text-bd-ink"

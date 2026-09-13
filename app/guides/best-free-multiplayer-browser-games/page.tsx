@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best Free Multiplayer Browser Games in 2026 - No Download',
@@ -46,22 +47,22 @@ const breadcrumbJsonLd = {
 
 const games = [
   {
-    rank: 1, emoji: '🎲', name: 'Yahtzee', players: '1–4 players', href: '/games/yahtzee',
+    rank: 1, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '1–4 players', href: '/games/yahtzee',
     why: "The ultimate turn-based dice game. Perfect for remote hangouts — you can chat while playing since there's no time pressure between turns. Supports AI bots to fill empty spots.",
     best: 'Casual sessions, family game nights, anyone who likes strategy but wants to relax',
   },
   {
-    rank: 2, emoji: '🕵️', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
+    rank: 2, gameId: 'spy', accent: 'var(--bd-lav)', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
     why: 'The best party game for larger groups. No board needed, no pieces — just quick thinking and bluffing. Every round is different thanks to random location assignments.',
     best: 'Game nights, friend groups of 4+, anyone who loves social deduction games',
   },
   {
-    rank: 3, emoji: '🧠', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
+    rank: 3, gameId: 'memory', accent: 'var(--bd-mint)', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
     why: 'Deceptively competitive. Easy to teach anyone in 30 seconds, but the tension rises fast as the board clears. Three difficulty levels keep it interesting for all ages.',
     best: 'Casual matches, playing with younger friends or family, short sessions',
   },
   {
-    rank: 4, emoji: '❌', name: 'Tic Tac Toe', players: '2 players', href: '/games/tic-tac-toe',
+    rank: 4, gameId: 'tic-tac-toe', accent: 'var(--bd-coral)', name: 'Tic Tac Toe', players: '2 players', href: '/games/tic-tac-toe',
     why: 'The classic for a reason. Best-of-3 and best-of-5 match modes make it surprisingly competitive. Quick to play, rematch ready in seconds.',
     best: '1-on-1 challenges, killing 5 minutes, testing your reflexes against an AI',
   },
@@ -74,7 +75,7 @@ export default function BestBrowserGamesGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🎮"
+        icon={{ glyph: 'gamepad' }}
         title="Best Free Multiplayer Browser Games in 2026"
         subtitle="4 min read · All games free on Boardly · No download required"
         breadcrumbLabel="Best Free Multiplayer Browser Games"
@@ -89,17 +90,17 @@ export default function BestBrowserGamesGuide() {
       >
         <GuideSection title="What Makes a Great Browser Multiplayer Game?">
           <GuideChecklist items={[
-            '✅ Zero setup — works the moment you open it',
-            '✅ Easy to share — one link gets your friends in',
-            '✅ Short sessions — rounds that fit in 5–15 minutes',
-            '✅ No skill barrier — anyone can join and have fun immediately',
-            '✅ Real-time or async — plays well with remote friends',
+            { mark: 'yes', text: 'Zero setup — works the moment you open it' },
+            { mark: 'yes', text: 'Easy to share — one link gets your friends in' },
+            { mark: 'yes', text: 'Short sessions — rounds that fit in 5–15 minutes' },
+            { mark: 'yes', text: 'No skill barrier — anyone can join and have fun immediately' },
+            { mark: 'yes', text: 'Real-time or async — plays well with remote friends' },
           ]} />
         </GuideSection>
 
         <GuideSection title="The Best Games Available Right Now">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, players, href, why, best }) => (
+            {games.map(({ rank, gameId, accent, name, players, href, why, best }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -112,7 +113,7 @@ export default function BestBrowserGamesGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                   <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{players}</span>
                 </div>

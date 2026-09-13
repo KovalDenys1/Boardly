@@ -3,6 +3,7 @@
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useEffect, useState } from 'react'
 import { HEADER_HEIGHT_PX } from '@/lib/responsive-tokens'
+import { Icon } from '@/components/icons'
 const MAINTENANCE_CONTACT_EMAIL = 'kovaldenys@icloud.com'
 const MAINTENANCE_VIEWPORT_STYLE = { minHeight: `calc(100vh - ${HEADER_HEIGHT_PX}px)` }
 
@@ -24,7 +25,7 @@ export default function MaintenanceContent() {
         className="flex items-center justify-center"
         style={{ ...MAINTENANCE_VIEWPORT_STYLE, background: 'var(--bd-bg)' }}
       >
-        <div className="text-2xl">🔧</div>
+        <Icon name="gear" size={32} tone="ink" label="Loading" />
       </div>
     )
   }
@@ -67,8 +68,9 @@ export default function MaintenanceContent() {
             border: '1.5px solid var(--bd-line)',
           }}
         >
-          <p className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
-            ⏱️ {t('maintenance.estimate')}
+          <p className="flex items-center justify-center gap-2 font-semibold" style={{ color: 'var(--bd-ink)' }}>
+            <Icon name="clock" size={18} weight="bold" />
+            {t('maintenance.estimate')}
           </p>
         </div>
 

@@ -11,7 +11,6 @@ export default function SpyDetailContent() {
       gameName={t('games.spy.name')}
       title={t('games.spy.detail.title')}
       description={t('games.spy.detail.heroDesc')}
-      icon="🕵️"
       iconLabel="Spy"
       gameId="spy"
       accentColor="var(--bd-lav)"

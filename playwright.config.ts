@@ -2,13 +2,32 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenv from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
+import { describeTargetMismatch } from './e2e/support/database-target'
 
 // The workers re-evaluate this file, so loading the environment here is what
 // lets the fixtures reach Redis without spawning a process per test.
-for (const file of ['.env.local', '.env']) {
+//
+// E2E_DB_ENV_FILE comes first because dotenv keeps the first value it sees:
+// naming a file is how a run against production picks up the production
+// connection strings instead of whatever .env.local happens to hold (#896).
+const envFiles = [process.env.E2E_DB_ENV_FILE, '.env.local', '.env'].filter(
+  (file): file is string => Boolean(file)
+)
+for (const file of envFiles) {
   const path = resolve(process.cwd(), file)
   if (existsSync(path)) dotenv.config({ path, override: false, quiet: true })
+  else if (file === process.env.E2E_DB_ENV_FILE) {
+    throw new Error(`e2e: E2E_DB_ENV_FILE points at ${file}, which does not exist.`)
+  }
 }
+
+// The database has to follow what the suite is pointed at, not the developer's
+// file. Refuse rather than run a suite whose cleanup goes somewhere else (#896).
+const mismatch = describeTargetMismatch({
+  baseUrl: process.env.E2E_BASE_URL,
+  databaseUrl: process.env.DATABASE_URL,
+})
+if (mismatch) throw new Error(mismatch)
 
 /**
  * End-to-end tests, run on demand rather than in CI.

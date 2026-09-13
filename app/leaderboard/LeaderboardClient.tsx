@@ -23,8 +23,6 @@ function FilterGameIcon({ filter, selected }: { filter: GameFilter; selected: bo
   )
 }
 
-const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
-
 const rankAccent = (rank: number) => {
   if (rank === 1) return 'var(--bd-sun)'
   if (rank === 2) return 'var(--bd-lav)'
@@ -39,7 +37,6 @@ const winRateColor = (winRate: number) => {
 }
 
 function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
-  const medal = MEDAL[entry.rank]
   const isTop3 = entry.rank <= 3
   const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
@@ -52,7 +49,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           className="inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_#1F1B16]"
           style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
         >
-          {medal ?? entry.rank}
+          {entry.rank}
         </span>
         <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.rank')}</span>
       </div>
@@ -71,7 +68,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{entry.username}</span>
-            {entry.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+            {entry.isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" className="shrink-0" />}
           </div>
           {entry.publicProfileId && (
             <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
@@ -155,8 +152,8 @@ function LeaderboardPageContent() {
               <div className="bd-card relative overflow-hidden p-5">
                 <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full" style={{ background: 'rgba(255,196,77,0.28)' }} />
                 <div className="relative flex items-center gap-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">
-                    🏆
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
+                    <Icon name="trophy" size={32} tone="on-accent" />
                   </div>
                   <div className="min-w-0">
                     <p className="bd-kicker">{period === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}</p>
@@ -255,7 +252,9 @@ function LeaderboardPageContent() {
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>
                               {selected && (
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--bd-bg)] text-sm font-black text-bd-lav-deep">✓</span>
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--bd-bg)] text-bd-lav-deep">
+                                  <Icon name="check" size={14} weight="bold" />
+                                </span>
                               )}
                             </button>
                           )
@@ -302,7 +301,9 @@ function LeaderboardPageContent() {
 
               {loading && entries.length === 0 ? (
                 <div className="py-16 text-center">
-                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">🏆</div>
+                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
+                    <Icon name="trophy" size={32} tone="on-accent" />
+                  </div>
                   <p className="text-sm font-semibold text-bd-ink-muted">{t('leaderboard.loading', 'Loading leaderboard…')}</p>
                 </div>
               ) : error ? (
@@ -311,7 +312,9 @@ function LeaderboardPageContent() {
                 </div>
               ) : entries.length === 0 ? (
                 <div className="py-16 text-center">
-                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-bd-ink-4">☆</div>
+                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-bd-ink-4">
+                    <Icon name="star" size={32} tone="on-accent" weight="duotone" />
+                  </div>
                   <p className="font-bold text-bd-ink">{t('leaderboard.empty', 'No qualifying players yet')}</p>
                   <p className="mt-1 text-sm text-bd-ink-muted">{t('leaderboard.emptyHint', 'Play at least 10 games to appear here')}</p>
                 </div>

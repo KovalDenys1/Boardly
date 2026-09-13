@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best 3 Player Games Online — Free, No Download',
@@ -48,17 +49,17 @@ const breadcrumbJsonLd = {
 
 const games = [
   {
-    rank: 1, emoji: '🎲', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
+    rank: 1, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
     why: 'Three-player Yahtzee hits a perfect balance — enough competition that every point matters, but short enough that a full game wraps up in 20–25 minutes. All three players see the same scorecard, so everyone knows exactly where they stand.',
     best: 'Longer sessions, competitive groups, dice strategy fans',
   },
   {
-    rank: 2, emoji: '🧠', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
+    rank: 2, gameId: 'memory', accent: 'var(--bd-mint)', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
     why: 'With three players, the card positions change fast — what you saw on one player\'s turn might be gone by the time it is yours. Keeps everyone focused the whole game. Choose from three grid sizes depending on how long you want to play.',
     best: 'Quick rounds, casual games, any age group',
   },
   {
-    rank: 3, emoji: '🕵️', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
+    rank: 3, gameId: 'spy', accent: 'var(--bd-lav)', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
     why: 'Three is the minimum for Guess the Spy, and it works surprisingly well. With fewer players, every question matters more and the spy has nowhere to hide. Rounds are short — 5–8 minutes — so you can play several in a row.',
     best: 'When you want something social and quick, 3 works great',
   },
@@ -71,7 +72,7 @@ export default function Best3PlayerGamesGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🎮"
+        icon={{ glyph: 'dice' }}
         title="Best 3 Player Games Online — Free, No Download"
         subtitle="3 min read · All games free on Boardly · No account required"
         breadcrumbLabel="Best 3 Player Games Online"
@@ -86,16 +87,16 @@ export default function Best3PlayerGamesGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 3 players — everyone in their own browser tab',
-            '✅ Desktop, tablet, or mobile — all work',
-            '✅ No account required for any player',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '3 players — everyone in their own browser tab' },
+            { mark: 'yes', text: 'Desktop, tablet, or mobile — all work' },
+            { mark: 'yes', text: 'No account required for any player' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
         <GuideSection title="The Best Games for 3 Players">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, players, href, why, best }) => (
+            {games.map(({ rank, gameId, accent, name, players, href, why, best }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -108,7 +109,7 @@ export default function Best3PlayerGamesGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                   <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{players}</span>
                 </div>

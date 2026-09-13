@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 
 type VerifyState = 'idle' | 'verifying' | 'success' | 'error'
@@ -141,8 +142,8 @@ export default function VerifyEmailContent() {
   if (token && verifyState === 'success') {
     return authShell(
       <div className="bd-card w-full max-w-sm p-8 text-center">
-        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-mint text-4xl shadow-[4px_4px_0_#1F1B16]">
-          ✓
+        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-mint shadow-[4px_4px_0_#1F1B16]">
+          <Icon name="check" size={40} tone="on-accent" />
         </div>
         <h1
           className="mb-3 text-3xl font-extrabold text-bd-ink"
@@ -157,8 +158,8 @@ export default function VerifyEmailContent() {
 
   return authShell(
     <div className="bd-card w-full max-w-sm p-8 text-center">
-      <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-sun text-4xl shadow-[4px_4px_0_#1F1B16]">
-        📧
+      <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-sun shadow-[4px_4px_0_#1F1B16]">
+        <Icon name="mail" size={40} tone="on-accent" />
       </div>
 
       <h1
@@ -173,8 +174,9 @@ export default function VerifyEmailContent() {
       </p>
 
       {sent && (
-        <div className="mb-4 rounded-xl border border-bd-mint/40 bg-bd-mint/10 px-4 py-3 text-sm font-semibold text-bd-mint-deep">
-          ✓ {t('auth.verifyEmail.emailSent')}
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-bd-mint/40 bg-bd-mint/10 px-4 py-3 text-sm font-semibold text-bd-mint-deep">
+          <Icon name="check" size={16} />
+          <span>{t('auth.verifyEmail.emailSent')}</span>
         </div>
       )}
 

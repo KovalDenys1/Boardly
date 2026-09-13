@@ -9,6 +9,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { loginSchema } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -179,8 +180,8 @@ export default function LoginForm() {
   const renderInviteBanner = () => (
     <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
-          🎮
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
+          <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
           <p className="font-semibold" style={{ color: '#16A34A' }}>
@@ -325,7 +326,7 @@ export default function LoginForm() {
         <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
           <span className="bd-kicker">{t('auth.login.title')}</span>
           <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 52, lineHeight: 1, marginTop: 8, marginBottom: 12, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
-            Welcome back 👋
+            Welcome back
           </h1>
           <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
             {t('auth.login.noAccount')}{' '}
@@ -336,7 +337,7 @@ export default function LoginForm() {
 
           {isLobbyInviteFlow && (
             <div style={{ marginBottom: 20, padding: 16, background: 'rgba(79,201,166,0.12)', border: '1.5px solid rgba(79,201,166,0.3)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span style={{ fontSize: 24 }}>🎮</span>
+              <Icon name="gamepad" size={24} style={{ color: 'var(--bd-mint-deep)' }} />
               <div>
                 <div style={{ fontWeight: 600, color: 'var(--bd-mint-deep)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
                 <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginTop: 2 }}>{t('auth.login.loginToJoin', 'Login to join the lobby')}</div>
@@ -462,21 +463,24 @@ export default function LoginForm() {
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
                 {[
-                  ['🎲', t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT, defaultValue: '{{games}} games ready to play' })],
-                  ['⚡', t('auth.login.heroChipInstant', 'No download — play in the browser')],
-                  ['👥', t('auth.login.heroChipGuests', 'Friends join with one link')],
-                ].map(([icon, label]) => (
+                  { icon: 'dice' as const, label: t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT, defaultValue: '{{games}} games ready to play' }) },
+                  { icon: 'bolt' as const, label: t('auth.login.heroChipInstant', 'No download – play in the browser') },
+                  { icon: 'users' as const, label: t('auth.login.heroChipGuests', 'Friends join with one link') },
+                ].map(({ icon, label }) => (
                   <div
                     key={label}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 8,
                       padding: '7px 14px', borderRadius: 999,
+                      // The chip keeps its cream ground in both themes because
+                      // the panel behind it is a coral/sun gradient that does
+                      // not flip — so the ink on it must not flip either.
                       background: 'rgba(255,248,235,0.85)',
-                      border: '1.5px solid var(--bd-ink)',
-                      fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)',
+                      border: '1.5px solid var(--bd-ink-on-accent)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-on-accent)',
                     }}
                   >
-                    <span>{icon}</span>
+                    <Icon name={icon} size={16} tone="on-accent" />
                     <span>{label}</span>
                   </div>
                 ))}

@@ -4,8 +4,36 @@
 npm run test:e2e        # headless, against a dev server it starts itself
 npm run test:e2e:ui     # Playwright's UI mode, for debugging a failure
 
-E2E_BASE_URL=https://boardly.online npm run test:e2e   # verify a release
+# verify a release — note the env file, see "Which database" below
+E2E_DB_ENV_FILE=.env.boardly-prod.local E2E_BASE_URL=https://boardly.online npm run test:e2e
 ```
+
+## Which database (#896)
+
+**The database has to follow what the suite is pointed at.** `baseURL` comes
+from `E2E_BASE_URL` and `DATABASE_URL` from `.env.local`, and those are two
+independent decisions. Until `.env.local` moved to `boardly-dev` on 2026-09-09
+they happened to name the same project, so the pair never had to agree; after
+it, `E2E_BASE_URL=https://boardly.online npm run test:e2e` would have driven a
+browser against production while the teardown deleted the marked lobbies, their
+`LobbyParticipations` rows and the `E2E*` guests from `boardly-dev`, where none
+of them exist — and reported success. That is the state #867 had to clean out
+of production by hand.
+
+So the pair is now checked in two places, because the teardown runs as its own
+process and should not have to trust the config that spawned it:
+
+| Pointed at | Database it must use |
+|---|---|
+| nothing, or `localhost` | `boardly-dev` |
+| a Vercel preview | `boardly-dev` — Preview's env points there |
+| `boardly.online` | production |
+
+A mismatch throws before the first test and the teardown deletes nothing. To
+run against production, name the file that holds its connection strings:
+`E2E_DB_ENV_FILE` is loaded before `.env.local`, and dotenv keeps the first
+value it sees. `E2E_DB_ENV_FILE` naming a file that does not exist is an error
+rather than a silent fall-through to the dev database.
 
 Playwright starts `next dev` on **port 3100** by itself — 3000 is often taken by
 another project, and `reuseExistingServer` will happily hand the suite whatever

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 
 export default function SuspendedPage() {
   const { t } = useTranslation()
@@ -65,10 +66,10 @@ export default function SuspendedPage() {
         {submitted ? (
           <div className="text-center">
             <div
-              className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-mint-deep bg-bd-mint/15 text-3xl"
+              className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-mint-deep bg-bd-mint/15 text-bd-mint-deep"
               style={{ boxShadow: '3px 3px 0 var(--bd-ink)' }}
             >
-              ✅
+              <Icon name="check" size={32} weight="bold" />
             </div>
             <h1
               className="mb-3 text-2xl font-extrabold text-bd-ink"
@@ -90,10 +91,10 @@ export default function SuspendedPage() {
           <>
             <div className="mb-6 text-center">
               <div
-                className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-3xl"
+                className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-bd-coral-deep"
                 style={{ boxShadow: '3px 3px 0 var(--bd-ink)' }}
               >
-                🔒
+                <Icon name="lock" size={32} />
               </div>
               <h1
                 className="mb-2 text-2xl font-extrabold text-bd-ink"

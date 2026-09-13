@@ -65,7 +65,7 @@ export default function HowToPlayYahtzeeGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
-        emoji="🎲"
+        icon={{ game: 'yahtzee' }}
         title="How to Play Yahtzee Online with Friends"
         subtitle="5 min read · Free to play on Boardly · 1–4 players"
         breadcrumbLabel="How to Play Yahtzee Online"
@@ -80,10 +80,10 @@ export default function HowToPlayYahtzeeGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 1–4 players (play solo against AI or with friends)',
-            '✅ A browser — desktop, tablet, or mobile',
-            '✅ No account required (guest play available)',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '1–4 players (play solo against AI or with friends)' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
@@ -122,11 +122,11 @@ export default function HowToPlayYahtzeeGuide() {
 
         <GuideSection title="Strategy Tips">
           <GuideTipList items={[
-            { emoji: '💡', tip: 'Chase the upper section bonus', detail: 'Aim for at least 3 of each number in the upper section — that gets you to 63 points and the 35-point bonus.' },
-            { emoji: '💡', tip: 'Keep Yahtzee attempts alive', detail: "If you have 3 or 4 of the same number on your first roll, it's usually worth going for Yahtzee rather than settling for three-of-a-kind." },
-            { emoji: '💡', tip: 'Use Chance as a last resort', detail: 'Chance scores the sum of all dice — save it for turns where nothing else fits. A good Chance score is usually 20+.' },
-            { emoji: '💡', tip: 'Fill low-value categories early', detail: "If you roll a bad set, put zeros in Aces or Twos early — they're worth little anyway." },
-            { emoji: '💡', tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
+            { tip: 'Chase the upper section bonus', detail: 'Aim for at least 3 of each number in the upper section — that gets you to 63 points and the 35-point bonus.' },
+            { tip: 'Keep Yahtzee attempts alive', detail: "If you have 3 or 4 of the same number on your first roll, it's usually worth going for Yahtzee rather than settling for three-of-a-kind." },
+            { tip: 'Use Chance as a last resort', detail: 'Chance scores the sum of all dice — save it for turns where nothing else fits. A good Chance score is usually 20+.' },
+            { tip: 'Fill low-value categories early', detail: "If you roll a bad set, put zeros in Aces or Twos early — they're worth little anyway." },
+            { tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
           ]} />
         </GuideSection>
       </GuideLayout>

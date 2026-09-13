@@ -11,9 +11,7 @@ export default function ConnectFourDetailContent() {
       gameName={t('games.connect_four.name')}
       title={t('games.connect_four.detail.title')}
       description={t('games.connect_four.detail.heroDesc')}
-      icon="🔴"
       iconLabel="Connect Four board"
-      iconVariant={undefined}
       gameId="connect-four"
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"

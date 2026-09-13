@@ -11,8 +11,7 @@ export default function YahtzeeDetailContent() {
       gameName={t('games.yahtzee.name')}
       title={t('games.yahtzee.detail.title')}
       description={t('games.yahtzee.detail.heroDesc')}
-      icon="🎲"
-      iconLabel="Dice"
+      iconLabel="Yahtzee"
       gameId="yahtzee"
       accentColor="var(--bd-sky)"
       accent="var(--bd-lav)"

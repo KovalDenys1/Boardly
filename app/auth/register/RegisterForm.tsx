@@ -10,6 +10,7 @@ import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import UsernameInput from '@/components/UsernameInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -183,8 +184,8 @@ export default function RegisterForm() {
   const renderInviteBanner = () => (
     <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
-          🎮
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
+          <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
           <p className="font-semibold" style={{ color: '#16A34A' }}>
@@ -249,7 +250,7 @@ export default function RegisterForm() {
         <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
           <span className="bd-kicker">{t('auth.register.kicker')}</span>
           <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 52, lineHeight: 1, marginTop: 8, marginBottom: 12, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
-            {t('auth.register.title')} 👋
+            {t('auth.register.title')}
           </h1>
           <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
             {t('auth.register.catchphrase')}{' '}
@@ -261,7 +262,7 @@ export default function RegisterForm() {
 
           {isLobbyInviteFlow && (
             <div style={{ marginBottom: 20, padding: 16, background: 'rgba(79,201,166,0.12)', border: '1.5px solid rgba(79,201,166,0.3)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span style={{ fontSize: 24 }}>🎮</span>
+              <Icon name="gamepad" size={24} style={{ color: 'var(--bd-mint-deep)' }} />
               <div>
                 <div style={{ fontWeight: 600, color: 'var(--bd-mint-deep)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
                 <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginTop: 2 }}>{t('auth.login.loginToJoin', 'Login to join the lobby')}</div>

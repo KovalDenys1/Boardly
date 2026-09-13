@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best Online Games for Game Night — Free, No Download',
@@ -48,27 +49,27 @@ const breadcrumbJsonLd = {
 
 const games = [
   {
-    rank: 1, emoji: '🕵️', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
+    rank: 1, gameId: 'spy', accent: 'var(--bd-lav)', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
     why: 'The best game night opener. One player is secretly the spy, everyone else knows the location. Players ask each other questions and try to figure out who does not belong. Rounds take 5–8 minutes, so you can play several back to back.',
     best: 'Groups of 5 or more who want laughs and arguments',
   },
   {
-    rank: 2, emoji: '🗣️', name: 'Alias', players: '4–16 players', href: '/games/alias',
+    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '4–16 players', href: '/games/alias',
     why: 'Split into two teams and race to guess words from your teammate\'s descriptions. High energy, fast-paced, and gets louder as the night goes on. Works great when you have a bigger group to split.',
     best: 'Competitive groups, team-based fun, 6+ players',
   },
   {
-    rank: 3, emoji: '🎲', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
+    rank: 3, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
     why: 'The classic dice game everyone knows. Roll five dice, fill 15 scoring categories, beat your opponents. Rounds take 15–20 minutes. Slower than the others but great for more relaxed sessions where you want to chat between turns.',
     best: 'Smaller groups, laid-back sessions, Yahtzee fans',
   },
   {
-    rank: 4, emoji: '🧠', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
+    rank: 4, gameId: 'memory', accent: 'var(--bd-mint)', name: 'Memory Card Game', players: '2–4 players', href: '/games/memory',
     why: 'Everyone flips the same cards — when your opponent misses a pair, you see exactly where it went. Fast rounds, three difficulty levels. Easy to teach anyone in 30 seconds.',
     best: 'Smaller groups, quick filler rounds between bigger games',
   },
   {
-    rank: 5, emoji: '🔴', name: 'Connect Four', players: '2 players', href: '/games/connect-four',
+    rank: 5, gameId: 'connect-four', accent: 'var(--bd-coral)', name: 'Connect Four', players: '2 players', href: '/games/connect-four',
     why: 'Great for head-to-head matchups while the rest of the group watches. Run a bracket tournament and let the winner take on the next challenger. Rounds take under 5 minutes.',
     best: 'Tournaments, 1v1 while others watch, quick elimination rounds',
   },
@@ -81,7 +82,7 @@ export default function BestOnlineGamesForGameNightGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🎉"
+        icon={{ glyph: 'party' }}
         title="Best Online Games for Game Night"
         subtitle="5 min read · All games free on Boardly · No download required"
         breadcrumbLabel="Best Online Games for Game Night"
@@ -96,16 +97,16 @@ export default function BestOnlineGamesForGameNightGuide() {
       >
         <GuideSection title="What Makes a Good Game Night Game?">
           <GuideChecklist items={[
-            '✅ Easy to explain — everyone should be playing within 2 minutes',
-            '✅ Works for your group size — check the player count before picking',
-            '✅ No download needed — you lose half the group at that step',
-            '✅ Rounds are short enough to play again if someone wants a rematch',
+            { mark: 'yes', text: 'Easy to explain — everyone should be playing within 2 minutes' },
+            { mark: 'yes', text: 'Works for your group size — check the player count before picking' },
+            { mark: 'yes', text: 'No download needed — you lose half the group at that step' },
+            { mark: 'yes', text: 'Rounds are short enough to play again if someone wants a rematch' },
           ]} />
         </GuideSection>
 
         <GuideSection title="The Best Games for Game Night">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, players, href, why, best }) => (
+            {games.map(({ rank, gameId, accent, name, players, href, why, best }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -118,7 +119,7 @@ export default function BestOnlineGamesForGameNightGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                   <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{players}</span>
                 </div>
@@ -140,11 +141,11 @@ export default function BestOnlineGamesForGameNightGuide() {
 
         <GuideSection title="Tips for Hosting an Online Game Night">
           <GuideChecklist items={[
-            '✅ Pick 2–3 games in advance and share the links before the call starts',
-            '✅ Start with Guess the Spy — it gets everyone talking immediately',
-            '✅ Switch games every 2–3 rounds to keep the energy up',
-            '✅ Let the group vote on the next game between rounds',
-            '✅ Keep a group chat open to share lobby links easily',
+            { mark: 'yes', text: 'Pick 2–3 games in advance and share the links before the call starts' },
+            { mark: 'yes', text: 'Start with Guess the Spy — it gets everyone talking immediately' },
+            { mark: 'yes', text: 'Switch games every 2–3 rounds to keep the energy up' },
+            { mark: 'yes', text: 'Let the group vote on the next game between rounds' },
+            { mark: 'yes', text: 'Keep a group chat open to share lobby links easily' },
           ]} />
         </GuideSection>
       </GuideLayout>

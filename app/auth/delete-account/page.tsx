@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -91,7 +92,9 @@ function DeleteAccountContent() {
         {error ? (
           <>
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">❌</div>
+              <div className="mb-4 flex justify-center">
+                <Icon name="warning" size={56} tone="coral" />
+              </div>
               <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
                 {t('deleteAccount.error')}
               </h1>
@@ -107,7 +110,9 @@ function DeleteAccountContent() {
         ) : success ? (
           <>
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">✅</div>
+              <div className="mb-4 flex justify-center">
+                <Icon name="check" size={56} tone="mint" />
+              </div>
               <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
                 {t('deleteAccount.success')}
               </h1>
@@ -118,7 +123,9 @@ function DeleteAccountContent() {
         ) : (
           <>
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">⚠️</div>
+              <div className="mb-4 flex justify-center">
+                <Icon name="warning" size={56} tone="coral" />
+              </div>
               <h1 className="text-2xl font-bold text-red-600 mb-2">
                 {t('deleteAccount.title')}
               </h1>

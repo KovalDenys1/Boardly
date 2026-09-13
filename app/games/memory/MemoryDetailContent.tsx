@@ -11,8 +11,7 @@ export default function MemoryDetailContent() {
       gameName={t('games.memory.name')}
       title={t('games.memory.detail.title')}
       description={t('games.memory.detail.heroDesc')}
-      icon="🧠"
-      iconLabel="Brain"
+      iconLabel="Memory"
       gameId="memory"
       accentColor="var(--bd-mint)"
       accent="var(--bd-mint)"

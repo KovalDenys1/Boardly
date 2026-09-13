@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
@@ -76,8 +77,8 @@ export default function ForgotPasswordPage() {
               </div>
 
               <div className={panelClassName}>
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-emerald-50 text-3xl shadow-sm dark:bg-emerald-950/40">
-                  📧
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-emerald-50 text-emerald-600 shadow-sm dark:bg-emerald-950/40 dark:text-emerald-300">
+                  <Icon name="mail" size={30} />
                 </div>
                 <p className="mt-4 text-center text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {t('auth.forgotPassword.checkSpam')}

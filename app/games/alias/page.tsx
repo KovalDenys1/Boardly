@@ -72,7 +72,6 @@ export default function AliasGamePage() {
         gameName="Alias"
         title="Play Alias Online"
         description="A team word game where one player describes secret words and the team races to guess as many as possible."
-        icon="🗣️"
         iconLabel="Alias"
         gameId="alias"
         accentColor="var(--bd-coral)"

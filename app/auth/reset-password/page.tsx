@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -94,8 +95,8 @@ function ResetPasswordForm() {
               </div>
 
               <div className="mx-auto mt-5 max-w-xl rounded-[30px] border border-rose-200/80 bg-white/85 p-5 text-center shadow-sm dark:border-rose-900/60 dark:bg-slate-950/35">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-3xl shadow-sm dark:bg-rose-950/40">
-                  ❌
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-rose-600 shadow-sm dark:bg-rose-950/40 dark:text-rose-300">
+                  <Icon name="warning" size={30} />
                 </div>
                 <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {t('auth.resetPassword.invalidHelp')}

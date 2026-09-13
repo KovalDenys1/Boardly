@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best Party Games Online — Free to Play, No Download',
@@ -48,17 +49,17 @@ const breadcrumbJsonLd = {
 
 const games = [
   {
-    rank: 1, emoji: '🕵️', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
+    rank: 1, gameId: 'spy', accent: 'var(--bd-lav)', name: 'Guess the Spy', players: '3–10 players', href: '/games/spy',
     why: 'The top party game on Boardly. One person is secretly the spy — the rest know the location and try to catch them through questions. Gets loud fast. Every round is different. Works for any group that can agree on nothing except that they want to play something.',
     best: 'Any group of 5–8, especially people who have never played together before',
   },
   {
-    rank: 2, emoji: '🗣️', name: 'Alias', players: '4–16 players', href: '/games/alias',
+    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '4–16 players', href: '/games/alias',
     why: 'Teams compete to guess as many words as possible from one player\'s descriptions. The bigger the group, the better this gets. It brings out personalities fast — some people are surprisingly bad at describing obvious things, which is half the fun.',
     best: 'Groups of 6 or more, team competition, high energy sessions',
   },
   {
-    rank: 3, emoji: '🎲', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
+    rank: 3, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
     why: 'A more relaxed option when you want something to do while catching up. Supports up to 4 players, takes 15–20 minutes, and everyone is always watching even between turns because they care about the scorecard.',
     best: 'Smaller subgroups, casual sessions, classic game fans',
   },
@@ -71,7 +72,7 @@ export default function BestPartyGamesOnlineGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🎊"
+        icon={{ glyph: 'sparkle' }}
         title="Best Party Games Online — Free, No Download"
         subtitle="4 min read · All games free on Boardly · No account required"
         breadcrumbLabel="Best Party Games Online"
@@ -86,17 +87,17 @@ export default function BestPartyGamesOnlineGuide() {
       >
         <GuideSection title="What Makes a Good Online Party Game?">
           <GuideChecklist items={[
-            '✅ Works for 4 or more people without slowing down',
-            '✅ Easy enough that someone new can join mid-session',
-            '✅ Short rounds — nobody wants to wait 30 minutes to play again',
-            '✅ No downloads or accounts — you lose guests at that step',
-            '✅ Creates moments people will talk about after',
+            { mark: 'yes', text: 'Works for 4 or more people without slowing down' },
+            { mark: 'yes', text: 'Easy enough that someone new can join mid-session' },
+            { mark: 'yes', text: 'Short rounds — nobody wants to wait 30 minutes to play again' },
+            { mark: 'yes', text: 'No downloads or accounts — you lose guests at that step' },
+            { mark: 'yes', text: 'Creates moments people will talk about after' },
           ]} />
         </GuideSection>
 
         <GuideSection title="The Best Party Games Available Now">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, players, href, why, best }) => (
+            {games.map(({ rank, gameId, accent, name, players, href, why, best }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -109,7 +110,7 @@ export default function BestPartyGamesOnlineGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                   <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{players}</span>
                 </div>
@@ -134,10 +135,10 @@ export default function BestPartyGamesOnlineGuide() {
             One person opens Boardly, picks a game, and creates a lobby. They share the lobby link — in a group chat, in a Zoom chat, anywhere. Everyone clicks it and joins immediately. No accounts, no installs, no waiting.
           </p>
           <GuideChecklist items={[
-            '✅ The host creates a lobby and sets the max players',
-            '✅ Share the link however your group communicates',
-            '✅ Everyone joins with a guest name — no sign-up',
-            '✅ Start the game when the group is ready',
+            { mark: 'yes', text: 'The host creates a lobby and sets the max players' },
+            { mark: 'yes', text: 'Share the link however your group communicates' },
+            { mark: 'yes', text: 'Everyone joins with a guest name — no sign-up' },
+            { mark: 'yes', text: 'Start the game when the group is ready' },
           ]} />
         </GuideSection>
       </GuideLayout>

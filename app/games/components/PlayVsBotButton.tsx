@@ -58,7 +58,22 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameType, difficulty, forceSolo: true }),
       })
-      const data = await res.json() as { lobbyCode?: string; error?: string }
+      const data = await res.json() as { lobbyCode?: string; error?: string; code?: string }
+      if (res.status === 401) {
+        // No client-side check can predict this one: a guest token expires or
+        // is rejected while `isGuest` is still true locally. The answer is the
+        // same as for a fresh visitor — offer the gate, never a raw
+        // "Unauthorized" toast, which tells a player nothing they can act on.
+        setLoading(false)
+        setPendingDifficulty(difficulty)
+        return
+      }
+      // Already has a game open (#907): take them to it rather than telling
+      // them no. They can change the game from inside the lobby.
+      if (res.status === 409 && data.code === 'LOBBY_ALREADY_OPEN' && data.lobbyCode) {
+        router.push(`/lobby/${data.lobbyCode}`)
+        return
+      }
       if (!res.ok) throw new Error(data.error ?? 'Failed')
       router.push(`/lobby/${data.lobbyCode}`)
     } catch (err) {
@@ -71,7 +86,15 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
   }
 
   const handleDifficulty = async (difficulty: Difficulty) => {
-    if (status === 'unauthenticated' && !isGuest) {
+    // `!== 'authenticated'`, not `=== 'unauthenticated'`. NextAuth reports
+    // `loading` for the first moments after mount, and a click inside that
+    // window used to slip past this check and POST with no credentials — the
+    // server answered 401 and the player got "An error occurred: Unauthorized"
+    // on a page whose whole promise is that you can play without an account.
+    // Erring towards the gate costs a signed-in player one dismissible modal
+    // in a race they will rarely win; erring the other way costs a new visitor
+    // the game.
+    if (status !== 'authenticated' && !isGuest) {
       // Let a fresh visitor pick a guest name right here instead of bouncing
       // them to /auth/login — Play vs Bot is meant to work without an account.
       setPendingDifficulty(difficulty)

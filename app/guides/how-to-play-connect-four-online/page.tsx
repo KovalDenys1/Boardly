@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import { Icon } from '@/components/icons'
 
 export const metadata: Metadata = {
   title: 'How to Play Connect Four Online - Complete Guide',
@@ -51,7 +52,7 @@ export default function HowToPlayConnectFourGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🔴"
+        icon={{ game: 'connect-four' }}
         title="How to Play Connect Four Online"
         subtitle="3 min read · Free to play on Boardly · 2 players or vs AI"
         breadcrumbLabel="How to Play Connect Four Online"
@@ -66,10 +67,10 @@ export default function HowToPlayConnectFourGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 2 players — or play solo against AI',
-            '✅ A browser — desktop, tablet, or mobile',
-            '✅ No account required (guest play available)',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '2 players — or play solo against AI' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
@@ -100,17 +101,17 @@ export default function HowToPlayConnectFourGuide() {
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Left to right', icon: '→' },
-              { label: 'Top to bottom', icon: '↓' },
-              { label: 'Diagonal ↘', icon: '↘' },
-              { label: 'Diagonal ↙', icon: '↙' },
-            ].map(({ label, icon }) => (
+              { label: 'Left to right', rotate: 0 },
+              { label: 'Top to bottom', rotate: 90 },
+              { label: 'Diagonal down-right', rotate: 45 },
+              { label: 'Diagonal down-left', rotate: 135 },
+            ].map(({ label, rotate }) => (
               <div
                 key={label}
                 className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium"
                 style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
               >
-                <span className="text-base">{icon}</span>
+                <Icon name="arrow-right" size={16} weight="bold" style={{ transform: `rotate(${rotate}deg)` }} />
                 {label}
               </div>
             ))}
@@ -120,27 +121,27 @@ export default function HowToPlayConnectFourGuide() {
         <GuideSection title="Strategy Tips">
           <GuideTipList items={[
             {
-              emoji: '💡',
+
               tip: 'Start in the middle column',
               detail: 'The center column (column 4) touches more winning lines than any other. Drop your first disc there — it gives you the most options.',
             },
             {
-              emoji: '💡',
+
               tip: 'Build from the bottom',
               detail: 'Stacking discs high early limits your options. Build your lines low first — the board fills up fast and low pieces are harder to block.',
             },
             {
-              emoji: '💡',
+
               tip: 'Watch the diagonals',
               detail: 'Diagonal wins are the easiest to miss. Before you drop a disc, check if you are accidentally helping your opponent complete a diagonal line.',
             },
             {
-              emoji: '💡',
+
               tip: 'Set up two threats at once',
               detail: 'If you can create a situation where you have two different ways to win, your opponent can only block one. This wins almost every time.',
             },
             {
-              emoji: '💡',
+
               tip: 'Do not fill a column prematurely',
               detail: 'Once a column is full, it is gone. If filling a column gives your opponent a winning space on top, avoid it until the time is right.',
             },

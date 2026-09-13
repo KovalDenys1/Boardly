@@ -19,10 +19,17 @@ export default function GameScoreboardHeader({
   rightCard: React.ReactNode
   trailing?: React.ReactNode
 }) {
+  // Every column is minmax(0, …): with a bare `auto` the centre could not
+  // shrink, so as the header narrowed the two 1fr cells collapsed toward zero
+  // and the score block ran out over both player cards (#874).
   return (
-    <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
+    <div style={{
+      position: 'relative', display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr)',
+      alignItems: 'center', gap: 12,
+    }}>
       {leftCard}
-      <div style={{ textAlign: 'center' }}>{center}</div>
+      <div style={{ textAlign: 'center', minWidth: 0, overflow: 'hidden' }}>{center}</div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, minWidth: 0 }}>
         {/* The left card fills its grid cell; in this flex cell the right card
             would shrink to its text, so it is told to fill too – two cards of

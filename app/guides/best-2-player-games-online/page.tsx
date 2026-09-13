@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best 2 Player Games Online Free - No Download',
@@ -83,7 +84,8 @@ const faqJsonLd = {
 const games = [
   {
     rank: 1,
-    emoji: '⭕',
+    gameId: 'tic-tac-toe',
+    accent: 'var(--bd-coral)',
     name: 'Tic Tac Toe',
     tagline: 'Best for: Quick 1v1 matches · <1 min · Pattern recognition',
     href: '/games/tic-tac-toe',
@@ -93,7 +95,8 @@ const games = [
   },
   {
     rank: 2,
-    emoji: '🧠',
+    gameId: 'memory',
+    accent: 'var(--bd-mint)',
     name: 'Memory Card Game',
     tagline: 'Best for: Competitive matching · 5–10 min · Memory & attention',
     href: '/games/memory',
@@ -103,7 +106,8 @@ const games = [
   },
   {
     rank: 3,
-    emoji: '🎲',
+    gameId: 'yahtzee',
+    accent: 'var(--bd-sky)',
     name: 'Yahtzee',
     tagline: 'Best for: Longer strategy sessions · 15–20 min · Dice + strategy',
     href: '/games/yahtzee',
@@ -121,7 +125,7 @@ export default function Best2PlayerGamesGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
-        emoji="🎮"
+        icon={{ glyph: 'users' }}
         title="Best 2 Player Games Online — Free, No Download"
         subtitle="4 min read · All games free on Boardly · No account required"
         breadcrumbLabel="Best 2 Player Games Online"
@@ -166,7 +170,7 @@ export default function Best2PlayerGamesGuide() {
 
         <GuideSection title="The Best 2 Player Games">
           <div className="space-y-4">
-            {games.map(({ rank, emoji, name, tagline, href, guideHref, why, tip }) => (
+            {games.map(({ rank, gameId, accent, name, tagline, href, guideHref, why, tip }) => (
               <div
                 key={name}
                 className="rounded-2xl border p-5"
@@ -179,13 +183,13 @@ export default function Best2PlayerGamesGuide() {
                   >
                     {rank}
                   </span>
-                  <span className="text-xl">{emoji}</span>
+                  <GameIcon gameId={gameId} accentColor={accent} size={22} variant="bare" />
                   <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{name}</strong>
                 </div>
                 <p className="mb-1 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{tagline}</p>
                 <p className="mb-2 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>{why}</p>
                 <p className="mb-3 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-                  <strong style={{ color: 'var(--bd-ink-soft)' }}>💡 Tip:</strong> {tip}
+                  <strong style={{ color: 'var(--bd-ink-soft)' }}>Tip:</strong> {tip}
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   <Link
@@ -210,10 +214,10 @@ export default function Best2PlayerGamesGuide() {
 
         <GuideSection title="Tips for Playing Online with One Friend">
           <GuideChecklist items={[
-            '✅ Share the lobby link directly — no account needed for either player',
-            '✅ Play on any device — desktop, mobile, and tablet all work',
-            '✅ Rematch in one click — no need to set up a new game after each round',
-            '✅ No time limits — play at whatever pace works for your session',
+            { mark: 'yes', text: 'Share the lobby link directly — no account needed for either player' },
+            { mark: 'yes', text: 'Play on any device — desktop, mobile, and tablet all work' },
+            { mark: 'yes', text: 'Rematch in one click — no need to set up a new game after each round' },
+            { mark: 'yes', text: 'No time limits — play at whatever pace works for your session' },
           ]} />
         </GuideSection>
       </GuideLayout>

@@ -178,6 +178,8 @@ export function printEnvInfo(options: ValidateEnvOptions = {}): void {
   console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
   console.log(
     `  - Analytics Access Allowlist: ${
+      // The console.log above is invisible to the audit's single-line log regex.
+      // emoji-allow: console output, exempt like every other emoji in this file.
       env.ANALYTICS_ALLOWED_USER_IDS || env.ANALYTICS_ALLOWED_EMAILS ? '✅ Configured' : '⚠️  Not set'
     }`
   )

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
 
 function LinkAccountContent() {
   const { data: session, status } = useSession()
@@ -56,15 +57,6 @@ function LinkAccountContent() {
     }
   }, [provider])
 
-  const getProviderIcon = () => {
-    switch (provider) {
-      case 'google': return '🔵'
-      case 'github': return '⚫'
-      case 'discord': return '🟣'
-      default: return '🔗'
-    }
-  }
-
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/auth/login')
@@ -102,8 +94,8 @@ function LinkAccountContent() {
       <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
         <div className="bd-card w-full max-w-md p-8">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
-              {getProviderIcon()}
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_#1F1B16]">
+              <Icon name="link" size={32} tone="on-accent" />
             </div>
             <h1
               className="text-2xl font-extrabold text-bd-ink"
@@ -115,7 +107,7 @@ function LinkAccountContent() {
 
           <div className="mb-6 rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
             <p className="mb-2 text-sm font-semibold text-bd-lav-deep">
-              ℹ️ You're about to link your {getProviderName()} account to this profile.
+              You're about to link your {getProviderName()} account to this profile.
             </p>
             <p className="text-xs leading-5 text-bd-ink-soft">
               <strong>Note:</strong> Your {getProviderName()} email may differ from your current account email ({session?.user?.email}). That's fine — you'll be able to sign in with either after linking.
@@ -130,7 +122,7 @@ function LinkAccountContent() {
               'All your game data remains on this account',
             ].map((item) => (
               <div key={item} className="flex items-start gap-2 text-sm text-bd-ink-soft">
-                <span className="mt-0.5 shrink-0 text-bd-mint-deep">✓</span>
+                <Icon name="check" size={16} className="mt-0.5 shrink-0 text-bd-mint-deep" />
                 <span>{item}</span>
               </div>
             ))}
@@ -153,8 +145,8 @@ function LinkAccountContent() {
   return (
     <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
       <div className="bd-card w-full max-w-sm p-8 text-center">
-        <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
-          {getProviderIcon()}
+        <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_#1F1B16]">
+          <Icon name="link" size={32} tone="on-accent" />
         </div>
         <h1
           className="mb-2 text-2xl font-extrabold text-bd-ink"

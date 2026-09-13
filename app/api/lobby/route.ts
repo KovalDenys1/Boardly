@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
 import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { checkOpenLobbyLimit } from '@/lib/lobby-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
@@ -133,28 +134,16 @@ export async function POST(request: NextRequest) {
       ...(gameType === 'yahtzee' ? { mode: normalizedYahtzeeMode } : {}),
     })
 
-    // Deactivate any previous waiting lobbies owned by this creator so they don't
-    // ghost in the Active Lobbies list when the creator navigates away without leaving.
-    // Independent of the new lobby being created below — fire-and-forget instead of
-    // serializing it in front of the create-lobby retry loop (2500ms latency budget).
-    if (!requestUser.isGuest) {
-      void prisma.lobbies.updateMany({
-        where: {
-          creatorId: requestUser.id,
-          isActive: true,
-          games: {
-            every: {
-              status: 'waiting',
-            },
-          },
+    const limit = await checkOpenLobbyLimit(requestUser.id)
+    if (limit.kind === 'blocked') {
+      return NextResponse.json(
+        {
+          error: 'You already have a game open',
+          code: 'LOBBY_ALREADY_OPEN',
+          lobbyCode: limit.lobbyCode,
         },
-        data: { isActive: false },
-      }).catch((error) => {
-        log.warn('Failed to deactivate creator\'s stale waiting lobbies', {
-          creatorId: requestUser.id,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      })
+        { status: 409 }
+      )
     }
 
     // Create lobby with initial game and add creator as first player

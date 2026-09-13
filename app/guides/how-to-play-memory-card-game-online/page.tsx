@@ -51,7 +51,7 @@ export default function HowToPlayMemoryGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🧠"
+        icon={{ game: 'memory' }}
         title="How to Play Memory Card Game Online"
         subtitle="4 min read · Free to play on Boardly · 2–4 players"
         breadcrumbLabel="How to Play Memory Card Game"
@@ -66,10 +66,10 @@ export default function HowToPlayMemoryGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 2–4 players',
-            '✅ A browser — desktop, tablet, or mobile',
-            '✅ No account required (guest play available)',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '2–4 players' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
@@ -110,11 +110,11 @@ export default function HowToPlayMemoryGuide() {
 
         <GuideSection title="Strategy Tips">
           <GuideTipList items={[
-            { emoji: '💡', tip: 'Look before you click', detail: "Don't rush your first flip. Take a moment to look at the whole board — a quick scan beats random clicking every time." },
-            { emoji: '💡', tip: 'Use the grid like a map', detail: 'Mentally divide the grid into sections. Clear one section at a time — easier to track positions.' },
-            { emoji: '💡', tip: 'Watch your opponents', detail: "When other players flip cards, you see them too. Their misses are hints about where pairs are hiding." },
-            { emoji: '💡', tip: 'Do not grab a pair the moment you find it', detail: "Once you know where a pair is, you can wait. Flipping a new card first gives you more information — then match the pair on the next turn." },
-            { emoji: '💡', tip: 'Play it safe when you are on a roll', detail: "Matching cards gives you another turn. When you are on a streak, pick pairs you are sure about rather than taking a guess that might end your turn." },
+            { tip: 'Look before you click', detail: "Don't rush your first flip. Take a moment to look at the whole board — a quick scan beats random clicking every time." },
+            { tip: 'Use the grid like a map', detail: 'Mentally divide the grid into sections. Clear one section at a time — easier to track positions.' },
+            { tip: 'Watch your opponents', detail: "When other players flip cards, you see them too. Their misses are hints about where pairs are hiding." },
+            { tip: 'Do not grab a pair the moment you find it', detail: "Once you know where a pair is, you can wait. Flipping a new card first gives you more information — then match the pair on the next turn." },
+            { tip: 'Play it safe when you are on a roll', detail: "Matching cards gives you another turn. When you are on a streak, pick pairs you are sure about rather than taking a guess that might end your turn." },
           ]} />
         </GuideSection>
       </GuideLayout>

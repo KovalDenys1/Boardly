@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import { Icon } from '@/components/icons'
 
 export const metadata: Metadata = {
   title: 'How to Play Alias Online - Complete Guide',
@@ -52,7 +53,7 @@ export default function HowToPlayAliasGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <GuideLayout
-        emoji="🗣️"
+        icon={{ game: 'alias' }}
         title="How to Play Alias Online"
         subtitle="4 min read · Free to play on Boardly · 4–16 players"
         breadcrumbLabel="How to Play Alias Online"
@@ -67,10 +68,10 @@ export default function HowToPlayAliasGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            '✅ 4–16 players split into 2 teams',
-            '✅ A browser — desktop, tablet, or mobile',
-            '✅ No account required (guest play available)',
-            '✅ Free — no ads, no download',
+            { mark: 'yes', text: '4–16 players split into 2 teams' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no ads, no download' },
           ]} />
         </GuideSection>
 
@@ -115,7 +116,10 @@ export default function HowToPlayAliasGuide() {
                 className="rounded-xl border p-3"
                 style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
               >
-                <p className="mb-0.5 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>❌ {rule}</p>
+                <p className="mb-0.5 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                  <Icon name="close" size={14} tone="coral" className="mr-1" />
+                  {rule}
+                </p>
                 <p className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{example}</p>
               </div>
             ))}
@@ -125,22 +129,22 @@ export default function HowToPlayAliasGuide() {
         <GuideSection title="Tips for Describers">
           <GuideTipList items={[
             {
-              emoji: '🗣️',
+
               tip: 'Start with easy words',
               detail: 'Do not get stuck on the first hard word. Skip it and come back — collecting easy points first builds your score and your team\'s confidence.',
             },
             {
-              emoji: '🗣️',
+
               tip: 'Use comparisons',
               detail: '"Like a car but you ride it and it has two wheels" works well. Compare the unknown thing to something your team definitely knows.',
             },
             {
-              emoji: '🗣️',
+
               tip: 'Move fast, do not overthink',
               detail: 'The timer is your enemy. A rough description said quickly is worth more than a perfect one that takes 10 seconds to build.',
             },
             {
-              emoji: '🗣️',
+
               tip: 'Use gestures for tricky words',
               detail: 'Gestures are allowed. If you cannot find the right words, show what you mean — mime it, point at things in the room.',
             },
@@ -150,17 +154,17 @@ export default function HowToPlayAliasGuide() {
         <GuideSection title="Tips for the Guessing Team">
           <GuideTipList items={[
             {
-              emoji: '👥',
+
               tip: 'Shout everything',
               detail: 'Wrong guesses do not cost points. Say whatever comes to mind — you might land on the right word by accident.',
             },
             {
-              emoji: '👥',
+
               tip: 'Listen for clues in the description',
               detail: 'Sometimes the way a word is described tells you its category — animal, place, action. Use that to narrow down your guesses.',
             },
             {
-              emoji: '👥',
+
               tip: 'Build on each other',
               detail: 'If a teammate guesses "bird" and the Describer reacts positively, try specific birds. Team guessing works best when players build on each other\'s ideas.',
             },

@@ -23,6 +23,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { prisma } from '@/lib/db'
 import { E2E_GUEST_PREFIX, E2E_LOBBY_MARKER } from './marker'
+import { describeTargetMismatch } from './database-target'
 
 function cachedGuestIds(): string[] {
   const dir = path.join(__dirname, '..', '.auth')
@@ -41,6 +42,21 @@ function cachedGuestIds(): string[] {
 }
 
 async function main() {
+  // The teardown runs as its own process, so it re-checks rather than trusting
+  // that the config that spawned it agreed with the target (#896). Deleting
+  // from the wrong database is the one failure mode that looks like success.
+  const mismatch = describeTargetMismatch({
+    baseUrl: process.env.E2E_BASE_URL,
+    databaseUrl: process.env.DATABASE_URL,
+  })
+  if (mismatch) {
+    console.warn(mismatch)
+    console.warn('e2e cleanup: nothing removed — clean up by hand.')
+    await prisma.$disconnect()
+    process.exitCode = 1
+    return
+  }
+
   const lobbies = await prisma.lobbies.findMany({
     where: { name: { startsWith: E2E_LOBBY_MARKER } },
     select: { id: true },
