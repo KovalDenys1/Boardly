@@ -25,7 +25,7 @@ jobs:
           INDEXNOW_KEY: 0b12a34ebc4e0bbe955eb42d3e0a49f3
         run: node scripts/indexnow-submit.mjs
       - name: Search Console sitemap
-        if: ${{ env.GSC_SERVICE_ACCOUNT_KEY != '' }}
+        if: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY != '' }}
         env:
           GSC_SERVICE_ACCOUNT_KEY: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY }}
         run: node scripts/gsc-submit-sitemap.mjs
