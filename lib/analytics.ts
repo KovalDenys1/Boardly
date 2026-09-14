@@ -591,7 +591,19 @@ export function trackUserRetention(data: {
  */
 export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): void {
   track('signup_prompt', { action })
+  // Also to OperationalEvents, because `track` goes to Vercel Analytics and the Hobby plan
+  // drops every custom event: the funnel the Revenue Plan defines had never stored a row.
+  // Note for whoever reads it: `shown` fires per mount and the nudge suppresses itself after
+  // a dismissal, so clicked-over-shown is a per-session ratio, not a per-person one.
+  emitOperationalEvent(`signup_prompt_${action}`, { is_guest: true })
   clientLogger.log('[analytics] Signup prompt', action)
+}
+
+/** Premium call to action, wherever it is rendered. `source` names the surface. */
+export function trackPremiumCta(source: string): void {
+  track('feature_used', { feature: 'premium_cta', source })
+  emitOperationalEvent('premium_cta_clicked', { source })
+  clientLogger.log('[analytics] Premium CTA', source)
 }
 
 /**
