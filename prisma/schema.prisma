@@ -289,11 +289,14 @@ model LobbyParticipations {
   participantKey String
   isBot          Boolean  @default(false)
   isGuest        Boolean  @default(false)
+  /// Where the participant came from, copied at join so it outlives the guest purge.
+  signupSource   String?  @db.VarChar(120)
   joinedAt       DateTime @default(now()) @db.Timestamptz(3)
 
   @@unique([lobbyId, participantKey])
   @@index([lobbyId])
   @@index([joinedAt])
+  @@index([signupSource, joinedAt])
 }
 
 model Players {

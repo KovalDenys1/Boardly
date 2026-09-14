@@ -36,6 +36,8 @@ export async function recordLobbyParticipation(params: {
   userId: string
   isBot?: boolean
   isGuest?: boolean
+  /** Copied from the user at join, because the user row may not survive the week. */
+  signupSource?: string | null
 }): Promise<void> {
   try {
     await prisma.lobbyParticipations.create({
@@ -46,6 +48,7 @@ export async function recordLobbyParticipation(params: {
         participantKey: participantKey(params.userId),
         isBot: params.isBot ?? false,
         isGuest: params.isGuest ?? false,
+        signupSource: params.signupSource ?? null,
       },
     })
   } catch (err) {

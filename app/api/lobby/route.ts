@@ -19,6 +19,7 @@ import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 import { sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 
 const log = apiLogger('/api/lobby')
 
@@ -275,6 +276,9 @@ export async function POST(request: NextRequest) {
       gameType: persistedGameType,
       userId: requestUser.id,
       isGuest: requestUser.isGuest,
+      // From the request's own cookie rather than the user row: it is the same first-touch
+      // value the account was created with, and it is already here without another query.
+      signupSource: getSignupSourceFromRequest(request),
     })
 
     return NextResponse.json({
