@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getFeaturedGuides } from '@/lib/guides-catalog'
+import { ALL_GUIDES } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 
@@ -10,10 +10,11 @@ import { Icon } from '@/components/icons'
  * Compact "Guides & tips" strip rendered on `/` and `/games`.
  * Purpose is internal linking: those two pages are the only ones Google
  * indexes today, and the guides were unreachable from them (GSC 2026-08-29).
+ * Lists every guide (#921): the six-slug shortlist left eight guides with no
+ * inbound link from a crawled page. Two columns so 14 cards end on a full row.
  */
 export default function GuidesSection() {
   const { t } = useTranslation()
-  const guides = getFeaturedGuides()
 
   return (
     <section
@@ -38,8 +39,8 @@ export default function GuidesSection() {
         </Link>
       </div>
 
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {guides.map((guide) => (
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {ALL_GUIDES.map((guide) => (
           <li key={guide.slug}>
             <Link
               href={`/guides/${guide.slug}`}

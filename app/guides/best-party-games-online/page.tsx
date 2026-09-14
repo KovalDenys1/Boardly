@@ -83,6 +83,7 @@ export default function BestPartyGamesOnlineGuide() {
           { href: '/guides/best-games-to-play-on-zoom', label: 'Best Games to Play on Zoom — Free, No Download' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
+          { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
         ]}
       >
         <GuideSection title="What Makes a Good Online Party Game?">

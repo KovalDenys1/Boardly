@@ -63,6 +63,7 @@ export default function HowToPlayConnectFourGuide() {
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
       >
         <GuideSection title="What You Need">

@@ -63,6 +63,8 @@ export default function HowToPlaySpyGuide() {
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
+          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
         ]}
       >
         <GuideSection title="Game Setup">

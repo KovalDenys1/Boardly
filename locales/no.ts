@@ -889,6 +889,11 @@ const no = {
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
+      ribbon: {
+        desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
+        tag: 'Uformell',
+        time: '2 min',
+      },
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
       rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
       rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
 import { Icon } from '@/components/icons'
 
@@ -64,6 +65,7 @@ export default function HowToPlayAliasGuide() {
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
+          { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
         ]}
       >
         <GuideSection title="What You Need">
@@ -176,6 +178,12 @@ export default function HowToPlayAliasGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>Team setup:</strong> Split your group into 2 teams before the game. The game supports 4 to 16 players total.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Choose 30, 60, 90, or 120 seconds per turn depending on how fast-paced you want the game.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>No account needed:</strong> Share a lobby link — everyone joins as a guest. Works on any device.</p>
+            <p>
+              Player counts, timers and everything else about the game are on the{' '}
+              <Link href="/games/alias" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>
+                Alias game page
+              </Link>.
+            </p>
           </div>
         </GuideSection>
       </GuideLayout>

@@ -889,6 +889,11 @@ const en = {
       name: 'Rock Paper Scissors',
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
+      ribbon: {
+        desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
+        tag: 'Casual',
+        time: '2 min',
+      },
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
       rule_2: 'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
       rule_3: 'If both choose the same, the round is a draw - replay',

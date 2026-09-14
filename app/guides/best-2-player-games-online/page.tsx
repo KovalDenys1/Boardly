@@ -136,6 +136,8 @@ export default function Best2PlayerGamesGuide() {
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
+          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
       >
         <GuideSection title="Quick Comparison">

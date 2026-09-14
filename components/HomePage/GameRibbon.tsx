@@ -248,10 +248,19 @@ export default function GameRibbon() {
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),
     },
+    rps: {
+      name: t('games.rock_paper_scissors.name'),
+      tag: t('games.rock_paper_scissors.ribbon.tag'),
+      players: '1-2',
+      time: t('games.rock_paper_scissors.ribbon.time'),
+      diff: t('games.rock_paper_scissors.difficulty'),
+      desc: t('games.rock_paper_scissors.ribbon.desc'),
+    },
   }
 
-  const featuredGames = availableGames.slice(0, 4)
-  const cards: GameCardProps[] = featuredGames.map((game) => {
+  // Every available game gets a card: `/` is one of the two pages Google
+  // crawls, so a game missing here had no inbound link at all (#921).
+  const cards: GameCardProps[] = availableGames.map((game) => {
     const details = translatedDetails[game.id] ?? {
       name: fallbackName(game.id),
       tag: '',
