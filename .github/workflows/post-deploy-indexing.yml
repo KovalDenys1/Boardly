@@ -1,0 +1,31 @@
+name: Post-deploy indexing
+
+# After every successful Production deployment: tell Bing and Yandex which URLs changed
+# (IndexNow – Google does not consume it) and resubmit the sitemap to Search Console
+# (hygiene; Google indexes on links and content, not on pings). Both steps are skipped,
+# not failed, when their credential is absent.
+
+"on":
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: IndexNow
+        env:
+          INDEXNOW_KEY: 0b12a34ebc4e0bbe955eb42d3e0a49f3
+        run: node scripts/indexnow-submit.mjs
+      - name: Search Console sitemap
+        if: ${{ env.GSC_SERVICE_ACCOUNT_KEY != '' }}
+        env:
+          GSC_SERVICE_ACCOUNT_KEY: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY }}
+        run: node scripts/gsc-submit-sitemap.mjs
