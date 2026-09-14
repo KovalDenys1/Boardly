@@ -10,6 +10,7 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import {
@@ -99,7 +100,7 @@ export async function POST(
       }
     }
 
-    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName)
+    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, getSignupSourceFromRequest(req))
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
