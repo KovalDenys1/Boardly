@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { recordCronRun } from '@/lib/cron-heartbeat'
 import { apiLogger } from '@/lib/logger'
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
@@ -12,6 +13,8 @@ async function handleCronRequest(request: NextRequest) {
   const authError = authorizeCronRequest(request)
   if (authError) return authError
 
+  const startedAt = Date.now()
+
   try {
     // Consolidated daily maintenance to stay within Vercel cron limits.
     const warningResult = await warnUnverifiedAccounts(2, 7)
@@ -20,6 +23,17 @@ async function handleCronRequest(request: NextRequest) {
     const replayCleanupResult = await cleanupOldReplaySnapshots()
     const replayOverflowResult = await cleanupOversizedReplaySnapshots()
     const lobbyCleanupResult = await cleanupStaleLobbiesAndGames()
+
+    await recordCronRun({
+      cron: 'maintenance',
+      success: true,
+      latencyMs: Date.now() - startedAt,
+      payload: {
+        deletedGuests: guestCleanupResult.deleted,
+        deletedUnverified: cleanupUnverifiedResult.deleted,
+        cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
+      },
+    })
 
     return NextResponse.json({
       success: true,
@@ -38,6 +52,12 @@ async function handleCronRequest(request: NextRequest) {
     })
   } catch (error) {
     log.error('Maintenance cron failed', error as Error)
+    await recordCronRun({
+      cron: 'maintenance',
+      success: false,
+      latencyMs: Date.now() - startedAt,
+      reason: error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+    })
     return NextResponse.json(
       {
         error: 'Maintenance cron failed',

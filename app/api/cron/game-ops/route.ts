@@ -1,4 +1,5 @@
 import { Prisma } from '@/prisma/client'
+import { recordCronRun } from '@/lib/cron-heartbeat'
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'
@@ -80,6 +81,8 @@ function toSchemaDegradedTaskResult(task: GameOpsTaskName, error: unknown) {
 async function handleCronRequest(request: NextRequest) {
   const authError = authorizeCronRequest(request)
   if (authError) return authError
+
+  const startedAt = Date.now()
 
   try {
     const baseUrl = new URL(request.url).origin
@@ -179,6 +182,15 @@ async function handleCronRequest(request: NextRequest) {
       throw turnRemindersResult.reason
     }
 
+    // A heartbeat on the way out, so a job that stops running is visible (#897). It cannot
+    // throw, and it is awaited so the row exists before the lambda is frozen.
+    await recordCronRun({
+      cron: 'game-ops',
+      success: true,
+      latencyMs: Date.now() - startedAt,
+      payload: { degraded: warnings.length > 0, warnings: warnings.length },
+    })
+
     return NextResponse.json({
       cleanup,
       expireBans,
@@ -190,6 +202,12 @@ async function handleCronRequest(request: NextRequest) {
     })
   } catch (error) {
     log.error('Game ops cron failed', error as Error)
+    await recordCronRun({
+      cron: 'game-ops',
+      success: false,
+      latencyMs: Date.now() - startedAt,
+      reason: error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+    })
     return NextResponse.json(
       {
         error: 'Game ops cron failed',

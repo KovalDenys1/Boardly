@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { runReliabilityAlertCycle } from '@/lib/reliability-alerts'
 import { authorizeCronRequest } from '@/lib/cron-auth'
+import { recordCronRun } from '@/lib/cron-heartbeat'
 
 const log = apiLogger('GET /api/cron/reliability-alerts')
 
@@ -11,6 +12,8 @@ function parseEnvNumber(value: string | undefined): number | undefined {
 }
 
 async function handleCronRequest(request: NextRequest) {
+  const startedAt = Date.now()
+
   try {
     const authError = authorizeCronRequest(request)
     if (authError) return authError
@@ -24,6 +27,17 @@ async function handleCronRequest(request: NextRequest) {
       dryRun: false,
     })
 
+    await recordCronRun({
+      cron: 'reliability-alerts',
+      success: true,
+      latencyMs: Date.now() - startedAt,
+      payload: {
+        triggered: result.triggered.length,
+        resolved: result.resolved.length,
+        rules: result.evaluation.rules.length,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       generatedAt: result.evaluation.generatedAt,
@@ -34,6 +48,12 @@ async function handleCronRequest(request: NextRequest) {
     })
   } catch (error) {
     log.error('Reliability alert cron job failed', error as Error)
+    await recordCronRun({
+      cron: 'reliability-alerts',
+      success: false,
+      latencyMs: Date.now() - startedAt,
+      reason: error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+    })
     return NextResponse.json(
       {
         error: 'Reliability alert cron failed',
