@@ -30,6 +30,7 @@ import {
   toPersistedGameStateInput,
 } from '@/lib/persisted-game-state'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
@@ -738,6 +739,7 @@ export async function POST(
           gameType: toPersistedGameType(runtimeGameType),
           userId: player.userId,
           isGuest: !!player.user?.isGuest,
+          signupSource: getSignupSourceFromRequest(request),
         })
 
         break

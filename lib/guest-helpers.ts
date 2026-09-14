@@ -27,14 +27,28 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
             const usernameChanged = existingGuest.username !== guestName
             const lastActiveAgeMs = Date.now() - existingGuest.lastActiveAt.getTime()
 
+            // signupSource used to be written on create and nowhere else, so whichever
+            // route happened to mint the row decided the answer forever — and one of them
+            // did not pass a source at all (#909), which is how 11 of 31 live guests ended
+            // up unattributed with no way back. Backfilling closes that for good: the
+            // cookie is written on the visitor's first page view and lives 90 days, so it
+            // still holds first-touch even when it arrives on a later request. Only ever
+            // fills a blank; an existing value is never overwritten by a later visit.
+            const needsSignupSource = signupSource !== null && existingGuest.signupSource === null
+
             // Nothing to persist and we touched this row recently — skip the write.
-            if (!usernameChanged && lastActiveAgeMs < GUEST_ACTIVITY_THROTTLE_MS) {
+            if (!usernameChanged && !needsSignupSource && lastActiveAgeMs < GUEST_ACTIVITY_THROTTLE_MS) {
                 return existingGuest
             }
 
             // Update last active timestamp and username only if it changed
-            const updateData: { lastActiveAt: Date; username?: string } = {
+            const updateData: { lastActiveAt: Date; username?: string; signupSource?: string } = {
                 lastActiveAt: new Date(),
+            }
+
+            if (needsSignupSource) {
+                updateData.signupSource = signupSource
+                log.info('Backfilled signupSource on an existing guest', { guestId, signupSource })
             }
 
             // Only update username if it has changed

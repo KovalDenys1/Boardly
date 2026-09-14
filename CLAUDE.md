@@ -62,6 +62,10 @@ Check GitHub Actions for the develop branch — all checks must be green before 
 - `prisma migrate deploy` is NOT part of the Vercel build (it hangs cross-region)
 - Migrations run automatically via GitHub Actions when `prisma/migrations/` changes on develop (workflow: `.github/workflows/migrate.yml`)
 - To run manually: `npm run db:migrate`
+- **Consequence: a merge to `develop` puts the schema on production while the code stays on `main`.**
+  The new table exists and nothing writes to it until the release. So a feature is not live when its
+  migration is green — check `git log origin/main..origin/develop` before reporting it as live, and
+  before concluding that a table which is empty is broken.
 
 ## Git hooks
 - `pre-commit`: runs `git --no-pager diff --cached --check` + locale parity check
@@ -360,3 +364,40 @@ entry**, so pointing Preview somewhere else means deleting it and recreating it 
 capture `vercel env pull --environment=production` first, and chain the removal and the production
 restore in one command so production is never without it for longer than a call. And Vercel rejects
 type `Secret` for a `NEXT_PUBLIC_*` key, correctly: those values are inlined into the client bundle.
+
+## Ads — what is already true, and the one place they must not go
+
+`app/layout.tsx` loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`. That
+script is **three things at once**, which is why it stays on even with no ad showing: site
+verification, the ad loader, and **Google's EEA/UK consent message**. The consent message
+has been published for boardly.online in 32 languages since 2026-09-02 and is delivered by
+that loader. So `app/privacy/page.tsx:113` promising consent-gated personalised ads is
+backed, and the absence of a CMP, TCF shim or cookie banner in the tree is not a gap —
+do not "fix" it by adding one.
+
+Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
+open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.
+
+- **The env switch is unset on purpose.** Vercel is on the **Hobby** plan, which is
+  non-commercial only, and ads make a site commercial; AdSense also still has
+  boardly.online as "Getting ready". Production only, once both are settled — never
+  Preview, which would serve ads on a non-production host.
+- **Client mount is not decoration.** The 15 guide routes are statically prerendered and
+  must stay that way. A server-side premium check turns all 15 dynamic. Verify with a
+  build: the guide rows must still be `○`.
+- **Premium is checked over HTTP, not from the session.** The NextAuth token carries no
+  premium claim, and adding one would show ads to someone who had just paid not to see
+  them until their token refreshed. Signed-out visitors and guests skip the lookup.
+
+**Never put an ad in or near a game.** Not in `GameResultOverlay`, which is where an
+earlier plan wanted one: it sits over the board holding the play-again button, so an ad
+there competes with the only action the player wants and invites exactly the misclick
+AdSense polices hardest. Ads go on content pages — the guides — below every CTA.
+
+An unfilled slot must collapse. Until approval every slot comes back
+`data-ad-status="unfilled"`, and without the collapse that is a blank gap on every page
+that has one.
+
+If the AdSense console says ads.txt is "Not found", check
+`https://boardly.online/ads.txt` before believing it — it serves 200, and the console has
+been showing a 2 September snapshot for weeks.

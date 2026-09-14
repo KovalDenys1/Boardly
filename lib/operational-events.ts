@@ -9,7 +9,28 @@ export const OPERATIONAL_EVENT_NAMES = [
   'socket_reconnect_recovered',
   'socket_reconnect_failed_final',
   'start_alone_auto_bot_result',
+  // The funnel the Revenue Plan defines. These were Vercel Analytics custom events, and the
+  // Hobby plan drops every one, so not a single row of the funnel had ever been stored.
+  // OperationalEvents already takes unsampled client beacons, so the funnel can exist here
+  // without waiting for Pro.
+  'signup_prompt_shown',
+  'signup_prompt_clicked',
+  'signup_prompt_dismissed',
+  'premium_cta_clicked',
+  'checkout_started',
 ] as const
+
+/**
+ * Names only the server may write.
+ *
+ * Deliberately NOT in OPERATIONAL_EVENT_NAMES: that array is the zod enum on the public
+ * `/api/ops/events` beacon, so anything listed there can be posted by anyone. A cron
+ * heartbeat that a client can forge is worse than no heartbeat, because it would read as
+ * proof that a job ran.
+ */
+export const SERVER_OPERATIONAL_EVENT_NAMES = ['cron_run'] as const
+
+export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]
 
 export type OperationalEventName = (typeof OPERATIONAL_EVENT_NAMES)[number]
 
@@ -139,6 +160,21 @@ export function buildOperationalEventRecord(input: {
         metricType: 'reliability',
         isGuest: readBoolean(payload, 'is_guest'),
         attemptsTotal: readNonNegativeInt(payload, 'attempts_total'),
+        reason: readString(payload, 'reason'),
+        payload,
+      }
+
+    case 'signup_prompt_shown':
+    case 'signup_prompt_clicked':
+    case 'signup_prompt_dismissed':
+    case 'premium_cta_clicked':
+    case 'checkout_started':
+      return {
+        eventName,
+        metricType: 'flow',
+        gameType: readString(payload, 'game_type'),
+        isGuest: readBoolean(payload, 'is_guest'),
+        source: readString(payload, 'source'),
         reason: readString(payload, 'reason'),
         payload,
       }

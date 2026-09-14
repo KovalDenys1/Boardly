@@ -23,6 +23,7 @@ export function captureSignupSource(): void {
     const value = deriveSignupSource({
       utmSource: params.get('utm_source'),
       utmMedium: params.get('utm_medium'),
+      utmCampaign: params.get('utm_campaign'),
       referrer: document.referrer,
       currentHostname: window.location.hostname,
     })

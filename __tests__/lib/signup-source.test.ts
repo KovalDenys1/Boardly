@@ -74,3 +74,25 @@ describe('captureSignupSource (browser)', () => {
     expect(document.cookie).not.toContain('reddit')
   })
 })
+
+describe('utm_campaign (#911)', () => {
+  it('keeps the campaign, so two posts on one platform are two rows', () => {
+    expect(
+      deriveSignupSource({ utmSource: 'reddit', utmMedium: 'social', utmCampaign: 'webgames-launch' }),
+    ).toBe('utm:reddit/social/webgames-launch')
+  })
+
+  it('holds the medium slot open when only a campaign is given', () => {
+    // Without the placeholder, utm:reddit/launch would be indistinguishable from a medium.
+    expect(deriveSignupSource({ utmSource: 'reddit', utmCampaign: 'launch' })).toBe(
+      'utm:reddit/-/launch',
+    )
+  })
+
+  it('is unchanged when there is no campaign', () => {
+    expect(deriveSignupSource({ utmSource: 'chatgpt.com', utmMedium: 'referral' })).toBe(
+      'utm:chatgpt.com/referral',
+    )
+    expect(deriveSignupSource({ utmSource: 'bing' })).toBe('utm:bing')
+  })
+})

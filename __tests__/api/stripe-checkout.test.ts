@@ -16,6 +16,11 @@ jest.mock('@/lib/db', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    // The route records a checkout_started funnel row on the way out (#913). It is awaited
+    // and its failure is swallowed, so the mock only has to exist for the route to finish.
+    operationalEvents: {
+      create: jest.fn().mockResolvedValue({}),
+    },
   },
 }))
 

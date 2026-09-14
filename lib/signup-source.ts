@@ -6,7 +6,10 @@
  * then copies that value onto `Users.signupSource` when the account is created
  * (guest, e-mail registration, or OAuth). Nothing else reads the cookie.
  *
- * Value shapes: `utm:<source>[/<medium>]`, `ref:<hostname>`, `direct`.
+ * Value shapes: `utm:<source>[/<medium>[/<campaign>]]`, `ref:<hostname>`, `direct`.
+ *
+ * The campaign is kept because without it two posts on the same platform are the same row,
+ * and the Revenue Plan's way of testing a channel is to run it for three weeks and compare.
  */
 
 export const SIGNUP_SOURCE_COOKIE = 'bd_src'
@@ -27,13 +30,22 @@ export function sanitizeSignupSource(value: string | null | undefined): string |
 export function deriveSignupSource(input: {
   utmSource?: string | null
   utmMedium?: string | null
+  utmCampaign?: string | null
   referrer?: string | null
   currentHostname?: string | null
 }): string {
   const utmSource = sanitizeSignupSource(input.utmSource)
   if (utmSource) {
     const utmMedium = sanitizeSignupSource(input.utmMedium)
-    return sanitizeSignupSource(`utm:${utmSource}${utmMedium ? `/${utmMedium}` : ''}`) ?? 'direct'
+    const utmCampaign = sanitizeSignupSource(input.utmCampaign)
+    // A campaign without a medium would make `utm:reddit/launch` ambiguous with a medium,
+    // so an empty medium is held open with a `-` rather than collapsed.
+    const tail = utmCampaign
+      ? `/${utmMedium || '-'}/${utmCampaign}`
+      : utmMedium
+        ? `/${utmMedium}`
+        : ''
+    return sanitizeSignupSource(`utm:${utmSource}${tail}`) ?? 'direct'
   }
 
   if (input.referrer) {

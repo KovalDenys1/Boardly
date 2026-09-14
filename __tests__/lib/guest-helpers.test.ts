@@ -153,6 +153,78 @@ describe('Guest Helpers', () => {
         })
     })
 
+
+    describe('signupSource attribution (#909)', () => {
+        const guestId = 'guest_src'
+        const guestName = 'Sourced Guest'
+
+        function existingGuest(overrides: Record<string, unknown> = {}) {
+            return {
+                id: guestId,
+                username: guestName,
+                email: `guest-${guestId}@boardly.guest`,
+                isGuest: true,
+                signupSource: null,
+                // Old enough that the activity throttle never hides a missing write.
+                lastActiveAt: new Date(Date.now() - 60 * 60 * 1000),
+                ...overrides,
+            }
+        }
+
+        it('stores the source on a brand new guest', async () => {
+            ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(null)
+                ; (prisma.users.create as jest.Mock).mockResolvedValue(existingGuest({ signupSource: 'ref:reddit.com' }))
+
+            await getOrCreateGuestUser(guestId, guestName, 'ref:reddit.com')
+
+            expect(prisma.users.create).toHaveBeenCalledWith(
+                expect.objectContaining({ data: expect.objectContaining({ signupSource: 'ref:reddit.com' }) })
+            )
+        })
+
+        it('backfills a guest that was minted without one', async () => {
+            ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(existingGuest())
+                ; (prisma.users.update as jest.Mock).mockResolvedValue(existingGuest({ signupSource: 'utm:reddit/social' }))
+
+            await getOrCreateGuestUser(guestId, guestName, 'utm:reddit/social')
+
+            expect(prisma.users.update).toHaveBeenCalledWith(
+                expect.objectContaining({ data: expect.objectContaining({ signupSource: 'utm:reddit/social' }) })
+            )
+        })
+
+        it('backfills even when the activity throttle would skip the write', async () => {
+            // The throttle exists to keep this off the hot path, but a blank source is
+            // something to persist, so it must not be swallowed by a recent touch.
+            ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(existingGuest({ lastActiveAt: new Date() }))
+                ; (prisma.users.update as jest.Mock).mockResolvedValue(existingGuest({ signupSource: 'direct' }))
+
+            await getOrCreateGuestUser(guestId, guestName, 'direct')
+
+            expect(prisma.users.update).toHaveBeenCalledWith(
+                expect.objectContaining({ data: expect.objectContaining({ signupSource: 'direct' }) })
+            )
+        })
+
+        it('never overwrites a source the guest already has', async () => {
+            ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(existingGuest({ signupSource: 'ref:reddit.com' }))
+                ; (prisma.users.update as jest.Mock).mockResolvedValue(existingGuest({ signupSource: 'ref:reddit.com' }))
+
+            await getOrCreateGuestUser(guestId, guestName, 'utm:twitter')
+
+            const call = (prisma.users.update as jest.Mock).mock.calls[0]?.[0]
+            expect(call?.data).not.toHaveProperty('signupSource')
+        })
+
+        it('stays off the hot path: no source to add, recently touched, no write', async () => {
+            ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(existingGuest({ lastActiveAt: new Date() }))
+
+            await getOrCreateGuestUser(guestId, guestName)
+
+            expect(prisma.users.update).not.toHaveBeenCalled()
+        })
+    })
+
     describe('cleanupOldGuests', () => {
         it('should delete guests inactive for more than 24 hours', async () => {
             const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000)

@@ -139,5 +139,27 @@ export async function POST(req: NextRequest) {
   }
 
   log.info('Checkout session created', { userId: user.id })
+
+  // Written here rather than from the browser: this is the one funnel step that can be
+  // observed on the server, so it cannot be forged and it cannot be lost to a beacon that
+  // never left the page. Never blocks the redirect.
+  await prisma.operationalEvents
+    .create({
+      data: {
+        eventName: 'checkout_started',
+        metricType: 'flow',
+        isGuest: false,
+        success: true,
+        source: 'stripe_checkout',
+        payload: {},
+      },
+    })
+    .catch((err: unknown) => {
+      log.error(
+        'Failed to record checkout_started',
+        err instanceof Error ? err : new Error(String(err)),
+      )
+    })
+
   return NextResponse.json({ url: checkoutSession.url })
 }
