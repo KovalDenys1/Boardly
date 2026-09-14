@@ -62,6 +62,10 @@ Check GitHub Actions for the develop branch — all checks must be green before 
 - `prisma migrate deploy` is NOT part of the Vercel build (it hangs cross-region)
 - Migrations run automatically via GitHub Actions when `prisma/migrations/` changes on develop (workflow: `.github/workflows/migrate.yml`)
 - To run manually: `npm run db:migrate`
+- **Consequence: a merge to `develop` puts the schema on production while the code stays on `main`.**
+  The new table exists and nothing writes to it until the release. So a feature is not live when its
+  migration is green — check `git log origin/main..origin/develop` before reporting it as live, and
+  before concluding that a table which is empty is broken.
 
 ## Git hooks
 - `pre-commit`: runs `git --no-pager diff --cached --check` + locale parity check
