@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { getSecurityHeaders, isSignatureAuthenticatedWebhook, verifyCsrfToken } from '@/lib/csrf'
+import {
+  SIGNUP_SOURCE_COOKIE,
+  SIGNUP_SOURCE_COOKIE_MAX_AGE_SECONDS,
+  deriveSignupSource,
+} from '@/lib/signup-source'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const SECURITY_HEADERS = getSecurityHeaders()
@@ -126,9 +131,50 @@ function buildCspHeaderValue() {
   `.replace(/\s{2,}/g, ' ').trim()
 }
 
+/**
+ * Records where a visitor came from, on the request that brought them here.
+ *
+ * `captureSignupSource` in GuestContext does the same thing, but from a `useEffect`, so it
+ * runs after the page has mounted - and a guest can be minted by an API call from that same
+ * first load. Eight of the twenty-nine guests created between 09.09 and 13.09 were stored
+ * with no source at all, which is the race losing.
+ *
+ * Here the real Referer and the real query string are on the request itself, before any
+ * script runs, so this is a measurement rather than a guess. First touch still wins: an
+ * existing cookie is never overwritten, and the client capture stays as the fallback for
+ * anything the matcher skips.
+ */
+function captureSignupSourceOnRequest(request: NextRequest, response: NextResponse): void {
+  const { pathname, searchParams } = request.nextUrl
+
+  // Only on a document request. On an API call or an asset the Referer is one of our own
+  // pages, which would record "direct" for someone who actually arrived from a search.
+  const isDocument = request.method === 'GET' && (request.headers.get('accept') ?? '').includes('text/html')
+  if (!isDocument || pathname.startsWith('/api/')) return
+
+  if (request.cookies.get(SIGNUP_SOURCE_COOKIE)?.value) return
+
+  const value = deriveSignupSource({
+    utmSource: searchParams.get('utm_source'),
+    utmMedium: searchParams.get('utm_medium'),
+    utmCampaign: searchParams.get('utm_campaign'),
+    referrer: request.headers.get('referer'),
+    currentHostname: request.nextUrl.hostname,
+  })
+
+  response.cookies.set(SIGNUP_SOURCE_COOKIE, value, {
+    maxAge: SIGNUP_SOURCE_COOKIE_MAX_AGE_SECONDS,
+    path: '/',
+    sameSite: 'lax',
+    secure: request.nextUrl.protocol === 'https:',
+  })
+}
+
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
   const { pathname } = request.nextUrl
+
+  captureSignupSourceOnRequest(request, response)
 
   const SUSPENDED_EXEMPT = ['/suspended', '/auth/', '/api/', '/_next/', '/favicon']
   const isSuspendedExempt = SUSPENDED_EXEMPT.some((p) => pathname.startsWith(p))
