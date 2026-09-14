@@ -22,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/', { changeFrequency: 'daily', priority: 1.0, lastModified: '2026-08-29' }),
     page('/games', { changeFrequency: 'weekly', priority: 0.9, lastModified: '2026-08-29' }),
     page('/leaderboard', { changeFrequency: 'daily', priority: 0.7, lastModified: '2026-05-26' }),
+    page('/about', { changeFrequency: 'yearly', priority: 0.5, lastModified: '2026-09-15' }),
 
     // Game detail pages (available games only)
     page('/games/yahtzee', { changeFrequency: 'monthly', priority: 0.9, lastModified: '2026-08-28' }),
