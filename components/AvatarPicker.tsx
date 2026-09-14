@@ -5,10 +5,10 @@ import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
+import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 
 const ALL_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8, 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
 export const PREMIUM_PACK_ID = 'premium-pack-1'
-export const PREMIUM_PACK_PRICE = '$2.99'
 
 type AvatarPickerProps = {
   currentAvatarUrl: string | null
@@ -170,7 +170,7 @@ export default function AvatarPicker({
             </span>
           ) : (
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-              {PREMIUM_PACK_PRICE}
+              from {PREMIUM_BASE_PRICE}
             </span>
           )}
         </div>
@@ -211,7 +211,7 @@ export default function AvatarPicker({
               className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
             >
               <Icon name="star" size={14} />
-              <span>Get Premium — {PREMIUM_PACK_PRICE}/mo</span>
+              <span>Get Premium — from {PREMIUM_BASE_PRICE}/mo</span>
             </button>
           )}
         </div>

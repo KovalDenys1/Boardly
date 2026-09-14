@@ -1,5 +1,10 @@
 import { buildFaqFacts } from '@/lib/faq-facts'
 import { getCatalogAvailableGames, getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
+import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
+import en from '@/locales/en'
+import no from '@/locales/no'
+import ru from '@/locales/ru'
+import uk from '@/locales/uk'
 
 describe('home page FAQ facts', () => {
   const facts = buildFaqFacts()
@@ -31,10 +36,17 @@ describe('home page FAQ facts', () => {
     expect(getGameMetadata(availableTypes.find((type) => getGameMetadata(type!)!.name === facts.maxPlayersGame.nameEn)!)!.maxPlayers).toBe(facts.maxPlayers)
   })
 
-  it('carries a price for the Premium answer', () => {
+  it('carries the base price and leaves the phrasing to each locale', () => {
     // The old q1 said "no subscriptions, no ads, and no paywalls" while
     // Premium was live and the AdSense loader had shipped.
-    expect(facts.premiumPrice).toMatch(/\d/)
+    expect(facts.premiumPrice).toBe(PREMIUM_BASE_PRICE)
+    // #919: Adaptive Pricing charges each customer in their own currency, so
+    // the figure is only a starting point. No locale may bake it into its own
+    // copy, and none may drop the slot its "from …" wording hangs on.
+    for (const locale of [en, no, ru, uk]) {
+      expect(locale.faq.q1.answer).toContain('{{price}}')
+      expect(locale.faq.q1.answer).not.toContain(PREMIUM_BASE_PRICE)
+    }
   })
 
   it('gives every game a real translation key', () => {

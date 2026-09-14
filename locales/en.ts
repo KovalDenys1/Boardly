@@ -2411,7 +2411,7 @@ const en = {
     listAnd: 'and',
     q1: {
       question: 'Is Boardly free to play?',
-      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription at {{price}} a month for extras like replays, custom lobby themes and full stats, and free players may see ads.',
+      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price that is converted to your local currency at checkout – for extras like replays, custom lobby themes and full stats, and free players may see ads.',
     },
     q2: {
       question: 'Do I need an account to play?',

@@ -2399,7 +2399,7 @@ const no = {
     listAnd: 'og',
     q1: {
       question: 'Er Boardly gratis å spille?',
-      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement til {{price}} i måneden for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
+      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar og regnes om til din lokale valuta ved betaling – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
     },
     q2: {
       question: 'Trenger jeg en konto for å spille?',
