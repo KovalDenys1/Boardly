@@ -1,6 +1,11 @@
 import { unstable_cache } from 'next/cache'
 import { prisma } from './db'
 import { apiLogger } from './logger'
+import {
+  isFakeArtistEnabled,
+  isSketchAndGuessEnabled,
+  isTelephoneDoodleEnabled,
+} from './feature-flags'
 
 const log = apiLogger('runtime-config')
 
@@ -21,6 +26,11 @@ const log = apiLogger('runtime-config')
  *
  * The cache is short because the point of the feature is that a change lands quickly. Thirty
  * seconds is the compromise between "did my change take effect" and one query per render.
+ *
+ * SERVER ONLY. This file imports Prisma, and `lib/feature-flags.ts` is reachable from client
+ * components, so the dependency runs one way: this file imports the env helpers, never the
+ * reverse. Pointing it the other way pulled Prisma into the client bundle and broke the
+ * production build with seven chunk errors, which is the reason the arrows are written down.
  */
 
 const CACHE_SECONDS = 30
@@ -102,4 +112,22 @@ export const getRuntimeFlags = unstable_cache(
 export async function isFlagEnabled(key: string, envFallback: boolean): Promise<boolean> {
   const flags = await getRuntimeFlags()
   return key in flags ? flags[key] : envFallback
+}
+
+/**
+ * The three game flags, with a database override when the control panel has set one.
+ *
+ * Server-side only. The env-only versions in `lib/feature-flags.ts` stay for client
+ * components and build-time checks, which cannot await a database read.
+ */
+export function isTelephoneDoodleEnabledAsync(): Promise<boolean> {
+  return isFlagEnabled('telephone_doodle', isTelephoneDoodleEnabled())
+}
+
+export function isSketchAndGuessEnabledAsync(): Promise<boolean> {
+  return isFlagEnabled('sketch_and_guess', isSketchAndGuessEnabled())
+}
+
+export function isFakeArtistEnabledAsync(): Promise<boolean> {
+  return isFlagEnabled('fake_artist', isFakeArtistEnabled())
 }

@@ -34,26 +34,11 @@ export function isFakeArtistEnabled(): boolean {
 }
 
 /**
- * The same three flags, with a database override when the control panel has set one.
+ * The keys the control panel may override, so its editor cannot invent one nothing reads.
  *
- * Use these on the server, where a game can be switched on without a redeploy. A missing row
- * means the env var decides, so an unreachable database behaves exactly as today.
+ * A plain list of strings on purpose: this file is reachable from client components, so it
+ * must not import anything that touches the database. The async resolvers live in
+ * `lib/runtime-config.ts`, which is server-only, and the dependency runs one way.
  */
-export async function isTelephoneDoodleEnabledAsync(): Promise<boolean> {
-  const { isFlagEnabled } = await import('./runtime-config')
-  return isFlagEnabled('telephone_doodle', isTelephoneDoodleEnabled())
-}
-
-export async function isSketchAndGuessEnabledAsync(): Promise<boolean> {
-  const { isFlagEnabled } = await import('./runtime-config')
-  return isFlagEnabled('sketch_and_guess', isSketchAndGuessEnabled())
-}
-
-export async function isFakeArtistEnabledAsync(): Promise<boolean> {
-  const { isFlagEnabled } = await import('./runtime-config')
-  return isFlagEnabled('fake_artist', isFakeArtistEnabled())
-}
-
-/** The keys the control panel may set, so its editor cannot invent one that nothing reads. */
 export const RUNTIME_FLAG_KEYS = ['telephone_doodle', 'sketch_and_guess', 'fake_artist'] as const
 export type RuntimeFlagKey = (typeof RUNTIME_FLAG_KEYS)[number]
