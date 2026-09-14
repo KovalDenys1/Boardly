@@ -5,6 +5,7 @@ name: CI
     branches:
       - main
       - develop
+      - "growth/**"
   pull_request:
     branches:
       - main
