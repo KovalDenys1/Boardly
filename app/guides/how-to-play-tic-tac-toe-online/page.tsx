@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
   title: 'How to Play Tic Tac Toe Online - Complete Guide',
@@ -29,7 +30,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/how-to-play-tic-tac-toe-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: '2026-05-08',
+  dateModified: getGuideBySlug('how-to-play-tic-tac-toe-online').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }

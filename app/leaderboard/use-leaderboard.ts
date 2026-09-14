@@ -2,19 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getAvailableGameTypes, getGameMetadata } from '@/lib/game-catalog'
+import type { LeaderboardEntry, LeaderboardPage } from '@/lib/leaderboard'
 
-export interface LeaderboardEntry {
-  rank: number
-  userId: string
-  username: string
-  publicProfileId: string | null
-  avatarUrl: string | null
-  isPremium: boolean
-  gamesPlayed: number
-  wins: number
-  losses: number
-  winRate: number
-}
+export type { LeaderboardEntry }
 
 export type GameFilter = { value: string; label: string; svgId: string | null; accentColor: string }
 
@@ -31,21 +21,27 @@ export const GAME_FILTERS: GameFilter[] = [
   }),
 ]
 
-export function useLeaderboard() {
+/**
+ * `initial` is the first page the server already rendered for the current
+ * URL (#922); the hook starts from it and skips the mount fetch, then owns
+ * every later fetch (filter changes, load more).
+ */
+export function useLeaderboard(initial: LeaderboardPage | null = null) {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const isFirstRender = useRef(true)
+  const skipMountFetch = useRef(initial !== null)
 
   const initialPeriod = searchParams.get('period') === '30d' ? '30d' : 'all'
   const rawGameType = searchParams.get('gameType') ?? ''
   const initialGameType = GAME_FILTERS.some((f) => f.value === rawGameType) ? rawGameType : ''
 
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [entries, setEntries] = useState<LeaderboardEntry[]>(initial?.entries ?? [])
+  const [loading, setLoading] = useState(initial === null)
   const [gameType, setGameType] = useState(initialGameType)
   const [period, setPeriod] = useState<'all' | '30d'>(initialPeriod)
-  const [hasMore, setHasMore] = useState(false)
+  const [hasMore, setHasMore] = useState(initial?.hasMore ?? false)
   const [page, setPage] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [gameMenuOpen, setGameMenuOpen] = useState(false)
@@ -74,6 +70,7 @@ export function useLeaderboard() {
 
   useEffect(() => {
     setPage(0)
+    if (skipMountFetch.current) { skipMountFetch.current = false; return }
     fetchLeaderboard(0, true)
   }, [gameType, period, fetchLeaderboard])
 
