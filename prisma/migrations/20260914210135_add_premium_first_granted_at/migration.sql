@@ -1,0 +1,27 @@
+-- ============================================================================
+-- Migration: premiumFirstGrantedAt on Users
+-- Date: 2026-09-14
+-- Description:
+--   Nothing in the database survives churn. `customer.subscription.deleted`
+--   nulls both `premiumUntil` and `stripeSubscriptionId`; an `updated` event
+--   carrying any non-active status nulls `premiumUntil` alone, because that
+--   path still passes the live subscription id. Either way the entitlement is
+--   gone and a cancelled account is indistinguishable from one that never
+--   paid. `stripeCustomerId` survives,
+--   but checkout writes it when the session is created, before any payment —
+--   it counts attempts, not conversions. `StripeWebhookEvents` keeps only
+--   id/type/processedAt, so it cannot say who an event was about.
+--
+--   This column is the one durable record of a conversion: the webhook writes
+--   it on the first grant and never again, and no path clears it. Cancellation
+--   still nulls the entitlement columns, which is what they are for.
+--
+--   Nullable with no backfill on purpose. The column means "the moment a grant
+--   was first observed", and no existing row carries that moment — `createdAt`
+--   is account creation, `premiumUntil` is a period end. Backfilling from
+--   either would put a wrong date in a column whose whole value is being
+--   trustworthy. Rows held by current subscribers get stamped by the next
+--   subscription event they receive.
+-- ============================================================================
+
+ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "premiumFirstGrantedAt" TIMESTAMPTZ(3);
