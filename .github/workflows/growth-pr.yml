@@ -2,8 +2,10 @@ name: Growth PR
 
 # The Wednesday growth builder pushes `growth/<issue>-<slug>` branches from a cloud session that
 # may not be able to open a pull request itself. This opens one to `develop` when none exists.
-# A PR opened with GITHUB_TOKEN does not trigger `pull_request` workflows, but CI already runs
-# on the push to the branch (see ci.yml), so the checks are there.
+# A PR opened with GITHUB_TOKEN does not trigger `pull_request` workflows, so ci.yml also
+# runs on pushes to `growth/**`; the checks on the PR come from that push. Creating the PR
+# needs the repository setting "Allow GitHub Actions to create and approve pull requests"
+# (enabled 2026-09-15).
 
 "on":
   push:
