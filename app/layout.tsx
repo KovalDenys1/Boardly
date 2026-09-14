@@ -1,4 +1,5 @@
 import './globals.css'
+import { AnnouncementBanner } from '@/components/AnnouncementBanner'
 import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
@@ -248,6 +249,8 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
+          {/* Renders nothing unless the control panel has a live announcement. */}
+          <AnnouncementBanner />
           <Header />
           <main>{children}</main>
           <FeedbackWidget />

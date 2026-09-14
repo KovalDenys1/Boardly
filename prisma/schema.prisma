@@ -542,3 +542,30 @@ model Feedback {
   @@index([type, createdAt])
   @@index([userId])
 }
+
+/// Written by the control panel, read by the game on every render. Product state, so it
+/// lives in Boardly's migrations rather than beside the panel's own bookkeeping tables.
+model Announcements {
+  id        String    @id @default(cuid())
+  message   String
+  href      String?
+  tone      String    @default("info")
+  active    Boolean   @default(false)
+  startsAt  DateTime? @db.Timestamptz(3)
+  endsAt    DateTime? @db.Timestamptz(3)
+  createdBy String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@index([active, startsAt, endsAt])
+}
+
+/// Overrides an env feature flag when a row exists. An absent row means the env var decides,
+/// so the database being unreachable can never turn a game off.
+model RuntimeFlags {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  note      String?
+  updatedBy String?
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+}
