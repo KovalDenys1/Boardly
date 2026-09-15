@@ -77,7 +77,6 @@ Operational checks:
 - `npm run check:env`
 - `npm run check:db`
 - `npm run ops:alerts:check`
-- `npm run ops:kpi:report`
 
 ## Verification Matrix (run what matches your change)
 

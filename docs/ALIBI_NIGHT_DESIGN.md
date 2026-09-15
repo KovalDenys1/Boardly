@@ -1,5 +1,11 @@
 # Alibi Night Design Spec (MVP)
 
+**Status, 2026-09-15: unbuilt, and partly superseded.** Alibi Night is `planned` in
+`lib/game-catalog.ts` - no engine, no route, no ticket in flight. Nothing below has been
+implemented. The realtime and auth sections predate the Socket.IO removal, so read
+`docs/ARCHITECTURE.md` for how a game actually broadcasts today before using this as a plan.
+Kept because the round model, scoring matrix and moderation rules are still the design.
+
 ## Scope
 
 `Alibi Night` is a social bluffing/investigation party game where each round one player is under suspicion and everyone submits short alibis. Players challenge inconsistencies, then vote on the most suspicious story.
@@ -129,7 +135,7 @@ Validation and actions:
 
 Realtime:
 
-- [ ] Broadcast state snapshots through existing socket room channel.
+- [ ] Broadcast state snapshots through the existing `lobby:{code}` Supabase Broadcast channel.
 - [ ] Add reconnect-safe state hydration path in lobby page hook.
 - [ ] Ensure timeout auto-actions are idempotent under reconnect races.
 
@@ -149,5 +155,5 @@ Tests:
 ## Integration notes
 
 - Keep server-authoritative flow: client optimistic updates are visual only.
-- Do not introduce any new `JWT_SECRET` path; use existing auth + `NEXTAUTH_SECRET` model.
+- Do not introduce a new signing secret; use the existing auth model built on `NEXTAUTH_SECRET`.
 - Guest actions must remain signed-token based (`X-Guest-Token`) and never raw client IDs.

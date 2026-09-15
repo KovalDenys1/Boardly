@@ -221,7 +221,9 @@ const ru = {
       join: 'Присоединиться к лобби',
       invalidCode: 'Неверный код лобби',
       lobbyFull: 'Лобби заполнено',
-      wrongPassword: 'Неверный пароль'
+      wrongPassword: 'Неверный пароль',
+      watchInstead: 'Смотреть как зритель',
+      createOwnLobby: 'Создать своё лобби'
     },
     joinPromptPrivate: 'Введите пароль, чтобы присоединиться к {{lobby}}',
     joinPromptPublic: 'Вы собираетесь присоединиться к {{lobby}}',

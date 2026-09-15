@@ -5,7 +5,9 @@ Keep it short, current, and source-of-truth oriented.
 
 ## Source of truth
 
-Game availability is defined in `lib/game-catalog.ts`.
+Game availability is defined in `lib/game-catalog.ts`. `README.md`'s game lists are checked
+against it by `npm run audit:docs`, so move a game there and the README has to follow in the
+same PR.
 
 Use this file first when a game changes lifecycle state:
 
@@ -16,6 +18,7 @@ Use this file first when a game changes lifecycle state:
 Related files have narrower responsibilities:
 
 - `lib/game-registry.ts` - runtime game engine registration and bot support.
+- `lib/feature-flags.ts` - the `ENABLE_*` flags that expose an experimental game.
 - `prisma/schema.prisma` - persisted `GameType` enum and database compatibility.
 - `lib/public-game-access.ts` - public lobby route access derived from availability.
 - `components/PlayerStatsDashboard.tsx` - game-specific presentation of user stats.
@@ -27,7 +30,7 @@ the catalog helper API instead.
 
 Before changing a game to `available`, verify:
 
-1. Gameplay is server-authoritative and persisted through the normal API -> DB -> socket flow.
+1. Gameplay is server-authoritative and persisted through the normal API -> DB -> Supabase Broadcast flow.
 2. Lobby creation, lobby listing, join, reconnect, finish, and terminal redirects work.
 3. The game has translations for every active locale.
 4. Profile statistics use metrics that make sense for that game.
@@ -46,7 +49,7 @@ When adding a new game, update or add:
 - `lib/games/*` game engine implementation.
 - Lobby create settings and public route access.
 - Lobby/game UI route and board components.
-- Socket/API action handling where needed.
+- API action route and realtime event handling where needed.
 - Locale strings in all active locales.
 - Game-specific profile statistics presentation.
 - Achievement definitions or an explicit "not yet" note.

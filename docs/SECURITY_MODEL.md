@@ -33,7 +33,7 @@
 
 - Guests receive short-lived signed tokens from server endpoints.
 - Token transport header: `X-Guest-Token`.
-- Guest claims are verified in API and socket auth paths.
+- Guest claims are verified server-side through `lib/guest-auth.ts`; the header is never trusted as sent.
 - Raw client-supplied guest IDs/names are not trusted as identity.
 
 ## Secret policy
@@ -42,28 +42,37 @@
 
 - `DATABASE_URL`: PostgreSQL connection string.
 - `NEXTAUTH_SECRET`: NextAuth JWT/session signing, minimum 32 characters.
-- `SOCKET_SERVER_INTERNAL_SECRET`: internal socket endpoints (`/api/notify`, `/metrics`), minimum 16 characters.
 - `CRON_SECRET`: dedicated cron endpoint auth secret, minimum 32 characters.
+- `SUPABASE_SERVICE_ROLE_KEY` and `NEXT_PUBLIC_SUPABASE_URL`: `broadcastToLobby` needs
+  both and returns `false` without either, silently, so realtime dies quietly if one is
+  missing.
 
 ### Optional and conditional
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
+- `BOARDLY_INTERNAL_SECRET`: server-to-server bot-turn triggers. The state route forwards
+  the caller's own session either way and adds this header on top when it is set, so
+  leaving it unset means the bot turn runs on the player's identity – acceptable locally
+  and not in a deployed environment.
+- `DISCORD_INTERNAL_SECRET`: bearer the Raspberry Pi gateway bot presents to
+  `/api/internal/discord/heartbeat` and `/api/internal/discord/members/[snowflake]`. Unset,
+  those routes answer 503.
 
 ### Usage rules
 
 - Never expose secrets through `NEXT_PUBLIC_*`.
 - Never log raw secrets.
-- Keep a dedicated internal socket secret (no fallback to unrelated app secrets).
 - Keep cron auth isolated to `CRON_SECRET` only (no fallback to `NEXTAUTH_SECRET`).
 - Rotate secrets after incidents and on schedule.
 
 ### Rotation checklist
 
-1. Generate a new `SOCKET_SERVER_INTERNAL_SECRET`.
-2. Update secret in all environments (Next.js + socket server).
-3. Redeploy both services.
-4. Verify internal notifications and metrics auth behavior.
-5. Remove old secret from secret manager.
+1. Generate the new value (`openssl rand -base64 32`).
+2. Set it in every environment that reads it – Vercel, GitHub Actions secrets, and the Pi
+   env file for `DISCORD_INTERNAL_SECRET`. `docs/DISCORD.md` has the full map.
+3. Redeploy so the new value is live.
+4. Exercise the paths that use it before removing the old value.
+5. Remove the old secret from the secret manager.
 
 ## Realtime integrity expectations
 
@@ -77,6 +86,6 @@ Before production deploy:
 
 - Validate env secrets and allowed origins.
 - Validate CSRF behavior on key mutating API routes (same-origin pass, cross-origin reject).
-- Verify migration path is separate from socket build.
-- Confirm auth/guest flows and websocket room authorization.
+- Confirm migrations run from their own job, not from the app build (`.github/workflows/migrate.yml`).
+- Confirm auth and guest flows, and that a non-member cannot read a lobby's realtime topic.
 - Run lint/tests and smoke test create/join/play/finish cycle.

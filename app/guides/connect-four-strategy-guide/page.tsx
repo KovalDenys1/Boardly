@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -46,11 +46,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'Is Connect Four a solved game?',
+    answer: 'Yes. With perfect play from both sides the first player wins, and the winning first move is the middle column. That is a fact about perfect play, not about your next game – nobody plays it perfectly over 42 squares, which is why the practical advice below still decides most matches.',
+  },
+  {
+    question: 'Why is the centre column worth so much?',
+    answer: 'Because more of the 69 possible four-in-a-rows pass through it than through any other column. A disc in the middle is part of horizontal, vertical and both diagonal lines at once; a disc on the outside column is part of far fewer.',
+  },
+  {
+    question: 'What is a double threat?',
+    answer: 'A position where you have two different squares that would each complete a four, so a single block cannot stop both. Building one is the whole game: every strong Connect Four move is either making a double threat or preventing your opponent from making one.',
+  },
+  {
+    question: 'Why do odd and even rows matter?',
+    answer: 'Because a disc only lands on the lowest free row, a threat is only usable when the squares beneath it have been filled. Counting whose turn it will be when a column reaches that height is how strong players decide which threats are real and which are decoration.',
+  },
+  {
+    question: 'What is the most common way to lose?',
+    answer: 'Dropping a disc that hands your opponent the square directly above it. It feels like a free move because it builds your own line, and it is the single most frequent losing move in the game.',
+  },
+  {
+    question: 'Does the strategy change against the bot?',
+    answer: 'Against easy and medium, not much – they miss threats, so building any threat works. Against hard, which searches six moves ahead, you have to stop making moves that only look good for one turn: it will already have seen where the column lands two turns later.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function ConnectFourStrategyGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'connect-four' }}
@@ -158,32 +193,7 @@ export default function ConnectFourStrategyGuide() {
         </GuideSection>
 
         <GuideSection title="Connect Four Strategy Questions">
-          <GuideFaqList items={[
-            {
-              question: 'Is Connect Four a solved game?',
-              answer: 'Yes. With perfect play from both sides the first player wins, and the winning first move is the middle column. That is a fact about perfect play, not about your next game – nobody plays it perfectly over 42 squares, which is why the practical advice below still decides most matches.',
-            },
-            {
-              question: 'Why is the centre column worth so much?',
-              answer: 'Because more of the 69 possible four-in-a-rows pass through it than through any other column. A disc in the middle is part of horizontal, vertical and both diagonal lines at once; a disc on the outside column is part of far fewer.',
-            },
-            {
-              question: 'What is a double threat?',
-              answer: 'A position where you have two different squares that would each complete a four, so a single block cannot stop both. Building one is the whole game: every strong Connect Four move is either making a double threat or preventing your opponent from making one.',
-            },
-            {
-              question: 'Why do odd and even rows matter?',
-              answer: 'Because a disc only lands on the lowest free row, a threat is only usable when the squares beneath it have been filled. Counting whose turn it will be when a column reaches that height is how strong players decide which threats are real and which are decoration.',
-            },
-            {
-              question: 'What is the most common way to lose?',
-              answer: 'Dropping a disc that hands your opponent the square directly above it. It feels like a free move because it builds your own line, and it is the single most frequent losing move in the game.',
-            },
-            {
-              question: 'Does the strategy change against the bot?',
-              answer: 'Against easy and medium, not much – they miss threats, so building any threat works. Against hard, which searches six moves ahead, you have to stop making moves that only look good for one turn: it will already have seen where the column lands two turns later.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

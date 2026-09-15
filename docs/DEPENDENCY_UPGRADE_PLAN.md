@@ -1,6 +1,6 @@
 # Dependency Upgrade Plan
 
-Last repository audit: 2026-04-22
+Last repository audit: 2026-09-15. Still live: Tailwind 4 and Zod 4 are both unstarted.
 
 This document is the dependency maintenance plan for Boardly. It is intentionally repository-aligned: use `package.json`, `package-lock.json`, and official package release notes when preparing a new upgrade branch. Do not treat this page as a live registry of the newest package versions.
 
@@ -12,7 +12,8 @@ This document is the dependency maintenance plan for Boardly. It is intentionall
 | `react` + `react-dom` | `^19.2.4` | aligned | Keep React upgrades coupled to the Next.js compatibility matrix |
 | `prisma` + `@prisma/client` | `^7.4.2` | aligned | Uses `prisma.config.ts`, explicit generator output, and `@prisma/adapter-pg` |
 | `@prisma/adapter-pg` | `^7.4.2` | aligned | Runtime TLS behavior is documented in `docs/OPERATIONS.md` |
-| `socket.io` + `socket.io-client` | `^4.8.3` | aligned | Realtime upgrades require reconnect and room-broadcast smoke coverage |
+| `@supabase/supabase-js` | `^2.105.4` | aligned | Carries realtime; bumps need a two-client broadcast smoke test |
+| `stripe` | `^22.1.1` | aligned | Pinned API version `2026-04-22.dahlia` in `lib/stripe.ts` moves separately from the SDK |
 | `@sentry/nextjs` | `^10.42.0` | aligned | Verify release monitoring after bumps |
 | `resend` | `^6.9.3` | aligned | Keep email behavior smoke-tested when touched |
 | `tailwindcss` | `3.4.14` | major follow-up | Tailwind 4 needs a dedicated styling/tooling migration |

@@ -58,6 +58,132 @@ describe('JoinPrompt', () => {
     expect(onJoin).not.toHaveBeenCalled()
   })
 
+  describe('a full lobby is not a dead end (#957)', () => {
+    const fullLobby = {
+      code: 'ABCD',
+      name: 'Open Lobby',
+      isPrivate: false,
+      gameType: 'connect_four',
+    }
+
+    it('offers a lobby of their own for the same game when the room is full', () => {
+      const onCreateOwnLobby = jest.fn()
+
+      render(
+        <JoinPrompt
+          lobby={fullLobby}
+          viewerMode="authenticated"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="Lobby is full"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onCreateOwnLobby={onCreateOwnLobby}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /lobby\.joinSection\.createOwnLobby/ }))
+
+      expect(onCreateOwnLobby).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves other join failures alone – only a full room gets the fallback', () => {
+      render(
+        <JoinPrompt
+          lobby={fullLobby}
+          viewerMode="authenticated"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="Wrong password"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onCreateOwnLobby={jest.fn()}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: /lobby\.joinSection\.createOwnLobby/ })).toBeNull()
+    })
+
+    it('waits for a usable name before an anonymous visitor can take it', () => {
+      const { rerender } = render(
+        <JoinPrompt
+          lobby={fullLobby}
+          viewerMode="anonymous"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="Lobby is full"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onCreateOwnLobby={jest.fn()}
+        />
+      )
+
+      expect(
+        screen.getByRole('button', { name: /lobby\.joinSection\.createOwnLobby/ }).hasAttribute('disabled')
+      ).toBe(true)
+
+      rerender(
+        <JoinPrompt
+          lobby={fullLobby}
+          viewerMode="anonymous"
+          guestName="Guest One"
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="Lobby is full"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onCreateOwnLobby={jest.fn()}
+        />
+      )
+
+      expect(
+        screen.getByRole('button', { name: /lobby\.joinSection\.createOwnLobby/ }).hasAttribute('disabled')
+      ).toBe(false)
+    })
+
+    it('translates the spectator fallback instead of hardcoding English', () => {
+      render(
+        <JoinPrompt
+          lobby={{ ...fullLobby, allowSpectators: true }}
+          viewerMode="authenticated"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="Lobby is full"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onWatchAsSpectator={jest.fn()}
+        />
+      )
+
+      expect(screen.getByRole('button', { name: /lobby\.joinSection\.watchInstead/ })).toBeTruthy()
+      expect(screen.queryByText(/Watch as spectator instead/)).toBeNull()
+    })
+  })
+
   it('keeps authenticated users on the regular join action flow', () => {
     const onJoin = jest.fn()
 
