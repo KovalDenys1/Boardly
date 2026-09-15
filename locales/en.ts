@@ -441,6 +441,7 @@ const en = {
     noDownloadNeeded: 'You can play as a guest. No app download needed.',
     stillBeingPolished: 'This game is still being polished.',
     guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
+    screenshotAlt: 'A round of {{gameName}} in progress on Boardly',
     readGuide: 'Read the guide →',
     detail: {
       labels: {

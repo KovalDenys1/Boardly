@@ -39,6 +39,16 @@ Playwright starts `next dev` on **port 3100** by itself — 3000 is often taken 
 another project, and `reuseExistingServer` will happily hand the suite whatever
 is already answering there.
 
+## Screenshots
+
+`npm run capture:screenshots` is a script in the same style, not a test: it
+starts a dev server on a free port, plays a few moves of each of the seven
+available games against the dev database (bots for the move-based ones,
+guests joined over the API for Guess the Spy and Alias) and writes
+`public/screenshots/<game>-{desktop,mobile}.png` for the game pages and the
+manifest (#932). Pass game slugs to capture a subset. It cleans up the way the
+suite does, plus the named guests it minted.
+
 ## Why these exist
 
 The Jest suite mocks Supabase. That is right for 1148 unit tests, and it means

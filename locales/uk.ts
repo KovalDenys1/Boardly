@@ -443,6 +443,7 @@ const uk: Translation = {
     noDownloadNeeded: 'Грай як гість. Завантажувати нічого не потрібно.',
     stillBeingPolished: 'Ця гра ще розробляється.',
     guideCallout: 'Вперше в {{gameName}}? Читай повні правила та поради.',
+    screenshotAlt: 'Партія в {{gameName}} на Boardly',
     readGuide: 'Читати гайд →',
     detail: {
       labels: {

@@ -81,6 +81,13 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
   const [isNarrow, setIsNarrow] = useState(false)
   const [isTiny, setIsTiny] = useState(false)
 
+  // The manifest's "Quick play" shortcut lands on /?quick=1 (#932). Read from
+  // the location rather than useSearchParams, which would need a Suspense
+  // boundary to keep the home page static.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('quick') === '1') setShowPicker(true)
+  }, [])
+
   useEffect(() => {
     const narrowQuery = window.matchMedia('(max-width: 639px)')
     const tinyQuery = window.matchMedia('(max-width: 379px)')
