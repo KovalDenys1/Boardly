@@ -38,7 +38,8 @@ export async function recordLobbyParticipation(params: {
   isGuest?: boolean
   /** Copied from the user at join, because the user row may not survive the week. */
   signupSource?: string | null
-}): Promise<void> {
+}): Promise<boolean> {
+  let created = false
   try {
     await prisma.lobbyParticipations.create({
       data: {
@@ -51,6 +52,7 @@ export async function recordLobbyParticipation(params: {
         signupSource: params.signupSource ?? null,
       },
     })
+    created = true
   } catch (err) {
     // A repeat join is expected (rejoin after a refresh) and the unique
     // constraint absorbs it. Anything else is logged and swallowed: an
@@ -63,6 +65,50 @@ export async function recordLobbyParticipation(params: {
         lobbyId: params.lobbyId,
       })
     }
+  }
+
+  if (created && !params.isBot) {
+    await recordSecondHumanJoined(params)
+  }
+
+  return created
+}
+
+/**
+ * The invite loop's outcome metric (#920): a lobby that reaches a second non-bot
+ * participant. Written server-side because the public beacon enum is forgeable, and a
+ * rate anyone could post with any lobby code is worse than none. Bots are excluded
+ * because a bot-filled Quick Play lobby is not an invite that worked.
+ *
+ * Never throws: an analytics write must not stop someone joining a game.
+ */
+async function recordSecondHumanJoined(params: {
+  lobbyId: string
+  lobbyCode: string
+  gameType: GameType
+  isGuest?: boolean
+  signupSource?: string | null
+}): Promise<void> {
+  try {
+    const humans = await prisma.lobbyParticipations.count({
+      where: { lobbyId: params.lobbyId, isBot: false },
+    })
+    if (humans !== 2) return
+
+    await prisma.operationalEvents.create({
+      data: {
+        eventName: 'second_human_joined',
+        metricType: 'flow',
+        gameType: params.gameType,
+        isGuest: params.isGuest ?? false,
+        source: params.signupSource ?? null,
+        payload: { lobby_code: params.lobbyCode },
+      },
+    })
+  } catch (err) {
+    log.error('Failed to record second_human_joined', err instanceof Error ? err : new Error(String(err)), {
+      lobbyId: params.lobbyId,
+    })
   }
 }
 

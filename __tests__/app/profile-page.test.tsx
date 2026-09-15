@@ -9,6 +9,8 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }))
 
+jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
+
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))

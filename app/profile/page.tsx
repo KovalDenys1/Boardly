@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import { trackPremiumCta } from '@/lib/analytics'
 import { Icon, type IconName } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import UsernameInput from '@/components/UsernameInput'
@@ -375,6 +376,7 @@ export default function ProfilePage() {
   }, [])
 
   const handleCheckout = useCallback(async () => {
+    trackPremiumCta('profile_premium_tab')
     setPremiumActionLoading(true)
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' })
