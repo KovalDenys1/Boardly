@@ -21,4 +21,19 @@ describe('GameRibbon', () => {
       expect(hrefs).toContain(href)
     }
   })
+
+  // The ribbon grid is 1 / 2 / 4 columns; the card count must divide evenly so
+  // no row ends with an empty slot (layout DoD). Seven games + the "more on the
+  // way" card that links /games.
+  it('renders a card count that fills the 2- and 4-column grid', () => {
+    const { container } = render(<GameRibbon />)
+
+    const grid = container.querySelector('.grid')
+    expect(grid).not.toBeNull()
+    const cardCount = grid!.children.length
+
+    expect(cardCount).toBe(8)
+    expect(cardCount % 4).toBe(0)
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toContain('/games')
+  })
 })

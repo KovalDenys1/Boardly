@@ -385,6 +385,8 @@ const en = {
     ribbonBadgeLater: 'Coming later',
     ribbonBadgePlanned: 'On the list',
     ribbonDescription: '{{available}} games are ready today. {{more}} more are being explored for future game nights.',
+    ribbonMoreTitle: 'More on the way',
+    ribbonMoreDesc: '{{count}} more games are in development. The full catalog shows what is next.',
     ctaLoggedInTitle: 'Good to have you back, {{name}}.',
     ctaLoggedInAccent: 'Your next game is one click away.',
     ctaLoggedInBody: 'Your stats, friends, and game history are right where you left them.',

@@ -385,6 +385,8 @@ const ru = {
     ribbonBadgeLater: 'Скоро',
     ribbonBadgePlanned: 'В планах',
     ribbonDescription: '{{available}} игр готово сегодня. Ещё {{more}} — в разработке.',
+    ribbonMoreTitle: 'Ещё в пути',
+    ribbonMoreDesc: 'Ещё {{count}} игр в разработке. В полном каталоге видно, что будет дальше.',
     ctaLoggedInTitle: 'Рады видеть тебя снова, {{name}}.',
     ctaLoggedInAccent: 'Следующая игра — в одном клике.',
     ctaLoggedInBody: 'Твоя статистика, друзья и история игр ждут тебя.',

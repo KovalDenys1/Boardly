@@ -143,6 +143,89 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
   )
 }
 
+/**
+ * Eighth ribbon card. The grid is 1 / 2 / 4 columns and seven game cards
+ * left an empty slot at xl and an orphan row at sm (layout DoD: columns end
+ * on one line). The card also gives `/` a second crawlable link to `/games`.
+ */
+function MoreGamesCard({ count }: { count: number }) {
+  const { t } = useTranslation()
+
+  return (
+    <div
+      style={{
+        background: 'var(--bd-card-warm)',
+        borderRadius: 24,
+        border: '1.5px dashed var(--bd-line)',
+        boxShadow: '0 6px 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          background: 'rgba(155,140,255,0.12)',
+          padding: '24px 16px',
+          height: 160,
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        <div className="bd-float" style={{ animationDelay: '1.4s' }}>
+          <span
+            style={{
+              fontFamily: 'var(--bd-font-display)',
+              fontSize: 56,
+              fontWeight: 700,
+              lineHeight: 1,
+              color: 'var(--bd-lav-deep)',
+            }}
+          >
+            +{count}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        <h3
+          style={{
+            fontFamily: 'var(--bd-font-display)',
+            fontSize: 22,
+            fontWeight: 700,
+            color: 'var(--bd-ink)',
+          }}
+        >
+          {t('home.ribbonMoreTitle')}
+        </h3>
+
+        <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, flex: 1 }}>
+          {t('home.ribbonMoreDesc', { count })}
+        </p>
+
+        <Link
+          href="/games"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px 20px',
+            borderRadius: 14,
+            fontWeight: 600,
+            fontSize: 15,
+            background: 'var(--bd-bg2)',
+            color: 'var(--bd-ink)',
+            border: '1px solid var(--bd-line)',
+            textDecoration: 'none',
+            marginTop: 4,
+          }}
+        >
+          {t('home.seeAllGames')}
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 function fallbackName(id: string) {
   return id
@@ -348,6 +431,7 @@ export default function GameRibbon() {
         {cards.map((g) => (
           <GameCard key={g.name} {...g} />
         ))}
+        <MoreGamesCard count={inDevelopmentCount + plannedCount} />
       </div>
     </section>
   )

@@ -387,6 +387,8 @@ const uk: Translation = {
     ribbonBadgeLater: 'Незабаром',
     ribbonBadgePlanned: 'У планах',
     ribbonDescription: '{{available}} ігор готово сьогодні. Ще {{more}} — в розробці.',
+    ribbonMoreTitle: 'Ще в дорозі',
+    ribbonMoreDesc: 'Ще {{count}} ігор у розробці. У повному каталозі видно, що буде далі.',
     ctaLoggedInTitle: 'Раді бачити тебе знову, {{name}}.',
     ctaLoggedInAccent: 'Наступна гра — на відстані одного кліку.',
     ctaLoggedInBody: 'Твоя статистика, друзі та ігрова історія чекають на тебе.',

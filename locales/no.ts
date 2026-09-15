@@ -385,6 +385,8 @@ const no = {
     ribbonBadgeLater: 'Kommer snart',
     ribbonBadgePlanned: 'På planen',
     ribbonDescription: '{{available}} spill er klare nå. {{more}} til er under utvikling.',
+    ribbonMoreTitle: 'Flere på vei',
+    ribbonMoreDesc: '{{count}} spill til er under utvikling. Hele katalogen viser hva som kommer.',
     ctaLoggedInTitle: 'Godt å se deg igjen, {{name}}.',
     ctaLoggedInAccent: 'Neste spill er ett klikk unna.',
     ctaLoggedInBody: 'Statistikken din, venner og spillhistorikk er der du forlot dem.',
