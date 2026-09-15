@@ -759,14 +759,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <div style={{
               padding: '20px 16px', border: `1.5px dashed ${accent}`, borderRadius: 14,
               color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
-              background: 'rgba(255,255,255,0.4)',
+              background: 'var(--bd-surface-raised)',
             }}>Waiting for players…</div>
           )}
           {list.map((p, i) => (
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '8px 12px 8px 8px', borderRadius: 999,
-              background: 'rgba(255,255,255,0.55)', border: '1.5px solid var(--bd-line)',
+              background: 'var(--bd-surface-raised)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
               <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
@@ -775,7 +775,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {p.userId === currentUserId && (
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontFamily: FONT_MONO,
-                    color: accentDeep, background: 'rgba(255,255,255,0.7)',
+                    color: accentDeep, background: 'var(--bd-surface-raised)',
                     padding: '2px 8px', borderRadius: 999,
                     border: `1px solid ${accent}`, letterSpacing: '0.08em',
                   }}>YOU</span>
@@ -965,7 +965,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <div key={pid} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '8px 12px', borderRadius: 999,
-                  background: 'rgba(255,255,255,0.6)',
+                  background: 'var(--bd-surface-raised)',
                   border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
                 }}>
                   <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
@@ -976,7 +976,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   {isYou && (
                     <span style={{
                       marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
-                      color: accentDeep, background: 'rgba(255,255,255,0.8)',
+                      color: accentDeep, background: 'var(--bd-surface-raised)',
                       padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
                     }}>YOU</span>
                   )}
@@ -1006,9 +1006,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </button>
           ) : (
             <div style={{
-              width: '100%', textAlign: 'center',
+              // A flex row, not a block: on a block the JSX space between the
+              // glyph and the text collapses and the two run together.
+              width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '12px 16px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.5)',
+              background: 'var(--bd-surface-raised)',
               border: `1.5px solid ${accent}`,
               fontWeight: 600, fontSize: 14,
               color: accentDeep,
@@ -1171,7 +1174,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             right={
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${teamAccent}`,
+                background: 'var(--bd-surface-raised)', border: `1.5px solid ${teamAccent}`,
                 borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
               }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
@@ -1329,7 +1332,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             right={
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${teamAccent}`,
+                background: 'var(--bd-surface-raised)', border: `1.5px solid ${teamAccent}`,
                 borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
               }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
@@ -1528,7 +1531,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                       <div key={team.id} style={{
                         display: 'grid', gridTemplateColumns: '14px 1fr auto', alignItems: 'center', gap: 14,
                         padding: '12px 14px', borderRadius: 14,
-                        background: isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
+                        background: isActive ? 'var(--bd-surface-raised)' : 'var(--bd-surface-raised)',
                         border: `1.5px solid ${isActive ? accent : 'var(--bd-line)'}`,
                       }}>
                         <span style={{ width: 14, height: 14, borderRadius: 999, background: accent, boxShadow: isActive ? `0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}` : 'none' }} />

@@ -15,6 +15,13 @@
   --bd-ink-muted: #8A7A66;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
+  /* A plate raised above whatever is behind it - a player pill on a team card,
+     a chip on the page. Translucent white rather than a colour, so it works on
+     the warm card, on the page and on a premium lobby theme's own background
+     without knowing which it is. It flips, unlike --bd-ink-on-accent: the
+     surfaces underneath flip too. Not in /dev/theme - lib/dev/theme-tokens.ts
+     is hex-only maths. */
+  --bd-surface-raised: rgba(255, 255, 255, 0.55);
   --bd-coral: #FF6B5B;
   --bd-coral-deep: #E04B3B;
   --bd-mint: #4FC9A6;
@@ -40,6 +47,7 @@ html.dark {
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-input-bg:  #2B2720;
+  --bd-surface-raised: rgba(255, 255, 255, 0.06);
 }
 
 @keyframes bd-float {
@@ -1746,6 +1754,20 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .scorecard-row-flash {
   animation: scorecard-just-scored 0.9s ease-out forwards;
+}
+
+/* A scorecard column scrolls under the pinned TOTAL bar, and at 844x390 the bar
+   sat on the last visible row: the hard edge sliced a line of text mid-glyph,
+   which reads as damage rather than as content that continues (#906).
+   The fade zone is the column's own bottom padding, so a row scrolled past the
+   end fades out instead of being cut, and the last row - the subtotal - comes to
+   rest above the fade rather than inside it. The gradient stops are mask alpha,
+   not colours. */
+.scorecard-scroll {
+  --scorecard-fade: 1.25rem;
+  padding-bottom: var(--scorecard-fade);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
 }
 .ttt-cell-coord {
   position: absolute;
