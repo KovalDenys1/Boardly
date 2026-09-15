@@ -24,8 +24,15 @@ jobs:
         env:
           INDEXNOW_KEY: 0b12a34ebc4e0bbe955eb42d3e0a49f3
         run: node scripts/indexnow-submit.mjs
+      # `secrets` is not a valid context in a step `if`, so the presence check runs in a step.
+      - name: Check Search Console credential
+        id: gsc
+        env:
+          GSC_SERVICE_ACCOUNT_KEY: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY }}
+        run: |
+          if [ -n "$GSC_SERVICE_ACCOUNT_KEY" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
       - name: Search Console sitemap
-        if: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY != '' }}
+        if: steps.gsc.outputs.present == 'true'
         env:
           GSC_SERVICE_ACCOUNT_KEY: ${{ secrets.GSC_SERVICE_ACCOUNT_KEY }}
         run: node scripts/gsc-submit-sitemap.mjs
