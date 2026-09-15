@@ -177,6 +177,7 @@ const en = {
       comingSoon: 'Coming Soon',
       password: 'Password',
       passwordPlaceholder: 'Leave empty for public lobby',
+      discordNotice: 'Public lobbies are listed on our Discord so people can join – private lobbies never are.',
       create: 'Create Lobby',
       creating: 'Creating...',
       cancel: 'Cancel',

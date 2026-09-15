@@ -186,6 +186,7 @@ const uk: Translation = {
       comingSoon: 'Незабаром',
       password: 'Пароль',
       passwordPlaceholder: 'Залиште порожнім для публічного лобі',
+      discordNotice: 'Публічні лобі публікуються на нашому Discord, щоб гравці могли приєднатися – приватні лобі не публікуються ніколи.',
       create: 'Створити лобі',
       creating: 'Створюємо...',
       cancel: 'Скасувати',

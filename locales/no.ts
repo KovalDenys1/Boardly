@@ -177,6 +177,7 @@ const no = {
       comingSoon: 'Kommer snart',
       password: 'Passord',
       passwordPlaceholder: 'La stå tomt for offentlig lobby',
+      discordNotice: 'Offentlige lobbyer vises på Discord-serveren vår slik at folk kan bli med – private lobbyer vises aldri.',
       create: 'Opprett lobby',
       creating: 'Oppretter...',
       cancel: 'Avbryt',
