@@ -44,7 +44,12 @@ export default function Footer() {
               >
                 B
               </span>
-              boardly
+              <span>
+                Boardly
+                <span className="font-semibold" style={{ fontSize: 15, letterSpacing: 0, color: 'var(--bd-ink-soft)' }}>
+                  {' – '}{t('footer.brandLine')}
+                </span>
+              </span>
             </div>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-muted)' }}>
               {t('footer.tagline')}
@@ -146,6 +151,17 @@ export default function Footer() {
               {t('footer.community')}
             </h3>
             <ul className="space-y-2.5">
+              <li>
+                <Link
+                  href="/about"
+                  className="text-sm transition-colors"
+                  style={{ color: 'var(--bd-ink-soft)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                >
+                  {t('footer.about')}
+                </Link>
+              </li>
               <li>
                 <a
                   href="https://github.com/KovalDenys1/Boardly"
