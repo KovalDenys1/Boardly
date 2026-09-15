@@ -346,16 +346,16 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
 
-      // Always, deliberately. This used to read `if (data.serverBroadcasted
-      // !== true)`, a field no server has ever set — so it always reconciled
-      // anyway, while looking like an optimisation someone could "finish" by
-      // returning that flag. Doing so without awaiting the broadcast would
-      // reintroduce #859 here: the client would trust a delivery nobody
-      // checked and sit on a stale board while the server moved on. The state
-      // is already in this response and applying it directly would save the
-      // request, but reconcile also refreshes players and lobby data, so that
-      // is a separate change (#861).
-      void reconcileWithServerSnapshot()
+      // No snapshot fetch here (#861). `data.game.state` is the authoritative
+      // state and it is already applied above, so `GET /api/lobby/:code` would
+      // answer with what this client just installed.
+      //
+      // This is not the broadcast being trusted, which is what #859 was about:
+      // nothing here waits on a delivery, the state arrived on this move's own
+      // response. What the snapshot also refreshes is the lobby and the player
+      // rows, and a roll changes neither — the scores on screen are read off
+      // the engine, not off `game.players`, and `Games.status` still says
+      // playing.
 
       trackMoveSubmitApplied({
         gameType: 'yahtzee',
@@ -397,7 +397,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileAfterMoveError])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -595,16 +595,17 @@ export function useGameActions(props: UseGameActionsProps) {
         },
       })
 
-      // Always, deliberately. This used to read `if (data.serverBroadcasted
-      // !== true)`, a field no server has ever set — so it always reconciled
-      // anyway, while looking like an optimisation someone could "finish" by
-      // returning that flag. Doing so without awaiting the broadcast would
-      // reintroduce #859 here: the client would trust a delivery nobody
-      // checked and sit on a stale board while the server moved on. The state
-      // is already in this response and applying it directly would save the
-      // request, but reconcile also refreshes players and lobby data, so that
-      // is a separate change (#861).
-      void reconcileWithServerSnapshot()
+      // No snapshot fetch on an ordinary score, for the reason the roll path
+      // above gives (#861): the authoritative state came back on this response
+      // and is already applied.
+      //
+      // The move that ends the game is the exception. It is the one move that
+      // changes something the response does not carry — `Games.status` becomes
+      // 'finished' server-side, and the end-of-game view is keyed on it. Once
+      // per game rather than once per move.
+      if (newEngine.isGameFinished()) {
+        void reconcileWithServerSnapshot()
+      }
 
       trackMoveSubmitApplied({
         gameType: 'yahtzee',
