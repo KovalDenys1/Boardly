@@ -120,6 +120,7 @@
     "lefthook": "^1.13.6",
     "markdownlint-cli": "^0.48.0",
     "prisma": "^7.4.2",
+    "sharp": "^0.34.5",
     "ts-jest": "^29.4.6",
     "whatwg-fetch": "^3.6.20"
   },

@@ -18,6 +18,11 @@ const SCREENSHOT_SLUG: Record<string, string> = {
   alias: 'alias',
 }
 
+/** Whether `npm run capture:screenshots` has produced a frame for this catalog id. */
+export function hasScreenshot(gameId: string): boolean {
+  return gameId in SCREENSHOT_SLUG
+}
+
 export default function GameScreenshot({ gameId, gameName }: { gameId: string; gameName: string }) {
   const { t } = useTranslation()
   const slug = SCREENSHOT_SLUG[gameId]

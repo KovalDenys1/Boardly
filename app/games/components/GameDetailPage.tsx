@@ -8,7 +8,7 @@ import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import PlayVsBotButton from './PlayVsBotButton'
-import GameScreenshot from './GameScreenshot'
+import GameScreenshot, { hasScreenshot } from './GameScreenshot'
 
 type DetailStep = {
   title: string
@@ -127,12 +127,18 @@ export default function GameDetailPage({
               )}
             </div>
 
-            <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-[26rem]">
-              <GameScreenshot gameId={gameId} gameName={gameName} />
-              <div className="absolute -left-4 -top-4">
-                <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={72} label={iconLabel} />
+            {hasScreenshot(gameId) ? (
+              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-[26rem]">
+                <GameScreenshot gameId={gameId} gameName={gameName} />
+                <div className="absolute -left-4 -top-4">
+                  <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={72} label={iconLabel} />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-center lg:justify-end">
+                <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={94} label={iconLabel} />
+              </div>
+            )}
           </div>
         </section>
 
