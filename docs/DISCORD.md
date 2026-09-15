@@ -23,7 +23,9 @@ set. Nothing in this repo holds the bot token.
 
 Both outbound webhook paths post a Discord embed (`{ "embeds": [ ... ] }`), so
 `FEEDBACK_DISCORD_WEBHOOK_URL` and `OPS_ALERT_WEBHOOK_URL` both have to be Discord channel
-webhooks. A Slack or Teams webhook rejects that payload.
+webhooks. A Slack or Teams webhook rejects that payload. Both go through `sendDiscordEmbed` in
+`lib/discord-webhook.ts` (#940); the feedback route keeps its own catch, because a dead webhook
+must not turn a saved submission into a 500.
 
 Every one of the site's variables is optional. With none of them set the site still runs:
 feedback is stored but not mirrored, alerts are still evaluated and logged instead of posted,
@@ -39,17 +41,34 @@ the value is readable by anyone who loads the site – as a public invite link i
 
 `lib/discord/internal-auth.ts` (#940) is `lib/cron-auth.ts` on its own secret, deliberately
 not a reuse of `CRON_SECRET`: a secret that leaks off the Pi must not also fire every cron job.
-`proxy.ts` gates `/api/internal/discord/*` on the same bearer and counts a request carrying it
-as a trusted server request, which is what lets the heartbeat POST through the CSRF check
-without an `Origin` header.
+The bearer is compared with `constantTimeEqual`, a length check and an XOR accumulator, because
+a plain `===` returns at the first wrong character and can be measured a byte at a time.
+`proxy.ts` gates `/api/internal/discord/*` on the same check before any function runs, and
+counts a request carrying the secret as a trusted server request, which is what lets the
+heartbeat POST through the CSRF check without an `Origin` header.
 
-- 503 when `DISCORD_INTERNAL_SECRET` is unset, 401 on a missing or wrong bearer
-- both routes are rate limited at 60 requests per minute per IP
-- the member lookup answers `{ "linked": false }` for a malformed id, an id nobody has linked,
-  a guest or suspended account, and any account whose `profileVisibility` is not `public`, so
-  `/stats` in Discord shows exactly what the public profile page shows
-- the heartbeat ignores its body and answers `{ "success": true, "recordedAt": ... }`. The bot
-  sends one anyway; only the freshness of the row is read
+Both routes answer 503 when `DISCORD_INTERNAL_SECRET` is unset and 401 on a missing or wrong
+bearer, and they are rate limited separately.
+
+`GET /api/internal/discord/members/{snowflake}` – 60 requests per minute per IP:
+
+- a snowflake that is not 17 to 20 digits is 400 `{ "error": "Invalid Discord user id" }`
+- an id nobody has linked, a guest, a suspended account and any account whose
+  `profileVisibility` is not `public` all read alike as `{ "linked": false }`, so the route
+  cannot be used to tell a private linked account from an unlinked one
+- otherwise `linked`, `username`, `gamesPlayed`, `isPremium`, `memberSince`. `gamesPlayed`
+  counts `Players` rows whose game reached `finished`, `abandoned` or `cancelled`, the same set
+  the profile page totals, so `/stats` in Discord matches the profile page
+- every answer carries `Cache-Control: no-store`
+
+`POST /api/internal/discord/heartbeat` – 12 requests per minute per IP, which leaves room for a
+restart loop without filling `OperationalEvents`:
+
+- the body is optional but strict: `sha`, `ready`, `uptimeSeconds`, `latencyMs`, `guildMembers`,
+  all optional, and any other key is 400 `{ "error": "Invalid heartbeat" }`
+- `ready: false` records the run as failed with reason `gateway_not_ready`, so a bot that is up
+  but not connected to the gateway is not counted as healthy
+- the answer is `{ "ok": true, "recordedAt": ... }`
 
 The bot never holds database credentials. Everything it knows about a member comes through the
 member route.
@@ -59,6 +78,14 @@ The `discord_bot_stale` reliability rule (#944) reads its age: warning after 20 
 critical after 60, delivered through the same webhook and GitHub issue path as every other
 rule. A bot that has never sent one does not breach, so the rule stays quiet until the bot has
 run once. Runbook: `docs/OPERATIONS.md#runbook-discord_bot_stale`.
+
+**Open mismatch with the bot.** The bot in `boardly-discord` posts `memberCount`, `openPosts`,
+`uptimeS` and `sha` (`bot/lib/boardly-api.ts`). Three of those names are not in the schema
+above, which rejects unknown keys, so every heartbeat it sends answers 400 and no row is
+written. Because the rule does not alert until a first heartbeat has landed, this fails
+silently: the bot looks healthy and the site never hears from it. Fix it on the bot side –
+`guildMembers`, `uptimeSeconds`, `ready` – before the launch checklist proves the first
+heartbeat.
 
 ## Secret map
 
@@ -115,7 +142,7 @@ npm run ops:alerts:check -- --dry-run      # discord_bot_stale appears in the ru
 curl -i -H "Authorization: Bearer $DISCORD_INTERNAL_SECRET" \
   https://boardly.online/api/internal/discord/members/000000000000000000   # {"linked":false}
 curl -i -X POST -H "Authorization: Bearer $DISCORD_INTERNAL_SECRET" \
-  https://boardly.online/api/internal/discord/heartbeat                    # {"success":true,...}
+  https://boardly.online/api/internal/discord/heartbeat                    # {"ok":true,...}
 ```
 
 ## Local development
