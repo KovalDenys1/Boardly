@@ -105,6 +105,42 @@ describe('runReliabilityAlertCycle', () => {
     expect(upsertArgs.update).not.toHaveProperty('githubIssueNumber')
   })
 
+  it('delivers a stale discord-bot heartbeat through the webhook like any other rule', async () => {
+    mockEvaluateReliabilityAlerts.mockResolvedValue({
+      generatedAt: '2026-09-20T12:00:00.000Z',
+      windowMinutes: 10,
+      baselineDays: 7,
+      rules: [
+        breachedRule({
+          alertKey: 'discord_bot_stale',
+          severity: 'critical',
+          currentValue: 75.5,
+          thresholdValue: 60,
+          unit: 'minutes',
+          summary: 'discord-bot last heartbeat 75.5m ago',
+          runbookPath: 'docs/OPERATIONS.md#runbook-discord_bot_stale',
+        }),
+      ],
+    })
+    ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) })
+
+    const result = await runReliabilityAlertCycle({
+      webhookUrl: 'https://discord.com/api/webhooks/1/ops',
+    })
+
+    expect(result.triggered.map((rule) => rule.alertKey)).toEqual(['discord_bot_stale'])
+    expect(result.notificationsSent).toBe(1)
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0]
+    expect(url).toBe('https://discord.com/api/webhooks/1/ops')
+    const body = JSON.parse(init.body)
+    expect(body.embeds[0].title).toContain('[TRIGGERED] discord_bot_stale')
+    expect(JSON.stringify(body)).toContain('docs/OPERATIONS.md#runbook-discord_bot_stale')
+    expect(mockPrisma.operationalAlertStates.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { alertKey: 'discord_bot_stale' } })
+    )
+  })
+
   it('creates and persists a GitHub issue number when the column is available', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,

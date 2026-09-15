@@ -2334,8 +2334,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     — Scorecard is functionally required to bank a roll, so
                     unlike TTT's history it isn't droppable from this tree.
                     Players/RollHistory/Chat stay reachable in portrait. */}
-                <div className="yahtzee-landscape-layout">
-                  <div className="yahtzee-landscape-board">
+                <div className="game-landscape-layout yahtzee-landscape-layout">
+                  <div className="game-landscape-board">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}
@@ -2357,7 +2357,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       showReviewScorecardButton={false}
                     />
                   </div>
-                  <div className="yahtzee-landscape-side">
+                  <div className="game-landscape-side yahtzee-landscape-side">
                     <div className="flex-shrink-0">{compactStatusBar}</div>
                     <div className="flex-1 min-h-0 overflow-y-auto">{scorecardSection}</div>
                   </div>

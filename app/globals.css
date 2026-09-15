@@ -15,6 +15,13 @@
   --bd-ink-muted: #8A7A66;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
+  /* A plate raised above whatever is behind it - a player pill on a team card,
+     a chip on the page. Translucent white rather than a colour, so it works on
+     the warm card, on the page and on a premium lobby theme's own background
+     without knowing which it is. It flips, unlike --bd-ink-on-accent: the
+     surfaces underneath flip too. Not in /dev/theme - lib/dev/theme-tokens.ts
+     is hex-only maths. */
+  --bd-surface-raised: rgba(255, 255, 255, 0.55);
   --bd-coral: #FF6B5B;
   --bd-coral-deep: #E04B3B;
   --bd-mint: #4FC9A6;
@@ -40,6 +47,7 @@ html.dark {
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-input-bg:  #2B2720;
+  --bd-surface-raised: rgba(255, 255, 255, 0.06);
 }
 
 @keyframes bd-float {
@@ -1669,6 +1677,88 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-history-list::-webkit-scrollbar { width: 6px; }
 .ttt-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+/* Shared scoreboard row and player card (#736 phase 3, moved out of the
+   components' style props in #901). They live here, not inline, because an
+   inline style beats every stylesheet rule – which is why the phone-landscape
+   branch further down could not make this row narrow enough for the ~300px
+   side column until the numbers moved. */
+.game-scoreboard-header {
+  position: relative;
+  display: grid;
+  /* Every column is minmax(0, …): with a bare `auto` the centre could not
+     shrink, so as the header narrowed the two 1fr cells collapsed toward zero
+     and the score block ran out over both player cards (#874). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  grid-template-areas: "left center right";
+  align-items: center;
+  gap: 12px;
+}
+.game-scoreboard-cell { min-width: 0; }
+.game-scoreboard-cell--left { grid-area: left; }
+.game-scoreboard-center {
+  grid-area: center;
+  text-align: center;
+  overflow: hidden;
+}
+.game-scoreboard-center--compact { display: none; }
+.game-scoreboard-cell--right {
+  grid-area: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.game-scoreboard-right-card { flex: 1 1 auto; min-width: 0; }
+
+.game-player-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  min-width: 0;
+  transition: all 0.2s;
+}
+.game-player-card--left { flex-direction: row; }
+.game-player-card--right { flex-direction: row-reverse; }
+.game-player-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px var(--bd-ink);
+  object-fit: cover;
+}
+.game-player-avatar--initial {
+  display: grid;
+  place-items: center;
+  font-family: var(--bd-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+}
+/* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
+   avatar, so at 390 and in the 300px landscape side column the name, subline
+   and turn line disappeared entirely instead of truncating – a player card
+   with no player on it (#874). A floor plus `flex: 1 1 auto` means the card
+   gives up characters, not the whole identity. */
+.game-player-identity {
+  flex: 1 1 auto;
+  min-width: 4.5ch;
+  overflow: hidden;
+}
+.game-player-turn {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--bd-ink);
+  font-weight: 600;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 /* Shared in-game chat dock (#736) — wraps components/Chat.tsx (fullScreen)
    inside a game layout panel. Used by TTT, Connect Four, and Memory. */
 .game-chat-panel {
@@ -1747,6 +1837,20 @@ input[type="range"].slider-thumb::-moz-range-track {
 .scorecard-row-flash {
   animation: scorecard-just-scored 0.9s ease-out forwards;
 }
+
+/* A scorecard column scrolls under the pinned TOTAL bar, and at 844x390 the bar
+   sat on the last visible row: the hard edge sliced a line of text mid-glyph,
+   which reads as damage rather than as content that continues (#906).
+   The fade zone is the column's own bottom padding, so a row scrolled past the
+   end fades out instead of being cut, and the last row - the subtotal - comes to
+   rest above the fade rather than inside it. The gradient stops are mask alpha,
+   not colours. */
+.scorecard-scroll {
+  --scorecard-fade: 1.25rem;
+  padding-bottom: var(--scorecard-fade);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
+}
 .ttt-cell-coord {
   position: absolute;
   top: 6px;
@@ -1815,48 +1919,97 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
-/* Phone landscape (mobile width, wider than tall): the portrait stack cannot
-   fit ~330-390px of viewport height, so a third layout tree shows the board
-   at full height on the left with a narrow chrome column on the right (#749).
-   Boards are container-sized via .ttt-board-card / .ttt-board-wrap, so no
-   extra sizing math lives here. */
-.ttt-landscape-layout { display: none; }
+/* ===== PHONE LANDSCAPE – THE SHARED LAYOUT FAMILY (#749/#751, #901) =====
+   The portrait stack cannot fit ~330-390px of viewport height, so a third
+   layout tree shows the board at full height on the left with a narrow chrome
+   column on the right. Boards are container-sized (.ttt-board-card,
+   .memory-mobile-board-wrap), so no sizing math lives here.
+
+   One family, not three. Tic-Tac-Toe, Connect Four and Rock Paper Scissors
+   shared `.ttt-landscape-*`, while Memory and Yahtzee carried byte-identical
+   copies under their own prefixes – so the chat panel's missing floor had to
+   be found and fixed three times, and was not (#902). Per-game deltas live in
+   their own rules below; everything true of every game lives here. */
+.game-landscape-layout { display: none; }
 @media (max-width: 1023px) and (orientation: landscape) {
-  .ttt-mobile-layout { display: none !important; }
-  .ttt-screen {
-    padding: 8px 10px 10px;
-    /* the landscape tree fits by construction — re-lock the shell */
-    overflow: hidden;
-  }
-  .ttt-landscape-layout {
+  .game-landscape-layout {
     display: flex;
     align-items: stretch;
     gap: 10px;
     height: 100%;
     min-height: 0;
   }
-  .ttt-landscape-board {
+  .game-landscape-board {
     flex: 1 1 auto;
     min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
   }
-  .ttt-landscape-board > .ttt-board-card {
+  .game-landscape-board > .ttt-board-card,
+  .game-landscape-board > .memory-mobile-board-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
-  .ttt-landscape-side {
+  .game-landscape-side {
     flex: 0 0 min(300px, 42vw);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
     min-height: 0;
+    /* Last resort. Below ~340px of viewport height even the compact chrome
+       stops fitting; a column that scrolls still hands the player every
+       control, which a column that clips does not. */
+    overflow-y: auto;
   }
-  .ttt-landscape-side > .game-chat-panel {
+  .game-landscape-side > .game-chat-panel {
     flex: 1 1 auto;
-    min-height: 0;
+    /* Chat's floor. It was the column's only flexible member, so it absorbed
+       the whole deficit: 60px in Connect Four, which `overflow: hidden` then
+       cut down to the title strip, and 179px in Memory, where the composer
+       covered the one message on screen (#902). The floor is the compact
+       message lines plus the compact composer. */
+    min-height: 128px;
+  }
+
+  /* --- Compact chat, so that floor is a floor and not a ceiling. ---------
+     The title strip goes: in this column the panel is always on screen, so it
+     announced chat to someone already looking at it while taking a third of
+     the room the messages needed. */
+  .game-landscape-side .chat-titlebar { display: none; }
+  .game-landscape-side .chat-messages { padding: 8px 10px; }
+  .game-landscape-side .chat-composer { padding: 8px 10px; }
+  .game-landscape-side .chat-composer-hint { display: none; }
+
+  /* --- Compact scoreboard: the short center, and a smaller player card. --
+     Two full player cards (42px avatar, 4.5ch of name) plus a three-line score
+     block need ~274px of the ~244px this column leaves after the card's own
+     padding, which is why the score ran out over both names (#901). */
+  .game-landscape-side .game-scoreboard-header { gap: 6px; }
+  .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .game-landscape-side .game-player-card { gap: 6px; padding: 4px 6px; }
+  .game-landscape-side .game-player-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .game-landscape-side .game-player-avatar--initial { font-size: 14px; }
+  /* Both lines are already on screen one block below: the turn is the whole
+     subject of GameStatusBanner, and the subline (X/O, "0W", "0p") repeats the
+     avatar's corner badge and the compact score. Dropping them is what makes
+     room for the game's own action row (layout DoD: no duplicated signals). */
+  .game-landscape-side .game-player-subline,
+  .game-landscape-side .game-player-turn { display: none; }
+}
+
+/* Tic-Tac-Toe / Connect Four / Rock Paper Scissors deltas. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .ttt-mobile-layout { display: none !important; }
+  .ttt-screen {
+    padding: 8px 10px 10px;
+    /* the landscape tree fits by construction – re-lock the shell */
+    overflow: hidden;
   }
 }
 
@@ -2355,7 +2508,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: clamp(18px, 4vw, 28px);
 }
 
-.spy-role-card {
+.spy-role-card,
+.spy-role-identity,
+.spy-role-action {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -2642,50 +2797,18 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
-/* Phone landscape (#751): mirrors .ttt-landscape-layout — board pane at full
-   height on the left, narrow chrome column on the right. The board reuses
-   .memory-mobile-board-wrap's container-query sizing, so no extra sizing
-   math lives here. Moves history is dropped from this pane (same call TTT
-   made for its own history tab) — still reachable by rotating to portrait. */
-.memory-landscape-layout { display: none; }
+/* Memory deltas on the shared family (#751). The board reuses
+   .memory-mobile-board-wrap's container-query sizing. Moves history is
+   dropped from this pane (same call TTT made for its own history tab) –
+   still reachable by rotating to portrait. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .memory-mobile-layout { display: none !important; }
   .memory-screen {
     padding: 8px 10px 10px;
-    /* the landscape tree fits by construction — re-lock the shell */
+    /* the landscape tree fits by construction – re-lock the shell */
     overflow: hidden;
   }
-  .memory-landscape-layout {
-    display: flex;
-    align-items: stretch;
-    gap: 10px;
-    height: 100%;
-    min-height: 0;
-  }
-  .memory-landscape-board {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
-  .memory-landscape-board > .memory-mobile-board-wrap {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  .memory-landscape-side {
-    flex: 0 0 min(300px, 42vw);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-    min-height: 0;
-  }
-  .memory-landscape-side > .game-chat-panel {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
+  .memory-landscape-board { position: relative; }
 }
 
 .memory-mobile-header {
@@ -2726,46 +2849,23 @@ input[type="range"].slider-thumb::-moz-range-track {
   justify-content: center;
 }
 
-/* ===== YAHTZEE GAME — PHONE LANDSCAPE (#751) ===== */
+/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS (#751) ===== */
 /* Yahtzee has no dedicated CSS family otherwise (pure Tailwind, inline in
    LobbyPageClient.tsx) — .yahtzee-screen/.yahtzee-mobile-layout exist only
-   as scoping hooks for this override, mirroring .ttt-landscape-layout.
-   Scorecard is functionally required to bank a roll (unlike TTT's history
-   or Memory's moves log), so it's the one thing kept in the side pane;
-   Players/RollHistory/Chat stay reachable by rotating back to portrait. */
-.yahtzee-landscape-layout { display: none; }
+   as scoping hooks for this override. Scorecard is functionally required to
+   bank a roll (unlike TTT's history or Memory's moves log), so it's the one
+   thing kept in the side pane; Players/RollHistory/Chat stay reachable by
+   rotating back to portrait. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .yahtzee-mobile-layout { display: none !important; }
   /* The persistent top status bar sits above Main Game Area (outside both
-     .yahtzee-mobile-layout and .yahtzee-landscape-layout), so it needs its
-     own hide rule — .yahtzee-landscape-side shows the same content inside
-     the pane instead (compactStatusBar). Without this the bar silently ate
-     ~60-65px out of the already-tight landscape height budget. */
+     .yahtzee-mobile-layout and the landscape tree), so it needs its own hide
+     rule – .yahtzee-landscape-side shows the same content inside the pane
+     instead (compactStatusBar). Without this the bar silently ate ~60-65px
+     out of the already-tight landscape height budget. */
   .yahtzee-top-status-bar { display: none !important; }
-  .yahtzee-landscape-layout {
-    display: flex;
-    align-items: stretch;
-    gap: 10px;
-    height: 100%;
-    min-height: 0;
-    padding: 0 10px 10px;
-  }
-  .yahtzee-landscape-board {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .yahtzee-landscape-side {
-    flex: 0 0 min(300px, 42vw);
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow: hidden; /* Scorecard manages its own internal scroll */
-  }
+  .yahtzee-landscape-layout { padding: 0 10px 10px; }
+  .yahtzee-landscape-side { overflow: hidden; } /* Scorecard manages its own internal scroll */
 }
 
 /* spy mobile (unchanged from existing) */
@@ -2777,6 +2877,95 @@ input[type="range"].slider-thumb::-moz-range-track {
   .spy-header {
     flex-direction: column;
   }
+}
+
+/* Alias team selection – phone landscape (#901).
+   The screen had no breakpoint of its own at all: a hero headline sized from
+   5vw, 24px card padding and full-size player rows, none of which collapse on
+   a short viewport, so both Join Team buttons, Start Rounds and Leave Game sat
+   off screen. The hero says what the context bar above it already says, so in
+   landscape it goes and the rest tightens. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  /* This screen is built from inline styles, so a class rule only wins with
+     !important. Scoped to one breakpoint and five hooks. */
+  .alias-team-screen { padding: 8px 12px !important; }
+  .alias-team-main { padding-bottom: 0 !important; }
+  /* The context bar directly above already names the game and the lobby. */
+  .alias-team-hero { display: none !important; }
+  .alias-team-card { padding: 12px 14px !important; }
+  .alias-context-bar { padding: 0 2px 6px !important; }
+  .alias-context-bar .alias-context-logo { width: 30px !important; height: 30px !important; border-radius: 10px !important; }
+  .alias-context-bar .alias-context-title { font-size: 17px !important; }
+  .alias-team-head { margin-bottom: 8px !important; }
+  .alias-team-name { font-size: 20px !important; margin-top: 0 !important; }
+  .alias-team-roster { gap: 6px !important; margin-bottom: 8px !important; min-height: 0 !important; }
+  .alias-team-player { padding: 4px 8px !important; }
+  .alias-team-join { padding: 7px 12px !important; font-size: 13px !important; }
+  .alias-team-actions { margin-top: 8px !important; }
+  .alias-team-actions button {
+    font-size: 15px !important;
+    padding: 9px 16px !important;
+  }
+}
+
+/* Guess the Spy – phone landscape (#901).
+   The rule above is width-only, so an 844x390 phone got the tall stacked
+   header; that plus the 430px .spy-stage floor put the role, the location
+   and the "I'm Ready" button below the fold on the one screen whose entire
+   purpose is to be read. The branch is the shared orientation condition, not
+   another width, and it re-lays the role card as two columns: identity and
+   the ready control on the left, the secret on the right. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .spy-screen { padding: 8px 10px; }
+  .spy-shell { gap: 8px; }
+
+  .spy-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+  .spy-header-round,
+  .spy-header-lobby { display: none; }
+  .spy-header h2 { font-size: 18px; margin-top: 0; }
+
+  .spy-stage {
+    min-height: 0;
+    padding: 0;
+    align-items: start;
+  }
+  .spy-role-card {
+    display: grid;
+    grid-template-columns: minmax(0, 210px) minmax(0, 1fr);
+    grid-template-areas:
+      "identity secret"
+      "action   secret";
+    align-content: start;
+    gap: 10px 14px;
+    padding: 12px 14px;
+  }
+  .spy-role-identity {
+    grid-area: identity;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .spy-role-identity > .text-center { text-align: left; }
+  .spy-role-card > .spy-role-info { grid-area: secret; }
+  .spy-role-action { grid-area: action; gap: 8px; }
+
+  .spy-role-mark {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    border-radius: 14px;
+    box-shadow: 0 3px 0 var(--bd-ink);
+    font-size: 20px;
+  }
+  .spy-role-title { font-size: 24px; }
+  .spy-role-info,
+  .spy-subpanel { padding: 10px 12px; }
+  .spy-secret-tile { padding: 8px 10px; }
 }
 
 /* ===== DARK MODE OVERRIDES ===== */

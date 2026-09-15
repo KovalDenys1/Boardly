@@ -18,6 +18,7 @@ export const ROUTE_UPDATED = {
   '/games': '2026-09-07',
   '/leaderboard': '2026-09-15',
   '/about': '2026-09-15',
+  '/premium': '2026-09-15',
   '/games/yahtzee': '2026-09-10',
   '/games/spy': '2026-09-10',
   '/games/tic-tac-toe': '2026-09-10',
@@ -25,7 +26,7 @@ export const ROUTE_UPDATED = {
   '/games/connect-four': '2026-09-10',
   '/games/alias': '2026-09-10',
   '/games/rock-paper-scissors': '2026-09-10',
-  '/guides': '2026-09-06',
+  '/guides': '2026-09-15',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',
 } as const satisfies Record<string, string>

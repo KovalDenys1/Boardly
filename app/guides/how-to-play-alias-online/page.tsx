@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
@@ -56,17 +56,19 @@ export default function HowToPlayAliasGuide() {
 
       <GuideLayout
         icon={{ game: 'alias' }}
+        slug="how-to-play-alias-online"
         title="How to Play Alias Online"
-        subtitle="4 min read · Free to play on Boardly · 4–16 players"
+        subtitle="5 min read · Free to play on Boardly · 4–16 players"
+        question="How do you play Alias online?"
+        answer="The group splits into two teams, and on each turn one player describes words on their screen to their own team against the clock without using the word itself – a guessed word is a point and a skipped one costs a point, and after three turns each the higher score wins."
         breadcrumbLabel="How to Play Alias Online"
         accentColor="var(--bd-coral)"
         cta={{ href: '/games/alias/lobbies', label: 'Play Alias Now', detail: 'Gather your teams and start describing.' }}
         related={[
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
-          { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
+          { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
         ]}
       >
         <GuideSection title="What You Need">
@@ -186,6 +188,35 @@ export default function HowToPlayAliasGuide() {
               </Link>.
             </p>
           </div>
+        </GuideSection>
+
+        <GuideSection title="Alias Questions">
+          <GuideFaqList items={[
+            {
+              question: 'How many players does Alias need?',
+              answer: 'The lobby seats four to sixteen. Four is two against two and works; six or eight is where it comes alive, because a bigger team means more voices shouting guesses and a describer who has to cut through them.',
+            },
+            {
+              question: 'Do we need a voice call?',
+              answer: 'It is much better with one. Guessing is done out loud and at speed, and typing guesses into a chat box slows the game to the rhythm of the slowest typist. Any call works – the game itself runs in the browser beside it.',
+            },
+            {
+              question: 'What counts as cheating when describing?',
+              answer: 'Saying the word, or any part of it, in any language. Rhymes, letter counts and the first letter are also off – if your team could reconstruct the word from the shape of it rather than the meaning, the clue does not count.',
+            },
+            {
+              question: 'Can I skip a word I cannot describe?',
+              answer: 'You can, but it is not free: a skip takes a point off your team\'s score for the turn, so it is only worth it when the word would otherwise eat more of the clock than one point is worth.',
+            },
+            {
+              question: 'Are there bots for Alias?',
+              answer: 'No. The game is one person describing something to another person, which is exactly what a bot cannot do – a canned clue is not a clue. If you are short a player, pick a game that supports bots instead.',
+            },
+            {
+              question: 'How long does a game last?',
+              answer: 'Six turns, three per team, so about ten minutes at the default 60-second timer and closer to twenty at 120 seconds. The host picks the turn length when creating the lobby, from 30 up to 120 seconds.',
+            },
+          ]} />
         </GuideSection>
       </GuideLayout>
     </>

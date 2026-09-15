@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
   title: 'Best Online Games for Game Night — Free, No Download',
   description:
-    'The best games to play online with friends on game night. No app, no setup — just share a link and start playing. Free browser games for groups of 2–10.',
+    'The best games to play online with friends on game night, from three players to a full party. No app, no setup – share a link and start playing. Free browser games for groups of 2–10.',
   keywords: [
     'best online games for game night',
     'game night games online',
@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     'virtual game night games free',
     'online games to play with friends at home',
     'best multiplayer games for game night',
+    'best party games online',
+    'online party games free',
+    'best 3 player games online',
+    'online games for 3 players',
   ],
   openGraph: {
     title: 'Best Online Games for Game Night | Boardly',
@@ -76,6 +80,29 @@ const games = [
   },
 ]
 
+const groupSizes = [
+  {
+    size: '2 players',
+    pick: 'Connect Four, Memory, Yahtzee',
+    why: 'Head to head, no teams, no waiting. Connect Four is the shortest of the three and the easiest to replay until somebody stops losing.',
+  },
+  {
+    size: '3 players',
+    pick: 'Guess the Spy, Yahtzee, Memory',
+    why: 'Three is the minimum for Guess the Spy and it plays tighter than a big table: every question counts and the spy has nowhere to hide. Yahtzee at three runs 20–25 minutes.',
+  },
+  {
+    size: '4–6 players',
+    pick: 'Alias, Guess the Spy',
+    why: 'The sweet spot for a party. Four is the smallest Alias lobby and enough for two teams, and Guess the Spy at five or six gives the spy room to bluff without the round dragging.',
+  },
+  {
+    size: '7 or more',
+    pick: 'Guess the Spy, Alias',
+    why: 'Both scale up – Guess the Spy to ten, Alias to sixteen. Run the quieter games as a side bracket so nobody is stuck watching for twenty minutes.',
+  },
+]
+
 export default function BestOnlineGamesForGameNightGuide() {
   return (
     <>
@@ -84,17 +111,19 @@ export default function BestOnlineGamesForGameNightGuide() {
 
       <GuideLayout
         icon={{ glyph: 'party' }}
+        slug="best-online-games-for-game-night"
         title="Best Online Games for Game Night"
-        subtitle="5 min read · All games free on Boardly · No download required"
+        subtitle="6 min read · All games free on Boardly · No download required"
+        question="What are the best online games for game night?"
+        answer="Guess the Spy for a group of five or more, Alias once you have enough people for two teams, and Yahtzee, Memory or Connect Four for a smaller or quieter night – all five run in the browser, need no account, and start from a link you paste into the group chat."
         breadcrumbLabel="Best Online Games for Game Night"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick your first game and share the link.' }}
         related={[
           { href: '/guides/best-games-to-play-on-zoom', label: 'Best Games to Play on Zoom — Free, No Download' },
-          { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
-          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
+          { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
         ]}
       >
         <GuideSection title="What Makes a Good Game Night Game?">
@@ -141,6 +170,30 @@ export default function BestOnlineGamesForGameNightGuide() {
           </div>
         </GuideSection>
 
+        <GuideSection title="Which Games Work at Which Group Size">
+          <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            Group size decides the night more than anything else on this list. A social deduction
+            game with three people is a different game from the same one with nine, and a dice game
+            that is tense at four drags at eight. Pick from the row that matches who actually turned
+            up, not from who said they would.
+          </p>
+          <div className="space-y-3">
+            {groupSizes.map(({ size, pick, why }) => (
+              <div
+                key={size}
+                className="rounded-2xl border p-4"
+                style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+              >
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{size}</strong>
+                  <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{pick}</span>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>{why}</p>
+              </div>
+            ))}
+          </div>
+        </GuideSection>
+
         <GuideSection title="Tips for Hosting an Online Game Night">
           <GuideChecklist items={[
             { mark: 'yes', text: 'Pick 2–3 games in advance and share the links before the call starts' },
@@ -148,6 +201,35 @@ export default function BestOnlineGamesForGameNightGuide() {
             { mark: 'yes', text: 'Switch games every 2–3 rounds to keep the energy up' },
             { mark: 'yes', text: 'Let the group vote on the next game between rounds' },
             { mark: 'yes', text: 'Keep a group chat open to share lobby links easily' },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Game Night Questions">
+          <GuideFaqList items={[
+            {
+              question: 'What can we play with exactly three people?',
+              answer: 'Guess the Spy works at three and is sharper than it sounds – with nobody to hide behind, every question a player asks is evidence. Yahtzee and Memory also seat three, and both finish fast enough that the loser gets a rematch. Alias is played in teams and its lobby seats four to sixteen, so keep it for when a fourth arrives.',
+            },
+            {
+              question: 'Which of these is the best online party game?',
+              answer: 'Alias, once you have six or more people. Two teams, a word to describe, a clock running – it is the loudest game on the list and the one that needs the least explaining. Guess the Spy is the better opener when the group is still warming up.',
+            },
+            {
+              question: 'Do we need a video call to play?',
+              answer: 'No. Guess the Spy and Alias are better with voice, because the whole game is people talking, and any call works – Zoom, Discord, Meet, a group phone call. Yahtzee, Memory and Connect Four need no voice at all; the in-game chat is enough.',
+            },
+            {
+              question: 'Does everyone need an account?',
+              answer: 'No. The host opens a lobby and shares the link, and everyone else joins as a guest with a name they type in. An account only buys you a saved profile and stats, and nobody needs one to sit down at the table.',
+            },
+            {
+              question: 'How long does an online game night usually run?',
+              answer: 'Two hours covers a good one: a couple of rounds of Guess the Spy to start, a longer stretch of Alias once everyone is warm, and a short game while people drop off. Switching every two or three rounds keeps the energy up better than one long session of anything.',
+            },
+            {
+              question: 'What if someone drops out halfway through?',
+              answer: 'Pick the next game around the people still there rather than waiting. Connect Four and Memory are the useful fallbacks – they seat two to four, start instantly, and give a shrinking group something to do without restarting the night.',
+            },
           ]} />
         </GuideSection>
       </GuideLayout>

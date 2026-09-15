@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -53,8 +53,11 @@ export default function HowToPlayMemoryGuide() {
 
       <GuideLayout
         icon={{ game: 'memory' }}
+        slug="how-to-play-memory-card-game-online"
         title="How to Play Memory Card Game Online"
-        subtitle="4 min read · Free to play on Boardly · 2–4 players"
+        subtitle="5 min read · Free to play on Boardly · 2–4 players"
+        question="How do you play the Memory card game online?"
+        answer="Every card starts face down; on your turn you flip two, keep the pair and go again if they match, and turn them back if they do not – when the last pair is gone the player holding the most pairs wins."
         breadcrumbLabel="How to Play Memory Card Game"
         accentColor="var(--bd-mint)"
         cta={{ href: '/games/memory/lobbies', label: 'Play Memory Now', detail: 'Ready to test your memory?' }}
@@ -91,8 +94,8 @@ export default function HowToPlayMemoryGuide() {
           <div className="space-y-3">
             {[
               { level: 'Easy', grid: '4×4', pairs: '8 pairs', best: 'Quick games, playing with younger players, or learning the game' },
-              { level: 'Medium', grid: '4×6', pairs: '12 pairs', best: 'Standard competitive play — the sweet spot for most groups' },
-              { level: 'Hard', grid: '5×6', pairs: '15 pairs', best: 'Serious players who want a longer, more demanding game' },
+              { level: 'Medium', grid: '5×4', pairs: '10 pairs', best: 'Standard competitive play — the sweet spot for most groups' },
+              { level: 'Hard', grid: '6×6', pairs: '18 pairs', best: 'Serious players who want a longer, more demanding game' },
             ].map(({ level, grid, pairs, best }) => (
               <div
                 key={level}
@@ -116,6 +119,35 @@ export default function HowToPlayMemoryGuide() {
             { tip: 'Watch your opponents', detail: "When other players flip cards, you see them too. Their misses are hints about where pairs are hiding." },
             { tip: 'Do not grab a pair the moment you find it', detail: "Once you know where a pair is, you can wait. Flipping a new card first gives you more information — then match the pair on the next turn." },
             { tip: 'Play it safe when you are on a roll', detail: "Matching cards gives you another turn. When you are on a streak, pick pairs you are sure about rather than taking a guess that might end your turn." },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Memory Card Game Questions">
+          <GuideFaqList items={[
+            {
+              question: 'How many players can play Memory online?',
+              answer: 'Two to four. Two is the sharpest version, because every card your opponent turns over is information you get for free. At four the board changes so much between your turns that luck starts to matter more than memory.',
+            },
+            {
+              question: 'What is the difference between the three difficulty levels?',
+              answer: 'Only the size of the board. Easy is a 4×4 grid with 8 pairs, Medium is 5×4 with 10, and Hard is 6×6 with 18. More pairs means more positions to hold in your head, so Hard rewards attention where Easy rewards speed.',
+            },
+            {
+              question: 'How long does a game take?',
+              answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Nothing is timed, so a group that talks between turns will take longer, and there is no penalty for it.',
+            },
+            {
+              question: 'Can I play Memory against a computer?',
+              answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about nine times in ten, which is roughly a very attentive human and a fair test of your own recall.',
+            },
+            {
+              question: 'Does the game always give the same cards?',
+              answer: 'No. The deck is shuffled for every game, so a board you have just cleared is no help in the next one. What carries over is the habit of scanning the whole grid before your first flip.',
+            },
+            {
+              question: 'Do I need an account to play?',
+              answer: 'No. Open a lobby, share the link, and the other players join as guests by typing a name. An account only adds a saved profile and a record of your results.',
+            },
           ]} />
         </GuideSection>
       </GuideLayout>

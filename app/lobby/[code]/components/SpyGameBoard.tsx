@@ -379,9 +379,9 @@ export default function SpyGameBoard({
       <div className="spy-shell">
         <header className="spy-header">
           <div className="min-w-0">
-            <p className="bd-kicker">{t('spy.round', { current: data.currentRound || 1, total: data.totalRounds || 3 })}</p>
+            <p className="spy-header-round bd-kicker">{t('spy.round', { current: data.currentRound || 1, total: data.totalRounds || 3 })}</p>
             <h2 className="mt-1 truncate text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h2>
-            <p className="mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">Lobby {lobbyCode.toUpperCase()}</p>
+            <p className="spy-header-lobby mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">Lobby {lobbyCode.toUpperCase()}</p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
             <div className="flex flex-wrap items-center gap-2">

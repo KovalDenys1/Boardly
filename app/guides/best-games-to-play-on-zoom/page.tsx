@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -85,15 +85,18 @@ export default function BestGamesToPlayOnZoomGuide() {
 
       <GuideLayout
         icon={{ glyph: 'laptop' }}
+        slug="best-games-to-play-on-zoom"
         title="Best Games to Play on Zoom — Free, No Download"
-        subtitle="4 min read · Works with Zoom, Google Meet, FaceTime, and any video call"
+        subtitle="5 min read · Works with Zoom, Google Meet, FaceTime, and any video call"
+        question="What are the best games to play on a Zoom call?"
+        answer="Guess the Spy and Alias, because the whole game is people talking and the call is already doing that work, with Yahtzee, Memory and Tic Tac Toe for a quieter call – the host pastes a lobby link into the Zoom chat and nobody screen shares, downloads or signs in."
         breadcrumbLabel="Best Games to Play on Zoom"
         accentColor="var(--bd-sky)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick a game, share the link in your call chat, and start.' }}
         related={[
           { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
-          { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
+          { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
         ]}
       >
@@ -148,6 +151,52 @@ export default function BestGamesToPlayOnZoomGuide() {
             { text: '3. Copy the lobby link and paste it into your Zoom chat' },
             { text: '4. Everyone clicks the link and joins in their browser' },
             { text: '5. Start the game — no accounts, no downloads for anyone' },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Keeping the Call and the Game Out of Each Other's Way">
+          <p className="mb-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            The one thing that goes wrong on a video call is the window fight: the game takes the
+            whole screen and the faces disappear, or the call stays maximised and half the group
+            loses the board. Put the call in its small floating window and the game tab beside it,
+            and tell everyone to do the same before the first round rather than during it.
+          </p>
+          <p className="mb-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            On a phone it is the other way round: the browser and the call cannot share the screen,
+            so the call goes on speaker in the background and the game takes the display. That works
+            for Guess the Spy and Alias, where all you need from the call is voice, and it is the
+            reason those two are the picks for a group joining from phones.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            Do not share your screen for any of these games. Screen sharing shows everyone your view
+            of the board, which spoils Guess the Spy outright, adds a second or two of lag to
+            everything else, and puts one person in charge of what the group can see. Each player in
+            their own tab is both simpler and fairer.
+          </p>
+        </GuideSection>
+
+        <GuideSection title="Zoom Game Questions">
+          <GuideFaqList items={[
+            {
+              question: 'Do I need to share my screen to play?',
+              answer: 'No, and you should not. Everyone opens the lobby link in their own browser and sees their own view of the game. Screen sharing would leak the spy in Guess the Spy and slow every other game down for no gain.',
+            },
+            {
+              question: 'Does this work on Google Meet, Teams or FaceTime?',
+              answer: 'Yes. Nothing here is specific to Zoom – the call only has to carry voice and a chat box you can paste a link into. Where there is no chat box, send the link in a group message instead.',
+            },
+            {
+              question: 'What is the best Zoom game for a big work call?',
+              answer: 'Guess the Spy. It seats up to ten, a round runs five to eight minutes, and it gets people who do not know each other talking without any warm-up. Alias is the better pick if the group is large enough to split into two teams and already knows one another.',
+            },
+            {
+              question: 'Can people join from their phones?',
+              answer: 'Yes. The games run in a mobile browser, so a player on a phone joins from the same link. Put the call on speaker and keep the game in the browser – on a phone the two cannot share the screen.',
+            },
+            {
+              question: 'What happens if someone drops off the call mid-game?',
+              answer: 'They reopen the lobby link and are back in the same game. The lobby stays open, so a dropped connection costs a player a turn rather than the whole round.',
+            },
           ]} />
         </GuideSection>
       </GuideLayout>

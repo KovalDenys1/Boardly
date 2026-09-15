@@ -47,28 +47,24 @@ export default function GamePlayerCard({
   const { t } = useTranslation()
   const justify = side === 'right' ? 'flex-end' : 'flex-start'
 
+  // Sizing lives in app/globals.css (.game-player-card): an inline style
+  // outranks every stylesheet rule, so the phone-landscape breakpoint could not
+  // shrink this card while the numbers were here (#901). Only the
+  // state-dependent colours stay inline.
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-      background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-      border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-      boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-      flexDirection: side === 'right' ? 'row-reverse' : 'row',
-      transition: 'all 0.2s', minWidth: 0,
-    }}>
+    <div
+      className={`game-player-card game-player-card--${side}`}
+      style={{
+        background: isActive ? 'var(--bd-input-bg)' : 'transparent',
+        border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
+        boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
+      }}
+    >
       <div style={{ position: 'relative', flexShrink: 0 }}>
         {avatarSrc ? (
-          <img src={avatarSrc} alt={name} style={{
-            width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-            border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
-          }} />
+          <img src={avatarSrc} alt={name} className="game-player-avatar" />
         ) : (
-          <div style={{
-            width: 42, height: 42, borderRadius: '50%', background: accentColor,
-            display: 'grid', placeItems: 'center', border: '2px solid white',
-            boxShadow: '0 0 0 2px var(--bd-ink)',
-            fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
-          }}>
+          <div className="game-player-avatar game-player-avatar--initial" style={{ background: accentColor }}>
             {name.charAt(0).toUpperCase()}
           </div>
         )}
@@ -79,10 +75,7 @@ export default function GamePlayerCard({
           subline and turn line disappeared entirely instead of truncating — a
           player card with no player on it (#874). A floor plus `flex: 1 1 auto`
           means the card gives up characters, not the whole identity. */}
-      <div style={{
-        textAlign: side === 'right' ? 'right' : 'left',
-        flex: '1 1 auto', minWidth: '4.5ch', overflow: 'hidden',
-      }}>
+      <div className="game-player-identity" style={{ textAlign: side === 'right' ? 'right' : 'left' }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: justify }}>
           <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
             {name}
@@ -97,17 +90,13 @@ export default function GamePlayerCard({
           )}
         </div>
         {subline !== undefined && (
-          <div style={{
+          <div className="game-player-subline" style={{
             fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{subline}</div>
         )}
         {isActive && (
-          <div style={{
-            marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
-            display: 'flex', gap: 4, alignItems: 'center', justifyContent: justify,
-            whiteSpace: 'nowrap', overflow: 'hidden',
-          }}>
+          <div className="game-player-turn" style={{ justifyContent: justify }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: turnDotColor ?? accentColor, display: 'inline-block', flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {isMe ? t('game.ui.yourTurn') : t('game.ui.theirTurn')}

@@ -62,11 +62,38 @@ stays on the shared breakpoint, so R2 stays clean.
 
 Rationale: a phone in landscape is ~330–430px tall; the portrait stack
 (header → status → tabs → content) cannot fit and the height-locked shells clip.
-A full landscape layout matrix is not worth it — only height-locked screens get a
-dedicated landscape tree (`.ttt-landscape-layout`: board pane left at full
-height, narrow chrome column right). Boards are container-sized, so the tree
-needs zero sizing math. Scrollable game surfaces (RPS, Sketch, Liar's Party,
-Alias, Spy) stay as-is — they scroll and remain usable.
+Boards are container-sized, so the tree needs zero sizing math.
+
+**One family, `.game-landscape-*` (#901).** `.game-landscape-layout` is the
+board pane left at full height with `.game-landscape-side`, a
+`min(300px, 42vw)` chrome column, on the right. Tic-Tac-Toe, Connect Four and
+RPS shared a `.ttt-landscape-*` copy of these rules while Memory and Yahtzee
+carried their own, so a fix had to be found three times – and was not: chat's
+missing height floor survived both #749 and #751. Per-game deltas (Memory's
+relative board pane, Yahtzee's padding and hidden status bar) keep their own
+prefixed rules; everything true of every game lives in the shared family.
+
+**What that column may hold.** It has ~326px of height at 844×390, less than
+desktop-density chrome needs, so the shared family also carries the compact
+forms: `.game-chat-panel` has a `min-height` floor and drops its title strip
+and send hint, `GameScoreboardHeader` swaps its centre block for the
+`centerCompact` one the game supplies, and `GamePlayerCard` loses its subline
+and turn line – both are already on screen in `GameStatusBanner` directly
+below. The column scrolls (`overflow-y: auto`) as a last resort rather than
+clipping a control out of existence.
+
+**Geometry belongs in the stylesheet.** `GameScoreboardHeader` and
+`GamePlayerCard` used to carry their sizes in a `style` prop, which outranks
+every stylesheet rule – no breakpoint could touch them. Shared in-game chrome
+that a breakpoint must be able to resize keeps its geometry in `globals.css`
+and only its state-dependent colours inline.
+
+**Scrollable game surfaces still scroll**, but a screen whose primary control
+is off the bottom is not usable: Spy and Alias each now have a landscape branch
+that collapses their hero chrome (#901). Sketch and Liar's Party are untouched
+and unverified at this viewport.
+
+The contract is pinned by `__tests__/app/phone-landscape-layout.test.ts`.
 
 ## Primitive catalog
 
@@ -193,4 +220,5 @@ Every UI change, before it is "done":
 | Memory | fills the in-game container, `--game-h` | done | #746 ✅ |
 | LobbyPageClient (Yahtzee/Alias/Spy/Sketch/RPS) | `.game-screen`, `desk:`, no scroll-lock | done | #747 ✅ |
 | Spy CSS, Liar's Party, spectate, fallbacks, remaining raw calcs | `var(--game-h)` everywhere | done | #748 ✅ |
+| Phone-landscape family + Spy/Alias branches | three copied trees, no Spy/Alias branch | one `.game-landscape-*` family | #901 #902 ✅ |
 | Homepage one-off breakpoints (639/720/1059/1060/1120) | ad-hoc | optional, low priority | planned |

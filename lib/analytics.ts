@@ -3,6 +3,7 @@ import { clientLogger } from './client-logger'
 import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
 import type { InviteShareMethod } from './invite-share'
+import type { PremiumPlan } from './premium-plans'
 
 /**
  * Analytics wrapper for tracking game events
@@ -646,11 +647,16 @@ export function trackInviteOpened(attribution: InviteAttribution, lobbyCode: str
   clientLogger.log('[analytics] Invite opened', payload)
 }
 
-/** Premium call to action, wherever it is rendered. `source` names the surface. */
-export function trackPremiumCta(source: string): void {
-  track('feature_used', { feature: 'premium_cta', source })
-  emitOperationalEvent('premium_cta_clicked', { source })
-  clientLogger.log('[analytics] Premium CTA', source)
+/**
+ * Premium call to action, wherever it is rendered. `source` names the surface;
+ * `plan` is passed only where the surface lets someone pick one, so a click on
+ * /premium can be read against the checkout it did or did not become (#926).
+ */
+export function trackPremiumCta(source: string, plan?: PremiumPlan): void {
+  const payload = { source, ...(plan ? { plan } : {}) } satisfies Record<string, AnalyticsPropertyValue>
+  track('feature_used', { feature: 'premium_cta', ...payload })
+  emitOperationalEvent('premium_cta_clicked', payload)
+  clientLogger.log('[analytics] Premium CTA', payload)
 }
 
 /**
