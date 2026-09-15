@@ -2466,6 +2466,7 @@ const uk: Translation = {
     privacy: 'Політика конфіденційності',
     terms: 'Умови використання',
     community: 'Спільнота',
+    discord: 'Discord',
     sendFeedback: 'Залишити відгук',
     allRightsReserved: '© {{year}} Boardly · Усі права захищені',
     builtWith: 'Створено з Next.js, Supabase та Prisma',

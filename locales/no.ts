@@ -2452,6 +2452,7 @@ const no = {
     privacy: 'Personvernregler',
     terms: 'Tjenestevilkår',
     community: 'Fellesskap',
+    discord: 'Discord',
     sendFeedback: 'Send tilbakemelding',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Supabase og Prisma',

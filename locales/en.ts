@@ -2464,6 +2464,7 @@ const en = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     community: 'Community',
+    discord: 'Discord',
     sendFeedback: 'Send Feedback',
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
     builtWith: 'Built with Next.js, Supabase & Prisma',

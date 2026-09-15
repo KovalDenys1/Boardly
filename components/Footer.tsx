@@ -176,6 +176,19 @@ export default function Footer() {
                 </a>
               </li>
               <li>
+                <a
+                  href="/discord"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm transition-colors"
+                  style={{ color: 'var(--bd-ink-soft)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                >
+                  {t('footer.discord')}
+                </a>
+              </li>
+              <li>
                 <button
                   id="footer-feedback-trigger"
                   onClick={() => window.dispatchEvent(new CustomEvent('open-feedback'))}
