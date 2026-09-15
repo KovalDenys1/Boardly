@@ -13,6 +13,7 @@ This folder contains the canonical project documentation.
 - `docs/GAME_DEVELOPMENT.md` - source-of-truth rules and checklist for adding/promoting games
 - `docs/SECURITY_MODEL.md` - auth boundaries, RLS posture, secrets policy
 - `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, alerts
+- `docs/DISCORD.md` - what talks to the Discord server, the variable each path needs, where each value is set
 - `docs/DEPENDENCY_UPGRADE_PLAN.md` - staged dependency maintenance plan and migration sequencing
 - `docs/PWA.md` - current PWA implementation and install/offline regression checks
 - `docs/PERFORMANCE_BUNDLE_BUDGET.md` - bundle budget policy and measurement baselines
