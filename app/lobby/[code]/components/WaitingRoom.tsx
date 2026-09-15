@@ -7,6 +7,7 @@ import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
 import { hasBotSupport } from '@/lib/game-catalog'
 import { sounds } from '@/lib/sounds'
+import { useInviteShare } from '@/hooks/useInviteShare'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
 
@@ -45,6 +46,7 @@ export default function WaitingRoom({
   onAddBot,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
+  const shareInvite = useInviteShare(lobby?.code)
   const [pickingBotDifficulty, setPickingBotDifficulty] = useState(false)
   const [addingBot, setAddingBot] = useState(false)
 
@@ -164,7 +166,13 @@ export default function WaitingRoom({
         const isPulse = isRequired && i === 0
         const showBotAction = i === 0 && !!onAddBot && !!canManageBots && hasBotSupport(lobby?.gameType)
         const showInviteAction = i === 0 && !!onInviteFriends
-        const showActions = showBotAction || showInviteAction
+        // Inviting people you already know needs an account, so `onInviteFriends` is absent
+        // for guests and non-hosts, and 87 % of lobbies are guest-created, which left the
+        // empty slot with no way at all to pull someone in. The share link needs neither
+        // (#927). It stands in for the friends button rather than joining it: three buttons
+        // do not fit this row at 320 px.
+        const showShareAction = i === 0 && !showInviteAction && !!lobby?.code
+        const showActions = showBotAction || showInviteAction || showShareAction
 
         return (
           <div
@@ -232,6 +240,19 @@ export default function WaitingRoom({
                         className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
                       >
                         <Icon name="mail" size={16} />
+                        <span>{t('game.ui.slotInvite')}</span>
+                      </button>
+                    )}
+                    {showShareAction && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sounds.play('click')
+                          void shareInvite('waiting_room_slot')
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                      >
+                        <Icon name="link" size={16} />
                         <span>{t('game.ui.slotInvite')}</span>
                       </button>
                     )}

@@ -1009,6 +1009,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             onLeave={() => setShowLeaveConfirmModal(true)}
                             isGuest={isGuest}
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+                            inviteCode={code}
                         />
                     )}
                     {overlayInspecting && (

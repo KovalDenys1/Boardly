@@ -463,6 +463,7 @@ export default function MemoryGameBoard({
           onLeave={onLeave}
           isGuest={isGuest}
           registerUrl={registerUrl}
+          inviteCode={lobbyCode}
         />
       )}
       {isFinished && overlayInspecting && (
@@ -736,6 +737,7 @@ export default function MemoryGameBoard({
                   onLeave={onLeave}
                   isGuest={isGuest}
                   registerUrl={registerUrl}
+                  inviteCode={lobbyCode}
                 />
               )}
               {isFinished && overlayInspecting && (

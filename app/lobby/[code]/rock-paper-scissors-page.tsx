@@ -736,6 +736,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+                    inviteCode={code}
                 />
             )}
             {isFinished && !isSpectator && overlayInspecting && (
