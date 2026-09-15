@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
-import { organizationNode } from '@/lib/organization-json-ld'
+import { siteJsonLd } from '@/lib/organization-json-ld'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
 
 const bricolageFont = Bricolage_Grotesque({
@@ -53,11 +53,15 @@ const Header = dynamic(() => import('@/components/Header'), {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://boardly.online'),
+  // Brand first, then what the product is: for a navigational query like
+  // "boardly official website" the searcher has to recognise the right Boardly
+  // in the result itself, and the description is where that happens – it now
+  // names the brand and the domain instead of opening with category copy (#886).
   title: {
-    default: 'Boardly - Free Online Board Games with Friends',
+    default: 'Boardly – Free Online Board Games with Friends',
     template: '%s | Boardly'
   },
-  description: 'Play free online board games and tabletop-style games with friends in real time. Join Yahtzee, Tic Tac Toe, Memory, Guess the Spy and more. No download required.',
+  description: 'Boardly (boardly.online) is a free online board games site. Play Yahtzee, Tic Tac Toe, Connect Four and Guess the Spy with friends in real time, no signup.',
   keywords: ['free online board games', 'online board games with friends', 'multiplayer board games', 'tabletop games online', 'browser games', 'yahtzee online', 'tic tac toe online', 'memory game online', 'boardly'],
   authors: [{ name: 'Boardly' }],
   creator: 'Boardly',
@@ -71,17 +75,18 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://boardly.online',
-    title: 'Boardly - Free Online Board Games with Friends',
-    description: 'Play free online board games and tabletop-style games with friends in real time. No download required.',
+    title: 'Boardly – Free Online Board Games with Friends',
+    description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
     siteName: 'Boardly',
     // Images are auto-generated from opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Boardly - Free Online Board Games with Friends',
-    description: 'Play free online board games with friends in real time. No download required.',
+    title: 'Boardly – Free Online Board Games with Friends',
+    description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
     // Images are auto-generated from twitter-image.tsx
-    creator: '@boardly',
+    // No `creator`: @boardly on X is not an account Boardly owns, and the tag
+    // attributed every share of the site to whoever does own it (#886).
   },
   // No canonical here: the root layout would hand it to every page that
   // forgot its own, pointing them all at "/". Each indexable page sets its own (#922).
@@ -116,15 +121,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Boardly',
-    description: 'Play free online board games and tabletop-style games with friends in real time.',
-    url: 'https://boardly.online',
-    publisher: organizationNode,
-  }
-
   const isProduction = process.env.NODE_ENV === 'production'
   const themeInitScript = getThemeInitScript()
   const devServiceWorkerResetScript = !isProduction
@@ -236,7 +232,7 @@ export default function RootLayout({
         
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
       </head>
       <body className="antialiased">

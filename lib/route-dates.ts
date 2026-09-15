@@ -14,7 +14,7 @@
  * `lib/guides-catalog.ts`; a catalog change bumps them here by hand.
  */
 export const ROUTE_UPDATED = {
-  '/': '2026-09-09',
+  '/': '2026-09-15',
   '/games': '2026-09-07',
   '/leaderboard': '2026-09-15',
   '/about': '2026-09-15',

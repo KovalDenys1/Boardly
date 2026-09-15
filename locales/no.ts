@@ -2409,6 +2409,10 @@ const no = {
     intro: 'Raske svar før du starter et rom, inviterer venner eller spiller som gjest.',
     // Conjunction for the generated game lists in q3 and q4
     listAnd: 'og',
+    q0: {
+      question: 'Hva er Boardly?',
+      answer: 'Boardly er et gratis nettsted for brettspill på boardly.online, der du spiller med venner rett i nettleseren i sanntid – uten nedlasting og uten konto.',
+    },
     q1: {
       question: 'Er Boardly gratis å spille?',
       answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar og regnes om til din lokale valuta ved betaling – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',

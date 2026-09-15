@@ -26,7 +26,11 @@ function english(games: FaqGame[]): string {
   return joinList(games.map((game) => game.nameEn), 'and')
 }
 
-const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const
+// Render order. `q0` is the plain "what is this site" answer, added first for
+// #886: brand searches land on the home page, and until now nothing in its
+// visible text said which Boardly this is. It is q0 rather than a renumbering
+// because q1–q8 are keyed in four locale files and in `answerVars` below.
+const FAQ_KEYS = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const
 type FaqKey = (typeof FAQ_KEYS)[number]
 
 /**
