@@ -221,7 +221,9 @@ const no = {
       join: 'Bli med i lobby',
       invalidCode: 'Ugyldig lobbykode',
       lobbyFull: 'Lobbyen er full',
-      wrongPassword: 'Feil passord'
+      wrongPassword: 'Feil passord',
+      watchInstead: 'Se på som tilskuer i stedet',
+      createOwnLobby: 'Lag din egen lobby'
     },
     joinPromptPrivate: 'Skriv inn passordet for å bli med i {{lobby}}',
     joinPromptPublic: 'Du er i ferd med å bli med i {{lobby}}',
