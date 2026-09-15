@@ -443,6 +443,7 @@ const ru = {
     noDownloadNeeded: 'Играй как гость. Ничего скачивать не нужно.',
     stillBeingPolished: 'Эта игра ещё разрабатывается.',
     guideCallout: 'Впервые в {{gameName}}? Читай полные правила и советы.',
+    screenshotAlt: 'Партия в {{gameName}} на Boardly',
     readGuide: 'Читать гайд →',
     detail: {
       labels: {

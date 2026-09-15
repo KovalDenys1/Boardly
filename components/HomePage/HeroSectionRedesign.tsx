@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -30,8 +30,28 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
   const [showGuestForm, setShowGuestForm] = useState(false)
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // The manifest's "Quick play" shortcut lands on /?quick=1 (#932). Read from
+  // the location rather than useSearchParams, which would need a Suspense
+  // boundary to keep the home page static; the param is stripped once read so
+  // back and reload do not reopen the picker after it was closed.
+  const [quickRequested, setQuickRequested] = useState(false)
 
   const isLoggedIn = status === 'authenticated'
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('quick') !== '1') return
+    url.searchParams.delete('quick')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    setQuickRequested(true)
+  }, [])
+
+  // A signed-out visitor has no Quick Play button, so the shortcut first asks
+  // for a guest name; the guest branch then opens the picker.
+  useEffect(() => {
+    if (quickRequested && status === 'unauthenticated' && !isGuest) setShowGuestForm(true)
+  }, [quickRequested, status, isGuest])
+
   const userName = session?.user?.name
   const userEmail = session?.user?.email
   const displayName = userName || userEmail?.split('@')[0]
@@ -45,7 +65,8 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
     try {
       await setGuestMode(name.trim())
       showToast.success('guest.welcome', undefined, { name: name.trim() })
-      router.push('/games')
+      // Quick play was asked for: stay on the hero, whose guest branch opens the picker.
+      if (!quickRequested) router.push('/games')
     } catch (error) {
       const err = error as Error & { translationKey?: string; statusCode?: number }
       if (err.translationKey) {
@@ -108,7 +129,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
           <p style={{ color: 'var(--bd-ink-muted)', fontSize: 14 }}>{t('guest.limitedFeatures')}</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
-          <QuickPlayButton />
+          <QuickPlayButton autoOpen={quickRequested} />
           <button
             onClick={() => router.push('/games')}
             style={{
@@ -334,7 +355,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
           <div className="home-cta-row">
             {isLoggedIn ? (
               <>
-                <QuickPlayButton className="home-cta-button home-cta-button-primary" />
+                <QuickPlayButton className="home-cta-button home-cta-button-primary" autoOpen={quickRequested} />
                 <button
                   onClick={() => router.push('/games')}
                   className="home-cta-button home-cta-button-outline"

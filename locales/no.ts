@@ -443,6 +443,7 @@ const no = {
     noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
     stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
     guideCallout: 'Ny i {{gameName}}? Les de fullstendige reglene og tipsene.',
+    screenshotAlt: 'En runde {{gameName}} i gang på Boardly',
     readGuide: 'Les guiden →',
     detail: {
       labels: {
