@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/quick-play/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -46,24 +47,30 @@ jest.mock('@/lib/rate-limit', () => ({
   rateLimitPresets: { api: {} },
 }))
 
+// #920: Quick Play records who sat in the lobby, with the acquisition cookie.
+jest.mock('@/lib/lobby-participation', () => ({
+  recordLobbyParticipation: jest.fn(async () => true),
+}))
+
 jest.mock('@/lib/bot-helpers', () => ({
   getOrCreateBotUser: jest.fn(async () => ({ id: 'bot-1', username: 'Bot' })),
   isPrismaUniqueConstraintError: jest.fn(() => false),
 }))
 
-const makeRequest = (body: unknown) =>
+const makeRequest = (body: unknown, cookie?: string) =>
   new NextRequest('http://localhost/api/quick-play', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
     body: JSON.stringify(body),
   })
 
 describe('POST /api/quick-play', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getRequestAuthUser as jest.Mock).mockResolvedValue({ id: 'user-1', username: 'Tester' })
+    ;(getRequestAuthUser as jest.Mock).mockResolvedValue({ id: 'user-1', username: 'Tester', isGuest: false })
     ;(prisma.lobbies.findMany as jest.Mock).mockResolvedValue([])
     ;(prisma.lobbies.create as jest.Mock).mockResolvedValue({
+      id: 'lobby-new',
       code: '1234',
       games: [{ id: 'game-1' }],
     })
@@ -157,4 +164,57 @@ describe('POST /api/quick-play', () => {
     expect(persistedState.data.mode).toBe('short')
   })
 
+  describe('participation (#920)', () => {
+    it('records the human who created a fresh lobby, with the acquisition cookie', async () => {
+      const res = await POST(makeRequest({ gameType: 'tic_tac_toe' }, 'bd_src=utm:reddit/post'))
+      expect(res.status).toBe(200)
+
+      expect(recordLobbyParticipation).toHaveBeenCalledTimes(1)
+      expect(recordLobbyParticipation).toHaveBeenCalledWith({
+        lobbyId: 'lobby-new',
+        lobbyCode: '1234',
+        gameType: 'tic_tac_toe',
+        userId: 'user-1',
+        isGuest: false,
+        signupSource: 'utm:reddit/post',
+      })
+    })
+
+    it('records the human who joined an existing lobby', async () => {
+      ;(getRequestAuthUser as jest.Mock).mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
+      ;(prisma.lobbies.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'lobby-1',
+          code: '5678',
+          name: 'Open Alias',
+          maxPlayers: 8,
+          gameType: 'alias',
+          creatorId: 'someone-else',
+          createdAt: new Date(),
+          games: [{ id: 'game-9', status: 'waiting', createdAt: new Date(), _count: { players: 3 } }],
+        },
+      ])
+      ;(prisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+        fn({
+          players: {
+            count: jest.fn(async () => 3),
+            create: jest.fn(async () => ({})),
+          },
+        })
+      )
+
+      const res = await POST(makeRequest({ gameType: 'alias' }))
+      expect(res.status).toBe(200)
+
+      expect(recordLobbyParticipation).toHaveBeenCalledTimes(1)
+      expect(recordLobbyParticipation).toHaveBeenCalledWith({
+        lobbyId: 'lobby-1',
+        lobbyCode: '5678',
+        gameType: 'alias',
+        userId: 'guest-1',
+        isGuest: true,
+        signupSource: null,
+      })
+    })
+  })
 })

@@ -1,4 +1,8 @@
-import { buildOperationalEventRecord } from '@/lib/operational-events'
+import {
+  buildOperationalEventRecord,
+  OPERATIONAL_EVENT_NAMES,
+  SERVER_OPERATIONAL_EVENT_NAMES,
+} from '@/lib/operational-events'
 
 describe('buildOperationalEventRecord', () => {
   it('normalizes move_submit_applied payload', () => {
@@ -64,5 +68,35 @@ describe('buildOperationalEventRecord', () => {
       reason: 'bot_add_failed',
       isGuest: false,
     })
+  })
+
+  it('normalizes the invite events as flow events with the surface in source and the lobby code in the payload (#920)', () => {
+    const copied = buildOperationalEventRecord({
+      eventName: 'invite_copied',
+      payload: { source: 'lobby_code_chip', lobby_code: 'AB12' },
+    })
+    expect(copied).toMatchObject({
+      eventName: 'invite_copied',
+      metricType: 'flow',
+      source: 'lobby_code_chip',
+      payload: { source: 'lobby_code_chip', lobby_code: 'AB12' },
+    })
+
+    const opened = buildOperationalEventRecord({
+      eventName: 'invite_opened',
+      payload: { source: 'share_link', lobby_code: 'AB12' },
+    })
+    expect(opened).toMatchObject({
+      eventName: 'invite_opened',
+      metricType: 'flow',
+      source: 'share_link',
+      payload: { lobby_code: 'AB12' },
+    })
+  })
+
+  it('keeps second_human_joined off the public beacon enum (#920)', () => {
+    expect(SERVER_OPERATIONAL_EVENT_NAMES).toContain('second_human_joined')
+    expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('second_human_joined')
+    expect(OPERATIONAL_EVENT_NAMES).toEqual(expect.arrayContaining(['invite_copied', 'invite_opened']))
   })
 })

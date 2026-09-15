@@ -1,6 +1,7 @@
 import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
 import type { OperationalEventName } from './operational-events'
+import type { InviteAttribution } from './invite-attribution'
 
 /**
  * Analytics wrapper for tracking game events
@@ -597,6 +598,33 @@ export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): vo
   // a dismissal, so clicked-over-shown is a per-session ratio, not a per-person one.
   emitOperationalEvent(`signup_prompt_${action}`, { is_guest: true })
   clientLogger.log('[analytics] Signup prompt', action)
+}
+
+/** Where an invite link was copied from; the lobby code goes in the payload so it joins. */
+export type InviteCopySource = 'lobby_header_button' | 'lobby_code_chip'
+
+/** Someone put an invite link on their clipboard (#920). */
+export function trackInviteCopied(source: InviteCopySource, lobbyCode: string): void {
+  const payload = { source, lobby_code: lobbyCode } satisfies Record<string, AnalyticsPropertyValue>
+  track('invite_copied', payload)
+  emitOperationalEvent('invite_copied', payload)
+  clientLogger.log('[analytics] Invite copied', payload)
+}
+
+/**
+ * A lobby page opened through a shared link or from another site (#920). Fired once per
+ * page mount by the lobby page; the parser in lib/invite-attribution.ts decides whether a
+ * load counts at all.
+ */
+export function trackInviteOpened(attribution: InviteAttribution, lobbyCode: string): void {
+  const payload = {
+    source: attribution.via,
+    lobby_code: lobbyCode,
+    ...(attribution.via === 'external_referrer' ? { referrer_host: attribution.referrerHost } : {}),
+  } satisfies Record<string, AnalyticsPropertyValue>
+  track('invite_opened', payload)
+  emitOperationalEvent('invite_opened', payload)
+  clientLogger.log('[analytics] Invite opened', payload)
 }
 
 /** Premium call to action, wherever it is rendered. `source` names the surface. */

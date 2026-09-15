@@ -100,7 +100,8 @@ export async function POST(
       }
     }
 
-    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, getSignupSourceFromRequest(req))
+    const signupSource = getSignupSourceFromRequest(req)
+    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
@@ -175,6 +176,16 @@ export async function POST(
           },
         },
       })
+
+      // The fresh-game branch never wrote a participation row (#920).
+      await recordLobbyParticipation({
+        lobbyId: lobby.id,
+        lobbyCode: lobby.code,
+        gameType: toPersistedGameType(runtimeGameType),
+        userId: guestUser.id,
+        isGuest: true,
+        signupSource,
+      })
     } else {
       // Add guest player to existing game
       const nextPosition = activeGame.players.length
@@ -192,6 +203,7 @@ export async function POST(
         gameType: activeGame.gameType,
         userId: guestUser.id,
         isGuest: true,
+        signupSource,
       })
 
       // Refresh game data

@@ -1,5 +1,7 @@
 import {
   MOVE_APPLY_TARGET_MS,
+  trackInviteCopied,
+  trackInviteOpened,
   trackLobbyLeaveRedirect,
   trackMoveSubmitApplied,
   trackStartAloneAutoBotResult,
@@ -122,6 +124,36 @@ describe('analytics reliability alerts', () => {
       api_outcome: 'timeout',
       status_code: 504,
       game_type: 'yahtzee',
+    })
+  })
+})
+
+describe('invite loop events (#920)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('names the copy surface and carries the lobby code', () => {
+    trackInviteCopied('lobby_code_chip', 'AB12')
+
+    expect(mockTrack).toHaveBeenCalledWith('invite_copied', {
+      source: 'lobby_code_chip',
+      lobby_code: 'AB12',
+    })
+  })
+
+  it('records the attribution an invite was opened with', () => {
+    trackInviteOpened({ via: 'share_link' }, 'AB12')
+    trackInviteOpened({ via: 'external_referrer', referrerHost: 'discord.com' }, 'AB12')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'invite_opened', {
+      source: 'share_link',
+      lobby_code: 'AB12',
+    })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'invite_opened', {
+      source: 'external_referrer',
+      lobby_code: 'AB12',
+      referrer_host: 'discord.com',
     })
   })
 })

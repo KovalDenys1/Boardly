@@ -14,6 +14,7 @@ import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type Support
 import GameIcon from '@/components/GameIcon'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
+import { trackPremiumCta } from '@/lib/analytics'
 import {
   trackLobbyCreateRequest,
   type AnalyticsGameType,
@@ -830,8 +831,17 @@ function CreateLobbyPage() {
                     <button
                       key={themeId}
                       type="button"
-                      disabled={isLocked}
-                      onClick={() => !isLocked && setSelectedTheme(themeId)}
+                      aria-disabled={isLocked}
+                      onClick={() => {
+                        if (isLocked) {
+                          // Locked controls used to be `disabled`, so a free user's tap was
+                          // silent and unmeasurable (#920). Same toast as the lobby settings panel.
+                          trackPremiumCta('create_theme')
+                          showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
+                          return
+                        }
+                        setSelectedTheme(themeId)
+                      }}
                       title={isLocked ? `${t.name} — Premium only` : t.name}
                       style={{
                         position: 'relative',
@@ -880,8 +890,15 @@ function CreateLobbyPage() {
               </div>
               <button
                 type="button"
-                disabled={!isPremiumUser}
-                onClick={() => isPremiumUser && setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
+                aria-disabled={!isPremiumUser}
+                onClick={() => {
+                  if (!isPremiumUser) {
+                    trackPremiumCta('create_spectators')
+                    showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
+                    return
+                  }
+                  setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
+                }}
                 aria-pressed={formData.allowSpectators}
                 aria-label="Toggle spectators"
                 style={{
