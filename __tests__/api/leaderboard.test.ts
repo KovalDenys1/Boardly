@@ -13,6 +13,12 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
+// unstable_cache needs Next's incremental cache, which jest does not have;
+// the test covers the query, not the caching.
+jest.mock('next/cache', () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+}))
+
 jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
   rateLimitPresets: { api: {} },

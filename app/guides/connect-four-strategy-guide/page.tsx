@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
   title: 'Connect Four Strategy Guide — How to Win Every Time',
@@ -30,7 +31,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/connect-four-strategy-guide',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2026-05-26',
-  dateModified: '2026-05-26',
+  dateModified: getGuideBySlug('connect-four-strategy-guide').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }

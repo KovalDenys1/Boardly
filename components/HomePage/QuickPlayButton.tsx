@@ -67,9 +67,15 @@ function PartnerChipLabel({
 
 interface QuickPlayButtonProps {
   className?: string
+  /**
+   * Open the picker without a click, once: the hero sets it when the page was
+   * reached through the manifest's Quick play shortcut (#932). Closing the
+   * picker afterwards sticks, since the flag only changes once.
+   */
+  autoOpen?: boolean
 }
 
-export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
+export default function QuickPlayButton({ className, autoOpen = false }: QuickPlayButtonProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const [showPicker, setShowPicker] = useState(false)
@@ -80,6 +86,10 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
   // the right it starves the game name into ugly 3-line wraps.
   const [isNarrow, setIsNarrow] = useState(false)
   const [isTiny, setIsTiny] = useState(false)
+
+  useEffect(() => {
+    if (autoOpen) setShowPicker(true)
+  }, [autoOpen])
 
   useEffect(() => {
     const narrowQuery = window.matchMedia('(max-width: 639px)')

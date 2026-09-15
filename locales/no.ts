@@ -385,6 +385,8 @@ const no = {
     ribbonBadgeLater: 'Kommer snart',
     ribbonBadgePlanned: 'På planen',
     ribbonDescription: '{{available}} spill er klare nå. {{more}} til er under utvikling.',
+    ribbonMoreTitle: 'Flere på vei',
+    ribbonMoreDesc: '{{count}} spill til er under utvikling. Hele katalogen viser hva som kommer.',
     ctaLoggedInTitle: 'Godt å se deg igjen, {{name}}.',
     ctaLoggedInAccent: 'Neste spill er ett klikk unna.',
     ctaLoggedInBody: 'Statistikken din, venner og spillhistorikk er der du forlot dem.',
@@ -441,6 +443,7 @@ const no = {
     noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
     stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
     guideCallout: 'Ny i {{gameName}}? Les de fullstendige reglene og tipsene.',
+    screenshotAlt: 'En runde {{gameName}} i gang på Boardly',
     readGuide: 'Les guiden →',
     detail: {
       labels: {
@@ -889,6 +892,11 @@ const no = {
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
+      ribbon: {
+        desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
+        tag: 'Uformell',
+        time: '2 min',
+      },
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
       rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
       rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',
@@ -2399,7 +2407,7 @@ const no = {
     listAnd: 'og',
     q1: {
       question: 'Er Boardly gratis å spille?',
-      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement til {{price}} i måneden for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
+      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar og regnes om til din lokale valuta ved betaling – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
     },
     q2: {
       question: 'Trenger jeg en konto for å spille?',
@@ -2431,6 +2439,8 @@ const no = {
     },
   },
   footer: {
+    brandLine: 'brettspill på nett',
+    about: 'Om Boardly',
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
     games: 'Spill',
     play: 'Spill',
@@ -2445,6 +2455,22 @@ const no = {
     sendFeedback: 'Send tilbakemelding',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Supabase og Prisma',
+  },
+  about: {
+    breadcrumb: 'Om',
+    title: 'Om Boardly',
+    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, Memory, Alias og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
+    originTitle: 'Hvor det kom fra',
+    origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
+    origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
+    notTitle: 'Hva Boardly ikke er',
+    not: 'Boardly er ikke boardly.co, boardly.ai eller joinboardly.com – det er urelaterte produkter som deler navnet; brettspillnettstedet finnes bare på boardly.online.',
+    fundingTitle: 'Hvordan det finansieres',
+    funding: 'Boardly er gratis å spille. Et valgfritt Premium-abonnement støtter nettstedet, og annonser, når de er godkjent, vises bare på guidesidene – aldri i eller ved siden av et spill.',
+    contactTitle: 'Kontakt',
+    contactIntro: 'Spørsmål, feil eller ideer:',
+    githubRepo: 'Boardly på GitHub',
+    playCta: 'Se alle spill',
   },
   onboarding: {
     title: 'Velkommen til Boardly!',

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { showToast } from '@/lib/i18n-toast'
+import { trackPremiumCta } from '@/lib/analytics'
 import { getGameMetadata, getCatalogAvailableGames } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -307,6 +308,7 @@ export default function LobbySettingsPanel({
                         disabled={isPremium && (updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true)}
                         onClick={() => {
                           if (!isPremium) {
+                            trackPremiumCta('lobby_settings_spectators')
                             showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                             return
                           }
@@ -360,6 +362,7 @@ export default function LobbySettingsPanel({
                           disabled={updatingSetting === 'theme' || isThemeActive}
                           onClick={() => {
                             if (isLocked) {
+                              trackPremiumCta('lobby_settings_theme')
                               showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                               return
                             }

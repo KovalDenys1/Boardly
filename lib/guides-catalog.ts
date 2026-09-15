@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the SEO guide pages under /guides.
  * Used by the guides index, the sitemap, and the "Guides" section that links
- * the guides from `/` and `/games` (the only two pages Google crawls today).
+ * every guide from `/` and `/games` (the only two pages Google crawls today).
  * Guide content is English-only, so titles/descriptions are deliberately not
  * routed through i18n – they mirror the page <title>s.
  */
@@ -175,26 +175,10 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
 ]
 
 export const ALL_GUIDES: GuideEntry[] = [...HOW_TO_PLAY_GUIDES, ...STRATEGY_GUIDES, ...BEST_OF_GUIDES]
-
-/**
- * The six guides surfaced on `/` and `/games`. Chosen by search demand
- * (GSC 2026-08-29: "board games online", "2 player …", "free online board games")
- * and by the most-visited game page (Guess the Spy).
- */
-export const FEATURED_GUIDE_SLUGS = [
-  'best-free-multiplayer-browser-games',
-  'best-2-player-games-online',
-  'best-party-games-online',
-  'how-to-play-spy-game-online',
-  'how-to-play-yahtzee-online',
-  'best-games-to-play-on-zoom',
-] as const
-
-export function getFeaturedGuides(): GuideEntry[] {
-  const bySlug = new Map(ALL_GUIDES.map((guide) => [guide.slug, guide]))
-  return FEATURED_GUIDE_SLUGS.map((slug) => {
-    const guide = bySlug.get(slug)
-    if (!guide) throw new Error(`Featured guide "${slug}" is not in ALL_GUIDES`)
-    return guide
-  })
+/** The catalog entry for a guide page – its Article.dateModified must be `updated` from here, not hand-typed. */
+export function getGuideBySlug(slug: string): GuideEntry {
+  const guide = ALL_GUIDES.find((entry) => entry.slug === slug)
+  if (!guide) throw new Error(`Guide "${slug}" is not in ALL_GUIDES`)
+  return guide
 }
+

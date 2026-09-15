@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
+import { organizationNode } from '@/lib/organization-json-ld'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
 
 const bricolageFont = Bricolage_Grotesque({
@@ -82,9 +83,8 @@ export const metadata: Metadata = {
     // Images are auto-generated from twitter-image.tsx
     creator: '@boardly',
   },
-  alternates: {
-    canonical: '/',
-  },
+  // No canonical here: the root layout would hand it to every page that
+  // forgot its own, pointing them all at "/". Each indexable page sets its own (#922).
   robots: {
     index: true,
     follow: true,
@@ -122,15 +122,7 @@ export default function RootLayout({
     name: 'Boardly',
     description: 'Play free online board games and tabletop-style games with friends in real time.',
     url: 'https://boardly.online',
-    publisher: {
-      '@type': 'Organization',
-      name: 'Boardly',
-      url: 'https://boardly.online',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://boardly.online/icons/icon-512.png'
-      }
-    }
+    publisher: organizationNode,
   }
 
   const isProduction = process.env.NODE_ENV === 'production'

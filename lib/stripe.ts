@@ -15,5 +15,17 @@ export function getStripe(): Stripe {
 }
 
 export const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID ?? ''
-export const PREMIUM_PRICE_AMOUNT = '$2.99'
+
+/**
+ * The subscription's list price, in the currency its Stripe Price is defined in
+ * (USD since #791). Stripe Adaptive Pricing converts the charge into the
+ * customer's own currency at checkout, so this is where the conversion starts
+ * and not what a given visitor is billed — render it behind a "from", or the
+ * locale's equivalent, never as a bare amount (#919).
+ *
+ * The only copy of the figure in the codebase: the profile page, the avatar
+ * picker and the home-page FAQ all read it here, and the README points at this
+ * constant instead of restating the number.
+ */
+export const PREMIUM_BASE_PRICE = '$2.99'
 export const PREMIUM_PRICE_LABEL = 'Boardly Premium'

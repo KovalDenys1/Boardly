@@ -1,0 +1,43 @@
+name: Growth PR
+
+# The Wednesday growth builder pushes `growth/<issue>-<slug>` branches from a cloud session that
+# may not be able to open a pull request itself. This opens one to `develop` when none exists.
+# A PR opened with GITHUB_TOKEN does not trigger `pull_request` workflows, so ci.yml also
+# runs on pushes to `growth/**`; the checks on the PR come from that push. Creating the PR
+# needs the repository setting "Allow GitHub Actions to create and approve pull requests"
+# (enabled 2026-09-15).
+
+"on":
+  push:
+    branches:
+      - "growth/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Open a pull request to develop if none exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          existing=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$existing" != "0" ]; then
+            echo "PR already open for $BRANCH"; exit 0
+          fi
+          title=$(git log -1 --pretty=%s)
+          git log -1 --pretty=%b > /tmp/body.md
+          issue=$(echo "$title" | grep -oE '#[0-9]+' | head -1 || true)
+          if [ -n "$issue" ]; then
+            printf '\n\nCloses %s\n' "$issue" >> /tmp/body.md
+          fi
+          gh pr create --base develop --head "$BRANCH" --title "$title" --body-file /tmp/body.md --label growth

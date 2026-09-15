@@ -1,8 +1,9 @@
 'use client'
 
 import { signOut } from 'next-auth/react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
@@ -39,12 +40,13 @@ export function MobileMenu({
 
   const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
 
-  const navigateMobile = (dest: string) => {
+  // Nav items are real anchors (#921); a signed-out visitor on a non-public
+  // route gets the auth prompt instead of the navigation.
+  const guardMobile = (dest: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (!isAuthenticated && !isGuestSession && !PUBLIC_ROUTES.includes(dest)) {
+      event.preventDefault()
       closeMenuImmediately()
       onUnauthClick?.(dest)
-    } else {
-      router.push(dest)
     }
   }
 
@@ -124,6 +126,7 @@ export function MobileMenu({
     fontFamily: 'inherit',
     border: 'none',
     cursor: 'pointer',
+    textDecoration: 'none',
     transition: 'background 0.15s',
     background: active ? 'var(--bd-sun)' : 'transparent',
     color: active ? 'var(--bd-ink)' : 'var(--bd-ink-soft)',
@@ -325,23 +328,23 @@ export function MobileMenu({
 
             {/* Nav links */}
             <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <button onClick={() => router.push('/')} style={navBtn(isActive('/'))}>
+              <Link href="/" style={navBtn(isActive('/'))}>
                 {t('header.home')}
-              </button>
+              </Link>
 
-              <button onClick={() => navigateMobile('/games')} style={navBtn(isActiveStart('/games'))}>
+              <Link href="/games" onClick={guardMobile('/games')} style={navBtn(isActiveStart('/games'))}>
                 {t('header.games')}
-              </button>
-              <button onClick={() => navigateMobile('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
+              </Link>
+              <Link href="/lobby" onClick={guardMobile('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
                 {t('header.lobbies')}
-              </button>
-              <button onClick={() => navigateMobile('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
+              </Link>
+              <Link href="/leaderboard" onClick={guardMobile('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
                 {t('header.leaderboard')}
-              </button>
+              </Link>
               {isAuthenticated && (
-                <button onClick={() => router.push('/friends')} style={navBtn(isActiveStart('/friends'))}>
+                <Link href="/friends" style={navBtn(isActiveStart('/friends'))}>
                   {t('header.friends')}
-                </button>
+                </Link>
               )}
 
               <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0' }} />

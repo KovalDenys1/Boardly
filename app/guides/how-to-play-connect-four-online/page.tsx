@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/how-to-play-connect-four-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2026-05-26',
-  dateModified: '2026-05-26',
+  dateModified: getGuideBySlug('how-to-play-connect-four-online').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
@@ -63,6 +64,7 @@ export default function HowToPlayConnectFourGuide() {
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
       >
         <GuideSection title="What You Need">

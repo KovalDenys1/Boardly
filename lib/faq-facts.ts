@@ -4,7 +4,7 @@ import {
   hasBotSupport,
   type GameCatalogEntry,
 } from './game-catalog'
-import { PREMIUM_PRICE_AMOUNT } from './stripe'
+import { PREMIUM_BASE_PRICE } from './stripe'
 
 /**
  * One available game, as the home page FAQ needs it. `nameKey` renders in the
@@ -24,6 +24,10 @@ export type FaqFacts = {
   botGames: FaqGame[]
   maxPlayers: number
   maxPlayersGame: FaqGame
+  /**
+   * Base price only — Adaptive Pricing decides the real amount per customer, so
+   * q1 in every locale renders it behind a "from" (#919).
+   */
   premiumPrice: string
 }
 
@@ -55,6 +59,6 @@ export function buildFaqFacts(): FaqFacts {
     maxPlayers: biggest?.max ?? 0,
     // games is never empty — the six original games are always available
     maxPlayersGame: biggest?.game ?? games[0],
-    premiumPrice: PREMIUM_PRICE_AMOUNT,
+    premiumPrice: PREMIUM_BASE_PRICE,
   }
 }

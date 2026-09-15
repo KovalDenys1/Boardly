@@ -46,6 +46,22 @@ function subscriptionEvent(overrides = {}) {
   }
 }
 
+// The route makes two kinds of write to Users. The entitlement write carries
+// premiumUntil / stripeSubscriptionId and runs on every event, grant or revoke.
+// The first-grant stamp is guarded by `premiumFirstGrantedAt: null` in its where
+// clause, which is the whole mechanism that makes it once-only.
+function updateCalls() {
+  return prisma.users.updateMany.mock.calls.map(([args]) => args)
+}
+
+function stampCalls() {
+  return updateCalls().filter((call) => 'premiumFirstGrantedAt' in call.where)
+}
+
+function entitlementCalls() {
+  return updateCalls().filter((call) => !('premiumFirstGrantedAt' in call.where))
+}
+
 function request() {
   return new NextRequest('https://boardly.online/api/stripe/webhook', {
     method: 'POST',
@@ -76,8 +92,10 @@ describe('POST /api/stripe/webhook — entitlement must never be silently droppe
     const res = await POST(request())
 
     expect(res.status).toBe(200)
-    expect(prisma.users.updateMany).toHaveBeenCalledTimes(1)
-    expect(prisma.users.updateMany.mock.calls[0][0].where).toEqual({ stripeCustomerId: 'cus_new' })
+    // One entitlement write, resolved straight from the customer id: the
+    // metadata fallback must not fire when the id already matched.
+    expect(entitlementCalls()).toHaveLength(1)
+    expect(entitlementCalls()[0].where).toEqual({ stripeCustomerId: 'cus_new' })
   })
 
   it('recovers via subscription metadata when the stored customer id went stale', async () => {
@@ -95,6 +113,9 @@ describe('POST /api/stripe/webhook — entitlement must never be silently droppe
     // The stored id is repaired so later events resolve directly.
     expect(repair.data.stripeCustomerId).toBe('cus_new')
     expect(repair.data.premiumUntil).toBeInstanceOf(Date)
+    // The stamp follows the id that matched, not the event's customer id: that
+    // id only resolves because the repair above just wrote it.
+    expect(stampCalls()[0].where).toEqual({ id: 'user_1', premiumFirstGrantedAt: null })
   })
 
   it('returns 500 and releases the idempotency claim when no user can be resolved', async () => {
@@ -149,6 +170,56 @@ describe('POST /api/stripe/webhook — entitlement must never be silently droppe
 
     expect(res.status).toBe(200)
     expect(prisma.stripeWebhookEvents.delete).not.toHaveBeenCalled()
+  })
+
+  it('stamps premiumFirstGrantedAt on the first grant', async () => {
+    prisma.users.updateMany.mockResolvedValue({ count: 1 })
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(stampCalls()).toHaveLength(1)
+    expect(stampCalls()[0].where).toEqual({
+      stripeCustomerId: 'cus_new',
+      premiumFirstGrantedAt: null,
+    })
+    expect(stampCalls()[0].data.premiumFirstGrantedAt).toBeInstanceOf(Date)
+  })
+
+  it('does not move premiumFirstGrantedAt on a later grant', async () => {
+    // A renewal is a grant like any other, and it must not rewrite the date the
+    // account first converted. The guard is in the where clause, so the row that
+    // already carries a stamp is not matched — the zero count here is Postgres
+    // saying exactly that.
+    prisma.users.updateMany
+      .mockResolvedValueOnce({ count: 1 }) // entitlement extended
+      .mockResolvedValueOnce({ count: 0 }) // stamp matched nothing: already set
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(stampCalls()).toHaveLength(1)
+    expect(stampCalls()[0].where.premiumFirstGrantedAt).toBeNull()
+    // The unguarded write runs on every event, so the column must never ride on it.
+    expect(entitlementCalls().some((call) => 'premiumFirstGrantedAt' in call.data)).toBe(false)
+  })
+
+  it('keeps premiumFirstGrantedAt when a subscription is cancelled', async () => {
+    // The point of the column: after churn, premiumUntil and
+    // stripeSubscriptionId are gone and only this says the account ever paid.
+    event = subscriptionEvent()
+    event.type = 'customer.subscription.deleted'
+    prisma.users.updateMany.mockResolvedValue({ count: 1 })
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(entitlementCalls()).toHaveLength(1)
+    expect(entitlementCalls()[0].data.premiumUntil).toBeNull()
+    expect(entitlementCalls()[0].data.stripeSubscriptionId).toBeNull()
+    expect(entitlementCalls()[0].data).not.toHaveProperty('premiumFirstGrantedAt')
+    // A revoke is not a conversion, so nothing may be stamped here either.
+    expect(stampCalls()).toHaveLength(0)
   })
 
   it('ignores a duplicate delivery of an event already processed', async () => {

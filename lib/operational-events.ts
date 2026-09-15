@@ -18,6 +18,11 @@ export const OPERATIONAL_EVENT_NAMES = [
   'signup_prompt_dismissed',
   'premium_cta_clicked',
   'checkout_started',
+  // The invite loop (#920). Both carry `lobby_code` in the payload so they join
+  // `second_human_joined` and LobbyParticipations; `source` names the button or the
+  // attribution that fired them.
+  'invite_copied',
+  'invite_opened',
 ] as const
 
 /**
@@ -28,7 +33,12 @@ export const OPERATIONAL_EVENT_NAMES = [
  * heartbeat that a client can forge is worse than no heartbeat, because it would read as
  * proof that a job ran.
  */
-export const SERVER_OPERATIONAL_EVENT_NAMES = ['cron_run'] as const
+export const SERVER_OPERATIONAL_EVENT_NAMES = [
+  'cron_run',
+  // Written by lib/lobby-participation.ts when a lobby reaches its second non-bot
+  // participant. A rate anyone could post with any lobby code is worse than none.
+  'second_human_joined',
+] as const
 
 export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]
 
@@ -169,6 +179,9 @@ export function buildOperationalEventRecord(input: {
     case 'signup_prompt_dismissed':
     case 'premium_cta_clicked':
     case 'checkout_started':
+    case 'invite_copied':
+    case 'invite_opened':
+      // `source` carries the button or surface; the lobby code stays in the payload.
       return {
         eventName,
         metricType: 'flow',

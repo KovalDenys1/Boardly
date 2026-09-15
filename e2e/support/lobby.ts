@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { type APIRequestContext, type BrowserContext, type Browser } from '@playwright/test'
+import { type APIRequestContext, type BrowserContext, type BrowserContextOptions, type Browser } from '@playwright/test'
 import { E2E_GUEST_PREFIX, E2E_LOBBY_MARKER } from './marker'
 
 /**
@@ -107,9 +107,12 @@ export async function createGuestLobby(
   request: APIRequestContext,
   gameType: string,
   baseURL: string,
-  maxPlayers = 4
+  maxPlayers = 4,
+  // A caller-supplied host is used as is and never cached: the screenshot
+  // capture mints guests with display names and deletes them by id afterwards.
+  hostOverride?: Guest
 ): Promise<E2ELobby> {
-  let host = readCachedGuest('host') ?? (await createGuest(request, baseURL))
+  let host = hostOverride ?? readCachedGuest('host') ?? (await createGuest(request, baseURL))
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const res = await request.post(`${baseURL}/api/lobby`, {
@@ -141,7 +144,7 @@ export async function createGuestLobby(
       throw new Error(`Lobby create returned no code: ${JSON.stringify(body)}`)
     }
 
-    cacheGuest('host', host)
+    if (!hostOverride) cacheGuest('host', host)
     return { code, host }
   }
 
@@ -154,8 +157,11 @@ export async function createGuestLobby(
  * There is no standalone "create a guest" endpoint, so this borrows the
  * guest-session route the client itself uses.
  */
-export async function createGuest(request: APIRequestContext, baseURL: string): Promise<Guest> {
-  const guestName = uniqueName(E2E_GUEST_PREFIX)
+export async function createGuest(
+  request: APIRequestContext,
+  baseURL: string,
+  guestName = uniqueName(E2E_GUEST_PREFIX)
+): Promise<Guest> {
   const res = await request.post(`${baseURL}/api/auth/guest-session`, {
     headers: { Origin: baseURL },
     data: { guestName },
@@ -179,9 +185,9 @@ export async function createGuest(request: APIRequestContext, baseURL: string): 
 export async function joinAsGuest(
   request: APIRequestContext,
   code: string,
-  baseURL: string
+  baseURL: string,
+  guestName = uniqueName(E2E_GUEST_PREFIX)
 ): Promise<Guest> {
-  const guestName = uniqueName(E2E_GUEST_PREFIX)
   const res = await request.post(`${baseURL}/api/lobby/${code}/join-guest`, {
     headers: { Origin: baseURL },
     data: { guestName },
@@ -208,8 +214,12 @@ export async function joinAsGuest(
  * is the point — two tabs in one context would share storage and be the same
  * person, and then nothing about a second player could be tested at all.
  */
-export async function contextForGuest(browser: Browser, guest: Guest): Promise<BrowserContext> {
-  const context = await browser.newContext()
+export async function contextForGuest(
+  browser: Browser,
+  guest: Guest,
+  options?: BrowserContextOptions
+): Promise<BrowserContext> {
+  const context = await browser.newContext(options)
   await context.addInitScript((seed: Guest) => {
     window.localStorage.setItem('boardly_guest_token', seed.guestToken)
     window.localStorage.setItem('boardly_guest_id', seed.guestId)

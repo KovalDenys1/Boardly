@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
@@ -32,7 +33,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/best-online-games-for-game-night',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2026-05-26',
-  dateModified: '2026-05-26',
+  dateModified: getGuideBySlug('best-online-games-for-game-night').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
@@ -93,6 +94,7 @@ export default function BestOnlineGamesForGameNightGuide() {
           { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
+          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
         ]}
       >
         <GuideSection title="What Makes a Good Game Night Game?">

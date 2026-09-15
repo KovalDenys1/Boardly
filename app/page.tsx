@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Footer from '@/components/Footer'
 import FaqSection from '@/components/HomePage/FaqSection'
 import HeroSectionRedesign from '@/components/HomePage/HeroSectionRedesign'
@@ -8,6 +9,10 @@ import CtaBanner from '@/components/HomePage/CtaBanner'
 import GuidesSection from '@/components/GuidesSection'
 import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
 import { buildFaqFacts } from '@/lib/faq-facts'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 // Keep home page fully static for fast global TTFB.
 export const dynamic = 'force-static'

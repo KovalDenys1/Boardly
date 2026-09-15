@@ -26,6 +26,7 @@ model Users {
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)
   premiumCancelAtPeriod Boolean   @default(false)
+  premiumFirstGrantedAt DateTime? @db.Timestamptz(3) // First time Premium was granted. Written once, never rewritten or cleared: cancellation nulls premiumUntil and stripeSubscriptionId, so this is the only column that still says the account once paid (#918)
   totpSecret            String?
   totpEnabled           Boolean   @default(false)
   totpPendingSecret     String?

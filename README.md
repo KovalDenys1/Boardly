@@ -23,7 +23,7 @@ The push to actually build it came from a school assignment. My teacher, Tarald,
 - **Database:** PostgreSQL via Prisma 7 (hosted on Supabase)
 - **Auth:** NextAuth — registered users + signed guest JWT (`X-Guest-Token` header)
 - **Realtime:** Supabase Realtime Broadcast + Postgres Changes (replaces Socket.IO)
-- **Payments:** Stripe monthly subscription ($2.99/mo)
+- **Payments:** Stripe monthly subscription — the base price lives in `PREMIUM_BASE_PRICE` (`lib/stripe.ts`) and Stripe Adaptive Pricing converts the charge to the customer's own currency
 - **i18n:** 4 locales — English, Russian, Norwegian, Ukrainian
 - **Hosting:** Vercel (Next.js app)
 

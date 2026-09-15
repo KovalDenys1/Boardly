@@ -16,6 +16,8 @@ import { broadcastToLobby } from '@/lib/supabase-server'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { resolveBotTarget } from '@/lib/quick-play'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 
 const log = apiLogger('/api/quick-play')
 
@@ -114,6 +116,10 @@ export async function POST(req: NextRequest) {
 
   log.info('Quick play request', { userId: user.id, gameType, difficulty, forceSolo })
 
+  // Quick Play is the busiest entry and never wrote LobbyParticipations, so its
+  // acquisition source was invisible (#920). Same cookie the account was created with.
+  const signupSource = getSignupSourceFromRequest(req)
+
   // --- Step 1: find best open lobby (skipped when forceSolo=true) ---
   if (!forceSolo) {
     const openLobbies = await prisma.lobbies.findMany({
@@ -190,6 +196,17 @@ export async function POST(req: NextRequest) {
             { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
           )
 
+          // Outside the transaction on purpose: an analytics write must never
+          // roll back or delay someone joining a game (#816).
+          await recordLobbyParticipation({
+            lobbyId: target.id,
+            lobbyCode: target.code,
+            gameType: target.gameType,
+            userId: user.id,
+            isGuest: user.isGuest,
+            signupSource,
+          })
+
           void broadcastToLobby(target.code, 'player-joined', {
             lobbyCode: target.code,
             username: user.username || 'Player',
@@ -246,6 +263,7 @@ export async function POST(req: NextRequest) {
   const maxPlayers = engine.getConfig().maxPlayers
 
   let newCode: string | null = null
+  let newLobbyId: string | null = null
   let gameId: string | null = null
 
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
@@ -277,6 +295,7 @@ export async function POST(req: NextRequest) {
           },
         },
         select: {
+          id: true,
           code: true,
           games: {
             select: { id: true },
@@ -286,6 +305,7 @@ export async function POST(req: NextRequest) {
         },
       })
       newCode = created.code
+      newLobbyId = created.id
       gameId = created.games[0]?.id ?? null
       break
     } catch (err) {
@@ -296,10 +316,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!newCode || !gameId) {
+  if (!newCode || !newLobbyId || !gameId) {
     log.error('Quick play: failed to create lobby', new Error('code-generation-failed'))
     return NextResponse.json({ error: 'Failed to create lobby' }, { status: 503 })
   }
+
+  await recordLobbyParticipation({
+    lobbyId: newLobbyId,
+    lobbyCode: newCode,
+    gameType: persistedGameType,
+    userId: user.id,
+    isGuest: user.isGuest,
+    signupSource,
+  })
 
   if (supportsBots) {
     // Fill with bots (1 human already in, need botTarget - 1 bots) — see

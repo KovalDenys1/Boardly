@@ -98,7 +98,8 @@ import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import { useLeaveLobby } from './hooks/useLeaveLobby'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
-import { trackLobbyLeaveRedirect } from '@/lib/analytics'
+import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
+import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
@@ -2557,6 +2558,33 @@ export default function LobbyPage() {
     isGuest,
     guestToken,
   })
+
+  // Invite attribution (#920): once per page mount, before any routing, so it counts the
+  // same whichever game page the lobby resolves to. The share marker is then removed
+  // from the address bar so a refresh is not a second open. The referrer fallback is
+  // trusted only when this document was created at the lobby URL by a normal navigation –
+  // document.referrer survives soft navigation and reloads, the Navigation Timing entry
+  // says where the document actually started.
+  const inviteOpenTracked = useRef(false)
+  useEffect(() => {
+    if (inviteOpenTracked.current || typeof window === 'undefined' || !code) return
+    inviteOpenTracked.current = true
+    const attribution = parseInviteAttribution({
+      code,
+      search: window.location.search,
+      referrer: document.referrer,
+      currentHostname: window.location.hostname,
+      navigation: readDocumentNavigation(),
+    })
+    if (!attribution) return
+    trackInviteOpened(attribution, code)
+    if (attribution.via === 'share_link') {
+      const cleaned = stripInviteMarker(window.location.href)
+      if (cleaned !== window.location.href) {
+        window.history.replaceState(window.history.state, '', cleaned)
+      }
+    }
+  }, [code])
 
   if (loading) {
     return <LobbyPageLoadingFallback />

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/best-2-player-games-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2026-05-08',
-  dateModified: '2026-05-08',
+  dateModified: getGuideBySlug('best-2-player-games-online').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
@@ -136,6 +137,8 @@ export default function Best2PlayerGamesGuide() {
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
+          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
       >
         <GuideSection title="Quick Comparison">

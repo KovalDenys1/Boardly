@@ -6,6 +6,8 @@ import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import LeaveIcon from '@/components/LeaveIcon'
+import { buildInviteLink } from '@/lib/invite-attribution'
+import { trackInviteCopied, type InviteCopySource } from '@/lib/analytics'
 import type { Game, Lobby } from '@/types/game'
 
 interface LobbyInfoProps {
@@ -36,11 +38,17 @@ export default function LobbyInfo({
     return withoutCode.trim() || lobby.name
   })()
 
-  const handleCopyInvite = () => {
-    if (typeof window !== 'undefined') {
+  // The link carries a share marker so the lobby page can tell an invited arrival from a
+  // typed code; the event names which of the two copy affordances was used (#920).
+  const handleCopyInvite = (source: InviteCopySource) => {
+    const inviteCode = lobby.code
+    if (typeof window !== 'undefined' && inviteCode) {
       navigator.clipboard
-        .writeText(`${window.location.origin}/lobby/${lobby.code}`)
-        .then(() => showToast.success('toast.linkCopied'))
+        .writeText(buildInviteLink(inviteCode, window.location.origin))
+        .then(() => {
+          trackInviteCopied(source, inviteCode)
+          showToast.success('toast.linkCopied')
+        })
         .catch(() => showToast.error('toast.error'))
     }
   }
@@ -91,7 +99,7 @@ export default function LobbyInfo({
               </button>
             )}
             <button
-              onClick={handleCopyInvite}
+              onClick={() => handleCopyInvite('lobby_header_button')}
               title={t('game.ui.copyInvite')}
               className="bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3"
             >
@@ -131,7 +139,7 @@ export default function LobbyInfo({
             </h1>
             {/* Code chip — clicking copies the invite link */}
             <button
-              onClick={handleCopyInvite}
+              onClick={() => handleCopyInvite('lobby_code_chip')}
               title={t('game.ui.copyInvite')}
               className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30 cursor-pointer"
             >

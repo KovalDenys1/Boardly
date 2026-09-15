@@ -77,6 +77,7 @@ export default function AliasGamePage() {
         accentColor="var(--bd-coral)"
         accent="var(--bd-coral)"
         lobbiesHref="/games/alias/lobbies"
+        guideHref="/guides/how-to-play-alias-online"
         primaryCtaLabel="Play now"
         groupNotice="Alias needs at least 4 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four."
         facts={[

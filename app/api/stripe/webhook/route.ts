@@ -6,6 +6,44 @@ import Stripe from 'stripe'
 
 const log = apiLogger('/api/stripe/webhook')
 
+// Records that this account converted, the first time it ever does. Cancellation
+// nulls premiumUntil and stripeSubscriptionId, and checkout writes
+// stripeCustomerId while creating the session (recreateStripeCustomer in
+// app/api/stripe/checkout/route.ts), before any payment — so without this stamp
+// a churned customer is indistinguishable from someone who opened checkout and
+// walked away.
+//
+// `premiumFirstGrantedAt: null` in the where clause is what makes the write
+// once-only: a row that already carries a stamp is not matched, so renewals and
+// re-subscribes cannot move it. It is a separate statement rather than a field
+// on the `data` payload below because that payload also carries revokes, and a
+// field there would be rewritten on every event.
+async function stampFirstGrant(
+  where: { stripeCustomerId: string } | { id: string },
+  until: Date | null
+) {
+  // Only a grant converts. A revoke must leave the stamp alone.
+  if (until === null) return
+
+  // This column is analytics, not entitlement: it decides what the Control Panel
+  // can report, never what a user can do. So it must not be able to fail the
+  // webhook. A throw here would reach POST, become a 500, and delete the
+  // idempotency claim — and `isWorthRetrying` is consulted only on the
+  // `updated === 0` paths, so a thrown error would bypass the age check that
+  // exists to stop sustained 5xx from getting the endpoint disabled by Stripe.
+  // Entitlement has already been written by the caller at this point.
+  try {
+    await prisma.users.updateMany({
+      where: { ...where, premiumFirstGrantedAt: null },
+      data: { premiumFirstGrantedAt: new Date() },
+    })
+  } catch (error) {
+    log.error('failed to stamp premiumFirstGrantedAt', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
 async function updateSubscriptionState(
   customerId: string,
   subscriptionId: string | null,
@@ -26,6 +64,7 @@ async function updateSubscriptionState(
   })
 
   if (result.count > 0) {
+    await stampFirstGrant({ stripeCustomerId: customerId }, until)
     return result.count
   }
 
@@ -48,6 +87,10 @@ async function updateSubscriptionState(
     })
 
     if (repaired.count > 0) {
+      // Stamped by id, not by customer id: this branch is the one that repairs a
+      // stale stripeCustomerId, so matching on the event's customer id would only
+      // work because the repair just ran. The id is what actually identified the row.
+      await stampFirstGrant({ id: fallbackUserId }, until)
       log.warn('Recovered Stripe event via subscription metadata userId', {
         customerId,
         subscriptionId,

@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import { trackPremiumCta } from '@/lib/analytics'
 import { Icon, type IconName } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import UsernameInput from '@/components/UsernameInput'
@@ -19,7 +20,7 @@ import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
-import { PREMIUM_PRICE_AMOUNT } from '@/lib/stripe'
+import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 import PublicProfileView from '@/components/PublicProfileView'
 import {
   getStoredAppearancePreferences,
@@ -375,6 +376,7 @@ export default function ProfilePage() {
   }, [])
 
   const handleCheckout = useCallback(async () => {
+    trackPremiumCta('profile_premium_tab')
     setPremiumActionLoading(true)
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' })
@@ -2529,7 +2531,7 @@ export default function ProfilePage() {
               <div className="max-w-2xl">
                 <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                  {!hasUploadPack ? `Unlock exclusive features for ${PREMIUM_PRICE_AMOUNT}/month.` : 'Manage your subscription and customize your profile.'}
+                  {!hasUploadPack ? `Unlock exclusive features from ${PREMIUM_BASE_PRICE}/month, converted to your currency at checkout.` : 'Manage your subscription and customize your profile.'}
                 </p>
               </div>
 
@@ -2668,11 +2670,11 @@ export default function ProfilePage() {
                       ) : (
                         <>
                           <Icon name="star" size={16} />
-                          <span>Get Premium — {PREMIUM_PRICE_AMOUNT}/mo</span>
+                          <span>Get Premium — from {PREMIUM_BASE_PRICE}/mo</span>
                         </>
                       )}
                     </button>
-                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">Cancel anytime</p>
+                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">Cancel anytime · final amount shown at checkout</p>
                   </div>
                 )}
               </div>

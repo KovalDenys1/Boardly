@@ -385,6 +385,8 @@ const en = {
     ribbonBadgeLater: 'Coming later',
     ribbonBadgePlanned: 'On the list',
     ribbonDescription: '{{available}} games are ready today. {{more}} more are being explored for future game nights.',
+    ribbonMoreTitle: 'More on the way',
+    ribbonMoreDesc: '{{count}} more games are in development. The full catalog shows what is next.',
     ctaLoggedInTitle: 'Good to have you back, {{name}}.',
     ctaLoggedInAccent: 'Your next game is one click away.',
     ctaLoggedInBody: 'Your stats, friends, and game history are right where you left them.',
@@ -441,6 +443,7 @@ const en = {
     noDownloadNeeded: 'You can play as a guest. No app download needed.',
     stillBeingPolished: 'This game is still being polished.',
     guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
+    screenshotAlt: 'A round of {{gameName}} in progress on Boardly',
     readGuide: 'Read the guide →',
     detail: {
       labels: {
@@ -889,6 +892,11 @@ const en = {
       name: 'Rock Paper Scissors',
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
+      ribbon: {
+        desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
+        tag: 'Casual',
+        time: '2 min',
+      },
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
       rule_2: 'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
       rule_3: 'If both choose the same, the round is a draw - replay',
@@ -2411,7 +2419,7 @@ const en = {
     listAnd: 'and',
     q1: {
       question: 'Is Boardly free to play?',
-      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription at {{price}} a month for extras like replays, custom lobby themes and full stats, and free players may see ads.',
+      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price that is converted to your local currency at checkout – for extras like replays, custom lobby themes and full stats, and free players may see ads.',
     },
     q2: {
       question: 'Do I need an account to play?',
@@ -2443,6 +2451,8 @@ const en = {
     },
   },
   footer: {
+    brandLine: 'online board games',
+    about: 'About',
     tagline: 'Play board games online with friends in real-time. Free, no download required.',
     games: 'Games',
     play: 'Play',
@@ -2457,6 +2467,22 @@ const en = {
     sendFeedback: 'Send Feedback',
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
     builtWith: 'Built with Next.js, Supabase & Prisma',
+  },
+  about: {
+    breadcrumb: 'About',
+    title: 'About Boardly',
+    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Memory, Alias and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
+    originTitle: 'Where it came from',
+    origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
+    origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',
+    notTitle: 'What Boardly is not',
+    not: 'Boardly is not boardly.co, boardly.ai or joinboardly.com – those are unrelated products that share the name; the board games website lives only at boardly.online.',
+    fundingTitle: 'How it is funded',
+    funding: 'Boardly is free to play. An optional Premium subscription supports the site, and ads, once approved, run only on guide pages – never in or next to a game.',
+    contactTitle: 'Contact',
+    contactIntro: 'Questions, bugs or ideas:',
+    githubRepo: 'Boardly on GitHub',
+    playCta: 'See all games',
   },
   onboarding: {
     title: 'Welcome to Boardly!',

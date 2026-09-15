@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
   title: 'How to Play Guess the Spy Online - Complete Guide',
@@ -30,7 +31,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/how-to-play-spy-game-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: '2026-05-08',
+  dateModified: getGuideBySlug('how-to-play-spy-game-online').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
@@ -63,6 +64,8 @@ export default function HowToPlaySpyGuide() {
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
+          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
         ]}
       >
         <GuideSection title="Game Setup">
