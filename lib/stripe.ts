@@ -29,3 +29,11 @@ export const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID ?? ''
  */
 export const PREMIUM_BASE_PRICE = '$2.99'
 export const PREMIUM_PRICE_LABEL = 'Boardly Premium'
+
+/**
+ * The yearly subscription's Stripe Price, read exactly like the monthly one so
+ * the two stay the same shape. Empty when `STRIPE_PREMIUM_PRICE_ID_YEARLY` is
+ * unset, which is the signal every caller uses to fall back to monthly-only:
+ * the yearly plan is never offered from a price ID this process cannot name.
+ */
+export const PREMIUM_PRICE_ID_YEARLY = process.env.STRIPE_PREMIUM_PRICE_ID_YEARLY ?? ''

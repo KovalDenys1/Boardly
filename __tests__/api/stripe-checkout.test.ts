@@ -41,11 +41,15 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 let mockPremiumPriceId = 'price_live_valid'
+let mockPremiumPriceIdYearly = 'price_live_valid_yearly'
 
 jest.mock('@/lib/stripe', () => ({
   getStripe: jest.fn(),
   get PREMIUM_PRICE_ID() {
     return mockPremiumPriceId
+  },
+  get PREMIUM_PRICE_ID_YEARLY() {
+    return mockPremiumPriceIdYearly
   },
 }))
 
@@ -53,14 +57,30 @@ const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockGetStripe = getStripe as jest.MockedFunction<typeof getStripe>
 
-function makeRequest() {
-  return new NextRequest('http://localhost:3000/api/stripe/checkout', { method: 'POST' })
+function makeRequest(plan?: string) {
+  return new NextRequest('http://localhost:3000/api/stripe/checkout', {
+    method: 'POST',
+    ...(plan
+      ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan }) }
+      : {}),
+  })
+}
+
+function freeUser() {
+  mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+  mockPrisma.users.findUnique.mockResolvedValue({
+    id: 'user-1',
+    email: 'user@example.com',
+    stripeCustomerId: 'cus_existing',
+    premiumUntil: null,
+  } as any)
 }
 
 describe('POST /api/stripe/checkout', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockPremiumPriceId = 'price_live_valid'
+    mockPremiumPriceIdYearly = 'price_live_valid_yearly'
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -218,6 +238,79 @@ describe('POST /api/stripe/checkout', () => {
 
     expect(response.status).toBe(200)
     expect(payload.url).toBe('https://checkout.stripe.com/session-1')
+  })
+
+  // #926: the plan decides the price ID, and no other purchase shape exists.
+  describe('plan selection', () => {
+    it('charges the monthly price when the body says nothing, as the old call sites do', async () => {
+      freeUser()
+      const create = jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/s' })
+      mockGetStripe.mockReturnValue({ checkout: { sessions: { create } } } as any)
+
+      await POST(makeRequest())
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ line_items: [{ price: 'price_live_valid', quantity: 1 }] })
+      )
+    })
+
+    it('charges the yearly price when the body asks for it', async () => {
+      freeUser()
+      const create = jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/s' })
+      mockGetStripe.mockReturnValue({ checkout: { sessions: { create } } } as any)
+
+      const response = await POST(makeRequest('yearly'))
+
+      expect(response.status).toBe(200)
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'subscription',
+          line_items: [{ price: 'price_live_valid_yearly', quantity: 1 }],
+          // The promotion code field is already on the payment page, so LAUNCH
+          // needs no field of its own on /premium.
+          allow_promotion_codes: true,
+        })
+      )
+    })
+
+    it('falls back to monthly for a plan that does not exist', async () => {
+      freeUser()
+      const create = jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/s' })
+      mockGetStripe.mockReturnValue({ checkout: { sessions: { create } } } as any)
+
+      await POST(makeRequest('lifetime'))
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ line_items: [{ price: 'price_live_valid', quantity: 1 }] })
+      )
+    })
+
+    it('refuses a yearly checkout rather than silently billing monthly when the yearly ID is unset', async () => {
+      mockPremiumPriceIdYearly = ''
+      freeUser()
+      const create = jest.fn()
+      mockGetStripe.mockReturnValue({ checkout: { sessions: { create } } } as any)
+
+      const response = await POST(makeRequest('yearly'))
+
+      expect(response.status).toBe(502)
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    it('records the plan on the checkout_started funnel row', async () => {
+      freeUser()
+      mockGetStripe.mockReturnValue({
+        checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/s' }) } },
+      } as any)
+
+      await POST(makeRequest('yearly'))
+
+      expect(mockPrisma.operationalEvents.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ eventName: 'checkout_started', payload: { plan: 'yearly' } }),
+        })
+      )
+    })
   })
 
   it('returns 502 when the billing portal call fails with a non-stale Stripe error', async () => {
