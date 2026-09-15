@@ -3,6 +3,7 @@ import {
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
+import type { TranslationKeys } from './i18n-helpers'
 
 export type RegisteredGameType =
   | 'yahtzee'
@@ -30,6 +31,45 @@ export type LobbyCreateConfig = {
   difficulty?: { options: string[]; default: string }
 }
 
+/**
+ * Everything the game's own page needs to be found and to answer the query it
+ * was found on (#929). It lives on the catalog entry so a game's title,
+ * description and answer sit with the game instead of being hand-copied into
+ * `app/games/<game>/page.tsx` – eight pages were carrying their own near
+ * identical block before this.
+ *
+ * `title`, `description`, `synonyms`, `genre` and `schemaDescription` are the
+ * crawler's copy and stay English, the way `lib/guides-catalog.ts` does: a
+ * <title> has no locale until the localized URLs of #928 exist. The question
+ * and the answer are read by visitors, so they are translation keys and the
+ * page renders them through `t()`.
+ */
+export type GameSeo = {
+  /** The <title>. The root layout appends " | Boardly", and the pair stays under 60 characters. */
+  title: string
+  /** The meta description, ~150 characters, written for the query the page targets. */
+  description: string
+  /** The other names people type for this game. Feeds `keywords`. */
+  synonyms: string[]
+  /** schema.org VideoGame genres. */
+  genre: string[]
+  /** What the game is, for the VideoGame JSON-LD – a definition, not a pitch. */
+  schemaDescription: string
+  /**
+   * The question the page answers, drawn as its first <h2> above the fold and
+   * used as the FAQPage question. One question: if it needs two, the page
+   * needs two answers.
+   */
+  questionKey: TranslationKeys
+  /**
+   * One short paragraph directly under it, in the product's own voice, and the
+   * same text the FAQPage JSON-LD carries – schema whose answer is nowhere on
+   * the page is a violation, which is what `/guides/best-2-player-games-online`
+   * shipped until #923.
+   */
+  answerKey: TranslationKeys
+}
+
 type GameCatalogEntryBase = {
   id: string
   nameKey: string
@@ -37,6 +77,8 @@ type GameCatalogEntryBase = {
   players: string
   difficultyKey: string
   color: string
+  /** Present on every game that has a page under `app/games/`. */
+  seo?: GameSeo
 }
 
 /** A game that is live and playable — gameType, route, and lobbyCreateConfig are all required. */
@@ -259,6 +301,28 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.yahtzee.description',
     players: '1-4',
     difficultyKey: 'games.yahtzee.difficulty',
+    seo: {
+      title: 'Play Yahtzee Online Free with Friends or Bots',
+      description: 'Play Yahtzee online free in your browser. Roll five dice, fill the scorecard and play with up to three friends in real time, or against a bot.',
+      synonyms: [
+        'yahtzee online',
+        'yahtzee online free',
+        'play yahtzee online',
+        'yahtzee online with friends',
+        'yahtzee multiplayer',
+        'yatzy online',
+        'free yahtzee game',
+        'dice game online',
+      ],
+      genre: [
+        'Dice Game',
+        'Strategy',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Dice game for one to four players. Roll five dice up to three times a turn, then commit the result to a scoring category: short mode fills nine categories, classic fifteen.',
+      questionKey: 'games.yahtzee.seo.question',
+      answerKey: 'games.yahtzee.seo.answer',
+    },
     availability: 'available',
     route: '/games/yahtzee/lobbies',
     color: 'from-blue-500 to-purple-600',
@@ -277,6 +341,28 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.spy.description',
     players: '3-10',
     difficultyKey: 'games.spy.difficulty',
+    seo: {
+      title: 'Play Guess the Spy Online Free – Social Deduction',
+      description: 'Play Guess the Spy online free with 3 to 10 players. Everyone gets the location except the spy: ask questions, catch the bluff and vote. No download needed.',
+      synonyms: [
+        'guess the spy online',
+        'spy game online',
+        'who is the spy game',
+        'find the imposter game',
+        'spyfall online free',
+        'spyfall style game online',
+        'social deduction game online',
+        'online spy game with friends',
+      ],
+      genre: [
+        'Social Deduction',
+        'Party Game',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Social deduction party game where each player receives a secret location and a role in it, except the spy, who must blend in without knowing where they are.',
+      questionKey: 'games.spy.seo.question',
+      answerKey: 'games.spy.seo.answer',
+    },
     availability: 'available',
     route: '/games/spy/lobbies',
     color: 'from-red-500 to-pink-600',
@@ -293,6 +379,26 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.tictactoe.description',
     players: '1-2',
     difficultyKey: 'games.tictactoe.difficulty',
+    seo: {
+      title: 'Play Tic Tac Toe Online Free with Friends',
+      description: 'Play Tic Tac Toe online free in the browser. Take the 3×3 grid against a friend or a bot, one round or a best of 3, 5 or 10. No download, no account needed.',
+      synonyms: [
+        'tic tac toe online',
+        'tic tac toe online free',
+        'play tic tac toe with friends',
+        'tic tac toe 2 player',
+        'noughts and crosses online',
+        'xs and os game online',
+      ],
+      genre: [
+        'Strategy',
+        'Puzzle',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Classic 3×3 grid strategy game where two players alternate placing X and O marks, aiming to get three in a row.',
+      questionKey: 'games.tictactoe.seo.question',
+      answerKey: 'games.tictactoe.seo.answer',
+    },
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',
     color: 'from-red-500 to-coral-500',
@@ -310,6 +416,26 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.memory.description',
     players: '1-4',
     difficultyKey: 'games.memory.difficulty',
+    seo: {
+      title: 'Play Memory Game Online Free – Multiplayer',
+      description: 'Play the Memory matching game online free with 2 to 4 players. Flip cards, keep the pairs you match and race on 4×4, 5×4 or 6×6 boards. No download needed.',
+      synonyms: [
+        'memory game online multiplayer',
+        'memory card game online',
+        'memory game online free',
+        'matching pairs game online',
+        'concentration card game online',
+        'memory game with friends',
+      ],
+      genre: [
+        'Puzzle',
+        'Memory',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Matching pairs card game for two to four players. Every card starts face down; flip two on your turn and keep the pair when they match. Easy is 4×4, hard is 6×6.',
+      questionKey: 'games.memory.seo.question',
+      answerKey: 'games.memory.seo.answer',
+    },
     availability: 'available',
     route: '/games/memory/lobbies',
     color: 'from-green-400 to-teal-500',
@@ -328,6 +454,28 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.connect_four.description',
     players: '1-2',
     difficultyKey: 'games.connect_four.difficulty',
+    seo: {
+      title: 'Play Connect 4 Online Free with a Friend',
+      description: 'Play Connect 4 online free. Drop discs on a seven by six board and be first to line up four, against a friend or a bot. Real time in the browser, no download.',
+      synonyms: [
+        'connect 4 online',
+        'connect four online',
+        'connect four online free',
+        'connect 4 online free',
+        'four in a row online',
+        'connect 4 with friends',
+        'connect four 2 player',
+        'connect four multiplayer',
+      ],
+      genre: [
+        'Strategy',
+        'Puzzle',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Two-player strategy game on a 6-row, 7-column grid. Drop coloured discs into columns and be the first to connect four in a row, horizontally, vertically or diagonally.',
+      questionKey: 'games.connect_four.seo.question',
+      answerKey: 'games.connect_four.seo.answer',
+    },
     availability: 'available',
     route: '/games/connect-four/lobbies',
     color: 'from-red-500 to-yellow-400',
@@ -345,6 +493,27 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.alias.description',
     players: '4-16',
     difficultyKey: 'games.alias.difficulty',
+    seo: {
+      title: 'Play Alias Online Free – Team Word Game',
+      description: 'Play Alias online free with 4 to 16 players in two teams. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
+      synonyms: [
+        'alias game online',
+        'alias word game online',
+        'alias online free',
+        'team word game online',
+        'describe the word game online',
+        'word guessing game with friends',
+      ],
+      genre: [
+        'Party Game',
+        'Word Game',
+        'Multiplayer',
+        'Team Game',
+      ],
+      schemaDescription: 'Team word description game where players describe words to their teammates without saying the word itself, racing against a timer to score points.',
+      questionKey: 'games.alias.seo.question',
+      answerKey: 'games.alias.seo.answer',
+    },
     availability: 'available',
     route: '/games/alias/lobbies',
     color: 'from-coral-400 to-red-500',
@@ -362,6 +531,25 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.liars_party.description',
     players: '4-12',
     difficultyKey: 'games.liars_party.difficulty',
+    seo: {
+      title: "Play Liar's Party Online Free – Bluffing Game",
+      description: "Play Liar's Party online free with 4 to 12 players. Make a claim, decide who is bluffing and let the vote settle it. In the browser, no download needed.",
+      synonyms: [
+        "liar's party online",
+        'bluffing game online',
+        'online party game for groups',
+        'social deduction game online free',
+      ],
+      genre: [
+        'Party Game',
+        'Social Deduction',
+        'Multiplayer',
+        'Bluffing',
+      ],
+      schemaDescription: 'Social bluffing party game where players make claims (true or bluff), others vote to challenge or believe, and players are eliminated after too many caught bluffs.',
+      questionKey: 'games.liars_party.seo.question',
+      answerKey: 'games.liars_party.seo.answer',
+    },
     availability: 'in-development',
     route: '/games/liars-party/lobbies',
     color: 'from-violet-500 to-purple-600',
@@ -378,6 +566,25 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '1-2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
+    seo: {
+      title: 'Play Rock Paper Scissors Online Free',
+      description: 'Play Rock Paper Scissors online free against a friend or a bot. Both players pick at the same time and the reveal is instant. In the browser, no download.',
+      synonyms: [
+        'rock paper scissors online',
+        'rps online',
+        'rock paper scissors online free',
+        'rock paper scissors 2 player online',
+        'rock paper scissors with friends',
+      ],
+      genre: [
+        'Casual Game',
+        'Multiplayer',
+        'Strategy',
+      ],
+      schemaDescription: 'Classic two-player simultaneous-choice game. Both players pick Rock, Paper or Scissors at the same time. Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
+      questionKey: 'games.rock_paper_scissors.seo.question',
+      answerKey: 'games.rock_paper_scissors.seo.answer',
+    },
     availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
@@ -457,6 +664,20 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     color: 'from-amber-500 to-red-600',
   },
 ]
+
+/**
+ * The catalog entry with this id, straight from the static list – no feature
+ * flags, because everything read off it here (route, player range, SEO copy)
+ * is the same whether the game is promoted or not.
+ */
+export function getCatalogEntryById(id: string): GameCatalogEntry | null {
+  return FEATURED_GAME_CATALOG.find((game) => game.id === id) ?? null
+}
+
+/** The SEO block for a game's own page, or null for a game that has no page. */
+export function getGameSeo(id: string): GameSeo | null {
+  return getCatalogEntryById(id)?.seo ?? null
+}
 
 export function isRegisteredGameType(value: string): value is RegisteredGameType {
   return value in GAME_METADATA

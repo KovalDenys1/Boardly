@@ -1,72 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGameMetadata } from '@/lib/game-seo'
+import GameJsonLd from '../components/GameJsonLd'
 import GameDetailPage from '../components/GameDetailPage'
 
-export const metadata: Metadata = {
-  title: 'Play Liar\'s Party Online - Social Bluffing Party Game',
-  description:
-    'Play Liar\'s Party online with friends for free! 4–12 players, real-time bluffing and voting. Make claims, challenge liars, and survive elimination. No download needed. Start on Boardly now!',
-  keywords: [
-    "liar's party game online",
-    'bluffing game online',
-    'social deduction game free',
-    'party game online multiplayer',
-    "liar's party browser game",
-    'online bluff game friends',
-    'social party game no download',
-  ],
-  openGraph: {
-    title: "Play Liar's Party Online | Boardly",
-    description:
-      "Make claims, vote on who's bluffing, and avoid elimination. Free social bluffing game for 4–12 players.",
-    url: 'https://boardly.online/games/liars-party',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "Play Liar's Party Online | Boardly",
-    description: 'Real-time bluffing party game in your browser. Claim, challenge, survive. Free, no download.',
-  },
-  alternates: {
-    canonical: 'https://boardly.online/games/liars-party',
-  },
-  robots: {
-    index: false,
-    follow: true,
-  },
-}
-
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: "Liar's Party", item: 'https://boardly.online/games/liars-party' },
-  ],
-}
-
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'VideoGame',
-  name: "Liar's Party",
-  description:
-    'Social bluffing party game where players make claims (true or bluff), others vote to challenge or believe, and players are eliminated after too many caught bluffs.',
-  url: 'https://boardly.online/games/liars-party',
-  image: 'https://boardly.online/opengraph-image',
-  genre: ['Party Game', 'Social Deduction', 'Multiplayer', 'Bluffing'],
-  numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 4, maxValue: 12 },
-  playMode: 'MultiPlayer',
-  applicationCategory: 'Game',
-  operatingSystem: 'Any (Browser)',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+export const metadata: Metadata = buildGameMetadata('liars-party', { index: false })
 
 export default function LiarsPartyGamePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <GameJsonLd gameId="liars-party" />
       <GameDetailPage
         gameName="Liar's Party"
         title="Play Liar's Party Online"
