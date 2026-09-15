@@ -29,6 +29,11 @@ interface JoinPromptProps {
   onLogin: () => void
   onRegister: () => void
   onWatchAsSpectator?: () => void
+  /**
+   * Offered when the lobby is full (#957), so an invite to a room with no free seat is
+   * not a dead end. Undefined when the game cannot be created (see the caller).
+   */
+  onCreateOwnLobby?: () => void
 }
 
 export default function JoinPrompt({
@@ -45,11 +50,15 @@ export default function JoinPrompt({
   onLogin,
   onRegister,
   onWatchAsSpectator,
+  onCreateOwnLobby,
 }: JoinPromptProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const gameMeta = typeof lobby.gameType === 'string' ? getGameMetadata(lobby.gameType) : null
   const isAnonymousViewer = viewerMode === 'anonymous'
+  // The refusal arrives as the API's English message with no code, which is how the
+  // rest of the join path recognises it too (useLobbyActions handleJoinLobby).
+  const isLobbyFull = error === 'Lobby is full'
   const requiresPassword = Boolean(lobby.isPrivate)
   const primaryAction = isAnonymousViewer ? onJoinAsGuest : onJoin
   const primaryActionLabel = isAnonymousViewer
@@ -155,13 +164,23 @@ export default function JoinPrompt({
               <Icon name="warning" size={18} />
               <p className="font-semibold text-sm">{error}</p>
             </div>
-            {error === 'Lobby is full' && lobby.allowSpectators && onWatchAsSpectator && (
+            {isLobbyFull && lobby.allowSpectators && onWatchAsSpectator && (
               <button
                 type="button"
                 onClick={onWatchAsSpectator}
                 className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
               >
-                <Icon name="eye" size={14} /> Watch as spectator instead →
+                <Icon name="eye" size={14} /> {t('lobby.joinSection.watchInstead')} →
+              </button>
+            )}
+            {isLobbyFull && onCreateOwnLobby && (
+              <button
+                type="button"
+                onClick={onCreateOwnLobby}
+                disabled={primaryActionDisabled}
+                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Icon name="plus" size={14} /> {t('lobby.joinSection.createOwnLobby')} →
               </button>
             )}
           </div>

@@ -222,6 +222,8 @@ const en = {
       invalidCode: 'Invalid lobby code',
       lobbyFull: 'Lobby is full',
       wrongPassword: 'Wrong password',
+      watchInstead: 'Watch as spectator instead',
+      createOwnLobby: 'Create your own lobby',
     },
     joinPromptPrivate: 'Enter the password to join {{lobby}}',
     joinPromptPublic: 'You are about to join {{lobby}}',
