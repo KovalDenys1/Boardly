@@ -108,13 +108,18 @@ function CreateLobbyPage() {
     isSelectableGameType(requestedGameType) ? requestedGameType : 'yahtzee'
   )
   const gameInfo = GAME_INFO[selectedGameType]
+  const [isPremiumUser, setIsPremiumUser] = useState(false)
 
   // #943: the Discord `/play <game> [players]` command links here with the seat count in
   // the URL. It belongs to the game the link named, so it is only read while that game is
   // the selected one – switching games in the picker falls back to that game's default.
+  // The plan matters too: POST /api/lobby answers 403 above FREE_MAX_PLAYERS, so a free
+  // account opens at the largest size it can actually create. `isPremiumUser` is false
+  // until the fetch below confirms it, which re-runs the reset effect once for a Premium
+  // host on a link asking for more than 10 seats.
   const deepLinkMaxPlayers =
     selectedGameType === requestedGameType
-      ? resolveRequestedMaxPlayers(searchParams.get('maxPlayers'), gameInfo?.allowedPlayers)
+      ? resolveRequestedMaxPlayers(searchParams.get('maxPlayers'), gameInfo?.allowedPlayers, isPremiumUser)
       : null
 
   const boardSize = 3
@@ -142,7 +147,6 @@ function CreateLobbyPage() {
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
   const [tipsOpen, setTipsOpen] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
-  const [isPremiumUser, setIsPremiumUser] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
