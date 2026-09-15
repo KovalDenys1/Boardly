@@ -25,7 +25,7 @@ export const ROUTE_UPDATED = {
   '/games/connect-four': '2026-09-10',
   '/games/alias': '2026-09-10',
   '/games/rock-paper-scissors': '2026-09-10',
-  '/guides': '2026-09-06',
+  '/guides': '2026-09-15',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',
 } as const satisfies Record<string, string>
