@@ -19,6 +19,7 @@ const serverOnlyImportPatterns = [
   /^@\/lib\/auth$/,
   /^@\/lib\/cron-auth$/,
   /^@\/lib\/custom-prisma-adapter$/,
+  /^@\/lib\/discord\/internal-auth$/,
   /^@\/lib\/email$/,
   /^@\/lib\/guest-auth$/,
   /^@\/lib\/guest-helpers$/,

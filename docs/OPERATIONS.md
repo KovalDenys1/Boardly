@@ -243,6 +243,28 @@ Check:
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 
+### Runbook: discord_bot_stale
+
+The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts
+`POST /api/internal/discord/heartbeat` every 5 minutes. The route writes a `cron_run` row with
+`source = "discord-bot"`; the rule reads the newest one. Warning after 20 minutes of silence,
+critical after 60. A bot that has never posted does not alert – the launch checklist proves the
+first heartbeat by hand.
+
+When it fires:
+
+1. Is the Pi up? `ssh` in, `systemctl status boardly-discord`, `journalctl -u boardly-discord -n 100`.
+   A `Restart=always` loop with a 401 in the log means the token or `DISCORD_INTERNAL_SECRET` on the
+   Pi no longer matches – the site answers 401 on a wrong secret and 503 when it is unset on Vercel.
+2. Is the bot up but the heartbeat failing? `curl -s http://127.0.0.1:3310/health` on the Pi should
+   report `ready: true`; then check `BOARDLY_BASE_URL` in `/home/denys/.boardly-discord.env`.
+3. Is the site rejecting it? Vercel logs for `/api/internal/discord/heartbeat` – 429 means a restart
+   loop is hammering the route (12 per minute allowed), 503 means the secret is missing in Production.
+4. Nothing wrong anywhere? Check `OperationalEvents` for the newest `cron_run` with
+   `source = 'discord-bot'`; if rows are arriving, the alert resolves on the next cycle.
+
+The alert resolves itself once a heartbeat lands; the GitHub issue closes with it.
+
 ### CSP hardening verification (preview/production)
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
