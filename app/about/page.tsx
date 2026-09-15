@@ -3,7 +3,8 @@ import AboutContent from './AboutContent'
 import { ABOUT_DESCRIPTION, ABOUT_URL, aboutPageJsonLd, organizationJsonLd } from './about-json-ld'
 
 export const metadata: Metadata = {
-  title: 'About Boardly – Free Online Board Games with Friends',
+  // absolute: the layout template would append "| Boardly" a second time.
+  title: { absolute: 'About Boardly – Free Online Board Games with Friends' },
   description: ABOUT_DESCRIPTION,
   openGraph: {
     title: 'About Boardly',

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import AboutPage, { metadata } from '@/app/about/page'
 import { aboutPageJsonLd, organizationJsonLd } from '@/app/about/about-json-ld'
+import { organizationNode } from '@/lib/organization-json-ld'
 
 // Resolve keys against the real English locale so the test checks the visible
 // entity statement, not just that a key was requested.
@@ -21,7 +22,7 @@ jest.mock('@/components/Footer', () => ({
 
 describe('/about metadata', () => {
   it('has a title, description, canonical and Open Graph url', () => {
-    expect(metadata.title).toMatch(/About Boardly/)
+    expect(metadata.title).toEqual({ absolute: 'About Boardly – Free Online Board Games with Friends' })
     expect(metadata.description).toMatch(/^Boardly \(boardly\.online\) is a free real-time multiplayer board games website/)
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/about')
     expect(metadata.openGraph?.url).toBe('https://boardly.online/about')
@@ -47,6 +48,11 @@ describe('/about JSON-LD', () => {
     expect(aboutPageJsonLd['@type']).toBe('AboutPage')
     expect(aboutPageJsonLd.url).toBe('https://boardly.online/about')
     expect(aboutPageJsonLd.about).toEqual({ '@id': organizationJsonLd['@id'] })
+  })
+
+  it('is the same Organization node the root layout publishes', () => {
+    expect(organizationNode['@id']).toBe(organizationJsonLd['@id'])
+    expect(organizationNode.logo).toBe(organizationJsonLd.logo)
   })
 
   it('renders both nodes as ld+json scripts', () => {
