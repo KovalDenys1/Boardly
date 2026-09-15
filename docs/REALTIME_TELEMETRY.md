@@ -81,11 +81,9 @@ Rules are evaluated in `evaluateReliabilityAlerts()` (`lib/operational-metrics.t
 
 ## KPI Dashboard (Operational)
 
-Operational KPI data is shown in:
-
-- `/analytics` page (server-rendered section: "Operational Reliability")
-- `GET /api/analytics/operations`
-- CLI report: `npm run ops:kpi:report`
+The analytics page and its API moved to `KovalDenys1/Boardly-control-panel` in May 2026, and
+the CLI report went with them. This repo keeps the raw material: `OperationalEvents` rows,
+the rules in `lib/operational-metrics.ts`, and `npm run ops:alerts:check`.
 
 Tracked KPIs:
 
@@ -97,7 +95,8 @@ Tracked KPIs:
 
 ## SLO Targets (Baseline + Operational)
 
-Targets are encoded in `lib/operational-metrics.ts`:
+Targets are encoded in `lib/operational-metrics.ts`, and the first two come from
+`MOVE_APPLY_TARGET_MS` / `LOBBY_READY_TARGET_MS` in `lib/analytics.ts`:
 
 - Move submit -> applied p95 <= `800ms`
 - Create lobby -> ready p95 <= `2500ms`
@@ -111,21 +110,22 @@ Baseline is computed from the previous `baselineDays` window (default 7 days), s
 
 ### If `rejoin_timeout` breaches
 
-- Check Socket.IO service health and deploy/cold-start windows
-- Check lobby join ACK behavior in `useSocketConnection` and socket room authorization
+- Check the Supabase project's realtime status and any Vercel cold-start window
+- Check the subscribe path in `app/lobby/[code]/hooks/useRealtimeConnection.ts`
 - Check DB latency on lobby/member queries
 
 ### If `auth_refresh_failed` breaches
 
-- Check `/api/socket/token` status trend (`401`/`403`/`5xx`)
+- Check the status trend on `/api/lobby/[code]/realtime-topic` (`401`/`403`/`5xx`)
 - Check auth secret/session validity (`NEXTAUTH_SECRET`, provider state)
-- Check token refresh path in `useSocketConnection` (`token_fetch`, `socket_auth_payload`)
+- Check the guest token path in `lib/guest-auth.ts`
 
 ### If `move_apply_timeout` breaches
 
 - Check `/api/game/[gameId]/state` p95 and DB lock/contention
-- Check by game breakdown (`game_type`) in operational KPI table
-- Check socket broadcast lag after successful mutation
+- Check by game breakdown (`game_type`) in the `OperationalEvents` rows
+- Check broadcast latency after a successful mutation – `broadcastToLobby` is awaited, so a
+  slow Supabase REST call shows up as a slow API response
 
 ## Execution Commands
 
@@ -139,12 +139,6 @@ Dry-run alert evaluation:
 
 ```bash
 npm run ops:alerts:check -- --dry-run
-```
-
-KPI report:
-
-```bash
-npm run ops:kpi:report -- --hours=24 --baseline-days=7
 ```
 
 Load run with fail-rate report:

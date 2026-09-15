@@ -13,9 +13,9 @@ Boardly uses a single-server model:
 1. Client sends action to API route.
 2. API validates actor, permissions, and game rule constraints.
 3. API persists authoritative state in DB.
-4. API notifies socket server (`/api/notify`).
-5. Socket server broadcasts update to `lobby:<code>` room.
-6. Clients reconcile local UI with server snapshot.
+4. API broadcasts the update to the `lobby:<code>` Supabase Broadcast channel, awaited
+   before the response returns.
+5. Clients reconcile local UI with server snapshot.
 
 Client optimism is allowed for responsiveness, but server state is final.
 
@@ -24,7 +24,7 @@ Client optimism is allowed for responsiveness, but server state is final.
 Boardly stays in one repository, but frontend and backend code should be separated by import boundaries:
 
 - `lib/client/**`: browser-only helpers used by Client Components and hooks.
-- `lib/server/**`: server-only infrastructure and service entrypoints used by API routes, server components, scripts, and the socket server.
+- `lib/server/**`: server-only infrastructure and service entrypoints used by API routes, server components, and scripts.
 - `lib/shared/**`: runtime-agnostic contracts and pure helpers that are safe on both sides.
 - existing `lib/**` root modules remain compatibility entrypoints while code is migrated incrementally.
 
@@ -55,6 +55,7 @@ All games implement `GameEngine` (`lib/game-engine.ts`) and expose:
 - `rock_paper_scissors`
 - `memory`
 - `guess_the_spy`
+- `connect_four`
 - `telephone_doodle`
 - `sketch_and_guess`
 - `liars_party`
@@ -70,9 +71,12 @@ Game lifecycle and public availability are managed in `lib/game-catalog.ts`:
 
 The default registered runtime set is managed in `lib/game-registry.ts`:
 
-- Stable games: `yahtzee`, `guess_the_spy`, `tic_tac_toe`, `rock_paper_scissors`, `memory`
-- Experimental/feature-flagged games: `telephone_doodle`, `sketch_and_guess`, `liars_party`, `fake_artist`, `alias`
-- Bot-supported games: `yahtzee`, `tic_tac_toe`, `rock_paper_scissors`
+- Always registered: `yahtzee`, `guess_the_spy`, `tic_tac_toe`, `rock_paper_scissors`, `memory`, `connect_four`, `alias`, `liars_party`
+- Feature-flagged: `telephone_doodle`, `sketch_and_guess`, `fake_artist` (`lib/feature-flags.ts`, overridable per deployment from the control panel through `lib/runtime-config.ts`)
+- Bot-supported: `yahtzee`, `tic_tac_toe`, `rock_paper_scissors`, `memory`, `connect_four`
+
+Registered is not the same as public: `liars_party` is registered and playable by lobby code
+while its catalog state is still `in-development`.
 
 For game launch and promotion requirements, see `docs/GAME_DEVELOPMENT.md`.
 
@@ -88,10 +92,10 @@ Architecture: Supabase Realtime — no separate server process.
 
 ### Client-side subscription
 
-- `hooks/useRealtimeConnection.ts` — subscribes to:
+- `app/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
   - `lobby:{code}` Broadcast channel (game events)
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
-- `hooks/use-lobby-list.ts` — global Postgres Changes on `Lobbies` table
+- `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
 - `components/ReactionOverlay.tsx` — `reactions:{code}` Broadcast channel (internal)
 
 ### When to use Broadcast vs Postgres Changes
@@ -120,7 +124,7 @@ This logic is centralized in `lib/lobby-lifecycle.ts` and reused across main and
 
 - server-issued signed guest JWT
 - identity header: `X-Guest-Token`
-- verification path: `lib/guest-auth.ts` + socket auth middleware
+- verification path: `lib/guest-auth.ts`, called by the API routes that mutate state
 
 ### Secret policy
 
@@ -132,11 +136,15 @@ This logic is centralized in `lib/lobby-lifecycle.ts` and reused across main and
 Core tables (pluralized schema):
 
 - Identity and preferences: `Users`, `AccountPreferences`, `Bots`
-- Auth/session: `Accounts`, `Sessions`, `VerificationTokens`, `PasswordResetTokens`, `EmailVerificationTokens`
-- Lobby/gameplay: `Lobbies`, `LobbyInvites`, `Games`, `Players`, `GameStateSnapshots`
-- Social: `FriendRequests`, `Friendships`
-- Notifications: `NotificationPreferences`, `Notifications`
-- Operations/admin: `OperationalEvents`, `OperationalAlertStates`, `AdminAuditLogs`, `Feedback`
+- Auth/session: `Accounts`, `PasswordResetTokens`, `EmailVerificationTokens` (NextAuth runs on JWT sessions, so there is no `Sessions` table)
+- Lobby/gameplay: `Lobbies`, `LobbyInvites`, `LobbyParticipations`, `Games`, `Players`, `GameStateSnapshots`
+- Game content: `SpyLocations`
+- Social and achievements: `FriendRequests`, `Friendships`, `UserAchievements`
+- Notifications: `NotificationPreferences`, `Notifications`, `PushSubscriptions`
+- Billing: `StripeWebhookEvents`
+- Operations/admin: `OperationalEvents`, `OperationalAlertStates`, `AdminAuditLogs`, `Feedback`, `Announcements`, `RuntimeFlags`
+
+`prisma/schema.prisma` is the list that counts; `docs/DATABASE.md` covers ownership and RLS.
 
 Game state is persisted as JSON in `Games.state` and treated as source of truth for replay/recovery.
 
@@ -177,6 +185,6 @@ Use `TIMESTAMPTZ` by default for:
 ## Quality guardrails
 
 - Keep game-specific logic isolated under `lib/games/` and game-specific UI blocks.
-- Avoid hardcoded single-game behavior in shared lobby/socket handlers.
+- Avoid hardcoded single-game behavior in shared lobby and realtime handlers.
 - Prefer strict TypeScript contracts over implicit shape assumptions.
 - Maintain tests for rules, scoring, reconnect, and turn transition behavior.

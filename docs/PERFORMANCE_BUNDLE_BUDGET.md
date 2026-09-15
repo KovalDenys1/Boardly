@@ -1,6 +1,6 @@
 # Bundle Budget Policy
 
-Updated: 2026-03-10
+Updated: 2026-09-15 (measurement commands; the baselines below are history, not targets)
 
 ## Goal
 
@@ -10,12 +10,11 @@ Catch client bundle regressions early for critical pages, starting with `"/lobby
 
 Production build baseline command (local/CI-safe placeholders for build-time env):
 
-```powershell
-$env:DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder'
-$env:DIRECT_URL='postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder'
-$env:NEXTAUTH_URL='http://localhost:3000'
-$env:NEXTAUTH_SECRET='test-nextauth-secret-32chars-min-required-len'
-$env:SOCKET_SERVER_INTERNAL_SECRET='test-socket-secret-32chars-min-required-key'
+```bash
+DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder' \
+DIRECT_URL='postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder' \
+NEXTAUTH_URL='http://localhost:3000' \
+NEXTAUTH_SECRET='test-nextauth-secret-32chars-min-required-len' \
 npm run build
 npm run check:bundle-budget
 ```
@@ -67,7 +66,7 @@ Optimization set:
   - `LobbyInfo`
   - `JoinPrompt`
   - `MobileTabPanel`
-- Preserved gameplay and socket flows while reducing initial route chunk weight.
+- Preserved gameplay and realtime flows while reducing initial route chunk weight.
 
 Measured result from `next build`:
 

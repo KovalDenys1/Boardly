@@ -193,7 +193,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `app/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
 - [ ] `app/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
 - [ ] `app/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
-- [ ] `components/HomePage/GameRibbon.tsx` — add to `GAME_ACCENT_BG`, `GAME_DETAIL_HREF`, `translatedDetails`, `getIllustration`
+- [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
 - [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
