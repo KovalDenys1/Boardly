@@ -2703,6 +2703,31 @@ const ru = {
     successBody: 'Мы читаем каждое сообщение и используем его для улучшения Boardly.',
     close: 'Закрыть',
   },
+  discordLink: {
+    title: 'Связать Boardly с Discord',
+    intro: 'После привязки сервер Boardly в Discord сможет выдавать роли по твоему аккаунту – Premium, Verified Player и Regular.',
+    sharesTitle: 'Что Boardly передаёт в Discord',
+    shares: {
+      premium: 'Активен ли Premium',
+      gamesPlayed: 'Сколько игр ты завершил',
+      memberSince: 'Дата создания аккаунта',
+      verified: 'Подтверждён ли email',
+    },
+    notShared: 'Больше ничего – ни адреса email, ни истории игр, ни списка друзей. Отвязка Discord в профиле удаляет всё это.',
+    relinkTitle: 'Свяжи заново, чтобы включить роли',
+    relinkBody: 'Твой Discord привязан со старым разрешением, которое не может обновлять роли. Повторная привязка запросит у Discord только это разрешение.',
+    connect: 'Перейти в Discord',
+    relink: 'Связать заново',
+    connecting: 'Открываем Discord…',
+    cancel: 'Не сейчас',
+    checking: 'Проверяем связь с Discord…',
+    updating: 'Обновляем роли в Discord…',
+    doneTitle: 'Связано',
+    done: 'Готово – можешь закрыть вкладку и вернуться в Discord.',
+    doneHint: 'Роли теперь следуют за аккаунтом: Premium обновляется в тот же день, сыгранные игры – каждую ночь.',
+    failed: 'Discord не ответил. Попробуй ещё раз через минуту.',
+    retry: 'Попробовать снова',
+  },
 } as const
 
 export default ru

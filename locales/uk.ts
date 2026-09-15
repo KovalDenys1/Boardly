@@ -2717,6 +2717,31 @@ const uk: Translation = {
     successBody: 'Ми читаємо кожне повідомлення і використовуємо його для покращення Boardly.',
     close: 'Закрити',
   },
+  discordLink: {
+    title: 'Пов\'язати Boardly з Discord',
+    intro: 'Після прив\'язки сервер Boardly у Discord зможе видавати ролі за твоїм акаунтом – Premium, Verified Player і Regular.',
+    sharesTitle: 'Що Boardly передає в Discord',
+    shares: {
+      premium: 'Чи активний Premium',
+      gamesPlayed: 'Скільки ігор ти завершив',
+      memberSince: 'Дата створення акаунта',
+      verified: 'Чи підтверджено email',
+    },
+    notShared: 'Більше нічого – ні адреси email, ні історії ігор, ні списку друзів. Відв\'язка Discord у профілі видаляє все це.',
+    relinkTitle: 'Пов\'яжи знову, щоб увімкнути ролі',
+    relinkBody: 'Твій Discord прив\'язано зі старим дозволом, який не може оновлювати ролі. Повторна прив\'язка запитає в Discord лише цей дозвіл.',
+    connect: 'Перейти в Discord',
+    relink: 'Пов\'язати знову',
+    connecting: 'Відкриваємо Discord…',
+    cancel: 'Не зараз',
+    checking: 'Перевіряємо зв\'язок із Discord…',
+    updating: 'Оновлюємо ролі в Discord…',
+    doneTitle: 'Пов\'язано',
+    done: 'Готово – можеш закрити вкладку й повернутися в Discord.',
+    doneHint: 'Ролі тепер ідуть за акаунтом: Premium оновлюється того ж дня, зіграні ігри – щоночі.',
+    failed: 'Discord не відповів. Спробуй ще раз за хвилину.',
+    retry: 'Спробувати знову',
+  },
 }
 
 export default uk

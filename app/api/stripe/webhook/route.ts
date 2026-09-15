@@ -3,8 +3,33 @@ import { getStripe } from '@/lib/stripe'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import Stripe from 'stripe'
+import { pushRoleConnection } from '@/lib/discord/role-connection'
 
 const log = apiLogger('/api/stripe/webhook')
+
+// Re-pushes the Discord Linked Roles metadata after a premium change, so the Premium role
+// follows the subscription the same day rather than at the nightly sync (#939). Like
+// stampFirstGrant this is not entitlement: it runs after the row is written and must never
+// fail the webhook, so pushRoleConnection's own never-throws contract is wrapped once more.
+async function pushDiscordRoleForCustomer(customerId: string, fallbackUserId: string | null) {
+  try {
+    const user = await prisma.users.findFirst({
+      where: fallbackUserId
+        ? { OR: [{ stripeCustomerId: customerId }, { id: fallbackUserId }] }
+        : { stripeCustomerId: customerId },
+      select: { id: true },
+    })
+    if (!user) return
+    const result = await pushRoleConnection(user.id)
+    if (result.status !== 'skipped') {
+      log.info('Discord role connection after premium change', { userId: user.id, status: result.status })
+    }
+  } catch (error) {
+    log.error('failed to push Discord role connection after premium change', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
 
 // Records that this account converted, the first time it ever does. Cancellation
 // nulls premiumUntil and stripeSubscriptionId, and checkout writes
@@ -152,6 +177,9 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       if (updated === 0 && isWorthRetrying(event)) {
         throw new Error(`Subscription event matched no user (customer ${sub.customer})`)
       }
+      if (updated > 0) {
+        await pushDiscordRoleForCustomer(sub.customer as string, metadataUserId(sub))
+      }
       log.info(`Subscription ${event.type}`, {
         customerId: sub.customer,
         status: sub.status,
@@ -165,13 +193,16 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       // Deliberately does not throw on a zero-row result: if no user holds this
       // customer id there is no entitlement left to revoke, and retrying for
       // days would never succeed.
-      await updateSubscriptionState(
+      const revoked = await updateSubscriptionState(
         sub.customer as string,
         null,
         null,
         false,
         metadataUserId(sub)
       )
+      if (revoked > 0) {
+        await pushDiscordRoleForCustomer(sub.customer as string, metadataUserId(sub))
+      }
       log.info('Subscription deleted', { customerId: sub.customer })
       break
     }
@@ -202,6 +233,9 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       )
       if (granted === 0 && isWorthRetrying(event)) {
         throw new Error(`Checkout session matched no user (customer ${customerId})`)
+      }
+      if (granted > 0) {
+        await pushDiscordRoleForCustomer(customerId, metadataUserId(subscription))
       }
       log.info('Checkout session completed', { customerId, subscriptionId })
       break
