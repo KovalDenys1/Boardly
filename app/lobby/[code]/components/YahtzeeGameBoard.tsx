@@ -153,11 +153,14 @@ export default function GameBoard({
             className={`rounded-2xl border px-3 shadow-sm ${compact ? 'py-2' : 'py-3'}`}
             style={{ background: nextStepBg, borderColor: nextStepBorder }}
           >
-            <div className="flex items-center justify-between gap-2">
-              <p className="bd-kicker">
+            {/* Wraps rather than overflows: the ~280px desktop left column cannot
+                fit the kicker and all three chips on one line, and without this
+                the card's edge sliced the last chip mid-glyph (#906). */}
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <p className="bd-kicker shrink-0">
                 Next Move
               </p>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 text-[11px] font-semibold">
                 <span className={`bd-chip px-2 py-1 ${isMyTurn && timeLeft <= 10 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' : isMyTurn ? 'bd-chip-mint' : ''}`}>
                   {isMyTurn ? (
                     timeLeft <= 10
