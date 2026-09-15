@@ -41,6 +41,7 @@ describe('participation key (#816)', () => {
 
 describe('second_human_joined (#920)', () => {
   const OLD = process.env.PARTICIPATION_HASH_SALT
+  const JOINED_AT = new Date('2026-09-15T10:00:00.000Z')
   const base = {
     lobbyId: 'lobby-1',
     lobbyCode: 'AB12',
@@ -53,7 +54,7 @@ describe('second_human_joined (#920)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.PARTICIPATION_HASH_SALT = 'test-salt'
-    ;(prisma.lobbyParticipations.create as jest.Mock).mockResolvedValue({})
+    ;(prisma.lobbyParticipations.create as jest.Mock).mockResolvedValue({ joinedAt: JOINED_AT })
   })
   afterAll(() => { process.env.PARTICIPATION_HASH_SALT = OLD })
 
@@ -63,7 +64,7 @@ describe('second_human_joined (#920)', () => {
     await expect(recordLobbyParticipation(base)).resolves.toBe(true)
 
     expect(prisma.lobbyParticipations.count).toHaveBeenCalledWith({
-      where: { lobbyId: 'lobby-1', isBot: false },
+      where: { lobbyId: 'lobby-1', isBot: false, joinedAt: { lte: JOINED_AT } },
     })
     expect(prisma.operationalEvents.create).toHaveBeenCalledTimes(1)
     expect(prisma.operationalEvents.create).toHaveBeenCalledWith({
@@ -85,6 +86,33 @@ describe('second_human_joined (#920)', () => {
     await recordLobbyParticipation({ ...base, userId: 'user-3' })
 
     expect(prisma.operationalEvents.create).not.toHaveBeenCalled()
+  })
+
+  it('fires exactly once when two humans join at the same time', async () => {
+    // Host row is in place; B and C both insert before either counts. The count is
+    // bounded by each caller's own joinedAt, so B sees host+B and C sees all three.
+    const earlier = new Date('2026-09-15T10:00:00.100Z')
+    const later = new Date('2026-09-15T10:00:00.250Z')
+    ;(prisma.lobbyParticipations.create as jest.Mock)
+      .mockResolvedValueOnce({ joinedAt: earlier })
+      .mockResolvedValueOnce({ joinedAt: later })
+    ;(prisma.lobbyParticipations.count as jest.Mock).mockImplementation(
+      async ({ where }: { where: { joinedAt: { lte: Date } } }) =>
+        [JOINED_AT, earlier, later].filter((t) => t <= where.joinedAt.lte).length,
+    )
+
+    await Promise.all([
+      recordLobbyParticipation(base),
+      recordLobbyParticipation({ ...base, userId: 'user-3' }),
+    ])
+
+    expect(prisma.lobbyParticipations.count).toHaveBeenCalledWith({
+      where: { lobbyId: 'lobby-1', isBot: false, joinedAt: { lte: earlier } },
+    })
+    expect(prisma.lobbyParticipations.count).toHaveBeenCalledWith({
+      where: { lobbyId: 'lobby-1', isBot: false, joinedAt: { lte: later } },
+    })
+    expect(prisma.operationalEvents.create).toHaveBeenCalledTimes(1)
   })
 
   it('ignores bots: a bot-filled lobby is not an invite that worked', async () => {

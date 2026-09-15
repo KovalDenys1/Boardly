@@ -39,9 +39,9 @@ export async function recordLobbyParticipation(params: {
   /** Copied from the user at join, because the user row may not survive the week. */
   signupSource?: string | null
 }): Promise<boolean> {
-  let created = false
+  let created: { joinedAt: Date } | null = null
   try {
-    await prisma.lobbyParticipations.create({
+    created = await prisma.lobbyParticipations.create({
       data: {
         lobbyId: params.lobbyId,
         lobbyCode: params.lobbyCode,
@@ -51,8 +51,8 @@ export async function recordLobbyParticipation(params: {
         isGuest: params.isGuest ?? false,
         signupSource: params.signupSource ?? null,
       },
+      select: { joinedAt: true },
     })
-    created = true
   } catch (err) {
     // A repeat join is expected (rejoin after a refresh) and the unique
     // constraint absorbs it. Anything else is logged and swallowed: an
@@ -68,10 +68,10 @@ export async function recordLobbyParticipation(params: {
   }
 
   if (created && !params.isBot) {
-    await recordSecondHumanJoined(params)
+    await recordSecondHumanJoined({ ...params, joinedAt: created.joinedAt })
   }
 
-  return created
+  return created !== null
 }
 
 /**
@@ -79,6 +79,12 @@ export async function recordLobbyParticipation(params: {
  * participant. Written server-side because the public beacon enum is forgeable, and a
  * rate anyone could post with any lobby code is worse than none. Bots are excluded
  * because a bot-filled Quick Play lobby is not an invite that worked.
+ *
+ * Counts only rows joined at or before the row this call created. The count runs
+ * outside the join transaction, so two humans joining the same lobby at once (Quick
+ * Play sends both to the fullest open lobby) would otherwise each see three and
+ * neither would fire. Rows in the same millisecond still tie, and the earlier one
+ * cannot tell it was earlier; that undercount is accepted, a double count is not.
  *
  * Never throws: an analytics write must not stop someone joining a game.
  */
@@ -88,10 +94,11 @@ async function recordSecondHumanJoined(params: {
   gameType: GameType
   isGuest?: boolean
   signupSource?: string | null
+  joinedAt: Date
 }): Promise<void> {
   try {
     const humans = await prisma.lobbyParticipations.count({
-      where: { lobbyId: params.lobbyId, isBot: false },
+      where: { lobbyId: params.lobbyId, isBot: false, joinedAt: { lte: params.joinedAt } },
     })
     if (humans !== 2) return
 
