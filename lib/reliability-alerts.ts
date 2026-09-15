@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { sendDiscordEmbed } from '@/lib/discord-webhook'
 import {
   evaluateReliabilityAlerts,
   type ReliabilityAlertEvaluation,
@@ -229,19 +230,6 @@ function buildDiscordEmbed(params: {
         timestamp: generatedAt,
       },
     ],
-  }
-}
-
-async function sendDiscordEmbed(webhookUrl: string, payload: object): Promise<void> {
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(`Discord webhook failed with HTTP ${response.status}: ${text}`)
   }
 }
 
