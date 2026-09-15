@@ -18,6 +18,7 @@ export const ROUTE_UPDATED = {
   '/games': '2026-09-07',
   '/leaderboard': '2026-09-15',
   '/about': '2026-09-15',
+  '/premium': '2026-09-15',
   '/games/yahtzee': '2026-09-10',
   '/games/spy': '2026-09-10',
   '/games/tic-tac-toe': '2026-09-10',
