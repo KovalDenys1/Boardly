@@ -2464,6 +2464,7 @@ const en = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     community: 'Community',
+    discord: 'Discord',
     sendFeedback: 'Send Feedback',
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
     builtWith: 'Built with Next.js, Supabase & Prisma',
@@ -2483,6 +2484,102 @@ const en = {
     contactIntro: 'Questions, bugs or ideas:',
     githubRepo: 'Boardly on GitHub',
     playCta: 'See all games',
+  },
+  premium: {
+    breadcrumb: 'Premium',
+    title: 'Boardly Premium',
+    lead: 'Every game on Boardly is free and stays free. Premium is the optional subscription that keeps the site running and unlocks how you show up in a lobby.',
+    planLegend: 'Billing period',
+    planMonthly: 'Monthly',
+    planYearly: 'Yearly',
+    perMonth: 'per month',
+    perYear: 'per year',
+    billedMonthly: 'Billed every month.',
+    billedYearly: 'Billed once a year, {{perMonth}} a month.',
+    save: 'Save {{percent}}%',
+    currencyNote: 'Listed in the currency the plan is priced in. Stripe converts it to your own currency at checkout, so the amount on the payment page is the one you pay.',
+    monthlyOnlyNote: 'The yearly plan is not available right now. Monthly renews every month and can be cancelled at any time.',
+    cta: 'Get Premium',
+    ctaSignedOut: 'Sign in to get Premium',
+    ctaManage: 'Manage subscription',
+    ctaLoading: 'Opening checkout...',
+    ctaNote: 'Cancel anytime. Have a promo code? Enter it on the payment page.',
+    ctaError: 'Could not open checkout. Please try again in a few minutes.',
+    includedTitle: 'What Premium unlocks',
+    freeTitle: 'Free forever, with or without Premium',
+    features: {
+      upload: {
+        label: 'Custom photo upload',
+        desc: 'Use any photo as your avatar instead of the built-in set.',
+      },
+      badge: {
+        label: 'Crown and gold name',
+        desc: 'Your name shows in gold with a crown in every lobby you join.',
+      },
+      cardStyle: {
+        label: 'Profile card style',
+        desc: 'Gold, Glass, Holographic or Dark Glow on your public profile.',
+      },
+      accent: {
+        label: 'Accent colour',
+        desc: 'Pick the colour your username is drawn in.',
+      },
+      featuredGame: {
+        label: 'Featured game',
+        desc: 'Put your favourite game at the top of your profile.',
+      },
+      themes: {
+        label: 'Lobby themes',
+        desc: 'Host a room in any theme, not just the default one.',
+      },
+      spectators: {
+        label: 'Spectators',
+        desc: 'Let friends watch your room without taking a seat.',
+      },
+    },
+    free: {
+      games: {
+        label: 'Every game',
+        desc: 'Full access to every game and every mode, no account needed.',
+      },
+      avatars: {
+        label: 'Built-in avatars',
+        desc: 'The whole built-in avatar set is free to use.',
+      },
+      bio: {
+        label: 'Bio',
+        desc: 'A short bio on your profile, up to 160 characters.',
+      },
+      profile: {
+        label: 'Public profile',
+        desc: 'A shareable profile link with your stats and history.',
+      },
+    },
+    faqTitle: 'Questions',
+    faq: {
+      q1: {
+        question: 'Do I need Premium to play?',
+        answer: 'No. Every game is free, with no download and no account required. Premium only changes the extras listed above.',
+      },
+      q2: {
+        question: 'What happens if I cancel?',
+        answer: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. Cancelling is done from the billing portal on your profile page.',
+      },
+      q3: {
+        question: 'Which currency am I charged in?',
+        answer: 'The plan has one list price, and Stripe converts it to your local currency during checkout. The payment page shows the exact amount before you confirm.',
+      },
+      q4: {
+        question: 'Can I switch between monthly and yearly?',
+        answer: 'Yes. Open the billing portal from your profile page and change the plan there; Stripe handles the difference for the time already paid.',
+      },
+      q5: {
+        question: 'Do you take promo codes?',
+        answer: 'Yes. There is a promo code field on the Stripe payment page, so a code can be applied right before you pay.',
+      },
+    },
+    closingTitle: 'Ready when you are',
+    closingBody: 'One subscription, cancelled from your profile page whenever you want. The games stay free either way.',
   },
   onboarding: {
     title: 'Welcome to Boardly!',

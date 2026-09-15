@@ -4,6 +4,8 @@
 npm run test:e2e        # headless, against a dev server it starts itself
 npm run test:e2e:ui     # Playwright's UI mode, for debugging a failure
 
+E2E_PORT=3111 npm run test:e2e   # when something else already has 3100
+
 # verify a release — note the env file, see "Which database" below
 E2E_DB_ENV_FILE=.env.boardly-prod.local E2E_BASE_URL=https://boardly.online npm run test:e2e
 ```
@@ -35,9 +37,24 @@ run against production, name the file that holds its connection strings:
 value it sees. `E2E_DB_ENV_FILE` naming a file that does not exist is an error
 rather than a silent fall-through to the dev database.
 
-Playwright starts `next dev` on **port 3100** by itself — 3000 is often taken by
-another project, and `reuseExistingServer` will happily hand the suite whatever
-is already answering there.
+## Which application (#900)
+
+Playwright starts `next dev` on **port 3100** by itself, and `reuseExistingServer`
+is on, so a server that is already listening there is adopted without a word.
+3000 was abandoned for that reason and 3100 went the same way: on 2026-09-10 the
+suite spent a run against another project's Next app, and all fourteen failures
+landed inside `createGuestLobby` on a `POST /api/lobby` that belonged to
+somebody else. A higher port would only postpone the next collision — the
+control panel is run on 3100 by hand too.
+
+So `e2e/support/global-setup.ts` asks the base URL for `/manifest.json` before
+the first test and refuses the run unless `short_name` is exactly `Boardly`. It
+runs after the web server has been started or adopted, so it sees the server the
+tests are actually about to drive, whichever it is, and it covers a deployment
+named with `E2E_BASE_URL` as well. The manifest is a static file in `public/`,
+so the check needs no route compiled and no release shipped.
+
+`E2E_PORT` moves the suite's own dev server off a port somebody else wants.
 
 ## Screenshots
 
@@ -117,7 +134,8 @@ only reason these tests exist. Consequences:
 
 ## If a change to `lib/` seems to have no effect
 
-Playwright reuses a dev server that is already listening on 3100. Next's dev
+Playwright reuses a dev server that is already listening on 3100 — a Boardly
+one, since #900, but still one that has been up for a while. Next's dev
 server hot-reloads most things but keeps module-level state — the memoised Redis
 client, for one — so a change to how a client is constructed needs the server
 restarted: `lsof -ti:3100 | xargs kill -9`. This cost half an hour once already.

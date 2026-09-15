@@ -78,7 +78,11 @@ Recommended:
 - hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
-- `OPS_ALERT_WEBHOOK_URL` (Discord webhook for reliability alerts)
+- `OPS_ALERT_WEBHOOK_URL` (Discord webhook for reliability alerts; the payload is a Discord embed, not a Slack one)
+- `FEEDBACK_DISCORD_WEBHOOK_URL` (optional Discord webhook that mirrors `/api/feedback` submissions into the staff feedback channel)
+- `NEXT_PUBLIC_DISCORD_INVITE` (optional; the invite `/discord` redirects to, inlined at build time, falling back to the invite compiled into `lib/discord.ts`)
+- `DISCORD_APPLICATION_ID` (optional; Linked Roles push) and `DISCORD_INTERNAL_SECRET` (optional; bearer for `/api/internal/discord/*`, same value in the Pi env file)
+- the full Discord map, including the bot's own variables, is `docs/DISCORD.md`
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
 - `GITHUB_ALERT_TOKEN` / `GITHUB_ALERT_REPO` (optional GitHub issue creation/closure for reliability alerts; repo format is `owner/repo`)
@@ -242,6 +246,28 @@ Check:
 - if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
+
+### Runbook: discord_bot_stale
+
+The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts
+`POST /api/internal/discord/heartbeat` every 5 minutes. The route writes a `cron_run` row with
+`source = "discord-bot"`; the rule reads the newest one. Warning after 20 minutes of silence,
+critical after 60. A bot that has never posted does not alert – the launch checklist proves the
+first heartbeat by hand.
+
+When it fires:
+
+1. Is the Pi up? `ssh` in, `systemctl status boardly-discord`, `journalctl -u boardly-discord -n 100`.
+   A `Restart=always` loop with a 401 in the log means the token or `DISCORD_INTERNAL_SECRET` on the
+   Pi no longer matches – the site answers 401 on a wrong secret and 503 when it is unset on Vercel.
+2. Is the bot up but the heartbeat failing? `curl -s http://127.0.0.1:3310/health` on the Pi should
+   report `ready: true`; then check `BOARDLY_BASE_URL` in `/home/denys/.boardly-discord.env`.
+3. Is the site rejecting it? Vercel logs for `/api/internal/discord/heartbeat` – 429 means a restart
+   loop is hammering the route (12 per minute allowed), 503 means the secret is missing in Production.
+4. Nothing wrong anywhere? Check `OperationalEvents` for the newest `cron_run` with
+   `source = 'discord-bot'`; if rows are arriving, the alert resolves on the next cycle.
+
+The alert resolves itself once a heartbeat lands; the GitHub issue closes with it.
 
 ### CSP hardening verification (preview/production)
 

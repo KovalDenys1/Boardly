@@ -50,13 +50,22 @@ export default function Chat({
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
+  // Scroll the message list itself, never scrollIntoView on the last bubble:
+  // that walks every scrollable ancestor, and in the phone-landscape side
+  // column (which scrolls as a fallback, #901) each arriving message dragged
+  // the whole column down and cut the scoreboard off at the top.
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+      return
+    }
+    container.scrollTop = container.scrollHeight
   }
 
   useEffect(() => {
@@ -174,14 +183,19 @@ export default function Chat({
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       }}
     >
+      {/* `shrink-0` on the title strip and the composer, and `min-h-0` on the
+          message list, are what keep this panel honest in a short box: as flex
+          items they used to shrink below their content, and the panel's
+          `overflow-hidden` then ate the composer outright (#902). What is left
+          over goes to the messages, which scroll. */}
       <div
-        className={`flex items-center justify-between border-b px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-[24px]'}`}
+        className={`chat-titlebar flex shrink-0 items-center justify-between border-b px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-[24px]'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
           <div className="bd-live-dot" aria-hidden="true" />
           <div className="min-w-0">
-            <div className="bd-kicker">Boardly Chat</div>
+            <div className="chat-titlebar-kicker bd-kicker">Boardly Chat</div>
             <h3 className="truncate text-base font-bold text-bd-ink" id="chat-title">
               {t('chat.title')}
             </h3>
@@ -221,7 +235,7 @@ export default function Chat({
 
       <div
         ref={messagesContainerRef}
-        className="relative flex-1 space-y-2.5 overflow-y-auto p-4 scroll-smooth"
+        className="chat-messages relative min-h-0 flex-1 space-y-2.5 overflow-y-auto p-4 scroll-smooth"
         style={{
           background:
             'radial-gradient(circle at 14% 8%, rgba(255,196,77,0.08), transparent 28%), radial-gradient(circle at 88% 12%, rgba(155,140,255,0.08), transparent 32%), linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
@@ -321,7 +335,6 @@ export default function Chat({
                 </div>
               )
             })}
-            <div ref={messagesEndRef} />
           </>
         )}
 
@@ -340,7 +353,7 @@ export default function Chat({
 
       {someoneTyping && (
         <div
-          className="border-t px-4 py-2.5 animate-[fade-in_0.3s_ease-out]"
+          className="chat-typing shrink-0 border-t px-4 py-2.5 animate-[fade-in_0.3s_ease-out]"
           style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-card-warm)' }}
         >
           <div className="flex items-center gap-2.5 text-bd-ink-muted">
@@ -357,7 +370,7 @@ export default function Chat({
       {!readOnly && (
       <form
         onSubmit={handleSubmit}
-        className={`border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
+        className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex items-stretch gap-2.5">
@@ -386,7 +399,7 @@ export default function Chat({
             📤
           </button>
         </div>
-        <div className="mt-2 text-center text-[10px] text-bd-ink-muted">
+        <div className="chat-composer-hint mt-2 text-center text-[10px] text-bd-ink-muted">
           {t('chat.sendHelp')}
         </div>
       </form>

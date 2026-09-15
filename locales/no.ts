@@ -2452,6 +2452,7 @@ const no = {
     privacy: 'Personvernregler',
     terms: 'Tjenestevilkår',
     community: 'Fellesskap',
+    discord: 'Discord',
     sendFeedback: 'Send tilbakemelding',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Supabase og Prisma',
@@ -2471,6 +2472,102 @@ const no = {
     contactIntro: 'Spørsmål, feil eller ideer:',
     githubRepo: 'Boardly på GitHub',
     playCta: 'Se alle spill',
+  },
+  premium: {
+    breadcrumb: 'Premium',
+    title: 'Boardly Premium',
+    lead: 'Alle spill på Boardly er gratis og forblir gratis. Premium er det valgfrie abonnementet som holder siden i drift og låser opp hvordan du vises i en lobby.',
+    planLegend: 'Betalingsperiode',
+    planMonthly: 'Månedlig',
+    planYearly: 'Årlig',
+    perMonth: 'per måned',
+    perYear: 'per år',
+    billedMonthly: 'Belastes hver måned.',
+    billedYearly: 'Belastes én gang i året, {{perMonth}} per måned.',
+    save: 'Spar {{percent}} %',
+    currencyNote: 'Oppgitt i valutaen planen er priset i. Stripe konverterer til din egen valuta i kassen, så beløpet på betalingssiden er det du betaler.',
+    monthlyOnlyNote: 'Årsplanen er ikke tilgjengelig akkurat nå. Månedlig fornyes hver måned og kan sies opp når som helst.',
+    cta: 'Få Premium',
+    ctaSignedOut: 'Logg inn for å få Premium',
+    ctaManage: 'Administrer abonnement',
+    ctaLoading: 'Åpner kassen...',
+    ctaNote: 'Si opp når som helst. Har du en rabattkode? Skriv den inn på betalingssiden.',
+    ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
+    includedTitle: 'Dette låser Premium opp',
+    freeTitle: 'Gratis for alltid, med eller uten Premium',
+    features: {
+      upload: {
+        label: 'Eget bilde',
+        desc: 'Bruk et hvilket som helst bilde som avatar i stedet for de innebygde.',
+      },
+      badge: {
+        label: 'Krone og gullnavn',
+        desc: 'Navnet ditt vises i gull med en krone i hver lobby du blir med i.',
+      },
+      cardStyle: {
+        label: 'Stil på profilkortet',
+        desc: 'Gold, Glass, Holographic eller Dark Glow på den offentlige profilen din.',
+      },
+      accent: {
+        label: 'Aksentfarge',
+        desc: 'Velg fargen brukernavnet ditt tegnes i.',
+      },
+      featuredGame: {
+        label: 'Utvalgt spill',
+        desc: 'Sett favorittspillet ditt øverst på profilen.',
+      },
+      themes: {
+        label: 'Lobbytemaer',
+        desc: 'Vert et rom i hvilket som helst tema, ikke bare standardtemaet.',
+      },
+      spectators: {
+        label: 'Tilskuere',
+        desc: 'La venner se på rommet ditt uten å ta en plass.',
+      },
+    },
+    free: {
+      games: {
+        label: 'Alle spill',
+        desc: 'Full tilgang til alle spill og moduser, uten konto.',
+      },
+      avatars: {
+        label: 'Innebygde avatarer',
+        desc: 'Hele det innebygde avatarsettet er gratis å bruke.',
+      },
+      bio: {
+        label: 'Bio',
+        desc: 'En kort bio på profilen din, opptil 160 tegn.',
+      },
+      profile: {
+        label: 'Offentlig profil',
+        desc: 'En delbar profillenke med statistikk og historikk.',
+      },
+    },
+    faqTitle: 'Spørsmål',
+    faq: {
+      q1: {
+        question: 'Trenger jeg Premium for å spille?',
+        answer: 'Nei. Alle spill er gratis, uten nedlasting og uten konto. Premium endrer bare tilleggene over.',
+      },
+      q2: {
+        question: 'Hva skjer hvis jeg sier opp?',
+        answer: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Oppsigelse gjøres i faktureringsportalen på profilsiden din.',
+      },
+      q3: {
+        question: 'Hvilken valuta blir jeg belastet i?',
+        answer: 'Planen har én listepris, og Stripe konverterer den til din lokale valuta i kassen. Betalingssiden viser nøyaktig beløp før du bekrefter.',
+      },
+      q4: {
+        question: 'Kan jeg bytte mellom månedlig og årlig?',
+        answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Stripe håndterer differansen for tiden du allerede har betalt.',
+      },
+      q5: {
+        question: 'Tar dere imot rabattkoder?',
+        answer: 'Ja. Det er et felt for rabattkode på Stripes betalingsside, så en kode kan brukes rett før du betaler.',
+      },
+    },
+    closingTitle: 'Klar når du er',
+    closingBody: 'Ett abonnement, sagt opp fra profilsiden din når du vil. Spillene er gratis uansett.',
   },
   onboarding: {
     title: 'Velkommen til Boardly!',

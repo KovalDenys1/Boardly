@@ -684,6 +684,11 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         </div>
                     </>
                 }
+                centerCompact={
+                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        {leftScore}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{rightScore}
+                    </div>
+                }
                 rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
             />
         </div>
@@ -847,11 +852,11 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             </div>
 
             {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
-            <div className="ttt-landscape-layout">
-                <div className="ttt-landscape-board">
+            <div className="game-landscape-layout">
+                <div className="game-landscape-board">
                     {renderBoardSection('rps-board-landscape')}
                 </div>
-                <div className="ttt-landscape-side">
+                <div className="game-landscape-side">
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {chatSection}

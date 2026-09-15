@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { sendDiscordEmbed } from '@/lib/discord-webhook'
 
 const log = apiLogger('/api/feedback')
 
@@ -57,11 +58,9 @@ function notifyDiscord(
     }],
   }
 
-  fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).catch((err) => log.error('Discord webhook failed', { error: err }))
+  // Fire and forget: feedback is saved before this runs, and a dead webhook must not
+  // turn a successful submission into a 500.
+  sendDiscordEmbed(webhookUrl, payload).catch((err) => log.error('Discord webhook failed', { error: err }))
 }
 
 // 5 submissions per hour per IP

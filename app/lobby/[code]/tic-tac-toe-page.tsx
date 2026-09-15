@@ -862,6 +862,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         </div>
                     </>
                 }
+                centerCompact={
+                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{oWins}
+                    </div>
+                }
                 rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
             />
         </div>
@@ -1155,11 +1160,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
 
             {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
-            <div className="ttt-landscape-layout">
-                <div className="ttt-landscape-board">
+            <div className="game-landscape-layout">
+                <div className="game-landscape-board">
                     {renderBoardSection('ttt-board-landscape')}
                 </div>
-                <div className="ttt-landscape-side">
+                <div className="game-landscape-side">
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}

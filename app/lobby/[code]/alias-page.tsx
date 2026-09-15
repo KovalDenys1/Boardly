@@ -235,12 +235,12 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
 }
 
 const GameContextBar: React.FC<{ code: string; title?: string; right?: React.ReactNode }> = ({ code, title = 'Alias', right }) => (
-  <header style={{
+  <header className="alias-context-bar" style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto',
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{
+      <div className="alias-context-logo" style={{
         width: 38, height: 38, borderRadius: 12,
         background: 'var(--bd-ink)',
         display: 'grid', placeItems: 'center',
@@ -251,7 +251,7 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <BdLabel>Boardly · word game</BdLabel>
-        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
+        <span className="alias-context-title" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
       </div>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -926,7 +926,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
       const isMyTeam = myTeamId === team.id
       return (
-        <div key={team.id} style={{
+        <div key={team.id} className="alias-team-card" style={{
           ...cardBase, padding: 24,
           borderTop: `6px solid ${accent}`,
           position: 'relative', overflow: 'hidden',
@@ -938,10 +938,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             width: 140, height: 140, borderRadius: '50%',
             background: accent, opacity: 0.07,
           }} />
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div className="alias-team-head" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
               <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : `Team 0${i + 1}`}</BdLabel>
-              <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
+              <div className="alias-team-name" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
                 {team.name}
               </div>
             </div>
@@ -950,7 +950,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
+          <div className="alias-team-roster" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
             {team.playerIds.length === 0 && (
               <div style={{
                 padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
@@ -962,7 +962,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               const isYou = pid === currentUserId
               const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
               return (
-                <div key={pid} style={{
+                <div key={pid} className="alias-team-player" style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '8px 12px', borderRadius: 999,
                   background: 'var(--bd-surface-raised)',
@@ -990,6 +990,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
           {isSolo ? null : myTeamId !== team.id ? (
             <button
+              className="alias-team-join"
               onClick={() => handleMove('assign_team', { teamId: team.id })}
               disabled={isMoveSubmitting}
               style={{
@@ -1005,10 +1006,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               Join {team.name}
             </button>
           ) : (
-            <div style={{
+            <div className="alias-team-join" style={{
               // A flex row, not a block: on a block the JSX space between the
               // glyph and the text collapses and the two run together.
-              width: '100%',
+              width: '100%', textAlign: 'center',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '12px 16px', borderRadius: 12,
               background: 'var(--bd-surface-raised)',
@@ -1024,10 +1025,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
 
     return (
-      <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
-        <main style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
+      <div className="alias-team-screen" style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
+        <main className="alias-team-main" style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
           <GameContextBar code={code} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div className="alias-team-hero" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
@@ -1068,7 +1069,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           )}
 
-          <div style={{
+          {/* One footer block so phone landscape can size the status row and
+              Leave Game together (#901). A plain flex column, which is what
+              the two children already laid out as. */}
+          <div className="alias-team-footer" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="alias-team-actions" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             marginTop: 20, gap: 16, flexWrap: 'wrap',
           }}>
@@ -1110,6 +1115,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               {t('lobby.game.leaveGame')}
             </button>
           )}
+          </div>
         </main>
         {!isSpectator && (
           <ConfirmModal

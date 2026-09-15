@@ -24,6 +24,15 @@ export const RECONNECT_RECOVERY_P95_TARGET_MS = 12000
 export const START_ALONE_AUTO_BOT_SUCCESS_TARGET_PCT = 99.5
 export const AUTH_REFRESH_FAILED_ALERT_THRESHOLD_PCT = 2
 
+/**
+ * The Discord bot on the Raspberry Pi posts `POST /api/internal/discord/heartbeat` every
+ * 5 minutes, which lands as a `cron_run` row with this `source`. Warning at four missed
+ * beats, critical at twelve: one missed beat is a Pi reboot, an hour is a dead service.
+ */
+export const DISCORD_BOT_HEARTBEAT_SOURCE = 'discord-bot'
+export const DISCORD_BOT_STALE_WARNING_MINUTES = 20
+export const DISCORD_BOT_STALE_CRITICAL_MINUTES = 60
+
 type Comparator = 'lte' | 'gte'
 
 interface OperationalEventRow {
@@ -81,14 +90,20 @@ export interface OperationalKpiDashboard {
   }
 }
 
+export type ReliabilityAlertKey =
+  | 'rejoin_timeout'
+  | 'auth_refresh_failed'
+  | 'move_apply_timeout'
+  | 'discord_bot_stale'
+
 export interface ReliabilityAlertRuleStatus {
-  alertKey: 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
+  alertKey: ReliabilityAlertKey
   breached: boolean
   severity: 'warning' | 'critical'
   currentValue: number | null
   thresholdValue: number
   baselineValue: number | null
-  unit: 'count' | 'percent' | 'ms'
+  unit: 'count' | 'percent' | 'ms' | 'minutes'
   summary: string
   windowMinutes: number
   runbookPath: string
@@ -448,6 +463,8 @@ export async function evaluateReliabilityAlerts(
     }
   }
 
+  const discordBotStale = await evaluateDiscordBotStale(now)
+
   const { current, baseline } = splitCurrentAndBaseline(events, currentStart)
 
   const currentRejoinTimeout = current.filter((event) => event.eventName === 'rejoin_timeout').length
@@ -547,6 +564,77 @@ export async function evaluateReliabilityAlerts(
         windowMinutes,
         runbookPath: 'docs/REALTIME_TELEMETRY.md#runbook-move-apply-timeout',
       },
+      {
+        alertKey: 'discord_bot_stale',
+        breached: discordBotStale.breached,
+        severity: discordBotStale.severity,
+        currentValue: discordBotStale.ageMinutes,
+        thresholdValue:
+          discordBotStale.severity === 'critical'
+            ? DISCORD_BOT_STALE_CRITICAL_MINUTES
+            : DISCORD_BOT_STALE_WARNING_MINUTES,
+        baselineValue: null,
+        unit: 'minutes',
+        summary: discordBotStale.summary,
+        windowMinutes,
+        runbookPath: 'docs/OPERATIONS.md#runbook-discord_bot_stale',
+      },
     ],
+  }
+}
+
+interface DiscordBotStaleStatus {
+  breached: boolean
+  severity: 'warning' | 'critical'
+  ageMinutes: number | null
+  summary: string
+}
+
+/**
+ * Freshness of the Discord bot's last heartbeat.
+ *
+ * Reads the newest `cron_run` row with `source = "discord-bot"`; the heartbeat route
+ * writes one every 5 minutes while the bot is up. A bot that has never posted is not a
+ * breach: the rule ships before the bot does, and an alert that is open from the merge
+ * until launch day would train everyone to ignore the channel. The launch checklist
+ * proves the first heartbeat by hand; from then on silence is the signal.
+ */
+async function evaluateDiscordBotStale(now: Date): Promise<DiscordBotStaleStatus> {
+  let lastHeartbeatAt: Date | null = null
+  try {
+    const latest = await prisma.operationalEvents.findFirst({
+      where: { eventName: 'cron_run', source: DISCORD_BOT_HEARTBEAT_SOURCE },
+      orderBy: { occurredAt: 'desc' },
+      select: { occurredAt: true },
+    })
+    lastHeartbeatAt = latest?.occurredAt ?? null
+  } catch (error) {
+    if (!isMissingOperationalEventsTableError(error)) {
+      throw error
+    }
+  }
+
+  if (!lastHeartbeatAt) {
+    return {
+      breached: false,
+      severity: 'warning',
+      ageMinutes: null,
+      summary: 'discord-bot has never sent a heartbeat (not alerting until the first one lands)',
+    }
+  }
+
+  const ageMinutes = Number(
+    (Math.max(0, now.getTime() - lastHeartbeatAt.getTime()) / 60000).toFixed(1)
+  )
+  const critical = ageMinutes >= DISCORD_BOT_STALE_CRITICAL_MINUTES
+  const breached = critical || ageMinutes >= DISCORD_BOT_STALE_WARNING_MINUTES
+
+  return {
+    breached,
+    severity: critical ? 'critical' : 'warning',
+    ageMinutes,
+    summary: breached
+      ? `discord-bot last heartbeat ${ageMinutes.toFixed(1)}m ago (warning at ${DISCORD_BOT_STALE_WARNING_MINUTES}m, critical at ${DISCORD_BOT_STALE_CRITICAL_MINUTES}m)`
+      : `discord-bot last heartbeat ${ageMinutes.toFixed(1)}m ago`,
   }
 }

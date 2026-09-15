@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -50,36 +50,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array. Until #923 the schema was here and the answers were on no part of the
+ * page, which is what Google calls hidden structured data.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'What are the best free 2 player games online?',
+    answer: 'Tic Tac Toe for a one-minute round, Memory when you want a real contest of attention, Connect Four for something tactical that still ends fast, and Yahtzee when you have twenty minutes. All four are free on Boardly, in the browser, with no download and no account.',
+  },
+  {
+    question: 'Can I play 2 player games online for free with no download?',
+    answer: 'Yes. Every game here runs in the browser on desktop, tablet and mobile. One player opens a lobby, shares the link, and the second player is in the same game a few seconds later – there is nothing to install on either side.',
+  },
+  {
+    question: 'What is the best quick 2 player game online?',
+    answer: 'Tic Tac Toe. A single round is under a minute, and best-of-three or best-of-five still fits inside five. Connect Four is the next step up: the same one-screen simplicity, a real decision on every move, and rounds under five minutes.',
+  },
+  {
+    question: 'What 2 player online game is best for competing with a friend?',
+    answer: 'Memory, because both players look at the same board and nothing is hidden from one of you – the winner is whoever paid more attention. Yahtzee is the better pick for a longer session, where category choices matter more than any single roll.',
+  },
+  {
+    question: 'Do both players need an account to play?',
+    answer: 'No. Neither player needs one. One of you creates the lobby, shares the link, and the other joins as a guest by typing a name. An account only adds a saved profile and stats.',
+  },
+  {
+    question: 'Can I play on my own if my friend is not around?',
+    answer: 'Tic Tac Toe and Connect Four both have a bot with three difficulty levels, so a solo round is always available. Memory and Yahtzee can be played solo as practice, but they are built for a second person on the other side of the board.',
+  },
+]
+
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'What are the best free 2 player games online?',
-      acceptedAnswer: { '@type': 'Answer', text: 'The best free 2 player games online include Tic Tac Toe (quick 1v1 strategy), Memory card game (competitive matching), and Yahtzee (dice strategy). All are available on Boardly with no download or account required.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'Can I play 2 player games online for free with no download?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yes. All games on Boardly run directly in your browser — desktop, tablet, or mobile. Just share a lobby link with your friend and you are both in the same game within seconds.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'What is the best quick 2 player game online?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Tic Tac Toe is the fastest 2 player game online — a single round takes under a minute. Play best-of-3 or best-of-5 for a competitive session that still fits in 5 minutes.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'What 2 player online game is best for competing with a friend?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Memory card game is great for close competitive play — both players see the same board, and the winner is decided by memory and attention. Yahtzee adds dice strategy and is better for longer sessions.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'Do both players need an account to play?',
-      acceptedAnswer: { '@type': 'Answer', text: 'No. Neither player needs an account. One player creates a lobby, shares the link, and the second player joins instantly as a guest.' },
-    },
-  ],
+  mainEntity: faq.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer },
+  })),
 }
 
 const games = [
@@ -107,6 +117,17 @@ const games = [
   },
   {
     rank: 3,
+    gameId: 'connect-four',
+    accent: 'var(--bd-sun)',
+    name: 'Connect Four',
+    tagline: 'Best for: Tactical head to head · 3–5 min · Planning ahead',
+    href: '/games/connect-four',
+    guideHref: '/guides/how-to-play-connect-four-online',
+    why: 'The only game in the catalogue built for exactly two people. Drop a disc, block your opponent, get four in a row. It is the shortest game here that still punishes a careless move, which makes it the best of the four for a long rematch series.',
+    tip: 'Play the middle column first – it belongs to more winning lines than any other column on the board.',
+  },
+  {
+    rank: 4,
     gameId: 'yahtzee',
     accent: 'var(--bd-sky)',
     name: 'Yahtzee',
@@ -127,8 +148,11 @@ export default function Best2PlayerGamesGuide() {
 
       <GuideLayout
         icon={{ glyph: 'users' }}
+        slug="best-2-player-games-online"
         title="Best 2 Player Games Online — Free, No Download"
-        subtitle="4 min read · All games free on Boardly · No account required"
+        subtitle="5 min read · All games free on Boardly · No account required"
+        question="What are the best 2 player games to play online?"
+        answer="Tic Tac Toe for a round that ends in under a minute, Connect Four for something tactical that still ends fast, Memory for a close contest of attention, and Yahtzee when you have twenty minutes – all four free in the browser, with no download and no account for either player."
         breadcrumbLabel="Best 2 Player Games Online"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick a game and challenge your friend now.' }}
@@ -136,7 +160,7 @@ export default function Best2PlayerGamesGuide() {
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
           { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
           { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
@@ -158,6 +182,7 @@ export default function Best2PlayerGamesGuide() {
                 {[
                   { name: 'Tic Tac Toe', length: '<1 min', skill: 'Pattern recognition' },
                   { name: 'Memory', length: '5–10 min', skill: 'Memory & attention' },
+                  { name: 'Connect Four', length: '3–5 min', skill: 'Planning ahead' },
                   { name: 'Yahtzee', length: '15–20 min', skill: 'Dice + strategy' },
                 ].map(({ name, length, skill }) => (
                   <tr key={name} style={{ borderBottom: '1px solid var(--bd-line)' }}>
@@ -222,6 +247,10 @@ export default function Best2PlayerGamesGuide() {
             { mark: 'yes', text: 'Rematch in one click — no need to set up a new game after each round' },
             { mark: 'yes', text: 'No time limits — play at whatever pace works for your session' },
           ]} />
+        </GuideSection>
+
+        <GuideSection title="2 Player Games: Common Questions">
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

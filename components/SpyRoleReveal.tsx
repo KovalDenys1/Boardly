@@ -29,16 +29,22 @@ export default function SpyRoleReveal({
 
   return (
     <div className="spy-stage">
+      {/* Three named regions, not six loose children: in phone landscape the
+          card becomes a two-column grid (identity and action left, the secret
+          right) and CSS needs something to place (#901). Stacked with the same
+          gap everywhere else, so nothing moves at the other viewports. */}
       <div className="spy-role-card">
-        <div className={`spy-role-mark ${isSpy ? 'spy-role-mark-alert' : 'spy-role-mark-safe'}`}>
-          <span>{isSpy ? 'S' : 'R'}</span>
-        </div>
+        <div className="spy-role-identity">
+          <div className={`spy-role-mark ${isSpy ? 'spy-role-mark-alert' : 'spy-role-mark-safe'}`}>
+            <span>{isSpy ? 'S' : 'R'}</span>
+          </div>
 
-        <div className="text-center">
-          <p className="bd-kicker">{t('spy.yourRole')}</p>
-          <h2 className={`spy-role-title ${isSpy ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
-            {t(isSpy ? 'spy.roles.spy' : 'spy.roles.regular')}
-          </h2>
+          <div className="text-center">
+            <p className="bd-kicker">{t('spy.yourRole')}</p>
+            <h2 className={`spy-role-title ${isSpy ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
+              {t(isSpy ? 'spy.roles.spy' : 'spy.roles.regular')}
+            </h2>
+          </div>
         </div>
 
         <div className="spy-role-info">
@@ -73,23 +79,25 @@ export default function SpyRoleReveal({
           )}
         </div>
 
-        <button
-          onClick={onReady}
-          disabled={isReady}
-          className={`bd-btn w-full justify-center ${isReady ? 'bd-btn-soft cursor-not-allowed opacity-70' : 'bd-btn-primary'}`}
-        >
-          {isReady ? t('spy.readyConfirmed') : t('spy.ready')}
-        </button>
+        <div className="spy-role-action">
+          <button
+            onClick={onReady}
+            disabled={isReady}
+            className={`bd-btn w-full justify-center ${isReady ? 'bd-btn-soft cursor-not-allowed opacity-70' : 'bd-btn-primary'}`}
+          >
+            {isReady ? t('spy.readyConfirmed') : t('spy.ready')}
+          </button>
 
-        <div className="spy-ready-meter">
-          <div
-            className="h-full rounded-full bg-[var(--bd-mint)] transition-all"
-            style={{ width: `${totalPlayers > 0 ? (playersReady / totalPlayers) * 100 : 0}%` }}
-          />
+          <div className="spy-ready-meter">
+            <div
+              className="h-full rounded-full bg-[var(--bd-mint)] transition-all"
+              style={{ width: `${totalPlayers > 0 ? (playersReady / totalPlayers) * 100 : 0}%` }}
+            />
+          </div>
+          <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
+            {t('spy.playersReady', { count: playersReady, total: totalPlayers })}
+          </p>
         </div>
-        <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
-          {t('spy.playersReady', { count: playersReady, total: totalPlayers })}
-        </p>
       </div>
     </div>
   )
