@@ -1671,7 +1671,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
 /* Shared scoreboard row and player card (#736 phase 3, moved out of the
    components' style props in #901). They live here, not inline, because an
-   inline style beats every stylesheet rule — which is why the phone-landscape
+   inline style beats every stylesheet rule – which is why the phone-landscape
    branch further down could not make this row narrow enough for the ~300px
    side column until the numbers moved. */
 .game-scoreboard-header {
@@ -1731,7 +1731,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
-   and turn line disappeared entirely instead of truncating — a player card
+   and turn line disappeared entirely instead of truncating – a player card
    with no player on it (#874). A floor plus `flex: 1 1 auto` means the card
    gives up characters, not the whole identity. */
 .game-player-identity {
@@ -1897,7 +1897,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
-/* ===== PHONE LANDSCAPE — THE SHARED LAYOUT FAMILY (#749/#751, #901) =====
+/* ===== PHONE LANDSCAPE – THE SHARED LAYOUT FAMILY (#749/#751, #901) =====
    The portrait stack cannot fit ~330-390px of viewport height, so a third
    layout tree shows the board at full height on the left with a narrow chrome
    column on the right. Boards are container-sized (.ttt-board-card,
@@ -1905,7 +1905,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
    One family, not three. Tic-Tac-Toe, Connect Four and Rock Paper Scissors
    shared `.ttt-landscape-*`, while Memory and Yahtzee carried byte-identical
-   copies under their own prefixes — so the chat panel's missing floor had to
+   copies under their own prefixes – so the chat panel's missing floor had to
    be found and fixed three times, and was not (#902). Per-game deltas live in
    their own rules below; everything true of every game lives here. */
 .game-landscape-layout { display: none; }
@@ -1986,7 +1986,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   .ttt-mobile-layout { display: none !important; }
   .ttt-screen {
     padding: 8px 10px 10px;
-    /* the landscape tree fits by construction — re-lock the shell */
+    /* the landscape tree fits by construction – re-lock the shell */
     overflow: hidden;
   }
 }
@@ -2777,13 +2777,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Memory deltas on the shared family (#751). The board reuses
    .memory-mobile-board-wrap's container-query sizing. Moves history is
-   dropped from this pane (same call TTT made for its own history tab) —
+   dropped from this pane (same call TTT made for its own history tab) –
    still reachable by rotating to portrait. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .memory-mobile-layout { display: none !important; }
   .memory-screen {
     padding: 8px 10px 10px;
-    /* the landscape tree fits by construction — re-lock the shell */
+    /* the landscape tree fits by construction – re-lock the shell */
     overflow: hidden;
   }
   .memory-landscape-board { position: relative; }
@@ -2827,7 +2827,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   justify-content: center;
 }
 
-/* ===== YAHTZEE — PHONE LANDSCAPE DELTAS (#751) ===== */
+/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS (#751) ===== */
 /* Yahtzee has no dedicated CSS family otherwise (pure Tailwind, inline in
    LobbyPageClient.tsx) — .yahtzee-screen/.yahtzee-mobile-layout exist only
    as scoping hooks for this override. Scorecard is functionally required to
@@ -2838,7 +2838,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   .yahtzee-mobile-layout { display: none !important; }
   /* The persistent top status bar sits above Main Game Area (outside both
      .yahtzee-mobile-layout and the landscape tree), so it needs its own hide
-     rule — .yahtzee-landscape-side shows the same content inside the pane
+     rule – .yahtzee-landscape-side shows the same content inside the pane
      instead (compactStatusBar). Without this the bar silently ate ~60-65px
      out of the already-tight landscape height budget. */
   .yahtzee-top-status-bar { display: none !important; }
@@ -2857,7 +2857,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
-/* Alias team selection — phone landscape (#901).
+/* Alias team selection – phone landscape (#901).
    The screen had no breakpoint of its own at all: a hero headline sized from
    5vw, 24px card padding and full-size player rows, none of which collapse on
    a short viewport, so both Join Team buttons, Start Rounds and Leave Game sat
@@ -2886,7 +2886,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
-/* Guess the Spy — phone landscape (#901).
+/* Guess the Spy – phone landscape (#901).
    The rule above is width-only, so an 844x390 phone got the tall stacked
    header; that plus the 430px .spy-stage floor put the role, the location
    and the "I'm Ready" button below the fold on the one screen whose entire

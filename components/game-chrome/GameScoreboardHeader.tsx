@@ -21,7 +21,7 @@ export default function GameScoreboardHeader({
    * The center block for the phone-landscape side column (#901). That column
    * is `min(300px, 42vw)` wide, and two player cards plus a full score block
    * need more than it has: the three columns collided and the score ran out
-   * over both cards. A short center — the score and nothing else — is what
+   * over both cards. A short center – the score and nothing else – is what
    * fits. Both are rendered into the same grid cell and CSS picks one, so the
    * swap costs no height; games that pass none keep the full block everywhere.
    */

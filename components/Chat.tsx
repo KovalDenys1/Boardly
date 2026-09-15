@@ -61,7 +61,11 @@ export default function Chat({
   const scrollToBottom = () => {
     const container = messagesContainerRef.current
     if (!container) return
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    if (typeof container.scrollTo === 'function') {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+      return
+    }
+    container.scrollTop = container.scrollHeight
   }
 
   useEffect(() => {
