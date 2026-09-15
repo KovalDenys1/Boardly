@@ -57,7 +57,8 @@
     "hooks:install": "lefthook install",
     "hooks:pre-commit": "node --import tsx scripts/git-hook-pre-commit.ts",
     "hooks:pre-push": "node --import tsx scripts/git-hook-pre-push.ts",
-    "prepare": "node scripts/install-hooks-if-available.js"
+    "prepare": "node scripts/install-hooks-if-available.js",
+    "discord:assets": "tsx scripts/discord/render-assets.tsx --out ../boardly-discord/assets/out/code"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
