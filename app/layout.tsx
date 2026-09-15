@@ -82,9 +82,8 @@ export const metadata: Metadata = {
     // Images are auto-generated from twitter-image.tsx
     creator: '@boardly',
   },
-  alternates: {
-    canonical: '/',
-  },
+  // No canonical here: the root layout would hand it to every page that
+  // forgot its own, pointing them all at "/". Each indexable page sets its own (#922).
   robots: {
     index: true,
     follow: true,

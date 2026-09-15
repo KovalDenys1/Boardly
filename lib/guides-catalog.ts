@@ -176,6 +176,13 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
 
 export const ALL_GUIDES: GuideEntry[] = [...HOW_TO_PLAY_GUIDES, ...STRATEGY_GUIDES, ...BEST_OF_GUIDES]
 
+/** The catalog entry for a guide page – its Article.dateModified must be `updated` from here, not hand-typed. */
+export function getGuideBySlug(slug: string): GuideEntry {
+  const guide = ALL_GUIDES.find((entry) => entry.slug === slug)
+  if (!guide) throw new Error(`Guide "${slug}" is not in ALL_GUIDES`)
+  return guide
+}
+
 /**
  * The six guides surfaced on `/` and `/games`. Chosen by search demand
  * (GSC 2026-08-29: "board games online", "2 player …", "free online board games")
