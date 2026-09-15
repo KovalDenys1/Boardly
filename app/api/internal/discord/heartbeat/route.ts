@@ -16,13 +16,24 @@ const heartbeatLimiter = rateLimit({
   message: 'Too many heartbeats.',
 })
 
+/**
+ * The body the bot actually sends, key for key.
+ *
+ * `boardly-discord/bot/lib/boardly-api.ts:138` posts
+ * `{ memberCount, openPosts, uptimeS, sha }` every five minutes from
+ * `bot/health.ts:96`, and `ready` is being added there in the same sitting. Strict on
+ * purpose, but strict only pays for itself if it is strict about the right keys: the
+ * first version of this route named three of them differently, so every heartbeat would
+ * have been a 400 the bot logged as a warning and nobody read - and `discord_bot_stale`
+ * stays quiet until a first heartbeat lands, so the site would have said nothing either.
+ */
 const heartbeatSchema = z
   .object({
+    memberCount: z.number().int().min(0).optional(),
+    openPosts: z.number().int().min(0).optional(),
+    uptimeS: z.number().int().min(0).optional(),
     sha: z.string().trim().min(1).max(64).optional(),
     ready: z.boolean().optional(),
-    uptimeSeconds: z.number().int().min(0).optional(),
-    latencyMs: z.number().min(0).max(60 * 60 * 1000).optional(),
-    guildMembers: z.number().int().min(0).optional(),
   })
   .strict()
 
@@ -31,8 +42,8 @@ const heartbeatSchema = z
  *
  * Writes a `cron_run` event with `source = "discord-bot"` through `recordCronRun`, the
  * same row the site's own crons write, so the `discord_bot_stale` reliability rule can
- * treat a silent bot like a silent cron. The body is optional context for the row's
- * payload; an empty body is a valid heartbeat.
+ * treat a silent bot like a silent cron. Every field is optional context for the row's
+ * payload; an empty body is a valid heartbeat, and a missing `ready` counts as ready.
  */
 export async function POST(request: NextRequest) {
   const authError = authorizeDiscordInternalRequest(request)
@@ -50,19 +61,23 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { sha, ready, uptimeSeconds, latencyMs, guildMembers } = parsed.data
+  const { memberCount, openPosts, uptimeS, sha, ready } = parsed.data
   const recordedAt = new Date()
 
   try {
     await recordCronRun({
       cron: DISCORD_BOT_HEARTBEAT_SOURCE,
       success: ready ?? true,
-      latencyMs: latencyMs ?? 0,
+      // A heartbeat reports no work, so there is no duration to record.
+      latencyMs: 0,
       reason: ready === false ? 'gateway_not_ready' : undefined,
       payload: {
         sha: sha ?? null,
-        uptimeSeconds: uptimeSeconds ?? null,
-        guildMembers: guildMembers ?? null,
+        memberCount: memberCount ?? null,
+        // The count of open looking-for-players threads, which is the only view the
+        // site gets of the feed the bot maintains.
+        openPosts: openPosts ?? null,
+        uptimeS: uptimeS ?? null,
       },
     })
   } catch (error) {

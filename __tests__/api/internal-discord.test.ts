@@ -241,10 +241,14 @@ describe('/api/internal/discord', () => {
       expect(mockRecordCronRun).not.toHaveBeenCalled()
     })
 
-    it('writes a discord-bot cron_run row with the body as payload', async () => {
+    // The body below is exactly what boardly-discord/bot/lib/boardly-api.ts:138 posts,
+    // from bot/health.ts:96, every five minutes. Keep the two in step: a key renamed on
+    // either side is a 400 the bot logs as a warning and nobody reads, and
+    // discord_bot_stale stays quiet until a first heartbeat lands, so nothing alerts.
+    it('accepts the body the deployed bot actually sends', async () => {
       const response = await postHeartbeat(
         heartbeatRequest(
-          { sha: 'abc1234', ready: true, uptimeSeconds: 600, latencyMs: 42.4, guildMembers: 12 },
+          { memberCount: 42, openPosts: 3, uptimeS: 600, sha: 'abc1234' },
           { authorization: `Bearer ${SECRET}` }
         )
       )
@@ -257,10 +261,24 @@ describe('/api/internal/discord', () => {
       expect(mockRecordCronRun).toHaveBeenCalledWith({
         cron: 'discord-bot',
         success: true,
-        latencyMs: 42.4,
+        latencyMs: 0,
         reason: undefined,
-        payload: { sha: 'abc1234', uptimeSeconds: 600, guildMembers: 12 },
+        payload: { sha: 'abc1234', memberCount: 42, openPosts: 3, uptimeS: 600 },
       })
+    })
+
+    it('takes the same body with ready: true, which the bot is adding', async () => {
+      const response = await postHeartbeat(
+        heartbeatRequest(
+          { memberCount: 42, openPosts: 3, uptimeS: 600, sha: 'abc1234', ready: true },
+          { authorization: `Bearer ${SECRET}` }
+        )
+      )
+
+      expect(response.status).toBe(200)
+      expect(mockRecordCronRun).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, reason: undefined })
+      )
     })
 
     it('accepts an empty body as a heartbeat', async () => {
@@ -271,6 +289,16 @@ describe('/api/internal/discord', () => {
       expect(response.status).toBe(200)
       expect(mockRecordCronRun).toHaveBeenCalledWith(
         expect.objectContaining({ cron: 'discord-bot', success: true, latencyMs: 0 })
+      )
+    })
+
+    it('records a missing ready as ready', async () => {
+      await postHeartbeat(
+        heartbeatRequest({ openPosts: 0 }, { authorization: `Bearer ${SECRET}` })
+      )
+
+      expect(mockRecordCronRun).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, reason: undefined })
       )
     })
 
