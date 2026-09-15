@@ -2,11 +2,17 @@ import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import LeaderboardPage from '@/app/leaderboard/page'
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
+import { apiLogger } from '@/lib/logger'
 import type { LeaderboardEntry } from '@/lib/leaderboard'
 
 jest.mock('@/lib/server/leaderboard', () => ({
   fetchLeaderboardPage: jest.fn(),
 }))
+
+jest.mock('@/lib/logger', () => {
+  const log = { info: jest.fn(), error: jest.fn() }
+  return { apiLogger: () => log }
+})
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn() }),
@@ -79,5 +85,7 @@ describe('/leaderboard server render (#922)', () => {
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith('/api/leaderboard?period=all&page=0'))
     expect(await screen.findAllByText('Dave')).not.toHaveLength(0)
+    // and the failure is not swallowed: the server logs it like the API route does
+    expect(apiLogger('/leaderboard').error).toHaveBeenCalledWith('Leaderboard SSR query failed', expect.any(Error))
   })
 })

@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import {
@@ -11,6 +12,9 @@ import {
 // the total but vanish when drilling down by type.
 const MIN_GAMES_ALL = 10
 const MIN_GAMES_FILTERED = 1
+
+// Matches the API's `s-maxage=20` – profile changes must not linger (#638).
+const LEADERBOARD_CACHE_SECONDS = 20
 
 type LeaderboardRow = {
   userId: string
@@ -35,8 +39,20 @@ export interface LeaderboardQuery {
 /**
  * The one leaderboard query. `/api/leaderboard` serves it over HTTP and
  * `app/leaderboard/page.tsx` renders its first page into the HTML (#922).
+ * Both go through the same 20 s data-cache entry per filter combination, the
+ * staleness the API already accepts with its `s-maxage=20`, so a crawler hit,
+ * a visit and the RSC re-render after a filter change do not each run the
+ * aggregation over every player and game.
  */
-export async function fetchLeaderboardPage({ gameType, period, page }: LeaderboardQuery): Promise<LeaderboardPage> {
+export function fetchLeaderboardPage(query: LeaderboardQuery): Promise<LeaderboardPage> {
+  return unstable_cache(
+    () => queryLeaderboardPage(query),
+    ['leaderboard', query.gameType ?? '', query.period, String(query.page)],
+    { revalidate: LEADERBOARD_CACHE_SECONDS }
+  )()
+}
+
+async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery): Promise<LeaderboardPage> {
   const since = period === '30d' ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : null
   const minGames = gameType ? MIN_GAMES_FILTERED : MIN_GAMES_ALL
 
