@@ -2421,6 +2421,10 @@ const en = {
     intro: 'Quick answers before you start a room, invite friends, or play as a guest.',
     // Conjunction for the generated game lists in q3 and q4
     listAnd: 'and',
+    q0: {
+      question: 'What is Boardly?',
+      answer: 'Boardly is a free online board games site at boardly.online, where you play with friends in the browser in real time – no download and no account needed.',
+    },
     q1: {
       question: 'Is Boardly free to play?',
       answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price that is converted to your local currency at checkout – for extras like replays, custom lobby themes and full stats, and free players may see ads.',
