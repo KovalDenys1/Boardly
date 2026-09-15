@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import DiscordPrivacySection from './DiscordPrivacySection'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -67,11 +68,11 @@ export default function PrivacyPolicy() {
               <ul className="list-disc space-y-1.5 pl-5">
                 <li><strong style={{ color: 'var(--bd-ink)' }}>Service Providers:</strong> Third-party services that help us operate (database hosting, email delivery)</li>
                 <li><strong style={{ color: 'var(--bd-ink)' }}>OAuth Providers:</strong> When you sign in with Google, GitHub, or Discord</li>
-                <li><strong style={{ color: 'var(--bd-ink)' }}>Discord Lobby Feed:</strong> When you open a public lobby, we post the game and the number of free seats to our Discord server so other players can find it. We never post your username, and a lobby with a password is never listed.</li>
-                <li><strong style={{ color: 'var(--bd-ink)' }}>Self-hosted Bot:</strong> The bot that publishes that feed runs on hardware we host ourselves rather than at a cloud provider. It handles only the public lobby data described above.</li>
                 <li><strong style={{ color: 'var(--bd-ink)' }}>Legal Requirements:</strong> When required by law or to protect our rights</li>
               </ul>
             </section>
+
+            <DiscordPrivacySection />
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>5. Data Security</h2>

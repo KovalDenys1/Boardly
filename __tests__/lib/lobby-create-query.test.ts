@@ -27,7 +27,7 @@ describe('resolveRequestedMaxPlayers (#943)', () => {
   })
 
   it('ignores a count inside the bounds the slider cannot select', () => {
-    // 5 sits between 4 and 6 — in range, but Alias has no such seat count.
+    // 5 sits between 4 and 6 – in range, but Alias has no such seat count.
     expect(resolveRequestedMaxPlayers('5', ALIAS_PLAYERS)).toBeNull()
   })
 

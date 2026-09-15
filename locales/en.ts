@@ -177,7 +177,7 @@ const en = {
       comingSoon: 'Coming Soon',
       password: 'Password',
       passwordPlaceholder: 'Leave empty for public lobby',
-      discordNotice: 'Public lobbies are listed on our Discord so people can join – private lobbies never are.',
+      discordListingNotice: 'Public lobbies are listed on our Discord so people can join – private lobbies never are',
       create: 'Create Lobby',
       creating: 'Creating...',
       cancel: 'Cancel',
@@ -2484,6 +2484,13 @@ const en = {
     contactIntro: 'Questions, bugs or ideas:',
     githubRepo: 'Boardly on GitHub',
     playCta: 'See all games',
+  },
+  privacyPolicy: {
+    discord: {
+      title: '4a. Discord',
+      feed: 'Open public lobbies are listed in our Discord server so other players can join. The listing carries the game, the number of free seats and the lobby link – never the host\'s name. Private lobbies are never listed.',
+      bot: 'The bot behind that feed runs on our own hardware, not at a third-party host, and reads only the public lobby list every visitor can already see.',
+    },
   },
   onboarding: {
     title: 'Welcome to Boardly!',

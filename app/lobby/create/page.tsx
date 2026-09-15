@@ -111,7 +111,7 @@ function CreateLobbyPage() {
 
   // #943: the Discord `/play <game> [players]` command links here with the seat count in
   // the URL. It belongs to the game the link named, so it is only read while that game is
-  // the selected one — switching games in the picker falls back to that game's default.
+  // the selected one – switching games in the picker falls back to that game's default.
   const deepLinkMaxPlayers =
     selectedGameType === requestedGameType
       ? resolveRequestedMaxPlayers(searchParams.get('maxPlayers'), gameInfo?.allowedPlayers)
@@ -966,10 +966,10 @@ function CreateLobbyPage() {
             )}
 
             {/* #945: the Discord feed republishes open public lobbies, so say so where
-                the lobby is made public — a lobby is private only if it has a password. */}
+                the lobby is made public – a lobby is private only if it has a password. */}
             <p className="flex items-start gap-1.5 text-[13px] text-bd-ink-muted">
               <Icon name="globe" size={13} />
-              <span>{t('lobby.create.discordNotice')}</span>
+              <span>{t('lobby.create.discordListingNotice')}</span>
             </p>
 
           </div>
