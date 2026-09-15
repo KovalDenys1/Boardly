@@ -73,7 +73,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'Does X always go first?',
-    answer: 'X opens the first round, and going first is a real advantage in a game this small. It does not stack up over a series, though: the game hands the opening move to the other mark each round, so a best-of-three or best-of-five is already even without anyone swapping seats.',
+    answer: 'X opens the first round, and going first is a real advantage in a game this small. The game hands the opening move to the other mark each round, so nobody has to swap seats to share it out. It does not come out exactly level over an odd number of rounds, though: across a full best-of-three X opens two of them and O one.',
   },
 ]
 

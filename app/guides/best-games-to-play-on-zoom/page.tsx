@@ -101,7 +101,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'What happens if someone drops off the call mid-game?',
-    answer: 'They reopen the lobby link and are back in the same game. The lobby stays open, so a dropped connection costs a player a turn rather than the whole round.',
+    answer: 'They reopen the lobby link and are back in the same game. The lobby stays open, so a short drop usually costs a turn – though a Tic Tac Toe turn whose clock runs out forfeits the round, so a long one can cost more than that.',
   },
 ]
 

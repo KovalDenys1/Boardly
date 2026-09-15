@@ -58,7 +58,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'Who goes first, and does it matter?',
-    answer: 'The lobby host plays first. It matters: with perfect play the first player wins, which is why the opening move in the middle column is worth so much. Play a series and alternate who starts if you want it even.',
+    answer: 'The lobby host plays first, and keeps the opening move in every round of a series. It matters: with perfect play the first player wins, which is why the opening move in the middle column is worth so much. If you want an even series, swap who creates the lobby.',
   },
   {
     question: 'What happens if the board fills up?',
@@ -70,7 +70,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'Is there a time limit on a turn?',
-    answer: 'Only if the host sets one. The lobby offers a turn timer of 30, 60, 90 or 120 seconds, and with it off a turn takes as long as it takes.',
+    answer: 'Yes, on every turn. The host picks 30, 60, 90 or 120 seconds when creating the lobby and 60 is the default, but there is no setting that turns the clock off. Letting it run out forfeits the round, so it is worth watching even on the long settings.',
   },
   {
     question: 'Do diagonal lines count?',
@@ -192,7 +192,7 @@ export default function HowToPlayConnectFourGuide() {
           <div className="space-y-3 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs AI:</strong> Play solo at any time. Great for practicing before challenging a friend.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs Friend:</strong> Share a lobby link — your friend joins in seconds, no account needed.</p>
-            <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Optional countdown keeps the game moving. Choose 30, 60, 90, or 120 seconds per turn.</p>
+            <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Every turn is on a countdown, and running out forfeits the round. Choose 30, 60, 90, or 120 seconds when you create the lobby.</p>
           </div>
         </GuideSection>
 

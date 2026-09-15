@@ -127,7 +127,7 @@ export default function HowToPlayAliasGuide() {
             },
             {
               title: 'Describe the word — without saying it',
-              detail: 'Use any words, comparisons, stories, or gestures to help your team guess. The only rules: you cannot say the word itself or any part of it.',
+              detail: 'Use any words, comparisons, stories, or gestures to help your team guess. What you cannot do is say the word itself, any part of it, or anything that rhymes with it.',
             },
             {
               title: 'Team guesses out loud',

@@ -131,7 +131,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'What if someone drops out halfway through?',
-    answer: 'Pick the next game around the people still there rather than waiting. Connect Four and Memory are the useful fallbacks – they seat two to four, start instantly, and give a shrinking group something to do without restarting the night.',
+    answer: 'Pick the next game around the people still there rather than waiting. Connect Four for the two who are left and Memory for up to four are the useful fallbacks – both start instantly and give a shrinking group something to do without restarting the night.',
   },
 ]
 

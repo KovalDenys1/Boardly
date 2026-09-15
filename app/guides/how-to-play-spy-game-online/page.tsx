@@ -66,7 +66,7 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'Can the spy win after being suspected?',
-    answer: 'Yes, but only while the questions are still running. The spy names the location from the list, and a correct guess takes the round however the table was leaning. It is a real bet: a wrong guess ends the round for the group there and then, and once somebody opens the vote the guess is no longer available at all.',
+    answer: 'Yes, but only while the questions are still running. The spy names the location from the list, and a correct guess takes the round however the table was leaning. It is a real bet: a wrong guess hands the round to the group there and then, and once somebody opens the vote the guess is no longer available at all.',
   },
   {
     question: 'How specific should my questions be?',
@@ -130,7 +130,7 @@ export default function HowToPlaySpyGuide() {
             },
             {
               title: 'The spy can guess the location',
-              detail: 'While the questions are still running, the spy can declare "I know the location!" and pick it from the list. A correct guess wins the round outright; a wrong one ends the round for the group. Once the vote is open the guess is gone.',
+              detail: 'While the questions are still running, the spy can declare "I know the location!" and pick it from the list. A correct guess wins the round outright; a wrong one ends it there and then, with the round going to the group. Once the vote is open the guess is gone.',
             },
           ]} />
         </GuideSection>

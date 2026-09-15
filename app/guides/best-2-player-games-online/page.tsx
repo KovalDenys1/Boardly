@@ -238,7 +238,7 @@ export default function Best2PlayerGamesGuide() {
             { mark: 'yes', text: 'Share the lobby link directly — no account needed for either player' },
             { mark: 'yes', text: 'Play on any device — desktop, mobile, and tablet all work' },
             { mark: 'yes', text: 'Rematch in one click — no need to set up a new game after each round' },
-            { mark: 'yes', text: 'No time limits — play at whatever pace works for your session' },
+            { mark: 'yes', text: 'Every turn runs on a clock, 60 seconds by default and 30 to 120 where the lobby lets you pick' },
           ]} />
         </GuideSection>
 

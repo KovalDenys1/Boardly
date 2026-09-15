@@ -61,11 +61,11 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'How long does a game take?',
-    answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Nothing is timed, so a group that talks between turns will take longer, and there is no penalty for it.',
+    answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Every turn runs on a clock the host sets at 30, 60, 90 or 120 seconds when creating the lobby; letting it run out turns your cards back over and passes the turn on, so a table that talks between turns loses the odd turn rather than the game.',
   },
   {
     question: 'Can I play Memory against a computer?',
-    answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about nine times in ten, which is roughly a very attentive human and a fair test of your own recall.',
+    answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about three times in four, which is roughly a very attentive human and a fair test of your own recall.',
   },
   {
     question: 'Does the game always give the same cards?',

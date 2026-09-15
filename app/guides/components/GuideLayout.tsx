@@ -211,6 +211,18 @@ export interface GuideFaqItem {
  * guide ever splits them again.
  */
 export function buildGuideFaqJsonLd(items: GuideFaqItem[]) {
+  // An empty `mainEntity` is not valid FAQPage, and a one-question FAQPage is
+  // the thin pattern Google's structured-data spam policy is aimed at. A guide
+  // with fewer than two questions should render the FAQ and ship no schema, so
+  // refuse here rather than emit the node: the guides prerender at build time,
+  // which turns this into a failed build instead of a live markup penalty.
+  if (items.length < 2) {
+    throw new Error(
+      `buildGuideFaqJsonLd needs at least two questions, got ${items.length}. ` +
+        'Render the FAQ without a FAQPage node instead.',
+    )
+  }
+
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -233,7 +245,9 @@ export function GuideFaqList({ items }: { items: GuideFaqItem[] }) {
     <div className="space-y-5">
       {items.map(({ question, answer }) => (
         <div key={question} className="border-b pb-5 last:border-0 last:pb-0" style={{ borderColor: 'var(--bd-line)' }}>
-          <h3 className="mb-2 text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
+          {/* The marker lets the schema test compare the two sets directly
+              rather than grepping the page source for how they were wired. */}
+          <h3 data-testid="guide-faq-question" className="mb-2 text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
             {question}
           </h3>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
