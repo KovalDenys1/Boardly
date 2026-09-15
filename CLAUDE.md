@@ -382,7 +382,7 @@ open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount,
   non-commercial only, and ads make a site commercial; AdSense also still has
   boardly.online as "Getting ready". Production only, once both are settled — never
   Preview, which would serve ads on a non-production host.
-- **Client mount is not decoration.** The 15 guide routes are statically prerendered and
+- **Client mount is not decoration.** The guide routes are statically prerendered and
   must stay that way. A server-side premium check turns all 15 dynamic. Verify with a
   build: the guide rows must still be `○`.
 - **Premium is checked over HTTP, not from the session.** The NextAuth token carries no
