@@ -18,7 +18,7 @@ set. Nothing in this repo holds the bot token.
 | Bot (Pi) | Site | `GET /api/lobby?status=all` every 30 s for the looking-for-players feed, plus Supabase Realtime | none - the public lobby list, no secret |
 | Site | Discord API | Linked Roles push to `/users/@me/applications/{DISCORD_APPLICATION_ID}/role-connection` | `lib/discord/role-connection.ts` (#939) |
 | GitHub | releases channel | Discord's own `/github` webhook on the Boardly repo | none |
-| Control panel | news channel | announcement mirror, `ANNOUNCEMENTS_DISCORD_WEBHOOK_URL` | none - `Boardly-control-panel` |
+| Control panel | news channel | announcement mirror, `ANNOUNCEMENTS_DISCORD_WEBHOOK_URL` | none - planned, not built |
 | Cloud routines | growth channel | `GROWTH_DISCORD_WEBHOOK_URL` | none |
 
 Both outbound webhook paths post a Discord embed (`{ "embeds": [ ... ] }`), so
@@ -105,9 +105,9 @@ Names only. Values live where the row says and nowhere else.
 | `BOARDLY_BASE_URL` | | yes | |
 | `STAFF_BOT_WEBHOOK_URL` | | yes | |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | | yes, read-only for Realtime | |
-| `ANNOUNCEMENTS_DISCORD_WEBHOOK_URL` | | | Vercel, control panel |
+| `ANNOUNCEMENTS_DISCORD_WEBHOOK_URL` | | | nowhere yet - the mirror is planned |
 | `GROWTH_DISCORD_WEBHOOK_URL` | | | cloud routines |
-| `DISCORD_ROLE_SYNC_CRON_URL` | | | GitHub Actions secret |
+| `DISCORD_ROLE_SYNC_CRON_URL` | | | nowhere yet - no role-sync workflow exists |
 
 Every webhook URL in that list is a secret, as is `DISCORD_CLIENT_SECRET`,
 `DISCORD_INTERNAL_SECRET`, `CRON_SECRET`, `DISCORD_BOT_TOKEN` and the Supabase key. The

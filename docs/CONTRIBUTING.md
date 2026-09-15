@@ -9,7 +9,7 @@ npm install
 cp .env.example .env.local
 npm run db:generate
 npm run db:push
-npm run dev:all
+npm run dev
 ```
 
 ## Workflow
@@ -25,10 +25,13 @@ npm run dev:all
 ## Verification commands
 
 ```bash
-npm run lint
+npm run ci:quick
 npm test
 npm run check:locales
 ```
+
+`ci:quick` is lint, typecheck and the four audits (module boundaries, responsive, emoji, docs)
+– the same set CI runs on every push.
 
 For significant backend or schema changes, also run:
 
@@ -41,7 +44,7 @@ npm run db:rls:smoke
 
 - TypeScript-first, avoid `any` unless justified.
 - Keep business logic in `lib/`, UI in `components/` and `app/`.
-- Keep socket event names/types centralized in `types/socket-events.ts`.
+- Keep realtime event names/types centralized in `types/realtime-events.ts`.
 - Keep server-authoritative reconciliation after moves.
 - Keep comments and documentation in English.
 - For new PostgreSQL server timestamps, prefer `TIMESTAMPTZ` (via explicit SQL in Prisma migrations when needed).
@@ -54,7 +57,7 @@ availability, stats, achievements, and replay expectations.
 1. Implement game class extending `GameEngine` in `lib/games/`.
 2. Add game type support in `prisma/schema.prisma` and lobby create API.
 3. Add UI board/page integration in lobby flow.
-4. Add translations (`locales/en.ts`, `locales/uk.ts`, and other active locales).
+4. Add translations to all four locales (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`); the pre-commit hook enforces key parity.
 5. Add unit tests for game logic.
 6. Update docs if architecture/workflow changed.
 
@@ -63,3 +66,4 @@ availability, stats, achievements, and replay expectations.
 - Never commit secrets (`.env`, `.env.local`).
 - Use `NEXTAUTH_SECRET` for auth/session signing logic.
 - Guest identity must use signed token flow (`X-Guest-Token`), not raw client IDs.
+- Never add a doc claim you have not checked; `npm run audit:docs` checks the mechanical half.

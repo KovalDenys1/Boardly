@@ -77,7 +77,6 @@ Recommended:
 - `MCP_POSTGRES_CA_CERT_PATH` (optional CA bundle path for hosted/TLS PostgreSQL used by Prisma 7 adapter and MCP scripts; not needed for local localhost PostgreSQL)
 - hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
-- `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (Discord webhook for reliability alerts; the payload is a Discord embed, not a Slack one)
 - `FEEDBACK_DISCORD_WEBHOOK_URL` (optional Discord webhook that mirrors `/api/feedback` submissions into the staff feedback channel)
 - `NEXT_PUBLIC_DISCORD_INVITE` (optional; the invite `/discord` redirects to, inlined at build time, falling back to the invite compiled into `lib/discord.ts`)
@@ -120,24 +119,21 @@ Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SER
 - Platform: Vercel
 - Command: `npm run build`
 
-### Socket server
+### Migrations
 
-- Platform: Render (web service)
-- Build command should not run DB migrations in this service.
-- Current `render.yaml` pattern:
-  - build: `npm ci && npm run db:generate`
-  - start: `npm run socket:start`
-
-Reason: running migrations in socket build can hang deployments.
+- Run from `.github/workflows/migrate.yml` when `prisma/migrations/**` or
+  `prisma/schema.prisma` changes on `develop`, never from the Vercel build –
+  `prisma migrate deploy` hangs cross-region there.
+- A merge to `develop` therefore puts the schema on production while the code is still on
+  `main`. Check `git log origin/main..origin/develop` before calling a feature live.
 
 ## Production runbook
 
-1. Deploy schema changes from one controlled migration job (`npm run db:migrate`).
-2. Deploy Next.js app.
-3. Deploy socket service.
-4. Verify health endpoint (`/health`) and lobby join flow.
-5. Verify the alert scheduler (GitHub Actions or Vercel cron), endpoint (`/api/cron/reliability-alerts`), and webhook delivery.
-6. Check operational dashboard and SLO cards from `docs/REALTIME_TELEMETRY.md`.
+1. Deploy schema changes from the migration workflow (or `npm run db:migrate` by hand).
+2. Deploy the Next.js app.
+3. Verify the health endpoint (`/api/health`) and the lobby join flow.
+4. Verify the alert scheduler (GitHub Actions), the endpoint (`/api/cron/reliability-alerts`), and webhook delivery.
+5. Check the SLO rules in `docs/REALTIME_TELEMETRY.md` against recent `OperationalEvents`.
 
 Note: `npm run db:migrate` automatically bootstraps required RLS roles
 (`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
@@ -188,16 +184,6 @@ Runtime note:
 - Prisma 7 / `pg-connection-string` may treat `sslmode=require` more strictly than older libpq-style clients.
 - Boardly normalizes hosted runtime URLs with `sslmode=require|prefer|verify-ca` to libpq-compatible behavior when no CA bundle is configured.
 - If you want strict certificate verification, configure `MCP_POSTGRES_CA_CERT_PATH` so runtime uses `sslmode=verify-full`.
-
-### Render build hangs after Prisma datasource log
-
-Likely cause: migration/DB step in wrong service or waiting on pooled connection.
-
-Check:
-
-- socket service build command does not call `prisma migrate`
-- migrations run in dedicated job/service only
-- `DIRECT_URL` is configured for migrations
 
 ### Realtime not working locally
 
@@ -298,9 +284,6 @@ Check:
 # Evaluate alert rules and send notifications (if webhook is configured)
 npm run ops:alerts:check
 
-# Build operational KPI report (baseline + SLO status)
-npm run ops:kpi:report -- --hours=24 --baseline-days=7
-
 # Run load scenario and produce fail-rate report
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
@@ -374,15 +357,10 @@ npm test -- --runTestsByPath \
   __tests__/lib/lobby-snapshot.test.ts \
   __tests__/lib/bots/tic-tac-toe-bot.test.ts \
   __tests__/lib/bots/rock-paper-scissors-bot.test.ts \
-  __tests__/socket/handlers/game-action.test.ts \
-  __tests__/socket/handlers/leave-lobby.test.ts \
-  __tests__/socket/disconnect-sync.test.ts
-```
-
-When `#128` follow-up is merged, extend this command with:
-
-```bash
-__tests__/lib/bots/bot-ux-timing.test.ts
+  __tests__/lib/bots/bot-ux-timing.test.ts \
+  __tests__/api/lobby-leave.test.ts \
+  __tests__/api/lobby-realtime-topic.test.ts \
+  __tests__/lib/lobby-lifecycle.test.ts
 ```
 
 Manual smoke matrix (required):

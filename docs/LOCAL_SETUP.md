@@ -1,47 +1,41 @@
 # Local Setup
 
-This guide explains how to run Boardly fully locally without Supabase, Vercel, Render, Resend, or other hosted services.
+How to run Boardly against a PostgreSQL database on your own machine, with no hosted
+services except the ones you choose to switch on.
 
-## Goal
+## What you get
 
-At the end of this setup you should have:
+- PostgreSQL on your machine
+- The Next.js app on `http://localhost:3000` – pages, API routes and auth
 
-- PostgreSQL running on your machine
-- Next.js app running on `http://localhost:3000`
-- Socket.IO server running on `http://localhost:3001`
-- Prisma schema pushed to a local database
+There is no second process. Realtime is Supabase Broadcast called over REST from the API
+routes, so there is no socket server to start; see `docs/ARCHITECTURE.md`.
 
 ## Prerequisites
 
-- Node.js 20.19+ (required by Prisma 7)
+- Node.js 20.19+, 22.12+ or 24+ (the range Prisma 7 declares; CI runs Node 20)
 - npm
 - PostgreSQL 14+ running locally
 
-Optional:
+Optional: Docker, if you prefer PostgreSQL in a container.
 
-- Docker, if you prefer to run PostgreSQL in a local container
-
-## 1. Clone and install
+## 1. Clone
 
 ```bash
 git clone <repo-url>
 cd Boardly
-npm install
 ```
 
 ## 2. Start PostgreSQL locally
 
-Use whichever local-only option you prefer.
-
 ### Option A: local PostgreSQL service
-
-Create a database:
 
 ```bash
 createdb boardly_local
 ```
 
-If your local PostgreSQL user is not `postgres`, replace the username in the `.env.local` example below.
+If your local PostgreSQL user is not `postgres`, replace the username in the `.env.local`
+example below.
 
 ### Option B: Docker
 
@@ -56,13 +50,11 @@ docker run --name boardly-postgres \
 
 ## 3. Create `.env.local`
 
-Copy the template:
-
 ```bash
 cp .env.example .env.local
 ```
 
-For a local-only stack, this minimal config is enough:
+For a local stack this is enough:
 
 ```env
 NODE_ENV=development
@@ -76,143 +68,127 @@ NEXTAUTH_URL=http://localhost:3000
 CORS_ORIGIN=http://localhost:3000,http://127.0.0.1:3000
 
 CRON_SECRET=replace-with-another-long-random-string-at-least-32-chars
-
-# Optional locally. Leave unset unless you need explicit overrides.
-# NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
-# SOCKET_SERVER_URL=http://localhost:3001
-# SOCKET_SERVER_INTERNAL_SECRET=replace-with-at-least-16-chars
 ```
 
-Generate local secrets:
+Generate secrets with:
 
 ```bash
 openssl rand -base64 32
 ```
 
-## 4. Leave hosted integrations disabled
+`prisma.config.ts` loads `.env` with `override: true` when that file exists, and falls back
+to `.env.local` only when it does not. So a stray `.env` silently wins over `.env.local` and
+over your shell for every Prisma command.
 
-For normal local development you do not need:
+## 4. Install dependencies
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
+```bash
+npm install
+```
+
+This comes after `.env.local` on purpose. `npm install` runs `postinstall`, which is
+`prisma generate`, and `prisma.config.ts` throws `DATABASE_URL or DIRECT_URL must be set`
+when it cannot find either – so on a fresh clone the install itself fails if you run it
+first.
+
+## 5. What you lose by leaving the hosted integrations unset
+
+Leave these unset and the app still starts:
+
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`
 - `RESEND_API_KEY`
-- Google / GitHub / Discord OAuth env vars
-- Sentry env vars
-- Upstash env vars
+- Google / GitHub / Discord OAuth variables
+- `STRIPE_SECRET_KEY` and the rest of the Stripe block
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+- Sentry variables
 
-Without these values:
+The cost of each:
 
-- email sending is skipped
-- OAuth providers are unavailable
-- Sentry is disabled
-- local DB still works normally through Prisma
+- **No Supabase:** server-side, `broadcastToLobby` returns `false` instead of broadcasting.
+  Client-side it is worse than degraded: `getSupabaseClient` passes
+  `NEXT_PUBLIC_SUPABASE_URL` straight into `createClient`, which throws `supabaseUrl is
+  required.`, so `/lobby`, a lobby page and the per-game lobby lists break rather than
+  quietly falling behind. Point the three Supabase variables at a free project before step
+  8.
+- **No Resend:** email sending is skipped, so verification and password reset go nowhere.
+- **No OAuth variables:** those providers do not appear on the sign-in page.
+- **No Stripe:** the `/api/stripe/*` routes fail. `/premium` still renders – `getPremiumPricing`
+  catches and falls back to `PREMIUM_BASE_PRICE`, offering monthly only. The one other
+  casualty is account deletion for a user who holds a subscription: it fails closed with a
+  502 rather than orphan a live subscription.
+- **No Redis:** chat history is not persisted and rate limiting falls back to a per-process
+  in-memory counter that resets with the dev server.
+- **No Sentry:** errors stay in the console.
 
-## 5. Prepare the database
-
-Generate Prisma client and push schema:
+## 6. Prepare the database
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-Recommended checks:
+Check it:
 
 ```bash
 npm run check:env:quiet
 npm run check:db
 ```
 
-## 6. Start the app and socket server
-
-Preferred:
-
-```bash
-npm run dev:all
-```
-
-Or in separate terminals:
+## 7. Start the app
 
 ```bash
 npm run dev
-npm run socket:dev
 ```
 
-Open:
+Open `http://localhost:3000`.
 
-- app: `http://localhost:3000`
-- socket server: `http://localhost:3001`
-
-## 7. Local smoke test
-
-Recommended quick smoke path:
+## 8. Local smoke test
 
 1. Open `http://localhost:3000`
-2. Create a guest session or sign in with a local account if you already have one
+2. Create a guest session, or sign in with a local account
 3. Create a lobby
 4. Start a game
 5. Verify moves update in the UI
 
-## Local architecture notes
+For a game that needs three or more players, fill the seats over the public join API rather
+than opening a second tab – a second tab shares cookies and is the same guest. See the
+"Testing a game that needs three or more real players" section of `CLAUDE.md`.
 
-- The browser connects to Socket.IO on port `3001`.
-- The Next.js server stays on port `3000`.
-- Prisma talks directly to your local PostgreSQL instance.
-- In development, protected internal socket endpoints are allowed without `SOCKET_SERVER_INTERNAL_SECRET`.
-
-## Common local-only problems
+## Common local problems
 
 ### `DATABASE_URL` is set but Prisma cannot connect
 
-Check:
-
-- PostgreSQL is actually running
-- the database exists
-- username/password in `.env.local` match your local PostgreSQL setup
-
-Useful commands:
+Check that PostgreSQL is running, that the database exists, that the credentials match, and
+that no stray `.env` is overriding `.env.local`.
 
 ```bash
 npm run check:db
 npm run db:validate
 ```
 
-### App loads but socket does not connect
-
-Check:
-
-- `npm run socket:dev` is running
-- `CORS_ORIGIN` includes `http://localhost:3000`
-- `NEXT_PUBLIC_SOCKET_URL` is unset or points to `http://localhost:3001`
-
-### Lobby/game pages behave strangely after schema changes
-
-Refresh Prisma artifacts and schema:
+### Lobby or game pages behave strangely after schema changes
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-Then restart `npm run dev:all`.
+Then restart `npm run dev`.
 
 ### Email or OAuth flows fail locally
 
-That is expected if you intentionally left those env vars unset. They are not required for a fully local gameplay/dev loop.
+Expected when those variables are unset. They are not needed for a local gameplay loop.
 
-## Recommended pre-change check
-
-Before larger changes:
+## Before you push
 
 ```bash
-bash scripts/codex-quick-check.sh --skip-db
+npm run ci:quick
+npm test
+npm run check:locales
 ```
 
-Or, if local DB is running:
-
-```bash
-bash scripts/codex-quick-check.sh
-```
+The `pre-push` hook runs `db:generate`, `check:locales`, `ci:quick` and the smoke tests, and
+blocks a direct push to `main`.
 
 ## Related docs
 

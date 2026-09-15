@@ -110,6 +110,6 @@ if (hasErrors) {
 }
 
 console.log('\nAll critical environment variables are set!')
-console.log('You can now run: npm run dev:all\n')
+console.log('You can now run: npm run dev\n')
 process.exit(0)
 

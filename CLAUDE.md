@@ -193,7 +193,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `app/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
 - [ ] `app/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
 - [ ] `app/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
-- [ ] `components/HomePage/GameRibbon.tsx` — add to `GAME_ACCENT_BG`, `GAME_DETAIL_HREF`, `translatedDetails`, `getIllustration`
+- [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
 - [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
@@ -382,7 +382,7 @@ open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount,
   non-commercial only, and ads make a site commercial; AdSense also still has
   boardly.online as "Getting ready". Production only, once both are settled — never
   Preview, which would serve ads on a non-production host.
-- **Client mount is not decoration.** The 15 guide routes are statically prerendered and
+- **Client mount is not decoration.** The guide routes are statically prerendered and
   must stay that way. A server-side premium check turns all 15 dynamic. Verify with a
   build: the guide rows must still be `○`.
 - **Premium is checked over HTTP, not from the session.** The NextAuth token carries no

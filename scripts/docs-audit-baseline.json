@@ -1,0 +1,164 @@
+[
+  {
+    "file": "AGENTS.md",
+    "check": "D4",
+    "value": "GITHUB_PERSONAL_ACCESS_TOKEN",
+    "reason": "The MCP GitHub server's own variable name, offered as an alternative to GITHUB_TOKEN. Not read by this app."
+  },
+  {
+    "file": "AGENTS.md",
+    "check": "D4",
+    "value": "JWT_SECRET",
+    "reason": "Named only to forbid it: the rule is that no new JWT_SECRET-based logic may be added."
+  },
+  {
+    "file": "CLAUDE.md",
+    "check": "D3",
+    "value": "/changelog",
+    "reason": "A route in KovalDenys1/Boardly-control-panel, which shares this database. Not served from this app."
+  },
+  {
+    "file": "docs/ARCHITECTURE.md",
+    "check": "D3",
+    "value": "/realtime/v1/api/broadcast",
+    "reason": "Supabase's REST endpoint that broadcastToLobby posts to, not a Next.js route."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D3",
+    "value": "/github",
+    "reason": "Discord's own webhook endpoint suffix for GitHub delivery, not a Boardly route."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D3",
+    "value": "/stats",
+    "reason": "A Discord slash command served by the gateway bot, not a Boardly route."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "ANNOUNCEMENTS_DISCORD_WEBHOOK_URL",
+    "reason": "Planned, not provisioned. No code in this repo, in Boardly-control-panel or in the gateway bot reads this name; the doc's rows say the mirror is not built yet."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "BOARDLY_BASE_URL",
+    "reason": "Set in the gateway bot's env file on the Raspberry Pi, not in this app."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "DISCORD_BOT_TOKEN",
+    "reason": "Set in the gateway bot's env file on the Raspberry Pi, not in this app."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "DISCORD_GUILD_ID",
+    "reason": "Set in the gateway bot's env file on the Raspberry Pi, not in this app."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "DISCORD_ROLE_SYNC_CRON_URL",
+    "reason": "Planned, not provisioned. There is no role-sync workflow under .github/workflows/ and no cron route for it; the doc's row says so."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "GROWTH_DISCORD_WEBHOOK_URL",
+    "reason": "Set on the cloud routines that post to the growth channel, not in this app."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "STAFF_BOT_WEBHOOK_URL",
+    "reason": "Set in the gateway bot's env file on the Raspberry Pi, not in this app."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "SUPABASE_ANON_KEY",
+    "reason": "The gateway bot's read-only Realtime credential, under its own name. This app uses NEXT_PUBLIC_SUPABASE_ANON_KEY."
+  },
+  {
+    "file": "docs/DISCORD.md",
+    "check": "D4",
+    "value": "SUPABASE_URL",
+    "reason": "The gateway bot's read-only Realtime credential, under its own name. This app uses NEXT_PUBLIC_SUPABASE_URL."
+  },
+  {
+    "file": "docs/LOCAL_SETUP.md",
+    "check": "D4",
+    "value": "POSTGRES_DB",
+    "reason": "An argument to the postgres Docker image in the setup snippet, not a Boardly variable."
+  },
+  {
+    "file": "docs/LOCAL_SETUP.md",
+    "check": "D4",
+    "value": "POSTGRES_PASSWORD",
+    "reason": "An argument to the postgres Docker image in the setup snippet, not a Boardly variable."
+  },
+  {
+    "file": "docs/LOCAL_SETUP.md",
+    "check": "D4",
+    "value": "POSTGRES_USER",
+    "reason": "An argument to the postgres Docker image in the setup snippet, not a Boardly variable."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "BOARDLY_BASE_URL",
+    "reason": "Read from the gateway bot's env file on the Pi during the discord_bot_stale runbook."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "JWT_SECRET",
+    "reason": "A deprecated alias. The doc names it to say remove it from every environment."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "NEXT_PUBLIC_SOCKET_URL",
+    "reason": "Decommissioned with Socket.IO. The doc names it so old environments can be cleaned up."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "PROJECT_HYGIENE_OWNER",
+    "reason": "A GitHub repository variable for .github/workflows/project-hygiene.yml, not app env."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "PROJECT_HYGIENE_PROJECT_NUMBER",
+    "reason": "A GitHub repository variable for .github/workflows/project-hygiene.yml, not app env."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "PROJECT_HYGIENE_TOKEN",
+    "reason": "A GitHub Actions secret for .github/workflows/project-hygiene.yml, not app env."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "RELIABILITY_ALERTS_CRON_URL",
+    "reason": "A GitHub Actions secret for .github/workflows/reliability-alerts-cron.yml, not app env."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "SOCKET_SERVER_INTERNAL_SECRET",
+    "reason": "Decommissioned with Socket.IO. The doc names it so old environments can be cleaned up."
+  },
+  {
+    "file": "docs/OPERATIONS.md",
+    "check": "D4",
+    "value": "SOCKET_SERVER_URL",
+    "reason": "Decommissioned with Socket.IO. The doc names it so old environments can be cleaned up."
+  }
+]
