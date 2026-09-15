@@ -94,6 +94,7 @@ export default function BestOnlineGamesForGameNightGuide() {
           { href: '/guides/best-party-games-online', label: 'Best Party Games Online — Free to Play' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
+          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
         ]}
       >
         <GuideSection title="What Makes a Good Game Night Game?">

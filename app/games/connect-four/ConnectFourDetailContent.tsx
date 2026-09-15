@@ -16,6 +16,7 @@ export default function ConnectFourDetailContent() {
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"
       lobbiesHref="/games/connect-four/lobbies"
+      guideHref="/guides/how-to-play-connect-four-online"
       facts={[
         { label: t('games.detail.labels.players'), value: '1–2' },
         { label: t('games.detail.labels.price'), value: t('games.detail.values.free') },

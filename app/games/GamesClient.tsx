@@ -1,7 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -36,8 +35,6 @@ function accentColor(color: string): string {
 }
 
 export default function GamesClient({ games: catalogGames }: GamesClientProps) {
-  const router = useRouter()
-  const { status } = useSession()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
@@ -48,14 +45,6 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
     difficultyKey: game.difficultyKey as TranslationKeys,
     status: game.availability === 'available' ? 'available' : 'coming-soon',
   }))
-
-  if (status === 'loading') {
-    return (
-      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
-        <div className="text-[18px] text-bd-ink-muted">{t('games.loading')}</div>
-      </div>
-    )
-  }
 
   const filters: Array<{ id: typeof selectedFilter; label: string }> = [
     { id: 'all', label: t('common.all') },
@@ -70,13 +59,9 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
       return t(a.nameKey).toLowerCase().localeCompare(t(b.nameKey).toLowerCase())
     })
 
-  const handleGameClick = (game: Game) => {
-    if (game.status !== 'available') return
-    // The catalog id is not always the detail path ('rps' lives at
-    // /games/rock-paper-scissors), so the path comes from the lobbies route.
-    const detailHref = game.route ? game.route.replace(/\/lobbies$/, '') : `/games/${game.id}`
-    router.push(detailHref)
-  }
+  // The catalog id is not always the detail path ('rps' lives at
+  // /games/rock-paper-scissors), so the path comes from the lobbies route.
+  const detailHref = (game: Game) => (game.route ? game.route.replace(/\/lobbies$/, '') : `/games/${game.id}`)
 
   return (
     <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto">
@@ -119,55 +104,67 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
           className="mb-14 grid gap-5"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
         >
-          {filteredGames.map(game => (
-            <div
-              key={game.id}
-              className={`bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
-                game.status === 'available' ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
-              }`}
-              onClick={() => handleGameClick(game)}
-            >
-              {/* Color accent strip */}
-              <div
-                className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
-                style={{ background: `linear-gradient(90deg, ${accentColor(game.color)}, transparent)` }}
-              />
+          {filteredGames.map(game => {
+            const isAvailable = game.status === 'available'
+            const cardClass = `bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
+              isAvailable ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
+            }`
+            const card = (
+              <>
+                {/* Color accent strip */}
+                <div
+                  className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
+                  style={{ background: `linear-gradient(90deg, ${accentColor(game.color)}, transparent)` }}
+                />
 
-              {/* Header row */}
-              <div className="mt-2 flex items-start justify-between">
-                <GameIcon gameId={game.id} accentColor={accentColor(game.color)} />
-                <span className={`text-[11px] ${game.status === 'available' ? 'bd-chip bd-chip-mint' : 'bd-chip'}`}>
-                  {game.status === 'available' ? t('games.available') : t('games.comingSoon')}
-                </span>
+                {/* Header row */}
+                <div className="mt-2 flex items-start justify-between">
+                  <GameIcon gameId={game.id} accentColor={accentColor(game.color)} />
+                  <span className={`text-[11px] ${isAvailable ? 'bd-chip bd-chip-mint' : 'bd-chip'}`}>
+                    {isAvailable ? t('games.available') : t('games.comingSoon')}
+                  </span>
+                </div>
+
+                {/* Game info */}
+                <div className="flex-1">
+                  <h3
+                    className="mb-1.5 text-[22px] font-bold tracking-[-0.01em] text-bd-ink"
+                    style={{ fontFamily: 'var(--bd-font-display)' }}
+                  >
+                    {t(game.nameKey)}
+                  </h3>
+                  <p className="text-sm leading-[1.5] text-bd-ink-soft">
+                    {t(game.descriptionKey)}
+                  </p>
+                </div>
+
+                {/* Meta row */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="bd-chip text-xs"><Icon name="users" size={12} /> {game.players} {t('games.players')}</span>
+                  <span className="bd-chip text-xs"><Icon name="bolt" size={12} /> {t(game.difficultyKey)}</span>
+                </div>
+
+                {/* CTA – a span, not a button, because it sits inside the card anchor */}
+                {isAvailable && (
+                  <span className="bd-btn bd-btn-primary mt-1 justify-center">
+                    {t('games.seeGame')}
+                  </span>
+                )}
+              </>
+            )
+
+            // Available cards are real anchors so crawlers reach the detail
+            // pages (#921); the whole card stays the click target.
+            return isAvailable ? (
+              <Link key={game.id} href={detailHref(game)} className={cardClass}>
+                {card}
+              </Link>
+            ) : (
+              <div key={game.id} className={cardClass}>
+                {card}
               </div>
-
-              {/* Game info */}
-              <div className="flex-1">
-                <h3
-                  className="mb-1.5 text-[22px] font-bold tracking-[-0.01em] text-bd-ink"
-                  style={{ fontFamily: 'var(--bd-font-display)' }}
-                >
-                  {t(game.nameKey)}
-                </h3>
-                <p className="text-sm leading-[1.5] text-bd-ink-soft">
-                  {t(game.descriptionKey)}
-                </p>
-              </div>
-
-              {/* Meta row */}
-              <div className="flex flex-wrap gap-2">
-                <span className="bd-chip text-xs"><Icon name="users" size={12} /> {game.players} {t('games.players')}</span>
-                <span className="bd-chip text-xs"><Icon name="bolt" size={12} /> {t(game.difficultyKey)}</span>
-              </div>
-
-              {/* CTA */}
-              {game.status === 'available' && (
-                <button className="bd-btn bd-btn-primary mt-1 justify-center">
-                  {t('games.seeGame')}
-                </button>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {filteredGames.length === 0 && (

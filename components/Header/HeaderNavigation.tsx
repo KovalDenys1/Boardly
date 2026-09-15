@@ -1,6 +1,8 @@
 'use client'
 
-import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import type { MouseEvent } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface HeaderNavigationProps {
@@ -10,7 +12,6 @@ interface HeaderNavigationProps {
 }
 
 export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: HeaderNavigationProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
 
@@ -25,59 +26,38 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
 
   const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard', '/guides']
 
-  const navigate = (dest: string) => {
+  // Real anchors so crawlers follow the nav (#921). A signed-out visitor on a
+  // non-public route still gets the auth prompt instead of the navigation.
+  const guard = (dest: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     if (!isAuthenticated && !isGuest && !PUBLIC_ROUTES.includes(dest)) {
+      event.preventDefault()
       onUnauthClick?.(dest)
-    } else {
-      router.push(dest)
     }
   }
 
+  const navStyle = { padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }
+
   return (
     <div className="hidden xl:flex" style={{ marginLeft: 'clamp(10px, 1.5vw, 28px)', gap: 'clamp(2px, 0.3vw, 6px)' }}>
-      <button
-        onClick={() => router.push('/')}
-        className={navBtn(isActive('/'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-      >
-        {t('header.home', 'Home')}
-      </button>
-      <button
-        onClick={() => navigate('/games')}
-        className={navBtn(!!pathname?.startsWith('/games'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-      >
-        {t('header.games', 'Games')}
-      </button>
-      <button
-        onClick={() => navigate('/lobby')}
-        className={navBtn(!!pathname?.startsWith('/lobby'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-      >
-        {t('header.lobbies', 'Lobbies')}
-      </button>
-      <button
-        onClick={() => navigate('/leaderboard')}
-        className={navBtn(!!pathname?.startsWith('/leaderboard'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-      >
-        {t('header.leaderboard', 'Leaderboard')}
-      </button>
-      <button
-        onClick={() => navigate('/guides')}
-        className={navBtn(!!pathname?.startsWith('/guides'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-      >
+      <Link href="/" className={navBtn(isActive('/'))} style={navStyle}>
+        {t('header.home')}
+      </Link>
+      <Link href="/games" onClick={guard('/games')} className={navBtn(!!pathname?.startsWith('/games'))} style={navStyle}>
+        {t('header.games')}
+      </Link>
+      <Link href="/lobby" onClick={guard('/lobby')} className={navBtn(!!pathname?.startsWith('/lobby'))} style={navStyle}>
+        {t('header.lobbies')}
+      </Link>
+      <Link href="/leaderboard" onClick={guard('/leaderboard')} className={navBtn(!!pathname?.startsWith('/leaderboard'))} style={navStyle}>
+        {t('header.leaderboard')}
+      </Link>
+      <Link href="/guides" onClick={guard('/guides')} className={navBtn(!!pathname?.startsWith('/guides'))} style={navStyle}>
         {t('header.guides')}
-      </button>
+      </Link>
       {isAuthenticated && (
-        <button
-          onClick={() => router.push('/friends')}
-          className={navBtn(!!pathname?.startsWith('/friends'))}
-          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
-        >
+        <Link href="/friends" className={navBtn(!!pathname?.startsWith('/friends'))} style={navStyle}>
           {t('header.friends')}
-        </button>
+        </Link>
       )}
     </div>
   )
