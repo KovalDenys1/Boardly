@@ -5,11 +5,11 @@ This folder contains the canonical project documentation.
 ## Core docs
 
 - `docs/PROJECT_VISION.md` - product goals, long-term direction, and decision principles
-- `docs/LOCAL_SETUP.md` - full local-only setup with local PostgreSQL and local app/socket services
-- `docs/ARCHITECTURE.md` - technical architecture, data model, websocket flow, game engine patterns
+- `docs/LOCAL_SETUP.md` - local setup against a PostgreSQL database on your own machine
+- `docs/ARCHITECTURE.md` - technical architecture, data model, realtime flow, game engine patterns
 - `docs/OPERATIONS.md` - environment setup, local runbook, deployment, troubleshooting
 - `docs/DATABASE.md` - schema ownership, RLS posture, migration and cleanup jobs
-- `docs/ROADMAP.md` - active priorities and near-term milestones
+- `docs/ROADMAP.md` - direction and what is already shipped; execution tracking is in GitHub Issues
 - `docs/CONTRIBUTING.md` - workflow and engineering standards
 - `docs/GAME_DEVELOPMENT.md` - source-of-truth rules and checklist for adding/promoting games
 - `docs/SECURITY_MODEL.md` - auth boundaries, RLS posture, secrets policy
@@ -24,6 +24,7 @@ This folder contains the canonical project documentation.
 ## Specialized docs
 
 - `lib/bots/README.md` - bot architecture and implementation guide
+- `e2e/README.md` - Playwright end-to-end suite: what it covers and how to run it
 - `prisma/migrations/README.md` - migration timeline and RLS migration notes
 - `public/sounds/README.md` - audio assets and usage notes
 - `docs/ALIBI_NIGHT_DESIGN.md` - phase model, safety rules, and MVP checklist for upcoming Alibi Night game

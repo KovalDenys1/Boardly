@@ -6,7 +6,7 @@ This document defines the production reliability telemetry path, alert rules, KP
 
 - Source emitters:
   - `lib/analytics.ts`
-  - `app/lobby/[code]/hooks/useSocketConnection.ts`
+  - `app/lobby/[code]/hooks/useRealtimeConnection.ts`
   - `app/lobby/[code]/hooks/useLobbyActions.ts`
 - Ingestion API: `POST /api/ops/events`
 - Storage:
@@ -124,8 +124,9 @@ Baseline is computed from the previous `baselineDays` window (default 7 days), s
 
 - Check `/api/game/[gameId]/state` p95 and DB lock/contention
 - Check by game breakdown (`game_type`) in the `OperationalEvents` rows
-- Check broadcast latency after a successful mutation – `broadcastToLobby` is awaited, so a
-  slow Supabase REST call shows up as a slow API response
+- Do not look for broadcast latency in the API p95. `/api/game/[gameId]/state` fires
+  `void broadcastToLobby(...)`, so a slow Supabase REST call does not show up there – it
+  shows up as clients seeing the move late while the API looks healthy.
 
 ## Execution Commands
 

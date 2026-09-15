@@ -13,18 +13,17 @@ routes, so there is no socket server to start; see `docs/ARCHITECTURE.md`.
 
 ## Prerequisites
 
-- Node.js 20.19+ (required by Prisma 7; CI runs Node 20)
+- Node.js 20.19+, 22.12+ or 24+ (the range Prisma 7 declares; CI runs Node 20)
 - npm
 - PostgreSQL 14+ running locally
 
 Optional: Docker, if you prefer PostgreSQL in a container.
 
-## 1. Clone and install
+## 1. Clone
 
 ```bash
 git clone <repo-url>
 cd Boardly
-npm install
 ```
 
 ## 2. Start PostgreSQL locally
@@ -81,7 +80,18 @@ openssl rand -base64 32
 to `.env.local` only when it does not. So a stray `.env` silently wins over `.env.local` and
 over your shell for every Prisma command.
 
-## 4. What you lose by leaving the hosted integrations unset
+## 4. Install dependencies
+
+```bash
+npm install
+```
+
+This comes after `.env.local` on purpose. `npm install` runs `postinstall`, which is
+`prisma generate`, and `prisma.config.ts` throws `DATABASE_URL or DIRECT_URL must be set`
+when it cannot find either – so on a fresh clone the install itself fails if you run it
+first.
+
+## 5. What you lose by leaving the hosted integrations unset
 
 Leave these unset and the app still starts:
 
@@ -94,17 +104,23 @@ Leave these unset and the app still starts:
 
 The cost of each:
 
-- **No Supabase:** `broadcastToLobby` returns `false` instead of broadcasting, so a second
-  browser does not see the first one's moves until it refetches. Everything server-side still
-  works. Point the three Supabase variables at a free project when you need to test realtime.
+- **No Supabase:** server-side, `broadcastToLobby` returns `false` instead of broadcasting.
+  Client-side it is worse than degraded: `getSupabaseClient` passes
+  `NEXT_PUBLIC_SUPABASE_URL` straight into `createClient`, which throws `supabaseUrl is
+  required.`, so `/lobby`, a lobby page and the per-game lobby lists break rather than
+  quietly falling behind. Point the three Supabase variables at a free project before step
+  8.
 - **No Resend:** email sending is skipped, so verification and password reset go nowhere.
 - **No OAuth variables:** those providers do not appear on the sign-in page.
-- **No Stripe:** `/premium` and the checkout routes fail; nothing else does.
+- **No Stripe:** the `/api/stripe/*` routes fail. `/premium` still renders – `getPremiumPricing`
+  catches and falls back to `PREMIUM_BASE_PRICE`, offering monthly only. The one other
+  casualty is account deletion for a user who holds a subscription: it fails closed with a
+  502 rather than orphan a live subscription.
 - **No Redis:** chat history is not persisted and rate limiting falls back to a per-process
   in-memory counter that resets with the dev server.
 - **No Sentry:** errors stay in the console.
 
-## 5. Prepare the database
+## 6. Prepare the database
 
 ```bash
 npm run db:generate
@@ -118,7 +134,7 @@ npm run check:env:quiet
 npm run check:db
 ```
 
-## 6. Start the app
+## 7. Start the app
 
 ```bash
 npm run dev
@@ -126,7 +142,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## 7. Local smoke test
+## 8. Local smoke test
 
 1. Open `http://localhost:3000`
 2. Create a guest session, or sign in with a local account
@@ -171,8 +187,8 @@ npm test
 npm run check:locales
 ```
 
-The `pre-push` hook runs `db:generate`, `ci:quick` and the smoke tests, and blocks a direct
-push to `main`.
+The `pre-push` hook runs `db:generate`, `check:locales`, `ci:quick` and the smoke tests, and
+blocks a direct push to `main`.
 
 ## Related docs
 

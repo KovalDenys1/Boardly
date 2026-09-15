@@ -43,14 +43,17 @@
 - `DATABASE_URL`: PostgreSQL connection string.
 - `NEXTAUTH_SECRET`: NextAuth JWT/session signing, minimum 32 characters.
 - `CRON_SECRET`: dedicated cron endpoint auth secret, minimum 32 characters.
-- `SUPABASE_SERVICE_ROLE_KEY`: server-side Supabase client used by `broadcastToLobby`.
+- `SUPABASE_SERVICE_ROLE_KEY` and `NEXT_PUBLIC_SUPABASE_URL`: `broadcastToLobby` needs
+  both and returns `false` without either, silently, so realtime dies quietly if one is
+  missing.
 
 ### Optional and conditional
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
-- `BOARDLY_INTERNAL_SECRET`: server-to-server bot-turn triggers. Unset, the state route
-  forwards the player's own session instead, which is acceptable locally and not in a
-  deployed environment.
+- `BOARDLY_INTERNAL_SECRET`: server-to-server bot-turn triggers. The state route forwards
+  the caller's own session either way and adds this header on top when it is set, so
+  leaving it unset means the bot turn runs on the player's identity – acceptable locally
+  and not in a deployed environment.
 - `DISCORD_INTERNAL_SECRET`: bearer the Raspberry Pi gateway bot presents to
   `/api/internal/discord/heartbeat` and `/api/internal/discord/members/[snowflake]`. Unset,
   those routes answer 503.

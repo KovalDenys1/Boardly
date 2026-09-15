@@ -14,14 +14,18 @@ page cannot be read as though they were still ahead:
 - Guest identity is signed-token only (`X-Guest-Token`).
 - Spectators, replays, notifications and web push.
 - Monetization: Stripe Premium, monthly and yearly, on `/premium`.
-- Seven games available, four more built behind flags.
+- Seven games available. Four more are built but `in-development`: three behind an
+  `ENABLE_*` flag, and Liar's Party, which is always registered and reachable by lobby
+  code.
 
 ## Current direction
 
 ### Catalog
 
 - Promote the `in-development` games one at a time. Built is not the same as promoted:
-  promotion is a product decision, and the checklist is `docs/GAME_DEVELOPMENT.md`.
+  promotion is a product decision, and the checklist is `docs/GAME_DEVELOPMENT.md`. Note
+  that Liar's Party has no feature flag, so promoting it is a catalog edit, not a flag
+  flip.
 - New games stay inside the shared `GameEngine`, lobby and `components/game-chrome/` kit.
 
 ### Reach

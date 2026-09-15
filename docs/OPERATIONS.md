@@ -121,8 +121,9 @@ Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SER
 
 ### Migrations
 
-- Run from `.github/workflows/migrate.yml` when `prisma/migrations/` changes on `develop`,
-  never from the Vercel build – `prisma migrate deploy` hangs cross-region there.
+- Run from `.github/workflows/migrate.yml` when `prisma/migrations/**` or
+  `prisma/schema.prisma` changes on `develop`, never from the Vercel build –
+  `prisma migrate deploy` hangs cross-region there.
 - A merge to `develop` therefore puts the schema on production while the code is still on
   `main`. Check `git log origin/main..origin/develop` before calling a feature live.
 
@@ -183,16 +184,6 @@ Runtime note:
 - Prisma 7 / `pg-connection-string` may treat `sslmode=require` more strictly than older libpq-style clients.
 - Boardly normalizes hosted runtime URLs with `sslmode=require|prefer|verify-ca` to libpq-compatible behavior when no CA bundle is configured.
 - If you want strict certificate verification, configure `MCP_POSTGRES_CA_CERT_PATH` so runtime uses `sslmode=verify-full`.
-
-### Render build hangs after Prisma datasource log
-
-Likely cause: migration/DB step in wrong service or waiting on pooled connection.
-
-Check:
-
-- socket service build command does not call `prisma migrate`
-- migrations run in dedicated job/service only
-- `DIRECT_URL` is configured for migrations
 
 ### Realtime not working locally
 
@@ -366,15 +357,10 @@ npm test -- --runTestsByPath \
   __tests__/lib/lobby-snapshot.test.ts \
   __tests__/lib/bots/tic-tac-toe-bot.test.ts \
   __tests__/lib/bots/rock-paper-scissors-bot.test.ts \
-  __tests__/socket/handlers/game-action.test.ts \
-  __tests__/socket/handlers/leave-lobby.test.ts \
-  __tests__/socket/disconnect-sync.test.ts
-```
-
-When `#128` follow-up is merged, extend this command with:
-
-```bash
-__tests__/lib/bots/bot-ux-timing.test.ts
+  __tests__/lib/bots/bot-ux-timing.test.ts \
+  __tests__/api/lobby-leave.test.ts \
+  __tests__/api/lobby-realtime-topic.test.ts \
+  __tests__/lib/lobby-lifecycle.test.ts
 ```
 
 Manual smoke matrix (required):

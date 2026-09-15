@@ -39,7 +39,7 @@
     "file": "docs/DISCORD.md",
     "check": "D4",
     "value": "ANNOUNCEMENTS_DISCORD_WEBHOOK_URL",
-    "reason": "Set in Boardly-control-panel, which mirrors announcements. The doc's table says so."
+    "reason": "Planned, not provisioned. No code in this repo, in Boardly-control-panel or in the gateway bot reads this name; the doc's rows say the mirror is not built yet."
   },
   {
     "file": "docs/DISCORD.md",
@@ -63,7 +63,7 @@
     "file": "docs/DISCORD.md",
     "check": "D4",
     "value": "DISCORD_ROLE_SYNC_CRON_URL",
-    "reason": "A GitHub Actions secret for the role-sync schedule, not app config."
+    "reason": "Planned, not provisioned. There is no role-sync workflow under .github/workflows/ and no cron route for it; the doc's row says so."
   },
   {
     "file": "docs/DISCORD.md",

@@ -10,7 +10,8 @@ import en from '../locales/en'
  * Four checks, all mechanical:
  *   D1  README.md's game lists match lib/game-catalog.ts
  *   D2  every npm script a doc names exists in package.json
- *   D3  every app route a doc names exists under app/
+ *   D3  every app route a doc names exists under app/ - inline, and in the app URLs
+ *       and bare paths of fenced blocks
  *   D4  every environment variable a doc names is declared in .env.example
  *       or scripts/check-env.ts
  *
@@ -406,6 +407,28 @@ function routeExists(candidate: string, routes: string[][]): boolean {
   })
 }
 
+/**
+ * Route-shaped tokens inside a fenced block: an app URL in a curl/fetch example, or a
+ * bare path on a line of its own. A fenced line is a whole command, so unlike an inline
+ * span it cannot be treated as one candidate.
+ */
+function fencedRouteCandidates(spans: CodeSpan[]): CodeSpan[] {
+  const candidates: CodeSpan[] = []
+
+  for (const span of spans) {
+    const appUrl = /https?:\/\/(?:localhost:\d+|(?:www\.)?boardly\.online)(\/[A-Za-z0-9[\]<>:_./-]*)/g
+    for (const match of span.text.matchAll(appUrl)) {
+      candidates.push({ text: match[1], line: span.line })
+    }
+    const bare = span.text.trim()
+    if (/^\/[A-Za-z0-9[\]<>:_.-]+(?:\/[A-Za-z0-9[\]<>:_.-]+)*$/.test(bare)) {
+      candidates.push({ text: bare, line: span.line })
+    }
+  }
+
+  return candidates
+}
+
 function checkRoutes(file: string, spans: CodeSpan[], routes: string[][]): Violation[] {
   const violations: Violation[] = []
   const seen = new Set<string>()
@@ -565,7 +588,7 @@ for (const file of collectDocFiles()) {
     violations.push(...checkReadmeGames(file, source))
   }
   violations.push(...checkScripts(file, [...inline, ...fencedLines], scripts))
-  violations.push(...checkRoutes(file, inline, routes))
+  violations.push(...checkRoutes(file, [...inline, ...fencedRouteCandidates(fencedLines)], routes))
   violations.push(...checkEnvVars(file, inline, fencedLines, declared, identifiers))
 }
 

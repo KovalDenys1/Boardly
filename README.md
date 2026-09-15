@@ -13,8 +13,11 @@ The push to actually build it came from a school assignment. My teacher, Tarald,
 ## Games
 
 Lifecycle state lives in `lib/game-catalog.ts` and nowhere else. `available` is what the
-site promotes; `in-development` is built and reachable behind a feature flag or a direct
-lobby code, but not listed or indexed; `planned` is direction only, with no code.
+site promotes – a create-lobby entry and an indexed `/games/<game>` page. `in-development`
+is built and reachable behind a feature flag or a direct lobby code; it still appears on
+`/games` under a "Coming soon" chip, but it is out of the sitemap and any page it has is
+`noindex`. `planned` has a catalog entry, a name and an icon, and no engine or route
+behind them.
 
 **Available (7):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Memory, Connect Four, Alias, Rock Paper Scissors
 **In development:** Liar's Party, Sketch & Guess, Fake Artist, Telephone Doodle
@@ -59,7 +62,7 @@ Client action → API route → DB update → Supabase Realtime Broadcast → cl
 
 Server state is always authoritative. Clients may apply optimistic updates for UX only.
 
-- **Broadcast**: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)` — stateless REST POST, works in Vercel serverless functions. Always `await`ed before response (Vercel kills pending promises after `return`).
+- **Broadcast**: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)` – stateless REST POST, works in Vercel serverless functions. It **should** be `await`ed before the response returns, because Vercel kills pending promises after `return` – but most call sites still fire it with `void`.
 - **Postgres Changes**: auto-broadcast when `prisma.lobbies.update()` runs – subscribed client-side via `app/lobby/[code]/hooks/useRealtimeConnection.ts`.
 - **Social events** (rematch, invite): `user:{userId}` Broadcast channel via `SocialLoopListener`.
 - **Chat**: persisted to Redis (Upstash), broadcast via Supabase Broadcast after write.
@@ -117,7 +120,7 @@ pnpm check:locales    # Verify all 4 locale files have identical keys
 pnpm db:generate      # Regenerate Prisma client
 pnpm db:push          # Push schema changes (dev only)
 pnpm db:migrate       # Run pending migrations (production)
-pnpm db:audit         # compare live tables, RLS and indexes against the expected set
+pnpm db:audit         # compare live tables and RLS against the expected set
 pnpm audit:docs       # check these docs against the code they describe
 ```
 

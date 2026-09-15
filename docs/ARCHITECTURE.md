@@ -13,8 +13,9 @@ Boardly uses a single-server model:
 1. Client sends action to API route.
 2. API validates actor, permissions, and game rule constraints.
 3. API persists authoritative state in DB.
-4. API broadcasts the update to the `lobby:<code>` Supabase Broadcast channel, awaited
-   before the response returns.
+4. API broadcasts the update to the lobby's Supabase Broadcast channel. The topic is
+   `lobby:<code>:<realtimeSecret>` – both sides build it in `lib/lobby-realtime-topic.ts`,
+   and the secret is handed out only by `GET /api/lobby/[code]/realtime-topic`.
 5. Clients reconcile local UI with server snapshot.
 
 Client optimism is allowed for responsiveness, but server state is final.
@@ -72,7 +73,7 @@ Game lifecycle and public availability are managed in `lib/game-catalog.ts`:
 The default registered runtime set is managed in `lib/game-registry.ts`:
 
 - Always registered: `yahtzee`, `guess_the_spy`, `tic_tac_toe`, `rock_paper_scissors`, `memory`, `connect_four`, `alias`, `liars_party`
-- Feature-flagged: `telephone_doodle`, `sketch_and_guess`, `fake_artist` (`lib/feature-flags.ts`, overridable per deployment from the control panel through `lib/runtime-config.ts`)
+- Feature-flagged: `telephone_doodle`, `sketch_and_guess`, `fake_artist` – read from the environment by `lib/feature-flags.ts`. `lib/runtime-config.ts` holds async versions meant to let the control panel override them without a deploy, but nothing imports those yet, so today the environment is the only switch.
 - Bot-supported: `yahtzee`, `tic_tac_toe`, `rock_paper_scissors`, `memory`, `connect_four`
 
 Registered is not the same as public: `liars_party` is registered and playable by lobby code
@@ -93,7 +94,7 @@ Architecture: Supabase Realtime — no separate server process.
 ### Client-side subscription
 
 - `app/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
-  - `lobby:{code}` Broadcast channel (game events)
+  - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events)
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
 - `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
 - `components/ReactionOverlay.tsx` — `reactions:{code}` Broadcast channel (internal)
@@ -124,7 +125,7 @@ This logic is centralized in `lib/lobby-lifecycle.ts` and reused across main and
 
 - server-issued signed guest JWT
 - identity header: `X-Guest-Token`
-- verification path: `lib/guest-auth.ts`, called by the API routes that mutate state
+- verification path: `lib/guest-auth.ts`, reached by most API routes through `getRequestAuthUser` in `lib/request-auth.ts` – on reads as well as writes
 
 ### Secret policy
 

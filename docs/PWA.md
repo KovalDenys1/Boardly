@@ -55,5 +55,7 @@ hand when the brand changes.
 - iOS install prompt is manual (Safari does not support `beforeinstallprompt`)
 - Web push shipped after this issue and is separate from the service worker's caching:
   subscriptions live in the `PushSubscriptions` table via `/api/push-subscriptions`, are sent
-  by `/api/cron/process-notifications`, and need `NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
-  `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+  by `sendPushNotification` in `lib/push-send.ts` – from `/api/cron/turn-reminders` and
+  directly from the friend, invite and achievement paths, not from
+  `/api/cron/process-notifications`, which runs the email queue – and need
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
