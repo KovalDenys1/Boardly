@@ -1,8 +1,14 @@
 import {
   buildInviteLink,
+  documentLoadedAtLobby,
   parseInviteAttribution,
+  readDocumentNavigation,
   stripInviteMarker,
 } from '@/lib/invite-attribution'
+
+const HOST = 'boardly.online'
+const CODE = 'AB12'
+const loadedAtLobby = { url: `https://${HOST}/lobby/${CODE}`, type: 'navigate' }
 
 describe('invite attribution (#920)', () => {
   it('builds a lobby link that carries the share marker', () => {
@@ -10,27 +16,133 @@ describe('invite attribution (#920)', () => {
     expect(buildInviteLink('AB12', 'http://localhost:3000/')).toBe('http://localhost:3000/lobby/AB12?via=invite')
   })
 
-  it('reads the share marker as a share link, whatever the referrer', () => {
+  it('reads the share marker as a share link, whatever the referrer or navigation', () => {
     expect(
-      parseInviteAttribution({ search: '?via=invite', referrer: '', currentHostname: 'boardly.online' })
+      parseInviteAttribution({ code: CODE, search: '?via=invite', referrer: '', currentHostname: HOST, navigation: null })
     ).toEqual({ via: 'share_link' })
     expect(
-      parseInviteAttribution({ search: '?x=1&via=invite', referrer: 'https://boardly.online/', currentHostname: 'boardly.online' })
+      parseInviteAttribution({
+        code: CODE,
+        search: '?x=1&via=invite',
+        referrer: 'https://boardly.online/',
+        currentHostname: HOST,
+        navigation: { url: `https://${HOST}/`, type: 'reload' },
+      })
     ).toEqual({ via: 'share_link' })
   })
 
-  it('falls back to an external referrer', () => {
+  it('falls back to an external referrer when the document was loaded at the lobby URL', () => {
     expect(
-      parseInviteAttribution({ search: '', referrer: 'https://www.discord.com/channels/1', currentHostname: 'boardly.online' })
+      parseInviteAttribution({
+        code: CODE,
+        search: '',
+        referrer: 'https://www.discord.com/channels/1',
+        currentHostname: HOST,
+        navigation: loadedAtLobby,
+      })
     ).toEqual({ via: 'external_referrer', referrerHost: 'discord.com' })
+    // the marker-stripped URL and a trailing slash still describe the same lobby
+    expect(
+      parseInviteAttribution({
+        code: CODE,
+        search: '',
+        referrer: 'https://t.me/share',
+        currentHostname: HOST,
+        navigation: { url: `https://${HOST}/lobby/${CODE}/?tab=chat`, type: 'navigate' },
+      })
+    ).toEqual({ via: 'external_referrer', referrerHost: 't.me' })
+  })
+
+  it('ignores the referrer after a soft navigation from another page', () => {
+    // landed on / from Google, then Quick Play did router.push('/lobby/AB12') – same document
+    expect(
+      parseInviteAttribution({
+        code: CODE,
+        search: '',
+        referrer: 'https://www.google.com/',
+        currentHostname: HOST,
+        navigation: { url: `https://${HOST}/`, type: 'navigate' },
+      })
+    ).toBeNull()
+    // a different lobby's document is not this lobby either
+    expect(
+      parseInviteAttribution({
+        code: CODE,
+        search: '',
+        referrer: 'https://www.google.com/',
+        currentHostname: HOST,
+        navigation: { url: `https://${HOST}/lobby/ZZ99`, type: 'navigate' },
+      })
+    ).toBeNull()
+  })
+
+  it('ignores the referrer on a reload or history traversal', () => {
+    for (const type of ['reload', 'back_forward', 'prerender']) {
+      expect(
+        parseInviteAttribution({
+          code: CODE,
+          search: '',
+          referrer: 'https://www.discord.com/channels/1',
+          currentHostname: HOST,
+          navigation: { url: loadedAtLobby.url, type },
+        })
+      ).toBeNull()
+    }
+  })
+
+  it('ignores the referrer when the navigation entry is unavailable', () => {
+    for (const navigation of [null, undefined, {}, { url: loadedAtLobby.url }, { type: 'navigate' }]) {
+      expect(
+        parseInviteAttribution({
+          code: CODE,
+          search: '',
+          referrer: 'https://www.discord.com/channels/1',
+          currentHostname: HOST,
+          navigation,
+        })
+      ).toBeNull()
+    }
   })
 
   it('is null for a typed code, own navigation or a malformed referrer', () => {
-    expect(parseInviteAttribution({ search: '', referrer: '', currentHostname: 'boardly.online' })).toBeNull()
     expect(
-      parseInviteAttribution({ search: '?via=other', referrer: 'https://www.boardly.online/games', currentHostname: 'boardly.online' })
+      parseInviteAttribution({ code: CODE, search: '', referrer: '', currentHostname: HOST, navigation: loadedAtLobby })
     ).toBeNull()
-    expect(parseInviteAttribution({ search: null, referrer: 'not a url', currentHostname: 'boardly.online' })).toBeNull()
+    expect(
+      parseInviteAttribution({
+        code: CODE,
+        search: '?via=other',
+        referrer: 'https://www.boardly.online/games',
+        currentHostname: HOST,
+        navigation: loadedAtLobby,
+      })
+    ).toBeNull()
+    expect(
+      parseInviteAttribution({ code: CODE, search: null, referrer: 'not a url', currentHostname: HOST, navigation: loadedAtLobby })
+    ).toBeNull()
+  })
+
+  it('matches the lobby path case-insensitively and rejects other paths', () => {
+    expect(documentLoadedAtLobby({ url: `https://${HOST}/lobby/ab12`, type: 'navigate' }, 'AB12')).toBe(true)
+    expect(documentLoadedAtLobby({ url: `https://${HOST}/lobby/AB123`, type: 'navigate' }, 'AB12')).toBe(false)
+    expect(documentLoadedAtLobby({ url: `https://${HOST}/games/lobby/AB12`, type: 'navigate' }, 'AB12')).toBe(false)
+    expect(documentLoadedAtLobby({ url: 'not a url', type: 'navigate' }, 'AB12')).toBe(false)
+  })
+
+  it('reads the Navigation Timing entry and is null without one', () => {
+    const original = performance.getEntriesByType
+    try {
+      performance.getEntriesByType = jest.fn(() => [{ name: loadedAtLobby.url, type: 'navigate' }]) as never
+      expect(readDocumentNavigation()).toEqual({ url: loadedAtLobby.url, type: 'navigate' })
+      performance.getEntriesByType = jest.fn(() => []) as never
+      expect(readDocumentNavigation()).toBeNull()
+      performance.getEntriesByType = jest.fn(() => {
+        throw new Error('no timing')
+      }) as never
+      expect(readDocumentNavigation()).toBeNull()
+    } finally {
+      performance.getEntriesByType = original
+    }
   })
 
   it('strips only the share marker, so a refresh is not a second open', () => {
