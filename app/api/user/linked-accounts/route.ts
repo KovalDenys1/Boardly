@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { clearRoleConnection } from '@/lib/discord/role-connection'
 import {
   AppError,
   AuthenticationError,
@@ -97,6 +98,14 @@ async function deleteLinkedAccountHandler(req: NextRequest) {
 
   if (!account) {
     throw new AppError('Account not linked', 404, 'NOT_FOUND')
+  }
+
+  // Empty the Linked Roles metadata while the token still exists: after the row is gone
+  // there is nothing left to authenticate the write with, and the Discord roles would stay
+  // granted (#939). Never throws; a Discord failure must not keep the account linked.
+  if (provider === 'discord') {
+    const cleared = await clearRoleConnection(user.id)
+    log.info('Discord role connection clear before unlink', { userId: user.id, status: cleared.status })
   }
 
   await prisma.accounts.delete({

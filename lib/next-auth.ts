@@ -53,6 +53,10 @@ export const authOptions: NextAuthOptions = {
         DiscordProvider({
           clientId: process.env.DISCORD_CLIENT_ID,
           clientSecret: process.env.DISCORD_CLIENT_SECRET,
+          // The scope is replaced as a whole string, not merged with the provider default
+          // (`identify email`). `role_connections.write` lets lib/discord/role-connection.ts
+          // write Linked Roles metadata with the user's own token (#939).
+          authorization: { params: { scope: 'identify email role_connections.write' } },
         }),
       ]
       : []),
@@ -172,6 +176,28 @@ export const authOptions: NextAuthOptions = {
                 provider: account.provider,
               })
               return '/suspended'
+            }
+
+            // Refresh the stored OAuth tokens on every sign-in. The adapter's linkAccount
+            // is the only other writer and fires once, when the row is created, so without
+            // this a Discord row linked before `role_connections.write` existed would keep
+            // its legacy scope and its 7-day token forever, and every Linked Roles write
+            // for it would 403 (#939). Only fields the provider actually returned are written.
+            const tokenUpdate: {
+              scope?: string
+              access_token?: string
+              refresh_token?: string
+              expires_at?: number
+            } = {}
+            if (typeof account.scope === 'string' && account.scope.length > 0) tokenUpdate.scope = account.scope
+            if (typeof account.access_token === 'string' && account.access_token.length > 0) tokenUpdate.access_token = account.access_token
+            if (typeof account.refresh_token === 'string' && account.refresh_token.length > 0) tokenUpdate.refresh_token = account.refresh_token
+            if (typeof account.expires_at === 'number') tokenUpdate.expires_at = account.expires_at
+            if (Object.keys(tokenUpdate).length > 0) {
+              await prisma.accounts.update({
+                where: { id: existingAccount.id },
+                data: tokenUpdate,
+              })
             }
 
             // Account already exists - allow sign in

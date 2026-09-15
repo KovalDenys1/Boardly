@@ -2677,6 +2677,31 @@ const en = {
     successBody: 'We read every submission and use it to improve Boardly.',
     close: 'Close',
   },
+  discordLink: {
+    title: 'Link Boardly to Discord',
+    intro: 'Linking lets the Boardly Discord server give you roles based on your account – Premium, Verified Player and Regular.',
+    sharesTitle: 'What Boardly shares with Discord',
+    shares: {
+      premium: 'Whether your Premium is active',
+      gamesPlayed: 'How many games you have finished',
+      memberSince: 'The date your account was created',
+      verified: 'Whether your email is verified',
+    },
+    notShared: 'Nothing else – no email address, no game history, no friends list. Unlinking Discord in your profile removes it all.',
+    relinkTitle: 'Link again to enable roles',
+    relinkBody: 'Your Discord account is linked with an older permission that cannot update roles. Linking again asks Discord for that one permission.',
+    connect: 'Continue to Discord',
+    relink: 'Link again',
+    connecting: 'Opening Discord…',
+    cancel: 'Not now',
+    checking: 'Checking your Discord link…',
+    updating: 'Updating your Discord roles…',
+    doneTitle: 'Linked',
+    done: 'Done – you can close this tab and go back to Discord.',
+    doneHint: 'Roles follow your account from here on: Premium changes the same day, games played every night.',
+    failed: 'Discord did not answer. Try again in a moment.',
+    retry: 'Try again',
+  },
 } as const
 
 export default en

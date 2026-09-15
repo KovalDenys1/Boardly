@@ -1,0 +1,55 @@
+name: Discord Role Sync Cron
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: discord-role-sync-cron
+  cancel-in-progress: false
+
+jobs:
+  trigger-discord-role-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate required secrets
+        env:
+          DISCORD_ROLE_SYNC_CRON_URL: ${{ secrets.DISCORD_ROLE_SYNC_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$DISCORD_ROLE_SYNC_CRON_URL" ]; then
+            echo "Missing required GitHub secret: DISCORD_ROLE_SYNC_CRON_URL"
+            exit 1
+          fi
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing required GitHub secret: CRON_SECRET"
+            exit 1
+          fi
+
+      - name: Trigger Discord role sync
+        env:
+          DISCORD_ROLE_SYNC_CRON_URL: ${{ secrets.DISCORD_ROLE_SYNC_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          RESPONSE_BODY="$(mktemp)"
+
+          HTTP_CODE="$(curl -sS -L -o "$RESPONSE_BODY" -w "%{http_code}" \
+            --max-time 45 \
+            --connect-timeout 10 \
+            --max-redirs 5 \
+            --retry 2 \
+            --retry-all-errors \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Accept: application/json" \
+            "$DISCORD_ROLE_SYNC_CRON_URL")"
+
+          echo "HTTP $HTTP_CODE"
+          cat "$RESPONSE_BODY"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Discord role sync endpoint returned a non-2xx response"
+            exit 1
+          fi
