@@ -1,72 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGameMetadata } from '@/lib/game-seo'
+import GameJsonLd from '../components/GameJsonLd'
 import GameDetailPage from '../components/GameDetailPage'
 
-export const metadata: Metadata = {
-  title: 'Play Rock Paper Scissors Online - Free 2-Player Game',
-  description:
-    'Play Rock Paper Scissors online with a friend for free! Real-time simultaneous picks, live reveal, and instant results. No download needed. Start on Boardly now!',
-  keywords: [
-    'rock paper scissors online',
-    'rock paper scissors multiplayer',
-    'rps game online',
-    'rock paper scissors free',
-    'rock paper scissors browser game',
-    'online rock paper scissors friend',
-    'rps two player online',
-  ],
-  openGraph: {
-    title: 'Play Rock Paper Scissors Online | Boardly',
-    description:
-      'Classic simultaneous-choice game. Pick Rock, Paper, or Scissors — both reveal at the same time. Free, 2 players, no download.',
-    url: 'https://boardly.online/games/rock-paper-scissors',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Play Rock Paper Scissors Online | Boardly',
-    description: 'Real-time rock paper scissors in your browser. Pick, reveal, win. Free, no download.',
-  },
-  alternates: {
-    canonical: 'https://boardly.online/games/rock-paper-scissors',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
-
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: 'Rock Paper Scissors', item: 'https://boardly.online/games/rock-paper-scissors' },
-  ],
-}
-
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'VideoGame',
-  name: 'Rock Paper Scissors',
-  description:
-    'Classic two-player simultaneous-choice game. Both players pick Rock, Paper, or Scissors at the same time. Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
-  url: 'https://boardly.online/games/rock-paper-scissors',
-  image: 'https://boardly.online/opengraph-image',
-  genre: ['Casual Game', 'Multiplayer', 'Strategy'],
-  numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 2 },
-  playMode: 'MultiPlayer',
-  applicationCategory: 'Game',
-  operatingSystem: 'Any (Browser)',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+export const metadata: Metadata = buildGameMetadata('rps')
 
 export default function RockPaperScissorsGamePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <GameJsonLd gameId="rps" />
       <GameDetailPage
         gameName="Rock Paper Scissors"
         title="Play Rock Paper Scissors Online"

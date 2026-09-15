@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import sitemap from '@/app/sitemap'
+import { getCatalogGames } from '@/lib/game-catalog'
+import { getGameCanonical } from '@/lib/game-seo'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { ROUTE_UPDATED } from '@/lib/route-dates'
 
@@ -41,9 +43,23 @@ describe('sitemap (#922)', () => {
 
   it('gives every URL a self canonical on its own page, none on the root layout', () => {
     expect(read('app/layout.tsx')).not.toMatch(/canonical:/)
+    // #929: a game page's canonical comes from its catalog entry, so the page
+    // names its game and lib/game-seo.ts builds the URL. Everything else still
+    // carries the literal.
+    const gameIdByRoute = new Map(
+      getCatalogGames()
+        .filter((game) => game.seo && game.route)
+        .map((game) => [game.route!.replace(/\/lobbies$/, ''), game.id])
+    )
     for (const entry of entries) {
       const route = pathOf(entry.url)
       const source = read(route === '/' ? 'app/page.tsx' : `app${route}/page.tsx`)
+      const gameId = gameIdByRoute.get(route)
+      if (gameId) {
+        expect(source).toContain(`buildGameMetadata('${gameId}'`)
+        expect(getGameCanonical(gameId)).toBe(entry.url)
+        continue
+      }
       const expected = route === '/' ? "canonical: '/'" : `canonical: '${BASE}${route}'`
       expect(source).toContain(expected)
     }

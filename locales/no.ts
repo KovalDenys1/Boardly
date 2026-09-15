@@ -468,6 +468,10 @@ const no = {
       title: 'Yatzy',
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
       difficulty: 'Lett',
+      seo: {
+        question: 'Kan du spille Yatzy online gratis med venner?',
+        answer: 'Ja. Opprett en lobby, del den firesifrede koden, og inntil fire spillere spiller i sanntid – gratis, i nettleseren, med et gjestenavn i stedet for en konto. Kort modus har ni poengkategorier, klassisk har alle femten, og en bot kan ta en ledig plass.',
+      },
       ribbon: {
         desc: 'Rull fem terninger, fyll ut poenglisten og jakt de beste kombinasjonene. Spill med venner eller start en rask solo-kamp.',
         tag: 'Terninger',
@@ -524,6 +528,10 @@ const no = {
       name: 'Gjett spionen',
       description: 'Sosialt deduksjonsspill der én spiller er spionen. Finn dem før tiden går ut!',
       difficulty: 'Middels',
+      seo: {
+        question: 'Hvordan spiller du Gjett spionen online?',
+        answer: 'Alle i rommet får det samme hemmelige stedet og en rolle der, bortsett fra én spiller som bare vet at vedkommende er spionen. Dere stiller hverandre spørsmål etter tur til gruppen tar en avstemning – eller spionen gjetter stedet og tar 500 poeng. Tre til ti spillere, gratis, i nettleseren.',
+      },
       ribbon: {
         desc: 'Alle får samme sted bortsett fra spionen. Still spørsmål, lytt nøye og stem.',
         tag: 'Deduksjon',
@@ -579,6 +587,10 @@ const no = {
       name: 'Tre på rad',
       description: 'Enkelt og raskt spill. Få tre på rad for å vinne!',
       difficulty: 'Lett',
+      seo: {
+        question: 'Kan du spille Tre på rad online gratis med en venn?',
+        answer: 'Ja. Del en lobbykode og bytt på å sette merker i 3×3-rutenettet i sanntid, eller legg til en bot på lett, middels eller vanskelig når ingen er tilgjengelig. En lobby spiller én runde med mindre du setter den til best av 3, 5 eller 10. Gratis, i nettleseren.',
+      },
       ribbon: {
         desc: 'En rask klassiker for to. Spill med en venn eller start en rask kamp når du bare har et minutt.',
         tag: 'Strategi',
@@ -689,6 +701,10 @@ const no = {
       name: 'Hukommelse',
       description: 'Finn alle matchende par. Test hukommelsen din!',
       difficulty: 'Lett',
+      seo: {
+        question: 'Kan du spille Hukommelse online med venner?',
+        answer: 'Ja. To til fire spillere deler ett brett i nettleseren: snu to kort når det er din tur, behold paret og fortsett når de matcher, og den som har flest par til slutt vinner. Lett er 4×4 med 8 par, middels 5×4 med 10, vanskelig 6×6 med 18.',
+      },
       ribbon: {
         desc: 'Vend kort, husk posisjoner og match par på lett, middels eller vanskelig brett.',
         tag: 'Kort',
@@ -799,6 +815,10 @@ const no = {
       name: 'Fire på rad',
       description: 'Slipp brikker og vær den første til å koble fire på rad!',
       difficulty: 'Medium',
+      seo: {
+        question: 'Kan du spille Fire på rad online gratis med en venn?',
+        answer: 'Ja. Brettet er sju kolonner ganger seks rader, spilt direkte i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og slipp brikker mot en bot. Gratis, ingenting å installere, og et gjestenavn er all kontoen du trenger.',
+      },
       ribbon: {
         desc: 'En klassisk strategispill for to spillere. Slipp brikker, bygg rekker og utmanøvrer motstanderen.',
         tag: 'Strategi',
@@ -893,6 +913,10 @@ const no = {
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
+      seo: {
+        question: 'Kan du spille Stein, saks, papir online mot en venn?',
+        answer: 'Ja. Begge velger samtidig og valgene vises samtidig, så ingen venter på å se hva den andre gjorde. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig, best av tre eller best av fem. Gratis, i nettleseren.',
+      },
       ribbon: {
         desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
         tag: 'Uformell',
@@ -942,6 +966,10 @@ const no = {
       name: 'Alias-spill',
       description: 'Forklar ord til laget ditt uten å bruke ordet selv!',
       difficulty: 'Middels',
+      seo: {
+        question: 'Kan du spille Alias online med en gjeng gratis?',
+        answer: 'Ja, med fire til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
+      },
       ribbon: {
         desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
         tag: 'Lag',
@@ -1052,6 +1080,10 @@ const no = {
       name: 'Løgnerfest',
       description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
       difficulty: 'Vanskelig',
+      seo: {
+        question: 'Kan du spille Løgnerfest online med en gjeng?',
+        answer: 'Ja, med fire til tolv personer. En spiller kommer med en påstand, sann eller bløff, og den regnes som avslørt bare når et klart flertall utfordrer den – samler du nok avslørte bløffer, er du ute. Det finnes ingen boter: å lese folkene i rommet er hele spillet.',
+      },
       lobbies: {
         title: 'Liar\'s Party',
         subtitle: 'Bli med i et spill eller opprett ditt eget lobby!',
@@ -2409,6 +2441,10 @@ const no = {
     intro: 'Raske svar før du starter et rom, inviterer venner eller spiller som gjest.',
     // Conjunction for the generated game lists in q3 and q4
     listAnd: 'og',
+    q0: {
+      question: 'Hva er Boardly?',
+      answer: 'Boardly er et gratis nettsted for brettspill på boardly.online, der du spiller med venner rett i nettleseren i sanntid – uten nedlasting og uten konto.',
+    },
     q1: {
       question: 'Er Boardly gratis å spille?',
       answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar og regnes om til din lokale valuta ved betaling – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',

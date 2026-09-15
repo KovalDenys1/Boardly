@@ -468,6 +468,10 @@ const en = {
       title: 'Yahtzee',
       description: 'Classic dice game with strategic scoring. Roll five dice to make combinations and score big!',
       difficulty: 'Easy',
+      seo: {
+        question: 'Can you play Yahtzee online for free with friends?',
+        answer: 'Yes. Open a lobby, share the four-digit code, and up to four of you play in real time – free, in the browser, with a guest name instead of an account. Short mode runs nine scoring categories, classic runs all fifteen, and a bot can fill an empty seat.',
+      },
       ribbon: {
         desc: 'Roll five dice, fill the scorecard, and chase the best combinations. You can play with friends or start a quick solo-friendly match.',
         tag: 'Dice',
@@ -524,6 +528,10 @@ const en = {
       name: 'Guess the Spy',
       description: 'Social deduction game where one player is the spy. Find them before time runs out!',
       difficulty: 'Medium',
+      seo: {
+        question: 'How do you play Guess the Spy online?',
+        answer: 'Everyone in the room gets the same secret location and a role in it, except one player who only knows they are the spy. You take turns asking each other questions until the group calls a vote – or the spy names the location and takes 500 points. Three to ten players, free, in the browser.',
+      },
       ribbon: {
         desc: 'Everyone gets the same location except the spy. Ask questions, listen closely, and vote.',
         tag: 'Deduction',
@@ -579,6 +587,10 @@ const en = {
       name: 'Tic-Tac-Toe',
       description: 'Simple and fast game. Get three in a row to win!',
       difficulty: 'Easy',
+      seo: {
+        question: 'Can you play Tic Tac Toe online with a friend for free?',
+        answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby plays a single round unless you set it to a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
+      },
       ribbon: {
         desc: 'A fast two-player classic. Play with a friend or start a quick game when you only have a minute.',
         tag: 'Strategy',
@@ -689,6 +701,10 @@ const en = {
       name: 'Memory',
       description: 'Find all the matching pairs. Test your memory skills!',
       difficulty: 'Easy',
+      seo: {
+        question: 'Can you play the Memory card game online with friends?',
+        answer: 'Yes. Two to four of you share one board in the browser: flip two cards on your turn, keep the pair and go again when they match, and whoever holds the most pairs at the end wins. Easy is 4×4 with 8 pairs, medium 5×4 with 10, hard 6×6 with 18.',
+      },
       ribbon: {
         desc: 'Flip cards, remember positions, and match pairs across easy, medium, or hard boards.',
         tag: 'Cards',
@@ -799,6 +815,10 @@ const en = {
       name: 'Connect Four',
       description: 'Drop discs and be the first to connect four in a row!',
       difficulty: 'Medium',
+      seo: {
+        question: 'Can you play Connect 4 online for free with a friend?',
+        answer: 'Yes. The board is the standard seven columns by six rows, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and drop discs against a bot. Free, nothing to install, and a guest name is all the account you need.',
+      },
       ribbon: {
         desc: 'A two-player strategy classic. Drop discs, build sequences, and outsmart your opponent.',
         tag: 'Strategy',
@@ -893,6 +913,10 @@ const en = {
       name: 'Rock Paper Scissors',
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
+      seo: {
+        question: 'Can you play Rock Paper Scissors online against a friend?',
+        answer: 'Yes. Both players pick at the same time and the choices reveal together, so nobody waits to see what the other did. Play a friend from a shared lobby code or a bot on easy, medium or hard, best of three or best of five. Free, in the browser.',
+      },
       ribbon: {
         desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
         tag: 'Casual',
@@ -942,6 +966,10 @@ const en = {
       name: 'Alias',
       description: 'Explain words to your team without using the word itself!',
       difficulty: 'Medium',
+      seo: {
+        question: 'Can you play Alias online with a group for free?',
+        answer: 'Yes, with four to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
+      },
       ribbon: {
         desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
         tag: 'Team',
@@ -1052,6 +1080,10 @@ const en = {
       name: 'Liar\'s Party',
       description: 'Bluff, read the room, and catch the best liars before they fool everyone.',
       difficulty: 'Hard',
+      seo: {
+        question: "Can you play Liar's Party online with a group?",
+        answer: 'Yes, with four to twelve people. One player makes a claim, true or bluffed, and it only counts as caught when a strict majority challenges it – collect enough caught bluffs and you are out. There are no bots: reading the people in the room is the whole game.',
+      },
       lobbies: {
         title: 'Liar\'s Party',
         subtitle: 'Join a game or create your own lobby!',
@@ -2421,6 +2453,10 @@ const en = {
     intro: 'Quick answers before you start a room, invite friends, or play as a guest.',
     // Conjunction for the generated game lists in q3 and q4
     listAnd: 'and',
+    q0: {
+      question: 'What is Boardly?',
+      answer: 'Boardly is a free online board games site at boardly.online, where you play with friends in the browser in real time – no download and no account needed.',
+    },
     q1: {
       question: 'Is Boardly free to play?',
       answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price that is converted to your local currency at checkout – for extras like replays, custom lobby themes and full stats, and free players may see ads.',
