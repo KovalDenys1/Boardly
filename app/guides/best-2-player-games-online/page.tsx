@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, type GuideFaqItem } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -53,7 +53,8 @@ const breadcrumbJsonLd = {
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
  * array. Until #923 the schema was here and the answers were on no part of the
- * page, which is what Google calls hidden structured data.
+ * page, which is what Google calls hidden structured data; #964 moved the node
+ * itself behind `buildGuideFaqJsonLd` so every guide is built the same way.
  */
 const faq: GuideFaqItem[] = [
   {
@@ -78,19 +79,11 @@ const faq: GuideFaqItem[] = [
   },
   {
     question: 'Can I play on my own if my friend is not around?',
-    answer: 'Tic Tac Toe and Connect Four both have a bot with three difficulty levels, so a solo round is always available. Memory and Yahtzee can be played solo as practice, but they are built for a second person on the other side of the board.',
+    answer: 'Yes, against a bot: all four have one, on easy, medium and hard. Tic Tac Toe and Connect Four are the closest to the real thing, because a bot plays them exactly as a person would. The Memory bot is playing the same game of recall you are, and Yahtzee against a bot is really a race for the best scorecard.',
   },
 ]
 
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faq.map(({ question, answer }) => ({
-    '@type': 'Question',
-    name: question,
-    acceptedAnswer: { '@type': 'Answer', text: answer },
-  })),
-}
+const faqJsonLd = buildGuideFaqJsonLd(faq)
 
 const games = [
   {
@@ -112,7 +105,7 @@ const games = [
     tagline: 'Best for: Competitive matching · 5–10 min · Memory & attention',
     href: '/games/memory',
     guideHref: '/guides/how-to-play-memory-card-game-online',
-    why: 'Flip cards, find pairs, beat your opponent. Both players see the same board — when your opponent misses a pair, you see exactly where it is. Three difficulty levels: Easy (8 pairs), Medium (12 pairs), Hard (15 pairs).',
+    why: 'Flip cards, find pairs, beat your opponent. Both players see the same board — when your opponent misses a pair, you see exactly where it is. Three difficulty levels: Easy (4×4, 8 pairs), Medium (5×4, 10 pairs), Hard (6×6, 18 pairs).',
     tip: 'Pay attention when your opponent flips — their misses are hints for your next turn.',
   },
   {
@@ -123,7 +116,7 @@ const games = [
     tagline: 'Best for: Tactical head to head · 3–5 min · Planning ahead',
     href: '/games/connect-four',
     guideHref: '/guides/how-to-play-connect-four-online',
-    why: 'The only game in the catalogue built for exactly two people. Drop a disc, block your opponent, get four in a row. It is the shortest game here that still punishes a careless move, which makes it the best of the four for a long rematch series.',
+    why: 'Two seats, no dice, and nothing hidden from either of you. Drop a disc, block your opponent, get four in a row. It is the shortest game here that still punishes a careless move, which makes it the best of the four for a long rematch series.',
     tip: 'Play the middle column first – it belongs to more winning lines than any other column on the board.',
   },
   {

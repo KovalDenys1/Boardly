@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -59,7 +59,7 @@ const games = [
     best: 'Groups of 5 or more who want laughs and arguments',
   },
   {
-    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '4–16 players', href: '/games/alias',
+    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '3–16 players', href: '/games/alias',
     why: 'Split into two teams and race to guess words from your teammate\'s descriptions. High energy, fast-paced, and gets louder as the night goes on. Works great when you have a bigger group to split.',
     best: 'Competitive groups, team-based fun, 6+ players',
   },
@@ -89,12 +89,12 @@ const groupSizes = [
   {
     size: '3 players',
     pick: 'Guess the Spy, Yahtzee, Memory',
-    why: 'Three is the minimum for Guess the Spy and it plays tighter than a big table: every question counts and the spy has nowhere to hide. Yahtzee at three runs 20–25 minutes.',
+    why: 'Three is the minimum for Guess the Spy and it plays tighter than a big table: every question counts and the spy has nowhere to hide. Yahtzee at three runs 20–25 minutes, and Alias takes three as well – each of you is your own team.',
   },
   {
     size: '4–6 players',
     pick: 'Alias, Guess the Spy',
-    why: 'The sweet spot for a party. Four is the smallest Alias lobby and enough for two teams, and Guess the Spy at five or six gives the spy room to bluff without the round dragging.',
+    why: 'The sweet spot for a party. Four is the smallest Alias lobby that splits into two teams, and Guess the Spy at five or six gives the spy room to bluff without the round dragging.',
   },
   {
     size: '7 or more',
@@ -103,11 +103,46 @@ const groupSizes = [
   },
 ]
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'What can we play with exactly three people?',
+    answer: 'Guess the Spy works at three and is sharper than it sounds – with nobody to hide behind, every question a player asks is evidence. Yahtzee and Memory also seat three, and both finish fast enough that the loser gets a rematch. Alias takes three too, played as three teams of one with the describer rotating, though it is a livelier game once there are enough of you for two proper teams.',
+  },
+  {
+    question: 'Which of these is the best online party game?',
+    answer: 'Alias, once you have six or more people. Two teams, a word to describe, a clock running – it is the loudest game on the list and the one that needs the least explaining. Guess the Spy is the better opener when the group is still warming up.',
+  },
+  {
+    question: 'Do we need a video call to play?',
+    answer: 'No. Guess the Spy and Alias are better with voice, because the whole game is people talking, and any call works – Zoom, Discord, Meet, a group phone call. Yahtzee, Memory and Connect Four need no voice at all; the in-game chat is enough.',
+  },
+  {
+    question: 'Does everyone need an account?',
+    answer: 'No. The host opens a lobby and shares the link, and everyone else joins as a guest with a name they type in. An account only buys you a saved profile and stats, and nobody needs one to sit down at the table.',
+  },
+  {
+    question: 'How long does an online game night usually run?',
+    answer: 'Two hours covers a good one: a couple of rounds of Guess the Spy to start, a longer stretch of Alias once everyone is warm, and a short game while people drop off. Switching every two or three rounds keeps the energy up better than one long session of anything.',
+  },
+  {
+    question: 'What if someone drops out halfway through?',
+    answer: 'Pick the next game around the people still there rather than waiting. Connect Four and Memory are the useful fallbacks – they seat two to four, start instantly, and give a shrinking group something to do without restarting the night.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function BestOnlineGamesForGameNightGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ glyph: 'party' }}
@@ -205,32 +240,7 @@ export default function BestOnlineGamesForGameNightGuide() {
         </GuideSection>
 
         <GuideSection title="Game Night Questions">
-          <GuideFaqList items={[
-            {
-              question: 'What can we play with exactly three people?',
-              answer: 'Guess the Spy works at three and is sharper than it sounds – with nobody to hide behind, every question a player asks is evidence. Yahtzee and Memory also seat three, and both finish fast enough that the loser gets a rematch. Alias is played in teams and its lobby seats four to sixteen, so keep it for when a fourth arrives.',
-            },
-            {
-              question: 'Which of these is the best online party game?',
-              answer: 'Alias, once you have six or more people. Two teams, a word to describe, a clock running – it is the loudest game on the list and the one that needs the least explaining. Guess the Spy is the better opener when the group is still warming up.',
-            },
-            {
-              question: 'Do we need a video call to play?',
-              answer: 'No. Guess the Spy and Alias are better with voice, because the whole game is people talking, and any call works – Zoom, Discord, Meet, a group phone call. Yahtzee, Memory and Connect Four need no voice at all; the in-game chat is enough.',
-            },
-            {
-              question: 'Does everyone need an account?',
-              answer: 'No. The host opens a lobby and shares the link, and everyone else joins as a guest with a name they type in. An account only buys you a saved profile and stats, and nobody needs one to sit down at the table.',
-            },
-            {
-              question: 'How long does an online game night usually run?',
-              answer: 'Two hours covers a good one: a couple of rounds of Guess the Spy to start, a longer stretch of Alias once everyone is warm, and a short game while people drop off. Switching every two or three rounds keeps the energy up better than one long session of anything.',
-            },
-            {
-              question: 'What if someone drops out halfway through?',
-              answer: 'Pick the next game around the people still there rather than waiting. Connect Four and Memory are the useful fallbacks – they seat two to four, start instantly, and give a shrinking group something to do without restarting the night.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

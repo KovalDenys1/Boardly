@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
@@ -46,11 +46,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How big is the Connect Four board?',
+    answer: 'Seven columns by six rows, 42 spaces in all. You choose a column rather than a square, and the disc falls to the lowest empty row in it – which is why the move you would like to make is often not available yet.',
+  },
+  {
+    question: 'Who goes first, and does it matter?',
+    answer: 'The lobby host plays first. It matters: with perfect play the first player wins, which is why the opening move in the middle column is worth so much. Play a series and alternate who starts if you want it even.',
+  },
+  {
+    question: 'What happens if the board fills up?',
+    answer: 'If all 42 spaces are taken and nobody has four in a row, the game is a draw and neither player scores. Draws are rare between players of different strength and common between two careful ones.',
+  },
+  {
+    question: 'Can I play Connect Four against the computer?',
+    answer: 'Yes, on three difficulty levels. The easy bot drops into a random open column, and the hard one searches six moves ahead and will punish a column you drop without checking the diagonals.',
+  },
+  {
+    question: 'Is there a time limit on a turn?',
+    answer: 'Only if the host sets one. The lobby offers a turn timer of 30, 60, 90 or 120 seconds, and with it off a turn takes as long as it takes.',
+  },
+  {
+    question: 'Do diagonal lines count?',
+    answer: 'Yes, in both directions, and they are what most lost games come down to. A vertical or horizontal threat is easy to see; a diagonal builds one disc at a time across four different columns and is easy to miss.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function HowToPlayConnectFourGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'connect-four' }}
@@ -162,32 +197,7 @@ export default function HowToPlayConnectFourGuide() {
         </GuideSection>
 
         <GuideSection title="Connect Four Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How big is the Connect Four board?',
-              answer: 'Seven columns by six rows, 42 spaces in all. You choose a column rather than a square, and the disc falls to the lowest empty row in it – which is why the move you would like to make is often not available yet.',
-            },
-            {
-              question: 'Who goes first, and does it matter?',
-              answer: 'The lobby host plays first. It matters: with perfect play the first player wins, which is why the opening move in the middle column is worth so much. Play a series and alternate who starts if you want it even.',
-            },
-            {
-              question: 'What happens if the board fills up?',
-              answer: 'If all 42 spaces are taken and nobody has four in a row, the game is a draw and neither player scores. Draws are rare between players of different strength and common between two careful ones.',
-            },
-            {
-              question: 'Can I play Connect Four against the computer?',
-              answer: 'Yes, on three difficulty levels. The easy bot drops into a random open column, and the hard one searches six moves ahead and will punish a column you drop without checking the diagonals.',
-            },
-            {
-              question: 'Is there a time limit on a turn?',
-              answer: 'Only if the host sets one. The lobby offers a turn timer of 30, 60, 90 or 120 seconds, and with it off a turn takes as long as it takes.',
-            },
-            {
-              question: 'Do diagonal lines count?',
-              answer: 'Yes, in both directions, and they are what most lost games come down to. A vertical or horizontal threat is easy to see; a diagonal builds one disc at a time across four different columns and is easy to miss.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

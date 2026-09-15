@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -45,11 +45,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many ways are there to win?',
+    answer: 'Eight: three rows, three columns and two diagonals. The centre square sits on four of them, each corner on three, and each edge square on only two, which is the whole of the opening theory.',
+  },
+  {
+    question: 'Can you always win at Tic Tac Toe?',
+    answer: 'No. Two players who both know what they are doing draw every time – the game is solved. What you can do is never lose, by taking the centre when it is free and answering every two-in-a-row before building your own.',
+  },
+  {
+    question: 'Why do so many games end in a draw?',
+    answer: 'Because the board is small enough that both players can see every threat. Draws are the normal result between equals, which is why a best-of-three or best-of-five series is the usual way to settle it.',
+  },
+  {
+    question: 'Can I play against the computer?',
+    answer: 'Yes, on three levels. The easy bot misses threats, the medium one blocks but does not plan, and the hard one plays the solved game – against it a draw is the best result available to anyone.',
+  },
+  {
+    question: 'How long does a round take?',
+    answer: 'Under a minute. That is what makes it the best game here for a rematch: the two of you can play a five-round series in the time a single round of something larger would take.',
+  },
+  {
+    question: 'Does X always go first?',
+    answer: 'X opens the first round, and going first is a real advantage in a game this small. It does not stack up over a series, though: the game hands the opening move to the other mark each round, so a best-of-three or best-of-five is already even without anyone swapping seats.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function HowToPlayTicTacToeGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'tic-tac-toe' }}
@@ -79,7 +114,7 @@ export default function HowToPlayTicTacToeGuide() {
 
         <GuideSection title="The Rules">
           <GuideSteps steps={[
-            { title: 'Choose your mark', detail: 'One player is X, the other is O. X always goes first.' },
+            { title: 'Choose your mark', detail: 'One player is X, the other is O. X opens the first round; in a best-of series the two marks take it in turns to start.' },
             { title: 'Take turns', detail: 'Players alternate placing their mark in any empty cell on the 3×3 grid.' },
             { title: 'Win with three in a row', detail: 'Get three of your marks in a row — horizontally, vertically, or diagonally — and you win.' },
             { title: 'Draw', detail: 'If all 9 cells are filled and neither player has three in a row, the game is a draw. With perfect play from both sides, every game ends in a draw.' },
@@ -131,32 +166,7 @@ export default function HowToPlayTicTacToeGuide() {
         </GuideSection>
 
         <GuideSection title="Tic Tac Toe Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How many ways are there to win?',
-              answer: 'Eight: three rows, three columns and two diagonals. The centre square sits on four of them, each corner on three, and each edge square on only two, which is the whole of the opening theory.',
-            },
-            {
-              question: 'Can you always win at Tic Tac Toe?',
-              answer: 'No. Two players who both know what they are doing draw every time – the game is solved. What you can do is never lose, by taking the centre when it is free and answering every two-in-a-row before building your own.',
-            },
-            {
-              question: 'Why do so many games end in a draw?',
-              answer: 'Because the board is small enough that both players can see every threat. Draws are the normal result between equals, which is why a best-of-three or best-of-five series is the usual way to settle it.',
-            },
-            {
-              question: 'Can I play against the computer?',
-              answer: 'Yes, on three levels. The easy bot misses threats, the medium one blocks but does not plan, and the hard one plays the solved game – against it a draw is the best result available to anyone.',
-            },
-            {
-              question: 'How long does a round take?',
-              answer: 'Under a minute. That is what makes it the best game here for a rematch: the two of you can play a five-round series in the time a single round of something larger would take.',
-            },
-            {
-              question: 'Does X always go first?',
-              answer: 'Yes. X is the lobby host and moves first, which is a real advantage in a single round. Alternate hosting between rounds, or play an even number of them, if you want the series to be fair.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

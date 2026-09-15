@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -45,11 +45,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many players can play Memory online?',
+    answer: 'Two to four. Two is the sharpest version, because every card your opponent turns over is information you get for free. At four the board changes so much between your turns that luck starts to matter more than memory.',
+  },
+  {
+    question: 'What is the difference between the three difficulty levels?',
+    answer: 'Only the size of the board. Easy is a 4×4 grid with 8 pairs, Medium is 5×4 with 10, and Hard is 6×6 with 18. More pairs means more positions to hold in your head, so Hard rewards attention where Easy rewards speed.',
+  },
+  {
+    question: 'How long does a game take?',
+    answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Nothing is timed, so a group that talks between turns will take longer, and there is no penalty for it.',
+  },
+  {
+    question: 'Can I play Memory against a computer?',
+    answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about nine times in ten, which is roughly a very attentive human and a fair test of your own recall.',
+  },
+  {
+    question: 'Does the game always give the same cards?',
+    answer: 'No. The deck is shuffled for every game, so a board you have just cleared is no help in the next one. What carries over is the habit of scanning the whole grid before your first flip.',
+  },
+  {
+    question: 'Do I need an account to play?',
+    answer: 'No. Open a lobby, share the link, and the other players join as guests by typing a name. An account only adds a saved profile and a record of your results.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function HowToPlayMemoryGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'memory' }}
@@ -123,32 +158,7 @@ export default function HowToPlayMemoryGuide() {
         </GuideSection>
 
         <GuideSection title="Memory Card Game Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How many players can play Memory online?',
-              answer: 'Two to four. Two is the sharpest version, because every card your opponent turns over is information you get for free. At four the board changes so much between your turns that luck starts to matter more than memory.',
-            },
-            {
-              question: 'What is the difference between the three difficulty levels?',
-              answer: 'Only the size of the board. Easy is a 4×4 grid with 8 pairs, Medium is 5×4 with 10, and Hard is 6×6 with 18. More pairs means more positions to hold in your head, so Hard rewards attention where Easy rewards speed.',
-            },
-            {
-              question: 'How long does a game take?',
-              answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Nothing is timed, so a group that talks between turns will take longer, and there is no penalty for it.',
-            },
-            {
-              question: 'Can I play Memory against a computer?',
-              answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about nine times in ten, which is roughly a very attentive human and a fair test of your own recall.',
-            },
-            {
-              question: 'Does the game always give the same cards?',
-              answer: 'No. The deck is shuffled for every game, so a board you have just cleared is no help in the next one. What carries over is the habit of scanning the whole grid before your first flip.',
-            },
-            {
-              question: 'Do I need an account to play?',
-              answer: 'No. Open a lobby, share the link, and the other players join as guests by typing a name. An account only adds a saved profile and a record of your results.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

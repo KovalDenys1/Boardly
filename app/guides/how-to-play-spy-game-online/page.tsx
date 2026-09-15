@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -46,11 +46,46 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many people do I need?',
+    answer: 'Three at the minimum and ten at the most. Three is tighter than it sounds, because there is nowhere for the spy to hide behind other people, and five or six is where the bluffing gets interesting.',
+  },
+  {
+    question: 'Can I play with a bot instead of a person?',
+    answer: 'No, and that is deliberate. The whole game is people reading each other – a bot asking a canned question tells you nothing, and a bot holding the spy role would empty the round. Invite a third person instead.',
+  },
+  {
+    question: 'What happens if the group accuses the wrong player?',
+    answer: 'The round goes to the spy, and so does a tied vote, which eliminates nobody. That is the cost that keeps the questioning honest: a group that accuses on a hunch loses as surely as one that never accuses at all.',
+  },
+  {
+    question: 'Can the spy win after being suspected?',
+    answer: 'Yes, but only while the questions are still running. The spy names the location from the list, and a correct guess takes the round however the table was leaning. It is a real bet: a wrong guess ends the round for the group there and then, and once somebody opens the vote the guess is no longer available at all.',
+  },
+  {
+    question: 'How specific should my questions be?',
+    answer: 'Specific enough that a person who knows the location can answer naturally, vague enough that a person who does not cannot work it out from the question. That tension is the entire skill of the game.',
+  },
+  {
+    question: 'How long is a round?',
+    answer: 'Five to eight minutes, which is short enough to play several in a row. Rotating who the spy is across a few rounds is the usual way to play, and it is also how a quiet player stops looking suspicious by default.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function HowToPlaySpyGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'spy' }}
@@ -91,11 +126,11 @@ export default function HowToPlaySpyGuide() {
             },
             {
               title: 'Anyone can call a vote',
-              detail: 'At any time, a player can call a vote to accuse someone of being the spy. If the majority agrees, the accused is revealed. Accusing the wrong person loses the round for the group.',
+              detail: 'Any player can close the questions and open the vote. Everyone votes at once, and the player with the most votes is revealed – a tie eliminates nobody. Naming anyone but the spy loses the round for the group.',
             },
             {
               title: 'The spy can guess the location',
-              detail: 'Before being voted out, the spy can declare "I know the location!" and make a guess. A correct guess wins the round for the spy — even if they were about to be exposed.',
+              detail: 'While the questions are still running, the spy can declare "I know the location!" and pick it from the list. A correct guess wins the round outright; a wrong one ends the round for the group. Once the vote is open the guess is gone.',
             },
           ]} />
         </GuideSection>
@@ -114,37 +149,12 @@ export default function HowToPlaySpyGuide() {
             { tip: 'Give confident, vague answers', detail: "The worst thing you can do is sound unsure. Be assertive — 'It's always busier than people expect' works for many locations." },
             { tip: 'Eliminate locations fast', detail: "Listen closely to others' questions and answers — they're leaking information. By round 3–4, you should be narrowing down your guesses." },
             { tip: 'Accuse someone early', detail: 'Counterintuitive, but voting to accuse another player shifts suspicion away from you. Pick someone quiet and call them out.' },
-            { tip: 'Know when to guess', detail: "If the vote is swinging toward you and you have a strong guess, fire early. A correct location guess wins even if you're caught." },
+            { tip: 'Know when to guess', detail: "Your window closes the moment somebody opens the vote, so name the location while the questions are still running. Guess right and the round is yours whatever the table thought; guess wrong and you hand it to them." },
           ]} />
         </GuideSection>
 
         <GuideSection title="Guess the Spy Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How many people do I need?',
-              answer: 'Three at the minimum and ten at the most. Three is tighter than it sounds, because there is nowhere for the spy to hide behind other people, and five or six is where the bluffing gets interesting.',
-            },
-            {
-              question: 'Can I play with a bot instead of a person?',
-              answer: 'No, and that is deliberate. The whole game is people reading each other – a bot asking a canned question tells you nothing, and a bot holding the spy role would empty the round. Invite a third person instead.',
-            },
-            {
-              question: 'What happens if the group accuses the wrong player?',
-              answer: 'The round goes to the spy. That is the cost that keeps the questioning honest: a group that accuses on a hunch loses as surely as one that never accuses at all.',
-            },
-            {
-              question: 'Can the spy win after being suspected?',
-              answer: 'Yes. At any point before being voted out the spy can declare that they know the location and name it. A correct guess takes the round even when the vote was already turning against them.',
-            },
-            {
-              question: 'How specific should my questions be?',
-              answer: 'Specific enough that a person who knows the location can answer naturally, vague enough that a person who does not cannot work it out from the question. That tension is the entire skill of the game.',
-            },
-            {
-              question: 'How long is a round?',
-              answer: 'Five to eight minutes, which is short enough to play several in a row. Rotating who the spy is across a few rounds is the usual way to play, and it is also how a quiet player stops looking suspicious by default.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

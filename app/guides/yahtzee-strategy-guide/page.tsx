@@ -102,7 +102,7 @@ export default function YahtzeeStrategyGuide() {
 
         <GuideSection title="Going for Yahtzee — When It Is Worth It">
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            A Yahtzee scores 50 points, and each extra Yahtzee after the first scores 100 bonus points on top. That makes it one of the highest-value plays in the game — but only if you know when to chase it.
+            A Yahtzee scores a flat 50 points and the box fills once. Boardly pays no bonus for a second five of a kind – it has to be scored somewhere else, usually Four of a Kind or Chance. Fifty is still the largest single number on the card, so it is worth chasing, but only from a position that was already going to pay.
           </p>
           <GuideChecklist verdict items={[
             { mark: 'yes', text: 'Go for it — you have 4 of the same number after your first roll' },
@@ -111,7 +111,7 @@ export default function YahtzeeStrategyGuide() {
             { mark: 'no', text: 'Do not bother — you also need the upper section bonus for that number' },
           ]} />
           <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            Keep in mind: if the Yahtzee box is already filled with a zero, extra Yahtzees still earn you 100 bonus points each. So never give up on rolling five of a kind.
+            Keep in mind: once the Yahtzee box is filled – with 50 or with a zero – five of a kind earns nothing extra. Score it as Four of a Kind or Chance, which both take the sum of all five dice, and spend the rest of the game on the bonus instead.
           </p>
         </GuideSection>
 
@@ -135,7 +135,7 @@ export default function YahtzeeStrategyGuide() {
             },
             {
               title: 'Lock in Four of a Kind when you see it',
-              detail: 'Four of a Kind scores the total of all five dice. Four sixes plus any other die is at least 26 points. Do not re-roll hoping for five — the risk is not worth it unless your Yahtzee box is still open.',
+              detail: 'Four of a Kind scores the sum of all five dice, so four sixes plus any other die is at least 25 points. Do not re-roll hoping for five — the risk is not worth it unless your Yahtzee box is still open.',
             },
           ]} />
         </GuideSection>

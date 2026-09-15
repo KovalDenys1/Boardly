@@ -203,6 +203,26 @@ export interface GuideFaqItem {
 }
 
 /**
+ * The FAQPage node for a guide, built from the array `GuideFaqList` renders on
+ * the same page. Google treats an answer that is nowhere on the page as hidden
+ * structured data, so the guides do not get to write the two separately: the
+ * page defines one `faq` array, passes it to `GuideFaqList`, and passes the
+ * same array here (#964). `__tests__/app/guide-faq-schema.test.tsx` fails if a
+ * guide ever splits them again.
+ */
+export function buildGuideFaqJsonLd(items: GuideFaqItem[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  }
+}
+
+/**
  * The questions people actually type, answered in full sentences. A guide that
  * carries FAQPage structured data must render the same text on the page –
  * Google treats schema whose content the visitor cannot see as a violation,

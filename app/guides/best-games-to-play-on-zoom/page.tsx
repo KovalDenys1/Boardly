@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -56,7 +56,7 @@ const games = [
     zoom: 'Ask questions verbally on the call, vote by speaking up',
   },
   {
-    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '4–16 players', href: '/games/alias',
+    rank: 2, gameId: 'alias', accent: 'var(--bd-coral)', name: 'Alias', players: '3–16 players', href: '/games/alias',
     why: 'The Describer talks, the team yells guesses — all of it happens naturally on the call. The browser just handles the words and the score. Great for groups who want something loud and energetic.',
     zoom: 'Describer talks, team shouts guesses — all on the call',
   },
@@ -77,11 +77,42 @@ const games = [
   },
 ]
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'Do I need to share my screen to play?',
+    answer: 'No, and you should not. Everyone opens the lobby link in their own browser and sees their own view of the game. Screen sharing would leak the spy in Guess the Spy and slow every other game down for no gain.',
+  },
+  {
+    question: 'Does this work on Google Meet, Teams or FaceTime?',
+    answer: 'Yes. Nothing here is specific to Zoom – the call only has to carry voice and a chat box you can paste a link into. Where there is no chat box, send the link in a group message instead.',
+  },
+  {
+    question: 'What is the best Zoom game for a big work call?',
+    answer: 'Guess the Spy. It seats up to ten, a round runs five to eight minutes, and it gets people who do not know each other talking without any warm-up. Alias is the better pick if the group is large enough to split into two teams and already knows one another.',
+  },
+  {
+    question: 'Can people join from their phones?',
+    answer: 'Yes. The games run in a mobile browser, so a player on a phone joins from the same link. Put the call on speaker and keep the game in the browser – on a phone the two cannot share the screen.',
+  },
+  {
+    question: 'What happens if someone drops off the call mid-game?',
+    answer: 'They reopen the lobby link and are back in the same game. The lobby stays open, so a dropped connection costs a player a turn rather than the whole round.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function BestGamesToPlayOnZoomGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ glyph: 'laptop' }}
@@ -176,28 +207,7 @@ export default function BestGamesToPlayOnZoomGuide() {
         </GuideSection>
 
         <GuideSection title="Zoom Game Questions">
-          <GuideFaqList items={[
-            {
-              question: 'Do I need to share my screen to play?',
-              answer: 'No, and you should not. Everyone opens the lobby link in their own browser and sees their own view of the game. Screen sharing would leak the spy in Guess the Spy and slow every other game down for no gain.',
-            },
-            {
-              question: 'Does this work on Google Meet, Teams or FaceTime?',
-              answer: 'Yes. Nothing here is specific to Zoom – the call only has to carry voice and a chat box you can paste a link into. Where there is no chat box, send the link in a group message instead.',
-            },
-            {
-              question: 'What is the best Zoom game for a big work call?',
-              answer: 'Guess the Spy. It seats up to ten, a round runs five to eight minutes, and it gets people who do not know each other talking without any warm-up. Alias is the better pick if the group is large enough to split into two teams and already knows one another.',
-            },
-            {
-              question: 'Can people join from their phones?',
-              answer: 'Yes. The games run in a mobile browser, so a player on a phone joins from the same link. Put the call on speaker and keep the game in the browser – on a phone the two cannot share the screen.',
-            },
-            {
-              question: 'What happens if someone drops off the call mid-game?',
-              answer: 'They reopen the lobby link and are back in the same game. The lobby stays open, so a dropped connection costs a player a turn rather than the whole round.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

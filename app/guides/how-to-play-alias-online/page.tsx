@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
@@ -48,19 +48,54 @@ const breadcrumbJsonLd = {
   ],
 }
 
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many players does Alias need?',
+    answer: 'Three to sixteen. Three is the odd one out: there is no team to describe to, so each player is their own team, the describer rotates, and the other two both guess. From four up it is two teams, and six or eight is where it comes alive, because a bigger team means more voices shouting guesses and a describer who has to cut through them.',
+  },
+  {
+    question: 'Do we need a voice call?',
+    answer: 'It is much better with one. Guessing is done out loud and at speed, and typing guesses into a chat box slows the game to the rhythm of the slowest typist. Any call works – the game itself runs in the browser beside it.',
+  },
+  {
+    question: 'What counts as cheating when describing?',
+    answer: 'Saying the word, or any part of it, in any language. Rhymes, letter counts and the first letter are also off – if your team could reconstruct the word from the shape of it rather than the meaning, the clue does not count.',
+  },
+  {
+    question: 'Can I skip a word I cannot describe?',
+    answer: 'You can, but it is not free: a skip takes a point off your team\'s score for the turn, so it is only worth it when the word would otherwise eat more of the clock than one point is worth.',
+  },
+  {
+    question: 'Are there bots for Alias?',
+    answer: 'No. The game is one person describing something to another person, which is exactly what a bot cannot do – a canned clue is not a clue. If you are short a player, pick a game that supports bots instead.',
+  },
+  {
+    question: 'How long does a game last?',
+    answer: 'Three turns for every team, so six turns in a two-team game and about ten minutes at the default 60-second timer, closer to twenty at 120 seconds. The host picks the turn length when creating the lobby, from 30 up to 120 seconds.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
 export default function HowToPlayAliasGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <GuideLayout
         icon={{ game: 'alias' }}
         slug="how-to-play-alias-online"
         title="How to Play Alias Online"
-        subtitle="5 min read · Free to play on Boardly · 4–16 players"
+        subtitle="5 min read · Free to play on Boardly · 3–16 players"
         question="How do you play Alias online?"
-        answer="The group splits into two teams, and on each turn one player describes words on their screen to their own team against the clock without using the word itself – a guessed word is a point and a skipped one costs a point, and after three turns each the higher score wins."
+        answer="The group splits into two teams – or into three teams of one, when exactly three of you play – and on each turn one player describes words on their screen to their own side against the clock without using the word itself, where a guessed word is a point and a skipped one costs a point, and after three turns each the highest score wins."
         breadcrumbLabel="How to Play Alias Online"
         accentColor="var(--bd-coral)"
         cta={{ href: '/games/alias/lobbies', label: 'Play Alias Now', detail: 'Gather your teams and start describing.' }}
@@ -73,7 +108,7 @@ export default function HowToPlayAliasGuide() {
       >
         <GuideSection title="What You Need">
           <GuideChecklist items={[
-            { mark: 'yes', text: '4–16 players split into 2 teams' },
+            { mark: 'yes', text: '3–16 players – two teams from four up, three teams of one at exactly three' },
             { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
             { mark: 'yes', text: 'No account required (guest play available)' },
             { mark: 'yes', text: 'Free — no ads, no download' },
@@ -103,8 +138,8 @@ export default function HowToPlayAliasGuide() {
               detail: 'When the timer runs out, your team scores one point per correct word. Then the other team takes their turn with a new Describer.',
             },
             {
-              title: 'First team to the point goal wins',
-              detail: 'Keep playing rounds until one team hits the score limit. The team with the most points wins.',
+              title: 'Three turns each, then count up',
+              detail: 'There is no score limit to race to. Every team gets three turns, and when the last one ends the highest total wins – two teams level on points finish tied.',
             },
           ]} />
         </GuideSection>
@@ -178,7 +213,7 @@ export default function HowToPlayAliasGuide() {
 
         <GuideSection title="Playing on Boardly">
           <div className="space-y-3 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-            <p><strong style={{ color: 'var(--bd-ink)' }}>Team setup:</strong> Split your group into 2 teams before the game. The game supports 4 to 16 players total.</p>
+            <p><strong style={{ color: 'var(--bd-ink)' }}>Team setup:</strong> Split your group into 2 teams before the game. The game supports 3 to 16 players total, and at exactly three everyone is their own team.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Choose 30, 60, 90, or 120 seconds per turn depending on how fast-paced you want the game.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>No account needed:</strong> Share a lobby link — everyone joins as a guest. Works on any device.</p>
             <p>
@@ -191,32 +226,7 @@ export default function HowToPlayAliasGuide() {
         </GuideSection>
 
         <GuideSection title="Alias Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How many players does Alias need?',
-              answer: 'The lobby seats four to sixteen. Four is two against two and works; six or eight is where it comes alive, because a bigger team means more voices shouting guesses and a describer who has to cut through them.',
-            },
-            {
-              question: 'Do we need a voice call?',
-              answer: 'It is much better with one. Guessing is done out loud and at speed, and typing guesses into a chat box slows the game to the rhythm of the slowest typist. Any call works – the game itself runs in the browser beside it.',
-            },
-            {
-              question: 'What counts as cheating when describing?',
-              answer: 'Saying the word, or any part of it, in any language. Rhymes, letter counts and the first letter are also off – if your team could reconstruct the word from the shape of it rather than the meaning, the clue does not count.',
-            },
-            {
-              question: 'Can I skip a word I cannot describe?',
-              answer: 'You can, but it is not free: a skip takes a point off your team\'s score for the turn, so it is only worth it when the word would otherwise eat more of the clock than one point is worth.',
-            },
-            {
-              question: 'Are there bots for Alias?',
-              answer: 'No. The game is one person describing something to another person, which is exactly what a bot cannot do – a canned clue is not a clue. If you are short a player, pick a game that supports bots instead.',
-            },
-            {
-              question: 'How long does a game last?',
-              answer: 'Six turns, three per team, so about ten minutes at the default 60-second timer and closer to twenty at 120 seconds. The host picks the turn length when creating the lobby, from 30 up to 120 seconds.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>

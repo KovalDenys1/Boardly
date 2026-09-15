@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideTable, GuideFaqList } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideTable, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -47,16 +47,44 @@ const breadcrumbJsonLd = {
   ],
 }
 
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'What is Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee is a classic dice-rolling game where players roll five dice up to three times per turn and try to score the highest by filling 15 scoring categories.' } },
-    { '@type': 'Question', name: 'How many players can play Yahtzee online?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee on Boardly supports 1–4 players. You can play solo against an AI or in real-time multiplayer with up to 3 friends.' } },
-    { '@type': 'Question', name: 'What is the upper section bonus in Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'If your combined score in the upper section totals 63 or more, you earn a 35-point bonus.' } },
-    { '@type': 'Question', name: 'What is a Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number, and it scores a fixed 50 points. The category can only be filled once, so a second Yahtzee has to go somewhere else, usually Chance.' } },
-  ],
-}
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array. The node used to be written out by hand here and carried four
+ * questions the page never showed, one of which also credited a 100-point
+ * bonus for a second Yahtzee that `lib/yahtzee.ts` has never scored (#964).
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many times can I roll the dice on a turn?',
+    answer: 'Three. The first roll takes all five dice; before each of the next two you choose which dice to hold and re-roll the rest. You may also stop early and score whatever you have.',
+  },
+  {
+    question: 'What is the upper section bonus?',
+    answer: 'Thirty-five extra points for scoring 63 or more across Ones through Sixes. Sixty-three is three of a kind in every one of those six categories, so being short in one row means making it up in another.',
+  },
+  {
+    question: 'Do I have to score every turn?',
+    answer: 'Yes. Every turn ends by writing a number into an empty category, even when the roll is bad – that is what a zero in Aces or Chance is for. You cannot skip a turn or reuse a category you have already filled.',
+  },
+  {
+    question: 'Is Large Straight worth more than Small Straight?',
+    answer: 'Yes: 40 against 30. If four dice already run in sequence after the first roll, the large one is usually worth the attempt, because the small one stays available as the fallback.',
+  },
+  {
+    question: 'Can I play Yahtzee on my own?',
+    answer: 'Yes. Yahtzee seats one to four players, so a solo game is a legitimate lobby, and there is a bot on three difficulty levels if you would rather have an opponent.',
+  },
+  {
+    question: 'How long does a game take?',
+    answer: 'Fifteen to twenty minutes for two players and a little longer for four, because everyone fills the same scorecard. It is the longest game on Boardly, and the best one for a session where people want to talk between turns.',
+  },
+  {
+    question: 'What is short mode?',
+    answer: 'A nine-category game: the lower section only, from One Pair through Chance, which cuts about 40% of the length. There is no upper section in short mode, so the 35-point bonus never applies. Pick it when the group wants a game that finishes.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
 
 export default function HowToPlayYahtzeeGuide() {
   return (
@@ -93,7 +121,7 @@ export default function HowToPlayYahtzeeGuide() {
 
         <GuideSection title="The Basic Rules">
           <p className="mb-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed. The game ends when all 15 categories are filled by every player.
+            Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed, and that includes Yahtzee itself: five of a kind scores 50 once, and a second one has to go somewhere else. The game ends when all 15 categories are filled by every player, or all 9 of them in short mode.
           </p>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score totals 63 or more.
@@ -119,7 +147,7 @@ export default function HowToPlayYahtzeeGuide() {
             { name: 'Full House', desc: 'Three of one + two of another', example: '25 pts fixed' },
             { name: 'Small Straight', desc: '4 sequential dice', example: '30 pts fixed' },
             { name: 'Large Straight', desc: '5 sequential dice', example: '40 pts fixed' },
-            { name: 'Yahtzee!', desc: 'All five dice the same', example: '50 pts (100 bonus extra)' },
+            { name: 'Yahtzee!', desc: 'All five dice the same', example: '50 pts fixed' },
             { name: 'Chance', desc: 'Any combo — sum of all 5 dice', example: 'Useful as a dump' },
           ]} />
         </GuideSection>
@@ -135,36 +163,7 @@ export default function HowToPlayYahtzeeGuide() {
         </GuideSection>
 
         <GuideSection title="Yahtzee Questions">
-          <GuideFaqList items={[
-            {
-              question: 'How many times can I roll the dice on a turn?',
-              answer: 'Three. The first roll takes all five dice; before each of the next two you choose which dice to hold and re-roll the rest. You may also stop early and score whatever you have.',
-            },
-            {
-              question: 'What is the upper section bonus?',
-              answer: 'Thirty-five extra points for scoring 63 or more across Ones through Sixes. Sixty-three is three of a kind in every one of those six categories, so being short in one row means making it up in another.',
-            },
-            {
-              question: 'Do I have to score every turn?',
-              answer: 'Yes. Every turn ends by writing a number into an empty category, even when the roll is bad – that is what a zero in Aces or Chance is for. You cannot skip a turn or reuse a category you have already filled.',
-            },
-            {
-              question: 'Is Large Straight worth more than Small Straight?',
-              answer: 'Yes: 40 against 30. If four dice already run in sequence after the first roll, the large one is usually worth the attempt, because the small one stays available as the fallback.',
-            },
-            {
-              question: 'Can I play Yahtzee on my own?',
-              answer: 'Yes. Yahtzee seats one to four players, so a solo game is a legitimate lobby, and there is a bot on three difficulty levels if you would rather have an opponent.',
-            },
-            {
-              question: 'How long does a game take?',
-              answer: 'Fifteen to twenty minutes for two players and a little longer for four, because everyone fills the same scorecard. It is the longest game on Boardly, and the best one for a session where people want to talk between turns.',
-            },
-            {
-              question: 'What is short mode?',
-              answer: 'A nine-category game: the lower section only, from One Pair through Chance, which cuts about 40% of the length. There is no upper section in short mode, so the 35-point bonus never applies. Pick it when the group wants a game that finishes.',
-            },
-          ]} />
+          <GuideFaqList items={faq} />
         </GuideSection>
       </GuideLayout>
     </>
