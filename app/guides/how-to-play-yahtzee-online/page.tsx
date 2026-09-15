@@ -54,7 +54,7 @@ const faqJsonLd = {
     { '@type': 'Question', name: 'What is Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee is a classic dice-rolling game where players roll five dice up to three times per turn and try to score the highest by filling 15 scoring categories.' } },
     { '@type': 'Question', name: 'How many players can play Yahtzee online?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee on Boardly supports 1–4 players. You can play solo against an AI or in real-time multiplayer with up to 3 friends.' } },
     { '@type': 'Question', name: 'What is the upper section bonus in Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'If your combined score in the upper section totals 63 or more, you earn a 35-point bonus.' } },
-    { '@type': 'Question', name: 'What is a Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number. It scores 50 points. Each additional Yahtzee scores a 100-point bonus.' } },
+    { '@type': 'Question', name: 'What is a Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number, and it scores a fixed 50 points. The category can only be filled once, so a second Yahtzee has to go somewhere else, usually Chance.' } },
   ],
 }
 

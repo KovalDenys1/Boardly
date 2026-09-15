@@ -7,6 +7,7 @@ import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { getGameSeo } from '@/lib/game-catalog'
 import PlayVsBotButton from './PlayVsBotButton'
 import GameScreenshot, { hasScreenshot } from './GameScreenshot'
 
@@ -75,6 +76,9 @@ export default function GameDetailPage({
   const { isGuest } = useGuest()
   // The "you can play as a guest" pitch only makes sense for anonymous visitors.
   const showGuestHint = status === 'unauthenticated' && !isGuest
+  // The question this page answers, and its answer, live on the catalog entry
+  // beside the title and description that put the visitor here (#929).
+  const seo = getGameSeo(gameId)
   return (
     <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
@@ -141,6 +145,19 @@ export default function GameDetailPage({
             )}
           </div>
         </section>
+
+        {/* The direct answer, above the facts and every section: a visitor who
+            arrived on "can you play X online free" reads the answer first. */}
+        {seo && (
+          <section className="bd-card mb-8 p-6 sm:p-8">
+            <h2 className="font-display text-2xl font-black text-bd-ink sm:text-3xl">
+              {t(seo.questionKey)}
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base">
+              {t(seo.answerKey)}
+            </p>
+          </section>
+        )}
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {facts.map(({ label, value }) => (
