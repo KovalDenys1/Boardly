@@ -11,7 +11,9 @@ import { Icon } from '@/components/icons'
  * Purpose is internal linking: those two pages are the only ones Google
  * indexes today, and the guides were unreachable from them (GSC 2026-08-29).
  * Lists every guide (#921): the six-slug shortlist left eight guides with no
- * inbound link from a crawled page. Two columns so 14 cards end on a full row.
+ * inbound link from a crawled page. Two columns, and the last card spans both
+ * when the catalog is an odd length, so the strip never ends on a half-empty
+ * row – #923 took the catalog from 14 guides to 11.
  */
 export default function GuidesSection() {
   const { t } = useTranslation()
@@ -40,8 +42,11 @@ export default function GuidesSection() {
       </div>
 
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {ALL_GUIDES.map((guide) => (
-          <li key={guide.slug}>
+        {ALL_GUIDES.map((guide, index) => (
+          <li
+            key={guide.slug}
+            className={index === ALL_GUIDES.length - 1 && ALL_GUIDES.length % 2 === 1 ? 'sm:col-span-2' : undefined}
+          >
             <Link
               href={`/guides/${guide.slug}`}
               className="bd-card group flex h-full items-start gap-3 p-4 transition-transform hover:-translate-y-0.5"

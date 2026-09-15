@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -54,8 +54,11 @@ export default function HowToPlaySpyGuide() {
 
       <GuideLayout
         icon={{ game: 'spy' }}
+        slug="how-to-play-spy-game-online"
         title="How to Play Guess the Spy Online"
-        subtitle="4 min read · Free to play on Boardly · 3–10 players"
+        subtitle="5 min read · Free to play on Boardly · 3–10 players"
+        question="How do you play Guess the Spy online?"
+        answer="Everyone but one player is shown the same secret location, and the group asks each other questions until it can vote out the player who does not know it – while the spy listens for the answer and can win outright by naming the location first."
         breadcrumbLabel="How to Play Guess the Spy"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games/spy/lobbies', label: 'Play Guess the Spy', detail: 'Gather 3–10 friends and try it now.' }}
@@ -63,9 +66,8 @@ export default function HowToPlaySpyGuide() {
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
           { href: '/guides/how-to-play-alias-online', label: 'How to Play Alias Online' },
-          { href: '/guides/best-3-player-games-online', label: 'Best 3 Player Games Online — Free, No Download' },
+          { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
         ]}
       >
         <GuideSection title="Game Setup">
@@ -113,6 +115,35 @@ export default function HowToPlaySpyGuide() {
             { tip: 'Eliminate locations fast', detail: "Listen closely to others' questions and answers — they're leaking information. By round 3–4, you should be narrowing down your guesses." },
             { tip: 'Accuse someone early', detail: 'Counterintuitive, but voting to accuse another player shifts suspicion away from you. Pick someone quiet and call them out.' },
             { tip: 'Know when to guess', detail: "If the vote is swinging toward you and you have a strong guess, fire early. A correct location guess wins even if you're caught." },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Guess the Spy Questions">
+          <GuideFaqList items={[
+            {
+              question: 'How many people do I need?',
+              answer: 'Three at the minimum and ten at the most. Three is tighter than it sounds, because there is nowhere for the spy to hide behind other people, and five or six is where the bluffing gets interesting.',
+            },
+            {
+              question: 'Can I play with a bot instead of a person?',
+              answer: 'No, and that is deliberate. The whole game is people reading each other – a bot asking a canned question tells you nothing, and a bot holding the spy role would empty the round. Invite a third person instead.',
+            },
+            {
+              question: 'What happens if the group accuses the wrong player?',
+              answer: 'The round goes to the spy. That is the cost that keeps the questioning honest: a group that accuses on a hunch loses as surely as one that never accuses at all.',
+            },
+            {
+              question: 'Can the spy win after being suspected?',
+              answer: 'Yes. At any point before being voted out the spy can declare that they know the location and name it. A correct guess takes the round even when the vote was already turning against them.',
+            },
+            {
+              question: 'How specific should my questions be?',
+              answer: 'Specific enough that a person who knows the location can answer naturally, vague enough that a person who does not cannot work it out from the question. That tension is the entire skill of the game.',
+            },
+            {
+              question: 'How long is a round?',
+              answer: 'Five to eight minutes, which is short enough to play several in a row. Rotating who the spy is across a few rounds is the usual way to play, and it is also how a quiet player stops looking suspicious by default.',
+            },
           ]} />
         </GuideSection>
       </GuideLayout>

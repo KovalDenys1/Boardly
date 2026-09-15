@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -53,8 +53,11 @@ export default function HowToPlayTicTacToeGuide() {
 
       <GuideLayout
         icon={{ game: 'tic-tac-toe' }}
+        slug="how-to-play-tic-tac-toe-online"
         title="How to Play Tic Tac Toe Online"
-        subtitle="4 min read · Free to play on Boardly · 2 players or vs AI"
+        subtitle="5 min read · Free to play on Boardly · 2 players or vs AI"
+        question="How do you play Tic Tac Toe online?"
+        answer="Two players take turns claiming squares on a 3×3 grid, X first, and whoever gets three of their own mark in a row – along one of the three rows, three columns or two diagonals – wins the round."
         breadcrumbLabel="How to Play Tic Tac Toe Online"
         accentColor="var(--bd-coral)"
         cta={{ href: '/games/tic-tac-toe/lobbies', label: 'Play Tic Tac Toe Now', detail: 'Ready to put your strategy to the test?' }}
@@ -125,6 +128,35 @@ export default function HowToPlayTicTacToeGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs Friend:</strong> Share a lobby link and play in real time. No account needed for either player.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Match mode:</strong> Play a series of rounds to determine the overall winner — best of 3 or best of 5.</p>
           </div>
+        </GuideSection>
+
+        <GuideSection title="Tic Tac Toe Questions">
+          <GuideFaqList items={[
+            {
+              question: 'How many ways are there to win?',
+              answer: 'Eight: three rows, three columns and two diagonals. The centre square sits on four of them, each corner on three, and each edge square on only two, which is the whole of the opening theory.',
+            },
+            {
+              question: 'Can you always win at Tic Tac Toe?',
+              answer: 'No. Two players who both know what they are doing draw every time – the game is solved. What you can do is never lose, by taking the centre when it is free and answering every two-in-a-row before building your own.',
+            },
+            {
+              question: 'Why do so many games end in a draw?',
+              answer: 'Because the board is small enough that both players can see every threat. Draws are the normal result between equals, which is why a best-of-three or best-of-five series is the usual way to settle it.',
+            },
+            {
+              question: 'Can I play against the computer?',
+              answer: 'Yes, on three levels. The easy bot misses threats, the medium one blocks but does not plan, and the hard one plays the solved game – against it a draw is the best result available to anyone.',
+            },
+            {
+              question: 'How long does a round take?',
+              answer: 'Under a minute. That is what makes it the best game here for a rematch: the two of you can play a five-round series in the time a single round of something larger would take.',
+            },
+            {
+              question: 'Does X always go first?',
+              answer: 'Yes. X is the lobby host and moves first, which is a real advantage in a single round. Alternate hosting between rounds, or play an even number of them, if you want the series to be fair.',
+            },
+          ]} />
         </GuideSection>
       </GuideLayout>
     </>

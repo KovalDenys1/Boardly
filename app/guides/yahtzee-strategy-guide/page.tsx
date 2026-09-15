@@ -54,15 +54,18 @@ export default function YahtzeeStrategyGuide() {
 
       <GuideLayout
         icon={{ glyph: 'trophy' }}
+        slug="yahtzee-strategy-guide"
         title="Yahtzee Strategy Guide — How to Win More Often"
         subtitle="6 min read · Strategy tips for all skill levels · Free on Boardly"
+        question="What is the best strategy for winning at Yahtzee?"
+        answer="Protect the 35-point upper bonus first, treat the low-value categories as the place to put a bad roll rather than something to chase, and decide what to keep by what the whole scorecard still needs – not by what this one roll looks like."
         breadcrumbLabel="Yahtzee Strategy Guide"
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Put these strategies to the test.' }}
         related={[
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online — Full Rules' },
           { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
-          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
         ]}
       >

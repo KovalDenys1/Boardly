@@ -35,6 +35,33 @@ const nextConfig = {
         destination: 'https://boardly.online/:path*',
         permanent: true,
       },
+      // Guides merged away by #923. All three were indexed URLs, so each one
+      // keeps working as a 301 onto the page that now answers its query.
+      // `__tests__/app/guides-pruning.test.ts` holds this list to the catalog:
+      // a slug may not be both redirected and listed, and a removed slug may
+      // not be linked from anywhere in the app.
+      {
+        // A four-entry copy of the catalog page, which outranks it 958
+        // impressions to 19 (GSC, 5 Jun – 4 Sep 2026). Same intent, so the
+        // guide was only splitting the signal.
+        source: '/guides/best-free-multiplayer-browser-games',
+        destination: '/games',
+        permanent: true,
+      },
+      {
+        // Yahtzee, Memory and Guess the Spy – a strict subset of the game
+        // night list, which now covers group size explicitly.
+        source: '/guides/best-3-player-games-online',
+        destination: '/guides/best-online-games-for-game-night',
+        permanent: true,
+      },
+      {
+        // Guess the Spy, Alias and Yahtzee for a group: the same three games
+        // and the same audience as game night, under a second name.
+        source: '/guides/best-party-games-online',
+        destination: '/guides/best-online-games-for-game-night',
+        permanent: true,
+      },
     ]
   },
   // Allow local host variants in development to prevent HMR/CORS failures
