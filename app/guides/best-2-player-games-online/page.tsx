@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist } from '../components/GuideLayout'
+import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/best-2-player-games-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2026-05-08',
-  dateModified: '2026-05-08',
+  dateModified: getGuideBySlug('best-2-player-games-online').updated,
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }

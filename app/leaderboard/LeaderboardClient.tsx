@@ -4,7 +4,8 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
-import { GAME_FILTERS, useLeaderboard, type GameFilter, type LeaderboardEntry } from './use-leaderboard'
+import { GAME_FILTERS, useLeaderboard, type GameFilter } from './use-leaderboard'
+import type { LeaderboardEntry, LeaderboardPage } from '@/lib/leaderboard'
 import { getGameMetadata } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -106,7 +107,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
   )
 }
 
-function LeaderboardPageContent() {
+function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }) {
   const {
     t,
     entries,
@@ -124,7 +125,7 @@ function LeaderboardPageContent() {
     totalGamesPlayed,
     handleLoadMore,
     handleGameFilterSelect,
-  } = useLeaderboard()
+  } = useLeaderboard(initial)
 
   return (
     <div className="bd-page bd-screen page-shell">
@@ -345,10 +346,10 @@ function LeaderboardPageContent() {
   )
 }
 
-export default function LeaderboardClient() {
+export default function LeaderboardClient({ initial }: { initial: LeaderboardPage | null }) {
   return (
     <Suspense fallback={<LoadingSkeleton />}>
-      <LeaderboardPageContent />
+      <LeaderboardPageContent initial={initial} />
     </Suspense>
   )
 }
