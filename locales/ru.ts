@@ -2452,6 +2452,7 @@ const ru = {
     privacy: 'Политика конфиденциальности',
     terms: 'Условия использования',
     community: 'Сообщество',
+    discord: 'Discord',
     sendFeedback: 'Оставить отзыв',
     allRightsReserved: '© {{year}} Boardly · Все права защищены',
     builtWith: 'Создано с Next.js, Supabase и Prisma',
