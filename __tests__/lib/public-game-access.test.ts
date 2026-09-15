@@ -1,4 +1,5 @@
 import {
+  canCreateLobbyForGameType,
   getGameLobbiesRoute,
   getLobbyCreateRoute,
   isTemporarilyUnavailableGameType,
@@ -32,6 +33,52 @@ describe('public game access helpers', () => {
     // ENABLE_SKETCH_AND_GUESS, which is off here — without it in the route map
     // the page would offer a create button that lands on the default game (#871)
     expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
+  })
+
+  describe('canCreateLobbyForGameType', () => {
+    it('covers every game a lobby invite can land on', () => {
+      // The four games the result overlay shares an invite from (#927), plus the rest
+      // of the catalog a shared lobby link can point at.
+      expect(canCreateLobbyForGameType('memory')).toBe(true)
+      expect(canCreateLobbyForGameType('tic_tac_toe')).toBe(true)
+      expect(canCreateLobbyForGameType('connect_four')).toBe(true)
+      expect(canCreateLobbyForGameType('rock_paper_scissors')).toBe(true)
+      expect(canCreateLobbyForGameType('yahtzee')).toBe(true)
+      expect(canCreateLobbyForGameType('guess_the_spy')).toBe(true)
+      expect(canCreateLobbyForGameType('alias')).toBe(true)
+    })
+
+    it('refuses a game the create page has no form for', () => {
+      // In-development, so the page refuses it too.
+      expect(canCreateLobbyForGameType('liars_party')).toBe(false)
+      // Not in the catalog at all, and a GameType the database accepts.
+      expect(canCreateLobbyForGameType('other')).toBe(false)
+      expect(canCreateLobbyForGameType(null)).toBe(false)
+      expect(canCreateLobbyForGameType(undefined)).toBe(false)
+      expect(canCreateLobbyForGameType('')).toBe(false)
+    })
+
+    it('refuses an experimental game that is enabled but has no lobbyCreateConfig', () => {
+      // These three are the reason the check is not isTemporarilyUnavailableGameType:
+      // it says false for all of them, and /lobby/create would answer with Yahtzee's form.
+      const previous = process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
+      process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = 'true'
+      try {
+        expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
+        expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(false)
+      } finally {
+        if (previous === undefined) {
+          delete process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
+        } else {
+          process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = previous
+        }
+      }
+
+      expect(isTemporarilyUnavailableGameType('fake_artist')).toBe(false)
+      expect(canCreateLobbyForGameType('fake_artist')).toBe(false)
+      expect(isTemporarilyUnavailableGameType('telephone_doodle')).toBe(false)
+      expect(canCreateLobbyForGameType('telephone_doodle')).toBe(false)
+    })
   })
 
   it('getPublicRegisteredGameTypes returns currently available games', () => {

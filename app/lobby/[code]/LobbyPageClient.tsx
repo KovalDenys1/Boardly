@@ -18,7 +18,7 @@ import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
-import { getGameLobbiesRoute, getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { canCreateLobbyForGameType, getGameLobbiesRoute, getLobbyCreateRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -1538,23 +1538,40 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // seconds between the share and the tap, and in a two-seat game (tic-tac-toe, connect
   // four, RPS) the result overlay's "Play again with friends" is always shared from a
   // full room. So a refused visitor is offered the same game in a room of their own
-  // rather than the lobbies list. The guard is the one getLobbyCreateRoute's own callers
-  // use: a game with no create form would drop them into the default game's.
-  const fullLobbyCreateRoute =
-    lobby?.gameType && !isTemporarilyUnavailableGameType(lobby.gameType)
-      ? getLobbyCreateRoute(lobby.gameType)
-      : null
+  // rather than the lobbies list. The guard has to be the create page's own, not
+  // isTemporarilyUnavailableGameType: that one is false for every type it has never
+  // heard of, and the page would answer the button with the default game's form.
+  const fullLobbyCreateRoute = canCreateLobbyForGameType(lobby?.gameType)
+    ? getLobbyCreateRoute(lobby?.gameType)
+    : null
 
   // /lobby/create sends an anonymous viewer back to the home page, so the name they
   // already typed into this form becomes their guest session instead of being asked for
   // a second time. JoinPrompt disables the button until that name is usable.
+  const createOwnLobbyInFlightRef = useRef(false)
   const handleCreateOwnLobby = useCallback(async () => {
     if (!fullLobbyCreateRoute) return
+    // The button carries the join button's disabled rule, and that rule turns on
+    // `isJoining`, which nothing here sets – so a second tap while the guest session is
+    // still being minted would mint a second one. The ref stays set on success: the push
+    // that follows is the last thing this screen does.
+    if (createOwnLobbyInFlightRef.current) return
+    createOwnLobbyInFlightRef.current = true
+
     if (joinViewerMode === 'anonymous') {
       try {
         await setGuestMode(guestNameInput.trim())
-      } catch {
-        showToast.error('guest.startFailed')
+      } catch (error) {
+        createOwnLobbyInFlightRef.current = false
+        // The reason is worth showing: a name already in use answers 409 with its own
+        // translation key, and a generic failure toast would leave the visitor tapping
+        // the same rejected name again.
+        const err = error as Error & { translationKey?: string }
+        if (err?.translationKey) {
+          showToast.error(err.translationKey)
+        } else {
+          showToast.errorFrom(err, 'guest.startFailed')
+        }
         return
       }
     }
