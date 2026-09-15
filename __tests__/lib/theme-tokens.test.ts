@@ -26,6 +26,9 @@ describe('theme token registry', () => {
     expect(names).not.toContain('bd-btn-ink')
     expect(names).not.toContain('bd-font-display')
     expect(names).not.toContain('bd-header-h')
+    // And so is the one translucent surface token (#904): the panel's maths is
+    // hex in, hex out, and an rgba() overlay has no hex to move.
+    expect(names).not.toContain('bd-surface-raised')
   })
 
   it('knows which tokens html.dark redefines', () => {

@@ -3,7 +3,8 @@ import Stripe from 'stripe'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
-import { getStripe, PREMIUM_PRICE_ID } from '@/lib/stripe'
+import { getStripe, PREMIUM_PRICE_ID, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
+import { isPremiumPlan, type PremiumPlan } from '@/lib/premium-plans'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
@@ -44,6 +45,21 @@ function toCheckoutErrorResponse(err: unknown, log: ReturnType<typeof apiLogger>
     )
   }
   throw err
+}
+
+/**
+ * Which plan the caller asked for (#926). Monthly is the default because the
+ * older call sites – the profile page and the avatar picker – post no body at
+ * all, and a missing field must keep charging what it always charged.
+ */
+async function readRequestedPlan(req: NextRequest): Promise<PremiumPlan> {
+  try {
+    const body: unknown = await req.json()
+    const plan = (body as { plan?: unknown } | null)?.plan
+    return isPremiumPlan(plan) ? plan : 'monthly'
+  } catch {
+    return 'monthly'
+  }
 }
 
 async function recreateStripeCustomer(user: { id: string; email: string | null }): Promise<string> {
@@ -96,8 +112,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!PREMIUM_PRICE_ID) {
-    log.error('STRIPE_PREMIUM_PRICE_ID is not configured')
+  const plan = await readRequestedPlan(req)
+  // Never silently bill a different plan than the one that was chosen: if the
+  // yearly price ID is missing, this is an error, not a fall back to monthly.
+  const priceId = plan === 'yearly' ? PREMIUM_PRICE_ID_YEARLY : PREMIUM_PRICE_ID
+  if (!priceId) {
+    log.error(
+      plan === 'yearly'
+        ? 'STRIPE_PREMIUM_PRICE_ID_YEARLY is not configured'
+        : 'STRIPE_PREMIUM_PRICE_ID is not configured'
+    )
     return NextResponse.json(
       { error: 'Checkout is temporarily unavailable. Please try again in a few minutes.' },
       { status: 502 }
@@ -113,7 +137,7 @@ export async function POST(req: NextRequest) {
     getStripe().checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
-      line_items: [{ price: PREMIUM_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/profile?premium=success`,
       cancel_url: `${origin}/profile`,
       allow_promotion_codes: true,
@@ -138,7 +162,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  log.info('Checkout session created', { userId: user.id })
+  log.info('Checkout session created', { userId: user.id, plan })
 
   // Written here rather than from the browser: this is the one funnel step that can be
   // observed on the server, so it cannot be forged and it cannot be lost to a beacon that
@@ -151,7 +175,9 @@ export async function POST(req: NextRequest) {
         isGuest: false,
         success: true,
         source: 'stripe_checkout',
-        payload: {},
+        // The plan is the one dimension this row is read by (#926): monthly and
+        // yearly checkouts are the same funnel step at very different values.
+        payload: { plan },
       },
     })
     .catch((err: unknown) => {

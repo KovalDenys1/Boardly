@@ -13,6 +13,11 @@ jest.mock('@/components/GuestConversionNudge', () => {
   }
 })
 
+const mockShare = jest.fn()
+jest.mock('@/hooks/useInviteShare', () => ({
+  useInviteShare: () => mockShare,
+}))
+
 describe('GameResultOverlay (#736 phase 2)', () => {
   const base = {
     title: 'Alice wins!',
@@ -32,6 +37,21 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.getByText('game.ui.returnToLobby')).toBeTruthy()
     expect(screen.getByText('game.ui.leave')).toBeTruthy()
     expect(screen.queryByText('game.ui.waitingForHost')).toBeNull()
+  })
+
+  it('offers the share CTA only when a lobby code is given (#927)', () => {
+    const { unmount } = render(<GameResultOverlay {...base} />)
+    expect(screen.queryByText('game.ui.playAgainWithFriends')).toBeNull()
+    unmount()
+
+    render(<GameResultOverlay {...base} inviteCode="AB12" />)
+    fireEvent.click(screen.getByText('game.ui.playAgainWithFriends'))
+    expect(mockShare).toHaveBeenCalledWith('result_overlay')
+  })
+
+  it('keeps the share CTA for non-hosts, who can still pull a friend in (#927)', () => {
+    render(<GameResultOverlay {...base} isHost={false} inviteCode="AB12" />)
+    expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
   })
 
   it('shows the waiting plate instead of actions for non-hosts', () => {

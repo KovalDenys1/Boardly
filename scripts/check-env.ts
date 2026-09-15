@@ -31,7 +31,21 @@ const optionalVars = [
   'RESEND_API_KEY',
   'DISCORD_CLIENT_ID',
   'DISCORD_CLIENT_SECRET',
+  // Discord community server - see docs/DISCORD.md
+  'FEEDBACK_DISCORD_WEBHOOK_URL',
+  'OPS_ALERT_WEBHOOK_URL',
+  'NEXT_PUBLIC_DISCORD_INVITE',
+  'DISCORD_APPLICATION_ID',
+  'DISCORD_INTERNAL_SECRET',
 ]
+
+// A webhook URL carries its own token in the path and the internal secret is a
+// secret, so these are reported as present without printing any of the value.
+const neverPrintedVars = new Set([
+  'FEEDBACK_DISCORD_WEBHOOK_URL',
+  'OPS_ALERT_WEBHOOK_URL',
+  'DISCORD_INTERNAL_SECRET',
+])
 
 function formatValue(value: string, visibleChars: number) {
   if (quiet) {
@@ -80,7 +94,8 @@ console.log('\nOptional environment variables:\n')
 for (const name of optionalVars) {
   const value = process.env[name]
   if (value) {
-    console.log(`OK  ${name}: ${formatValue(value, 30)}`)
+    const shown = neverPrintedVars.has(name) ? '[set]' : formatValue(value, 30)
+    console.log(`OK  ${name}: ${shown}`)
   } else {
     console.log(`INF ${name}: not set`)
   }

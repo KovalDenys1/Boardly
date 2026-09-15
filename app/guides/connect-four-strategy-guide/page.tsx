@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GuideLayout, { GuideSection, GuideTipList, GuideChecklist } from '../components/GuideLayout'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideFaqList } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
 export const metadata: Metadata = {
@@ -54,8 +54,11 @@ export default function ConnectFourStrategyGuide() {
 
       <GuideLayout
         icon={{ game: 'connect-four' }}
+        slug="connect-four-strategy-guide"
         title="Connect Four Strategy Guide — How to Win Every Time"
-        subtitle="5 min read · Strategy tips for all skill levels · Free on Boardly"
+        subtitle="6 min read · Strategy tips for all skill levels · Free on Boardly"
+        question="How do you win at Connect Four every time?"
+        answer="Take the middle column early, because more winning lines run through it than any other, then work towards a position where you threaten two squares at once – your opponent can only block one of them."
         breadcrumbLabel="Connect Four Strategy Guide"
         accentColor="var(--bd-sun)"
         cta={{ href: '/games/connect-four/lobbies', label: 'Play Connect Four Now', detail: 'Put these strategies to the test.' }}
@@ -151,6 +154,35 @@ export default function ConnectFourStrategyGuide() {
             { mark: 'no', text: 'Stacking discs in one column too early — fills it up and locks you out' },
             { mark: 'no', text: 'Missing diagonal threats — check them every single turn' },
             { mark: 'no', text: 'Completing a column that gives your opponent the winning space on top' },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Connect Four Strategy Questions">
+          <GuideFaqList items={[
+            {
+              question: 'Is Connect Four a solved game?',
+              answer: 'Yes. With perfect play from both sides the first player wins, and the winning first move is the middle column. That is a fact about perfect play, not about your next game – nobody plays it perfectly over 42 squares, which is why the practical advice below still decides most matches.',
+            },
+            {
+              question: 'Why is the centre column worth so much?',
+              answer: 'Because more of the 69 possible four-in-a-rows pass through it than through any other column. A disc in the middle is part of horizontal, vertical and both diagonal lines at once; a disc on the outside column is part of far fewer.',
+            },
+            {
+              question: 'What is a double threat?',
+              answer: 'A position where you have two different squares that would each complete a four, so a single block cannot stop both. Building one is the whole game: every strong Connect Four move is either making a double threat or preventing your opponent from making one.',
+            },
+            {
+              question: 'Why do odd and even rows matter?',
+              answer: 'Because a disc only lands on the lowest free row, a threat is only usable when the squares beneath it have been filled. Counting whose turn it will be when a column reaches that height is how strong players decide which threats are real and which are decoration.',
+            },
+            {
+              question: 'What is the most common way to lose?',
+              answer: 'Dropping a disc that hands your opponent the square directly above it. It feels like a free move because it builds your own line, and it is the single most frequent losing move in the game.',
+            },
+            {
+              question: 'Does the strategy change against the bot?',
+              answer: 'Against easy and medium, not much – they miss threats, so building any threat works. Against hard, which searches six moves ahead, you have to stop making moves that only look good for one turn: it will already have seen where the column lands two turns later.',
+            },
           ]} />
         </GuideSection>
       </GuideLayout>

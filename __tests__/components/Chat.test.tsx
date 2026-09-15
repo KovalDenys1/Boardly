@@ -41,6 +41,24 @@ describe('Chat', () => {
     expect(screen.queryByLabelText('chat.minimize')).toBeNull()
   })
 
+  // #902: the title strip and the composer were ordinary flex items, so in a
+  // short panel they shrank below their content and `overflow: hidden` cut
+  // them off – Connect Four showed the title and nothing else, Memory put the
+  // composer on top of its only message.
+  it('keeps the title strip and the composer unshrinkable, and the list flexible', () => {
+    const { container } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+    )
+    const titlebar = container.querySelector('.chat-titlebar') as HTMLElement
+    const composer = container.querySelector('.chat-composer') as HTMLElement
+    const list = container.querySelector('.chat-messages') as HTMLElement
+
+    expect(titlebar.className).toContain('shrink-0')
+    expect(composer.className).toContain('shrink-0')
+    expect(list.className).toContain('flex-1')
+    expect(list.className).toContain('min-h-0')
+  })
+
   it('renders the composer for writers', () => {
     render(
       <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />

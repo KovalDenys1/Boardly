@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import dotenv from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
+import { localBaseUrl, resolveDevServerPort } from './e2e/support/app-identity'
 import { describeTargetMismatch } from './e2e/support/database-target'
 
 // The workers re-evaluate this file, so loading the environment here is what
@@ -29,6 +30,11 @@ const mismatch = describeTargetMismatch({
 })
 if (mismatch) throw new Error(mismatch)
 
+// The port the suite's own dev server gets. 3100 by default; E2E_PORT moves it
+// when something else has the port, which the control panel does when it is
+// run by hand (#900).
+const devServerPort = resolveDevServerPort()
+
 /**
  * End-to-end tests, run on demand rather than in CI.
  *
@@ -55,6 +61,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list']],
+  // Runs after the webServer plugin, so it probes the server the tests are
+  // actually about to drive — started here or adopted — and refuses the run if
+  // it is not Boardly (#900).
+  globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',
 
   timeout: 90_000,
@@ -65,10 +75,11 @@ export default defineConfig({
   },
 
   use: {
-    // Port 3100, not 3000: other projects live on 3000, and `reuseExistingServer`
-    // will happily hand the suite whatever is already answering there — which
-    // it did, and every request 404'd against somebody else's site.
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3100',
+    // Port 3100, not 3000: other projects live on 3000. That only narrows the
+    // field — `reuseExistingServer` hands the suite whatever answers on the
+    // port, and 3100 collided with another project's dev server too (#900).
+    // `globalSetup` is what makes reuse safe now: it checks the app's identity.
+    baseURL: process.env.E2E_BASE_URL ?? localBaseUrl(devServerPort),
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
   },
@@ -81,8 +92,8 @@ export default defineConfig({
     // `next dev` rather than a production build: a build takes minutes, and
     // dev mode also skips the origin-based CSRF check for localhost, which the
     // API-driven setup in e2e/support/lobby.ts relies on.
-    command: 'npm run dev -- -p 3100',
-    url: 'http://localhost:3100',
+    command: `npm run dev -- -p ${devServerPort}`,
+    url: localBaseUrl(devServerPort),
     reuseExistingServer: true,
     timeout: 180_000,
     stdout: 'ignore',

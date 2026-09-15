@@ -4,6 +4,7 @@ import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { Icon } from '@/components/icons'
+import { useInviteShare } from '@/hooks/useInviteShare'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -41,6 +42,12 @@ export interface GameResultOverlayProps {
   actionsReplacement?: React.ReactNode
   isGuest?: boolean
   registerUrl?: string
+  /**
+   * Lobby code for "Play again with friends" (#927). The end of a game is the highest-intent
+   * moment in the product and used to be a dead end; the button shares the same
+   * `?via=invite` link the lobby header does. Omit it and the button is not rendered.
+   */
+  inviteCode?: string
 }
 
 const ghostBtn: React.CSSProperties = {
@@ -54,6 +61,19 @@ const ghostBtn: React.CSSProperties = {
   cursor: 'pointer',
   fontFamily: 'inherit',
   width: '100%',
+}
+
+/** The share CTA: readable against the dark overlay without competing with Play Again. */
+const shareBtn: React.CSSProperties = {
+  ...ghostBtn,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  fontWeight: 700,
+  background: 'rgba(255,255,255,0.2)',
+  border: '1px solid rgba(255,255,255,0.45)',
+  color: '#fff',
 }
 
 const platePlain: React.CSSProperties = {
@@ -84,8 +104,10 @@ export default function GameResultOverlay({
   actionsReplacement,
   isGuest = false,
   registerUrl,
+  inviteCode,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
+  const shareInvite = useInviteShare(inviteCode)
 
   const defaultIcon = isDraw ? (
     <Icon name="handshake" size={44} />
@@ -196,6 +218,12 @@ export default function GameResultOverlay({
           ) : (
             <div style={platePlain}>{t('game.ui.waitingForHost')}</div>
           ))}
+          {inviteCode && (
+            <button onClick={() => void shareInvite('result_overlay')} style={shareBtn}>
+              <Icon name="link" size={16} />
+              <span>{t('game.ui.playAgainWithFriends')}</span>
+            </button>
+          )}
           {onLeave && (
             <button onClick={onLeave} style={ghostBtn}>
               {t('game.ui.leave')}

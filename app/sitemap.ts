@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/games', { changeFrequency: 'weekly', priority: 0.9 }),
     page('/leaderboard', { changeFrequency: 'daily', priority: 0.7 }),
     page('/about', { changeFrequency: 'yearly', priority: 0.5 }),
+    page('/premium', { changeFrequency: 'monthly', priority: 0.7 }),
 
     // Game detail pages (available games only)
     page('/games/yahtzee', { changeFrequency: 'monthly', priority: 0.9 }),

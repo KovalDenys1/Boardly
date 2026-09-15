@@ -133,12 +133,19 @@ describe('invite loop events (#920)', () => {
     jest.clearAllMocks()
   })
 
-  it('names the copy surface and carries the lobby code', () => {
-    trackInviteCopied('lobby_code_chip', 'AB12')
+  it('names the surface, the method and the lobby code', () => {
+    trackInviteCopied('lobby_code_chip', 'AB12', 'clipboard')
+    trackInviteCopied('result_overlay', 'AB12', 'web_share')
 
-    expect(mockTrack).toHaveBeenCalledWith('invite_copied', {
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'invite_copied', {
       source: 'lobby_code_chip',
       lobby_code: 'AB12',
+      method: 'clipboard',
+    })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'invite_copied', {
+      source: 'result_overlay',
+      lobby_code: 'AB12',
+      method: 'web_share',
     })
   })
 

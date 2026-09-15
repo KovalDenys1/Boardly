@@ -72,6 +72,13 @@ Rules are evaluated in `evaluateReliabilityAlerts()` (`lib/operational-metrics.t
 - Condition B: `move_submit_applied` p95 > `MOVE_APPLY_TARGET_MS` (`800ms`)
 - Window: `OPS_ALERT_WINDOW_MINUTES`
 
+### `discord_bot_stale` heartbeat freshness
+
+- Severity: `warning` (>= 20 min since the last heartbeat), `critical` (>= 60 min)
+- Condition: age of the newest `cron_run` row with `source = "discord-bot"`, written by `POST /api/internal/discord/heartbeat`
+- Never alerts before the first heartbeat has landed
+- Runbook: `docs/OPERATIONS.md#runbook-discord_bot_stale`
+
 ## KPI Dashboard (Operational)
 
 Operational KPI data is shown in:

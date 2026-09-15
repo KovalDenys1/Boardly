@@ -887,6 +887,11 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         </div>
                     </>
                 }
+                centerCompact={
+                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{p2Wins}
+                    </div>
+                }
                 rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
             />
         </div>
@@ -1004,6 +1009,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             onLeave={() => setShowLeaveConfirmModal(true)}
                             isGuest={isGuest}
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+                            inviteCode={code}
                         />
                     )}
                     {overlayInspecting && (
@@ -1103,11 +1109,11 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
 
             {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
-            <div className="ttt-landscape-layout">
-                <div className="ttt-landscape-board">
+            <div className="game-landscape-layout">
+                <div className="game-landscape-board">
                     {renderBoardSection()}
                 </div>
-                <div className="ttt-landscape-side">
+                <div className="game-landscape-side">
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}

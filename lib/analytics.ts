@@ -2,6 +2,8 @@ import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
 import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
+import type { InviteShareMethod } from './invite-share'
+import type { PremiumPlan } from './premium-plans'
 
 /**
  * Analytics wrapper for tracking game events
@@ -600,12 +602,30 @@ export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): vo
   clientLogger.log('[analytics] Signup prompt', action)
 }
 
-/** Where an invite link was copied from; the lobby code goes in the payload so it joins. */
-export type InviteCopySource = 'lobby_header_button' | 'lobby_code_chip'
+/** Where an invite link was shared from; the lobby code goes in the payload so it joins. */
+export type InviteCopySource =
+  | 'lobby_header_button'
+  | 'lobby_code_chip'
+  | 'result_overlay'
+  | 'waiting_room_slot'
 
-/** Someone put an invite link on their clipboard (#920). */
-export function trackInviteCopied(source: InviteCopySource, lobbyCode: string): void {
-  const payload = { source, lobby_code: lobbyCode } satisfies Record<string, AnalyticsPropertyValue>
+/**
+ * Someone sent an invite link out of the page (#920, extended by #927).
+ *
+ * Still one event for every surface: `source` names the affordance and `method` says
+ * whether it went through the OS share sheet or the clipboard, so the share sheet does not
+ * fork the funnel the invite loop already measures.
+ */
+export function trackInviteCopied(
+  source: InviteCopySource,
+  lobbyCode: string,
+  method: InviteShareMethod
+): void {
+  const payload = {
+    source,
+    lobby_code: lobbyCode,
+    method,
+  } satisfies Record<string, AnalyticsPropertyValue>
   track('invite_copied', payload)
   emitOperationalEvent('invite_copied', payload)
   clientLogger.log('[analytics] Invite copied', payload)
@@ -627,11 +647,16 @@ export function trackInviteOpened(attribution: InviteAttribution, lobbyCode: str
   clientLogger.log('[analytics] Invite opened', payload)
 }
 
-/** Premium call to action, wherever it is rendered. `source` names the surface. */
-export function trackPremiumCta(source: string): void {
-  track('feature_used', { feature: 'premium_cta', source })
-  emitOperationalEvent('premium_cta_clicked', { source })
-  clientLogger.log('[analytics] Premium CTA', source)
+/**
+ * Premium call to action, wherever it is rendered. `source` names the surface;
+ * `plan` is passed only where the surface lets someone pick one, so a click on
+ * /premium can be read against the checkout it did or did not become (#926).
+ */
+export function trackPremiumCta(source: string, plan?: PremiumPlan): void {
+  const payload = { source, ...(plan ? { plan } : {}) } satisfies Record<string, AnalyticsPropertyValue>
+  track('feature_used', { feature: 'premium_cta', ...payload })
+  emitOperationalEvent('premium_cta_clicked', payload)
+  clientLogger.log('[analytics] Premium CTA', payload)
 }
 
 /**
