@@ -14,15 +14,21 @@ project. Nothing here reads the bot token.
 | `app/api/feedback/route.ts` | out | `FEEDBACK_DISCORD_WEBHOOK_URL` | feedback is still stored; no embed is posted |
 | `lib/reliability-alerts.ts`, reached by `GET /api/cron/reliability-alerts` and `npm run ops:alerts:check` | out | `OPS_ALERT_WEBHOOK_URL` | alert state still changes; a warning is logged instead of a post |
 | `lib/next-auth.ts` | in | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | the Discord provider is not registered, so no Discord button renders |
+| `lib/discord.ts`, read by `GET /discord` | link | `NEXT_PUBLIC_DISCORD_INVITE` | the invite compiled into `lib/discord.ts` is used, so the redirect still works |
 
-Both outbound paths post a Discord embed (`{ "embeds": [ ... ] }`), so both variables have to be
-Discord channel webhooks. A Slack or Teams webhook rejects that payload.
+Both outbound paths post a Discord embed (`{ "embeds": [ ... ] }`), so
+`FEEDBACK_DISCORD_WEBHOOK_URL` and `OPS_ALERT_WEBHOOK_URL` both have to be Discord channel
+webhooks. A Slack or Teams webhook rejects that payload.
 
-The community server also brings three variables that no code in this repo reads yet:
-`DISCORD_INVITE_URL` (the `/discord` redirect, issue #938), `DISCORD_APPLICATION_ID`
-(Linked Roles, issue #939) and `DISCORD_INTERNAL_SECRET` (the internal read-only routes the
-bot calls, issue #940). They are listed here and in `.env.example` so the map is complete
-when those land.
+`lib/discord.ts` (issue #938) is the only place that knows the invite behind `/discord`, so
+rotating a leaked or expired one is a single value change. `NEXT_PUBLIC_DISCORD_INVITE` is
+public and inlined into the bundle at build time: a new invite needs a rebuild, not just a
+restart, and the value is readable by anyone who loads the site – as a public invite link it
+is meant to be.
+
+Two more variables are listed here and in `.env.example` before any code reads them, so the
+map is complete when they land: `DISCORD_APPLICATION_ID` (Linked Roles, issue #939) and
+`DISCORD_INTERNAL_SECRET` (the internal read-only routes the bot calls, issue #940).
 
 ## Secret map
 
@@ -32,7 +38,7 @@ when those land.
 | `DISCORD_CLIENT_SECRET` | yes | Vercel, all environments | same application as the client id |
 | `FEEDBACK_DISCORD_WEBHOOK_URL` | yes | Vercel, Production | the embed carries the reporter's email, so the target channel is staff-only |
 | `OPS_ALERT_WEBHOOK_URL` | yes | Vercel, Production | reliability alerts; also read by `npm run ops:alerts:check` locally |
-| `DISCORD_INVITE_URL` | no | Vercel, Production and Preview | the public invite link |
+| `NEXT_PUBLIC_DISCORD_INVITE` | no | Vercel, Production and Preview | public and inlined at build time, so a change takes effect on the next build; unset falls back to the invite in `lib/discord.ts` |
 | `DISCORD_APPLICATION_ID` | no | Vercel, Production | the same application as `DISCORD_CLIENT_ID` |
 | `DISCORD_INTERNAL_SECRET` | yes | Vercel Production **and** the bot's env file on the Pi | the only value the two repos share; generate with `openssl rand -base64 32` |
 

@@ -34,7 +34,7 @@ const optionalVars = [
   // Discord community server - see docs/DISCORD.md
   'FEEDBACK_DISCORD_WEBHOOK_URL',
   'OPS_ALERT_WEBHOOK_URL',
-  'DISCORD_INVITE_URL',
+  'NEXT_PUBLIC_DISCORD_INVITE',
   'DISCORD_APPLICATION_ID',
   'DISCORD_INTERNAL_SECRET',
 ]
