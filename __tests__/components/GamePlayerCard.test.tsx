@@ -46,4 +46,33 @@ describe('GamePlayerCard (#736 phase 3)', () => {
     expect(screen.getByText('3W')).toBeTruthy()
     expect(screen.getByText('A')).toBeTruthy()
   })
+
+  // The phone-landscape rules in globals.css shrink this card and hide the
+  // two lines the status banner already shows (#901). They can only do that
+  // through these classes, and only while the same numbers are not also in a
+  // style prop – an inline style outranks every stylesheet rule.
+  it('carries the classes the phone-landscape rules target', () => {
+    const { container } = render(<GamePlayerCard {...base} isActive isMe subline="3W" />)
+    expect(container.querySelector('.game-player-card--left')).not.toBeNull()
+    expect(container.querySelector('.game-player-avatar--initial')).not.toBeNull()
+    expect(container.querySelector('.game-player-identity')).not.toBeNull()
+    expect(container.querySelector('.game-player-subline')).not.toBeNull()
+    expect(container.querySelector('.game-player-turn')).not.toBeNull()
+  })
+
+  it('flips the card class, not a style prop, for the right-hand seat', () => {
+    const { container } = render(<GamePlayerCard {...base} side="right" />)
+    expect(container.querySelector('.game-player-card--right')).not.toBeNull()
+    const card = container.querySelector('.game-player-card') as HTMLElement
+    expect(card.style.flexDirection).toBe('')
+    expect(card.style.gap).toBe('')
+    expect(card.style.padding).toBe('')
+  })
+
+  it('keeps no size in the avatar style prop', () => {
+    const { container } = render(<GamePlayerCard {...base} />)
+    const avatar = container.querySelector('.game-player-avatar') as HTMLElement
+    expect(avatar.style.width).toBe('')
+    expect(avatar.style.height).toBe('')
+  })
 })
