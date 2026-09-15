@@ -550,6 +550,11 @@ export default function MemoryGameBoard({
               </div>
             </>
           }
+          centerCompact={
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+              {matchedPairs}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 4px' }}>/</span>{totalPairs}
+            </div>
+          }
           rightCard={
             <GamePlayerCard
               name={displayNameByUserId.get(player1.id) || 'Player 2'}
@@ -758,11 +763,11 @@ export default function MemoryGameBoard({
       </div>
 
       {/* ── Phone landscape (#751) ─────────────────────── */}
-      <div className="memory-landscape-layout">
-        <div className="memory-landscape-board">
+      <div className="game-landscape-layout">
+        <div className="game-landscape-board memory-landscape-board">
           {renderBoardSection('memory-mobile-board-wrap')}
         </div>
-        <div className="memory-landscape-side">
+        <div className="game-landscape-side">
           {compactHeaderSection}
           {statusSection}
           {chatSection}

@@ -4,7 +4,7 @@ import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import type { IconName } from '@/components/icons/names'
-import type { GuideIcon } from '@/lib/guides-catalog'
+import { getGuideBySlug, type GuideIcon } from '@/lib/guides-catalog'
 import { GUIDES_AD_SLOT } from '@/lib/ad-slots'
 
 interface RelatedGuide {
@@ -15,8 +15,19 @@ interface RelatedGuide {
 interface GuideLayoutProps {
   /** The guide's mark: a game glyph (catalog id) or a chrome icon – same shape the guides index uses. */
   icon: GuideIcon
+  /** The guide's catalog slug – the "Last updated" date is read from it, never hand-typed (#923). */
+  slug: string
   title: string
   subtitle: string
+  /**
+   * The question this page answers, drawn as the first <h2>, with `answer`
+   * directly under it (#923). A searcher who lands here gets the answer before
+   * any section, and the heading matches the query rather than describing the
+   * page.
+   */
+  question: string
+  /** One sentence. If it needs two, the question is really two questions. */
+  answer: string
   breadcrumbLabel: string
   accentColor: string
   cta: {
@@ -186,16 +197,56 @@ export function GuideTable({
   )
 }
 
+export interface GuideFaqItem {
+  question: string
+  answer: string
+}
+
+/**
+ * The questions people actually type, answered in full sentences. A guide that
+ * carries FAQPage structured data must render the same text on the page –
+ * Google treats schema whose content the visitor cannot see as a violation,
+ * and `/guides/best-2-player-games-online` shipped that way until #923.
+ */
+export function GuideFaqList({ items }: { items: GuideFaqItem[] }) {
+  return (
+    <div className="space-y-5">
+      {items.map(({ question, answer }) => (
+        <div key={question} className="border-b pb-5 last:border-0 last:pb-0" style={{ borderColor: 'var(--bd-line)' }}>
+          <h3 className="mb-2 text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
+            {question}
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            {answer}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const UPDATED_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
 export default function GuideLayout({
   icon,
+  slug,
   title,
   subtitle,
+  question,
+  answer,
   breadcrumbLabel,
   accentColor,
   cta,
   related,
   children,
 }: GuideLayoutProps) {
+  const updated = getGuideBySlug(slug).updated
+
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -235,8 +286,27 @@ export default function GuideLayout({
               {title}
             </h1>
             <p className="text-sm" style={{ color: 'var(--bd-ink-muted)' }}>{subtitle}</p>
+            <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+              Last updated <time dateTime={updated}>{UPDATED_FORMAT.format(new Date(`${updated}T00:00:00Z`))}</time>
+            </p>
           </div>
         </div>
+
+        {/* The direct answer, before any section */}
+        <section
+          className="mb-6 rounded-[1.5rem] border p-7"
+          style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}
+        >
+          <h2
+            className="mb-3 text-xl font-bold"
+            style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+          >
+            {question}
+          </h2>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            {answer}
+          </p>
+        </section>
 
         {/* Content sections */}
         {children}

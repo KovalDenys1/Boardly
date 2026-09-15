@@ -213,6 +213,115 @@ describe('useGameActions', () => {
     })
   })
 
+  // #861: a human move used to end with an unconditional
+  // `reconcileWithServerSnapshot()`, which is `loadLobby()`, which is
+  // `GET /api/lobby/:code?includeFinished=true` — a whole snapshot fetched to
+  // learn the state that came back on the move's own response. These count the
+  // requests rather than argue about them, so the snapshot cannot creep back
+  // in unnoticed.
+  describe('the snapshot a move no longer fetches (#861)', () => {
+    const LOBBY_SNAPSHOT_URL = '/api/lobby/ABCD12?includeFinished=true'
+
+    /** What LobbyPageClient passes in: loadLobby, which fetches the snapshot. */
+    const makeReconcile = () =>
+      jest.fn(async () => {
+        await fetch(LOBBY_SNAPSHOT_URL)
+      })
+
+    const requestsTo = (fragment: string) =>
+      (global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).includes(fragment))
+
+    it('a roll sends the move and nothing else', async () => {
+      const restoredEngine = makeRestoreEngine()
+      mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue(makeOkRollResponse())
+
+      const reconcileWithServerSnapshot = makeReconcile()
+      const props = makeProps({ reconcileWithServerSnapshot })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(requestsTo('/api/game/game-123/state')).toHaveLength(1)
+      expect(requestsTo('/api/lobby/')).toHaveLength(0)
+      expect(reconcileWithServerSnapshot).not.toHaveBeenCalled()
+    })
+
+    it('a score that leaves the game running sends the move and nothing else', async () => {
+      const restoredEngine = makeRestoreEngine()
+      jest.spyOn(restoredEngine, 'getScorecard').mockReturnValue({ ones: 3 } as any)
+      jest.spyOn(restoredEngine, 'isGameFinished').mockReturnValue(false)
+      mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ game: { state: {} } }),
+      })
+
+      const makeMoveSpy = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+      const gameEngine = makeEngine()
+      jest.spyOn(gameEngine, 'getScorecard').mockReturnValue({} as any)
+      jest.spyOn(gameEngine, 'getDice').mockReturnValue([1, 1, 1, 1, 1])
+
+      const reconcileWithServerSnapshot = makeReconcile()
+      const props = makeProps({ reconcileWithServerSnapshot, gameEngine: gameEngine as any })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleScore('ones') })
+      makeMoveSpy.mockRestore()
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(requestsTo('/api/lobby/')).toHaveLength(0)
+      expect(reconcileWithServerSnapshot).not.toHaveBeenCalled()
+    })
+
+    it('the score that ends the game still reconciles, because Games.status only arrives that way', async () => {
+      const restoredEngine = makeRestoreEngine()
+      jest.spyOn(restoredEngine, 'getScorecard').mockReturnValue({ ones: 3 } as any)
+      jest.spyOn(restoredEngine, 'isGameFinished').mockReturnValue(true)
+      jest.spyOn(restoredEngine, 'checkWinCondition').mockReturnValue(null as any)
+      mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ game: { state: {} } }),
+      })
+
+      const makeMoveSpy = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+      const gameEngine = makeEngine()
+      jest.spyOn(gameEngine, 'getScorecard').mockReturnValue({} as any)
+      jest.spyOn(gameEngine, 'getDice').mockReturnValue([1, 1, 1, 1, 1])
+
+      const reconcileWithServerSnapshot = makeReconcile()
+      const props = makeProps({ reconcileWithServerSnapshot, gameEngine: gameEngine as any })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleScore('ones') })
+      makeMoveSpy.mockRestore()
+
+      expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+      expect(requestsTo('/api/lobby/')).toHaveLength(1)
+    })
+
+    it('a failed move still reconciles, so the board cannot keep an optimistic update', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal Server Error' }),
+      })
+
+      const reconcileWithServerSnapshot = makeReconcile()
+      const props = makeProps({ reconcileWithServerSnapshot })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+
+      expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+      expect(requestsTo('/api/lobby/')).toHaveLength(1)
+    })
+  })
+
   describe('roll history dedup', () => {
     it('same entry id appended twice → array stays length 1', async () => {
       const restoredEngine = makeRestoreEngine()

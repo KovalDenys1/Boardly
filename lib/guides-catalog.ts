@@ -34,7 +34,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-sky)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'how-to-play-spy-game-online',
@@ -44,7 +44,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-lav)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'how-to-play-memory-card-game-online',
@@ -54,7 +54,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-mint)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'how-to-play-tic-tac-toe-online',
@@ -64,7 +64,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'how-to-play-connect-four-online',
@@ -74,7 +74,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '3 min',
     accent: 'var(--bd-sun)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'how-to-play-alias-online',
@@ -84,7 +84,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
 ]
 
@@ -97,7 +97,7 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     readTime: '6 min',
     accent: 'var(--bd-sky)',
     category: 'strategy',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'connect-four-strategy-guide',
@@ -107,21 +107,11 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-sun)',
     category: 'strategy',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
 ]
 
 export const BEST_OF_GUIDES: GuideEntry[] = [
-  {
-    slug: 'best-free-multiplayer-browser-games',
-    title: 'Best Free Multiplayer Browser Games in 2026',
-    description: 'No download, no payment — the best games to play with friends right now.',
-    icon: { glyph: 'gamepad' },
-    readTime: '4 min',
-    accent: 'var(--bd-sun)',
-    category: 'best-of',
-    updated: '2026-05-26',
-  },
   {
     slug: 'best-2-player-games-online',
     title: 'Best 2 Player Games Online — Free, No Download',
@@ -130,17 +120,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-sun)',
     category: 'best-of',
-    updated: '2026-05-26',
-  },
-  {
-    slug: 'best-3-player-games-online',
-    title: 'Best 3 Player Games Online — Free, No Download',
-    description: 'Yahtzee, Memory, Guess the Spy — the best games for groups of three.',
-    icon: { glyph: 'dice' },
-    readTime: '3 min',
-    accent: 'var(--bd-mint)',
-    category: 'best-of',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'best-online-games-for-game-night',
@@ -150,7 +130,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-lav)',
     category: 'best-of',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
   {
     slug: 'best-games-to-play-on-zoom',
@@ -160,17 +140,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-sky)',
     category: 'best-of',
-    updated: '2026-05-26',
-  },
-  {
-    slug: 'best-party-games-online',
-    title: 'Best Party Games Online — Free to Play',
-    description: 'The best online party games for groups of 4 or more — no download, no account.',
-    icon: { glyph: 'sparkle' },
-    readTime: '4 min',
-    accent: 'var(--bd-coral)',
-    category: 'best-of',
-    updated: '2026-05-26',
+    updated: '2026-09-15',
   },
 ]
 

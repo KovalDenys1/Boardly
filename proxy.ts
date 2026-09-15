@@ -3,6 +3,10 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { getSecurityHeaders, isSignatureAuthenticatedWebhook, verifyCsrfToken } from '@/lib/csrf'
 import {
+  authorizeDiscordInternalRequest,
+  hasValidDiscordInternalSecret,
+} from '@/lib/discord/internal-auth'
+import {
   SIGNUP_SOURCE_COOKIE,
   SIGNUP_SOURCE_COOKIE_MAX_AGE_SECONDS,
   deriveSignupSource,
@@ -79,8 +83,17 @@ function hasValidCronAuthorization(request: NextRequest): boolean {
   return request.headers.get('authorization') === `Bearer ${cronSecret}`
 }
 
+// The Discord bot's routes. Its secret opens these and nothing else, so a Pi env file
+// that leaks cannot reach the crons or the bot-turn trigger.
+const DISCORD_INTERNAL_PATH_PREFIX = '/api/internal/discord/'
+
+function isDiscordInternalPath(pathname: string): boolean {
+  return pathname.startsWith(DISCORD_INTERNAL_PATH_PREFIX)
+}
+
 function isTrustedServerRequest(request: NextRequest): boolean {
-  return hasValidInternalSecret(request) || hasValidCronAuthorization(request)
+  if (hasValidInternalSecret(request) || hasValidCronAuthorization(request)) return true
+  return isDiscordInternalPath(request.nextUrl.pathname) && hasValidDiscordInternalSecret(request)
 }
 
 function buildCspHeaderValue() {
@@ -224,6 +237,14 @@ export async function proxy(request: NextRequest) {
   // access-control checks in certain conditions. Fall back to the server's own origin
   // so CORS headers are always present on API responses.
   if (pathname.startsWith('/api')) {
+    // Gate the bot's routes here as well as in the handlers: a wrong or missing secret
+    // never reaches a function, and the heartbeat POST (no Origin header, so no CSRF
+    // token) is let through below only because the same secret marks it trusted.
+    if (isDiscordInternalPath(pathname) && request.method !== 'OPTIONS') {
+      const authError = authorizeDiscordInternalRequest(request)
+      if (authError) return authError
+    }
+
     const origin = request.headers.get('origin')
     const allowedOrigin =
       resolveAllowedCorsOrigin(origin) ??
