@@ -177,6 +177,7 @@ const no = {
       comingSoon: 'Kommer snart',
       password: 'Passord',
       passwordPlaceholder: 'La stå tomt for offentlig lobby',
+      discordListingNotice: 'Offentlige lobbyer vises på Discord-serveren vår så folk kan bli med – private lobbyer vises aldri der',
       create: 'Opprett lobby',
       creating: 'Oppretter...',
       cancel: 'Avbryt',
@@ -2472,6 +2473,13 @@ const no = {
     contactIntro: 'Spørsmål, feil eller ideer:',
     githubRepo: 'Boardly på GitHub',
     playCta: 'Se alle spill',
+  },
+  privacyPolicy: {
+    discord: {
+      title: '4a. Discord',
+      feed: 'Åpne offentlige lobbyer legges ut på Discord-serveren vår så andre spillere kan bli med. Oppføringen viser spillet, antall ledige plasser og lenken til lobbyen – aldri vertens navn. Private lobbyer legges aldri ut.',
+      bot: 'Boten bak den strømmen kjører på vår egen maskinvare, ikke hos en tredjepart, og leser bare den offentlige lobbylisten som alle besøkende allerede ser.',
+    },
   },
   premium: {
     breadcrumb: 'Premium',

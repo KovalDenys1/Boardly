@@ -20,6 +20,7 @@ import {
   type AnalyticsGameType,
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
+import { resolveRequestedMaxPlayers } from '@/lib/lobby-create-query'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 
@@ -107,13 +108,26 @@ function CreateLobbyPage() {
     isSelectableGameType(requestedGameType) ? requestedGameType : 'yahtzee'
   )
   const gameInfo = GAME_INFO[selectedGameType]
+  const [isPremiumUser, setIsPremiumUser] = useState(false)
+
+  // #943: the Discord `/play <game> [players]` command links here with the seat count in
+  // the URL. It belongs to the game the link named, so it is only read while that game is
+  // the selected one – switching games in the picker falls back to that game's default.
+  // The plan matters too: POST /api/lobby answers 403 above FREE_MAX_PLAYERS, so a free
+  // account opens at the largest size it can actually create. `isPremiumUser` is false
+  // until the fetch below confirms it, which re-runs the reset effect once for a Premium
+  // host on a link asking for more than 10 seats.
+  const deepLinkMaxPlayers =
+    selectedGameType === requestedGameType
+      ? resolveRequestedMaxPlayers(searchParams.get('maxPlayers'), gameInfo?.allowedPlayers, isPremiumUser)
+      : null
 
   const boardSize = 3
 
   const [formData, setFormData] = useState({
     name: '',
     password: '',
-    maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
+    maxPlayers: deepLinkMaxPlayers ?? GAME_INFO[selectedGameType].defaultMaxPlayers,
     allowSpectators: false,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
     yahtzeeMode: GAME_INFO[selectedGameType].settings.defaultGameMode ?? 'classic',
@@ -123,7 +137,9 @@ function CreateLobbyPage() {
   })
   const LOBBY_NAME_MAX = 22
   const [showNameWarning, setShowNameWarning] = useState(false)
-  const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
+  const [maxPlayersInput, setMaxPlayersInput] = useState(
+    (deepLinkMaxPlayers ?? GAME_INFO[selectedGameType].defaultMaxPlayers).toString()
+  )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
@@ -131,24 +147,24 @@ function CreateLobbyPage() {
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
   const [tipsOpen, setTipsOpen] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
-  const [isPremiumUser, setIsPremiumUser] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
     if (gameInfo) {
+      const nextMaxPlayers = deepLinkMaxPlayers ?? gameInfo.defaultMaxPlayers
       setFormData(prev => ({
         ...prev,
-        maxPlayers: gameInfo.defaultMaxPlayers,
+        maxPlayers: nextMaxPlayers,
         turnTimer: gameInfo.settings.defaultTurnTimer || 60,
         yahtzeeMode: gameInfo.settings.defaultGameMode ?? 'classic',
         ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
         memoryDifficulty: gameInfo.settings.defaultDifficulty ?? 'easy',
         gameType: selectedGameType,
       }))
-      setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
+      setMaxPlayersInput(nextMaxPlayers.toString())
       setShowPlayerWarning(false)
     }
-  }, [selectedGameType, gameInfo])
+  }, [selectedGameType, gameInfo, deepLinkMaxPlayers])
 
   useEffect(() => {
     if (status === 'unauthenticated' && !isGuest) {
@@ -952,6 +968,13 @@ function CreateLobbyPage() {
                 {error}
               </div>
             )}
+
+            {/* #945: the Discord feed republishes open public lobbies, so say so where
+                the lobby is made public – a lobby is private only if it has a password. */}
+            <p className="flex items-start gap-1.5 text-[13px] text-bd-ink-muted">
+              <Icon name="globe" size={13} />
+              <span>{t('lobby.create.discordListingNotice')}</span>
+            </p>
 
           </div>
         </form>

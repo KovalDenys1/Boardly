@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import DiscordPrivacySection from './DiscordPrivacySection'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -70,6 +71,8 @@ export default function PrivacyPolicy() {
                 <li><strong style={{ color: 'var(--bd-ink)' }}>Legal Requirements:</strong> When required by law or to protect our rights</li>
               </ul>
             </section>
+
+            <DiscordPrivacySection />
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>5. Data Security</h2>
