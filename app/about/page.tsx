@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: ABOUT_DESCRIPTION,
   },
   alternates: {
-    canonical: ABOUT_URL,
+    canonical: 'https://boardly.online/about',
   },
   robots: {
     index: true,
