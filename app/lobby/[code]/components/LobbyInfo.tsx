@@ -1,13 +1,12 @@
 import { useRouter } from 'next/navigation'
-import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import LeaveIcon from '@/components/LeaveIcon'
-import { buildInviteLink } from '@/lib/invite-attribution'
-import { trackInviteCopied, type InviteCopySource } from '@/lib/analytics'
+import { useInviteShare } from '@/hooks/useInviteShare'
+import type { InviteCopySource } from '@/lib/analytics'
 import type { Game, Lobby } from '@/types/game'
 
 interface LobbyInfoProps {
@@ -39,18 +38,11 @@ export default function LobbyInfo({
   })()
 
   // The link carries a share marker so the lobby page can tell an invited arrival from a
-  // typed code; the event names which of the two copy affordances was used (#920).
+  // typed code; the event names which affordance was used (#920). On a phone this opens the
+  // OS share sheet and on a desktop it copies, both through the one helper (#927).
+  const shareInvite = useInviteShare(lobby.code)
   const handleCopyInvite = (source: InviteCopySource) => {
-    const inviteCode = lobby.code
-    if (typeof window !== 'undefined' && inviteCode) {
-      navigator.clipboard
-        .writeText(buildInviteLink(inviteCode, window.location.origin))
-        .then(() => {
-          trackInviteCopied(source, inviteCode)
-          showToast.success('toast.linkCopied')
-        })
-        .catch(() => showToast.error('toast.error'))
-    }
+    void shareInvite(source)
   }
 
   return (

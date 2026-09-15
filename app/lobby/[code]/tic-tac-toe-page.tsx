@@ -991,6 +991,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     ) : undefined}
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+                    inviteCode={code}
                 />
             )}
             {isFinished && !isSpectator && overlayInspecting && (

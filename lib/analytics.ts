@@ -2,6 +2,7 @@ import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
 import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
+import type { InviteShareMethod } from './invite-share'
 
 /**
  * Analytics wrapper for tracking game events
@@ -600,12 +601,30 @@ export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): vo
   clientLogger.log('[analytics] Signup prompt', action)
 }
 
-/** Where an invite link was copied from; the lobby code goes in the payload so it joins. */
-export type InviteCopySource = 'lobby_header_button' | 'lobby_code_chip'
+/** Where an invite link was shared from; the lobby code goes in the payload so it joins. */
+export type InviteCopySource =
+  | 'lobby_header_button'
+  | 'lobby_code_chip'
+  | 'result_overlay'
+  | 'waiting_room_slot'
 
-/** Someone put an invite link on their clipboard (#920). */
-export function trackInviteCopied(source: InviteCopySource, lobbyCode: string): void {
-  const payload = { source, lobby_code: lobbyCode } satisfies Record<string, AnalyticsPropertyValue>
+/**
+ * Someone sent an invite link out of the page (#920, extended by #927).
+ *
+ * Still one event for every surface: `source` names the affordance and `method` says
+ * whether it went through the OS share sheet or the clipboard, so the share sheet does not
+ * fork the funnel the invite loop already measures.
+ */
+export function trackInviteCopied(
+  source: InviteCopySource,
+  lobbyCode: string,
+  method: InviteShareMethod
+): void {
+  const payload = {
+    source,
+    lobby_code: lobbyCode,
+    method,
+  } satisfies Record<string, AnalyticsPropertyValue>
   track('invite_copied', payload)
   emitOperationalEvent('invite_copied', payload)
   clientLogger.log('[analytics] Invite copied', payload)
