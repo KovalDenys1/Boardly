@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
-import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import SketchAndGuessGameBoard from '@/components/SketchAndGuessGameBoard'
 import { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
@@ -23,6 +22,7 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { getThemePageStyle } from '@/lib/lobby-themes'
+import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -121,7 +121,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     const [loading, setLoading] = useState(true)
     const [lobby, setLobby] = useState<LobbyData | null>(null)
-    const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isReturningToWaiting, setIsReturningToWaiting] = useState(false)
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
@@ -258,11 +257,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             finalizePendingLobbyCreateMetric({ lobbyCode: normalizedLobby.code, fallbackGameType: normalizedLobby.gameType })
         } catch (err) {
             clientLogger.error('Failed to load lobby:', err)
-            setError(t('errors.failedToLoad'))
+            // A failed refresh must not replace a game in progress, so the failure is a toast
+            // and the error screen below is reached only when there is no lobby to show at all.
+            showToast.error('errors.failedToLoad')
         } finally {
             setLoading(false)
         }
-    }, [code, t, normalizeLobbyResponse])
+    }, [code, normalizeLobbyResponse])
 
     useEffect(() => {
         const redirectReason = resolveLifecycleRedirectReason({ gameStatus: lobby?.status, lobbyIsActive: lobby?.isActive })
@@ -340,7 +341,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             const submitStartedAt = Date.now()
             let responseStatus: number | undefined
             setIsSubmitting(true)
-            setError(null)
             try {
                 const res = await fetchWithGuest(`/api/game/${lobby.game.id}/sketch-and-guess-action`, {
                     method: 'POST',
@@ -411,7 +411,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             } catch (err) {
                 clientLogger.error(`Failed to submit ${action}:`, err)
                 const errorMessage = err instanceof Error ? err.message : t('errors.generic')
-                setError(errorMessage)
+                // A rejected guess or drawing is a toast, never a page-level error screen: the
+                // round is still live and the player has to stay on the board to try again.
                 showToast.error('errors.general', undefined, { message: errorMessage })
             } finally {
                 setIsSubmitting(false)
@@ -447,24 +448,22 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         }
     }, [code, getCurrentUserId, lobby, handleGameReset])
 
-    if (loading) {
-        return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
-    }
+    if (loading) return <LobbyPageLoadingFallback />
+    if (!lobby) return <LobbyPageErrorFallback />
 
-    if (error || !lobby || !lobby.game) {
+    const themeStyle = getThemePageStyle(lobby.theme)
+    const game = lobby.game
+
+    if (!game) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
-                <div className="rounded-2xl border border-rose-200 bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
-                    <p className="text-rose-700">{error || t('errors.gameNotFound')}</p>
-                    <button
-                        onClick={() => router.push(`/lobby/${code}`)}
-                        className="mt-4 rounded-xl bg-rose-600 px-4 py-2 font-semibold text-white transition hover:bg-rose-500"
-                    >
-                        {t('common.back')}
+            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+                <div className="bd-card w-full max-w-md p-8 text-center">
+                    <h1 className="mb-3 text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                        {t('games.tictactoe.game.gameNotStartedTitle')}
+                    </h1>
+                    <p className="mb-6 text-sm text-bd-ink-soft">{t('games.tictactoe.game.gameNotStartedDescription')}</p>
+                    <button onClick={() => router.push(`/lobby/${code}`)} className="bd-btn bd-btn-primary mx-auto">
+                        {t('game.ui.backToLobby')}
                     </button>
                 </div>
             </div>
@@ -472,18 +471,15 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     }
 
     const currentUserId = getCurrentUserId()
-    const currentPlayer = lobby.game.players.find((p) => p.id === currentUserId)
-    const gameData = lobby.game.data
+    const currentPlayer = game.players.find((p) => p.id === currentUserId)
+    const gameData = game.data
 
     if (!currentPlayer && !isSpectator) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
-                <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
-                    <p className="text-bd-ink-soft mb-4">{t('lobby.game.notPartOfMatch')}</p>
-                    <button
-                        onClick={() => router.push(`/lobby/${code}`)}
-                        className="rounded-xl bd-btn bd-btn-primary px-4 py-2 font-semibold transition"
-                    >
+            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+                <div className="bd-card w-full max-w-md p-8 text-center">
+                    <p className="mb-6 text-sm text-bd-ink-soft">{t('lobby.game.notPartOfMatch')}</p>
+                    <button onClick={() => router.push(`/lobby/${code}`)} className="bd-btn bd-btn-primary mx-auto">
                         {t('lobby.game.back_to_lobby')}
                     </button>
                 </div>
@@ -492,10 +488,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     }
 
     const isCreator = !isSpectator && !!currentUserId && lobby.creatorId === currentUserId
-    const isFinished = lobby.game.status === 'finished'
+    const isFinished = game.status === 'finished'
 
     return (
-        <div className="h-[var(--game-h)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
+        <div className="h-[var(--game-h)] overflow-y-auto" style={themeStyle}>
             <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
                 <div className="mx-auto max-w-5xl space-y-5">
                     <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
@@ -519,7 +515,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                                     {socketConnected ? t('games.guess_my_drawing.game.liveUpdates') : t('games.guess_my_drawing.game.reconnecting')}
                                 </span>
                                 <span className="inline-flex items-center rounded-full bd-chip px-3 py-1 text-xs font-semibold">
-                                    {lobby.game.players.length} {t('game.ui.player')}
+                                    {game.players.length} {t('game.ui.player')}
                                 </span>
                                 {!isSpectator && (
                                     <button
@@ -537,9 +533,9 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     <section className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
                         <SketchAndGuessGameBoard
                             gameData={gameData}
-                            gameStatus={lobby.game.status}
+                            gameStatus={game.status}
                             playerId={isSpectator ? '' : currentPlayer!.id}
-                            players={lobby.game.players}
+                            players={game.players}
                             onSubmitDrawing={handleSubmitDrawing}
                             onSubmitGuess={handleSubmitGuess}
                             onAdvanceRound={handleAdvanceRound}
