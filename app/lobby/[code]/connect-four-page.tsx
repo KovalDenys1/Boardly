@@ -44,6 +44,19 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
+import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+
+/** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
+function parseLobbyGameState(activeGame: unknown): unknown {
+    const raw = (activeGame as { state?: unknown } | null)?.state
+    if (typeof raw !== 'string') return raw ?? null
+    try {
+        return JSON.parse(raw || '{}')
+    } catch {
+        return null
+    }
+}
+
 
 // ─── Design sub-components ────────────────────────────────────────────────────
 
@@ -324,6 +337,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
     useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
+    const freshnessRef = React.useRef(createFreshnessWatermark())
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
@@ -396,7 +410,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     }, [isGuest, guestId, session?.user?.id])
 
     const applyAuthoritativeState = useCallback(
-        (gameId: string, authoritativeState: unknown, statusOverride?: Game['status']): boolean => {
+        (gameId: string, authoritativeState: unknown, statusOverride?: Game['status'], options?: { trusted?: boolean }): boolean => {
+            // #985: refuse a snapshot older than the one on screen, so a stale
+            // broadcast cannot overwrite the optimistic move and flicker it.
+            const freshness = decideFreshness(freshnessRef.current, authoritativeState, {
+                trusted: options?.trusted,
+                moveInFlight: isMoveSubmittingRef.current,
+            })
+            if (!freshness.accept) {
+                clientLogger.debug('Ignoring stale game state', { gameId, reason: freshness.reason })
+                return true
+            }
             if (!authoritativeState || typeof authoritativeState !== 'object') return false
             const authoritativeEngine = new ConnectFourGame(gameId)
             authoritativeEngine.restoreState(authoritativeState as AnyGameState)
@@ -431,6 +455,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, { includeFinished: true })
             if (!lobbyPayload) throw new Error('Invalid lobby response')
             setLobby(lobbyPayload as Lobby)
+            // An explicit resync is authoritative: move the watermark with it (#985).
+            decideFreshness(freshnessRef.current, parseLobbyGameState(activeGame), { trusted: true })
             setGame(activeGame as Game | null)
             if (typeof lobbyPayload?.code === 'string') {
                 finalizePendingLobbyCreateMetric({ lobbyCode: lobbyPayload.code, fallbackGameType: lobbyPayload.gameType })
@@ -506,6 +532,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     }, [applyAuthoritativeState, loadLobby])
 
     const handleGameReset = useCallback(() => {
+        resetFreshnessWatermark(freshnessRef.current)
         if (onGameReset) onGameReset()
         else router.push(`/lobby/${code}`)
     }, [code, onGameReset, router])
@@ -579,7 +606,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 return false
             }
             const authoritativeState = data?.game?.state
-            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) await loadLobby()
+            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
             trackMoveSubmitApplied({ gameType: 'connect_four', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'connect_four_page' })
             if (move.type === 'request-undo') {
                 if (data?.autoResponse?.type === 'undo') {
@@ -713,7 +740,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             const data = await response.json().catch(() => null)
             if (response.ok) {
                 const authoritativeState = data?.game?.state
-                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) await loadLobby()
+                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
                 showToast.success('lobby.game.next_round')
                 return
             }
