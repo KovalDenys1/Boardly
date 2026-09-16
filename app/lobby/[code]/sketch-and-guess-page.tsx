@@ -249,17 +249,26 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 headers: { 'Content-Type': 'application/json' },
             })
 
-            if (!res.ok) throw new Error('Failed to load lobby')
-            const data = await res.json()
+            const data = await res.json().catch(() => null)
+            if (!res.ok) {
+                // A refused lobby is gone (the route answers 404 once it is deleted or reaped),
+                // so the player has to land on the error screen instead of keeping a board that
+                // can never update again. Same split as rock-paper-scissors-page.
+                clientLogger.error('Failed to load lobby:', data?.error)
+                showToast.error('errors.failedToLoad', undefined, undefined, { id: 'sketch-load-failed' })
+                setLobby(null)
+                return
+            }
             const normalizedLobby = normalizeLobbyResponse(data)
             if (!normalizedLobby) throw new Error('Invalid lobby response')
             setLobby(normalizedLobby)
             finalizePendingLobbyCreateMetric({ lobbyCode: normalizedLobby.code, fallbackGameType: normalizedLobby.gameType })
         } catch (err) {
+            // A network blip is not a dead lobby, so a game in progress stays on screen. One
+            // toast id, because every realtime broadcast calls this and N failures are still one
+            // thing gone wrong.
             clientLogger.error('Failed to load lobby:', err)
-            // A failed refresh must not replace a game in progress, so the failure is a toast
-            // and the error screen below is reached only when there is no lobby to show at all.
-            showToast.error('errors.failedToLoad')
+            showToast.error('errors.failedToLoad', undefined, undefined, { id: 'sketch-load-failed' })
         } finally {
             setLoading(false)
         }
@@ -479,8 +488,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
                 <div className="bd-card w-full max-w-md p-8 text-center">
                     <p className="mb-6 text-sm text-bd-ink-soft">{t('lobby.game.notPartOfMatch')}</p>
+                    {/* Same key as the card above and as rock-paper-scissors: `lobby.game.back_to_lobby`
+                        is worded differently in no and uk, so two adjacent screens read as two actions. */}
                     <button onClick={() => router.push(`/lobby/${code}`)} className="bd-btn bd-btn-primary mx-auto">
-                        {t('lobby.game.back_to_lobby')}
+                        {t('game.ui.backToLobby')}
                     </button>
                 </div>
             </div>

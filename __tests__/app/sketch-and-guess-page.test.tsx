@@ -43,11 +43,14 @@ jest.mock('@/contexts/GuestContext', () => ({
   }),
 }))
 
-jest.mock('@/lib/i18n-helpers', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}))
+// The real hook deliberately preserves the `t` reference across renders
+// (lib/i18n-helpers.ts), because re-wrapping it makes every callback that depends on it
+// unstable. A mock that returns a fresh `t` each render turns any such callback into a
+// render loop and would make this suite fail for a reason unrelated to what it asserts.
+jest.mock('@/lib/i18n-helpers', () => {
+  const t = (key: string) => key
+  return { useTranslation: () => ({ t }) }
+})
 
 jest.mock('@/lib/i18n-toast', () => ({
   showToast: {
@@ -80,8 +83,8 @@ jest.mock('@/lib/analytics', () => ({
   trackMoveSubmitApplied: jest.fn(),
 }))
 
-// The board owns the guess input; the page only has to hand it a submit callback,
-// so the mock exposes one button that calls it.
+// The board owns the guess input; the page only hands it a submit callback, so the mock
+// exposes one button that calls it.
 jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   __esModule: true,
   default: ({ onSubmitGuess }: { onSubmitGuess: (guess: string) => void }) => (
@@ -111,7 +114,7 @@ jest.mock('@/lib/supabase-client', () => ({
   })),
 }))
 
-function buildLobbyResponse(overrides: Record<string, unknown> = {}) {
+function buildLobbyResponse() {
   return {
     lobby: {
       id: 'lobby-1',
@@ -149,8 +152,11 @@ function buildLobbyResponse(overrides: Record<string, unknown> = {}) {
         { id: 'player-3', userId: 'user-3', name: 'Cara', user: { username: 'Cara' } },
       ],
     },
-    ...overrides,
   }
+}
+
+function okResponse(body: unknown) {
+  return { ok: true, status: 200, json: async () => body } as Response
 }
 
 describe('SketchAndGuessLobbyPage fallback states', () => {
@@ -160,40 +166,52 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
-    mockFetchWithGuest.mockResolvedValue({
-      ok: true,
-      json: async () => buildLobbyResponse(),
-    } as Response)
+    mockFetchWithGuest.mockResolvedValue(okResponse(buildLobbyResponse()))
   })
 
-  it('uses the shared loading fallback, not a hardcoded viewport shell', async () => {
+  it('loads behind the shared loading fallback, not a hardcoded viewport shell', async () => {
     const { container } = render(<SketchAndGuessLobbyPage code="ABCD" />)
 
     const root = container.firstChild as HTMLElement | null
     expect(root?.className).toContain('min-h-[var(--game-h)]')
     expect(container.innerHTML).not.toContain('min-h-[100dvh]')
+    expect(container.innerHTML).not.toContain('from-sky-50')
 
     // Let the pending load settle so the state updates it schedules happen inside the test.
     await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
   })
 
-  it('shows the shared error fallback when the lobby cannot be loaded', async () => {
-    mockFetchWithGuest.mockResolvedValue({ ok: false, json: async () => ({}) } as Response)
+  // A lobby that has been deleted or reaped answers 404. Keeping the last snapshot on screen
+  // would leave the player on a board that can never update again, so the lobby is dropped.
+  it('falls through to the shared error screen when the lobby is gone', async () => {
+    mockFetchWithGuest.mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: 'Lobby not found' }) } as Response)
 
     const { container } = render(<SketchAndGuessLobbyPage code="ABCD" />)
 
     await waitFor(() => {
       expect(screen.queryByText('games.tictactoe.game.errorTitle')).not.toBeNull()
     })
-    expect(toast.error).toHaveBeenCalledWith('errors.failedToLoad')
+    expect(toast.error).toHaveBeenCalledWith('errors.failedToLoad', undefined, undefined, { id: 'sketch-load-failed' })
     expect(container.innerHTML).not.toContain('min-h-[100dvh]')
   })
 
+  // The other half of that split: a network blip is not a dead lobby, so the round survives it.
+  it('keeps a live board when a background refresh fails', async () => {
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+
+    mockFetchWithGuest.mockRejectedValueOnce(new Error('Failed to fetch'))
+
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { gameId: 'game-1' } })
+    })
+
+    expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0)
+    expect(screen.queryByText('games.tictactoe.game.errorTitle')).toBeNull()
+  })
+
   it('offers a way back to the lobby when the lobby has no active game', async () => {
-    mockFetchWithGuest.mockResolvedValue({
-      ok: true,
-      json: async () => ({ lobby: buildLobbyResponse().lobby }),
-    } as Response)
+    mockFetchWithGuest.mockResolvedValue(okResponse({ lobby: buildLobbyResponse().lobby }))
 
     render(<SketchAndGuessLobbyPage code="ABCD" />)
 
@@ -211,7 +229,7 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
       { id: 'player-2', userId: 'user-2', name: 'Bob', user: { username: 'Bob' } },
       { id: 'player-3', userId: 'user-3', name: 'Cara', user: { username: 'Cara' } },
     ]
-    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
 
     const { container } = render(<SketchAndGuessLobbyPage code="ABCD" />)
 
@@ -220,11 +238,27 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     })
     expect(container.innerHTML).toContain('h-[var(--game-h)]')
     expect(container.innerHTML).not.toContain('min-h-[100dvh]')
+    // The card above it uses the same key, so the two screens read as one action.
+    expect(screen.getByRole('button', { name: 'game.ui.backToLobby' })).not.toBeNull()
   })
 
-  // The defect this covers: submitAction used to write the failure into the same
-  // `error` state the page guarded its whole render on, so one rejected guess
-  // replaced the live round with a full-screen error card and nothing could clear it.
+  it('shows the board to a spectator who is not one of the players', async () => {
+    const response = buildLobbyResponse()
+    response.activeGame.players = [
+      { id: 'player-2', userId: 'user-2', name: 'Bob', user: { username: 'Bob' } },
+      { id: 'player-3', userId: 'user-3', name: 'Cara', user: { username: 'Cara' } },
+    ]
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
+
+    render(<SketchAndGuessLobbyPage code="ABCD" isSpectator />)
+
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+    expect(screen.queryByText('lobby.game.notPartOfMatch')).toBeNull()
+  })
+
+  // The defect this covers: submitAction used to write the failure into the same `error`
+  // state the page guarded its whole render on, so one rejected guess replaced the live
+  // round with a full-screen error card and nothing could clear it.
   it('keeps the board mounted when a guess is rejected', async () => {
     render(<SketchAndGuessLobbyPage code="ABCD" />)
 
@@ -244,6 +278,5 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
       expect(toast.error).toHaveBeenCalledWith('errors.general', undefined, { message: 'Guess already submitted' })
     })
     expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0)
-    expect(screen.queryByText('games.tictactoe.game.errorTitle')).toBeNull()
   })
 })
