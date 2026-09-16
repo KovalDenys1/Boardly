@@ -2703,6 +2703,31 @@ const no = {
     successBody: 'Vi leser alle innsendte meldinger og bruker dem til å forbedre Boardly.',
     close: 'Lukk',
   },
+  discordLink: {
+    title: 'Koble Boardly til Discord',
+    intro: 'Med koblingen kan Boardly-serveren på Discord gi deg roller ut fra kontoen din – Premium, Verified Player og Regular.',
+    sharesTitle: 'Dette deler Boardly med Discord',
+    shares: {
+      premium: 'Om Premium er aktivt',
+      gamesPlayed: 'Hvor mange spill du har fullført',
+      memberSince: 'Datoen kontoen ble opprettet',
+      verified: 'Om e-posten din er bekreftet',
+    },
+    notShared: 'Ingenting annet – ingen e-postadresse, ingen spillhistorikk, ingen venneliste. Fjerner du Discord i profilen, forsvinner alt.',
+    relinkTitle: 'Koble til på nytt for å få roller',
+    relinkBody: 'Discord-kontoen din er koblet med en eldre tillatelse som ikke kan oppdatere roller. En ny kobling ber Discord om bare den tillatelsen.',
+    connect: 'Fortsett til Discord',
+    relink: 'Koble til på nytt',
+    connecting: 'Åpner Discord…',
+    cancel: 'Ikke nå',
+    checking: 'Sjekker Discord-koblingen…',
+    updating: 'Oppdaterer Discord-rollene dine…',
+    doneTitle: 'Koblet',
+    done: 'Ferdig – du kan lukke fanen og gå tilbake til Discord.',
+    doneHint: 'Rollene følger kontoen din fra nå av: Premium samme dag, fullførte spill hver natt.',
+    failed: 'Discord svarte ikke. Prøv igjen om litt.',
+    retry: 'Prøv igjen',
+  },
 } as const
 
 export default no

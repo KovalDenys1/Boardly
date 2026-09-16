@@ -6,6 +6,7 @@ import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { getStripe } from '@/lib/stripe'
+import { clearRoleConnection } from '@/lib/discord/role-connection'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/delete-account')
@@ -145,6 +146,15 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+
+    // Empty the Discord Linked Roles metadata before the Accounts cascade takes the token
+    // with it – afterwards nothing could authenticate the write and the roles would stay
+    // granted on a deleted account (#939). Never throws, so it cannot block the deletion.
+    const cleared = await clearRoleConnection(user.id)
+    log.info('Discord role connection clear before account deletion', {
+      userId: user.id,
+      status: cleared.status,
+    })
 
     // Delete the user (this will cascade delete sessions, accounts, players, lobbies)
     await prisma.users.delete({

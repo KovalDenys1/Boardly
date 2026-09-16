@@ -6,6 +6,7 @@ import { sendAccountDeletionEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { randomBytes } from 'crypto'
+import { clearRoleConnection } from '@/lib/discord/role-connection'
 import {
   AuthenticationError,
   NotFoundError,
@@ -80,9 +81,16 @@ async function requestDeletionHandler(req: NextRequest) {
     user.username || 'User'
   )
 
+  // The plan clears the Discord Linked Roles metadata at the request, not only at the
+  // confirmed deletion: the person has said they are leaving, and the roles are the one
+  // visible Boardly footprint outside the site. Never throws. If the deletion is never
+  // confirmed, the nightly discord-role-sync cron pushes the metadata back (#939).
+  const cleared = await clearRoleConnection(user.id)
+
   log.info('Account deletion requested', {
     userId: user.id,
     email: user.email,
+    discordRoleConnection: cleared.status,
   })
 
   return NextResponse.json({
