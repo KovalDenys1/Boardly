@@ -35,6 +35,7 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -281,7 +282,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             if (!res.ok) {
                 clientLogger.error('Failed to load lobby:', data?.error)
                 showToast.error('errors.failedToLoad')
-                setLobby(null)
+                // #991: only a gone lobby drops the board. A 429 or a transient 5xx
+                // is a failed fetch, and a game in progress must survive it.
+                if (isLobbyGoneStatus(res.status)) setLobby(null)
                 setLoading(false)
                 return
             }

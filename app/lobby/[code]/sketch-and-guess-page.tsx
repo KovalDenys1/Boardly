@@ -23,6 +23,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
+import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -251,12 +252,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
             const data = await res.json().catch(() => null)
             if (!res.ok) {
-                // A refused lobby is gone (the route answers 404 once it is deleted or reaped),
-                // so the player has to land on the error screen instead of keeping a board that
-                // can never update again. Same split as rock-paper-scissors-page.
+                // A gone lobby (404/403/410) has to land the player on the error screen
+                // rather than keep a board that can never update again. #991: every other
+                // status is a failed fetch — a 429 from a shared IP, a transient 5xx — and
+                // used to wipe a live game just the same. Same split as the other pages.
                 clientLogger.error('Failed to load lobby:', data?.error)
                 showToast.error('errors.failedToLoad', undefined, undefined, { id: 'sketch-load-failed' })
-                setLobby(null)
+                if (isLobbyGoneStatus(res.status)) setLobby(null)
                 return
             }
             const normalizedLobby = normalizeLobbyResponse(data)
