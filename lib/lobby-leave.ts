@@ -450,6 +450,19 @@ export async function performPlayerLeave(
             if (value === undefined) delete data[key]
             else if (key in data) data[key] = value
           }
+          // #990: clearing the tracking arrays is not enough — the cards the
+          // departed player had turned over stayed face up, which is a state the
+          // engine never produces. Memory's bot reads "two unmatched cards face
+          // up" as "a pair is mid-resolution", refused to move, and ended the
+          // turn without ending it: the game could not be finished. Anything
+          // card-shaped gets turned back down with the arrays it belongs to.
+          if (Array.isArray(data.cards)) {
+            data.cards = (data.cards as Array<Record<string, unknown>>).map((card) =>
+              card && typeof card === 'object' && card.isFlipped === true && card.isMatched !== true
+                ? { ...card, isFlipped: false }
+                : card
+            )
+          }
         }
         await prisma.games.update({
           where: { id: activeGame.id },
