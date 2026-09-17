@@ -45,6 +45,7 @@ import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
 function parseLobbyGameState(activeGame: unknown): unknown {
@@ -452,7 +453,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 // #987: only leave when the lobby is genuinely gone. A 429 from a
                 // shared IP or a transient 5xx used to throw a player out of a live
                 // game — and a reconnect resync is exactly when those arrive.
-                if (res.status === 404 || res.status === 403 || res.status === 410) {
+                if (isLobbyGoneStatus(res.status)) {
                     router.push('/games')
                 }
                 setLoading(false)
