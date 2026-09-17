@@ -44,6 +44,19 @@ import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
+import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+
+/** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
+function parseLobbyGameState(activeGame: unknown): unknown {
+    const raw = (activeGame as { state?: unknown } | null)?.state
+    if (typeof raw !== 'string') return raw ?? null
+    try {
+        return JSON.parse(raw || '{}')
+    } catch {
+        return null
+    }
+}
+
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
@@ -220,6 +233,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // needs its own heartbeat while the game itself is active.
     useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
+    const freshnessRef = React.useRef(createFreshnessWatermark())
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
@@ -294,8 +308,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     }, [isGuest, guestId, session?.user?.id])
 
     const applyAuthoritativeState = useCallback(
-        (gameId: string, authoritativeState: unknown, statusOverride?: Game['status']): boolean => {
+        (gameId: string, authoritativeState: unknown, statusOverride?: Game['status'], options?: { trusted?: boolean }): boolean => {
             if (!authoritativeState || typeof authoritativeState !== 'object') return false
+            // #985: an unsolicited snapshot older than the one on screen used to
+            // overwrite the optimistic move and make it flicker.
+            const freshness = decideFreshness(freshnessRef.current, authoritativeState, {
+                trusted: options?.trusted,
+                moveInFlight: isMoveSubmittingRef.current,
+            })
+            if (!freshness.accept) {
+                clientLogger.debug('Ignoring stale game state', { gameId, reason: freshness.reason })
+                return true
+            }
             const authoritativeEngine = new TicTacToeGame(gameId)
             authoritativeEngine.restoreState(authoritativeState as AnyGameState)
             const resolvedState = authoritativeEngine.getState()
@@ -323,12 +347,20 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             if (!res.ok) {
                 clientLogger.error('Failed to load lobby:', data.error)
                 showToast.error('errors.failedToLoad')
-                router.push('/games')
+                // #987: only leave when the lobby is genuinely gone. A 429 from a
+                // shared IP or a transient 5xx used to throw a player out of a live
+                // game — and a reconnect resync is exactly when those arrive.
+                if (res.status === 404 || res.status === 403 || res.status === 410) {
+                    router.push('/games')
+                }
+                setLoading(false)
                 return
             }
             const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, { includeFinished: true })
             if (!lobbyPayload) throw new Error('Invalid lobby response')
             setLobby(lobbyPayload as Lobby)
+            // An explicit resync is authoritative: move the watermark with it (#985).
+            decideFreshness(freshnessRef.current, parseLobbyGameState(activeGame), { trusted: true })
             setGame(activeGame as Game | null)
             if (typeof lobbyPayload?.code === 'string') {
                 finalizePendingLobbyCreateMetric({ lobbyCode: lobbyPayload.code, fallbackGameType: lobbyPayload.gameType })
@@ -402,11 +434,16 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
   }, [applyAuthoritativeState, loadLobby])
 
   const handleGameReset = useCallback(() => {
+    resetFreshnessWatermark(freshnessRef.current)
     if (onGameReset) onGameReset()
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
 
   const { isConnected, isReconnecting } = useRealtimeConnection({
+        // #987: Supabase Broadcast has no replay buffer, so every event that
+        // landed while the socket was down is gone. Without this the board
+        // stayed frozen on pre-gap state and neither player could move.
+    onStateSync: async () => { await loadLobby() },
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,
@@ -484,7 +521,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 return false
             }
             const authoritativeState = data?.game?.state
-            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) await loadLobby()
+            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
             trackMoveSubmitApplied({ gameType: 'tic_tac_toe', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'tic_tac_toe_page' })
             if (move.type === 'request-undo') {
                 if (data?.autoResponse?.type === 'undo') {
@@ -651,7 +688,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     throw new Error((typeof data?.details === 'string' && data.details) || (typeof data?.error === 'string' && data.error) || 'Failed to start next round')
                 }
                 const authoritativeState = data?.game?.state
-                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) await loadLobby()
+                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
                 trackMoveSubmitApplied({ gameType: 'tic_tac_toe', moveType: 'next-round', durationMs: Date.now() - nextRoundSubmitStartedAt, isGuest, success: true, applied: true, statusCode: nextRoundResponseStatus, source: 'tic_tac_toe_page' })
                 nextRoundMetricTracked = true
                 showToast.success('lobby.game.next_round')

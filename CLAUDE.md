@@ -345,10 +345,17 @@ until ~Nov 2026 beyond confirming the card on file is still valid.
 
 **`prisma.config.ts` overrides your shell.** It calls `dotenv.config({ override: true })` on `.env`
 if that file exists, and only otherwise on `.env.local`. So exporting `DATABASE_URL` /
-`DIRECT_URL` in the shell does **not** point Prisma anywhere — `.env.local` wins, and the CLI
-connects to production. On 2026-09-07 a `prisma migrate deploy` aimed at `boardly-dev` reported
-"No pending migrations" against a database with zero tables, which is the impossible answer that
-gave it away.
+`DIRECT_URL` in the shell does **not** point Prisma anywhere — `.env.local` wins. On 2026-09-07 a
+`prisma migrate deploy` aimed at `boardly-dev` reported "No pending migrations" against a database
+with zero tables, which is the impossible answer that gave it away.
+
+**Since then `.env.local` points at `boardly-dev`, not production** (checked 2026-09-17:
+`inmvbxfflqeblynpktay`, 13 users, 2 games — production is `vamydthjlytrseqdpzqv`, 159 registered
+users). So the trap has inverted: a script run from this repo now silently hits **dev**, and a
+"user not found" against a row you just read in production is the tell. To touch production data,
+use the Control Panel's `.env.local` (`~/Projects/boardly-control-panel`, same shared database and
+the sanctioned admin surface) or the `supabase-prod` MCP, and always guard the write with a second
+identifying column so a wrong-database run refuses instead of writing.
 
 To run a Prisma command against another database, use the config's own precedence rather than
 fighting it: write the target values into a temporary `.env`, run, and delete it — with a `trap`,

@@ -16,6 +16,7 @@ import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transitio
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
+import { runAfterResponse } from '@/lib/after-response'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -164,7 +165,13 @@ function autoTriggerBotTurn(params: {
     turnEndToBotTriggerMs,
   })
 
-  void fetch(botTurnApiUrl, {
+  // `after()` and not a bare `void fetch(...)`: this route returns as soon as the
+  // move is written, and on Vercel the instance can be frozen the moment the
+  // response is sent — which cut the trigger off mid-flight and left the bot
+  // waiting for a client-side watchdog (in Rock Paper Scissors, the full round
+  // timer). `after` keeps the invocation alive until the work settles.
+  runAfterResponse(
+    fetch(botTurnApiUrl, {
     method: 'POST',
     headers: botTurnHeaders,
     body: JSON.stringify({
@@ -204,6 +211,7 @@ function autoTriggerBotTurn(params: {
         error: triggerError,
       })
     })
+  )
 }
 
 export async function POST(

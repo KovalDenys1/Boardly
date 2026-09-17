@@ -667,6 +667,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }, [code, onGameReset, router])
 
   useRealtimeConnection({
+        // #987: Supabase Broadcast has no replay buffer, so every event that
+        // landed while the socket was down is gone. Without this the board
+        // stayed frozen on pre-gap state and neither player could move.
+    onStateSync: async () => { await loadLobby() },
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,

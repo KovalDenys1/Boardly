@@ -43,6 +43,13 @@ export class MemoryBotExecutor {
       }
 
       if (!this.hasAvailableFlip(dataBeforeMove)) {
+        // #990: never leave without ending the turn. Bailing silently here left
+        // the turn parked on the bot forever when a player left mid-pair; the
+        // engine turns the stragglers back down and advances on a pass.
+        const strandedFaceUp = dataBeforeMove.cards.some((card) => card.isFlipped && !card.isMatched)
+        if (strandedFaceUp) {
+          await onMove({ type: 'timeout-pass', data: {} } as Parameters<MoveCallback>[0])
+        }
         return
       }
 
@@ -169,6 +176,10 @@ export class MemoryBotExecutor {
     }
 
     if (visibleUnmatchedCount > 1) {
+      // Two unmatched cards face up normally means a pair is mid-resolution and
+      // the engine is about to turn them back. #990: a player leaving mid-pair
+      // could leave them face up for good, and returning false here stalled the
+      // turn forever. The caller now passes instead of going silent.
       return false
     }
 
