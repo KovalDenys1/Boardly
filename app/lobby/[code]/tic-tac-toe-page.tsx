@@ -347,7 +347,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             if (!res.ok) {
                 clientLogger.error('Failed to load lobby:', data.error)
                 showToast.error('errors.failedToLoad')
-                router.push('/games')
+                // #987: only leave when the lobby is genuinely gone. A 429 from a
+                // shared IP or a transient 5xx used to throw a player out of a live
+                // game — and a reconnect resync is exactly when those arrive.
+                if (res.status === 404 || res.status === 403 || res.status === 410) {
+                    router.push('/games')
+                }
+                setLoading(false)
                 return
             }
             const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, { includeFinished: true })
@@ -434,6 +440,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
   }, [code, onGameReset, router])
 
   const { isConnected, isReconnecting } = useRealtimeConnection({
+        // #987: Supabase Broadcast has no replay buffer, so every event that
+        // landed while the socket was down is gone. Without this the board
+        // stayed frozen on pre-gap state and neither player could move.
+    onStateSync: async () => { await loadLobby() },
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,

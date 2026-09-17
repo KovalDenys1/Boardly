@@ -52,6 +52,7 @@ export function useRealtimeConnection({
   onGameReset,
 }: UseRealtimeConnectionProps) {
   const [isConnected, setIsConnected] = useState(false)
+  const [hasConnectedOnce, setHasConnectedOnce] = useState(false)
   // The broadcast topic is no longer `lobby:{code}` — it carries a per-lobby
   // secret that only a member may fetch (#845), so subscribing waits on it.
   const [topic, setTopic] = useState<string | null>(null)
@@ -161,6 +162,7 @@ export function useRealtimeConnection({
           setIsConnected(true)
           const isReconnect = hasConnectedOnceRef.current
           hasConnectedOnceRef.current = true
+          setHasConnectedOnce(true)
           if (isReconnect && onStateSyncRef.current) {
             void onStateSyncRef.current().catch((err) => {
               clientLogger.warn('State sync after reconnect failed:', err)
@@ -212,9 +214,14 @@ export function useRealtimeConnection({
     []
   )
 
+  // #987: this was hardcoded `false`, so the "Reconnecting…" UI was dead and
+  // `useLobbyChatHistory` never re-fetched the messages missed while the socket
+  // was down. Having connected once and not being connected now is exactly it.
+  const isReconnecting = hasConnectedOnce && !isConnected
+
   return {
     isConnected,
-    isReconnecting: false as const,
+    isReconnecting,
     reconnectAttempt: 0 as const,
     emitWhenConnected,
   }
