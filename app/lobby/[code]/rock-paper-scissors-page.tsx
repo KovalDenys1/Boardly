@@ -34,6 +34,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
+import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -243,7 +244,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
      * keeps their own pick from the previous local state, so the tile stays
      * highlighted instead of blinking off when the broadcast lands.
      */
-    const applyAuthoritativeState = useCallback((gameId: string, raw: unknown, statusOverride?: unknown): boolean => {
+    const freshnessRef = React.useRef(createFreshnessWatermark())
+    const applyAuthoritativeState = useCallback((gameId: string, raw: unknown, statusOverride?: unknown, options?: { trusted?: boolean }): boolean => {
+        // #985: a stale broadcast used to land on top of a just-submitted choice.
+        const freshness = decideFreshness(freshnessRef.current, raw, { trusted: options?.trusted })
+        if (!freshness.accept) {
+            clientLogger.debug('Ignoring stale RPS state', { gameId, reason: freshness.reason })
+            return true
+        }
         const nextState = parseRpsState(raw, isLifecycleStatus(statusOverride) ? statusOverride : undefined)
         if (!nextState) return false
         const userId = getCurrentUserId()
@@ -292,6 +300,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                             .filter((player) => player.id)
                     }
                     const resolvedStatus = isLifecycleStatus(activeGame.status) ? activeGame.status : parsedState.status
+                    // An explicit resync is authoritative: move the watermark with it (#985).
+                    decideFreshness(freshnessRef.current, parsedState, { trusted: true })
                     setGame({ id: activeGame.id, status: resolvedStatus, players, state: { ...parsedState, status: resolvedStatus } })
                 } else {
                     setGame(null)
@@ -354,6 +364,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, getCurrentUserId, isLeavingLobbyRef])
 
     const handleGameReset = useCallback(() => {
+        resetFreshnessWatermark(freshnessRef.current)
         if (onGameReset) onGameReset()
         else router.push(`/lobby/${code}`)
     }, [code, onGameReset, router])
@@ -440,7 +451,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             }
             const responseGame = payload?.game as { state?: unknown; status?: unknown } | undefined
             const authoritativeState = responseGame?.state
-            if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, responseGame?.status)) await loadLobby()
+            if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, responseGame?.status, { trusted: true })) await loadLobby()
             trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
             if (isAutoAction) showToast.info('games.rock_paper_scissors.timeUp')
             return true
