@@ -1,8 +1,11 @@
 name: Reliability Alerts Cron
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  # Vercel owns this schedule since 2026-09-18 (#897): GitHub throttles scheduled
+  # workflows hard on a free account — six runs against the 288 a */5 cron
+  # declares, with gaps of hours. Pro allows a one-minute interval with
+  # per-minute precision, so the schedule lives in vercel.json now.
+  # workflow_dispatch stays, so this is still the way to fire one by hand.
   workflow_dispatch:
 
 concurrency:
