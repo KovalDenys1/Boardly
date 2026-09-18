@@ -45,7 +45,9 @@ jest.mock('@/lib/supabase-server', () => ({
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 
-const TARGET_PLAYER_ID = '11111111-1111-4111-8111-111111111111'
+// A cuid, the shape Prisma actually gives Players.id. This used to be a hand-written
+// uuid, which is why the suite stayed green while every real kick answered 400.
+const TARGET_PLAYER_ID = 'cmu6zza3v0009lesisur3smwy'
 
 function kickRequest() {
   return new NextRequest('http://localhost:3000/api/lobby/ABC123/kick-player', {
@@ -89,6 +91,15 @@ describe('POST /api/lobby/[code]/kick-player', () => {
       where: { id: 'lobby-1' },
       data: { kickedUserIds: { push: 'griefer-1' } },
     })
+  })
+
+  it('accepts a cuid player id, the only shape Prisma ever hands out', async () => {
+    // Guard on the id shape, not on the outcome: with `.uuid()` in the schema this
+    // answered 400 before the lobby was even read, so no real kick ever went through.
+    const response = await KICK_PLAYER(kickRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).not.toBe(400)
+    expect(mockPrisma.lobbies.findUnique).toHaveBeenCalled()
   })
 
   it('records nothing when the caller is not the host', async () => {

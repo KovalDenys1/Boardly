@@ -6,8 +6,13 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
+// `Players.id` is a cuid (prisma/schema.prisma), never a uuid, so the `.uuid()` that
+// #555 tightened this to rejected every real player: kicking has answered 400 "Invalid
+// playerId" ever since. The unit test did not catch it because its fixture id was a
+// hand-written uuid. The id is looked up in the lobby's own roster below, which is the
+// check that matters; the shape only has to be a non-empty string, as in `unkickSchema`.
 const kickPlayerSchema = z.object({
-  playerId: z.string().uuid(),
+  playerId: z.string().min(1),
 })
 
 const unkickSchema = z.object({
