@@ -849,6 +849,26 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
   }, [code, isGuest, guestId, guestName, guestToken])
 
+  // #1024: undo a kick. The kick is remembered so a removed player cannot walk
+  // back in on a reload (#1013), which also makes a mis-click final — this is
+  // the way back. It only clears the memory; they still rejoin via the link.
+  const unkickPlayer = useCallback(async (userId: string) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/kick-player`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to let the player back in')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+      showToast.success('toast.playerUnkicked')
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   const kickBot = useCallback(async (botPlayerId: string) => {
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -887,6 +907,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     addBotToLobby,
     kickBot,
     kickPlayer,
+    unkickPlayer,
     changeBotDifficulty,
     announceBotJoined,
     handleJoinLobby,

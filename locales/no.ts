@@ -2327,6 +2327,7 @@ const no = {
     botAddFailed: 'Kunne ikke legge til bot-spiller. Prøv igjen.',
     botKicked: 'Bot fjernet fra lobbyen.',
     playerKicked: 'Spiller fjernet fra lobbyen.',
+    playerUnkicked: 'De kan bli med igjen nå.',
     playerWasKicked: '{{player}} ble fjernet fra lobbyen.',
     youWereKicked: 'Du ble fjernet fra lobbyen av verten.',
     botAddedToStart: 'La til {{botName}} ({{difficulty}}) så du kan starte med en gang!',
