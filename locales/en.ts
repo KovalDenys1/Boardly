@@ -222,6 +222,7 @@ const en = {
       invalidCode: 'Invalid lobby code',
       lobbyFull: 'Lobby is full',
       wrongPassword: 'Wrong password',
+      kickedCannotRejoin: 'The host removed you from this lobby',
       watchInstead: 'Watch as spectator instead',
       createOwnLobby: 'Create your own lobby',
     },

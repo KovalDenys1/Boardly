@@ -203,6 +203,19 @@ describe('getFinishedGameHumanRoster (#1005)', () => {
     )
   })
 
+  it('does not carry over a player the host kicked (#1013)', async () => {
+    const client = makeClient({
+      players: [
+        { userId: 'human-1', user: { bot: null } },
+        { userId: 'kicked-1', user: { bot: null } },
+      ],
+    })
+
+    await expect(
+      getFinishedGameHumanRoster(client, 'lobby-1', ['kicked-1'])
+    ).resolves.toEqual(['human-1'])
+  })
+
   it('returns nothing when the lobby has never finished a game', async () => {
     const client = makeClient(null)
 

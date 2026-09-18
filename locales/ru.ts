@@ -222,6 +222,7 @@ const ru = {
       invalidCode: 'Неверный код лобби',
       lobbyFull: 'Лобби заполнено',
       wrongPassword: 'Неверный пароль',
+      kickedCannotRejoin: 'Хост удалил вас из этого лобби',
       watchInstead: 'Смотреть как зритель',
       createOwnLobby: 'Создать своё лобби'
     },

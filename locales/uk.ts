@@ -231,6 +231,7 @@ const uk: Translation = {
       invalidCode: 'Невірний код лобі',
       lobbyFull: 'Лобі заповнене',
       wrongPassword: 'Невірний пароль',
+      kickedCannotRejoin: 'Хост видалив вас із цього лобі',
       watchInstead: 'Дивитися як глядач',
       createOwnLobby: 'Створити власне лобі',
     },

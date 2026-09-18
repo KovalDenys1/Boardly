@@ -94,6 +94,7 @@ describe('POST /api/game/create', () => {
     creatorId: 'creator-123',
     maxPlayers: 4,
     gameType: 'yahtzee',
+    kickedUserIds: [],
     games: [],
   }
 

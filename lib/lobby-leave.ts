@@ -35,7 +35,7 @@ export const LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE = {
 // declared it would not match anything the client actually returns (#845).
 export type LobbyWithGamesForLeave = Prisma.LobbiesGetPayload<{
   include: typeof LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE
-  omit: { realtimeSecret: true }
+  omit: { realtimeSecret: true; kickedUserIds: true }
 }>
 
 type LeaveStateWriteResult<TState> =

@@ -204,6 +204,7 @@ describe('Guest mode API endpoints', () => {
       code: 'TEST123',
       maxPlayers: 4,
       password: null,
+      kickedUserIds: [],
       games: [
         {
           id: 'game_1',
@@ -255,6 +256,7 @@ describe('Guest mode API endpoints', () => {
       code: 'TEST123',
       maxPlayers: 4,
       password: null,
+      kickedUserIds: [],
       allowSpectators: true,
       games: [{ id: 'game_1', status: 'playing' }],
     } as any)
@@ -281,6 +283,7 @@ describe('Guest mode API endpoints', () => {
       code: 'TEST123',
       maxPlayers: 4,
       password: null,
+      kickedUserIds: [],
       allowSpectators: false,
       games: [{ id: 'game_1', status: 'playing' }],
     } as any)

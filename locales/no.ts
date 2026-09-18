@@ -222,6 +222,7 @@ const no = {
       invalidCode: 'Ugyldig lobbykode',
       lobbyFull: 'Lobbyen er full',
       wrongPassword: 'Feil passord',
+      kickedCannotRejoin: 'Verten fjernet deg fra denne lobbyen',
       watchInstead: 'Se som tilskuer i stedet',
       createOwnLobby: 'Opprett din egen lobby'
     },

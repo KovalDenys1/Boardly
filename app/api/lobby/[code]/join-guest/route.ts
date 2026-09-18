@@ -55,6 +55,9 @@ export async function POST(
     // Find the lobby
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
+      // kickedUserIds is omitted globally (lib/db.ts); this route is one of the two that
+      // has to honour it, so it asks for it back by name.
+      omit: { kickedUserIds: false },
       include: {
         games: {
           where: {
@@ -105,6 +108,16 @@ export async function POST(
     const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
+
+    // The guest id is carried in the token and survives the redirect, so a kicked guest comes
+    // back as the same user — and the lobby refuses them, exactly as it refuses a kicked
+    // account (#1013). Checked before the already-in-lobby lookup: their Players row is gone.
+    if (lobby.kickedUserIds.includes(guestUser.id)) {
+      return NextResponse.json(
+        { error: 'The host removed you from this lobby', code: 'KICKED_FROM_LOBBY' },
+        { status: 403 }
+      )
+    }
 
     const activeGame = pickRelevantLobbyGame(lobby.games)
 
@@ -161,7 +174,11 @@ export async function POST(
       // query above, so this branch opened a bare room that outranked it and everyone
       // still on the results screen was swapped into an empty board. Carry the previous
       // match over, then seat the guest behind it.
-      const carriedUserIds = await getFinishedGameHumanRoster(prisma, lobby.id)
+      const carriedUserIds = await getFinishedGameHumanRoster(
+        prisma,
+        lobby.id,
+        lobby.kickedUserIds
+      )
       const rosterUserIds = carriedUserIds.includes(guestUser.id)
         ? carriedUserIds
         : [...carriedUserIds, guestUser.id]

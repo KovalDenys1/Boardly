@@ -86,7 +86,9 @@ export async function transitionLobbyToWaitingRoom(params: TransitionParams): Pr
  */
 export async function getFinishedGameHumanRoster(
   client: Pick<typeof prisma, 'games'>,
-  lobbyId: string
+  lobbyId: string,
+  /** Users the lobby will not seat again — the host's kick list (#1013). */
+  excludeUserIds: readonly string[] = []
 ): Promise<string[]> {
   const lastFinishedGame = await client.games.findFirst({
     where: { lobbyId, status: 'finished' },
@@ -107,8 +109,10 @@ export async function getFinishedGameHumanRoster(
     return []
   }
 
+  const excluded = new Set(excludeUserIds)
+
   return lastFinishedGame.players
-    .filter((player) => !player.user.bot)
+    .filter((player) => !player.user.bot && !excluded.has(player.userId))
     .map((player) => player.userId)
 }
 

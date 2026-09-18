@@ -148,6 +148,9 @@ export async function POST(request: NextRequest) {
     // Verify lobby exists and user is the creator
     const lobby = await prisma.lobbies.findUnique({
       where: { id: lobbyId },
+      // kickedUserIds is omitted globally (lib/db.ts). "Play again" rebuilds a roster from an
+      // older game, which can still hold somebody the host has since thrown out (#1013).
+      omit: { kickedUserIds: false },
       include: {
         games: {
           // A lobby accumulates finished games. "Play again" has to rebuild the roster
@@ -197,9 +200,14 @@ export async function POST(request: NextRequest) {
     if (!waitingGame) {
       const finishedGame = lobby.games.find(g => g.status === 'finished')
       if (finishedGame) {
+        // The `where` on the include drops departures; the kick list drops anyone the host
+        // removed after that game was played, so neither comes back through "Play again".
+        const kickedUserIds = new Set(lobby.kickedUserIds)
+        const returningPlayers = finishedGame.players.filter((p) => !kickedUserIds.has(p.userId))
+
         log.info('Creating new waiting game from finished game', {
           finishedGameId: finishedGame.id,
-          playerCount: finishedGame.players?.length || 0
+          playerCount: returningPlayers.length
         })
 
         const finishedGameTargetRounds =
@@ -240,7 +248,7 @@ export async function POST(request: NextRequest) {
             gameType: persistedGameType,
             state: toPersistedGameStateInput(initialWaitingState),
             players: {
-              create: finishedGame.players.map((p, index) => ({
+              create: returningPlayers.map((p, index) => ({
                 userId: p.userId,
                 score: 0,
                 position: index, // Preserve player order

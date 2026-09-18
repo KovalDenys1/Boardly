@@ -55,7 +55,10 @@ function createPrismaClient() {
       // those spreading the secret would hand it to exactly the outsiders the
       // column exists to keep out. Omitting it globally makes every read that
       // wants it say so — see lib/lobby-realtime-topic.ts.
-      lobbies: { realtimeSecret: true },
+      // Lobbies.kickedUserIds is moderation bookkeeping (#1013). Every route that reads a
+      // lobby row spreads it into a response, and the list of people a host threw out is
+      // not something to hand back to the room — the join paths ask for it by name.
+      lobbies: { realtimeSecret: true, kickedUserIds: true },
     },
   })
     .$extends(resilienceExtension)

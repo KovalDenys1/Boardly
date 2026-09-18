@@ -95,6 +95,7 @@ describe('POST /api/lobby/[code]/join-guest — joining after the game finished 
     maxPlayers: 4,
     gameType: 'yahtzee',
     allowSpectators: true,
+    kickedUserIds: [],
     games: [],
   }
 
@@ -140,6 +141,44 @@ describe('POST /api/lobby/[code]/join-guest — joining after the game finished 
     expect(response.status).toBe(400)
     expect(data.error).toBe('Lobby is full')
     expect(mockPrisma.games.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses a kicked guest returning on the same token (#1013)', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...lobby,
+      kickedUserIds: ['guest-new'],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('KICKED_FROM_LOBBY')
+    expect(mockPrisma.games.create).not.toHaveBeenCalled()
+    expect(mockPrisma.players.create).not.toHaveBeenCalled()
+  })
+
+  it('leaves a kicked player out of the roster it carries into the new room (#1013)', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...lobby,
+      kickedUserIds: ['player-b'],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.games.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          players: {
+            create: [
+              { userId: 'player-a', position: 0 },
+              { userId: 'guest-new', position: 1 },
+            ],
+          },
+        }),
+      })
+    )
   })
 
   it('still opens a fresh room when the lobby has never finished a game', async () => {
