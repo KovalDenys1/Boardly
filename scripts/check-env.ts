@@ -37,7 +37,15 @@ const optionalVars = [
   'NEXT_PUBLIC_DISCORD_INVITE',
   'DISCORD_APPLICATION_ID',
   'DISCORD_INTERNAL_SECRET',
+  // Web Push. All three or none — the public key is inlined into the client
+  // bundle, so a deploy missing it hands every opt-in a permission prompt and
+  // no subscription (#983).
+  'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
+  'VAPID_PRIVATE_KEY',
+  'VAPID_SUBJECT',
 ]
+
+const vapidVars = ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT']
 
 // A webhook URL carries its own token in the path and the internal secret is a
 // secret, so these are reported as present without printing any of the value.
@@ -45,6 +53,7 @@ const neverPrintedVars = new Set([
   'FEEDBACK_DISCORD_WEBHOOK_URL',
   'OPS_ALERT_WEBHOOK_URL',
   'DISCORD_INTERNAL_SECRET',
+  'VAPID_PRIVATE_KEY',
 ])
 
 function formatValue(value: string, visibleChars: number) {
@@ -99,6 +108,12 @@ for (const name of optionalVars) {
   } else {
     console.log(`INF ${name}: not set`)
   }
+}
+
+const vapidSet = vapidVars.filter((name) => Boolean(process.env[name]))
+if (vapidSet.length > 0 && vapidSet.length < vapidVars.length) {
+  const missing = vapidVars.filter((name) => !process.env[name])
+  console.log(`\nWARN Web Push is half-configured; missing: ${missing.join(', ')}`)
 }
 
 console.log(`\n${'='.repeat(60)}`)
