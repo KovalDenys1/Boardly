@@ -5,6 +5,7 @@ import { broadcastToLobby } from '@/lib/supabase-server'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { commitGameState } from '@/lib/game-state-lock'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { deleteGameTurnReminderNotifications } from '@/lib/in-app-notifications'
@@ -35,6 +36,51 @@ export type LobbyWithGamesForLeave = Prisma.LobbiesGetPayload<{
   include: typeof LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE
   omit: { realtimeSecret: true }
 }>
+
+type LeaveStateWriteResult<TState> =
+  | { status: 'unchanged' }
+  | { status: 'committed'; state: TState }
+  | { status: 'conflict' }
+
+/**
+ * #1001: performPlayerLeave applies the leave to a snapshot its caller read
+ * several round trips earlier, and a move can commit inside that window. Written
+ * on the primary key alone, that snapshot put the pre-move board back and
+ * broadcast it, so the move was gone with nothing left to show it had landed —
+ * while every other writer of this column takes the optimistic lock.
+ *
+ * So the write lands only on the revision it was derived from, and a lost race
+ * is re-derived from the row that is actually there rather than forced through.
+ */
+async function commitLeaveStateChange<TState>(
+  gameId: string,
+  snapshot: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date },
+  applyLeave: (state: Prisma.JsonValue) => TState | null
+): Promise<LeaveStateWriteResult<TState>> {
+  let row: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date } | null = snapshot
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (!row) return { status: 'unchanged' }
+
+    const nextState = applyLeave(row.state)
+    if (nextState === null) return { status: 'unchanged' }
+
+    const committed = await commitGameState({
+      gameId,
+      revision: { currentTurn: row.currentTurn, updatedAt: row.updatedAt },
+      data: { state: toPersistedGameStateInput(nextState) },
+    })
+
+    if (committed) return { status: 'committed', state: nextState }
+
+    row = await prisma.games.findUnique({
+      where: { id: gameId },
+      select: { state: true, currentTurn: true, updatedAt: true },
+    })
+  }
+
+  return { status: 'conflict' }
+}
 
 export interface PerformPlayerLeaveResult {
   status: number
@@ -434,12 +480,20 @@ export async function performPlayerLeave(
   // For turn-based games: advance to the next player if the departed player was current.
   // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
   // to avoid state corruption. Timer will handle stuck turns for those games.
+  const gameRowSnapshot = {
+    state: activeGame.state,
+    currentTurn: activeGame.currentTurn,
+    updatedAt: activeGame.updatedAt,
+  }
+
   let turnAdvanced = false
   if (gameMeta?.advanceTurnOnLeave) {
     try {
-      const parsedState = parseAndValidateGameState(activeGame.state)
-      const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
-      if (currentPlayerId === userId) {
+      const result = await commitLeaveStateChange(activeGame.id, gameRowSnapshot, (rawState) => {
+        const parsedState = parseAndValidateGameState(rawState)
+        const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
+        if (currentPlayerId !== userId) return null
+
         parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % parsedState.players.length
         // Reset the departed player's turn scratch data so the next player
         // starts clean — which fields, and their reset values, come from
@@ -464,12 +518,19 @@ export async function performPlayerLeave(
             )
           }
         }
-        await prisma.games.update({
-          where: { id: activeGame.id },
-          data: { state: toPersistedGameStateInput(parsedState) },
-        })
+        return parsedState
+      })
+
+      if (result.status === 'committed') {
         turnAdvanced = true
-        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: parsedState })
+        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: result.state })
+      } else if (result.status === 'conflict') {
+        // The turn clock is the backstop here: stuck-turn recovery (#989) asks
+        // the server again once it expires on the departed player's seat.
+        log.warn('Skipped advancing the turn after player left: game row kept changing', {
+          gameId: activeGame.id,
+          userId,
+        })
       }
     } catch (e) {
       log.warn('Failed to advance turn after player left mid-game', { error: e })
@@ -479,15 +540,20 @@ export async function performPlayerLeave(
   // Engine-managed games: delegate player-leave state mutation to the engine
   if (gameMeta?.engineHandlesLeave) {
     try {
-      const engine = restoreGameEngine(activeGame.gameType, activeGame.id, activeGame.state)
-      const changed = engine.handlePlayerLeave(userId)
-      if (changed) {
-        const newState = engine.getState()
-        await prisma.games.update({
-          where: { id: activeGame.id },
-          data: { state: toPersistedGameStateInput(newState) },
+      const result = await commitLeaveStateChange(activeGame.id, gameRowSnapshot, (rawState) => {
+        const engine = restoreGameEngine(activeGame.gameType, activeGame.id, rawState)
+        if (!engine.handlePlayerLeave(userId)) return null
+        return engine.getState()
+      })
+
+      if (result.status === 'committed') {
+        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: result.state })
+      } else if (result.status === 'conflict') {
+        log.warn('Skipped engine handlePlayerLeave: game row kept changing', {
+          gameId: activeGame.id,
+          userId,
+          gameType: activeGame.gameType,
         })
-        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: newState })
       }
     } catch (e) {
       log.warn('Failed to apply engine handlePlayerLeave', { error: e, gameType: activeGame.gameType })
