@@ -132,7 +132,7 @@ Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SER
 1. Deploy schema changes from the migration workflow (or `npm run db:migrate` by hand).
 2. Deploy the Next.js app.
 3. Verify the health endpoint (`/api/health`) and the lobby join flow.
-4. Verify the alert scheduler (GitHub Actions), the endpoint (`/api/cron/reliability-alerts`), and webhook delivery.
+4. Verify the alert scheduler (Vercel Cron, declared in `vercel.json`), the endpoint (`/api/cron/reliability-alerts`), and webhook delivery.
 5. Check the SLO rules in `docs/REALTIME_TELEMETRY.md` against recent `OperationalEvents`.
 
 Note: `npm run db:migrate` automatically bootstraps required RLS roles
@@ -229,7 +229,7 @@ Check:
 - `OPS_ALERT_WEBHOOK_URL` is configured as a Discord webhook and valid
 - if GitHub issue automation is enabled, `GITHUB_ALERT_TOKEN` and `GITHUB_ALERT_REPO` are configured
 - cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts` (no `NEXTAUTH_SECRET` fallback)
-- if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
+- `CRON_SECRET` is set in Vercel Production — Vercel sends it as the `Authorization: Bearer` header on every scheduled invocation, which is what `authorizeCronRequest` checks
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 
