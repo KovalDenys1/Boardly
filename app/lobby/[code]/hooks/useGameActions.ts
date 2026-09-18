@@ -13,6 +13,7 @@ import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
 import { trackPlayerAction, trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
+import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 
 interface UseGameActionsProps {
   game: Game | null
@@ -32,6 +33,10 @@ interface UseGameActionsProps {
   celebrate: () => void
   fireworks: () => void
   reconcileWithServerSnapshot: () => Promise<void>
+  /** Shared watermark (#985): the response to a move here is the newest state that exists, so it moves the watermark for everyone reading it. */
+  freshnessRef: React.MutableRefObject<FreshnessWatermark>
+  /** Mirrors `isMoveInProgress` for readers that run outside React's render cycle - the broadcast handler needs it synchronously (#994). */
+  moveInFlightRef: React.MutableRefObject<boolean>
 }
 
 export interface AutoActionContext {
@@ -56,6 +61,20 @@ function isAutoActionContext(value: unknown): value is AutoActionContext {
     !!candidate.turnSnapshot &&
     typeof candidate.turnSnapshot.currentPlayerId === 'string'
   )
+}
+
+/**
+ * The move response carries the authoritative state already parsed, while a
+ * broadcast and the lobby snapshot carry it as a JSON string. JSON.parse on an
+ * object throws, so neither shape can be assumed.
+ */
+function parseServerGameState(value: unknown): unknown {
+  if (typeof value !== 'string') return value ?? null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
 }
 
 function isExpectedAutoActionSkip(status: number, error: unknown): boolean {
@@ -87,9 +106,11 @@ export function useGameActions(props: UseGameActionsProps) {
     celebrate,
     fireworks,
     reconcileWithServerSnapshot,
+    freshnessRef,
+    moveInFlightRef,
   } = props
 
-  const [isMoveInProgress, setIsMoveInProgress] = useState(false)
+  const [isMoveInProgress, setIsMoveInProgressState] = useState(false)
   const [isRolling, setIsRolling] = useState(false)
   const [isScoring, setIsScoring] = useState(false)
   const [isStateReverting, setIsStateReverting] = useState(false)
@@ -98,6 +119,13 @@ export function useGameActions(props: UseGameActionsProps) {
 
   // Local held state - purely client-side between rolls
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
+
+  // A React state update is not visible to the broadcast handler until the next
+  // render, and a broadcast can land in between; the ref is what that handler reads.
+  const setIsMoveInProgress = useCallback((inProgress: boolean) => {
+    moveInFlightRef.current = inProgress
+    setIsMoveInProgressState(inProgress)
+  }, [moveInFlightRef])
 
   // Safety reset: when the turn flips to ours, clear any leftover in-progress flags.
   // This handles the case where isMoveInProgress got stuck during a disconnect/turn advance.
@@ -108,7 +136,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsScoring(false)
     }
     prevIsMyTurnRef.current = isMyTurn
-  }, [isMyTurn])
+  }, [isMyTurn, setIsMoveInProgress])
 
   const triggerRollbackIndicator = useCallback(() => {
     if (rollbackIndicatorTimeoutRef.current) {
@@ -269,6 +297,12 @@ export function useGameActions(props: UseGameActionsProps) {
         if (isAutoAction) return null
         throw new Error('Invalid server response')
       }
+      // The answer to the move this client just made is the newest state that
+      // exists, so it moves the watermark every other source is judged against
+      // (#985) - including the broadcast of the *previous* move, which routinely
+      // lands after this response and used to rewind the board (#994).
+      const parsedServerState = parseServerGameState(data.game.state)
+      decideFreshness(freshnessRef.current, parsedServerState, { trusted: true })
 
       // Replace optimistic update with real server data
       let newEngine: YahtzeeGame | null = null
@@ -281,20 +315,13 @@ export function useGameActions(props: UseGameActionsProps) {
 
         const currentPlayer = newEngine.getCurrentPlayer()
         const rollNumber = 3 - newEngine.getRollsLeft()
-        // data.game.state is already a parsed object by this point (the whole
-        // response went through a single res.json() round-trip) - it is NOT a
-        // JSON string to re-parse. JSON.parse on an object throws, silently
-        // falling back to a random id below and breaking the deterministic
-        // dedup match against LobbyPageClient's broadcast handler, which
-        // already gets this right (see its typeof state === 'string' check).
-        const parsedServerState = (() => {
-          try {
-            return typeof data.game.state === 'string' ? JSON.parse(data.game.state) : data.game.state
-          } catch {
-            return null
-          }
-        })()
-        const serverTs = parsedServerState?.data?.lastRoll?.timestamp
+        // The roll id has to match the one LobbyPageClient's broadcast handler
+        // builds, or the same roll shows up twice in the history. That match is
+        // on the server timestamp, which is why the state above is parsed
+        // through a helper that tolerates both shapes rather than a bare
+        // JSON.parse - which throws on an object and used to fall back to a
+        // random id here.
+        const serverTs = (parsedServerState as { data?: { lastRoll?: { timestamp?: string } } } | null)?.data?.lastRoll?.timestamp
         const newEntry: RollHistoryEntry = {
           id: serverTs ? `${userId || guestId}-${serverTs}` : `${Date.now()}_${Math.random()}`,
           turnNumber: newEngine.getRound(),
@@ -397,7 +424,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileAfterMoveError, freshnessRef, setIsMoveInProgress])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -549,6 +576,9 @@ export function useGameActions(props: UseGameActionsProps) {
         if (isAutoAction) return null
         throw new Error('Invalid server response')
       }
+      // Trusted for the reason the roll path gives: this is the server's answer
+      // to the move it just applied (#985).
+      decideFreshness(freshnessRef.current, parseServerGameState(data.game.state), { trusted: true })
       const newEngine = await restoreGameEngineClient('yahtzee', gameEngine.getState().id, data.game.state) as YahtzeeGame
       setGameEngine(newEngine)
 
@@ -691,7 +721,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError, freshnessRef, setIsMoveInProgress])
 
   return {
     handleRollDice,

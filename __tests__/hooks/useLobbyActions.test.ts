@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
+import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 
 jest.mock('@/lib/client-logger', () => ({
   clientLogger: { log: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
@@ -44,8 +45,10 @@ jest.mock('@/i18n', () => {
 
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { showToast } from '@/lib/i18n-toast'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
 const mockRestoreGameEngineClient = restoreGameEngineClient as jest.MockedFunction<typeof restoreGameEngineClient>
+const mockNormalizeLobbySnapshot = normalizeLobbySnapshotResponse as jest.MockedFunction<typeof normalizeLobbySnapshotResponse>
 
 const makeLobby = () => ({
   id: 'lobby-1',
@@ -68,6 +71,7 @@ const makeProps = (overrides: Record<string, unknown> = {}) => ({
   code: 'ABCD12',
   lobby: makeLobby() as any,
   game: makeGame() as any,
+  freshnessRef: { current: createFreshnessWatermark() },
   setGame: jest.fn(),
   setLobby: jest.fn(),
   setGameEngine: jest.fn(),
@@ -178,6 +182,109 @@ describe('useLobbyActions', () => {
 
       expect(setGameEngine).toHaveBeenCalledWith(mockEngine)
       expect(setGame).toHaveBeenCalled()
+    })
+  })
+
+  describe('snapshot de-dupe (#996)', () => {
+    // The snapshot GET is the expensive one (presence sweep plus the per-game
+    // timeout fallbacks), so two lobby events arriving together still share it.
+    const makePendingFetch = () => {
+      const resolvers: Array<(value: unknown) => void> = []
+      ;(global.fetch as jest.Mock).mockImplementation(
+        () => new Promise((resolve) => { resolvers.push(resolve) })
+      )
+      return {
+        resolvers,
+        settle: () => resolvers.forEach((resolve) => resolve({ ok: true, status: 200, json: async () => ({}) })),
+      }
+    }
+
+    it('two ordinary refreshes share one request', async () => {
+      const pending = makePendingFetch()
+      const { result } = renderHook(() => useLobbyActions(makeProps()))
+
+      await act(async () => {
+        const first = result.current.loadLobby()
+        const second = result.current.loadLobby()
+        pending.settle()
+        await Promise.all([first, second])
+      })
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('a reconcile issues its own request instead of awaiting one that left earlier', async () => {
+      const pending = makePendingFetch()
+      const { result } = renderHook(() => useLobbyActions(makeProps()))
+
+      await act(async () => {
+        const inFlight = result.current.loadLobby()
+        const reconcile = result.current.loadLobby({ fresh: true })
+        pending.settle()
+        await Promise.all([inFlight, reconcile])
+      })
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('snapshot freshness (#994)', () => {
+    const snapshotWith = (lastMoveAt: number) => ({
+      lobby: { id: 'lobby-1', code: 'ABCD12', gameType: 'yahtzee' },
+      activeGame: {
+        id: 'game-123',
+        status: 'playing',
+        players: [{ userId: 'player-1', name: 'Alice', user: { bot: null } }],
+        state: JSON.stringify({ id: 'game-123', lastMoveAt }),
+      },
+    })
+
+    const runLoad = async (
+      watermark: number | null,
+      options?: { fresh?: boolean }
+    ) => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, status: 200, json: async () => ({}) })
+      mockNormalizeLobbySnapshot.mockReturnValue(snapshotWith(1_000) as any)
+      mockRestoreGameEngineClient.mockResolvedValue({} as any)
+
+      const setGame = jest.fn()
+      const setGameEngine = jest.fn()
+      const setLobby = jest.fn()
+      const props = makeProps({
+        setGame,
+        setGameEngine,
+        setLobby,
+        freshnessRef: { current: { current: watermark } },
+      })
+      const { result } = renderHook(() => useLobbyActions(props))
+      await act(async () => { await result.current.loadLobby(options) })
+      return { setGame, setGameEngine, setLobby }
+    }
+
+    it('a snapshot older than what is on screen leaves the board alone', async () => {
+      const { setGame, setGameEngine, setLobby } = await runLoad(5_000)
+
+      expect(setGameEngine).not.toHaveBeenCalled()
+      // The lobby and the player rows still apply: both change without a move.
+      expect(setLobby).toHaveBeenCalled()
+      const merge = setGame.mock.calls[0][0] as (prev: unknown) => any
+      const merged = merge({ id: 'game-123', state: 'already on screen', players: [] })
+      expect(merged.state).toBe('already on screen')
+      expect(merged.players).toHaveLength(1)
+    })
+
+    it('a reconcile applies even when the watermark is ahead, so the board can unstick', async () => {
+      const { setGame, setGameEngine } = await runLoad(5_000, { fresh: true })
+
+      expect(setGame).toHaveBeenCalled()
+      expect(setGameEngine).toHaveBeenCalled()
+    })
+
+    it('an ordinary refresh still applies a snapshot newer than the watermark', async () => {
+      const { setGame, setGameEngine } = await runLoad(10)
+
+      expect(setGame).toHaveBeenCalled()
+      expect(setGameEngine).toHaveBeenCalled()
     })
   })
 })

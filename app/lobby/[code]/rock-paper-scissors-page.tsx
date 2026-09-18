@@ -139,6 +139,25 @@ function parseRpsState(raw: unknown, fallbackStatus?: RpsLifecycleStatus): RpsSt
     }
 }
 
+/**
+ * Undoes this player's own optimistic lock-in and nothing else. Everything else
+ * in the state may legitimately have moved on while the request was out - the
+ * opponent's pick, the round the server resolved, the new score - and none of
+ * it is this client's to roll back (#995).
+ */
+function withoutOwnChoice(state: RpsState, userId: string): RpsState {
+    const playerChoices = { ...state.data.playerChoices }
+    delete playerChoices[userId]
+    return {
+        ...state,
+        data: {
+            ...state.data,
+            playerChoices,
+            playersReady: state.data.playersReady.filter((id) => id !== userId),
+        },
+    }
+}
+
 function extractStateFromGameUpdate(payload: unknown): unknown {
     if (!payload || typeof payload !== 'object') return null
     const update = payload as GameUpdatePayload
@@ -250,7 +269,13 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
     const applyAuthoritativeState = useCallback((gameId: string, raw: unknown, statusOverride?: unknown, options?: { trusted?: boolean }): boolean => {
         // #985: a stale broadcast used to land on top of a just-submitted choice.
-        const freshness = decideFreshness(freshnessRef.current, raw, { trusted: options?.trusted })
+        // `moveInFlight` is the half tic-tac-toe and connect four already had:
+        // a snapshot taken before this player's own request cannot have seen it,
+        // and applying it un-highlights the tile mid-submit (#995).
+        const freshness = decideFreshness(freshnessRef.current, raw, {
+            trusted: options?.trusted,
+            moveInFlight: isSubmittingRef.current,
+        })
         if (!freshness.accept) {
             clientLogger.debug('Ignoring stale RPS state', { gameId, reason: freshness.reason })
             return true
@@ -400,7 +425,12 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         const isAutoAction = options?.isAutoAction === true
         const submitStartedAt = Date.now()
         let responseStatus: number | undefined
-        const previousGame = game
+        const gameId = game.id
+        const revertOwnChoice = () => {
+            setGame((prevGame) => (prevGame && prevGame.id === gameId
+                ? { ...prevGame, state: withoutOwnChoice(prevGame.state, userId) }
+                : prevGame))
+        }
         isSubmittingRef.current = true
         setIsSubmitting(true)
         try {
@@ -451,11 +481,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             if (!res) return false
             if (!res.ok) {
                 trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
-                setGame(previousGame)
+                revertOwnChoice()
                 if (!isAutoAction) {
                     showToast.error('errors.general', undefined, { message: String(payload?.message || payload?.error || 'Failed to submit choice') })
                 }
-                if (res.status === 409) await loadLobby()
+                // Not only on 409. A 500, a 400 or a dropped response all leave
+                // this client guessing which round the server is on, and nothing
+                // else re-reads: there is no poll here, only broadcasts.
+                await loadLobby()
                 return false
             }
             const responseGame = payload?.game as { state?: unknown; status?: unknown } | undefined
@@ -467,8 +500,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         } catch (error) {
             trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
             clientLogger.error('Failed to submit choice:', error)
-            setGame(previousGame)
+            revertOwnChoice()
             if (!isAutoAction) showToast.errorFrom(error, 'errors.general')
+            await loadLobby()
             return false
         } finally {
             isSubmittingRef.current = false
