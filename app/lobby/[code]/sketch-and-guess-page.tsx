@@ -132,6 +132,12 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     )
     // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
     useLobbyHeartbeat(code, !isSpectator)
+    // isSubmitting is state, so an async callback that read it would read the
+    // value from the render it closed over - the second Enter gets false and
+    // sends anyway. The ref is the guard; the state is only for the spinner
+    // (#1006, the same pattern as tic-tac-toe and RPS).
+    const submitInFlightRef = useRef(false)
+
     const lifecycleRedirectInFlightRef = useRef(false)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'sketch_and_guess').minPlayersRequired
 
@@ -352,9 +358,11 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const submitAction = useCallback(
         async (action: 'submit-drawing' | 'submit-guess' | 'advance-round', data: Record<string, unknown>) => {
             if (!lobby?.game) return
+            if (submitInFlightRef.current) return
 
             const submitStartedAt = Date.now()
             let responseStatus: number | undefined
+            submitInFlightRef.current = true
             setIsSubmitting(true)
             try {
                 const sendAction = () => fetchWithGuest(`/api/game/${lobby.game!.id}/sketch-and-guess-action`, {
@@ -443,6 +451,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 // round is still live and the player has to stay on the board to try again.
                 showToast.error('errors.general', undefined, { message: errorMessage })
             } finally {
+                submitInFlightRef.current = false
                 setIsSubmitting(false)
             }
         },
