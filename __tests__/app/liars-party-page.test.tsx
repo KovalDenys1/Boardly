@@ -3,6 +3,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { clientLogger } from '@/lib/client-logger'
 
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
@@ -154,9 +155,32 @@ function buildLobbyResponse() {
   }
 }
 
+/** A live round whose clock ran out `staleSeconds` ago and that nobody has answered. */
+function buildStalledPlayingResponse(staleSeconds: number) {
+  const response = buildLobbyResponse()
+  const statePlayers = response.activeGame.players.map((player) => ({
+    id: player.userId,
+    name: player.name,
+    isActive: true,
+  }))
+
+  response.activeGame.status = 'playing'
+  response.activeGame.state.status = 'playing'
+  response.activeGame.state.players = statePlayers
+  response.activeGame.state.lastMoveAt = Date.now() - staleSeconds * 1000
+  Object.assign(response.activeGame.state.data, {
+    claimantOrder: ['user-2', 'user-1', 'user-3', 'user-4'],
+    currentClaimantId: 'user-2',
+    activePlayerIds: ['user-1', 'user-2', 'user-3', 'user-4'],
+  })
+
+  return response
+}
+
 describe('LiarsPartyLobbyPage', () => {
   const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
   const toast = showToast as jest.Mocked<typeof showToast>
+  const logger = clientLogger as jest.Mocked<typeof clientLogger>
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -208,4 +232,27 @@ describe('LiarsPartyLobbyPage', () => {
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
   })
+
+  it('asks the server when the round clock has run out and nobody has acted (#999)', async () => {
+    const response = buildStalledPlayingResponse(120)
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response)
+
+    render(<LiarsPartyLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
+
+    // The lobby GET is the whole fix: it runs applyTimeoutFallback and
+    // sweepStalePlayers, and nothing else on this page asks for one.
+    await waitFor(
+      () =>
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('asking the server'),
+          { code: 'ABCD' }
+        ),
+      { timeout: 3000 }
+    )
+  })
+
 })

@@ -17,6 +17,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LiarsPartyPageProps {
   code: string
@@ -550,11 +551,13 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   useLobbyHeartbeat(code, !isSpectator)
 
   // Timer tick — forces re-render every second for countdown displays
-  const [, setTimerTick] = useState(0)
+  const [timerTick, setTimerTick] = useState(0)
   useEffect(() => {
     const interval = setInterval(() => setTimerTick(t => t + 1), 1000)
     return () => clearInterval(interval)
   }, [])
+
+  const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
@@ -680,6 +683,35 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     onPlayerJoined: () => { void loadLobby() },
     onGameReset: handleGameReset,
   })
+
+  // #999: this game does have a server-side timeout fallback, but it runs inside
+  // GET /api/lobby/[code], and during play this page only fetches when a
+  // broadcast arrives – which needs somebody to still be moving. Let the table go
+  // quiet, because the player everyone is waiting on closed their tab, and
+  // nothing asks: the countdown reaches zero, applyTimeoutFallback never runs and
+  // sweepStalePlayers never sees the missing heartbeat. So when the clock runs
+  // out and nothing has happened, ask. Throttled by the same recovery the
+  // move-based games use (#989): one request per ten seconds, six at most.
+  useEffect(() => {
+    if (game?.status !== 'playing') return
+
+    const state = gameEngine?.getState()
+    const lastMoveAt = typeof state?.lastMoveAt === 'number' ? state.lastMoveAt : null
+    if (lastMoveAt === null) return
+
+    const limitSeconds = typeof lobby?.turnTimer === 'number' && lobby.turnTimer > 0 ? lobby.turnTimer : 60
+    const now = Date.now()
+    if (now - lastMoveAt < limitSeconds * 1000) return
+
+    const decision = stuckTurnRecoveryRef.current.decide(
+      turnSignatureOf(state?.currentPlayerIndex, lastMoveAt),
+      now
+    )
+    if (decision !== 'resync') return
+
+    clientLogger.warn("⏰ Liar's Party timer expired with nobody acting, asking the server", { code })
+    void loadLobby()
+  }, [timerTick, game?.status, gameEngine, lobby?.turnTimer, code, loadLobby])
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
     if (!game || isMoveSubmitting) return
