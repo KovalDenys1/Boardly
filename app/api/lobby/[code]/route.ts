@@ -923,6 +923,18 @@ export async function PATCH(
     if (typeof updates.gameType === 'string' && updates.gameType !== lobby.gameType) {
       const currentMax = typeof updates.maxPlayers === 'number' ? updates.maxPlayers : lobby.maxPlayers
       const clamped = Math.min(maxAllowedPlayers, Math.max(minAllowedPlayers, currentMax))
+      // The roster guard above only runs when maxPlayers is sent explicitly, so a switch to
+      // a smaller game clamped the seat count under the people already in the room and the
+      // surplus was dropped when the game started, with nothing telling them why (#1004).
+      // A waiting game hard-deletes a leaver's row, so this count is the live roster.
+      if (clamped < activePlayerCount) {
+        return NextResponse.json(
+          {
+            error: `Current player count is ${activePlayerCount}, cannot set lower max players`,
+          },
+          { status: 400 }
+        )
+      }
       if (clamped !== lobby.maxPlayers || typeof updates.maxPlayers === 'number') {
         clampedMaxPlayers = clamped
       }

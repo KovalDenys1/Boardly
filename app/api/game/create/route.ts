@@ -384,13 +384,39 @@ export async function POST(request: NextRequest) {
       return aIsBot - bIsBot // Non-bots first, bots last
     })
 
+    const unseatedPlayers: string[] = []
     for (const player of sortedPlayers) {
-      gameEngine.addPlayer({
+      const seated = gameEngine.addPlayer({
         id: player.userId,
         name: player.user.username || 'Unknown',
         score: player.score,
         isActive: true,
       })
+      if (!seated) {
+        unseatedPlayers.push(player.userId)
+      }
+    }
+
+    // addPlayer returns false once the engine is at capacity. Discarding that return
+    // started games missing whoever did not fit: they kept their Players row, so the
+    // client showed them a live board they could never take a turn on (#1004). A roster
+    // the game cannot seat is a lobby problem – say so instead of dropping people.
+    if (unseatedPlayers.length > 0) {
+      log.warn('Refused to start a game that cannot seat the whole lobby', {
+        gameId: waitingGame.id,
+        lobbyCode: lobby.code,
+        playerCount: sortedPlayers.length,
+        seats: sortedPlayers.length - unseatedPlayers.length,
+        unseatedPlayers,
+      })
+      return NextResponse.json(
+        {
+          error: `This game seats ${sortedPlayers.length - unseatedPlayers.length} players, but ${sortedPlayers.length} are in the lobby`,
+          code: 'LOBBY_OVER_CAPACITY',
+          details: 'Remove a player or switch back to a game that fits the room',
+        },
+        { status: 400 }
+      )
     }
 
     // Don't shuffle - players are already in correct order (human first, bot last)
