@@ -80,6 +80,8 @@ describe('cleanupStaleLobbiesAndGames', () => {
             updatedAt: new Date('2026-02-27T18:30:00.000Z'),
             players: [
               {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T18:30:00.000Z'),
                 user: { bot: null },
               },
             ],
@@ -96,6 +98,8 @@ describe('cleanupStaleLobbiesAndGames', () => {
             updatedAt: new Date('2026-02-27T17:30:00.000Z'),
             players: [
               {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T17:30:00.000Z'),
                 user: { bot: null },
               },
             ],
@@ -189,6 +193,145 @@ describe('cleanupStaleLobbiesAndGames', () => {
         }),
         data: expect.objectContaining({
           status: 'abandoned',
+        }),
+      })
+    )
+  })
+
+  it('keeps a waiting room whose players are still heartbeating (#1003)', async () => {
+    // Four friends gathering for a party game write Players rows and nothing else,
+    // so games.updatedAt is stuck at lobby creation. Row age alone used to evict all
+    // of them 30 minutes in, mid-chat.
+    const now = new Date('2026-02-27T21:00:00.000Z')
+    mockPrisma.lobbies.findMany.mockResolvedValue([
+      {
+        id: 'lobby-gathering',
+        code: 'PARTY1',
+        games: [
+          {
+            id: 'game-gathering',
+            status: 'waiting',
+            updatedAt: new Date('2026-02-27T19:00:00.000Z'),
+            players: [
+              {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T20:59:55.000Z'),
+                user: { bot: null },
+              },
+              {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T20:59:52.000Z'),
+                user: { bot: null },
+              },
+            ],
+          },
+        ],
+      },
+    ] as any)
+
+    const result = await cleanupStaleLobbiesAndGames({ now, waitingStaleHours: 0.5 })
+
+    expect(result.scannedActiveGames).toBe(1)
+    expect(result.cancelledWaitingGames).toBe(0)
+    expect(mockPrisma.games.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['game-gathering'] } }),
+      })
+    )
+    expect(mockPrisma.lobbies.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['lobby-gathering'] } }),
+      })
+    )
+  })
+
+  it('still cancels a waiting room everyone has walked away from (#1003)', async () => {
+    const now = new Date('2026-02-27T21:00:00.000Z')
+    mockPrisma.lobbies.findMany.mockResolvedValue([
+      {
+        id: 'lobby-abandoned',
+        code: 'GONE01',
+        games: [
+          {
+            id: 'game-abandoned',
+            status: 'waiting',
+            updatedAt: new Date('2026-02-27T19:00:00.000Z'),
+            players: [
+              {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T19:05:00.000Z'),
+                user: { bot: null },
+              },
+            ],
+          },
+        ],
+      },
+    ] as any)
+    mockPrisma.games.updateMany.mockResolvedValueOnce({ count: 1 } as any)
+
+    const result = await cleanupStaleLobbiesAndGames({ now, waitingStaleHours: 0.5 })
+
+    expect(result.cancelledWaitingGames).toBe(1)
+    expect(mockPrisma.games.updateMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { in: ['game-abandoned'] }, status: 'waiting' }),
+        data: { status: 'cancelled' },
+      })
+    )
+  })
+
+  it('a bot left alone in the room does not keep it alive (#1003)', async () => {
+    const now = new Date('2026-02-27T21:00:00.000Z')
+    mockPrisma.lobbies.findMany.mockResolvedValue([
+      {
+        id: 'lobby-bot-only',
+        code: 'BOT001',
+        games: [
+          {
+            id: 'game-bot-only',
+            status: 'waiting',
+            updatedAt: new Date('2026-02-27T20:59:00.000Z'),
+            players: [
+              {
+                leftAt: null,
+                lastHeartbeatAt: new Date('2026-02-27T20:59:58.000Z'),
+                user: { bot: { id: 'bot-1' } },
+              },
+            ],
+          },
+        ],
+      },
+    ] as any)
+    mockPrisma.games.updateMany.mockResolvedValueOnce({ count: 1 } as any)
+
+    const result = await cleanupStaleLobbiesAndGames({ now, waitingStaleHours: 0.5 })
+
+    expect(result.cancelledWaitingGames).toBe(1)
+  })
+
+  it('the global backstop skips waiting games someone is still sitting in (#1003)', async () => {
+    mockPrisma.lobbies.findMany.mockResolvedValue([] as any)
+
+    await cleanupStaleLobbiesAndGames({
+      now: new Date('2026-02-27T21:00:00.000Z'),
+      waitingStaleHours: 1,
+      playingStaleHours: 2,
+    })
+
+    // The backstop never joins Players, so without this condition it re-cancelled
+    // exactly the rooms the per-lobby branch had just spared.
+    expect(mockPrisma.games.updateMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'waiting',
+          players: {
+            none: {
+              leftAt: null,
+              lastHeartbeatAt: { gt: new Date('2026-02-27T20:59:30.000Z') },
+            },
+          },
         }),
       })
     )
