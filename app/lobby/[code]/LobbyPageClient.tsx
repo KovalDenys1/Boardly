@@ -87,6 +87,7 @@ import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
+import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
 import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
@@ -1026,6 +1027,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     addBotToLobby,
     kickBot,
     kickPlayer,
+    unkickPlayer,
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
@@ -1571,6 +1573,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isGameStarted = game?.status === 'playing'
   const isSpectator = isGameStarted && !isInGame
 
+  // #1024's undo needs the host to see who was removed, and the waiting room is the
+  // only screen with room for it (#899). Nobody but the host is offered the list.
+  const { kickedPlayers, refreshKickedPlayers } = useKickedPlayers({
+    code,
+    enabled: isCreator && !isGameStarted,
+    isGuest,
+    guestId,
+    guestName,
+    guestToken,
+  })
+  const handleKickPlayer = useCallback(async (playerId: string) => {
+    await kickPlayer(playerId)
+    void refreshKickedPlayers()
+  }, [kickPlayer, refreshKickedPlayers])
+  const handleUnkickPlayer = useCallback(async (kickedUserId: string) => {
+    await unkickPlayer(kickedUserId)
+    void refreshKickedPlayers()
+  }, [unkickPlayer, refreshKickedPlayers])
+
   // Zero-signal disconnect detection (#675) — only real participants (not
   // spectators, who aren't Players rows) need to heartbeat.
   useLobbyHeartbeat(code, Boolean(isInGame))
@@ -2086,10 +2107,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   canManageBots={canStartGame}
                   canKickPlayers={isCreator}
                   onKickBot={kickBot}
-                  onKickPlayer={kickPlayer}
+                  onKickPlayer={handleKickPlayer}
                   onProfileClick={setProfileUserId}
                   onInviteFriends={canStartGame && !isGuest ? () => setShowFriendsModal(true) : undefined}
                   onAddBot={canStartGame ? handleAddBot : undefined}
+                  kickedPlayers={kickedPlayers}
+                  onUnkickPlayer={isCreator ? handleUnkickPlayer : undefined}
                 />
               </div>
               {/* Chat - mobile only, inside card */}

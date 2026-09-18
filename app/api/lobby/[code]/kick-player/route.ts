@@ -191,3 +191,72 @@ export async function DELETE(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+/**
+ * The kicked list, for the host's waiting room (#899 / #1024).
+ *
+ * The DELETE above is the undo, but a host cannot undo what they cannot see, and
+ * `kickedUserIds` holds ids – the waiting room needs names and faces. Host-only:
+ * who a host removed is moderation bookkeeping, not lobby-wide information.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
+  const log = apiLogger('GET /api/lobby/[code]/kick-player')
+  try {
+    const requestUser = await getRequestAuthUser(request)
+    const hostId = requestUser?.id
+
+    if (!hostId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { code } = await params
+    const lobby = await prisma.lobbies.findUnique({
+      where: { code },
+      // kickedUserIds is omitted globally (lib/db.ts); naming it in `select` is
+      // what brings it back, and Prisma refuses `select` and `omit` together.
+      select: { creatorId: true, kickedUserIds: true },
+    })
+
+    if (!lobby) {
+      return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
+    }
+
+    if (lobby.creatorId !== hostId) {
+      return NextResponse.json({ error: 'Only the host can see who was removed' }, { status: 403 })
+    }
+
+    if (lobby.kickedUserIds.length === 0) {
+      return NextResponse.json({ kickedPlayers: [] })
+    }
+
+    const users = await prisma.users.findMany({
+      where: { id: { in: lobby.kickedUserIds } },
+      // Never `select: undefined` here: the default row carries the email address,
+      // and this list is rendered (#801 keeps addresses off every lobby surface).
+      select: { id: true, username: true, image: true, avatarUrl: true },
+    })
+    const byId = new Map(users.map((user) => [user.id, user]))
+
+    // Walk the stored ids, not the rows: a guest account is hard-deleted after three
+    // days, and its id staying on the list is exactly the entry a host wants to clear.
+    const kickedPlayers = lobby.kickedUserIds.map((userId) => {
+      const user = byId.get(userId)
+      return {
+        userId,
+        username: user?.username ?? null,
+        avatarUrl: user?.avatarUrl ?? user?.image ?? null,
+      }
+    })
+
+    return NextResponse.json({ kickedPlayers })
+  } catch (error) {
+    log.error('Error listing kicked players', error as Error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
