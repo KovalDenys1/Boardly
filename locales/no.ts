@@ -1705,6 +1705,9 @@ const no = {
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
         pushUnsupported: 'Push-varsler støttes ikke i denne nettleseren.',
         pushDenied: 'Du har blokkert varsler. Tillat dem i nettleserinnstillingene.',
+        pushUnavailable: 'Push-varsler er ikke tilgjengelige på denne serveren ennå.',
+        pushEnabled: 'Push-varsler er på.',
+        pushFailed: 'Kunne ikke slå på push-varsler. Prøv igjen.',
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {

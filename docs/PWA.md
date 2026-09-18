@@ -55,7 +55,13 @@ hand when the brand changes.
 - iOS install prompt is manual (Safari does not support `beforeinstallprompt`)
 - Web push shipped after this issue and is separate from the service worker's caching:
   subscriptions live in the `PushSubscriptions` table via `/api/push-subscriptions`, are sent
-  by `sendPushNotification` in `lib/push-send.ts` – from `/api/cron/turn-reminders` and
-  directly from the friend, invite and achievement paths, not from
+  by `sendPushNotification` in `lib/push-send.ts` – from the turn-reminder cycle inside
+  `/api/cron/game-ops` and directly from the friend, invite and achievement paths, not from
   `/api/cron/process-notifications`, which runs the email queue – and need
   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+- All three VAPID variables must be set together. The public key is inlined at build time,
+  so a deploy missing it disables the opt-in in the profile instead of granting a
+  notification permission that can never produce a subscription. `sendPushNotification`
+  also returns before reading any subscription when a user's `pushNotifications`
+  preference is false, and that column defaults to false – subscribing is not enough on
+  its own, the preference is what the profile toggle writes.
