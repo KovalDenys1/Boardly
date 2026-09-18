@@ -134,7 +134,14 @@ export function useBotTurn({
           return
         }
         retryAttemptRef.current = 0
+        // Same reasoning as the network-error path below: giving up without
+        // clearing the refs leaves isSameTurn true, so the monitor never fires
+        // again and the board sits on the bot's turn until a broadcast happens
+        // to land (#1002).
+        lastBotPlayerId.current = null
+        lastPlayerIndex.current = null
         showToast.error('toast.botMoveFailed')
+        await reconcileAfterBotTurn('bot-turn-failed')
         return
       }
 
