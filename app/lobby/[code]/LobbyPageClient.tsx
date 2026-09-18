@@ -24,6 +24,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { createFreshnessWatermark, decideFreshness, readGameStateId, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -86,6 +87,7 @@ import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
+import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
 import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
@@ -105,6 +107,7 @@ import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 function CenteredLoadingFallback() {
   return (
@@ -326,6 +329,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isInitialLoadRef = React.useRef(true)
   const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Leave lobby')
   const lifecycleRedirectInFlightRef = React.useRef(false)
+  const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
@@ -339,6 +343,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     rollsLeft: null,
   })
   const hasLobbyPageInteractionRef = React.useRef(false)
+  // #994: Yahtzee, Spy and Memory all render through this file, and until now it
+  // applied every snapshot it was handed. The watermark and the in-flight flag
+  // are owned here because the broadcast handler, the move submits and the lobby
+  // snapshot all have to be judged against the same one.
+  const freshnessRef = React.useRef(createFreshnessWatermark())
+  const moveInFlightRef = React.useRef(false)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -544,7 +554,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [currentPlayerId, getCurrentUserId, playAmbientSound])
 
   // Create ref for loadLobby to avoid circular dependency
-  const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
+  const loadLobbyRef = React.useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback(async (payload: GameUpdatePayload) => {
@@ -576,8 +586,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         }
 
         if (game?.id) {
+          const gameId = game.id
+          // A rematch is a different row; its state must not be written into the
+          // game on screen, nor move that game's watermark.
+          const payloadGameId = readGameStateId(parsedState)
+          if (payloadGameId && payloadGameId !== gameId) {
+            clientLogger.debug('Ignoring game-update for another game', { gameId, payloadGameId })
+            return
+          }
+          // #994: broadcasts are fire-and-forget and take two hops the move
+          // response does not, so one routinely lands after the state that
+          // supersedes it. Applying it rewound the board - and in Yahtzee a
+          // snapshot with rollsLeft 3 also wipes the local held dice, which
+          // nothing ever restores.
+          const freshness = decideFreshness(freshnessRef.current, parsedState, {
+            moveInFlight: moveInFlightRef.current,
+          })
+          if (!freshness.accept) {
+            clientLogger.debug('Ignoring stale game state', { gameId, reason: freshness.reason })
+            return
+          }
           const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
-          const newEngine = await restoreGameEngineClient(gt, game.id, parsedState)
+          const newEngine = await restoreGameEngineClient(gt, gameId, parsedState)
           setGameEngine(newEngine)
 
           if (
@@ -652,7 +682,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
           // Update game object with new state
           setGame((prevGame) => {
-            if (!prevGame) return prevGame
+            if (!prevGame || prevGame.id !== gameId) return prevGame
             return {
               ...prevGame,
               state: JSON.stringify(parsedState),
@@ -883,7 +913,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       setDepartedPlayerIds(prev => new Set([...prev, data.userId]))
     }
 
-    // Host left during post-game — no reassignment, just notify and refresh
+    // Host left post-game and nobody could take the seat (#1012) — when somebody did,
+    // the server sends nextCreatorId instead and the branch below announces the new host.
     if (data.hostLeft) {
       showToast.info('toast.hostLeftSession')
       if (loadLobbyRef.current) {
@@ -940,7 +971,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [lobby, game, currentUserIdForMembership])
 
   const handleGameReset = useCallback(() => {
-    if (loadLobbyRef.current) void loadLobbyRef.current()
+    // A rematch starts a new series, so the old game's stamps must not gate it.
+    resetFreshnessWatermark(freshnessRef.current)
+    if (loadLobbyRef.current) void loadLobbyRef.current({ fresh: true })
   }, [])
 
   // Realtime connection hook - must be before useLobbyActions
@@ -959,7 +992,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onSpectatorCountChange,
     onStateSync: async () => {
       if (loadLobbyRef.current) {
-        await loadLobbyRef.current()
+        // Reconnect resync (#987): the gap is exactly when an in-flight
+        // snapshot is too old to answer with (#996).
+        await loadLobbyRef.current({ fresh: true })
       }
     },
     onGameReset: handleGameReset,
@@ -992,9 +1027,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     addBotToLobby,
     kickBot,
     kickPlayer,
+    unkickPlayer,
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
+    joinRefusalCode,
     handleStartGame,
     updateLobbySettings,
     guestNameInput,
@@ -1006,6 +1043,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     code,
     lobby,
     game,
+    freshnessRef,
     setGame,
     setLobby,
     setGameEngine,
@@ -1025,7 +1063,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
-    onLobbyFull: () => router.push(`/lobby/${code}/spectate`),
   })
 
   // Update ref with loadLobby function
@@ -1035,7 +1072,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const reconcileWithServerSnapshot = React.useCallback(async () => {
     if (!loadLobbyRef.current) return
-    await loadLobbyRef.current()
+    // Every caller of this means "read the truth as of now": a bot turn that
+    // just committed, a move that just failed, a turn that looks stuck. A
+    // snapshot request that was already in flight cannot answer that (#996).
+    await loadLobbyRef.current({ fresh: true })
   }, [])
 
   useEffect(() => {
@@ -1141,7 +1181,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           }
         }
 
-        return true
+        // #989: the clock ran out on a human who is not here. Only their own
+        // browser submits a timeout and Yahtzee has no server-side fallback, so
+        // the table sat on a dead turn until somebody reloaded — which abandons
+        // the game and loses the scorecards. A lobby GET sweeps them once their
+        // heartbeat is 30s stale and the leave path steps the turn off the seat
+        // (#992). Throttled, and it gives up after a minute.
+        const decision = stuckTurnRecoveryRef.current.decide(
+          turnSignatureOf(gameEngine?.getState().currentPlayerIndex, gameEngine?.getState().lastMoveAt),
+          Date.now()
+        )
+        if (decision === 'give-up') return true
+        if (decision === 'resync') {
+          clientLogger.warn('⏰ Turn timer expired on an absent player, asking the server', { code })
+          void reconcileWithServerSnapshot()
+        }
+        return false
       }
 
       if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) {
@@ -1306,6 +1361,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     celebrate,
     fireworks,
     reconcileWithServerSnapshot,
+    freshnessRef,
+    moveInFlightRef,
   })
 
   // Update refs for timer
@@ -1514,6 +1571,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
   const isGameStarted = game?.status === 'playing'
   const isSpectator = isGameStarted && !isInGame
+
+  // #1024's undo needs the host to see who was removed, and the waiting room is the
+  // only screen with room for it (#899). Nobody but the host is offered the list.
+  const { kickedPlayers, refreshKickedPlayers } = useKickedPlayers({
+    code,
+    enabled: isCreator && !isGameStarted,
+    isGuest,
+    guestId,
+    guestName,
+    guestToken,
+  })
+  const handleKickPlayer = useCallback(async (playerId: string) => {
+    await kickPlayer(playerId)
+    void refreshKickedPlayers()
+  }, [kickPlayer, refreshKickedPlayers])
+  const handleUnkickPlayer = useCallback(async (kickedUserId: string) => {
+    await unkickPlayer(kickedUserId)
+    void refreshKickedPlayers()
+  }, [unkickPlayer, refreshKickedPlayers])
 
   // Zero-signal disconnect detection (#675) — only real participants (not
   // spectators, who aren't Players rows) need to heartbeat.
@@ -1939,6 +2015,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               password={password}
               setPassword={setPassword}
               error={error}
+              errorCode={joinRefusalCode}
               isJoining={isJoiningLobby}
               onJoin={handleJoinLobby}
               onJoinAsGuest={handleGuestJoinLobby}
@@ -2029,10 +2106,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   canManageBots={canStartGame}
                   canKickPlayers={isCreator}
                   onKickBot={kickBot}
-                  onKickPlayer={kickPlayer}
+                  onKickPlayer={handleKickPlayer}
                   onProfileClick={setProfileUserId}
                   onInviteFriends={canStartGame && !isGuest ? () => setShowFriendsModal(true) : undefined}
                   onAddBot={canStartGame ? handleAddBot : undefined}
+                  kickedPlayers={kickedPlayers}
+                  onUnkickPlayer={isCreator ? handleUnkickPlayer : undefined}
                 />
               </div>
               {/* Chat - mobile only, inside card */}

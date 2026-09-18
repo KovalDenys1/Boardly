@@ -13,6 +13,7 @@ import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { getFinishedGameHumanRoster } from '@/lib/lobby-series-transition'
 import {
   hashLobbyPassword,
   isHashedLobbyPassword,
@@ -21,6 +22,7 @@ import {
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import type { LobbyJoinRefusalCode } from '@/lib/lobby-join-errors'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -54,6 +56,9 @@ export async function POST(
     // Find the lobby
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
+      // kickedUserIds is omitted globally (lib/db.ts); this route is one of the two that
+      // has to honour it, so it asks for it back by name.
+      omit: { kickedUserIds: false },
       include: {
         games: {
           where: {
@@ -105,6 +110,16 @@ export async function POST(
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
+    // The guest id is carried in the token and survives the redirect, so a kicked guest comes
+    // back as the same user — and the lobby refuses them, exactly as it refuses a kicked
+    // account (#1013). Checked before the already-in-lobby lookup: their Players row is gone.
+    if (lobby.kickedUserIds.includes(guestUser.id)) {
+      return NextResponse.json(
+        { error: 'The host removed you from this lobby', code: 'KICKED_FROM_LOBBY' },
+        { status: 403 }
+      )
+    }
+
     const activeGame = pickRelevantLobbyGame(lobby.games)
 
     // Check if guest is already in the lobby
@@ -134,7 +149,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: 'Game in progress',
-          code: 'GAME_IN_PROGRESS',
+          code: 'GAME_IN_PROGRESS' satisfies LobbyJoinRefusalCode,
           allowSpectators: lobby.allowSpectators,
         },
         { status: 409 }
@@ -143,7 +158,10 @@ export async function POST(
 
     // Check if lobby is full
     if (activeGame && activeGame.players.length >= lobby.maxPlayers) {
-      return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Lobby is full', code: 'LOBBY_FULL' satisfies LobbyJoinRefusalCode },
+        { status: 400 }
+      )
     }
 
     // Create or get the active game
@@ -155,6 +173,27 @@ export async function POST(
       }
       const runtimeGameType = requestedGameType
       const initialState = createGameEngine(runtimeGameType, 'temp').getState()
+
+      // Same hole as the authenticated join (#1005): a finished game is invisible to the
+      // query above, so this branch opened a bare room that outranked it and everyone
+      // still on the results screen was swapped into an empty board. Carry the previous
+      // match over, then seat the guest behind it.
+      const carriedUserIds = await getFinishedGameHumanRoster(
+        prisma,
+        lobby.id,
+        lobby.kickedUserIds
+      )
+      const rosterUserIds = carriedUserIds.includes(guestUser.id)
+        ? carriedUserIds
+        : [...carriedUserIds, guestUser.id]
+
+      if (rosterUserIds.length > lobby.maxPlayers) {
+        return NextResponse.json(
+        { error: 'Lobby is full', code: 'LOBBY_FULL' satisfies LobbyJoinRefusalCode },
+        { status: 400 }
+      )
+      }
+
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
@@ -162,10 +201,10 @@ export async function POST(
           status: 'waiting',
           state: toPersistedGameStateInput(initialState),
           players: {
-            create: {
-              userId: guestUser.id,
-              position: 0,
-            },
+            create: rosterUserIds.map((rosterUserId, position) => ({
+              userId: rosterUserId,
+              position,
+            })),
           },
         },
         include: {

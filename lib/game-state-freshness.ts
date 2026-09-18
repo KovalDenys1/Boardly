@@ -80,3 +80,14 @@ export function decideFreshness(
 export function resetFreshnessWatermark(watermark: FreshnessWatermark): void {
   watermark.current = null
 }
+
+/**
+ * The game a snapshot belongs to, when it says so. A rematch is a new row with
+ * a new id, and its state must neither be written into the game on screen nor
+ * move that game's watermark (#994).
+ */
+export function readGameStateId(state: unknown): string | null {
+  if (!state || typeof state !== 'object') return null
+  const value = (state as { id?: unknown }).id
+  return typeof value === 'string' && value.length > 0 ? value : null
+}

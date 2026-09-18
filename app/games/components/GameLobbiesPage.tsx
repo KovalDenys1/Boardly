@@ -14,7 +14,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { canCreateLobbyForGameType, getLobbyCreateRoute } from '@/lib/public-game-access'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import { useMyActiveLobby } from '@/app/lobby/use-my-active-lobby'
 
@@ -101,7 +101,10 @@ export default function GameLobbiesPage({
   const [adminWatchModalCode, setAdminWatchModalCode] = useState<string | null>(null)
   const isAuthenticated = status === 'authenticated' || isGuest
   const createLobbyPath = getLobbyCreateRoute(gameType) ?? '/lobby/create'
-  const canCreateLobby = !isTemporarilyUnavailableGameType(gameType)
+  // The denylist answers false for a type it has never heard of and for a
+  // flag-promoted game that has no create form yet, so the button led to
+  // /lobby/create?gameType=… which silently fell back to Yahtzee (#971).
+  const canCreateLobby = canCreateLobbyForGameType(gameType)
 
   const tx = useCallback(
     (suffix: string) => t(`${lobbiesNamespace}.${suffix}` as TranslationKeys),

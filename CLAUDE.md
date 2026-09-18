@@ -207,6 +207,30 @@ npm run ci:quick   # lint + typecheck + arch audit
 
 ---
 
+## This is a 16 GB laptop Denys is using at the same time
+
+The machine is an M2 Pro: 12 cores but only 16 GB, and Chrome, Obsidian and
+Discord are always resident. Memory is the limit, not cores, and when it is
+exceeded macOS swaps and the whole desktop stutters — his editor, not just the
+build. On 2026-09-18 five agents each ran `npx jest` and `npx tsc --noEmit` at
+once: 55 jest workers plus five typecheckers, load average 15 on 12 cores, and
+he could not use the Mac.
+
+- **`pnpm test` / `npm test`, never a bare `npx jest`.** The script passes
+  `--runInBand` (one process). A bare `npx jest` used to spawn one worker per
+  core bar one; `jest.config.js` now caps it at 3, but the script is still the
+  right call. `npm run test:fast` is the unconstrained one, for an idle machine.
+- **Run the tests your change touches, not all 221 suites.** `npx jest <paths>`.
+  The full suite belongs to the person integrating, once, at the end.
+- **One `tsc --noEmit` at a time.** It peaks over a gigabyte on this project.
+- **Several agents means fewer heavy commands each, not more.** If you are one of
+  a batch, assume the others are compiling too.
+
+Prefix a long build or suite with `nice -n 10` when the machine is in use — it
+costs the run almost nothing and keeps the UI responsive.
+
+---
+
 *The sections below moved here from Claude Code's global memory on 2026-09-07. They are
 Boardly-only rules, so they belong in the repo that loads them rather than in an index
 read at the start of every session, whatever the session is about.*

@@ -21,9 +21,32 @@ export interface GameState<TGameData = unknown> {
   status: 'waiting' | 'playing' | 'finished';
   winner?: string;
   data: TGameData; // Game-specific state
-  lastMoveAt?: number; // Timestamp of last move for timer calculation
+  lastMoveAt?: number; // Timestamp of the last accepted move – drop-off detection (#815)
+  // When the seat that is on the clock started its turn. Kept apart from
+  // lastMoveAt because a move that does not hand the turn over must not buy the
+  // player another full turn timer (#998). Absent on states written before that,
+  // so every reader falls back to lastMoveAt.
+  turnStartedAt?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** The instant the current seat's clock started, for states that predate `turnStartedAt`. */
+export function resolveTurnStartedAt(state: {
+  turnStartedAt?: unknown
+  lastMoveAt?: unknown
+} | null | undefined): number | null {
+  const turnStartedAt = state?.turnStartedAt
+  if (typeof turnStartedAt === 'number' && Number.isFinite(turnStartedAt)) return turnStartedAt
+  const lastMoveAt = state?.lastMoveAt
+  if (typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt)) return lastMoveAt
+  return null
+}
+
+/** Where a seat's clock stood before a move, for GameEngine.holdTurnClock (#1007). */
+export interface TurnClockSnapshot {
+  currentPlayerIndex: number
+  turnStartedAtMs: number | null
 }
 
 export interface RestorableGameState<TGameData = unknown> extends GameState<TGameData> {
@@ -175,6 +198,7 @@ export abstract class GameEngine {
     this.state.status = 'playing';
     this.state.updatedAt = new Date();
     this.state.lastMoveAt = Date.now();
+    this.state.turnStartedAt = this.state.lastMoveAt;
     return true;
   }
 
@@ -194,6 +218,9 @@ export abstract class GameEngine {
     // rotate a turn index per action — guess the spy, alias — never advanced
     // lastMoveAt at all and their drop-off could not be located (#815).
     this.state.lastMoveAt = Date.now();
+    if (this.restartsTurnClock(move)) {
+      this.state.turnStartedAt = this.state.lastMoveAt;
+    }
 
     // Check for winner
     const winner = this.checkWinCondition();
@@ -210,9 +237,35 @@ export abstract class GameEngine {
     return true;
   }
 
+  /**
+   * Put the seat's clock back where it stood before a timeout auto-action (#1007).
+   *
+   * makeMove stamps turnStartedAt on every accepted move, and an auto-action is
+   * a move like any other - so Yahtzee's auto-roll reset the very deadline the
+   * auto-score that follows it milliseconds later is measured against. The
+   * score came back 409 TURN_TIMER_ACTIVE, the client read that as "the turn
+   * already ended", and an abandoned turn took two full timers to end.
+   *
+   * The timeout firing is not the player acting, so it may not buy that seat
+   * another clock. When the auto-action did hand the turn on, the new seat's
+   * clock is the one that counts and this leaves it alone.
+   */
+  holdTurnClock(previous: TurnClockSnapshot): void {
+    if (previous.turnStartedAtMs === null) return;
+    if (this.state.currentPlayerIndex !== previous.currentPlayerIndex) return;
+    this.state.turnStartedAt = previous.turnStartedAtMs;
+  }
+
   // Override this in subclasses to control when turn advances
   protected shouldAdvanceTurn(move: Move): boolean {
     // By default, advance turn after every move
+    return true;
+  }
+
+  // Override in games that have moves which are not a turn – a draw or undo
+  // prompt, say. Anything that answers `false` leaves the current seat's clock
+  // where it was, so the player on it cannot top it up at will (#998).
+  protected restartsTurnClock(_move: Move): boolean {
     return true;
   }
 
@@ -225,6 +278,7 @@ export abstract class GameEngine {
   protected advanceTurnIndex(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
     this.state.lastMoveAt = Date.now();
+    this.state.turnStartedAt = this.state.lastMoveAt;
   }
 
   handlePlayerLeave(playerId: string): boolean {

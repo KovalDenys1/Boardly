@@ -94,6 +94,7 @@ describe('POST /api/game/create', () => {
     creatorId: 'creator-123',
     maxPlayers: 4,
     gameType: 'yahtzee',
+    kickedUserIds: [],
     games: [],
   }
 
@@ -712,6 +713,37 @@ describe('POST /api/game/create', () => {
     )
   })
 
+  it('rebuilds the "Play again" roster from present players in the newest finished game (#1011)', async () => {
+    // The filter is a Prisma `where`, so the mock cannot apply it — assert the query the
+    // route asks. Without it a soft-left Players row is copied into the next game and the
+    // heartbeat sweep abandons that game ~30s after it starts.
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      games: [{ ...mockWaitingGame, status: 'finished' }],
+    } as any)
+    mockPrisma.games.create.mockResolvedValue({
+      ...mockWaitingGame,
+      id: 'game-new-123',
+      status: 'waiting',
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'yahtzee',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 2 },
+      }),
+    })
+    await POST(request)
+
+    const lobbyQuery = mockPrisma.lobbies.findUnique.mock.calls[0][0]
+    expect(lobbyQuery.include.games.orderBy).toEqual({ updatedAt: 'desc' })
+    expect(lobbyQuery.include.games.include.players.where).toEqual({ leftAt: null })
+    expect(lobbyQuery.include.games.include.players.orderBy).toEqual({ position: 'asc' })
+  })
+
   it('returns generic 500 response without internal details on unexpected failures', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('sensitive database failure'))
@@ -768,5 +800,54 @@ describe('POST /api/game/create', () => {
     expect(capturedGameState.currentPlayerIndex).toBe(0)
     expect(capturedGameState.data.dice).toHaveLength(5)
     expect(capturedGameState.data.rollsLeft).toBe(3)
+  })
+
+  it('refuses to start a game that cannot seat the whole lobby (#1004)', async () => {
+    // Four players left over from a Yahtzee room in a lobby now set to Connect Four:
+    // the engine seats two and used to silently discard the other two, who then sat on
+    // a live board it was never their turn on.
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    const overCapacityGame = {
+      ...mockWaitingGame,
+      players: [
+        ...mockWaitingGame.players,
+        {
+          id: 'player-3',
+          userId: 'user-789',
+          score: 0,
+          position: 2,
+          user: { id: 'user-789', username: 'player3', bot: null },
+        },
+        {
+          id: 'player-4',
+          userId: 'user-012',
+          score: 0,
+          position: 3,
+          user: { id: 'user-012', username: 'player4', bot: null },
+        },
+      ],
+    }
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      gameType: 'connect_four',
+      maxPlayers: 2,
+      games: [overCapacityGame],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'connect_four',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 2, minPlayers: 2 },
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.code).toBe('LOBBY_OVER_CAPACITY')
+    expect(data.error).toBe('This game seats 2 players, but 4 are in the lobby')
+    expect(mockPrisma.games.update).not.toHaveBeenCalled()
   })
 })

@@ -19,6 +19,7 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
   id: string
@@ -135,6 +136,7 @@ export default function MemoryGameBoard({
   const [optimisticFlippedIds, setOptimisticFlippedIds] = useState<string[]>([])
   const [mobileTab, setMobileTab] = useState<MobileTab>('board')
   const [overlayInspecting, setOverlayInspecting] = useState(false)
+  const stuckTurnRecoveryRef = useRef(createStuckTurnRecovery())
   const resolveKeyRef = useRef<string | null>(null)
 
   const parsedState = (state || {}) as MemoryState
@@ -296,7 +298,19 @@ export default function MemoryGameBoard({
     turnTimerLimit,
     onTimeout: async (): Promise<boolean> => {
       if (!isMyTurn || !currentPlayerId || pendingMismatchCardIds.length === 2) {
-        return true
+        // A pair resolving is a real pause, not a stuck turn — leave it alone.
+        if (pendingMismatchCardIds.length === 2) return true
+        // #989: the clock ran out on somebody else's turn and only they can end it.
+        // If they have closed the tab nobody will, so ask the server — the lobby GET
+        // sweeps an absent player and the leave path steps the turn off their seat
+        // (#992). Throttled, and it gives up after a minute.
+        const decision = stuckTurnRecoveryRef.current.decide(
+          turnSignatureOf(timerState?.currentPlayerIndex, timerState?.lastMoveAt),
+          Date.now()
+        )
+        if (decision === 'give-up') return true
+        if (decision === 'resync') void reconcileWithServerSnapshot?.()
+        return false
       }
 
       const autoActionContext = buildAutoActionContext(currentPlayerId)

@@ -127,8 +127,8 @@ const games = [
     tagline: 'Best for: Longer strategy sessions · 15–20 min · Dice + strategy',
     href: '/games/yahtzee',
     guideHref: '/guides/how-to-play-yahtzee-online',
-    why: 'Roll five dice, fill 15 scoring categories, outscore your opponent. A full 2-player game takes 15–20 minutes. More strategic than the others — the dice create variance, but smart category choices win games.',
-    tip: 'Chase the upper section bonus early: 35 points for scoring 63+ in Ones through Sixes.',
+    why: 'Roll five dice and fill the scorecard, then outscore your opponent. A new lobby opens in short mode – nine categories – and classic opens all fifteen for a 15–20 minute game. More strategic than the others – the dice create variance, but smart category choices win games.',
+    tip: 'In classic mode, chase the upper section bonus early: 35 points for scoring 63+ in Ones through Sixes. Short mode has no upper section, so the bonus never applies.',
   },
 ]
 

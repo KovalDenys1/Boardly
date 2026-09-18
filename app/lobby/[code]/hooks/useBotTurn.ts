@@ -77,6 +77,15 @@ export function useBotTurn({
   }, [])
 
   const triggerBotTurn = useCallback(async (botUserId: string, gameId: string) => {
+    // A spectator is not a participant, so the route answers 401/403 – neither a
+    // 409 nor "Not bot's turn", so the rejection lands on the retry-then-toast path
+    // and shows "Bot move failed" for a game they can only watch. The rejected POST
+    // also takes the server's bot lock before the participant check, which can push
+    // the real player's own trigger into a 409 retry cycle (#1014). The monitor
+    // effect below already refuses to run for a spectator; the exported trigger,
+    // which the pages' turn-timeout fallbacks call, did not.
+    if (isSpectator) return
+
     if (botTurnInProgress.current) {
       clientLogger.log('🤖 Bot turn already in progress, skipping...')
       return
@@ -134,7 +143,14 @@ export function useBotTurn({
           return
         }
         retryAttemptRef.current = 0
+        // Same reasoning as the network-error path below: giving up without
+        // clearing the refs leaves isSameTurn true, so the monitor never fires
+        // again and the board sits on the bot's turn until a broadcast happens
+        // to land (#1002).
+        lastBotPlayerId.current = null
+        lastPlayerIndex.current = null
         showToast.error('toast.botMoveFailed')
+        await reconcileAfterBotTurn('bot-turn-failed')
         return
       }
 
@@ -171,7 +187,7 @@ export function useBotTurn({
       }
       botTurnInProgress.current = false
     }
-  }, [code, reconcileAfterBotTurn, scheduleRetry])
+  }, [code, isSpectator, reconcileAfterBotTurn, scheduleRetry])
 
   // Keep ref current for retry self-calls
   triggerBotTurnRef.current = triggerBotTurn

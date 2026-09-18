@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { useGameActions } from '@/app/lobby/[code]/hooks/useGameActions'
+import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 
 jest.mock('@/lib/client-logger', () => ({
@@ -103,6 +104,8 @@ const makeProps = (overrides: Partial<Parameters<typeof useGameActions>[0]> = {}
   celebrate: jest.fn(),
   fireworks: jest.fn(),
   reconcileWithServerSnapshot: jest.fn().mockResolvedValue(undefined),
+  freshnessRef: { current: createFreshnessWatermark() },
+  moveInFlightRef: { current: false },
   ...overrides,
 })
 
@@ -367,6 +370,54 @@ describe('useGameActions', () => {
       // Must match the broadcast handler's `${lastRoll.playerId}-${lastRoll.timestamp}`
       // construction exactly - playerId here is userId for an authenticated player.
       expect(entry.id).toBe(`player-1-${SERVER_TS}`)
+    })
+  })
+
+  describe('freshness wiring (#994)', () => {
+    const makeResponseWithLastMoveAt = (lastMoveAt: number) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        game: { state: { id: 'game-123', lastMoveAt, data: { lastRoll: { timestamp: SERVER_TS } } } },
+      }),
+    })
+
+    it('the move response moves the shared watermark, even past a watermark that ran ahead', async () => {
+      mockRestoreGameEngineClient.mockResolvedValue(makeRestoreEngine() as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue(makeResponseWithLastMoveAt(900))
+
+      // A broadcast that was applied before this move left the watermark here.
+      const freshnessRef = { current: { current: 5_000 } }
+      const props = makeProps({ freshnessRef })
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+
+      expect(freshnessRef.current.current).toBe(900)
+    })
+
+    it('flags the move as in flight for the whole request, so a snapshot that predates it can be dropped', async () => {
+      mockRestoreGameEngineClient.mockResolvedValue(makeRestoreEngine() as any)
+      let resolveFetch: ((value: unknown) => void) | null = null
+      ;(global.fetch as jest.Mock).mockImplementation(
+        () => new Promise((resolve) => { resolveFetch = resolve })
+      )
+
+      const moveInFlightRef = { current: false }
+      const props = makeProps({ moveInFlightRef })
+      const { result } = renderHook(() => useGameActions(props))
+
+      let rollPromise: Promise<unknown> = Promise.resolve()
+      await act(async () => {
+        rollPromise = result.current.handleRollDice() as Promise<unknown>
+        await Promise.resolve()
+      })
+      expect(moveInFlightRef.current).toBe(true)
+
+      await act(async () => {
+        resolveFetch?.(makeResponseWithLastMoveAt(900))
+        await rollPromise
+      })
+      expect(moveInFlightRef.current).toBe(false)
     })
   })
 })

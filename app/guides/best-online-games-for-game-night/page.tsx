@@ -65,7 +65,7 @@ const games = [
   },
   {
     rank: 3, gameId: 'yahtzee', accent: 'var(--bd-sky)', name: 'Yahtzee', players: '2–4 players', href: '/games/yahtzee',
-    why: 'The classic dice game everyone knows. Roll five dice, fill 15 scoring categories, beat your opponents. Rounds take 15–20 minutes. Slower than the others but great for more relaxed sessions where you want to chat between turns.',
+    why: 'The classic dice game everyone knows. Roll five dice and fill the scorecard: nine categories in short mode, which is what a new lobby opens with, or all fifteen in classic. A classic game takes 15–20 minutes. Slower than the others but great for more relaxed sessions where you want to chat between turns.',
     best: 'Smaller groups, laid-back sessions, Yahtzee fans',
   },
   {

@@ -135,7 +135,10 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
               marginTop: 4,
             }}
           >
-            {status === 'in-development' ? t('home.ribbonBadgeLater') : t('home.ribbonBadgePlanned')}
+            {/* A flag can promote a game to 'available' before it has a page to
+                link to (#975), and "planned" is the wrong word for that – only
+                a genuinely planned game gets the planned label. */}
+            {status === 'planned' ? t('home.ribbonBadgePlanned') : t('home.ribbonBadgeLater')}
           </div>
         )}
       </div>
@@ -326,7 +329,7 @@ export default function GameRibbon() {
     alias: {
       name: t('games.alias.name'),
       tag: t('games.alias.ribbon.tag'),
-      players: '4-16',
+      players: '3-16',
       time: t('games.alias.ribbon.time'),
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),

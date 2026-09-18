@@ -14,7 +14,13 @@ import {
 } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import {
+  getLobbyJoinRefusalMessageKey,
+  isLobbyJoinRefusalCode,
+  type LobbyJoinRefusalCode,
+} from '@/lib/lobby-join-errors'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
@@ -36,7 +42,9 @@ interface UseLobbyActionsProps {
   code: string
   lobby: Lobby | null
   game: Game | null
-  setGame: (game: Game | null) => void
+  /** Shared with the broadcast handler and the move submits, so all three sources of state are judged against one watermark (#994). */
+  freshnessRef: React.MutableRefObject<FreshnessWatermark>
+  setGame: React.Dispatch<React.SetStateAction<Game | null>>
   setLobby: (lobby: Lobby | null) => void
   setGameEngine: (engine: GameEngine | null) => void
   setTimerActive: (active: boolean) => void
@@ -62,7 +70,6 @@ interface UseLobbyActionsProps {
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
   selectedBotDifficulty: BotDifficulty
-  onLobbyFull?: () => void
 }
 
 interface AddBotOptions {
@@ -146,6 +153,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     code,
     lobby,
     game,
+    freshnessRef,
     setGame,
     setLobby,
     setGameEngine,
@@ -164,15 +172,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
-    onLobbyFull,
   } = props
 
   const [password, setPassword] = useState('')
   const [guestNameInput, setGuestNameInput] = useState(guestName || '')
   const [isJoiningLobby, setIsJoiningLobby] = useState(false)
+  // Why the last join attempt was refused. `error` carries the sentence the
+  // visitor reads; this is what the UI branches on, so neither the branch nor
+  // the sentence depends on the server's English prose (#967).
+  const [joinRefusalCode, setJoinRefusalCode] = useState<LobbyJoinRefusalCode | null>(null)
 
   // Use ref to avoid circular dependencies
-  const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
+  const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
   const lobbySnapshotRequestRef = useRef<Promise<LobbySnapshotResult> | null>(null)
 
@@ -184,7 +195,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setGuestNameInput(guestName)
   }, [guestName])
 
-  const applyLobbySnapshot = useCallback(async (snapshot: LobbySnapshotResult) => {
+  const applyLobbySnapshot = useCallback(async (
+    snapshot: LobbySnapshotResult,
+    options: { trusted?: boolean } = {}
+  ) => {
     const normalizedLobby = snapshot.lobby
     const normalizedGame = snapshot.game
 
@@ -196,29 +210,66 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
     }
 
-    if (normalizedGame) {
-      setGame(normalizedGame)
-      if (normalizedGame.state) {
-        try {
-          const parsedState =
-            typeof normalizedGame.state === 'string'
-              ? JSON.parse(normalizedGame.state)
-              : normalizedGame.state
+    if (!normalizedGame) return
 
-          // Create the correct engine based on game type
-          const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
-          const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
-          setGameEngine(engine)
-        } catch (parseError) {
-          clientLogger.error('Failed to parse game state:', parseError)
-          setError('Game state is corrupted. Please start a new game.')
-        }
+    let parsedState: unknown = null
+    let parseFailed = false
+    if (normalizedGame.state) {
+      try {
+        parsedState =
+          typeof normalizedGame.state === 'string'
+            ? JSON.parse(normalizedGame.state)
+            : normalizedGame.state
+      } catch (parseError) {
+        parseFailed = true
+        clientLogger.error('Failed to parse game state:', parseError)
+        setError('Game state is corrupted. Please start a new game.')
       }
     }
-  }, [setGame, setGameEngine, setError, setLobby])
 
-  const requestLobbySnapshot = useCallback(async (): Promise<LobbySnapshotResult> => {
-    if (lobbySnapshotRequestRef.current) {
+    // The lobby itself is always worth applying - players join and leave
+    // independently of the board. The game is not: a snapshot answers with the
+    // state as of when its request left, which a broadcast or this player's own
+    // move response may already have overtaken (#994). A reconcile asks for its
+    // own snapshot and passes `trusted`, so it can still unstick the board.
+    const freshness = decideFreshness(freshnessRef.current, parsedState, { trusted: options.trusted })
+    if (!freshness.accept) {
+      clientLogger.debug('Ignoring stale lobby snapshot', {
+        gameId: normalizedGame.id,
+        reason: freshness.reason,
+      })
+      // The player rows are not part of that judgement: someone joining or
+      // leaving changes them with no move and no new stamp, and dropping the
+      // whole snapshot would freeze the roster for the rest of the game.
+      setGame((prevGame) => (prevGame && prevGame.id === normalizedGame.id
+        ? { ...prevGame, players: normalizedGame.players }
+        : prevGame))
+      return
+    }
+
+    setGame(normalizedGame)
+
+    if (parseFailed || !parsedState) return
+
+    try {
+      // Create the correct engine based on game type
+      const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
+      const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
+      setGameEngine(engine)
+    } catch (restoreError) {
+      clientLogger.error('Failed to parse game state:', restoreError)
+      setError('Game state is corrupted. Please start a new game.')
+    }
+  }, [freshnessRef, setGame, setGameEngine, setError, setLobby])
+
+  const requestLobbySnapshot = useCallback(async (
+    options: { fresh?: boolean } = {}
+  ): Promise<LobbySnapshotResult> => {
+    // Sharing an in-flight request is only right for a caller that wants "the
+    // lobby, roughly now". A reconcile wants the truth as of *after* whatever
+    // it is reconciling, and the parked promise left before that happened, so
+    // it asks for its own (#996).
+    if (!options.fresh && lobbySnapshotRequestRef.current) {
       return await lobbySnapshotRequestRef.current
     }
 
@@ -264,13 +315,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   ])
 
   const fetchLobbySnapshot = useCallback(async (
-    options: { applyState?: boolean } = {}
+    options: { applyState?: boolean; fresh?: boolean } = {}
   ): Promise<LobbySnapshotResult> => {
     const applyState = options.applyState !== false
-    const snapshot = await requestLobbySnapshot()
+    const fresh = options.fresh === true
+    const snapshot = await requestLobbySnapshot({ fresh })
 
     if (applyState) {
-      await applyLobbySnapshot(snapshot)
+      await applyLobbySnapshot(snapshot, { trusted: fresh })
     }
 
     return snapshot
@@ -279,9 +331,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     requestLobbySnapshot,
   ])
 
-  const loadLobby = useCallback(async () => {
+  const loadLobby = useCallback(async (options: { fresh?: boolean } = {}) => {
     try {
-      await fetchLobbySnapshot({ applyState: true })
+      await fetchLobbySnapshot({ applyState: true, fresh: options.fresh })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -375,6 +427,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const handleJoinLobby = useCallback(async () => {
     setIsJoiningLobby(true)
     setError('')
+    setJoinRefusalCode(null)
 
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -423,19 +476,28 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       const errorCode = (err as { code?: string })?.code
-      // A running game is refused the same way a full lobby is: watch it if the lobby
-      // allows spectators, otherwise read the reason and take the lobbies button that
-      // JoinPrompt always shows.
-      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
-      if (refused && lobby?.allowSpectators && onLobbyFull) {
-        onLobbyFull()
-      } else {
-        setError(message)
+      // A kick is permanent for this lobby (#1013), and this request may well be the
+      // auto-join firing on its own, so the reason has to read as a decision about them
+      // rather than as a failed attempt — and in their language, not the server's English.
+      if (errorCode === 'KICKED_FROM_LOBBY') {
+        setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
+        return
       }
+      // A running game is refused the same way a full lobby is. Either way the
+      // reason goes to the join screen, which offers watching, a room of their own
+      // and the lobbies list from there (#972): a spectator-enabled lobby used to
+      // move the visitor to the spectator page without telling them why, which is
+      // both a decision taken for them and the reason JoinPrompt's own watch and
+      // create offers were unreachable.
+      const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
+      if (isLobbyJoinRefusalCode(errorCode)) {
+        setJoinRefusalCode(errorCode)
+      }
+      setError(refusalKey ? i18n.t(refusalKey) : message)
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
+  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleGuestJoinLobby = useCallback(async () => {
     const normalizedGuestName = guestNameInput.trim()
@@ -452,6 +514,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     setIsJoiningLobby(true)
     setError('')
+    setJoinRefusalCode(null)
 
     try {
       const response = await fetch(`/api/lobby/${code}/join-guest`, {
@@ -503,19 +566,24 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       const errorCode = (err as { code?: string })?.code
-      // A running game is refused the same way a full lobby is: watch it if the lobby
-      // allows spectators, otherwise read the reason and take the lobbies button that
-      // JoinPrompt always shows.
-      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
-      if (refused && lobby?.allowSpectators && onLobbyFull) {
-        onLobbyFull()
-      } else {
-        setError(message)
+      // A kick is permanent for this lobby (#1013), and this request may well be the
+      // auto-join firing on its own, so the reason has to read as a decision about them
+      // rather than as a failed attempt — and in their language, not the server's English.
+      if (errorCode === 'KICKED_FROM_LOBBY') {
+        setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
+        return
       }
+      // Same as the signed-in path above: the reason goes to the join screen and the
+      // visitor chooses what to do with it (#972).
+      const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
+      if (isLobbyJoinRefusalCode(errorCode)) {
+        setJoinRefusalCode(errorCode)
+      }
+      setError(refusalKey ? i18n.t(refusalKey) : message)
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode, lobby?.allowSpectators, onLobbyFull])
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id) return
@@ -773,6 +841,26 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
   }, [code, isGuest, guestId, guestName, guestToken])
 
+  // #1024: undo a kick. The kick is remembered so a removed player cannot walk
+  // back in on a reload (#1013), which also makes a mis-click final — this is
+  // the way back. It only clears the memory; they still rejoin via the link.
+  const unkickPlayer = useCallback(async (userId: string) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/kick-player`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to let the player back in')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+      showToast.success('toast.playerUnkicked')
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   const kickBot = useCallback(async (botPlayerId: string) => {
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -811,10 +899,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     addBotToLobby,
     kickBot,
     kickPlayer,
+    unkickPlayer,
     changeBotDifficulty,
     announceBotJoined,
     handleJoinLobby,
     handleGuestJoinLobby,
+    joinRefusalCode,
     handleStartGame,
     updateLobbySettings,
     guestNameInput,

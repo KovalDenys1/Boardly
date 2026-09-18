@@ -45,6 +45,8 @@ import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
 function parseLobbyGameState(activeGame: unknown): unknown {
@@ -234,6 +236,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
     const freshnessRef = React.useRef(createFreshnessWatermark())
+    const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
@@ -350,7 +353,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 // #987: only leave when the lobby is genuinely gone. A 429 from a
                 // shared IP or a transient 5xx used to throw a player out of a live
                 // game — and a reconnect resync is exactly when those arrive.
-                if (res.status === 404 || res.status === 403 || res.status === 410) {
+                if (isLobbyGoneStatus(res.status)) {
                     router.push('/games')
                 }
                 setLoading(false)
@@ -589,7 +592,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     }, [game?.id, gameEngine])
 
     const timerState = gameEngine?.getState() ?? null
-    const timerStateData = timerState?.data as TicTacToeGameData | undefined
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
             ? Math.floor(lobby.turnTimer)
@@ -606,7 +608,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const { timeLeft } = useGameTimer({
         isMyTurn: isSpectator ? false : isMyTurn(),
-        gameState: timerStateData?.pendingRequest ? null : timerState,
+        // A draw or undo prompt used to pass null here, which stopped the hook
+        // from ever firing a timeout while leaving the countdown visibly running
+        // down to zero. With no clock and no legal move the board was frozen for
+        // as long as the opponent ignored the prompt (#997).
+        gameState: timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
             if (!gameEngine || !game || !isMyTurn()) {
@@ -627,7 +633,23 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         return false
                     }
                 }
-                return true
+                // #989: nobody else can end this turn. The player whose turn it is
+                // submits the timeout, and if they closed the tab there is no server
+                // fallback for this game type — the board sat on a dead turn until
+                // someone reloaded, which abandons the game and credits nobody. A
+                // lobby GET runs sweepStalePlayers, which marks them gone once their
+                // heartbeat is 30s stale; the leave path then steps the turn off the
+                // seat (#992). Throttled, and it stops after a minute.
+                const decision = stuckTurnRecoveryRef.current.decide(
+                    turnSignatureOf(timerState?.currentPlayerIndex, timerState?.lastMoveAt),
+                    Date.now()
+                )
+                if (decision === 'give-up') return true
+                if (decision === 'resync') {
+                    clientLogger.warn('⏰ Turn timer expired on an absent player, asking the server', { code })
+                    void loadLobby()
+                }
+                return false
             }
 
             const userId = getCurrentUserId()
@@ -996,7 +1018,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 board={gameData.board}
                 winningLine={gameData.winningLine}
                 onCellClick={handleCellClick}
-                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting}
+                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
                 testId={testId}
             />
             {isFinished && !isSpectator && !overlayInspecting && (

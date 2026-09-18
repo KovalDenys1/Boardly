@@ -8,6 +8,8 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface TransitionPlayer {
   userId: string
+  /** Set on the Players row when the player left a playing or finished game. */
+  leftAt?: Date | null
   user?: { bot?: unknown } | null
 }
 
@@ -29,7 +31,10 @@ interface TransitionParams {
  */
 export async function transitionLobbyToWaitingRoom(params: TransitionParams): Promise<{ gameId: string }> {
   const { lobbyId, lobbyCode, gameType, players } = params
-  const humanPlayers = players.filter((p) => !p.user?.bot)
+  // Departures are soft-leaves, so the finished game still holds their Players row. Carrying
+  // it into the fresh waiting room seats a player who is gone (#1011) — the same defect the
+  // "Play again" path had. Only the roster of people still here crosses over.
+  const humanPlayers = players.filter((p) => !p.user?.bot && !p.leftAt)
 
   const initialState = createGameEngine(gameType, 'temp').getState()
 
@@ -65,6 +70,50 @@ export async function transitionLobbyToWaitingRoom(params: TransitionParams): Pr
   await broadcastToLobby(lobbyCode, 'game-reset', { lobbyCode, gameId: newGame.id })
 
   return { gameId: newGame.id }
+}
+
+/**
+ * The human (non-bot) roster of the lobby's most recent finished game, in seat order.
+ *
+ * Both join paths read "no waiting game" as "create one", and a finished game is invisible
+ * to the query they ask, so a join arriving after the match opened a bare room – which
+ * outranks the finished one in `pickRelevantLobbyGame`, so every client swapped to an empty
+ * board holding only the newcomer (#1005). Carrying the roster across is what this module
+ * already does for "Return to lobby"; the join paths need the same list without the
+ * transaction and the broadcast wrapped around it.
+ *
+ * Takes the client to query with, so a caller inside a transaction stays inside it.
+ */
+export async function getFinishedGameHumanRoster(
+  client: Pick<typeof prisma, 'games'>,
+  lobbyId: string,
+  /** Users the lobby will not seat again — the host's kick list (#1013). */
+  excludeUserIds: readonly string[] = []
+): Promise<string[]> {
+  const lastFinishedGame = await client.games.findFirst({
+    where: { lobbyId, status: 'finished' },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      players: {
+        where: { leftAt: null },
+        orderBy: { position: 'asc' },
+        select: {
+          userId: true,
+          user: { select: { bot: true } },
+        },
+      },
+    },
+  })
+
+  if (!lastFinishedGame) {
+    return []
+  }
+
+  const excluded = new Set(excludeUserIds)
+
+  return lastFinishedGame.players
+    .filter((player) => !player.user.bot && !excluded.has(player.userId))
+    .map((player) => player.userId)
 }
 
 /**

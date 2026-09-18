@@ -1,6 +1,10 @@
 // @ts-nocheck
 
-import { transitionLobbyToWaitingRoom, maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
+import {
+  transitionLobbyToWaitingRoom,
+  maybeAutoTransitionCompletedSeries,
+  getFinishedGameHumanRoster,
+} from '@/lib/lobby-series-transition'
 import { prisma } from '@/lib/db'
 import { createGameEngine } from '@/lib/game-registry'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -86,6 +90,23 @@ describe('transitionLobbyToWaitingRoom', () => {
     })
   })
 
+  it('leaves behind a player who soft-left the finished game (#1011)', async () => {
+    await transitionLobbyToWaitingRoom({
+      lobbyId: 'lobby-3',
+      lobbyCode: 'LEFT',
+      gameType: 'tic_tac_toe',
+      players: [
+        { userId: 'human-1', leftAt: null, user: { bot: null } },
+        { userId: 'human-2', leftAt: new Date('2026-09-17T10:00:00.000Z'), user: { bot: null } },
+      ],
+    })
+
+    const createManyArg = mockTx.players.createMany.mock.calls[0][0]
+    expect(createManyArg.data.map((p: { userId: string }) => p.userId)).toEqual(['human-1'])
+    // Seat numbers are re-indexed over who is actually there, so the fresh room has no gap.
+    expect(createManyArg.data.map((p: { position: number }) => p.position)).toEqual([0])
+  })
+
   it('carries over zero players when everyone remaining is a bot', async () => {
     await transitionLobbyToWaitingRoom({
       lobbyId: 'lobby-2',
@@ -150,5 +171,54 @@ describe('maybeAutoTransitionCompletedSeries', () => {
     maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, onError)
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(onError).toHaveBeenCalledWith(expect.any(Error))
+  })
+})
+
+describe('getFinishedGameHumanRoster (#1005)', () => {
+  const makeClient = (game: unknown) => ({
+    games: { findFirst: jest.fn().mockResolvedValue(game) },
+  })
+
+  it('returns the humans still in the newest finished game, in seat order', async () => {
+    const client = makeClient({
+      players: [
+        { userId: 'human-1', user: { bot: null } },
+        { userId: 'bot-1', user: { bot: { id: 'bot-row-1' } } },
+        { userId: 'human-2', user: { bot: null } },
+      ],
+    })
+
+    await expect(getFinishedGameHumanRoster(client, 'lobby-1')).resolves.toEqual([
+      'human-1',
+      'human-2',
+    ])
+    expect(client.games.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { lobbyId: 'lobby-1', status: 'finished' },
+        orderBy: { updatedAt: 'desc' },
+        select: expect.objectContaining({
+          players: expect.objectContaining({ where: { leftAt: null } }),
+        }),
+      })
+    )
+  })
+
+  it('does not carry over a player the host kicked (#1013)', async () => {
+    const client = makeClient({
+      players: [
+        { userId: 'human-1', user: { bot: null } },
+        { userId: 'kicked-1', user: { bot: null } },
+      ],
+    })
+
+    await expect(
+      getFinishedGameHumanRoster(client, 'lobby-1', ['kicked-1'])
+    ).resolves.toEqual(['human-1'])
+  })
+
+  it('returns nothing when the lobby has never finished a game', async () => {
+    const client = makeClient(null)
+
+    await expect(getFinishedGameHumanRoster(client, 'lobby-1')).resolves.toEqual([])
   })
 })

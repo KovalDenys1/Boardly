@@ -1,4 +1,4 @@
-import { GameEngine, Player, Move } from '@/lib/game-engine'
+import { GameEngine, Player, Move, resolveTurnStartedAt } from '@/lib/game-engine'
 
 // Create a concrete implementation for testing
 class TestGame extends GameEngine {
@@ -465,5 +465,159 @@ describe('move telemetry (#815)', () => {
     expect(game.makeMove({ type: 'nonsense', playerId: 'p1' } as Move)).toBe(false)
 
     expect(game.getState().lastMoveAt as number).toBe(atStart)
+  })
+})
+
+class OfferGame extends GameEngine {
+  constructor(gameId: string) {
+    super(gameId, 'test-offer', { maxPlayers: 2, minPlayers: 2 })
+  }
+  getInitialGameData() { return {} }
+  validateMove(move: Move): boolean { return move.type === 'play' || move.type === 'offer' }
+  processMove(): void {}
+  checkWinCondition(): Player | null { return null }
+  getGameRules(): string[] { return [] }
+  protected shouldAdvanceTurn(move: Move): boolean { return move.type === 'play' }
+  // Tic-tac-toe and connect four answer like this for a draw or undo prompt.
+  protected restartsTurnClock(move: Move): boolean { return move.type !== 'offer' }
+}
+
+describe('turn clock (#998)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  const startGame = (gameId: string) => {
+    const game = new OfferGame(gameId)
+    game.addPlayer({ id: 'p1', name: 'A' } as Player)
+    game.addPlayer({ id: 'p2', name: 'B' } as Player)
+    game.startGame()
+    return game
+  }
+
+  it('starts the clock with the game', () => {
+    const game = startGame('clock-start')
+    expect(game.getState().turnStartedAt).toBe(game.getState().lastMoveAt)
+  })
+
+  it('leaves the clock alone for a move that is not a turn', () => {
+    // The stall this closes: offer a draw with 2s left, opponent declines, clock
+    // back to a full turn, repeat forever. lastMoveAt still moves, because
+    // drop-off detection reads it.
+    const game = startGame('clock-offer')
+    const turnStartedAt = game.getState().turnStartedAt as number
+
+    jest.advanceTimersByTime(5000)
+    expect(game.makeMove({ type: 'offer', playerId: 'p1' } as Move)).toBe(true)
+
+    expect(game.getState().turnStartedAt).toBe(turnStartedAt)
+    expect(game.getState().lastMoveAt as number).toBeGreaterThan(turnStartedAt)
+    expect(game.getState().currentPlayerIndex).toBe(0)
+  })
+
+  it('restarts the clock when the turn actually changes hands', () => {
+    const game = startGame('clock-play')
+    const turnStartedAt = game.getState().turnStartedAt as number
+
+    jest.advanceTimersByTime(5000)
+    expect(game.makeMove({ type: 'play', playerId: 'p1' } as Move)).toBe(true)
+
+    expect(game.getState().turnStartedAt as number).toBeGreaterThan(turnStartedAt)
+    expect(game.getState().turnStartedAt).toBe(game.getState().lastMoveAt)
+    expect(game.getState().currentPlayerIndex).toBe(1)
+  })
+})
+
+describe('resolveTurnStartedAt', () => {
+  it('falls back to lastMoveAt for a state written before turnStartedAt existed', () => {
+    expect(resolveTurnStartedAt({ lastMoveAt: 1000 })).toBe(1000)
+  })
+
+  it('prefers turnStartedAt once it is there', () => {
+    expect(resolveTurnStartedAt({ lastMoveAt: 5000, turnStartedAt: 1000 })).toBe(1000)
+  })
+
+  it('answers null when neither timestamp is usable', () => {
+    expect(resolveTurnStartedAt({ lastMoveAt: Number.NaN })).toBeNull()
+    expect(resolveTurnStartedAt(null)).toBeNull()
+  })
+})
+
+// #1007 — the timeout fires, the auto-action moves, and makeMove stamps a new
+// turnStartedAt. The server measures the turn deadline from that stamp, so the
+// second half of a two-step timeout (Yahtzee rolls, then scores) was refused as
+// too early and the abandoned turn ran for two full timers.
+class RollAndScoreGame extends GameEngine {
+  constructor(gameId: string) {
+    super(gameId, 'test-roll-score', { maxPlayers: 2, minPlayers: 2 })
+  }
+  getInitialGameData() { return {} }
+  validateMove(move: Move): boolean { return move.type === 'roll' || move.type === 'score' }
+  processMove(): void {}
+  checkWinCondition(): Player | null { return null }
+  getGameRules(): string[] { return [] }
+  // Yahtzee's shape: only the score hands the turn over, and every move restarts
+  // the clock, because nothing here overrides restartsTurnClock.
+  protected shouldAdvanceTurn(move: Move): boolean { return move.type === 'score' }
+}
+
+describe('holdTurnClock (#1007)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  const startGame = (gameId: string) => {
+    const game = new RollAndScoreGame(gameId)
+    game.addPlayer({ id: 'p1', name: 'A' } as Player)
+    game.addPlayer({ id: 'p2', name: 'B' } as Player)
+    game.startGame()
+    return game
+  }
+
+  it('puts the clock back when the auto-action left the seat where it was', () => {
+    const game = startGame('hold-same-seat')
+    const turnStartedAt = game.getState().turnStartedAt as number
+
+    jest.advanceTimersByTime(60_000)
+    expect(game.makeMove({ type: 'roll', playerId: 'p1' } as Move)).toBe(true)
+    expect(game.getState().turnStartedAt as number).toBeGreaterThan(turnStartedAt)
+
+    game.holdTurnClock({ currentPlayerIndex: 0, turnStartedAtMs: turnStartedAt })
+
+    expect(game.getState().turnStartedAt).toBe(turnStartedAt)
+    // The move still counts as activity, so drop-off detection keeps working.
+    expect(game.getState().lastMoveAt as number).toBeGreaterThan(turnStartedAt)
+  })
+
+  it('leaves the new seat its own clock when the auto-action ended the turn', () => {
+    const game = startGame('hold-turn-changed')
+    const turnStartedAt = game.getState().turnStartedAt as number
+
+    jest.advanceTimersByTime(60_000)
+    expect(game.makeMove({ type: 'score', playerId: 'p1' } as Move)).toBe(true)
+    game.holdTurnClock({ currentPlayerIndex: 0, turnStartedAtMs: turnStartedAt })
+
+    expect(game.getState().currentPlayerIndex).toBe(1)
+    expect(game.getState().turnStartedAt as number).toBeGreaterThan(turnStartedAt)
+  })
+
+  it('does nothing when there was no clock to put back', () => {
+    const game = startGame('hold-no-clock')
+
+    jest.advanceTimersByTime(60_000)
+    expect(game.makeMove({ type: 'roll', playerId: 'p1' } as Move)).toBe(true)
+    const afterMove = game.getState().turnStartedAt as number
+
+    game.holdTurnClock({ currentPlayerIndex: 0, turnStartedAtMs: null })
+
+    expect(game.getState().turnStartedAt).toBe(afterMove)
   })
 })

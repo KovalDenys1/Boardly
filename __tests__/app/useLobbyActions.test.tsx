@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { showToast } from '@/lib/i18n-toast'
+import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 
 jest.mock('@/lib/restore-game-engine-client', () => ({
   restoreGameEngineClient: jest.fn(),
@@ -42,6 +43,13 @@ jest.mock('@/lib/i18n-toast', () => ({
 
 jest.mock('@/lib/lobby-create-metrics', () => ({
   finalizePendingLobbyCreateMetric: jest.fn(),
+}))
+
+// Marks the string as having gone through i18n, so a test can tell a translated
+// message from the server's English prose (#967).
+jest.mock('@/i18n', () => ({
+  __esModule: true,
+  default: { t: (key: string) => `translated:${key}` },
 }))
 
 const mockRestoreGameEngineClient = restoreGameEngineClient as jest.MockedFunction<
@@ -163,6 +171,7 @@ describe('useLobbyActions', () => {
           creatorId: 'creator-123',
         },
         game: staleGame as any,
+        freshnessRef: { current: createFreshnessWatermark() },
         setGame,
         setLobby: jest.fn(),
         setGameEngine,
@@ -203,6 +212,119 @@ describe('useLobbyActions', () => {
     expect(setGameEngine).toHaveBeenCalled()
     expect(mockedShowToast.error).not.toHaveBeenCalledWith('toast.botAddFailed')
   })
+
+  it('translates a full-lobby refusal instead of showing the server sentence (#967)', async () => {
+    const setError = jest.fn()
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'Lobby is full', code: 'LOBBY_FULL' }),
+    })
+
+    const { result } = renderHook(() =>
+      useLobbyActions({
+        code: 'ABCD',
+        lobby: {
+          id: 'lobby-123',
+          code: 'ABCD',
+          gameType: 'tic_tac_toe',
+          maxPlayers: 2,
+          turnTimer: 60,
+          creatorId: 'creator-123',
+          allowSpectators: false,
+        },
+        game: null,
+        freshnessRef: { current: createFreshnessWatermark() },
+        setGame: jest.fn(),
+        setLobby: jest.fn(),
+        setGameEngine: jest.fn(),
+        setTimerActive: jest.fn(),
+        setTimeLeft: jest.fn(),
+        setRollHistory: jest.fn(),
+        setCelebrationEvent: jest.fn(),
+        setChatMessages: jest.fn(),
+        isGuest: false,
+        guestId: null,
+        guestName: null,
+        guestToken: null,
+        userId: 'visitor-1',
+        username: 'Visitor',
+        setGuestMode: jest.fn().mockResolvedValue(undefined),
+        setError,
+        setLoading: jest.fn(),
+        setStartingGame: jest.fn(),
+        selectedBotDifficulty: 'medium',
+      })
+    )
+
+    await act(async () => {
+      await result.current.handleJoinLobby()
+    })
+
+    expect(setError).toHaveBeenLastCalledWith('translated:lobby.joinSection.lobbyFull')
+    expect(result.current.joinRefusalCode).toBe('LOBBY_FULL')
+  })
+
+  it.each([
+    ['LOBBY_FULL' as const, 'lobby.joinSection.lobbyFull', 400],
+    ['GAME_IN_PROGRESS' as const, 'lobby.joinSection.gameInProgress', 409],
+  ])(
+    'keeps a %s refusal on the join screen when the lobby takes spectators (#972)',
+    async (code, messageKey, status) => {
+      // The refusal used to be swallowed by a push to /lobby/[code]/spectate, so the
+      // visitor was moved into watching without being told why, and JoinPrompt's own
+      // "watch instead" and "create your own lobby" offers could never render.
+      const setError = jest.fn()
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status,
+        json: async () => ({ error: 'refused', code }),
+      })
+
+      const { result } = renderHook(() =>
+        useLobbyActions({
+          code: 'ABCD',
+          lobby: {
+            id: 'lobby-123',
+            code: 'ABCD',
+            gameType: 'tic_tac_toe',
+            maxPlayers: 2,
+            turnTimer: 60,
+            creatorId: 'creator-123',
+            allowSpectators: true,
+          },
+          game: null,
+          freshnessRef: { current: createFreshnessWatermark() },
+          setGame: jest.fn(),
+          setLobby: jest.fn(),
+          setGameEngine: jest.fn(),
+          setTimerActive: jest.fn(),
+          setTimeLeft: jest.fn(),
+          setRollHistory: jest.fn(),
+          setCelebrationEvent: jest.fn(),
+          setChatMessages: jest.fn(),
+          isGuest: false,
+          guestId: null,
+          guestName: null,
+          guestToken: null,
+          userId: 'visitor-1',
+          username: 'Visitor',
+          setGuestMode: jest.fn().mockResolvedValue(undefined),
+          setError,
+          setLoading: jest.fn(),
+          setStartingGame: jest.fn(),
+          selectedBotDifficulty: 'medium',
+        })
+      )
+
+      await act(async () => {
+        await result.current.handleJoinLobby()
+      })
+
+      expect(setError).toHaveBeenLastCalledWith(`translated:${messageKey}`)
+      expect(result.current.joinRefusalCode).toBe(code)
+    }
+  )
 
   it('reconciles stale lobby state after bot-add failure and still starts when a second human already joined', async () => {
     const initialWaitingGame = createWaitingGame([createPlayer('creator-123', 'Host')])
@@ -265,6 +387,7 @@ describe('useLobbyActions', () => {
           creatorId: 'creator-123',
         },
         game: initialWaitingGame as any,
+        freshnessRef: { current: createFreshnessWatermark() },
         setGame,
         setLobby: jest.fn(),
         setGameEngine: jest.fn(),

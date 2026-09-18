@@ -19,6 +19,7 @@ jest.mock('@/lib/fetch-with-guest', () => ({
 }))
 
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { showToast } from '@/lib/i18n-toast'
 
 const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
 
@@ -145,6 +146,41 @@ describe('useBotTurn watchdog', () => {
     expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
   })
 
+  it('reconciles and clears the tracked turn after the last retry fails', async () => {
+    // #1002: this was the only failure path that neither reconciled nor cleared
+    // the refs, so isSameTurn stayed true and the monitor never fired again —
+    // the board sat on the bot's turn until a broadcast happened to land.
+    mockFetchWithGuest.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Internal server error', code: 'BOT_TURN_FAILED' }),
+    } as any)
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const gameEngine = makeBotEngine() as any
+
+    renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        reconcileWithServerSnapshot,
+      })
+    )
+
+    // The first attempt plus MAX_BOT_RETRIES (2) retries, each on its own delay.
+    await advanceAndFlush(0)
+    await act(async () => { await Promise.resolve() })
+    await advanceAndFlush(RETRY_DELAY_MS + 100)
+    await act(async () => { await Promise.resolve() })
+    await advanceAndFlush(RETRY_DELAY_MS + 100)
+    await act(async () => { await Promise.resolve() })
+
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(3)
+    expect(showToast.error).toHaveBeenCalledWith('toast.botMoveFailed')
+    expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+  })
+
   it('does not reconcile when it was not the bot\'s turn after all', async () => {
     // A 400 "Not bot's turn" means somebody else already moved it along; there
     // is nothing to recover and a reconcile would only add a request.
@@ -170,5 +206,38 @@ describe('useBotTurn watchdog', () => {
     await act(async () => { await Promise.resolve() })
 
     expect(reconcileWithServerSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('does not POST when a spectator calls triggerBotTurn from a turn-timeout fallback', async () => {
+    // #1014: the pages' onTimeout fallback re-derives "is it a bot's turn" and calls
+    // the exported trigger, which had no spectator guard. The route refuses a
+    // non-participant with 401/403, the retry-then-toast path then shows "Bot move
+    // failed" to someone who is only watching, and each rejected POST holds the
+    // server's bot lock long enough to push the real player's trigger into a 409.
+    mockFetchWithGuest.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'Forbidden' }),
+    } as any)
+    const gameEngine = makeBotEngine() as any
+
+    const { result } = renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        isSpectator: true,
+      })
+    )
+
+    await act(async () => {
+      await result.current.triggerBotTurn('bot-1', 'game-123')
+    })
+
+    // No request, so no retry cycle and no toast however long the clock runs.
+    await advanceAndFlush(WATCHDOG_MS + RETRY_DELAY_MS * 3)
+    expect(mockFetchWithGuest).not.toHaveBeenCalled()
+    expect(showToast.error).not.toHaveBeenCalled()
   })
 })
