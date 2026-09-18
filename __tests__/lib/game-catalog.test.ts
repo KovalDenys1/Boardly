@@ -3,6 +3,7 @@ import {
   getBotSupportedGameTypes,
   getCatalogAvailableGames,
   getCatalogGames,
+  getGameMetadata,
   hasBotSupport,
   isAvailableGameType,
   isAvailableCatalogEntry,
@@ -120,4 +121,22 @@ describe('leave-behavior metadata (#759)', () => {
     })
   })
 
+})
+
+describe('advertised player counts (#969)', () => {
+  it('matches every catalog entry to its engine metadata', () => {
+    // #847 dropped Alias to three players but the catalog still said 4-16, so
+    // /games/alias turned a group of three away from a game they can play.
+    // A bot game may advertise 1 because the empty seats are filled by bots.
+    for (const game of getCatalogGames()) {
+      const metadata = game.gameType ? getGameMetadata(game.gameType) : null
+      if (!metadata) continue
+      const [min, max] = game.players.split('-').map(Number)
+      expect({ type: game.gameType, max }).toEqual({ type: game.gameType, max: metadata.maxPlayers })
+      expect({ type: game.gameType, min }).toEqual({
+        type: game.gameType,
+        min: metadata.supportsBots ? 1 : metadata.minPlayers,
+      })
+    }
+  })
 })

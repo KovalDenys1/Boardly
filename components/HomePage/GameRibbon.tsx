@@ -326,7 +326,7 @@ export default function GameRibbon() {
     alias: {
       name: t('games.alias.name'),
       tag: t('games.alias.ribbon.tag'),
-      players: '4-16',
+      players: '3-16',
       time: t('games.alias.ribbon.time'),
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),
