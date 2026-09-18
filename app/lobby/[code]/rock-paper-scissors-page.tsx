@@ -36,6 +36,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -246,6 +247,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
      * highlighted instead of blinking off when the broadcast lands.
      */
     const freshnessRef = React.useRef(createFreshnessWatermark())
+    const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
     const applyAuthoritativeState = useCallback((gameId: string, raw: unknown, statusOverride?: unknown, options?: { trusted?: boolean }): boolean => {
         // #985: a stale broadcast used to land on top of a just-submitted choice.
         const freshness = decideFreshness(freshnessRef.current, raw, { trusted: options?.trusted })
@@ -523,7 +525,21 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         return false
                     }
                 }
-                return true
+                // #989: I have picked and the opponent never will — they closed the
+                // tab. Nobody submits a timeout for an absent player and this game
+                // type has no server fallback, so ask the server: the lobby GET
+                // sweeps them once their heartbeat is 30s stale and the leave path
+                // ends the round. Throttled, and it stops after a minute.
+                const decision = stuckTurnRecoveryRef.current.decide(
+                    turnSignatureOf(rpsData.rounds.length, game?.state.lastMoveAt),
+                    Date.now()
+                )
+                if (decision === 'give-up') return true
+                if (decision === 'resync') {
+                    clientLogger.warn('⏰ RPS round timer expired on an absent opponent, asking the server', { code })
+                    void loadLobby()
+                }
+                return false
             }
             const randomChoice = RPS_CHOICES[Math.floor(Math.random() * RPS_CHOICES.length)]
             clientLogger.warn('⏰ RPS round timer expired, submitting a random choice', { code, gameId: game?.id })
