@@ -10,6 +10,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
@@ -337,16 +338,19 @@ export default function SpectatorLobbyPage() {
   const realtimeTopic = data?.realtimeTopic
   useEffect(() => {
     if (!code || !realtimeTopic) return
-    const supabase = getSupabaseClient()
-    const channel = supabase
-      .channel(realtimeTopic)
-      .on('broadcast', { event: 'game-update' }, () => void loadSnapshot())
-      .on('broadcast', { event: 'game-started' }, () => void loadSnapshot())
-      .on('broadcast', { event: 'player-left' }, () => void loadSnapshot())
-      .subscribe()
-    gameChannelRef.current = channel
+    // Shared with the game component this page mounts for the dedicated game
+    // types — one subscribe, one teardown, whoever gets there first (#1000).
+    const reload = () => void loadSnapshot()
+    const lobbyChannel = acquireLobbyChannel(realtimeTopic, {
+      events: {
+        'game-update': reload,
+        'game-started': reload,
+        'player-left': reload,
+      },
+    })
+    gameChannelRef.current = lobbyChannel.channel
     return () => {
-      void supabase.removeChannel(channel)
+      lobbyChannel.release()
       gameChannelRef.current = null
     }
   }, [code, realtimeTopic, loadSnapshot])

@@ -945,5 +945,89 @@ describe('TicTacToeGame', () => {
 
             expect(game.isTheoreticalDraw()).toBe(true)
         })
+
+        it('lets the requester keep playing, which withdraws their own offer (#997)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })).toBe(true)
+            expect(getGameData(game).pendingRequest).toBeNull()
+            expect(getGameData(game).board[0][1]).toBe('X')
+        })
+
+        it('still makes the player who was asked answer before moving (#997)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            // Player O asks while it is X's turn, so X is the responder.
+            expect(game.makeMove({ playerId: 'player-o', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })).toBe(false)
+            expect(getGameData(game).pendingRequest).not.toBeNull()
+        })
+
+        it('lets the clock end the turn while an offer is still unanswered (#997)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'timeout-forfeit', data: {}, timestamp: new Date() })).toBe(true)
+            const data = getGameData(game)
+            expect(data.winner).toBe('O')
+            expect(data.pendingRequest).toBeNull()
+            expect(game.getState().status).toBe('finished')
+        })
+
+        it('lets either player start the next round while an undo request hangs (#997)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'timeout-forfeit', data: {}, timestamp: new Date() })
+            expect(game.getState().status).toBe('finished')
+
+            // Between rounds there is no clock and no board, so this used to be
+            // the one place a prompt could hold the series open for good.
+            expect(game.makeMove({ playerId: 'player-o', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(true)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.getState().status).toBe('playing')
+            expect(getGameData(game).pendingRequest).toBeNull()
+        })
+
+        it('does not hand the player on the clock a fresh turn timer for an offer and a decline (#998)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            const turnStartedAt = game.getState().turnStartedAt as number
+            expect(game.getState().currentPlayerIndex).toBe(0)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.makeMove({ playerId: 'player-o', type: 'respond-draw', data: { accept: false }, timestamp: new Date() })).toBe(true)
+
+            // Still player X's turn, and still the same clock they were about to lose on.
+            expect(game.getState().currentPlayerIndex).toBe(0)
+            expect(game.getState().turnStartedAt).toBe(turnStartedAt)
+            // Drop-off detection still sees the activity.
+            expect(game.getState().lastMoveAt as number).toBeGreaterThanOrEqual(turnStartedAt)
+        })
+
+        it('restarts the turn clock when an undo is accepted and the board rewinds (#998)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            const turnStartedAt = game.getState().turnStartedAt as number
+            jest.useFakeTimers()
+            jest.advanceTimersByTime(5000)
+
+            try {
+                expect(game.makeMove({ playerId: 'player-x', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(true)
+                expect(game.makeMove({ playerId: 'player-o', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(true)
+
+                expect(game.getState().turnStartedAt as number).toBeGreaterThan(turnStartedAt)
+            } finally {
+                jest.useRealTimers()
+            }
+        })
     })
 })

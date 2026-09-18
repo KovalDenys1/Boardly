@@ -678,7 +678,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     }, [game?.id, gameEngine])
 
     const timerState = gameEngine?.getState() ?? null
-    const timerStateData = timerState?.data as ConnectFourGameData | undefined
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
             ? Math.floor(lobby.turnTimer)
@@ -695,7 +694,11 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const { timeLeft } = useGameTimer({
         isMyTurn: isSpectator ? false : isMyTurn(),
-        gameState: timerStateData?.pendingRequest ? null : timerState,
+        // An undo prompt used to pass null here, which stopped the hook from
+        // ever firing a timeout while leaving the countdown visibly running down
+        // to zero. With no clock and no legal move the board was frozen for as
+        // long as the opponent ignored the prompt (#997).
+        gameState: timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
             if (!gameEngine || !game || !isMyTurn()) {
@@ -1034,7 +1037,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     ) : null
 
-    const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || !!pendingRequest
+    // The player being asked answers first; the one who asked plays on, which
+    // withdraws their own request rather than leaving the board stuck (#997).
+    const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder
 
     const renderBoardSection = () => (
         <div className="ttt-board-card" style={{ position: 'relative' }}>

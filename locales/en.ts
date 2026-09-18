@@ -1711,6 +1711,9 @@ const en = {
         pushDesc: 'Browser notifications for real-time updates',
         pushUnsupported: 'Push notifications are not supported in this browser.',
         pushDenied: 'You have blocked notifications. Allow them in browser settings.',
+        pushUnavailable: 'Push notifications are not available on this server yet.',
+        pushEnabled: 'Push notifications are on.',
+        pushFailed: 'Could not turn on push notifications. Try again.',
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
         categories: {

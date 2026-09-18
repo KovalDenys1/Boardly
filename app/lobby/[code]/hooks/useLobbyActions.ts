@@ -14,6 +14,7 @@ import {
 } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
@@ -36,7 +37,9 @@ interface UseLobbyActionsProps {
   code: string
   lobby: Lobby | null
   game: Game | null
-  setGame: (game: Game | null) => void
+  /** Shared with the broadcast handler and the move submits, so all three sources of state are judged against one watermark (#994). */
+  freshnessRef: React.MutableRefObject<FreshnessWatermark>
+  setGame: React.Dispatch<React.SetStateAction<Game | null>>
   setLobby: (lobby: Lobby | null) => void
   setGameEngine: (engine: GameEngine | null) => void
   setTimerActive: (active: boolean) => void
@@ -146,6 +149,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     code,
     lobby,
     game,
+    freshnessRef,
     setGame,
     setLobby,
     setGameEngine,
@@ -172,7 +176,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const [isJoiningLobby, setIsJoiningLobby] = useState(false)
 
   // Use ref to avoid circular dependencies
-  const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
+  const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
   const lobbySnapshotRequestRef = useRef<Promise<LobbySnapshotResult> | null>(null)
 
@@ -184,7 +188,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setGuestNameInput(guestName)
   }, [guestName])
 
-  const applyLobbySnapshot = useCallback(async (snapshot: LobbySnapshotResult) => {
+  const applyLobbySnapshot = useCallback(async (
+    snapshot: LobbySnapshotResult,
+    options: { trusted?: boolean } = {}
+  ) => {
     const normalizedLobby = snapshot.lobby
     const normalizedGame = snapshot.game
 
@@ -196,29 +203,66 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
     }
 
-    if (normalizedGame) {
-      setGame(normalizedGame)
-      if (normalizedGame.state) {
-        try {
-          const parsedState =
-            typeof normalizedGame.state === 'string'
-              ? JSON.parse(normalizedGame.state)
-              : normalizedGame.state
+    if (!normalizedGame) return
 
-          // Create the correct engine based on game type
-          const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
-          const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
-          setGameEngine(engine)
-        } catch (parseError) {
-          clientLogger.error('Failed to parse game state:', parseError)
-          setError('Game state is corrupted. Please start a new game.')
-        }
+    let parsedState: unknown = null
+    let parseFailed = false
+    if (normalizedGame.state) {
+      try {
+        parsedState =
+          typeof normalizedGame.state === 'string'
+            ? JSON.parse(normalizedGame.state)
+            : normalizedGame.state
+      } catch (parseError) {
+        parseFailed = true
+        clientLogger.error('Failed to parse game state:', parseError)
+        setError('Game state is corrupted. Please start a new game.')
       }
     }
-  }, [setGame, setGameEngine, setError, setLobby])
 
-  const requestLobbySnapshot = useCallback(async (): Promise<LobbySnapshotResult> => {
-    if (lobbySnapshotRequestRef.current) {
+    // The lobby itself is always worth applying - players join and leave
+    // independently of the board. The game is not: a snapshot answers with the
+    // state as of when its request left, which a broadcast or this player's own
+    // move response may already have overtaken (#994). A reconcile asks for its
+    // own snapshot and passes `trusted`, so it can still unstick the board.
+    const freshness = decideFreshness(freshnessRef.current, parsedState, { trusted: options.trusted })
+    if (!freshness.accept) {
+      clientLogger.debug('Ignoring stale lobby snapshot', {
+        gameId: normalizedGame.id,
+        reason: freshness.reason,
+      })
+      // The player rows are not part of that judgement: someone joining or
+      // leaving changes them with no move and no new stamp, and dropping the
+      // whole snapshot would freeze the roster for the rest of the game.
+      setGame((prevGame) => (prevGame && prevGame.id === normalizedGame.id
+        ? { ...prevGame, players: normalizedGame.players }
+        : prevGame))
+      return
+    }
+
+    setGame(normalizedGame)
+
+    if (parseFailed || !parsedState) return
+
+    try {
+      // Create the correct engine based on game type
+      const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
+      const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
+      setGameEngine(engine)
+    } catch (restoreError) {
+      clientLogger.error('Failed to parse game state:', restoreError)
+      setError('Game state is corrupted. Please start a new game.')
+    }
+  }, [freshnessRef, setGame, setGameEngine, setError, setLobby])
+
+  const requestLobbySnapshot = useCallback(async (
+    options: { fresh?: boolean } = {}
+  ): Promise<LobbySnapshotResult> => {
+    // Sharing an in-flight request is only right for a caller that wants "the
+    // lobby, roughly now". A reconcile wants the truth as of *after* whatever
+    // it is reconciling, and the parked promise left before that happened, so
+    // it asks for its own (#996).
+    if (!options.fresh && lobbySnapshotRequestRef.current) {
       return await lobbySnapshotRequestRef.current
     }
 
@@ -264,13 +308,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   ])
 
   const fetchLobbySnapshot = useCallback(async (
-    options: { applyState?: boolean } = {}
+    options: { applyState?: boolean; fresh?: boolean } = {}
   ): Promise<LobbySnapshotResult> => {
     const applyState = options.applyState !== false
-    const snapshot = await requestLobbySnapshot()
+    const fresh = options.fresh === true
+    const snapshot = await requestLobbySnapshot({ fresh })
 
     if (applyState) {
-      await applyLobbySnapshot(snapshot)
+      await applyLobbySnapshot(snapshot, { trusted: fresh })
     }
 
     return snapshot
@@ -279,9 +324,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     requestLobbySnapshot,
   ])
 
-  const loadLobby = useCallback(async () => {
+  const loadLobby = useCallback(async (options: { fresh?: boolean } = {}) => {
     try {
-      await fetchLobbySnapshot({ applyState: true })
+      await fetchLobbySnapshot({ applyState: true, fresh: options.fresh })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

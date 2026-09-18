@@ -21,9 +21,26 @@ export interface GameState<TGameData = unknown> {
   status: 'waiting' | 'playing' | 'finished';
   winner?: string;
   data: TGameData; // Game-specific state
-  lastMoveAt?: number; // Timestamp of last move for timer calculation
+  lastMoveAt?: number; // Timestamp of the last accepted move – drop-off detection (#815)
+  // When the seat that is on the clock started its turn. Kept apart from
+  // lastMoveAt because a move that does not hand the turn over must not buy the
+  // player another full turn timer (#998). Absent on states written before that,
+  // so every reader falls back to lastMoveAt.
+  turnStartedAt?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** The instant the current seat's clock started, for states that predate `turnStartedAt`. */
+export function resolveTurnStartedAt(state: {
+  turnStartedAt?: unknown
+  lastMoveAt?: unknown
+} | null | undefined): number | null {
+  const turnStartedAt = state?.turnStartedAt
+  if (typeof turnStartedAt === 'number' && Number.isFinite(turnStartedAt)) return turnStartedAt
+  const lastMoveAt = state?.lastMoveAt
+  if (typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt)) return lastMoveAt
+  return null
 }
 
 export interface RestorableGameState<TGameData = unknown> extends GameState<TGameData> {
@@ -175,6 +192,7 @@ export abstract class GameEngine {
     this.state.status = 'playing';
     this.state.updatedAt = new Date();
     this.state.lastMoveAt = Date.now();
+    this.state.turnStartedAt = this.state.lastMoveAt;
     return true;
   }
 
@@ -194,6 +212,9 @@ export abstract class GameEngine {
     // rotate a turn index per action — guess the spy, alias — never advanced
     // lastMoveAt at all and their drop-off could not be located (#815).
     this.state.lastMoveAt = Date.now();
+    if (this.restartsTurnClock(move)) {
+      this.state.turnStartedAt = this.state.lastMoveAt;
+    }
 
     // Check for winner
     const winner = this.checkWinCondition();
@@ -216,6 +237,13 @@ export abstract class GameEngine {
     return true;
   }
 
+  // Override in games that have moves which are not a turn – a draw or undo
+  // prompt, say. Anything that answers `false` leaves the current seat's clock
+  // where it was, so the player on it cannot top it up at will (#998).
+  protected restartsTurnClock(_move: Move): boolean {
+    return true;
+  }
+
   // Override in rare cases where a move must be allowed outside "playing" status.
   // Default remains deny-by-default for defense in depth.
   protected canProcessMoveWhenNotPlaying(_move: Move): boolean {
@@ -225,6 +253,7 @@ export abstract class GameEngine {
   protected advanceTurnIndex(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
     this.state.lastMoveAt = Date.now();
+    this.state.turnStartedAt = this.state.lastMoveAt;
   }
 
   handlePlayerLeave(playerId: string): boolean {

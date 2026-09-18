@@ -118,10 +118,9 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
-      if (gameData.pendingRequest) {
-        return false
-      }
-
+      // An undo asked for between rounds used to block this, and nothing else
+      // runs between rounds – no clock, no board – so an opponent who never
+      // answered held the whole series (#997). Moving on is the answer.
       const match = this.ensureMatchState(gameData)
       return !this.isMatchComplete(match)
     }
@@ -182,7 +181,10 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
-      if (this.state.status !== 'playing' || gameData.winner !== null || gameData.pendingRequest) {
+      // A pending prompt used to block this too, which left the clock as the
+      // only thing that could end the turn and then forbade it from doing so
+      // (#997). The clock outranks an offer nobody has answered.
+      if (this.state.status !== 'playing' || gameData.winner !== null) {
         return false
       }
 
@@ -197,7 +199,11 @@ export class TicTacToeGame extends GameEngine {
       return false
     }
 
-    if (gameData.pendingRequest) {
+    // Only the player being asked has to deal with the prompt. The one who sent
+    // it can play on, which withdraws it (processMove clears it) – otherwise an
+    // offer the opponent ignores leaves the requester unable to move at all
+    // while their own clock runs out (#997).
+    if (gameData.pendingRequest?.responderId === move.playerId) {
       return false
     }
 
@@ -389,6 +395,20 @@ export class TicTacToeGame extends GameEngine {
       return false
     }
     return this.state.status === 'playing'
+  }
+
+  protected restartsTurnClock(move: Move): boolean {
+    // Asking for a draw or an undo is not a turn. While it counted as one the
+    // player on the clock could top their own timer up with an offer whenever
+    // they were about to lose on time, and repeat it forever (#998). Accepting
+    // an undo is different: the board rewinds, so the turn genuinely restarts.
+    if (move.type === 'request-draw' || move.type === 'request-undo' || move.type === 'respond-draw') {
+      return false
+    }
+    if (move.type === 'respond-undo') {
+      return move.data.accept === true
+    }
+    return true
   }
 
   getPendingRequest(): TicTacToePendingRequest | null {

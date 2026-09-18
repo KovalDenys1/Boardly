@@ -21,6 +21,7 @@ export const persistedGameStateSchema = z.object({
   updatedAt: z.coerce.date(),
   winner: z.string().optional(),
   lastMoveAt: z.number().optional(),
+  turnStartedAt: z.number().optional(),
   config: z.object({
     maxPlayers: z.number(),
     minPlayers: z.number(),

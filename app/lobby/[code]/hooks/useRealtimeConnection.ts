@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
 import { fetchLobbyTopic } from '@/lib/lobby-realtime-topic-client'
 import { clientLogger } from '@/lib/client-logger'
 import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
@@ -115,48 +116,51 @@ export function useRealtimeConnection({
 
     const supabase = getSupabaseClient()
 
-    const broadcastChannel = supabase
-      .channel(topic)
-      .on('broadcast', { event: 'game-update' }, ({ payload }) => {
-        clientLogger.log('📡 game-update via Supabase Broadcast')
-        onGameUpdateRef.current?.(payload as GameUpdatePayload)
-      })
-      .on('broadcast', { event: 'chat-message' }, ({ payload }) => {
-        onChatMessageRef.current?.(payload as ChatMessagePayload)
-      })
-      .on('broadcast', { event: 'player-typing' }, ({ payload }) => {
-        onPlayerTypingRef.current?.(payload as PlayerTypingPayload)
-      })
-      .on('broadcast', { event: 'player-joined' }, ({ payload }) => {
-        clientLogger.log('📡 player-joined via Supabase Broadcast')
-        onPlayerJoinedRef.current?.(payload as PlayerJoinedPayload)
-      })
-      .on('broadcast', { event: 'player-left' }, ({ payload }) => {
-        clientLogger.log('📡 player-left via Supabase Broadcast')
-        onPlayerLeftRef.current?.(payload as PlayerLeftPayload)
-      })
-      .on('broadcast', { event: 'game-started' }, ({ payload }) => {
-        clientLogger.log('📡 game-started via Supabase Broadcast')
-        onGameStartedRef.current?.(payload as GameStartedPayload)
-      })
-      .on('broadcast', { event: 'game-abandoned' }, ({ payload }) => {
-        clientLogger.log('📡 game-abandoned via Supabase Broadcast')
-        onGameAbandonedRef.current?.(payload as GameAbandonedPayload)
-      })
-      .on('broadcast', { event: 'bot-action' }, ({ payload }) => {
-        onBotActionRef.current?.(payload as BaseBotActionEvent)
-      })
-      .on('broadcast', { event: 'game-reset' }, ({ payload }) => {
-        clientLogger.log('📡 game-reset via Supabase Broadcast')
-        onGameResetRef.current?.(payload as GameResetPayload)
-      })
-      .on('broadcast', { event: 'spectator-count-update' }, ({ payload }) => {
-        const count = typeof (payload as Record<string, unknown>)?.count === 'number'
-          ? (payload as Record<string, unknown>).count as number
-          : 0
-        onSpectatorCountChangeRef.current?.(count)
-      })
-      .subscribe((status) => {
+    // The spectate shell opens this same topic, and the client hands both of us
+    // one channel object — so the subscribe and the teardown are shared (#1000).
+    const lobbyChannel = acquireLobbyChannel(topic, {
+      events: {
+        'game-update': (payload) => {
+          clientLogger.log('📡 game-update via Supabase Broadcast')
+          onGameUpdateRef.current?.(payload as GameUpdatePayload)
+        },
+        'chat-message': (payload) => {
+          onChatMessageRef.current?.(payload as ChatMessagePayload)
+        },
+        'player-typing': (payload) => {
+          onPlayerTypingRef.current?.(payload as PlayerTypingPayload)
+        },
+        'player-joined': (payload) => {
+          clientLogger.log('📡 player-joined via Supabase Broadcast')
+          onPlayerJoinedRef.current?.(payload as PlayerJoinedPayload)
+        },
+        'player-left': (payload) => {
+          clientLogger.log('📡 player-left via Supabase Broadcast')
+          onPlayerLeftRef.current?.(payload as PlayerLeftPayload)
+        },
+        'game-started': (payload) => {
+          clientLogger.log('📡 game-started via Supabase Broadcast')
+          onGameStartedRef.current?.(payload as GameStartedPayload)
+        },
+        'game-abandoned': (payload) => {
+          clientLogger.log('📡 game-abandoned via Supabase Broadcast')
+          onGameAbandonedRef.current?.(payload as GameAbandonedPayload)
+        },
+        'bot-action': (payload) => {
+          onBotActionRef.current?.(payload as BaseBotActionEvent)
+        },
+        'game-reset': (payload) => {
+          clientLogger.log('📡 game-reset via Supabase Broadcast')
+          onGameResetRef.current?.(payload as GameResetPayload)
+        },
+        'spectator-count-update': (payload) => {
+          const count = typeof (payload as Record<string, unknown>)?.count === 'number'
+            ? (payload as Record<string, unknown>).count as number
+            : 0
+          onSpectatorCountChangeRef.current?.(count)
+        },
+      },
+      onStatus: (status) => {
         if (status === 'SUBSCRIBED') {
           clientLogger.log('✅ Supabase Realtime connected:', topic)
           setIsConnected(true)
@@ -172,9 +176,10 @@ export function useRealtimeConnection({
           clientLogger.warn('⚠️ Supabase Realtime channel closed/errored:', status)
           setIsConnected(false)
         }
-      })
+      },
+    })
 
-    broadcastChannelRef.current = broadcastChannel
+    broadcastChannelRef.current = lobbyChannel.channel
 
     // Postgres Changes on Lobbies — catches settings updates, creator reassignment, deactivation
     const lobbiesChannel = supabase
@@ -193,7 +198,7 @@ export function useRealtimeConnection({
 
     return () => {
       clientLogger.log('🔌 Cleaning up Supabase Realtime channels')
-      void supabase.removeChannel(broadcastChannel)
+      lobbyChannel.release()
       void supabase.removeChannel(lobbiesChannel)
       broadcastChannelRef.current = null
       lobbiesChannelRef.current = null

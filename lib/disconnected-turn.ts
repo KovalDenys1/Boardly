@@ -15,6 +15,7 @@ export interface TurnState {
   players?: StatePlayer[]
   currentPlayerIndex?: number
   lastMoveAt?: number
+  turnStartedAt?: number
   updatedAt?: string | number | Date
   data?: TurnStateData
   [key: string]: unknown
@@ -134,6 +135,9 @@ export function advanceTurnPastDisconnectedPlayers(
   if (changed) {
     state.currentPlayerIndex = currentIndex
     state.lastMoveAt = timestampMs
+    // The seat that inherits the turn gets a full clock, not the one the player
+    // who vanished had already burned through (#998).
+    state.turnStartedAt = timestampMs
     state.updatedAt = new Date(timestampMs).toISOString()
 
     if (state.data && typeof state.data === 'object') {

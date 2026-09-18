@@ -4,6 +4,10 @@ import { clientLogger } from '@/lib/client-logger'
 interface GameState {
   currentPlayerIndex: number
   lastMoveAt?: number
+  // When the current seat's clock started. Distinct from lastMoveAt, which any
+  // accepted move bumps – including a draw or undo prompt, which is not a turn
+  // and must not hand the player on the clock a fresh timer (#998).
+  turnStartedAt?: number
   status?: string
 }
 
@@ -15,13 +19,17 @@ interface UseGameTimerProps {
   onTimeout: () => boolean | Promise<boolean>
 }
 
-function resolveLastMoveAtMs(gameState: GameState | null): number | null {
+function resolveTurnStartedAtMs(gameState: GameState | null): number | null {
+  const turnStartedAt = gameState?.turnStartedAt
+  if (typeof turnStartedAt === 'number' && Number.isFinite(turnStartedAt)) return turnStartedAt
+  // States written before turnStartedAt existed, and games that never rotate a
+  // turn index, still have only lastMoveAt to go on.
   const lastMoveAt = gameState?.lastMoveAt
   return typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt) ? lastMoveAt : null
 }
 
-function calculateRemainingTimeSeconds(turnTimerLimit: number, lastMoveAt: number): number {
-  const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
+function calculateRemainingTimeSeconds(turnTimerLimit: number, turnStartedAt: number): number {
+  const elapsedSeconds = Math.floor((Date.now() - turnStartedAt) / 1000)
   return Math.max(0, turnTimerLimit - elapsedSeconds)
 }
 
@@ -39,7 +47,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
   const turnSignatureRef = useRef<string>('')
   const lastTimeoutInvocationAtRef = useRef<number>(0)
   const TIMEOUT_CALLBACK_DEBOUNCE_MS = 1500
-  const authoritativeLastMoveAt = resolveLastMoveAtMs(gameState)
+  const authoritativeTurnStartedAt = resolveTurnStartedAtMs(gameState)
 
   const clearTimeoutRetryTimer = useCallback(() => {
     if (timeoutRetryTimerRef.current) {
@@ -87,8 +95,8 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
     }
 
     const currentPlayerIndex = gameState.currentPlayerIndex
-    const lastMoveAt = resolveLastMoveAtMs(gameState)
-    const turnSignature = `${currentPlayerIndex}:${lastMoveAt ?? 'none'}`
+    const turnStartedAt = resolveTurnStartedAtMs(gameState)
+    const turnSignature = `${currentPlayerIndex}:${turnStartedAt ?? 'none'}`
 
     // Detect real turn boundary (player or turn-start timestamp changed)
     const turnChanged = turnSignatureRef.current !== turnSignature
@@ -100,10 +108,10 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       lastTimeoutInvocationAtRef.current = 0
       clearTimeoutRetryTimer()
       
-      // Calculate remaining time from lastMoveAt if available
-      if (lastMoveAt) {
-        const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
-        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, lastMoveAt)
+      // Calculate remaining time from the turn start if available
+      if (turnStartedAt) {
+        const elapsedSeconds = Math.floor((Date.now() - turnStartedAt) / 1000)
+        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, turnStartedAt)
         
         if (isInitialLoad) {
           clientLogger.log('🔄 Initial load - turn changed, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's, limit:', turnTimerLimit, 's)')
@@ -114,13 +122,13 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
           setTimeLeft(remainingTime)
         }
       } else {
-        // Fallback to turnTimerLimit if no lastMoveAt
+        // Fallback to turnTimerLimit if no turn-start timestamp
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - turn changed, starting timer at', turnTimerLimit, 's (no lastMoveAt)')
+          clientLogger.log('🔄 Initial load - turn changed, starting timer at', turnTimerLimit, 's (no turnStartedAt)')
           setTimeLeft(turnTimerLimit)
           setIsInitialLoad(false)
         } else {
-          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), resetting timer to', turnTimerLimit, 's (no lastMoveAt)')
+          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), resetting timer to', turnTimerLimit, 's (no turnStartedAt)')
           setTimeLeft(turnTimerLimit)
         }
       }
@@ -136,8 +144,8 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
     if (!timerActive) return
 
     const syncFromAuthoritativeTimestamp = () => {
-      if (authoritativeLastMoveAt && turnTimerLimit > 0) {
-        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, authoritativeLastMoveAt)
+      if (authoritativeTurnStartedAt && turnTimerLimit > 0) {
+        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, authoritativeTurnStartedAt)
         setTimeLeft(prev => (prev === remainingTime ? prev : remainingTime))
         return
       }
@@ -147,13 +155,13 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
 
     // When we have a server timestamp, immediately resync on effect mount/resubscribe
     // (e.g. after tab throttling/background resume) instead of waiting a full second.
-    if (authoritativeLastMoveAt && turnTimerLimit > 0) {
+    if (authoritativeTurnStartedAt && turnTimerLimit > 0) {
       syncFromAuthoritativeTimestamp()
     }
 
     const interval = setInterval(syncFromAuthoritativeTimestamp, 1000)
     return () => clearInterval(interval)
-  }, [timerActive, authoritativeLastMoveAt, turnTimerLimit])
+  }, [timerActive, authoritativeTurnStartedAt, turnTimerLimit])
 
   // Handle timeout separately in useEffect to avoid state updates during render.
   // If timeout handler returns `false`, we re-arm this effect and retry.
@@ -167,12 +175,8 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
 
       // Guard against stale zero state right after turn switch.
       // This can happen when effects run out of order on mobile/dev refresh cycles.
-      const lastMoveAt =
-        typeof gameState.lastMoveAt === 'number' && Number.isFinite(gameState.lastMoveAt)
-          ? gameState.lastMoveAt
-          : null
-      if (lastMoveAt && turnTimerLimit > 0) {
-        const elapsedMs = now - lastMoveAt
+      if (authoritativeTurnStartedAt && turnTimerLimit > 0) {
+        const elapsedMs = now - authoritativeTurnStartedAt
         const limitMs = turnTimerLimit * 1000
         if (elapsedMs < limitMs) {
           const remainingSeconds = Math.max(0, Math.ceil((limitMs - elapsedMs) / 1000))
@@ -221,7 +225,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       
       return () => clearTimeout(timeoutId)
     }
-  }, [timerActive, timeLeft, gameState?.status, gameState?.lastMoveAt, turnTimerLimit, timeoutRetryTick, scheduleTimeoutRetry])
+  }, [timerActive, timeLeft, gameState?.status, authoritativeTurnStartedAt, turnTimerLimit, timeoutRetryTick, scheduleTimeoutRetry])
 
   return { timeLeft, timerActive }
 }

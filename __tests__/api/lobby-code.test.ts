@@ -26,6 +26,7 @@ jest.mock('@/lib/db', () => ({
     },
     players: {
       create: jest.fn(),
+      createMany: jest.fn(),
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       delete: jest.fn(),
@@ -419,6 +420,58 @@ describe('POST /api/lobby/[code]', () => {
     expect(data.code).toBe('LOBBY_JOIN_FAILED')
     expect(data.details).toBeUndefined()
   })
+
+  it('carries the finished match into the room a newcomer opens (#1005)', async () => {
+    // A spectator joining once the game ended used to open a second, empty waiting game.
+    // It outranks the finished one, so the players watching the results were swapped into
+    // a room they were not in.
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({ ...mockLobby, games: [] } as any)
+    mockPrisma.games.findFirst.mockImplementation(async (args: any) =>
+      args.where.status === 'finished'
+        ? {
+            players: [
+              { userId: 'player-a', user: { bot: null } },
+              { userId: 'bot-1', user: { bot: { id: 'bot-row-1' } } },
+              { userId: 'player-b', user: { bot: null } },
+            ],
+          }
+        : null
+    )
+    mockPrisma.games.create.mockResolvedValue({ id: 'game-new', status: 'waiting' } as any)
+    mockPrisma.players.createMany.mockResolvedValue({ count: 2 } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null)
+    mockPrisma.players.count.mockResolvedValue(2)
+    mockPrisma.players.create.mockResolvedValue({
+      id: 'player-123',
+      userId: 'user-123',
+      gameId: 'game-new',
+      position: 2,
+      user: { id: 'user-123', username: 'testuser', isGuest: false },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    const response = await POST(request, { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.players.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({ gameId: 'game-new', userId: 'player-a', position: 0 }),
+          expect.objectContaining({ gameId: 'game-new', userId: 'player-b', position: 1 }),
+        ],
+      })
+    )
+    expect(mockPrisma.players.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'user-123', position: 2 }),
+      })
+    )
+  })
 })
 
 describe('PATCH /api/lobby/[code]', () => {
@@ -569,6 +622,85 @@ describe('PATCH /api/lobby/[code]', () => {
     })
     expect(Array.isArray(updateCall.data.state.data.teams)).toBe(true)
     expect(updateCall.data.state.data.board).toBeUndefined()
+  })
+
+  it('refuses a game-type switch that seats fewer players than the room holds (#1004)', async () => {
+    // Four friends in a Yahtzee room, host picks Connect Four (2 seats). The clamp used
+    // to write maxPlayers 2 over a roster of four and the two who did not fit were
+    // dropped when the game started, with nothing shown to them.
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      creatorId: 'user-123',
+      gameType: 'yahtzee',
+      maxPlayers: 4,
+      games: [
+        {
+          id: 'game-1',
+          status: 'waiting',
+          updatedAt: new Date(),
+          players: [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }, { id: 'p4' }],
+        },
+      ],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ gameType: 'connect_four' }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Current player count is 4, cannot set lower max players')
+    expect(mockPrisma.lobbies.update).not.toHaveBeenCalled()
+    expect(mockPrisma.games.update).not.toHaveBeenCalled()
+  })
+
+  it('allows a game-type switch that still seats everyone (#1004)', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      creatorId: 'user-123',
+      gameType: 'yahtzee',
+      maxPlayers: 4,
+      games: [
+        {
+          id: 'game-1',
+          status: 'waiting',
+          updatedAt: new Date(),
+          players: [{ id: 'p1' }, { id: 'p2' }],
+        },
+      ],
+    } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      maxPlayers: 2,
+      allowSpectators: false,
+      maxSpectators: 0,
+      turnTimer: 60,
+      theme: 'default',
+      gameType: 'connect_four',
+    } as any)
+    mockPrisma.games.update.mockResolvedValue({} as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ gameType: 'connect_four' }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ maxPlayers: 2, gameType: 'connect_four' }),
+      })
+    )
   })
 })
 

@@ -18,6 +18,19 @@ export function isPushSupported(): boolean {
   )
 }
 
+/**
+ * Whether this build can subscribe anybody at all.
+ *
+ * The VAPID public key is inlined at build time, so a deploy without it can
+ * never produce a subscription — and a browser grants the notification prompt
+ * once. Asking before this check spends that prompt on nothing, which is how
+ * `PushSubscriptions` stayed empty in production with every opt-in looking
+ * like it had worked (#983).
+ */
+export function isPushConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
+}
+
 export function getPushPermissionState(): NotificationPermission | 'unsupported' {
   if (!isPushSupported()) return 'unsupported'
   return Notification.permission
@@ -38,17 +51,9 @@ export async function getExistingPushSubscription(): Promise<PushSubscription | 
   return reg.pushManager.getSubscription()
 }
 
-export async function subscribeToPush(): Promise<PushSubscription | null> {
+async function createSubscription(): Promise<PushSubscription | null> {
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   if (!vapidPublicKey) return null
-
-  // Request permission before anything else that could await (including
-  // service-worker readiness, which can take a real amount of time on a
-  // first visit). Browsers require Notification.requestPermission() to run
-  // close to the triggering user gesture — an async gap beforehand can
-  // cause it to hang or silently no-op instead of showing the prompt.
-  const permission = await Notification.requestPermission()
-  if (permission !== 'granted') return null
 
   const reg = await getRegistration()
   if (!reg) return null
@@ -57,6 +62,74 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
   })
+}
+
+export type SerializedPushSubscription = {
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
+function encodeKey(key: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(key)))
+}
+
+/**
+ * The shape `/api/push-subscriptions` stores. Either key can come back null —
+ * the spec allows it and the server has nothing to deliver to without both.
+ */
+export function serializePushSubscription(
+  subscription: PushSubscription
+): SerializedPushSubscription | null {
+  const p256dh = subscription.getKey('p256dh')
+  const auth = subscription.getKey('auth')
+  if (!p256dh || !auth) return null
+  return {
+    endpoint: subscription.endpoint,
+    p256dh: encodeKey(p256dh),
+    auth: encodeKey(auth),
+  }
+}
+
+export type PushRegistrationResult =
+  | 'registered'
+  | 'unavailable'
+  | 'unsupported'
+  | 'denied'
+  | 'failed'
+
+/**
+ * The whole opt-in, with one outcome the caller can act on.
+ *
+ * Every step that used to end in a silent `null` now names itself, so the
+ * profile toggle can say what happened instead of leaving the checkbox where
+ * the user put it and doing nothing.
+ */
+export async function subscribeAndRegisterPush(): Promise<PushRegistrationResult> {
+  if (!isPushConfigured()) return 'unavailable'
+  if (!isPushSupported()) return 'unsupported'
+
+  // Straight after the check, with nothing awaited in between: browsers tie
+  // the prompt to the click that caused it and quietly ignore a late request.
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') return 'denied'
+
+  try {
+    const subscription = await createSubscription()
+    if (!subscription) return 'failed'
+
+    const payload = serializePushSubscription(subscription)
+    if (!payload) return 'failed'
+
+    const res = await fetch('/api/push-subscriptions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    return res.ok ? 'registered' : 'failed'
+  } catch {
+    return 'failed'
+  }
 }
 
 export async function unsubscribeFromPush(): Promise<boolean> {

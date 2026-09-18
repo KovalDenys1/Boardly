@@ -77,7 +77,9 @@ export class ConnectFourGame extends GameEngine {
 
     if (move.type === 'next-round') {
       if (this.state.status !== 'finished') return false
-      if (gameData.pendingRequest) return false
+      // An undo asked for between rounds used to block this, and nothing else
+      // runs between rounds – no clock, no board – so an opponent who never
+      // answered held the whole series (#997). Moving on is the answer.
       const playerIndex = this.state.players.findIndex((p) => p.id === move.playerId)
       return playerIndex !== -1
     }
@@ -98,13 +100,20 @@ export class ConnectFourGame extends GameEngine {
     if (move.type === 'timeout-forfeit') {
       const playerIndex = this.state.players.findIndex((p) => p.id === move.playerId)
       if (playerIndex === -1 || playerIndex !== this.state.currentPlayerIndex) return false
-      if (this.state.status !== 'playing' || gameData.winner !== null || gameData.pendingRequest) return false
+      // A pending prompt used to block this too, which left the clock as the
+      // only thing that could end the turn and then forbade it from doing so
+      // (#997). The clock outranks an offer nobody has answered.
+      if (this.state.status !== 'playing' || gameData.winner !== null) return false
       return true
     }
 
     if (move.type !== 'drop') return false
     if (this.state.status !== 'playing') return false
-    if (gameData.pendingRequest) return false
+    // Only the player being asked has to deal with the prompt. The one who sent
+    // it can play on, which withdraws it (processMove clears it) – otherwise a
+    // request the opponent ignores leaves the requester unable to move at all
+    // while their own clock runs out (#997).
+    if (gameData.pendingRequest?.responderId === move.playerId) return false
     if (gameData.winner !== null) return false
 
     const playerIndex = this.state.players.findIndex((p) => p.id === move.playerId)
@@ -242,6 +251,16 @@ export class ConnectFourGame extends GameEngine {
 
   protected shouldAdvanceTurn(move: Move): boolean {
     return move.type === 'drop' && this.state.status === 'playing'
+  }
+
+  protected restartsTurnClock(move: Move): boolean {
+    // Asking for an undo is not a turn. While it counted as one the player on
+    // the clock could top their own timer up with a request whenever they were
+    // about to lose on time, and repeat it forever (#998). Accepting an undo is
+    // different: the board rewinds, so the turn genuinely restarts.
+    if (move.type === 'request-undo') return false
+    if (move.type === 'respond-undo') return move.data.accept === true
+    return true
   }
 
   getPendingRequest(): ConnectFourPendingRequest | null {

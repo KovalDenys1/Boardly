@@ -30,6 +30,13 @@ import {
 import { changeLanguageLazy, type Locale } from '@/i18n'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
+import {
+  getExistingPushSubscription,
+  getPushPermissionState,
+  isPushConfigured,
+  subscribeAndRegisterPush,
+  unsubscribeFromPush,
+} from '@/lib/push-subscription'
 
 interface LinkedAccount {
   provider: string
@@ -213,7 +220,7 @@ export default function ProfilePage() {
     unsubscribedAll: false,
     pushNotifications: false,
   })
-  const [pushPermission, setPushPermission] = useState<'loading' | 'unsupported' | NotificationPermission>('loading')
+  const [pushPermission, setPushPermission] = useState<'loading' | 'unsupported' | 'unavailable' | NotificationPermission>('loading')
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>({
     profileVisibility: 'public',
@@ -554,6 +561,12 @@ export default function ProfilePage() {
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setPushPermission('unsupported')
+      return
+    }
+    // A build with no VAPID public key cannot subscribe anyone, so the toggle
+    // is off the table before the browser is ever asked (#983).
+    if (!isPushConfigured()) {
+      setPushPermission('unavailable')
       return
     }
     setPushPermission(Notification.permission)
@@ -1143,35 +1156,40 @@ export default function ProfilePage() {
   const handleTogglePush = async (enable: boolean) => {
     if (notificationsSaving) return
     try {
-      // Request permission before the dynamic import below (or anything else
-      // async) — browsers can silently ignore Notification.requestPermission()
-      // once too much time has passed since the click that triggered it.
-      const permission = enable ? await Notification.requestPermission() : null
-      if (enable) setPushPermission(permission!)
-      if (enable && permission !== 'granted') return
-
-      const { subscribeToPush, unsubscribeFromPush, getExistingPushSubscription } = await import('@/lib/push-subscription')
       if (enable) {
-        const sub = await subscribeToPush()
-        if (!sub) return
-        await fetch('/api/push-subscriptions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: sub.endpoint, p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')!))), auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')!))) }),
-        })
-        updateNotificationPreference('pushNotifications', true)
-      } else {
-        const sub = await getExistingPushSubscription()
-        if (sub) {
-          await unsubscribeFromPush()
-          await fetch('/api/push-subscriptions', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          })
+        // Every outcome is named now, so an opt-in that cannot work says so
+        // instead of leaving the user with a granted prompt and no
+        // subscription (#983).
+        const result = await subscribeAndRegisterPush()
+        if (result === 'registered') {
+          setPushPermission('granted')
+          updateNotificationPreference('pushNotifications', true)
+          showToast.success('profile.settings.notifications.pushEnabled')
+        } else if (result === 'unavailable') {
+          setPushPermission('unavailable')
+          showToast.error('profile.settings.notifications.pushUnavailable')
+        } else if (result === 'unsupported') {
+          setPushPermission('unsupported')
+          showToast.error('profile.settings.notifications.pushUnsupported')
+        } else if (result === 'denied') {
+          setPushPermission(getPushPermissionState())
+          showToast.error('profile.settings.notifications.pushDenied')
+        } else {
+          showToast.error('profile.settings.notifications.pushFailed')
         }
-        updateNotificationPreference('pushNotifications', false)
+        return
       }
+
+      const sub = await getExistingPushSubscription()
+      if (sub) {
+        await unsubscribeFromPush()
+        await fetch('/api/push-subscriptions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        })
+      }
+      updateNotificationPreference('pushNotifications', false)
     } catch {
       showToast.error('profile.settings.error')
     }
@@ -2321,15 +2339,17 @@ export default function ProfilePage() {
                           <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
                             {pushPermission === 'unsupported'
                               ? t('profile.settings.notifications.pushUnsupported')
-                              : pushPermission === 'denied'
-                                ? t('profile.settings.notifications.pushDenied')
-                                : t('profile.settings.notifications.pushDesc')}
+                              : pushPermission === 'unavailable'
+                                ? t('profile.settings.notifications.pushUnavailable')
+                                : pushPermission === 'denied'
+                                  ? t('profile.settings.notifications.pushDenied')
+                                  : t('profile.settings.notifications.pushDesc')}
                           </div>
                         </div>
                         <Checkbox
                           checked={notificationPreferences.pushNotifications && pushPermission === 'granted'}
                           onCheckedChange={(checked) => handleTogglePush(Boolean(checked))}
-                          disabled={notificationsSaving || pushPermission === 'unsupported' || pushPermission === 'denied' || pushPermission === 'loading'}
+                          disabled={notificationsSaving || pushPermission === 'unsupported' || pushPermission === 'unavailable' || pushPermission === 'denied' || pushPermission === 'loading'}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>
