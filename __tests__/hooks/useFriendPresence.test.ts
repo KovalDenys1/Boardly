@@ -1,6 +1,7 @@
 import React from 'react'
 import { act, renderHook } from '@testing-library/react'
 import {
+  readOnlineUserIds,
   useOnlinePresence,
   useAnnouncePresence,
   __resetSharedChannelForTests,
@@ -16,12 +17,18 @@ import {
 function createFakeSupabaseClient() {
   const channelsByTopic = new Map<string, any>()
 
-  function channel(topic: string) {
+  function channel(topic: string, opts?: { config?: { presence?: { key?: string } } }) {
     const existing = channelsByTopic.get(topic)
     if (existing) return existing
 
     let joined = false
     const listeners: Array<() => void> = []
+    // Every client joining this topic passes the same constant key, and the
+    // realtime adapter's transformState keys the map by that key and appends
+    // every client's meta to the one array. Stubbing presenceState as `{}` is
+    // what let #1010 through, so the fake reproduces the merge instead.
+    const presenceKey = opts?.config?.presence?.key ?? 'anon'
+    const metas: Array<Record<string, unknown>> = []
     const chan = {
       on(type: string, _filter: unknown, cb: () => void) {
         if (joined && type === 'presence') {
@@ -35,9 +42,15 @@ function createFakeSupabaseClient() {
         cb?.('SUBSCRIBED')
         return chan
       },
-      track: jest.fn().mockResolvedValue(undefined),
+      track: jest.fn(async (payload: Record<string, unknown>) => {
+        metas.push({ ...payload, presence_ref: `ref-${metas.length}` })
+      }),
       untrack: jest.fn().mockResolvedValue(undefined),
-      presenceState: () => ({}),
+      presenceState: () => (metas.length === 0 ? {} : { [presenceKey]: [...metas] }),
+      /** A different browser joining the same channel under the same key. */
+      _trackRemote(payload: Record<string, unknown>) {
+        metas.push({ ...payload, presence_ref: `ref-${metas.length}` })
+      },
       _fireSync() {
         listeners.forEach((l) => l())
       },
@@ -139,6 +152,40 @@ describe('useFriendPresence shared channel', () => {
     announcer.unmount()
 
     expect(chan.untrack).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports the ids of the other people on the channel, not the join key (#1010)', async () => {
+    const reader = renderHook(() => useOnlinePresence())
+    renderHook(() => useAnnouncePresence('me', true))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const chan = fakeClient.channel('online-users')
+    act(() => {
+      chan._trackRemote({ userId: 'friend-1' })
+      chan._trackRemote({ userId: 'friend-2' })
+      chan._fireSync()
+    })
+
+    // Object.keys() here was Set { 'reader' }, so has(friend.id) was false for
+    // every real id and no friend could ever show as online.
+    expect([...reader.result.current].sort()).toEqual(['friend-1', 'friend-2', 'me'])
+    expect(reader.result.current.has('reader')).toBe(false)
+  })
+
+  it('ignores presence entries with no usable userId', () => {
+    expect(readOnlineUserIds({})).toEqual(new Set())
+    expect(
+      readOnlineUserIds({
+        reader: [
+          { userId: 'friend-1', presence_ref: 'a' },
+          { presence_ref: 'b' },
+          { userId: '', presence_ref: 'c' },
+          { userId: 'friend-1', presence_ref: 'd' },
+        ],
+      } as never)
+    ).toEqual(new Set(['friend-1']))
   })
 
   it('removes the channel only after the last consumer unmounts (deferred teardown)', () => {

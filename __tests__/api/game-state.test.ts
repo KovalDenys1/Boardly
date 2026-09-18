@@ -416,6 +416,134 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
   })
 
+  // #1007 — Yahtzee's timeout rolls first and scores second. The roll used to
+  // stamp a new turnStartedAt, which is the value the guard above measures the
+  // deadline from, so the score that followed it milliseconds later came back
+  // 409 and the abandoned turn ran for two full timers.
+  it('keeps the turn clock where it was when a timeout auto-action does not end the turn', async () => {
+    const turnStartedAt = Date.now() - 120_000
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 0,
+      updatedAt: new Date(turnStartedAt).toISOString(),
+      lastMoveAt: turnStartedAt,
+      turnStartedAt,
+      data: { ...persistedState.data, rollsLeft: 3 },
+    }
+
+    const mockEngine = {
+      // What GameEngine.makeMove does: stamp both clocks, leave the seat alone
+      // because a Yahtzee roll does not hand the turn over.
+      makeMove: jest.fn(() => {
+        engineState.lastMoveAt = Date.now()
+        engineState.turnStartedAt = Date.now()
+        engineState.data = { ...engineState.data, rollsLeft: 2 }
+        return true
+      }),
+      // The real one is GameEngine.holdTurnClock, exercised in
+      // __tests__/lib/game-engine.test.ts; here it stands in for it.
+      holdTurnClock: jest.fn((previous) => {
+        if (previous.turnStartedAtMs === null) return
+        if (engineState.currentPlayerIndex !== previous.currentPlayerIndex) return
+        engineState.turnStartedAt = previous.turnStartedAtMs
+      }),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'player-2', score: 0 },
+      ]),
+      getRollsLeft: jest.fn(() => engineState.data.rollsLeft),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(
+      buildRequest({
+        move: { type: 'roll', data: {} },
+        autoActionContext: {
+          source: 'turn-timeout',
+          debounceKey: `auto-roll-${turnStartedAt}`,
+          turnSnapshot: {
+            currentPlayerId: 'player-1',
+            currentPlayerIndex: 0,
+            lastMoveAt: turnStartedAt,
+            rollsLeft: 3,
+            updatedAt: engineState.updatedAt,
+          },
+        },
+      }),
+      { params: Promise.resolve({ gameId: 'game-123' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockEngine.holdTurnClock).toHaveBeenCalledWith({
+      currentPlayerIndex: 0,
+      turnStartedAtMs: turnStartedAt,
+    })
+
+    const persisted = mockPrisma.games.updateMany.mock.calls[0][0].data.state
+    expect(persisted.turnStartedAt).toBe(turnStartedAt)
+    // The move itself still counts as activity, so this one does move.
+    expect(persisted.lastMoveAt).toBeGreaterThan(turnStartedAt)
+  })
+
+  it('accepts the auto-score that follows an auto-roll, because the turn clock did not move', async () => {
+    const turnStartedAt = Date.now() - 120_000
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 0,
+      updatedAt: new Date().toISOString(),
+      // What the auto-roll left behind: fresh activity, original turn start.
+      lastMoveAt: Date.now(),
+      turnStartedAt,
+      data: { ...persistedState.data, rollsLeft: 2 },
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      holdTurnClock: jest.fn(),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'player-2', score: 0 },
+      ]),
+      getRollsLeft: jest.fn(() => 2),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(
+      buildRequest({
+        move: { type: 'score', data: { category: 'chance' } },
+        autoActionContext: {
+          source: 'turn-timeout',
+          debounceKey: `auto-chain-${turnStartedAt}`,
+          turnSnapshot: {
+            currentPlayerId: 'player-1',
+            currentPlayerIndex: 0,
+            lastMoveAt: engineState.lastMoveAt,
+            rollsLeft: 2,
+            updatedAt: engineState.updatedAt,
+          },
+        },
+      }),
+      { params: Promise.resolve({ gameId: 'game-123' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockEngine.makeMove).toHaveBeenCalled()
+  })
+
   it('uses database lastMoveAt as authoritative fallback when engine state timestamp is missing', async () => {
     const recentDbLastMoveAt = new Date(Date.now())
     const gameWithRecentDbTimer = {

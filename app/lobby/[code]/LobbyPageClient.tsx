@@ -912,7 +912,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       setDepartedPlayerIds(prev => new Set([...prev, data.userId]))
     }
 
-    // Host left during post-game — no reassignment, just notify and refresh
+    // Host left post-game and nobody could take the seat (#1012) — when somebody did,
+    // the server sends nextCreatorId instead and the branch below announces the new host.
     if (data.hostLeft) {
       showToast.info('toast.hostLeftSession')
       if (loadLobbyRef.current) {
@@ -1028,6 +1029,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
+    joinRefusalCode,
     handleStartGame,
     updateLobbySettings,
     guestNameInput,
@@ -1993,6 +1995,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               password={password}
               setPassword={setPassword}
               error={error}
+              errorCode={joinRefusalCode}
               isJoining={isJoiningLobby}
               onJoin={handleJoinLobby}
               onJoinAsGuest={handleGuestJoinLobby}

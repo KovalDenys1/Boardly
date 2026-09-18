@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 
@@ -9,6 +9,14 @@ export type FriendPresence = 'offline' | 'online' | 'in_lobby' | 'in_game'
 
 /** Global Supabase Presence channel every authenticated client tracks itself on. */
 export const ONLINE_USERS_CHANNEL = 'online-users'
+
+/**
+ * The join key for that channel. It is a constant on purpose — one shared,
+ * ref-counted channel serves every consumer on the page (see below), so there is
+ * no per-consumer key to give it. Who is online is read from the tracked
+ * payloads instead; see `readOnlineUserIds`.
+ */
+const PRESENCE_KEY = 'reader'
 
 export const PRESENCE_PRIORITY: Record<FriendPresence, number> = {
   in_game: 0,
@@ -46,7 +54,7 @@ function acquireChannel(): { channel: RealtimeChannel; ready: Promise<void> } {
   if (!sharedChannel) {
     const supabase = getSupabaseClient()
     const channel = supabase.channel(ONLINE_USERS_CHANNEL, {
-      config: { presence: { key: 'reader' } },
+      config: { presence: { key: PRESENCE_KEY } },
     })
     channel.on('presence', { event: 'sync' }, () => {
       syncListeners.forEach((listener) => listener())
@@ -84,6 +92,27 @@ function releaseChannel() {
 }
 
 /**
+ * The user ids in a presence state, read out of the tracked payloads.
+ *
+ * Not out of the keys: the shared channel joins with the constant key
+ * `PRESENCE_KEY`, so every client is filed under the same one and
+ * `Object.keys(presenceState())` is that literal, never a user id (#1010). The
+ * spectator channel reads its payloads the same way
+ * (app/lobby/[code]/spectate/page.tsx).
+ */
+export function readOnlineUserIds(
+  state: RealtimePresenceState<{ userId?: string }>
+): Set<string> {
+  const ids = new Set<string>()
+  for (const meta of Object.values(state).flat()) {
+    if (typeof meta.userId === 'string' && meta.userId.length > 0) {
+      ids.add(meta.userId)
+    }
+  }
+  return ids
+}
+
+/**
  * Subscribes to the global presence channel and returns the live set of
  * currently-online userIds. Read-only (never calls `.track()`) — use
  * `useAnnouncePresence` to announce the current user's own presence.
@@ -93,7 +122,8 @@ export function useOnlinePresence(): Set<string> {
 
   useEffect(() => {
     const { channel } = acquireChannel()
-    const sync = () => setOnlineIds(new Set(Object.keys(channel.presenceState())))
+    const sync = () =>
+      setOnlineIds(readOnlineUserIds(channel.presenceState<{ userId?: string }>()))
     syncListeners.add(sync)
     sync()
     return () => {

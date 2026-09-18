@@ -8,6 +8,8 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface TransitionPlayer {
   userId: string
+  /** Set on the Players row when the player left a playing or finished game. */
+  leftAt?: Date | null
   user?: { bot?: unknown } | null
 }
 
@@ -29,7 +31,10 @@ interface TransitionParams {
  */
 export async function transitionLobbyToWaitingRoom(params: TransitionParams): Promise<{ gameId: string }> {
   const { lobbyId, lobbyCode, gameType, players } = params
-  const humanPlayers = players.filter((p) => !p.user?.bot)
+  // Departures are soft-leaves, so the finished game still holds their Players row. Carrying
+  // it into the fresh waiting room seats a player who is gone (#1011) — the same defect the
+  // "Play again" path had. Only the roster of people still here crosses over.
+  const humanPlayers = players.filter((p) => !p.user?.bot && !p.leftAt)
 
   const initialState = createGameEngine(gameType, 'temp').getState()
 
@@ -81,7 +86,9 @@ export async function transitionLobbyToWaitingRoom(params: TransitionParams): Pr
  */
 export async function getFinishedGameHumanRoster(
   client: Pick<typeof prisma, 'games'>,
-  lobbyId: string
+  lobbyId: string,
+  /** Users the lobby will not seat again — the host's kick list (#1013). */
+  excludeUserIds: readonly string[] = []
 ): Promise<string[]> {
   const lastFinishedGame = await client.games.findFirst({
     where: { lobbyId, status: 'finished' },
@@ -102,8 +109,10 @@ export async function getFinishedGameHumanRoster(
     return []
   }
 
+  const excluded = new Set(excludeUserIds)
+
   return lastFinishedGame.players
-    .filter((player) => !player.user.bot)
+    .filter((player) => !player.user.bot && !excluded.has(player.userId))
     .map((player) => player.userId)
 }
 

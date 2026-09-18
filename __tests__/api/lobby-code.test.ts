@@ -254,6 +254,7 @@ describe('POST /api/lobby/[code]', () => {
     password: null,
     maxPlayers: 4,
     creatorId: 'creator-123',
+    kickedUserIds: [],
     games: [],
   }
 
@@ -401,6 +402,57 @@ describe('POST /api/lobby/[code]', () => {
     expect(response.status).toBe(400)
     expect(data.error).toBe('Lobby is full')
     expect(mockPrisma.players.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses a kicked player, before the password, and seats nobody (#1013)', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      // Knowing the password must not be a way back in.
+      password: 'hashed-secret',
+      kickedUserIds: ['user-123'],
+      games: [mockGame],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({ password: 'secret123' }),
+    })
+    const response = await POST(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('KICKED_FROM_LOBBY')
+    expect(mockVerifyLobbyPassword).not.toHaveBeenCalled()
+    expect(mockPrisma.players.create).not.toHaveBeenCalled()
+  })
+
+  it('asks for the kick list by name, since lib/db.ts omits it globally (#1013)', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      games: [mockGame],
+    } as any)
+    mockPrisma.games.findFirst.mockResolvedValue({ id: 'game-123', status: 'waiting' } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null)
+    mockPrisma.players.count.mockResolvedValue(0)
+    mockPrisma.players.create.mockResolvedValue({
+      id: 'player-1',
+      userId: 'user-123',
+      user: { id: 'user-123', username: 'testuser', isGuest: false },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    await POST(request, { params: { code: 'ABC123' } as any })
+
+    expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ omit: { kickedUserIds: false } })
+    )
   })
 
   it('returns sanitized 500 response when join fails unexpectedly', async () => {
@@ -1049,7 +1101,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
   })
 
-  it('removes player from a finished game without reassigning creator (post-game host control)', async () => {
+  it('hands the host seat to a player who stayed when the host leaves post-game (#1012)', async () => {
     const finishedLobby = {
       ...mockLobby,
       creatorId: 'user-123',
@@ -1132,20 +1184,29 @@ describe('POST /api/lobby/[code]/leave', () => {
     )
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
-    // Creator is NOT reassigned during post-game state
-    expect(mockPrisma.lobbies.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ data: { creatorId: expect.any(String) } })
+    // The settled result is untouched, but the lobby's creator must be somebody still in it —
+    // otherwise Play again, Return to lobby and Ask for rematch all point at the departed host.
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'lobby-123' },
+        data: { creatorId: 'user-456' },
+      })
     )
-    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
-      'ABC123',
-      'player-left',
+    const playerLeftPayload = mockBroadcastToLobby.mock.calls.find(
+      (call: unknown[]) => call[1] === 'player-left'
+    )?.[2]
+    expect(playerLeftPayload).toEqual(
       expect.objectContaining({
         userId: 'user-123',
         playerId: 'user-123',
-        hostLeft: true,
+        nextCreatorId: 'user-456',
+        nextCreatorName: 'another-user',
+        gameTerminal: true,
         remainingPlayers: 1,
       })
     )
+    // hostLeft would make the client stop at "create a new lobby" and never announce the new host.
+    expect(playerLeftPayload).not.toHaveProperty('hostLeft')
   })
 
   it('awaits broadcast and returns 200 when other players remain', async () => {

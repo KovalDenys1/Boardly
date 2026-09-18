@@ -221,7 +221,9 @@ const ru = {
       join: 'Присоединиться к лобби',
       invalidCode: 'Неверный код лобби',
       lobbyFull: 'Лобби заполнено',
+      gameInProgress: 'Игра уже началась',
       wrongPassword: 'Неверный пароль',
+      kickedCannotRejoin: 'Хост удалил вас из этого лобби',
       watchInstead: 'Смотреть как зритель',
       createOwnLobby: 'Создать своё лобби'
     },

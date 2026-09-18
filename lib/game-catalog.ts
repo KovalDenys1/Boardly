@@ -491,11 +491,11 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     gameType: 'alias',
     nameKey: 'games.alias.name',
     descriptionKey: 'games.alias.description',
-    players: '4-16',
+    players: '3-16',
     difficultyKey: 'games.alias.difficulty',
     seo: {
       title: 'Play Alias Online Free – Team Word Game',
-      description: 'Play Alias online free with 4 to 16 players in two teams. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
+      description: 'Play Alias online free with 3 to 16 players. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
       synonyms: [
         'alias game online',
         'alias word game online',

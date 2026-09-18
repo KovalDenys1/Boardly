@@ -90,6 +90,23 @@ describe('transitionLobbyToWaitingRoom', () => {
     })
   })
 
+  it('leaves behind a player who soft-left the finished game (#1011)', async () => {
+    await transitionLobbyToWaitingRoom({
+      lobbyId: 'lobby-3',
+      lobbyCode: 'LEFT',
+      gameType: 'tic_tac_toe',
+      players: [
+        { userId: 'human-1', leftAt: null, user: { bot: null } },
+        { userId: 'human-2', leftAt: new Date('2026-09-17T10:00:00.000Z'), user: { bot: null } },
+      ],
+    })
+
+    const createManyArg = mockTx.players.createMany.mock.calls[0][0]
+    expect(createManyArg.data.map((p: { userId: string }) => p.userId)).toEqual(['human-1'])
+    // Seat numbers are re-indexed over who is actually there, so the fresh room has no gap.
+    expect(createManyArg.data.map((p: { position: number }) => p.position)).toEqual([0])
+  })
+
   it('carries over zero players when everyone remaining is a bot', async () => {
     await transitionLobbyToWaitingRoom({
       lobbyId: 'lobby-2',
@@ -184,6 +201,19 @@ describe('getFinishedGameHumanRoster (#1005)', () => {
         }),
       })
     )
+  })
+
+  it('does not carry over a player the host kicked (#1013)', async () => {
+    const client = makeClient({
+      players: [
+        { userId: 'human-1', user: { bot: null } },
+        { userId: 'kicked-1', user: { bot: null } },
+      ],
+    })
+
+    await expect(
+      getFinishedGameHumanRoster(client, 'lobby-1', ['kicked-1'])
+    ).resolves.toEqual(['human-1'])
   })
 
   it('returns nothing when the lobby has never finished a game', async () => {

@@ -388,6 +388,10 @@ function GuesserCanvasView({
   const parsedContent = useMemo(() => parseDrawingContent(round.drawingContent), [round.drawingContent])
 
   const handleSubmit = useCallback(async () => {
+    // The box is only cleared after the round trip, so the guess is still on
+    // screen while the request is out and pressing Enter again is the natural
+    // thing to do (#1006).
+    if (isSubmitting) return
     const trimmed = guess.trim()
     if (trimmed.length < 2) {
       setValidationError(t('games.guess_my_drawing.game.guessTooShort'))
@@ -396,7 +400,7 @@ function GuesserCanvasView({
     setValidationError(null)
     await onSubmitGuess(trimmed)
     setGuess('')
-  }, [guess, onSubmitGuess, t])
+  }, [guess, isSubmitting, onSubmitGuess, t])
 
   return (
     <div className="space-y-4">
@@ -423,6 +427,7 @@ function GuesserCanvasView({
             onKeyDown={(e) => {
               if (e.key === 'Enter') void handleSubmit()
             }}
+            disabled={isSubmitting}
             placeholder={t('games.guess_my_drawing.game.guessPlaceholder')}
             maxLength={80}
             className="w-full rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-3 text-center text-lg font-semibold text-bd-ink"

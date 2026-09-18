@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest } from '@/lib/game-engine'
+import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest, resolveTurnStartedAt, type TurnClockSnapshot } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
@@ -298,6 +298,9 @@ export async function POST(
             placement: true,
             isWinner: true,
             scorecard: true,
+            // Read so the series auto-transition below can tell a seat that is still
+            // occupied from one whose player soft-left the finished game (#1011).
+            leftAt: true,
             user: {
               select: {
                 id: true,
@@ -336,6 +339,7 @@ export async function POST(
       placement: number | null
       isWinner: boolean
       scorecard: string | null
+      leftAt: Date | null
       user: {
         id: string
         username: string | null
@@ -463,10 +467,25 @@ export async function POST(
       timestamp: new Date(),
     }
 
+    // Where the seat's clock stood before this move, so a timeout auto-action
+    // can be stopped from resetting it (#1007). Only an auto-action needs it.
+    const turnBeforeMove: TurnClockSnapshot | null = isAutoAction
+      ? {
+          currentPlayerIndex: gameEngine.getState().currentPlayerIndex,
+          turnStartedAtMs: resolveTurnStartedAt(gameEngine.getState()),
+        }
+      : null
+
     // Make the move
     const moveResult = gameEngine.makeMove(gameMove)
     if (!moveResult) {
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
+    }
+
+    if (turnBeforeMove) {
+      // Yahtzee's timeout rolls first and scores second; letting the roll stamp
+      // a new turnStartedAt made the score too early by the guard above (#1007).
+      gameEngine.holdTurnClock(turnBeforeMove)
     }
 
     let botAutoResponse: BotAutoResponse | null = null
