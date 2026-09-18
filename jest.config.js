@@ -30,6 +30,10 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    // Agent worktrees live inside the repo, so jest walks into them and runs a
+    // second copy of every suite against the wrong tree — 1306 suites instead of
+    // 215, and the failures look like yours.
+    '<rootDir>/.claude/',
     // Playwright specs, run by `npm run test:e2e` against a real server and a
     // real Supabase project. Jest would match them by filename and fail.
     '<rootDir>/e2e/',

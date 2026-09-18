@@ -16,6 +16,8 @@ jest.mock('@/lib/db', () => ({
     },
     players: {
       findFirst: jest.fn(),
+      // #992 asks which seats are bots before deciding whom the turn may skip.
+      findMany: jest.fn(),
       delete: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
@@ -104,6 +106,7 @@ describe('performPlayerLeave game-state writes', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     ;(prisma.players.count as jest.Mock).mockResolvedValue(2)
+    ;(prisma.players.findMany as jest.Mock).mockResolvedValue([])
     ;(prisma.players.update as jest.Mock).mockResolvedValue({})
     ;(prisma.lobbies.update as jest.Mock).mockResolvedValue({})
     ;(broadcastToLobby as jest.Mock).mockResolvedValue(true)
@@ -125,9 +128,12 @@ describe('performPlayerLeave game-state writes', () => {
     expect(stateWrites()[0][0].data.state.currentPlayerIndex).toBe(1)
   })
 
-  it('does not replay its snapshot when a move committed first', async () => {
-    // The move advanced the turn off the departed player, so once the leave
-    // re-reads the row there is nothing left for it to do.
+  it('re-applies the leave to the row that won, instead of replaying its snapshot', async () => {
+    // The move advanced the turn off the departed player. The leave still has
+    // work on the re-read row, though: #992 has to mark the leaver inactive, or
+    // the wheel comes back to their seat a round later and the table freezes.
+    // So it attempts a second write against the newer revision — and because
+    // that one is refused too here, nothing is broadcast.
     ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 0 })
     ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
       state: memoryState(1),
@@ -137,7 +143,18 @@ describe('performPlayerLeave game-state writes', () => {
 
     await performPlayerLeave(lobbyWithGame(memoryState(0)) as any, 'ABCD12', LEAVER, mockLog)
 
-    expect(stateWrites()).toHaveLength(1)
+    const writes = stateWrites()
+    expect(writes).toHaveLength(2)
+    // The retry is conditioned on the revision it re-read, never on the stale one.
+    expect(writes[1][0].where).toEqual({
+      id: 'game-1',
+      currentTurn: 13,
+      updatedAt: new Date('2026-09-17T10:00:01.000Z'),
+    })
+    const leaver = writes[1][0].data.state.players.find(
+      (p: { id: string }) => p.id === LEAVER
+    )
+    expect(leaver.isActive).toBe(false)
     expect(
       (broadcastToLobby as jest.Mock).mock.calls.filter(([, event]) => event === 'game-update')
     ).toHaveLength(0)
