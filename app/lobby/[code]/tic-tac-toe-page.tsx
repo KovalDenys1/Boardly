@@ -592,7 +592,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     }, [game?.id, gameEngine])
 
     const timerState = gameEngine?.getState() ?? null
-    const timerStateData = timerState?.data as TicTacToeGameData | undefined
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
             ? Math.floor(lobby.turnTimer)
@@ -609,7 +608,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const { timeLeft } = useGameTimer({
         isMyTurn: isSpectator ? false : isMyTurn(),
-        gameState: timerStateData?.pendingRequest ? null : timerState,
+        // A draw or undo prompt used to pass null here, which stopped the hook
+        // from ever firing a timeout while leaving the countdown visibly running
+        // down to zero. With no clock and no legal move the board was frozen for
+        // as long as the opponent ignored the prompt (#997).
+        gameState: timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
             if (!gameEngine || !game || !isMyTurn()) {
@@ -1015,7 +1018,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 board={gameData.board}
                 winningLine={gameData.winningLine}
                 onCellClick={handleCellClick}
-                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting}
+                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
                 testId={testId}
             />
             {isFinished && !isSpectator && !overlayInspecting && (

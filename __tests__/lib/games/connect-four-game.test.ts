@@ -320,6 +320,59 @@ describe('ConnectFourGame', () => {
     })
   })
 
+  describe('an unanswered undo request (#997)', () => {
+    it('lets the requester keep playing, which withdraws their own request', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'drop', { col: 1 }))
+
+      expect(g.makeMove(createMove('p1', 'request-undo', {}))).toBe(true)
+
+      expect(g.makeMove(createMove('p1', 'drop', { col: 2 }))).toBe(true)
+      expect(getData(g).pendingRequest).toBeNull()
+    })
+
+    it('still makes the player who was asked answer before moving', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'drop', { col: 1 }))
+
+      // p2 asks while it is p1's turn, so p1 is the responder.
+      expect(g.makeMove(createMove('p2', 'request-undo', {}))).toBe(true)
+
+      expect(g.makeMove(createMove('p1', 'drop', { col: 2 }))).toBe(false)
+      expect(getData(g).pendingRequest).not.toBeNull()
+    })
+
+    it('lets the clock end the turn while the request is still unanswered', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'drop', { col: 1 }))
+
+      expect(g.makeMove(createMove('p1', 'request-undo', {}))).toBe(true)
+
+      expect(g.makeMove(createMove('p1', 'timeout-forfeit', {}))).toBe(true)
+      expect(getData(g).winner).toBe(2)
+      expect(getData(g).pendingRequest).toBeNull()
+      expect(g.getState().status).toBe('finished')
+    })
+
+    it('lets either player start the next round while a request hangs', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'timeout-forfeit', {}))
+      expect(g.getState().status).toBe('finished')
+
+      // Between rounds there is no clock and no board, so this used to be the
+      // one place a request could hold the series open for good.
+      expect(g.makeMove(createMove('p1', 'request-undo', {}))).toBe(true)
+
+      expect(g.makeMove(createMove('p2', 'next-round', {}))).toBe(true)
+      expect(g.getState().status).toBe('playing')
+      expect(getData(g).pendingRequest).toBeNull()
+    })
+  })
+
   describe('turn clock (#998)', () => {
     it('does not hand the player on the clock a fresh turn timer for a request and a decline', () => {
       const g = makeReadyGame()

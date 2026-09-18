@@ -162,6 +162,20 @@ function buildLobbyResponse() {
   }
 }
 
+/** Two moves played, back on user-1's turn, with `requesterId` waiting on an answer. */
+function buildLobbyResponseWithDrawOffer(requesterId: string) {
+  const response = buildLobbyResponse()
+  const engine = new TicTacToeGame('game-1')
+  engine.restoreState(response.activeGame.state)
+
+  engine.makeMove({ playerId: 'user-1', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+  engine.makeMove({ playerId: 'user-2', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+  engine.makeMove({ playerId: requesterId, type: 'request-draw', data: {}, timestamp: new Date() })
+
+  response.activeGame.state = engine.getState()
+  return response
+}
+
 describe('TicTacToeLobbyPage', () => {
   const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
   const toast = showToast as jest.Mocked<typeof showToast>
@@ -206,5 +220,39 @@ describe('TicTacToeLobbyPage', () => {
     expect((await screen.findAllByRole('button', { name: /undo/i })).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('button', { name: /draw/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('button', { name: 'game.ui.leave' }).length).toBeGreaterThan(0)
+  })
+
+  describe('an unanswered draw offer (#997)', () => {
+    it('leaves the board playable for the player who made the offer', async () => {
+      const response = buildLobbyResponseWithDrawOffer('user-1')
+      mockFetchWithGuest.mockResolvedValue({
+        ok: true,
+        json: async () => response,
+      } as Response)
+
+      render(<TicTacToeLobbyPage code="ABCD" />)
+
+      await waitFor(() => expect(screen.getByTestId('ttt-board')).toBeTruthy())
+      // Playing on withdraws the offer, so the opponent ignoring it cannot pin
+      // the requester on a board they are not allowed to touch.
+      screen.getAllByRole('button', { name: 'cell C3' }).forEach((cell) => {
+        expect(cell.disabled).toBe(false)
+      })
+    })
+
+    it('holds the board for the player who has to answer it', async () => {
+      const response = buildLobbyResponseWithDrawOffer('user-2')
+      mockFetchWithGuest.mockResolvedValue({
+        ok: true,
+        json: async () => response,
+      } as Response)
+
+      render(<TicTacToeLobbyPage code="ABCD" />)
+
+      await waitFor(() => expect(screen.getByTestId('ttt-board')).toBeTruthy())
+      screen.getAllByRole('button', { name: 'cell C3' }).forEach((cell) => {
+        expect(cell.disabled).toBe(true)
+      })
+    })
   })
 })
