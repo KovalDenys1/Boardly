@@ -247,14 +247,17 @@ export async function performPlayerLeave(
   const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
 
   const creatorLeft = lobby.creatorId === userId
-  const isTerminalGame = activeGame.status === 'finished' || activeGame.status === 'abandoned' || activeGame.status === 'cancelled'
   const lobbyCanStayActive =
     activeGame.status === 'playing'
       ? remainingPlayers >= minPlayersRequired && remainingHumanPlayers > 0
       : remainingPlayers > 0 && remainingHumanPlayers > 0
-  // Don't reassign creator during post-game — only the original host can start the next game
+  // Post-game used to be excluded here, so that only the original host could start the next
+  // game. That holds while the host is still in the room; when the host is the one leaving it
+  // left creatorId pointing at somebody who is gone, and every restart path is gated on it —
+  // "Play again" and "Return to lobby" hidden, both endpoints 403, "Ask for rematch" pinging
+  // the player who just left (#1012). The lobby's creator is now always someone still in it.
   const reassignedCreator =
-    creatorLeft && lobbyCanStayActive && !isTerminalGame
+    creatorLeft && lobbyCanStayActive
       ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
       : null
 
@@ -337,7 +340,10 @@ export async function performPlayerLeave(
 
     await emitLobbyEvent(log, code, 'player-left', {
       ...playerLeftEventPayload,
-      ...(creatorLeft ? { hostLeft: true } : {}),
+      // hostLeft is now only the dead end: the host went and nobody could take the seat.
+      // When somebody did, the payload carries nextCreatorId and the client announces the
+      // new host — it checks hostLeft first and returns, so the two must not both be set.
+      ...(creatorLeft && !reassignedCreator ? { hostLeft: true } : {}),
       gameTerminal: true,
     })
 

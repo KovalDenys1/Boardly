@@ -1049,7 +1049,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
   })
 
-  it('removes player from a finished game without reassigning creator (post-game host control)', async () => {
+  it('hands the host seat to a player who stayed when the host leaves post-game (#1012)', async () => {
     const finishedLobby = {
       ...mockLobby,
       creatorId: 'user-123',
@@ -1132,20 +1132,29 @@ describe('POST /api/lobby/[code]/leave', () => {
     )
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
-    // Creator is NOT reassigned during post-game state
-    expect(mockPrisma.lobbies.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ data: { creatorId: expect.any(String) } })
+    // The settled result is untouched, but the lobby's creator must be somebody still in it —
+    // otherwise Play again, Return to lobby and Ask for rematch all point at the departed host.
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'lobby-123' },
+        data: { creatorId: 'user-456' },
+      })
     )
-    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
-      'ABC123',
-      'player-left',
+    const playerLeftPayload = mockBroadcastToLobby.mock.calls.find(
+      (call: unknown[]) => call[1] === 'player-left'
+    )?.[2]
+    expect(playerLeftPayload).toEqual(
       expect.objectContaining({
         userId: 'user-123',
         playerId: 'user-123',
-        hostLeft: true,
+        nextCreatorId: 'user-456',
+        nextCreatorName: 'another-user',
+        gameTerminal: true,
         remainingPlayers: 1,
       })
     )
+    // hostLeft would make the client stop at "create a new lobby" and never announce the new host.
+    expect(playerLeftPayload).not.toHaveProperty('hostLeft')
   })
 
   it('awaits broadcast and returns 200 when other players remain', async () => {
