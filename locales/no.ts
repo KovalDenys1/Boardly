@@ -1206,6 +1206,8 @@ const no = {
       howToPlayRuleTicTacToe: 'Bytt på å plassere symboler og lag en linje på tre.',
       howToPlayRuleRps: 'Velg stein, papir eller saks og vinn flertallet av rundene.',
       howToPlayRuleMemory: 'Snu to kort per tur og samle matchende par.',
+      howToPlayRuleConnectFour: 'Slipp brikker ned i en kolonne og få fire på rad.',
+      howToPlayRuleAlias: 'Forklar ordet uten å si det, og la laget gjette.',
       howToPlayRuleFallback: 'Følg instruksjonene i spillet og utfør handlinger når det er din tur.',
       perTurn: 'per tur',
       timeLimit: 'Tidsgrense',
@@ -1228,6 +1230,9 @@ const no = {
       drawBadge: 'UAVGJORT',
       viewBoard: 'Se brettet',
       kickPlayer: 'Fjern spiller',
+      removedPlayers: 'Fjernede spillere',
+      removedPlayersHint: 'De kan ikke bli med igjen før du slipper dem inn.',
+      letBackIn: 'Slipp inn igjen',
       settings: 'Innstillinger',
     }
   },
