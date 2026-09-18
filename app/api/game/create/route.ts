@@ -150,8 +150,19 @@ export async function POST(request: NextRequest) {
       where: { id: lobbyId },
       include: {
         games: {
+          // A lobby accumulates finished games. "Play again" has to rebuild the roster
+          // from the match everyone just played, not from whichever finished row Postgres
+          // happened to return first, which in practice was the oldest one (#1011).
+          orderBy: { updatedAt: 'desc' },
           include: {
             players: {
+              // Leaving a playing or finished game is a soft-leave: the Players row stays
+              // and only leftAt is stamped (lib/lobby-leave.ts). Copied unfiltered into the
+              // next game it seats somebody who is not there, so the turn reaches a player
+              // no client can time out and ~30s later the heartbeat sweep abandons the game
+              // everyone just started (#1011).
+              where: { leftAt: null },
+              orderBy: { position: 'asc' },
               include: {
                 user: {
                   include: {

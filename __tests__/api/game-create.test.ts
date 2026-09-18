@@ -712,6 +712,37 @@ describe('POST /api/game/create', () => {
     )
   })
 
+  it('rebuilds the "Play again" roster from present players in the newest finished game (#1011)', async () => {
+    // The filter is a Prisma `where`, so the mock cannot apply it — assert the query the
+    // route asks. Without it a soft-left Players row is copied into the next game and the
+    // heartbeat sweep abandons that game ~30s after it starts.
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      games: [{ ...mockWaitingGame, status: 'finished' }],
+    } as any)
+    mockPrisma.games.create.mockResolvedValue({
+      ...mockWaitingGame,
+      id: 'game-new-123',
+      status: 'waiting',
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'yahtzee',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 2 },
+      }),
+    })
+    await POST(request)
+
+    const lobbyQuery = mockPrisma.lobbies.findUnique.mock.calls[0][0]
+    expect(lobbyQuery.include.games.orderBy).toEqual({ updatedAt: 'desc' })
+    expect(lobbyQuery.include.games.include.players.where).toEqual({ leftAt: null })
+    expect(lobbyQuery.include.games.include.players.orderBy).toEqual({ position: 'asc' })
+  })
+
   it('returns generic 500 response without internal details on unexpected failures', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('sensitive database failure'))

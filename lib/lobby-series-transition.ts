@@ -8,6 +8,8 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface TransitionPlayer {
   userId: string
+  /** Set on the Players row when the player left a playing or finished game. */
+  leftAt?: Date | null
   user?: { bot?: unknown } | null
 }
 
@@ -29,7 +31,10 @@ interface TransitionParams {
  */
 export async function transitionLobbyToWaitingRoom(params: TransitionParams): Promise<{ gameId: string }> {
   const { lobbyId, lobbyCode, gameType, players } = params
-  const humanPlayers = players.filter((p) => !p.user?.bot)
+  // Departures are soft-leaves, so the finished game still holds their Players row. Carrying
+  // it into the fresh waiting room seats a player who is gone (#1011) — the same defect the
+  // "Play again" path had. Only the roster of people still here crosses over.
+  const humanPlayers = players.filter((p) => !p.user?.bot && !p.leftAt)
 
   const initialState = createGameEngine(gameType, 'temp').getState()
 
