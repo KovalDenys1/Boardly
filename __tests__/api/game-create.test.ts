@@ -769,4 +769,53 @@ describe('POST /api/game/create', () => {
     expect(capturedGameState.data.dice).toHaveLength(5)
     expect(capturedGameState.data.rollsLeft).toBe(3)
   })
+
+  it('refuses to start a game that cannot seat the whole lobby (#1004)', async () => {
+    // Four players left over from a Yahtzee room in a lobby now set to Connect Four:
+    // the engine seats two and used to silently discard the other two, who then sat on
+    // a live board it was never their turn on.
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    const overCapacityGame = {
+      ...mockWaitingGame,
+      players: [
+        ...mockWaitingGame.players,
+        {
+          id: 'player-3',
+          userId: 'user-789',
+          score: 0,
+          position: 2,
+          user: { id: 'user-789', username: 'player3', bot: null },
+        },
+        {
+          id: 'player-4',
+          userId: 'user-012',
+          score: 0,
+          position: 3,
+          user: { id: 'user-012', username: 'player4', bot: null },
+        },
+      ],
+    }
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      gameType: 'connect_four',
+      maxPlayers: 2,
+      games: [overCapacityGame],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'connect_four',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 2, minPlayers: 2 },
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.code).toBe('LOBBY_OVER_CAPACITY')
+    expect(data.error).toBe('This game seats 2 players, but 4 are in the lobby')
+    expect(mockPrisma.games.update).not.toHaveBeenCalled()
+  })
 })

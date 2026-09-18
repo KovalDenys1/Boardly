@@ -68,6 +68,46 @@ export async function transitionLobbyToWaitingRoom(params: TransitionParams): Pr
 }
 
 /**
+ * The human (non-bot) roster of the lobby's most recent finished game, in seat order.
+ *
+ * Both join paths read "no waiting game" as "create one", and a finished game is invisible
+ * to the query they ask, so a join arriving after the match opened a bare room – which
+ * outranks the finished one in `pickRelevantLobbyGame`, so every client swapped to an empty
+ * board holding only the newcomer (#1005). Carrying the roster across is what this module
+ * already does for "Return to lobby"; the join paths need the same list without the
+ * transaction and the broadcast wrapped around it.
+ *
+ * Takes the client to query with, so a caller inside a transaction stays inside it.
+ */
+export async function getFinishedGameHumanRoster(
+  client: Pick<typeof prisma, 'games'>,
+  lobbyId: string
+): Promise<string[]> {
+  const lastFinishedGame = await client.games.findFirst({
+    where: { lobbyId, status: 'finished' },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      players: {
+        where: { leftAt: null },
+        orderBy: { position: 'asc' },
+        select: {
+          userId: true,
+          user: { select: { bot: true } },
+        },
+      },
+    },
+  })
+
+  if (!lastFinishedGame) {
+    return []
+  }
+
+  return lastFinishedGame.players
+    .filter((player) => !player.user.bot)
+    .map((player) => player.userId)
+}
+
+/**
  * Fire-and-forget auto-transition trigger, shared by the human-move and
  * bot-move processing routes: once a tic-tac-toe series is mathematically
  * decided, immediately reset the lobby to a fresh waiting room instead of

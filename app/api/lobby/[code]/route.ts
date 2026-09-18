@@ -10,6 +10,7 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata, isAvailableGameType } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { getFinishedGameHumanRoster } from '@/lib/lobby-series-transition'
 import { sweepStalePlayers } from '@/lib/lobby-presence'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
@@ -679,7 +680,13 @@ export async function POST(
             })
 
             if (!activeGame) {
-              activeGame = await tx.games.create({
+              // The room the newcomer opens has to be the room the previous match is
+              // sitting in. Created bare, it outranks the finished game everyone is
+              // still looking at, and they were all pulled into an empty board holding
+              // only the newcomer (#1005). Same roster carry-over as "Return to lobby".
+              const carriedUserIds = await getFinishedGameHumanRoster(tx, lobby.id)
+
+              const createdGame = await tx.games.create({
                 data: {
                   lobbyId: lobby.id,
                   gameType: toPersistedGameType(runtimeGameType),
@@ -688,6 +695,20 @@ export async function POST(
                 },
                 select: { id: true, status: true },
               })
+
+              if (carriedUserIds.length > 0) {
+                await tx.players.createMany({
+                  data: carriedUserIds.map((carriedUserId, index) => ({
+                    gameId: createdGame.id,
+                    userId: carriedUserId,
+                    position: index,
+                    scorecard: JSON.stringify({}),
+                  })),
+                  skipDuplicates: true,
+                })
+              }
+
+              activeGame = createdGame
             }
 
             // Return early if player already joined
@@ -923,6 +944,18 @@ export async function PATCH(
     if (typeof updates.gameType === 'string' && updates.gameType !== lobby.gameType) {
       const currentMax = typeof updates.maxPlayers === 'number' ? updates.maxPlayers : lobby.maxPlayers
       const clamped = Math.min(maxAllowedPlayers, Math.max(minAllowedPlayers, currentMax))
+      // The roster guard above only runs when maxPlayers is sent explicitly, so a switch to
+      // a smaller game clamped the seat count under the people already in the room and the
+      // surplus was dropped when the game started, with nothing telling them why (#1004).
+      // A waiting game hard-deletes a leaver's row, so this count is the live roster.
+      if (clamped < activePlayerCount) {
+        return NextResponse.json(
+          {
+            error: `Current player count is ${activePlayerCount}, cannot set lower max players`,
+          },
+          { status: 400 }
+        )
+      }
       if (clamped !== lobby.maxPlayers || typeof updates.maxPlayers === 'number') {
         clampedMaxPlayers = clamped
       }

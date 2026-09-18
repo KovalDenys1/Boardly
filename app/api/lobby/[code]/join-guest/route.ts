@@ -13,6 +13,7 @@ import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { getFinishedGameHumanRoster } from '@/lib/lobby-series-transition'
 import {
   hashLobbyPassword,
   isHashedLobbyPassword,
@@ -155,6 +156,20 @@ export async function POST(
       }
       const runtimeGameType = requestedGameType
       const initialState = createGameEngine(runtimeGameType, 'temp').getState()
+
+      // Same hole as the authenticated join (#1005): a finished game is invisible to the
+      // query above, so this branch opened a bare room that outranked it and everyone
+      // still on the results screen was swapped into an empty board. Carry the previous
+      // match over, then seat the guest behind it.
+      const carriedUserIds = await getFinishedGameHumanRoster(prisma, lobby.id)
+      const rosterUserIds = carriedUserIds.includes(guestUser.id)
+        ? carriedUserIds
+        : [...carriedUserIds, guestUser.id]
+
+      if (rosterUserIds.length > lobby.maxPlayers) {
+        return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
+      }
+
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
@@ -162,10 +177,10 @@ export async function POST(
           status: 'waiting',
           state: toPersistedGameStateInput(initialState),
           players: {
-            create: {
-              userId: guestUser.id,
-              position: 0,
-            },
+            create: rosterUserIds.map((rosterUserId, position) => ({
+              userId: rosterUserId,
+              position,
+            })),
           },
         },
         include: {

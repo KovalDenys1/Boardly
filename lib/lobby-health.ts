@@ -1,6 +1,7 @@
 import { prisma } from './db'
 import { logger } from './logger'
 import { pickRelevantLobbyGame } from './lobby-snapshot'
+import { HEARTBEAT_STALE_THRESHOLD_MS } from './lobby-presence'
 import { deleteGameTurnReminderNotifications } from './in-app-notifications'
 
 type CleanupStaleLobbyGamesOptions = {
@@ -27,6 +28,8 @@ type CleanupLobbyGame = {
   status: string
   updatedAt: Date
   players: Array<{
+    leftAt: Date | null
+    lastHeartbeatAt: Date
     user: {
       bot: unknown
     }
@@ -101,6 +104,8 @@ export async function cleanupStaleLobbiesAndGames(
           updatedAt: true,
           players: {
             select: {
+              leftAt: true,
+              lastHeartbeatAt: true,
               user: {
                 select: {
                   bot: true,
@@ -120,6 +125,7 @@ export async function cleanupStaleLobbiesAndGames(
   const playingGamesToAbandon = new Set<string>()
   const waitingStaleCutoff = new Date(now.getTime() - waitingStaleHours * 60 * 60 * 1000)
   const playingStaleCutoff = new Date(now.getTime() - playingStaleHours * 60 * 60 * 1000)
+  const heartbeatCutoff = new Date(now.getTime() - HEARTBEAT_STALE_THRESHOLD_MS)
 
   for (const lobby of lobbies) {
     const activeGame = pickRelevantLobbyGame<CleanupLobbyGame>(lobby.games as CleanupLobbyGame[])
@@ -136,7 +142,22 @@ export async function cleanupStaleLobbiesAndGames(
     const hoursSinceUpdate = (now.getTime() - new Date(activeGame.updatedAt).getTime()) / (1000 * 60 * 60)
 
     if (activeGame.status === 'waiting') {
-      const shouldCancel = playersCount === 0 || humanPlayers === 0 || hoursSinceUpdate > waitingStaleHours
+      // A filling waiting room never writes its own Games row – joining, adding a bot,
+      // chatting and heartbeating all touch Players only – so `updatedAt` measures time
+      // since the lobby was created, and on its own it cancelled rooms with people still
+      // sitting in them waiting for a fourth (#1003). Presence decides instead, read from
+      // the heartbeat the app already collects for #675; row age now only ends rooms that
+      // nobody is actually in.
+      const hasPresentPlayer = activeGame.players.some(
+        (player) =>
+          !player.user.bot &&
+          !player.leftAt &&
+          new Date(player.lastHeartbeatAt).getTime() > heartbeatCutoff.getTime()
+      )
+      const shouldCancel =
+        playersCount === 0 ||
+        humanPlayers === 0 ||
+        (hoursSinceUpdate > waitingStaleHours && !hasPresentPlayer)
       if (shouldCancel) {
         waitingGamesToCancel.add(activeGame.id)
         lobbiesToDeactivate.add(lobby.id)
@@ -207,6 +228,16 @@ export async function cleanupStaleLobbiesAndGames(
       status: 'waiting',
       updatedAt: {
         lte: waitingStaleCutoff,
+      },
+      // The same presence test as the per-lobby branch (#1003): without it this backstop
+      // cancels the populated rooms that branch just spared, since it never joins Players.
+      players: {
+        none: {
+          leftAt: null,
+          lastHeartbeatAt: {
+            gt: heartbeatCutoff,
+          },
+        },
       },
     },
     data: {
