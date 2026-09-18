@@ -16,6 +16,11 @@ import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import {
+  getLobbyJoinRefusalMessageKey,
+  isLobbyJoinRefusalCode,
+  type LobbyJoinRefusalCode,
+} from '@/lib/lobby-join-errors'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
@@ -174,6 +179,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const [password, setPassword] = useState('')
   const [guestNameInput, setGuestNameInput] = useState(guestName || '')
   const [isJoiningLobby, setIsJoiningLobby] = useState(false)
+  // Why the last join attempt was refused. `error` carries the sentence the
+  // visitor reads; this is what the UI branches on, so neither the branch nor
+  // the sentence depends on the server's English prose (#967).
+  const [joinRefusalCode, setJoinRefusalCode] = useState<LobbyJoinRefusalCode | null>(null)
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
@@ -420,6 +429,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const handleJoinLobby = useCallback(async () => {
     setIsJoiningLobby(true)
     setError('')
+    setJoinRefusalCode(null)
 
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -471,11 +481,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // A running game is refused the same way a full lobby is: watch it if the lobby
       // allows spectators, otherwise read the reason and take the lobbies button that
       // JoinPrompt always shows.
-      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
-      if (refused && lobby?.allowSpectators && onLobbyFull) {
+      const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
+      if (refusalKey && lobby?.allowSpectators && onLobbyFull) {
         onLobbyFull()
       } else {
-        setError(message)
+        if (isLobbyJoinRefusalCode(errorCode)) {
+          setJoinRefusalCode(errorCode)
+        }
+        setError(refusalKey ? i18n.t(refusalKey) : message)
       }
     } finally {
       setIsJoiningLobby(false)
@@ -497,6 +510,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     setIsJoiningLobby(true)
     setError('')
+    setJoinRefusalCode(null)
 
     try {
       const response = await fetch(`/api/lobby/${code}/join-guest`, {
@@ -551,11 +565,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // A running game is refused the same way a full lobby is: watch it if the lobby
       // allows spectators, otherwise read the reason and take the lobbies button that
       // JoinPrompt always shows.
-      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
-      if (refused && lobby?.allowSpectators && onLobbyFull) {
+      const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
+      if (refusalKey && lobby?.allowSpectators && onLobbyFull) {
         onLobbyFull()
       } else {
-        setError(message)
+        if (isLobbyJoinRefusalCode(errorCode)) {
+          setJoinRefusalCode(errorCode)
+        }
+        setError(refusalKey ? i18n.t(refusalKey) : message)
       }
     } finally {
       setIsJoiningLobby(false)
@@ -860,6 +877,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     announceBotJoined,
     handleJoinLobby,
     handleGuestJoinLobby,
+    joinRefusalCode,
     handleStartGame,
     updateLobbySettings,
     guestNameInput,

@@ -221,6 +221,7 @@ const en = {
       join: 'Join Lobby',
       invalidCode: 'Invalid lobby code',
       lobbyFull: 'Lobby is full',
+      gameInProgress: 'The game has already started',
       wrongPassword: 'Wrong password',
       watchInstead: 'Watch as spectator instead',
       createOwnLobby: 'Create your own lobby',

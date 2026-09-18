@@ -1028,6 +1028,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
+    joinRefusalCode,
     handleStartGame,
     updateLobbySettings,
     guestNameInput,
@@ -1993,6 +1994,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               password={password}
               setPassword={setPassword}
               error={error}
+              errorCode={joinRefusalCode}
               isJoining={isJoiningLobby}
               onJoin={handleJoinLobby}
               onJoinAsGuest={handleGuestJoinLobby}

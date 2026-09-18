@@ -221,6 +221,7 @@ const no = {
       join: 'Bli med i lobby',
       invalidCode: 'Ugyldig lobbykode',
       lobbyFull: 'Lobbyen er full',
+      gameInProgress: 'Spillet har allerede startet',
       wrongPassword: 'Feil passord',
       watchInstead: 'Se som tilskuer i stedet',
       createOwnLobby: 'Opprett din egen lobby'

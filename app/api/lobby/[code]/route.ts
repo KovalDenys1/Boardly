@@ -23,6 +23,7 @@ import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { verifyLobbyPassword } from '@/lib/lobby-password'
+import type { LobbyJoinRefusalCode } from '@/lib/lobby-join-errors'
 import { buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import {
@@ -648,7 +649,7 @@ export async function POST(
         return NextResponse.json(
           {
             error: 'Game in progress',
-            code: 'GAME_IN_PROGRESS',
+            code: 'GAME_IN_PROGRESS' satisfies LobbyJoinRefusalCode,
             allowSpectators: lobby.allowSpectators,
           },
           { status: 409 }
@@ -767,7 +768,7 @@ export async function POST(
       } catch (error) {
         if (error instanceof LobbyFullError) {
           return NextResponse.json(
-            { error: 'Lobby is full' },
+            { error: 'Lobby is full', code: 'LOBBY_FULL' satisfies LobbyJoinRefusalCode },
             { status: 400 }
           )
         }

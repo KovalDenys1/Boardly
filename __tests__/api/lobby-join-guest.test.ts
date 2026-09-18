@@ -139,6 +139,9 @@ describe('POST /api/lobby/[code]/join-guest — joining after the game finished 
 
     expect(response.status).toBe(400)
     expect(data.error).toBe('Lobby is full')
+    // The code is what the client picks a translation by; the English sentence
+    // stays for the logs and for a client loaded before #967.
+    expect(data.code).toBe('LOBBY_FULL')
     expect(mockPrisma.games.create).not.toHaveBeenCalled()
   })
 

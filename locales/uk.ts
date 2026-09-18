@@ -230,6 +230,7 @@ const uk: Translation = {
       join: 'Приєднатися',
       invalidCode: 'Невірний код лобі',
       lobbyFull: 'Лобі заповнене',
+      gameInProgress: 'Гру вже розпочато',
       wrongPassword: 'Невірний пароль',
       watchInstead: 'Дивитися як глядач',
       createOwnLobby: 'Створити власне лобі',

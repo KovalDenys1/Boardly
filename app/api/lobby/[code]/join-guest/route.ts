@@ -22,6 +22,7 @@ import {
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import type { LobbyJoinRefusalCode } from '@/lib/lobby-join-errors'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -135,7 +136,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: 'Game in progress',
-          code: 'GAME_IN_PROGRESS',
+          code: 'GAME_IN_PROGRESS' satisfies LobbyJoinRefusalCode,
           allowSpectators: lobby.allowSpectators,
         },
         { status: 409 }
@@ -144,7 +145,10 @@ export async function POST(
 
     // Check if lobby is full
     if (activeGame && activeGame.players.length >= lobby.maxPlayers) {
-      return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Lobby is full', code: 'LOBBY_FULL' satisfies LobbyJoinRefusalCode },
+        { status: 400 }
+      )
     }
 
     // Create or get the active game
@@ -167,7 +171,10 @@ export async function POST(
         : [...carriedUserIds, guestUser.id]
 
       if (rosterUserIds.length > lobby.maxPlayers) {
-        return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
+        return NextResponse.json(
+        { error: 'Lobby is full', code: 'LOBBY_FULL' satisfies LobbyJoinRefusalCode },
+        { status: 400 }
+      )
       }
 
       game = await prisma.games.create({
