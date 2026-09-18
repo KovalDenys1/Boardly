@@ -24,6 +24,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { createFreshnessWatermark, decideFreshness, readGameStateId, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -339,6 +340,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     rollsLeft: null,
   })
   const hasLobbyPageInteractionRef = React.useRef(false)
+  // #994: Yahtzee, Spy and Memory all render through this file, and until now it
+  // applied every snapshot it was handed. The watermark and the in-flight flag
+  // are owned here because the broadcast handler, the move submits and the lobby
+  // snapshot all have to be judged against the same one.
+  const freshnessRef = React.useRef(createFreshnessWatermark())
+  const moveInFlightRef = React.useRef(false)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -576,8 +583,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         }
 
         if (game?.id) {
+          const gameId = game.id
+          // A rematch is a different row; its state must not be written into the
+          // game on screen, nor move that game's watermark.
+          const payloadGameId = readGameStateId(parsedState)
+          if (payloadGameId && payloadGameId !== gameId) {
+            clientLogger.debug('Ignoring game-update for another game', { gameId, payloadGameId })
+            return
+          }
+          // #994: broadcasts are fire-and-forget and take two hops the move
+          // response does not, so one routinely lands after the state that
+          // supersedes it. Applying it rewound the board - and in Yahtzee a
+          // snapshot with rollsLeft 3 also wipes the local held dice, which
+          // nothing ever restores.
+          const freshness = decideFreshness(freshnessRef.current, parsedState, {
+            moveInFlight: moveInFlightRef.current,
+          })
+          if (!freshness.accept) {
+            clientLogger.debug('Ignoring stale game state', { gameId, reason: freshness.reason })
+            return
+          }
           const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
-          const newEngine = await restoreGameEngineClient(gt, game.id, parsedState)
+          const newEngine = await restoreGameEngineClient(gt, gameId, parsedState)
           setGameEngine(newEngine)
 
           if (
@@ -652,7 +679,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
           // Update game object with new state
           setGame((prevGame) => {
-            if (!prevGame) return prevGame
+            if (!prevGame || prevGame.id !== gameId) return prevGame
             return {
               ...prevGame,
               state: JSON.stringify(parsedState),
@@ -940,6 +967,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [lobby, game, currentUserIdForMembership])
 
   const handleGameReset = useCallback(() => {
+    // A rematch starts a new series, so the old game's stamps must not gate it.
+    resetFreshnessWatermark(freshnessRef.current)
     if (loadLobbyRef.current) void loadLobbyRef.current({ fresh: true })
   }, [])
 
@@ -1008,6 +1037,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     code,
     lobby,
     game,
+    freshnessRef,
     setGame,
     setLobby,
     setGameEngine,
@@ -1311,6 +1341,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     celebrate,
     fireworks,
     reconcileWithServerSnapshot,
+    freshnessRef,
+    moveInFlightRef,
   })
 
   // Update refs for timer

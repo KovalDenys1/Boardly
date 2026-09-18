@@ -1,6 +1,7 @@
 import {
   createFreshnessWatermark,
   decideFreshness,
+  readGameStateId,
   readLastMoveAt,
   resetFreshnessWatermark,
 } from '@/lib/game-state-freshness'
@@ -11,6 +12,14 @@ describe('game state freshness (#985)', () => {
     expect(readLastMoveAt({ lastMoveAt: 'x' })).toBeNull()
     expect(readLastMoveAt({})).toBeNull()
     expect(readLastMoveAt(null)).toBeNull()
+  })
+
+  it('reads the game id only when the snapshot names one', () => {
+    expect(readGameStateId({ id: 'game-1' })).toBe('game-1')
+    expect(readGameStateId({ id: '' })).toBeNull()
+    expect(readGameStateId({ id: 7 })).toBeNull()
+    expect(readGameStateId({})).toBeNull()
+    expect(readGameStateId(null)).toBeNull()
   })
 
   it('accepts the first snapshot and then only strictly newer ones', () => {
