@@ -11,6 +11,13 @@ const customJestConfig = {
   // future per-suite leak degrades to a slow run instead of a heap OOM.
   // Ignored by --runInBand (no workers there).
   workerIdleMemoryLimit: '1GB',
+  // Jest's default is one worker per core bar one — eleven on this machine, each
+  // a full node process holding the module graph. That is already most of the
+  // RAM on a 16 GB Mac, and with several agents running suites at once it swaps
+  // and the whole desktop stutters. `npm test` passes --runInBand and overrides
+  // this; the cap is here so a bare `npx jest` is polite too. Raise it with
+  // `--maxWorkers` for a one-off run on an idle machine.
+  maxWorkers: 3,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
