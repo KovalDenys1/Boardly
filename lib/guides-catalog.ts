@@ -120,7 +120,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-sun)',
     category: 'best-of',
-    updated: '2026-09-15',
+    updated: '2026-09-18',
   },
   {
     slug: 'best-online-games-for-game-night',
@@ -130,7 +130,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-lav)',
     category: 'best-of',
-    updated: '2026-09-15',
+    updated: '2026-09-18',
   },
   {
     slug: 'best-games-to-play-on-zoom',

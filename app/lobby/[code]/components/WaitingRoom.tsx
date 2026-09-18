@@ -10,6 +10,7 @@ import { sounds } from '@/lib/sounds'
 import { useInviteShare } from '@/hooks/useInviteShare'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
+import WaitingRoomGuide, { type KickedPlayer } from './WaitingRoomGuide'
 
 const BOT_DIFFICULTY_ICON: Record<BotDifficulty, IconName> = {
   easy: 'bot-easy',
@@ -30,6 +31,9 @@ interface WaitingRoomProps {
   onProfileClick?: (userId: string) => void
   onInviteFriends?: () => void
   onAddBot?: (difficulty: BotDifficulty) => Promise<void> | void
+  /** Host-only; the list is not sent to anyone else. */
+  kickedPlayers?: KickedPlayer[]
+  onUnkickPlayer?: (userId: string) => void
 }
 
 export default function WaitingRoom({
@@ -44,6 +48,8 @@ export default function WaitingRoom({
   onProfileClick,
   onInviteFriends,
   onAddBot,
+  kickedPlayers,
+  onUnkickPlayer,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
   const shareInvite = useInviteShare(lobby?.code)
@@ -58,8 +64,10 @@ export default function WaitingRoom({
   const hasCustomTheme = lobby?.theme && lobby.theme !== 'default'
   const showTryBotGames = missingPlayers > 0 && !!game?.createdAt && !hasBotSupport(lobby?.gameType)
 
+  // A column that is at least as tall as its scroll area, so the guide below the
+  // roster can take the slack instead of leaving it empty (#899).
   return (
-    <div className="space-y-2 px-4 py-4 sm:px-6">
+    <div className="flex min-h-full flex-col gap-2 px-4 py-4 sm:px-6">
       {/* Theme banner */}
       {hasCustomTheme && (
         <LobbyThemeBanner theme={lobby.theme as LobbyTheme} />
@@ -281,6 +289,12 @@ export default function WaitingRoom({
       {showTryBotGames && game?.createdAt && (
         <TryBotGamesBanner waitingSinceMs={new Date(game.createdAt).getTime()} />
       )}
+
+      <WaitingRoomGuide
+        gameType={lobby?.gameType}
+        kickedPlayers={kickedPlayers}
+        onUnkickPlayer={onUnkickPlayer}
+      />
     </div>
   )
 }

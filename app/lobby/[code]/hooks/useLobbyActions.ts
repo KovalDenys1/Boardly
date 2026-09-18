@@ -70,7 +70,6 @@ interface UseLobbyActionsProps {
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
   selectedBotDifficulty: BotDifficulty
-  onLobbyFull?: () => void
 }
 
 interface AddBotOptions {
@@ -173,7 +172,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
-    onLobbyFull,
   } = props
 
   const [password, setPassword] = useState('')
@@ -485,22 +483,21 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
         return
       }
-      // A running game is refused the same way a full lobby is: watch it if the lobby
-      // allows spectators, otherwise read the reason and take the lobbies button that
-      // JoinPrompt always shows.
+      // A running game is refused the same way a full lobby is. Either way the
+      // reason goes to the join screen, which offers watching, a room of their own
+      // and the lobbies list from there (#972): a spectator-enabled lobby used to
+      // move the visitor to the spectator page without telling them why, which is
+      // both a decision taken for them and the reason JoinPrompt's own watch and
+      // create offers were unreachable.
       const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
-      if (refusalKey && lobby?.allowSpectators && onLobbyFull) {
-        onLobbyFull()
-      } else {
-        if (isLobbyJoinRefusalCode(errorCode)) {
-          setJoinRefusalCode(errorCode)
-        }
-        setError(refusalKey ? i18n.t(refusalKey) : message)
+      if (isLobbyJoinRefusalCode(errorCode)) {
+        setJoinRefusalCode(errorCode)
       }
+      setError(refusalKey ? i18n.t(refusalKey) : message)
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
+  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleGuestJoinLobby = useCallback(async () => {
     const normalizedGuestName = guestNameInput.trim()
@@ -576,22 +573,17 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
         return
       }
-      // A running game is refused the same way a full lobby is: watch it if the lobby
-      // allows spectators, otherwise read the reason and take the lobbies button that
-      // JoinPrompt always shows.
+      // Same as the signed-in path above: the reason goes to the join screen and the
+      // visitor chooses what to do with it (#972).
       const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)
-      if (refusalKey && lobby?.allowSpectators && onLobbyFull) {
-        onLobbyFull()
-      } else {
-        if (isLobbyJoinRefusalCode(errorCode)) {
-          setJoinRefusalCode(errorCode)
-        }
-        setError(refusalKey ? i18n.t(refusalKey) : message)
+      if (isLobbyJoinRefusalCode(errorCode)) {
+        setJoinRefusalCode(errorCode)
       }
+      setError(refusalKey ? i18n.t(refusalKey) : message)
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode, lobby?.allowSpectators, onLobbyFull])
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id) return

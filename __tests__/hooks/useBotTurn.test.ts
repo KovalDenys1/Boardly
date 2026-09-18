@@ -207,4 +207,37 @@ describe('useBotTurn watchdog', () => {
 
     expect(reconcileWithServerSnapshot).not.toHaveBeenCalled()
   })
+
+  it('does not POST when a spectator calls triggerBotTurn from a turn-timeout fallback', async () => {
+    // #1014: the pages' onTimeout fallback re-derives "is it a bot's turn" and calls
+    // the exported trigger, which had no spectator guard. The route refuses a
+    // non-participant with 401/403, the retry-then-toast path then shows "Bot move
+    // failed" to someone who is only watching, and each rejected POST holds the
+    // server's bot lock long enough to push the real player's trigger into a 409.
+    mockFetchWithGuest.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'Forbidden' }),
+    } as any)
+    const gameEngine = makeBotEngine() as any
+
+    const { result } = renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        isSpectator: true,
+      })
+    )
+
+    await act(async () => {
+      await result.current.triggerBotTurn('bot-1', 'game-123')
+    })
+
+    // No request, so no retry cycle and no toast however long the clock runs.
+    await advanceAndFlush(WATCHDOG_MS + RETRY_DELAY_MS * 3)
+    expect(mockFetchWithGuest).not.toHaveBeenCalled()
+    expect(showToast.error).not.toHaveBeenCalled()
+  })
 })

@@ -1,3 +1,6 @@
+import { existsSync } from 'fs'
+import path from 'path'
+
 import {
   getAvailableGameTypes,
   getBotSupportedGameTypes,
@@ -69,6 +72,34 @@ describe('game catalog availability', () => {
       expect(game.route).toBeDefined()
       expect(game.lobbyCreateConfig).toBeDefined()
       expect(game.lobbyCreateConfig.allowedPlayers.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('every catalog route points at a page that exists (#975)', () => {
+    // fake-artist and telephone-doodle carried routes under app/games/ that were
+    // never built, so flipping either flag promoted the entry and put a link to a
+    // 404 on /games and the home ribbon. A route is a promise that a page is there.
+    const routed = getCatalogGames().filter((game) => game.route !== undefined)
+
+    expect(routed.length).toBeGreaterThan(0)
+    for (const game of routed) {
+      const page = path.join(process.cwd(), 'app', `${game.route}/page.tsx`)
+      expect({ id: game.id, hasPage: existsSync(page) }).toEqual({ id: game.id, hasPage: true })
+    }
+  })
+
+  it('does not route the games that have no page yet (#975)', () => {
+    const promoted = getCatalogGames({
+      enabledExperimental: ['fake-artist', 'telephone-doodle'],
+    }).filter((game) => game.id === 'fake-artist' || game.id === 'telephone-doodle')
+
+    expect(promoted).toHaveLength(2)
+    for (const game of promoted) {
+      expect({ id: game.id, availability: game.availability }).toEqual({
+        id: game.id,
+        availability: 'available',
+      })
+      expect({ id: game.id, route: game.route }).toEqual({ id: game.id, route: undefined })
     }
   })
 
