@@ -105,6 +105,7 @@ import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 function CenteredLoadingFallback() {
   return (
@@ -326,6 +327,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isInitialLoadRef = React.useRef(true)
   const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Leave lobby')
   const lifecycleRedirectInFlightRef = React.useRef(false)
+  const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
@@ -1141,7 +1143,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           }
         }
 
-        return true
+        // #989: the clock ran out on a human who is not here. Only their own
+        // browser submits a timeout and Yahtzee has no server-side fallback, so
+        // the table sat on a dead turn until somebody reloaded — which abandons
+        // the game and loses the scorecards. A lobby GET sweeps them once their
+        // heartbeat is 30s stale and the leave path steps the turn off the seat
+        // (#992). Throttled, and it gives up after a minute.
+        const decision = stuckTurnRecoveryRef.current.decide(
+          turnSignatureOf(gameEngine?.getState().currentPlayerIndex, gameEngine?.getState().lastMoveAt),
+          Date.now()
+        )
+        if (decision === 'give-up') return true
+        if (decision === 'resync') {
+          clientLogger.warn('⏰ Turn timer expired on an absent player, asking the server', { code })
+          void reconcileWithServerSnapshot()
+        }
+        return false
       }
 
       if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) {

@@ -8,6 +8,7 @@ import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/pers
 import { restoreGameEngine } from '@/lib/game-registry'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { deleteGameTurnReminderNotifications } from '@/lib/in-app-notifications'
+import { advanceTurnPastDisconnectedPlayers, setPlayerConnectionInState, type TurnState } from '@/lib/disconnected-turn'
 
 /**
  * Shared by the explicit POST /api/lobby/[code]/leave route and the
@@ -431,7 +432,7 @@ export async function performPlayerLeave(
     // Non-critical player left: fall through to the generic handling below
   }
 
-  // For turn-based games: advance to the next player if the departed player was current.
+  // For turn-based games: mark the departed player inactive and move the turn off them.
   // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
   // to avoid state corruption. Timer will handle stuck turns for those games.
   let turnAdvanced = false
@@ -439,8 +440,34 @@ export async function performPlayerLeave(
     try {
       const parsedState = parseAndValidateGameState(activeGame.state)
       const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
-      if (currentPlayerId === userId) {
-        parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % parsedState.players.length
+      const leaverWasCurrent = currentPlayerId === userId
+
+      // #992: this used to do nothing at all unless the leaver happened to hold the
+      // turn, and even then it only bumped the index — the departed player stayed a
+      // fully valid seat, because `GameEngine.removePlayer` refuses to drop anyone
+      // while a game is playing. So the modulo wheel came back round to them and the
+      // match froze on a greyed-out ghost that nobody could skip: no client submits a
+      // timeout for a foreign seat, and these game types have no server-side fallback.
+      // `setPlayerConnectionInState` and `advanceTurnPastDisconnectedPlayers` were both
+      // written for this and the first had no caller anywhere, which left the per-move
+      // skip in the move and bot-turn routes permanently inert.
+      // `user.bot` is a relation and the shared include does not pull it, so ask
+      // directly rather than widening a type every other caller pays for.
+      const botUserIds = new Set(
+        (
+          await prisma.players.findMany({
+            where: { gameId: activeGame.id, user: { bot: { isNot: null } } },
+            select: { userId: true },
+          })
+        ).map((p) => p.userId)
+      )
+      const markedInactive = setPlayerConnectionInState(
+        parsedState as unknown as TurnState,
+        userId,
+        false
+      )
+
+      if (leaverWasCurrent) {
         // Reset the departed player's turn scratch data so the next player
         // starts clean — which fields, and their reset values, come from
         // catalog metadata rather than duck-typing every game here (#759).
@@ -464,11 +491,28 @@ export async function performPlayerLeave(
             )
           }
         }
+      }
+
+      // Runs whoever left: it steps off the seat when the leaver held the turn, and
+      // off any seat already marked inactive when the wheel reaches one later.
+      const advance = advanceTurnPastDisconnectedPlayers(
+        parsedState as unknown as TurnState,
+        botUserIds
+      )
+
+      if (markedInactive || advance.changed) {
         await prisma.games.update({
           where: { id: activeGame.id },
           data: { state: toPersistedGameStateInput(parsedState) },
         })
-        turnAdvanced = true
+        turnAdvanced = advance.changed
+        if (advance.skippedPlayerIds.length > 0) {
+          log.info('Skipped departed players when advancing the turn', {
+            gameId: activeGame.id,
+            skippedPlayerIds: advance.skippedPlayerIds,
+            currentPlayerId: advance.currentPlayerId,
+          })
+        }
         await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: parsedState })
       }
     } catch (e) {

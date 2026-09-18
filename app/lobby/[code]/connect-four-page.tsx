@@ -46,6 +46,7 @@ import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
 function parseLobbyGameState(activeGame: unknown): unknown {
@@ -339,6 +340,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
     const freshnessRef = React.useRef(createFreshnessWatermark())
+    const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
@@ -714,7 +716,23 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         return false
                     }
                 }
-                return true
+                // #989: nobody else can end this turn. The player whose turn it is
+                // submits the timeout, and if they closed the tab there is no server
+                // fallback for this game type — the board sat on a dead turn until
+                // someone reloaded, which abandons the game and credits nobody. A
+                // lobby GET runs sweepStalePlayers, which marks them gone once their
+                // heartbeat is 30s stale; the leave path then steps the turn off the
+                // seat (#992). Throttled, and it stops after a minute.
+                const decision = stuckTurnRecoveryRef.current.decide(
+                    turnSignatureOf(timerState?.currentPlayerIndex, timerState?.lastMoveAt),
+                    Date.now()
+                )
+                if (decision === 'give-up') return true
+                if (decision === 'resync') {
+                    clientLogger.warn('⏰ Turn timer expired on an absent player, asking the server', { code })
+                    void loadLobby()
+                }
+                return false
             }
             const userId = getCurrentUserId()
             if (!userId) return false
