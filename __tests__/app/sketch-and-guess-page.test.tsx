@@ -279,4 +279,32 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     })
     expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0)
   })
+
+  // #1006 — submitAction read nothing before sending, so a second Enter while the
+  // first guess was still out sent a second POST off the same read of the state.
+  // isSubmitting could not have helped: an async callback reads the value from the
+  // render it closed over.
+  it('sends one guess when the player submits twice before the first lands', async () => {
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+
+    let settleGuess: (value: Response) => void = () => {}
+    mockFetchWithGuest.mockImplementationOnce(
+      () => new Promise<Response>((resolve) => { settleGuess = resolve })
+    )
+
+    const guessCalls = () =>
+      mockFetchWithGuest.mock.calls.filter((call) =>
+        String(call[0]).includes('/sketch-and-guess-action')
+      ).length
+
+    fireEvent.click(screen.getByRole('button', { name: 'guess' }))
+    fireEvent.click(screen.getByRole('button', { name: 'guess' }))
+
+    expect(guessCalls()).toBe(1)
+
+    await act(async () => {
+      settleGuess(okResponse({ state: null }))
+    })
+  })
 })
