@@ -1,6 +1,10 @@
 // @ts-nocheck
 
-import { transitionLobbyToWaitingRoom, maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
+import {
+  transitionLobbyToWaitingRoom,
+  maybeAutoTransitionCompletedSeries,
+  getFinishedGameHumanRoster,
+} from '@/lib/lobby-series-transition'
 import { prisma } from '@/lib/db'
 import { createGameEngine } from '@/lib/game-registry'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -150,5 +154,41 @@ describe('maybeAutoTransitionCompletedSeries', () => {
     maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, onError)
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(onError).toHaveBeenCalledWith(expect.any(Error))
+  })
+})
+
+describe('getFinishedGameHumanRoster (#1005)', () => {
+  const makeClient = (game: unknown) => ({
+    games: { findFirst: jest.fn().mockResolvedValue(game) },
+  })
+
+  it('returns the humans still in the newest finished game, in seat order', async () => {
+    const client = makeClient({
+      players: [
+        { userId: 'human-1', user: { bot: null } },
+        { userId: 'bot-1', user: { bot: { id: 'bot-row-1' } } },
+        { userId: 'human-2', user: { bot: null } },
+      ],
+    })
+
+    await expect(getFinishedGameHumanRoster(client, 'lobby-1')).resolves.toEqual([
+      'human-1',
+      'human-2',
+    ])
+    expect(client.games.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { lobbyId: 'lobby-1', status: 'finished' },
+        orderBy: { updatedAt: 'desc' },
+        select: expect.objectContaining({
+          players: expect.objectContaining({ where: { leftAt: null } }),
+        }),
+      })
+    )
+  })
+
+  it('returns nothing when the lobby has never finished a game', async () => {
+    const client = makeClient(null)
+
+    await expect(getFinishedGameHumanRoster(client, 'lobby-1')).resolves.toEqual([])
   })
 })
