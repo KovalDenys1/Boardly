@@ -43,6 +43,12 @@ export function resolveTurnStartedAt(state: {
   return null
 }
 
+/** Where a seat's clock stood before a move, for GameEngine.holdTurnClock (#1007). */
+export interface TurnClockSnapshot {
+  currentPlayerIndex: number
+  turnStartedAtMs: number | null
+}
+
 export interface RestorableGameState<TGameData = unknown> extends GameState<TGameData> {
   config?: GameConfig;
 }
@@ -229,6 +235,25 @@ export abstract class GameEngine {
     }
 
     return true;
+  }
+
+  /**
+   * Put the seat's clock back where it stood before a timeout auto-action (#1007).
+   *
+   * makeMove stamps turnStartedAt on every accepted move, and an auto-action is
+   * a move like any other - so Yahtzee's auto-roll reset the very deadline the
+   * auto-score that follows it milliseconds later is measured against. The
+   * score came back 409 TURN_TIMER_ACTIVE, the client read that as "the turn
+   * already ended", and an abandoned turn took two full timers to end.
+   *
+   * The timeout firing is not the player acting, so it may not buy that seat
+   * another clock. When the auto-action did hand the turn on, the new seat's
+   * clock is the one that counts and this leaves it alone.
+   */
+  holdTurnClock(previous: TurnClockSnapshot): void {
+    if (previous.turnStartedAtMs === null) return;
+    if (this.state.currentPlayerIndex !== previous.currentPlayerIndex) return;
+    this.state.turnStartedAt = previous.turnStartedAtMs;
   }
 
   // Override this in subclasses to control when turn advances
