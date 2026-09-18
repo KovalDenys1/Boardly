@@ -26,6 +26,7 @@ import { getThemePageStyle } from '@/lib/lobby-themes'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
+import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
 
 interface AliasPageProps {
   code: string
@@ -86,6 +87,14 @@ function computePreviewTeams(players: GamePlayer[]): { team1: GamePlayer[]; team
 }
 
 // ─── Design constants ─────────────────────────────────────────────────────────
+
+/**
+ * How long to leave between resync attempts once the Alias turn clock has run out (#1009).
+ *
+ * Short, because the only thing being waited out is the gap between this
+ * device's clock and the server's, not a player who has gone missing.
+ */
+const TURN_TIMEOUT_RESYNC_INTERVAL_MS = 3_000
 
 const FONT_DISPLAY = 'var(--bd-font-display)'
 const FONT_MONO = "'JetBrains Mono', ui-monospace, monospace"
@@ -382,6 +391,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [guessInput, setGuessInput] = useState('')
   const guessesEndRef = useRef<HTMLDivElement | null>(null)
 
+  // Lives outside the timer effect on purpose: the effect is rebuilt whenever
+  // loadLobby is rebuilt, and a recovery rebuilt with it would forget how many
+  // times it had already asked and start again from nothing (#1009).
+  const turnTimeoutRecoveryRef = React.useRef(
+    createStuckTurnRecovery({ minIntervalMs: TURN_TIMEOUT_RESYNC_INTERVAL_MS })
+  )
+
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
@@ -661,14 +677,24 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     // down would hit the temporal dead zone and throw ReferenceError, killing
     // the page via the error boundary (#770).
     let id: ReturnType<typeof setInterval> | undefined
+    // #1009: one poll at zero was one chance. This client decides the deadline
+    // has passed with its own clock, and the server re-checks the same deadline
+    // against the same turnStartedAt with its own (lib/games/alias.ts), so a
+    // device running ahead gets applyTimeoutFallback refused and the state back
+    // unchanged - and the deps above are exactly what a refused fallback leaves
+    // untouched, so the effect cannot re-run and re-arm itself. Keep asking
+    // instead, throttled by the recovery the move-based games use (#989), and
+    // stop the countdown once it gives up.
     const tick = () => {
       const elapsed = Math.floor((Date.now() - turnStartedAt) / 1000)
       const r = Math.max(0, turnTimerSeconds - elapsed)
       setRemaining(r)
-      if (r === 0) {
-        if (id) clearInterval(id)
-        void loadLobby()
-      }
+      if (r > 0) return
+      // The server stamps turnStartedAt per turn, so it identifies the turn the
+      // attempts are being counted for: a new turn starts the count again.
+      const decision = turnTimeoutRecoveryRef.current.decide(String(turnStartedAt), Date.now())
+      if (decision === 'resync') void loadLobby()
+      else if (decision === 'give-up' && id) clearInterval(id)
     }
     tick()
     id = setInterval(tick, 1000)

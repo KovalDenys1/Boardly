@@ -19,12 +19,17 @@ const mockChannel: any = {
   subscribe: jest.fn(() => mockChannel),
 }
 
+// One object, not a fresh one per render: the page's loadLobby is a useCallback
+// on [code, router], and a router that changes identity every render re-runs
+// every effect that depends on it - including the one that loads the lobby.
+const mockRouter = {
+  replace: mockReplace,
+  push: mockPush,
+  prefetch: mockPrefetch,
+}
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: mockPush,
-    prefetch: mockPrefetch,
-  }),
+  useRouter: () => mockRouter,
 }))
 
 jest.mock('next-auth/react', () => ({
@@ -291,5 +296,118 @@ describe('AliasLobbyPage turn timer with an already-expired turn (#770)', () => 
     expect(sawTdzError).toBe(false)
 
     errorSpy.mockRestore()
+  })
+})
+
+// #1009 — the countdown used to destroy its own interval on the tick where it
+// reached zero, so the single lobby GET that followed was the only one this
+// client would ever make. The server re-checks the same deadline against the
+// same turnStartedAt with its own clock, so a device running ahead of it has
+// applyTimeoutFallback refused and gets back the state it already had: deps
+// unchanged, interval gone, ring parked at 0 for the rest of the turn.
+describe('AliasLobbyPage turn timeout resync (#1009)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  // Fixed for the whole test: a real server hands back the same turn start
+  // every time it refuses to move the turn on.
+  let stuckTurnStartedAt = 0
+
+  function buildStuckTurnResponse() {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    // Expired well past the 60s turnTimer, and every answer carries the same
+    // turnStartedAt: the server is refusing the fallback every time.
+    base.activeGame.state.data.turnStartedAt = stuckTurnStartedAt
+    base.activeGame.state.data.currentCard = { word: 'apple', taboo: [] }
+    base.activeGame.state.data.teams[0].playerIds = ['user-1', 'user-2']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    base.activeGame.state.players = [
+      { id: 'user-1', name: 'Alice' },
+      { id: 'user-2', name: 'Bob' },
+      { id: 'user-3', name: 'Carol' },
+      { id: 'user-4', name: 'Dave' },
+    ]
+    return base
+  }
+
+  // The heartbeat ping goes through the same mock, so count only lobby reads.
+  function lobbyGetCount() {
+    return mockFetchWithGuest.mock.calls.filter((call) =>
+      String(call[0]).includes('/api/lobby/ABCD?')
+    ).length
+  }
+
+  // The lobby fetch settles on a macrotask, and under the fake clock nothing
+  // runs one unless we hold on to the real timer to do it.
+  let realSetTimeout: typeof globalThis.setTimeout
+
+  async function flushPendingWork() {
+    await act(async () => {
+      await new Promise((resolve) => realSetTimeout(resolve, 0))
+    })
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => buildStuckTurnResponse(),
+    } as Response)
+    realSetTimeout = globalThis.setTimeout
+    jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] })
+    stuckTurnStartedAt = Date.now() - 10 * 60 * 1000
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('asks again when the first request leaves the turn where it was', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await flushPendingWork()
+    // user-1 describes for team 1, so the expired turn is on screen and the
+    // countdown effect has run its first tick.
+    expect(screen.getByTestId('alias-describer-screen')).toBeTruthy()
+
+    const afterMount = lobbyGetCount()
+
+    act(() => {
+      jest.advanceTimersByTime(10_000)
+    })
+    await flushPendingWork()
+
+    // The old code asked once more and then destroyed its own interval, so a
+    // single extra request is the failure this test exists to catch.
+    expect(lobbyGetCount() - afterMount).toBeGreaterThanOrEqual(2)
+  })
+
+  it('throttles the retries and then stops asking', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await flushPendingWork()
+    expect(screen.getByTestId('alias-describer-screen')).toBeTruthy()
+
+    // Ten seconds of a turn nothing will move: one request every three seconds,
+    // not one on every tick.
+    const afterMount = lobbyGetCount()
+    act(() => {
+      jest.advanceTimersByTime(10_000)
+    })
+    await flushPendingWork()
+    expect(lobbyGetCount() - afterMount).toBeLessThanOrEqual(4)
+
+    act(() => {
+      jest.advanceTimersByTime(60_000)
+    })
+    await flushPendingWork()
+    const afterGivingUp = lobbyGetCount()
+
+    act(() => {
+      jest.advanceTimersByTime(60_000)
+    })
+    await flushPendingWork()
+    expect(lobbyGetCount()).toBe(afterGivingUp)
   })
 })
