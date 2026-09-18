@@ -24,6 +24,8 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
+import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { SKETCH_PHASE_SECONDS } from '@/lib/games/sketch-and-guess-phases'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -34,6 +36,8 @@ interface SketchAndGuessGame {
     status: SketchLifecycleStatus
     players: Array<{ id: string; name: string }>
     data: SketchAndGuessGameData
+    /** When the current phase started; the engine stamps it on every phase change (#1022). */
+    lastMoveAt?: number
 }
 
 interface LobbyData {
@@ -74,6 +78,20 @@ function defaultSketchState(): SketchAndGuessGameData {
         finishedAt: null,
         isMvpScaffold: true,
     }
+}
+
+/** The phase deadline is measured from `lastMoveAt`, which arrives as a string or an object. */
+function readLastMoveAt(raw: unknown): number | undefined {
+    let parsed: unknown = raw
+    if (typeof raw === 'string') {
+        try {
+            parsed = JSON.parse(raw)
+        } catch {
+            return undefined
+        }
+    }
+    const value = (parsed as Record<string, unknown>)?.lastMoveAt
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
 function parseSketchState(state: unknown): SketchAndGuessGameData {
@@ -122,6 +140,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     const [loading, setLoading] = useState(true)
     const [lobby, setLobby] = useState<LobbyData | null>(null)
+    const stuckPhaseRecoveryRef = useRef(createStuckTurnRecovery())
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isReturningToWaiting, setIsReturningToWaiting] = useState(false)
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
@@ -234,6 +253,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             status: normalizedStatus,
             players,
             data: parseSketchState(activeGame.state),
+            lastMoveAt: readLastMoveAt(activeGame.state),
         }
 
         return {
@@ -325,6 +345,43 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         if (isGuest && !guestToken) return
         void loadLobbyData()
     }, [status, isGuest, guestToken, isSpectator, loadLobbyData])
+
+    // #1022: this game has a server-side timeout — it runs inside GET /api/lobby/[code]
+    // — but during play the page only fetches when a broadcast arrives, and a
+    // broadcast needs somebody to still be moving. Let the drawer close their tab and
+    // nothing asks: the phase clock runs out, `applyTimeoutFallback` never runs and the
+    // round sits there until a player reloads. So when the phase is overdue, ask.
+    // Throttled by the same recovery the other games use (#989): one request per ten
+    // seconds, six at most, then it stops rather than hammering a dead round.
+    useEffect(() => {
+        const game = lobby?.game
+        if (!game || game.status !== 'playing') return
+
+        const phaseStartedAt = game.lastMoveAt
+        if (typeof phaseStartedAt !== 'number') return
+
+        const phaseSeconds = SKETCH_PHASE_SECONDS[game.data.phase] ?? SKETCH_PHASE_SECONDS.drawing
+        const overdueAt = phaseStartedAt + phaseSeconds * 1000
+
+        const check = () => {
+            const now = Date.now()
+            if (now < overdueAt) return
+            const decision = stuckPhaseRecoveryRef.current.decide(
+                turnSignatureOf(game.data.currentRound, phaseStartedAt),
+                now
+            )
+            if (decision !== 'resync') return
+            clientLogger.warn('⏰ Sketch & Guess phase overdue, asking the server', {
+                code,
+                phase: game.data.phase,
+            })
+            void loadLobbyData()
+        }
+
+        check()
+        const interval = setInterval(check, 2_000)
+        return () => clearInterval(interval)
+    }, [lobby?.game, code, loadLobbyData])
 
     const handleGameUpdate = useCallback(async (_payload: unknown) => {
         await loadLobbyData()

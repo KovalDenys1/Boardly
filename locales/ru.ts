@@ -2327,6 +2327,7 @@ const ru = {
     botAddFailed: 'Не удалось добавить бота. Попробуйте снова.',
     botKicked: 'Бот удалён из лобби.',
     playerKicked: 'Игрок удалён из лобби.',
+    playerUnkicked: 'Теперь он может зайти снова.',
     playerWasKicked: '{{player}} был удалён из лобби.',
     youWereKicked: 'Хост удалил вас из лобби.',
     botAddedToStart: 'Добавлен {{botName}} ({{difficulty}}), чтобы можно было начать игру!',

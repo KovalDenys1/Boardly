@@ -2341,6 +2341,7 @@ const uk: Translation = {
     botAddFailed: 'Не вдалося додати бота. Спробуйте ще раз.',
     botKicked: 'Бота видалено з лобі.',
     playerKicked: 'Гравця видалено з лобі.',
+    playerUnkicked: 'Тепер він може приєднатися знову.',
     playerWasKicked: '{{player}} було видалено з лобі.',
     youWereKicked: 'Вас видалив з лобі хост.',
     botAddedToStart: 'Додано {{botName}} ({{difficulty}}), щоб можна було одразу почати гру!',

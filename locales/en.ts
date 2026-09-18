@@ -2339,6 +2339,7 @@ const en = {
     botAddFailed: 'Failed to add bot player. Please try again.',
     botKicked: 'Bot removed from lobby.',
     playerKicked: 'Player removed from lobby.',
+    playerUnkicked: 'They can join again now.',
     playerWasKicked: '{{player}} was removed from the lobby.',
     youWereKicked: 'You were removed from the lobby by the host.',
     botAddedToStart: 'Added {{botName}} ({{difficulty}}) so you can start playing!',

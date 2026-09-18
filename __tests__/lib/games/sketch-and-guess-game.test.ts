@@ -4,6 +4,7 @@ import {
   SketchAndGuessGameData,
   sanitizeSketchAndGuessStateForBroadcast,
 } from '@/lib/games/sketch-and-guess-game'
+import { SKETCH_PHASE_SECONDS } from '@/lib/games/sketch-and-guess-phases'
 
 const createMove = (playerId: string, type: string, data: Record<string, unknown>): Move => ({
   playerId,
@@ -103,7 +104,12 @@ describe('SketchAndGuessGame (MVP scaffold)', () => {
     expect(oneRoundGame.startGame()).toBe(true)
 
     const phaseStartAt = oneRoundGame.getState().lastMoveAt as number
-    const timeoutResult = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000)
+    // #1022: the phases have their own budgets now — 90 s drawing, 60 s guessing,
+    // 8 s reveal — so running all three out takes 158 s rather than the three
+    // equal 30 s windows this used to assume. The argument is ignored.
+    const elapsed =
+      (SKETCH_PHASE_SECONDS.drawing + SKETCH_PHASE_SECONDS.guessing + SKETCH_PHASE_SECONDS.reveal) * 1000
+    const timeoutResult = oneRoundGame.applyTimeoutFallback(undefined, phaseStartAt + elapsed)
     const data = getData(oneRoundGame)
 
     expect(timeoutResult.changed).toBe(true)
