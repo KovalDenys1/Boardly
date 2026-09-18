@@ -13,6 +13,7 @@ import {
 } from '@/lib/validation/telephone-doodle'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
+import { commitGameState, GameStateConflictError, type GameRowRevision } from '@/lib/game-state-lock'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 
 const limiter = rateLimit(rateLimitPresets.game)
@@ -124,6 +125,13 @@ export async function POST(
       game.players.map((entry) => [entry.userId, entry])
     )
 
+    // #993: a party round has every player submitting into the same phase at
+    // the same moment, so each write is conditioned on the revision it read and
+    // the loser is told nothing landed instead of replaying its own snapshot
+    // over the others. One request can persist twice (timeout fallback, then the
+    // move), so the lock moves on with the row.
+    let revision: GameRowRevision = { currentTurn: game.currentTurn, updatedAt: game.updatedAt }
+
     const persistTelephoneState = async (
       nextState: ReturnType<TelephoneDoodleGame['getState']>,
       actionType: string,
@@ -146,16 +154,21 @@ export async function POST(
         dbPlayers: game.players,
       })
 
-      await prisma.games.update({
-        where: { id: gameId },
+      const committed = await commitGameState({
+        gameId,
+        revision,
         data: {
           state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
           ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
-          updatedAt: new Date(),
         },
       })
+
+      if (!committed) {
+        throw new GameStateConflictError()
+      }
+      revision = committed
 
       if (terminalUpdate) {
         // The terminal diff supersedes the per-move score sync below — one
@@ -375,6 +388,13 @@ export async function POST(
         : undefined,
     })
   } catch (error) {
+    if (error instanceof GameStateConflictError) {
+      return NextResponse.json(
+        { error: 'Game state changed, please retry', code: 'STATE_CONFLICT' },
+        { status: 409 }
+      )
+    }
+
     log.error('Error processing Telephone Doodle action', error as Error)
     return NextResponse.json(
       { error: 'Failed to process action' },

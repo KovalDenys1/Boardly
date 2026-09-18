@@ -9,6 +9,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
+import { commitGameState, GameStateConflictError } from '@/lib/game-state-lock'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 
 const spyActionSchema = z.object({
@@ -136,17 +137,24 @@ export async function POST(
       dbPlayers: game.players,
     })
 
-    // Update game in database - CRITICAL: include status from engine
-    await prisma.games.update({
-      where: { id: gameId },
+    // Update game in database - CRITICAL: include status from engine.
+    // #993: ready-ups and votes all land in the same phase at the same moment,
+    // so this write has to lose to whoever committed first rather than replay
+    // its own snapshot over their submission.
+    const committed = await commitGameState({
+      gameId,
+      revision: { currentTurn: game.currentTurn, updatedAt: game.updatedAt },
       data: {
         state: toPersistedGameStateInput(updatedState),
         status: updatedState.status, // Sync status from game engine
-        updatedAt: new Date(),
         ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
         ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
       },
     })
+
+    if (!committed) {
+      throw new GameStateConflictError()
+    }
 
     if (terminalUpdate) {
       await Promise.all(terminalUpdate.changedPlayerUpdates.map((update) =>
@@ -206,6 +214,13 @@ export async function POST(
       state: broadcastState,
     })
   } catch (err) {
+    if (err instanceof GameStateConflictError) {
+      return NextResponse.json(
+        { error: 'Game state changed, please retry', code: 'STATE_CONFLICT' },
+        { status: 409 }
+      )
+    }
+
     log.error('Error processing Spy game action', err as Error)
     return NextResponse.json(
       { error: 'Failed to process action' },

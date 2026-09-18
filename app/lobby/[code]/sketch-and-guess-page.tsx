@@ -346,13 +346,26 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             setIsSubmitting(true)
             setError(null)
             try {
-                const res = await fetchWithGuest(`/api/game/${lobby.game.id}/sketch-and-guess-action`, {
+                const sendAction = () => fetchWithGuest(`/api/game/${lobby.game!.id}/sketch-and-guess-action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action, data }),
                 })
+
+                let res = await sendAction()
                 responseStatus = res.status
-                const payload = await res.json().catch(() => null)
+                let payload = await res.json().catch(() => null)
+
+                // Everyone guesses into the same phase at once, and the server
+                // writes under an optimistic lock on the game row, so the one
+                // who loses the race is told nothing was written. Sending again
+                // is the recovery: the route re-reads state every time (#993).
+                for (let attempt = 1; attempt < 3 && res.status === 409 && payload?.code === 'STATE_CONFLICT'; attempt += 1) {
+                    await new Promise((resolve) => setTimeout(resolve, 150 * attempt))
+                    res = await sendAction()
+                    responseStatus = res.status
+                    payload = await res.json().catch(() => null)
+                }
 
                 if (!res.ok) {
                     trackMoveSubmitApplied({
