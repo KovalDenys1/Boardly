@@ -35,4 +35,17 @@ describe('GamesClient', () => {
     expect(hrefs).not.toContain('/games/liars-party')
     expect(hrefs.some((href) => href?.startsWith('/games/'))).toBe(true)
   })
+
+  it('does not link a promoted game that has no page (#975)', () => {
+    // The href used to be guessed from the catalog id when the entry carried no
+    // route, so promoting Fake Artist or Telephone Doodle rendered an anchor to
+    // /games/fake-artist – a path nothing serves.
+    const games = getCatalogGames({ enabledExperimental: ['fake-artist', 'telephone-doodle'] })
+    render(<GamesClient games={games} />)
+
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+
+    expect(hrefs).not.toContain('/games/fake-artist')
+    expect(hrefs).not.toContain('/games/telephone-doodle')
+  })
 })

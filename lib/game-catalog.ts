@@ -613,7 +613,9 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     players: '4-10',
     difficultyKey: 'games.fake_artist.difficulty',
     availability: 'in-development',
-    route: '/games/fake-artist/lobbies',
+    // No `route`: nothing exists under app/games/fake-artist, so a route here
+    // is a link to a 404 the moment the flag promotes the entry (#975). The
+    // field goes back once the pages do.
     color: 'from-fuchsia-500 to-violet-600',
   },
   {
@@ -624,7 +626,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     players: '3-12',
     difficultyKey: 'games.telephone_doodle.difficulty',
     availability: 'in-development',
-    route: '/games/telephone-doodle/lobbies',
+    // No `route`, for the same reason as fake-artist above (#975).
     color: 'from-sky-500 to-indigo-600',
   },
   {

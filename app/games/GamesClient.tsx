@@ -61,7 +61,10 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
 
   // The catalog id is not always the detail path ('rps' lives at
   // /games/rock-paper-scissors), so the path comes from the lobbies route.
-  const detailHref = (game: Game) => (game.route ? game.route.replace(/\/lobbies$/, '') : `/games/${game.id}`)
+  // An entry without a route has no page, so there is nothing to link to:
+  // guessing /games/<id> is how a flag-promoted game with no page under
+  // app/games/ used to put a 404 in front of players (#975).
+  const detailHref = (game: Game) => (game.route ? game.route.replace(/\/lobbies$/, '') : null)
 
   return (
     <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto">
@@ -105,9 +108,11 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
         >
           {filteredGames.map(game => {
+            const href = detailHref(game)
             const isAvailable = game.status === 'available'
+            const isLinked = isAvailable && href !== null
             const cardClass = `bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
-              isAvailable ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
+              isLinked ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
             }`
             const card = (
               <>
@@ -145,7 +150,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
                 </div>
 
                 {/* CTA – a span, not a button, because it sits inside the card anchor */}
-                {isAvailable && (
+                {isLinked && (
                   <span className="bd-btn bd-btn-primary mt-1 justify-center">
                     {t('games.seeGame')}
                   </span>
@@ -155,8 +160,8 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
 
             // Available cards are real anchors so crawlers reach the detail
             // pages (#921); the whole card stays the click target.
-            return isAvailable ? (
-              <Link key={game.id} href={detailHref(game)} className={cardClass}>
+            return isLinked ? (
+              <Link key={game.id} href={href} className={cardClass}>
                 {card}
               </Link>
             ) : (
