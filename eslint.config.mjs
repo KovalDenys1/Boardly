@@ -18,6 +18,10 @@ export default defineConfig([
     },
   },
   globalIgnores([
+    // Agent worktrees are inside the repo, so eslint walks into them and lints a
+    // second copy of everything against the wrong tree — 147 of 208 warnings came
+    // from there once. Same reason `.claude/` is ignored in jest.config.js.
+    '.claude/**',
     '.next/**',
     'out/**',
     'build/**',
