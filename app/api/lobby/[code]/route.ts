@@ -505,14 +505,17 @@ export async function GET(
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'sketch_and_guess'
     ) {
-      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
-      if (turnTimerSeconds > 0) {
+      // #1022: no `turnTimerSeconds > 0` gate here, unlike the other four. This
+      // game owns its own per-phase clocks, so a lobby created without a turn
+      // timer still gets one — without that, a drawer who closed their tab
+      // stalled the round until somebody reloaded.
+      {
         try {
           const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const sketchGame = new SketchAndGuessGame(activeGame.id)
           sketchGame.restoreState(parsedState)
 
-          const r = sketchGame.applyTimeoutFallback(turnTimerSeconds)
+          const r = sketchGame.applyTimeoutFallback()
           if (r.changed) {
             await commitTimeoutFallback({
               activeGame,

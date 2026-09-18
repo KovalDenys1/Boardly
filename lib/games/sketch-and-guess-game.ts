@@ -1,7 +1,9 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
 import { resolveBoundedRuleNumber, getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
-export type SketchAndGuessPhase = 'drawing' | 'guessing' | 'reveal'
+import { SKETCH_PHASE_SECONDS, type SketchAndGuessPhase } from './sketch-and-guess-phases'
+
+export type { SketchAndGuessPhase }
 
 export interface SketchAndGuessGuess {
   playerId: string
@@ -284,7 +286,13 @@ export class SketchAndGuessGame extends GameEngine {
     return false
   }
 
-  applyTimeoutFallback(turnTimerSeconds: number, nowMs: number = Date.now()): SketchAndGuessTimeoutResolution {
+  /**
+   * `turnTimerSeconds` is accepted for the shared call shape the lobby route uses
+   * and deliberately ignored — see `SKETCH_PHASE_SECONDS`. Before #1022 this game had no
+   * clock a client could see at all, so a player who closed their tab stalled the
+   * round for everyone until somebody reloaded.
+   */
+  applyTimeoutFallback(_turnTimerSeconds?: number, nowMs: number = Date.now()): SketchAndGuessTimeoutResolution {
     const result: SketchAndGuessTimeoutResolution = {
       changed: false,
       timeoutWindowsConsumed: 0,
@@ -299,11 +307,6 @@ export class SketchAndGuessGame extends GameEngine {
       return result
     }
 
-    if (typeof turnTimerSeconds !== 'number' || !Number.isFinite(turnTimerSeconds) || turnTimerSeconds <= 0) {
-      return result
-    }
-
-    const timeoutMs = Math.max(1, Math.floor(turnTimerSeconds * 1000))
     let phaseStartedAt =
       typeof this.state.lastMoveAt === 'number' && Number.isFinite(this.state.lastMoveAt)
         ? this.state.lastMoveAt
@@ -314,14 +317,15 @@ export class SketchAndGuessGame extends GameEngine {
     }
 
     let safetyCounter = 0
-    while (
-      this.state.status === 'playing' &&
-      nowMs - phaseStartedAt >= timeoutMs &&
-      safetyCounter < SKETCH_TIMEOUT_FALLBACK_MAX_ITERATIONS
-    ) {
+    while (this.state.status === 'playing' && safetyCounter < SKETCH_TIMEOUT_FALLBACK_MAX_ITERATIONS) {
+      const data = this.state.data as SketchAndGuessGameData
+      // Each phase has its own budget, so the deadline is recomputed every lap
+      // rather than fixed before the loop (#1022).
+      const timeoutMs = Math.max(1, SKETCH_PHASE_SECONDS[data.phase] * 1000)
+      if (nowMs - phaseStartedAt < timeoutMs) break
+
       safetyCounter += 1
       const timeoutAt = phaseStartedAt + timeoutMs
-      const data = this.state.data as SketchAndGuessGameData
       const currentRound = this.getCurrentRound(data)
       if (!currentRound) {
         break
