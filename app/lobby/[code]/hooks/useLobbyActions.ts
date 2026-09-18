@@ -172,7 +172,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const [isJoiningLobby, setIsJoiningLobby] = useState(false)
 
   // Use ref to avoid circular dependencies
-  const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
+  const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
   const lobbySnapshotRequestRef = useRef<Promise<LobbySnapshotResult> | null>(null)
 
@@ -217,8 +217,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
   }, [setGame, setGameEngine, setError, setLobby])
 
-  const requestLobbySnapshot = useCallback(async (): Promise<LobbySnapshotResult> => {
-    if (lobbySnapshotRequestRef.current) {
+  const requestLobbySnapshot = useCallback(async (
+    options: { fresh?: boolean } = {}
+  ): Promise<LobbySnapshotResult> => {
+    // Sharing an in-flight request is only right for a caller that wants "the
+    // lobby, roughly now". A reconcile wants the truth as of *after* whatever
+    // it is reconciling, and the parked promise left before that happened, so
+    // it asks for its own (#996).
+    if (!options.fresh && lobbySnapshotRequestRef.current) {
       return await lobbySnapshotRequestRef.current
     }
 
@@ -264,10 +270,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   ])
 
   const fetchLobbySnapshot = useCallback(async (
-    options: { applyState?: boolean } = {}
+    options: { applyState?: boolean; fresh?: boolean } = {}
   ): Promise<LobbySnapshotResult> => {
     const applyState = options.applyState !== false
-    const snapshot = await requestLobbySnapshot()
+    const snapshot = await requestLobbySnapshot({ fresh: options.fresh === true })
 
     if (applyState) {
       await applyLobbySnapshot(snapshot)
@@ -279,9 +285,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     requestLobbySnapshot,
   ])
 
-  const loadLobby = useCallback(async () => {
+  const loadLobby = useCallback(async (options: { fresh?: boolean } = {}) => {
     try {
-      await fetchLobbySnapshot({ applyState: true })
+      await fetchLobbySnapshot({ applyState: true, fresh: options.fresh })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

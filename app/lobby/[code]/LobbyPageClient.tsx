@@ -544,7 +544,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [currentPlayerId, getCurrentUserId, playAmbientSound])
 
   // Create ref for loadLobby to avoid circular dependency
-  const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
+  const loadLobbyRef = React.useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback(async (payload: GameUpdatePayload) => {
@@ -940,7 +940,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [lobby, game, currentUserIdForMembership])
 
   const handleGameReset = useCallback(() => {
-    if (loadLobbyRef.current) void loadLobbyRef.current()
+    if (loadLobbyRef.current) void loadLobbyRef.current({ fresh: true })
   }, [])
 
   // Realtime connection hook - must be before useLobbyActions
@@ -959,7 +959,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onSpectatorCountChange,
     onStateSync: async () => {
       if (loadLobbyRef.current) {
-        await loadLobbyRef.current()
+        // Reconnect resync (#987): the gap is exactly when an in-flight
+        // snapshot is too old to answer with (#996).
+        await loadLobbyRef.current({ fresh: true })
       }
     },
     onGameReset: handleGameReset,
@@ -1035,7 +1037,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const reconcileWithServerSnapshot = React.useCallback(async () => {
     if (!loadLobbyRef.current) return
-    await loadLobbyRef.current()
+    // Every caller of this means "read the truth as of now": a bot turn that
+    // just committed, a move that just failed, a turn that looks stuck. A
+    // snapshot request that was already in flight cannot answer that (#996).
+    await loadLobbyRef.current({ fresh: true })
   }, [])
 
   useEffect(() => {

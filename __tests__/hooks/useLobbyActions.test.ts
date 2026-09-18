@@ -180,4 +180,47 @@ describe('useLobbyActions', () => {
       expect(setGame).toHaveBeenCalled()
     })
   })
+
+  describe('snapshot de-dupe (#996)', () => {
+    // The snapshot GET is the expensive one (presence sweep plus the per-game
+    // timeout fallbacks), so two lobby events arriving together still share it.
+    const makePendingFetch = () => {
+      const resolvers: Array<(value: unknown) => void> = []
+      ;(global.fetch as jest.Mock).mockImplementation(
+        () => new Promise((resolve) => { resolvers.push(resolve) })
+      )
+      return {
+        resolvers,
+        settle: () => resolvers.forEach((resolve) => resolve({ ok: true, status: 200, json: async () => ({}) })),
+      }
+    }
+
+    it('two ordinary refreshes share one request', async () => {
+      const pending = makePendingFetch()
+      const { result } = renderHook(() => useLobbyActions(makeProps()))
+
+      await act(async () => {
+        const first = result.current.loadLobby()
+        const second = result.current.loadLobby()
+        pending.settle()
+        await Promise.all([first, second])
+      })
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('a reconcile issues its own request instead of awaiting one that left earlier', async () => {
+      const pending = makePendingFetch()
+      const { result } = renderHook(() => useLobbyActions(makeProps()))
+
+      await act(async () => {
+        const inFlight = result.current.loadLobby()
+        const reconcile = result.current.loadLobby({ fresh: true })
+        pending.settle()
+        await Promise.all([inFlight, reconcile])
+      })
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+  })
 })
