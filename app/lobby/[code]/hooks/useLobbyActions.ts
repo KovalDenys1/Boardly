@@ -478,6 +478,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       const errorCode = (err as { code?: string })?.code
+      // A kick is permanent for this lobby (#1013), and this request may well be the
+      // auto-join firing on its own, so the reason has to read as a decision about them
+      // rather than as a failed attempt — and in their language, not the server's English.
+      if (errorCode === 'KICKED_FROM_LOBBY') {
+        setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
+        return
+      }
       // A running game is refused the same way a full lobby is: watch it if the lobby
       // allows spectators, otherwise read the reason and take the lobbies button that
       // JoinPrompt always shows.
@@ -562,6 +569,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       const errorCode = (err as { code?: string })?.code
+      // A kick is permanent for this lobby (#1013), and this request may well be the
+      // auto-join firing on its own, so the reason has to read as a decision about them
+      // rather than as a failed attempt — and in their language, not the server's English.
+      if (errorCode === 'KICKED_FROM_LOBBY') {
+        setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
+        return
+      }
       // A running game is refused the same way a full lobby is: watch it if the lobby
       // allows spectators, otherwise read the reason and take the lobbies button that
       // JoinPrompt always shows.

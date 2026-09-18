@@ -223,6 +223,7 @@ const no = {
       lobbyFull: 'Lobbyen er full',
       gameInProgress: 'Spillet har allerede startet',
       wrongPassword: 'Feil passord',
+      kickedCannotRejoin: 'Verten fjernet deg fra denne lobbyen',
       watchInstead: 'Se som tilskuer i stedet',
       createOwnLobby: 'Opprett din egen lobby'
     },

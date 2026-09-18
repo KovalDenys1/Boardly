@@ -298,6 +298,9 @@ export async function POST(
             placement: true,
             isWinner: true,
             scorecard: true,
+            // Read so the series auto-transition below can tell a seat that is still
+            // occupied from one whose player soft-left the finished game (#1011).
+            leftAt: true,
             user: {
               select: {
                 id: true,
@@ -336,6 +339,7 @@ export async function POST(
       placement: number | null
       isWinner: boolean
       scorecard: string | null
+      leftAt: Date | null
       user: {
         id: string
         username: string | null

@@ -72,7 +72,16 @@ export async function POST(
       return NextResponse.json({ error: 'Cannot kick yourself' }, { status: 400 })
     }
 
-    await prisma.players.delete({ where: { id: playerId } })
+    // Remember the decision, atomically with the removal. A bare delete is a kick the player
+    // walks straight back through: re-opening the invite link is enough, because the
+    // public-lobby auto-join fires on a fresh mount with no click from them (#1013).
+    await prisma.$transaction([
+      prisma.players.delete({ where: { id: playerId } }),
+      prisma.lobbies.update({
+        where: { id: lobby.id },
+        data: { kickedUserIds: { push: targetPlayer.userId } },
+      }),
+    ])
 
     const remainingCount = waitingGame.players.length - 1
 

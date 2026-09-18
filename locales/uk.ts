@@ -232,6 +232,7 @@ const uk: Translation = {
       lobbyFull: 'Лобі заповнене',
       gameInProgress: 'Гру вже розпочато',
       wrongPassword: 'Невірний пароль',
+      kickedCannotRejoin: 'Хост видалив вас із цього лобі',
       watchInstead: 'Дивитися як глядач',
       createOwnLobby: 'Створити власне лобі',
     },

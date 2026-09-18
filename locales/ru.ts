@@ -223,6 +223,7 @@ const ru = {
       lobbyFull: 'Лобби заполнено',
       gameInProgress: 'Игра уже началась',
       wrongPassword: 'Неверный пароль',
+      kickedCannotRejoin: 'Хост удалил вас из этого лобби',
       watchInstead: 'Смотреть как зритель',
       createOwnLobby: 'Создать своё лобби'
     },

@@ -612,6 +612,9 @@ export async function POST(
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
+      // kickedUserIds is omitted globally (lib/db.ts); this route is one of the two that
+      // has to honour it, so it asks for it back by name.
+      omit: { kickedUserIds: false },
       include: {
         games: {
           where: { status: { in: ['waiting', 'playing'] } },
@@ -621,6 +624,17 @@ export async function POST(
 
     if (!lobby) {
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
+    }
+
+    // A kick has to hold, and it is checked before the password so that knowing the password
+    // is not a way back in. Without this the host's only moderation tool was a row delete the
+    // player walked straight back through — re-opening the invite link was enough, because
+    // the public-lobby auto-join fires on a fresh mount with no click from them (#1013).
+    if (lobby.kickedUserIds.includes(userId)) {
+      return NextResponse.json(
+        { error: 'The host removed you from this lobby', code: 'KICKED_FROM_LOBBY' },
+        { status: 403 }
+      )
     }
 
     // Check password if set
@@ -685,7 +699,11 @@ export async function POST(
               // sitting in. Created bare, it outranks the finished game everyone is
               // still looking at, and they were all pulled into an empty board holding
               // only the newcomer (#1005). Same roster carry-over as "Return to lobby".
-              const carriedUserIds = await getFinishedGameHumanRoster(tx, lobby.id)
+              const carriedUserIds = await getFinishedGameHumanRoster(
+                tx,
+                lobby.id,
+                lobby.kickedUserIds
+              )
 
               const createdGame = await tx.games.create({
                 data: {

@@ -223,6 +223,7 @@ const en = {
       lobbyFull: 'Lobby is full',
       gameInProgress: 'The game has already started',
       wrongPassword: 'Wrong password',
+      kickedCannotRejoin: 'The host removed you from this lobby',
       watchInstead: 'Watch as spectator instead',
       createOwnLobby: 'Create your own lobby',
     },

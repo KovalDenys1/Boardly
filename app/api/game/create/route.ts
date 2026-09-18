@@ -148,10 +148,24 @@ export async function POST(request: NextRequest) {
     // Verify lobby exists and user is the creator
     const lobby = await prisma.lobbies.findUnique({
       where: { id: lobbyId },
+      // kickedUserIds is omitted globally (lib/db.ts). "Play again" rebuilds a roster from an
+      // older game, which can still hold somebody the host has since thrown out (#1013).
+      omit: { kickedUserIds: false },
       include: {
         games: {
+          // A lobby accumulates finished games. "Play again" has to rebuild the roster
+          // from the match everyone just played, not from whichever finished row Postgres
+          // happened to return first, which in practice was the oldest one (#1011).
+          orderBy: { updatedAt: 'desc' },
           include: {
             players: {
+              // Leaving a playing or finished game is a soft-leave: the Players row stays
+              // and only leftAt is stamped (lib/lobby-leave.ts). Copied unfiltered into the
+              // next game it seats somebody who is not there, so the turn reaches a player
+              // no client can time out and ~30s later the heartbeat sweep abandons the game
+              // everyone just started (#1011).
+              where: { leftAt: null },
+              orderBy: { position: 'asc' },
               include: {
                 user: {
                   include: {
@@ -186,9 +200,14 @@ export async function POST(request: NextRequest) {
     if (!waitingGame) {
       const finishedGame = lobby.games.find(g => g.status === 'finished')
       if (finishedGame) {
+        // The `where` on the include drops departures; the kick list drops anyone the host
+        // removed after that game was played, so neither comes back through "Play again".
+        const kickedUserIds = new Set(lobby.kickedUserIds)
+        const returningPlayers = finishedGame.players.filter((p) => !kickedUserIds.has(p.userId))
+
         log.info('Creating new waiting game from finished game', {
           finishedGameId: finishedGame.id,
-          playerCount: finishedGame.players?.length || 0
+          playerCount: returningPlayers.length
         })
 
         const finishedGameTargetRounds =
@@ -229,7 +248,7 @@ export async function POST(request: NextRequest) {
             gameType: persistedGameType,
             state: toPersistedGameStateInput(initialWaitingState),
             players: {
-              create: finishedGame.players.map((p, index) => ({
+              create: returningPlayers.map((p, index) => ({
                 userId: p.userId,
                 score: 0,
                 position: index, // Preserve player order
