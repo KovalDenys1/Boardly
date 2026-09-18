@@ -157,4 +157,49 @@ describe('useGameTimer race guards', () => {
     await advanceAndFlush(1000)
     expect(result.current.timeLeft).toBe(4)
   })
+
+  it('keeps counting the same turn when a draw or undo prompt bumps lastMoveAt (#998)', async () => {
+    const turnStartedAt = Date.now()
+    const onTimeout = jest.fn().mockResolvedValue(true)
+
+    const { result, rerender } = renderHook(
+      (props: Parameters<typeof useGameTimer>[0]) => useGameTimer(props),
+      {
+        initialProps: {
+          isMyTurn: true,
+          gameState: {
+            currentPlayerIndex: 0,
+            status: 'playing',
+            lastMoveAt: turnStartedAt,
+            turnStartedAt,
+          },
+          turnTimerLimit: 20,
+          onTimeout,
+        },
+      }
+    )
+
+    await act(async () => {
+      jest.setSystemTime(new Date(turnStartedAt + 18_000))
+      await Promise.resolve()
+    })
+    await advanceAndFlush(1000)
+    expect(result.current.timeLeft).toBe(1)
+
+    // Offer a draw and have it declined: two accepted moves, same seat, same turn.
+    rerender({
+      isMyTurn: true,
+      gameState: {
+        currentPlayerIndex: 0,
+        status: 'playing',
+        lastMoveAt: turnStartedAt + 19_000,
+        turnStartedAt,
+      },
+      turnTimerLimit: 20,
+      onTimeout,
+    })
+
+    await advanceAndFlush(1000)
+    expect(result.current.timeLeft).toBe(0)
+  })
 })

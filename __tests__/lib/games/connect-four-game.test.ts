@@ -320,6 +320,24 @@ describe('ConnectFourGame', () => {
     })
   })
 
+  describe('turn clock (#998)', () => {
+    it('does not hand the player on the clock a fresh turn timer for a request and a decline', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'drop', { col: 1 }))
+
+      const turnStartedAt = g.getState().turnStartedAt as number
+      expect(g.getState().currentPlayerIndex).toBe(0)
+
+      expect(g.makeMove(createMove('p1', 'request-undo', {}))).toBe(true)
+      expect(g.makeMove(createMove('p2', 'respond-undo', { accept: false }))).toBe(true)
+
+      expect(g.getState().currentPlayerIndex).toBe(0)
+      expect(g.getState().turnStartedAt).toBe(turnStartedAt)
+      expect(g.getState().lastMoveAt as number).toBeGreaterThanOrEqual(turnStartedAt)
+    })
+  })
+
   describe('getGameRules', () => {
     it('returns an array of 4 rule strings', () => {
       const g = makeReadyGame()

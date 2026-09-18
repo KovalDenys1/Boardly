@@ -391,6 +391,20 @@ export class TicTacToeGame extends GameEngine {
     return this.state.status === 'playing'
   }
 
+  protected restartsTurnClock(move: Move): boolean {
+    // Asking for a draw or an undo is not a turn. While it counted as one the
+    // player on the clock could top their own timer up with an offer whenever
+    // they were about to lose on time, and repeat it forever (#998). Accepting
+    // an undo is different: the board rewinds, so the turn genuinely restarts.
+    if (move.type === 'request-draw' || move.type === 'request-undo' || move.type === 'respond-draw') {
+      return false
+    }
+    if (move.type === 'respond-undo') {
+      return move.data.accept === true
+    }
+    return true
+  }
+
   getPendingRequest(): TicTacToePendingRequest | null {
     const gameData = this.state.data as TicTacToeGameData
     return gameData.pendingRequest ? { ...gameData.pendingRequest } : null

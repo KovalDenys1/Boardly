@@ -244,6 +244,16 @@ export class ConnectFourGame extends GameEngine {
     return move.type === 'drop' && this.state.status === 'playing'
   }
 
+  protected restartsTurnClock(move: Move): boolean {
+    // Asking for an undo is not a turn. While it counted as one the player on
+    // the clock could top their own timer up with a request whenever they were
+    // about to lose on time, and repeat it forever (#998). Accepting an undo is
+    // different: the board rewinds, so the turn genuinely restarts.
+    if (move.type === 'request-undo') return false
+    if (move.type === 'respond-undo') return move.data.accept === true
+    return true
+  }
+
   getPendingRequest(): ConnectFourPendingRequest | null {
     const gameData = this.state.data as ConnectFourGameData
     return gameData.pendingRequest ? { ...gameData.pendingRequest } : null

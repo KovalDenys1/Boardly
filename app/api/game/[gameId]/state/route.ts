@@ -424,7 +424,14 @@ export async function POST(
 
       const turnTimerMs = resolveTurnTimerMs(game.lobby?.turnTimer)
       if (turnTimerMs > 0) {
-        const lastMoveAtMs = resolveLastMoveAtMs(serverState?.lastMoveAt, game.lastMoveAt)
+        // The clock runs from the start of the turn, not from the last thing
+        // anybody did: a draw or undo prompt bumps lastMoveAt without handing
+        // the turn over, and measuring from that made the timeout look early
+        // and rejected a forfeit the player had genuinely earned (#998).
+        const lastMoveAtMs = resolveLastMoveAtMs(
+          serverState?.turnStartedAt ?? serverState?.lastMoveAt,
+          game.lastMoveAt
+        )
         if (lastMoveAtMs !== null) {
           const elapsedMs = Date.now() - lastMoveAtMs
           if (elapsedMs < turnTimerMs) {

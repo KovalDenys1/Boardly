@@ -945,5 +945,40 @@ describe('TicTacToeGame', () => {
 
             expect(game.isTheoreticalDraw()).toBe(true)
         })
+
+        it('does not hand the player on the clock a fresh turn timer for an offer and a decline (#998)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            const turnStartedAt = game.getState().turnStartedAt as number
+            expect(game.getState().currentPlayerIndex).toBe(0)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.makeMove({ playerId: 'player-o', type: 'respond-draw', data: { accept: false }, timestamp: new Date() })).toBe(true)
+
+            // Still player X's turn, and still the same clock they were about to lose on.
+            expect(game.getState().currentPlayerIndex).toBe(0)
+            expect(game.getState().turnStartedAt).toBe(turnStartedAt)
+            // Drop-off detection still sees the activity.
+            expect(game.getState().lastMoveAt as number).toBeGreaterThanOrEqual(turnStartedAt)
+        })
+
+        it('restarts the turn clock when an undo is accepted and the board rewinds (#998)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+
+            const turnStartedAt = game.getState().turnStartedAt as number
+            jest.useFakeTimers()
+            jest.advanceTimersByTime(5000)
+
+            try {
+                expect(game.makeMove({ playerId: 'player-x', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(true)
+                expect(game.makeMove({ playerId: 'player-o', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(true)
+
+                expect(game.getState().turnStartedAt as number).toBeGreaterThan(turnStartedAt)
+            } finally {
+                jest.useRealTimers()
+            }
+        })
     })
 })
