@@ -215,6 +215,58 @@ describe('JoinPrompt', () => {
       expect(screen.queryByRole('button', { name: /lobby\.joinSection\.createOwnLobby/ })).toBeNull()
     })
 
+    it('still offers to watch a game already in progress (#972)', () => {
+      // The visitor used to be redirected to the spectator page for this refusal, so
+      // dropping the redirect has to leave the offer somewhere they can take it.
+      const onWatchAsSpectator = jest.fn()
+
+      render(
+        <JoinPrompt
+          lobby={{ ...fullLobby, allowSpectators: true }}
+          viewerMode="authenticated"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="lobby.joinSection.gameInProgress"
+          errorCode="GAME_IN_PROGRESS"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onWatchAsSpectator={onWatchAsSpectator}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /lobby\.joinSection\.watchInstead/ }))
+
+      expect(onWatchAsSpectator).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not offer to watch a lobby that has spectators switched off', () => {
+      render(
+        <JoinPrompt
+          lobby={{ ...fullLobby, allowSpectators: false }}
+          viewerMode="authenticated"
+          guestName=""
+          setGuestName={jest.fn()}
+          password=""
+          setPassword={jest.fn()}
+          error="lobby.joinSection.lobbyFull"
+          errorCode="LOBBY_FULL"
+          isJoining={false}
+          onJoin={jest.fn()}
+          onJoinAsGuest={jest.fn()}
+          onLogin={jest.fn()}
+          onRegister={jest.fn()}
+          onWatchAsSpectator={jest.fn()}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: /lobby\.joinSection\.watchInstead/ })).toBeNull()
+    })
+
     it('translates the spectator fallback instead of hardcoding English', () => {
       render(
         <JoinPrompt

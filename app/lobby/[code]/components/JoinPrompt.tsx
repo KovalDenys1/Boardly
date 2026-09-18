@@ -35,6 +35,11 @@ interface JoinPromptProps {
   onJoinAsGuest: () => void
   onLogin: () => void
   onRegister: () => void
+  /**
+   * Offered beside the refusal when the lobby takes spectators (#966). The visitor
+   * used to be redirected to the spectator page before the refusal ever reached
+   * this component, so this branch could not be reached at all (#972).
+   */
   onWatchAsSpectator?: () => void
   /**
    * Offered when the lobby is full (#957), so an invite to a room with no free seat is
@@ -65,6 +70,10 @@ export default function JoinPrompt({
   const gameMeta = typeof lobby.gameType === 'string' ? getGameMetadata(lobby.gameType) : null
   const isAnonymousViewer = viewerMode === 'anonymous'
   const isLobbyFull = errorCode === 'LOBBY_FULL'
+  // A running game is refused for the same reason a full room is – there is no
+  // seat – and watching is the answer to both. Only the full room gets the
+  // "make your own" offer, because a game in progress ends and frees the seats.
+  const isRefused = isLobbyFull || errorCode === 'GAME_IN_PROGRESS'
   const requiresPassword = Boolean(lobby.isPrivate)
   const primaryAction = isAnonymousViewer ? onJoinAsGuest : onJoin
   const primaryActionLabel = isAnonymousViewer
@@ -170,7 +179,7 @@ export default function JoinPrompt({
               <Icon name="warning" size={18} />
               <p className="font-semibold text-sm">{error}</p>
             </div>
-            {isLobbyFull && lobby.allowSpectators && onWatchAsSpectator && (
+            {isRefused && lobby.allowSpectators && onWatchAsSpectator && (
               <button
                 type="button"
                 onClick={onWatchAsSpectator}
