@@ -467,6 +467,13 @@ export async function POST(
             }
           )
         } catch (dbError) {
+          // #1002: a lost optimistic-lock race is another instance doing the
+          // turn, not a database fault. It has to reach the 409 branch of the
+          // outer handler unchanged, or the client retries a turn that already
+          // happened and shows the player a failure toast for a move that landed.
+          if (dbError instanceof ConcurrentBotTurnError) {
+            throw dbError
+          }
           log.error('Critical: Failed to persist bot move state', dbError as Error, {
             gameId,
             botUserId,

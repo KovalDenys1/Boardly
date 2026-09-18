@@ -19,6 +19,7 @@ jest.mock('@/lib/fetch-with-guest', () => ({
 }))
 
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { showToast } from '@/lib/i18n-toast'
 
 const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
 
@@ -142,6 +143,41 @@ describe('useBotTurn watchdog', () => {
     await advanceAndFlush(0)
     await act(async () => { await Promise.resolve() })
 
+    expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+  })
+
+  it('reconciles and clears the tracked turn after the last retry fails', async () => {
+    // #1002: this was the only failure path that neither reconciled nor cleared
+    // the refs, so isSameTurn stayed true and the monitor never fired again —
+    // the board sat on the bot's turn until a broadcast happened to land.
+    mockFetchWithGuest.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Internal server error', code: 'BOT_TURN_FAILED' }),
+    } as any)
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const gameEngine = makeBotEngine() as any
+
+    renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        reconcileWithServerSnapshot,
+      })
+    )
+
+    // The first attempt plus MAX_BOT_RETRIES (2) retries, each on its own delay.
+    await advanceAndFlush(0)
+    await act(async () => { await Promise.resolve() })
+    await advanceAndFlush(RETRY_DELAY_MS + 100)
+    await act(async () => { await Promise.resolve() })
+    await advanceAndFlush(RETRY_DELAY_MS + 100)
+    await act(async () => { await Promise.resolve() })
+
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(3)
+    expect(showToast.error).toHaveBeenCalledWith('toast.botMoveFailed')
     expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
   })
 

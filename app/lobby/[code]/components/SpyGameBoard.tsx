@@ -266,7 +266,7 @@ export default function SpyGameBoard({
       let moveMetricTracked = false
 
       try {
-        const res = await fetch(`/api/game/${gameId}/spy-action`, {
+        const sendAction = () => fetch(`/api/game/${gameId}/spy-action`, {
           method: 'POST',
           headers: getAuthHeaders(isGuest, guestId, guestName, guestToken),
           body: JSON.stringify({
@@ -274,11 +274,24 @@ export default function SpyGameBoard({
             data: actionData,
           }),
         })
+
+        let res = await sendAction()
         responseStatus = res.status
-        const payload = await res.json()
+        let payload = await res.json().catch(() => null)
+
+        // Ready-ups and votes are submitted by the whole table at once, and the
+        // server writes under an optimistic lock on the game row, so the one who
+        // loses the race is told nothing was written. Sending again is the
+        // recovery: the route re-reads state on every request (#993).
+        for (let attempt = 1; attempt < 3 && res.status === 409 && payload?.code === 'STATE_CONFLICT'; attempt += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 150 * attempt))
+          res = await sendAction()
+          responseStatus = res.status
+          payload = await res.json().catch(() => null)
+        }
 
         if (!res.ok) {
-          throw new Error(payload.error || 'Failed to submit action')
+          throw new Error(payload?.error || 'Failed to submit action')
         }
 
         await refreshAfterAction()
