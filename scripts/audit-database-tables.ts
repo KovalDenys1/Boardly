@@ -1,14 +1,6 @@
 #!/usr/bin/env tsx
 import { prisma } from '../lib/db'
-
-type PolicyMode = 'required' | 'blocked-direct'
-
-type ExpectedTable = {
-  name: string
-  domain: string
-  purpose: string
-  policyMode: PolicyMode
-}
+import { AUTH_TIMESTAMP_TABLES, EXPECTED_TABLES } from './expected-database-tables'
 
 type CatalogRow = {
   tableName: string
@@ -32,155 +24,6 @@ type Issue = {
   severity: 'error' | 'warning' | 'info'
   message: string
 }
-
-const expectedTables: ExpectedTable[] = [
-  {
-    name: '_prisma_migrations',
-    domain: 'schema',
-    purpose: 'Prisma migration history',
-    policyMode: 'required',
-  },
-  {
-    name: 'Users',
-    domain: 'identity',
-    purpose: 'registered and guest identities, profile flags, roles',
-    policyMode: 'required',
-  },
-  {
-    name: 'Accounts',
-    domain: 'auth',
-    purpose: 'NextAuth provider accounts',
-    policyMode: 'required',
-  },
-  {
-    name: 'Sessions',
-    domain: 'auth',
-    purpose: 'NextAuth sessions',
-    policyMode: 'required',
-  },
-  {
-    name: 'VerificationTokens',
-    domain: 'auth',
-    purpose: 'NextAuth verification tokens',
-    policyMode: 'required',
-  },
-  {
-    name: 'PasswordResetTokens',
-    domain: 'auth',
-    purpose: 'password reset tokens',
-    policyMode: 'required',
-  },
-  {
-    name: 'EmailVerificationTokens',
-    domain: 'auth',
-    purpose: 'email verification tokens',
-    policyMode: 'required',
-  },
-  {
-    name: 'AccountPreferences',
-    domain: 'identity',
-    purpose: 'profile privacy, online status, onboarding markers',
-    policyMode: 'blocked-direct',
-  },
-  {
-    name: 'Bots',
-    domain: 'gameplay',
-    purpose: 'bot player metadata',
-    policyMode: 'required',
-  },
-  {
-    name: 'Lobbies',
-    domain: 'gameplay',
-    purpose: 'room setup, creator, spectator settings',
-    policyMode: 'required',
-  },
-  {
-    name: 'LobbyInvites',
-    domain: 'social',
-    purpose: 'invite funnel and conversion analytics',
-    policyMode: 'required',
-  },
-  {
-    name: 'Games',
-    domain: 'gameplay',
-    purpose: 'authoritative game state, lifecycle, match timing',
-    policyMode: 'required',
-  },
-  {
-    name: 'GameStateSnapshots',
-    domain: 'gameplay',
-    purpose: 'compressed replay snapshots',
-    policyMode: 'required',
-  },
-  {
-    name: 'Players',
-    domain: 'gameplay',
-    purpose: 'game participants, scores, placements',
-    policyMode: 'required',
-  },
-  {
-    name: 'FriendRequests',
-    domain: 'social',
-    purpose: 'pending and resolved friend requests',
-    policyMode: 'required',
-  },
-  {
-    name: 'Friendships',
-    domain: 'social',
-    purpose: 'accepted friend graph',
-    policyMode: 'required',
-  },
-  {
-    name: 'SpyLocations',
-    domain: 'content',
-    purpose: 'Guess the Spy location and role content',
-    policyMode: 'required',
-  },
-  {
-    name: 'OperationalEvents',
-    domain: 'operations',
-    purpose: 'reliability telemetry and KPI source events',
-    policyMode: 'required',
-  },
-  {
-    name: 'OperationalAlertStates',
-    domain: 'operations',
-    purpose: 'alert dedupe and open/resolved state',
-    policyMode: 'required',
-  },
-  {
-    name: 'NotificationPreferences',
-    domain: 'notifications',
-    purpose: 'user notification delivery preferences',
-    policyMode: 'required',
-  },
-  {
-    name: 'Notifications',
-    domain: 'notifications',
-    purpose: 'email and in-app notification queue/history',
-    policyMode: 'required',
-  },
-  {
-    name: 'AdminAuditLogs',
-    domain: 'admin',
-    purpose: 'admin action audit trail',
-    policyMode: 'required',
-  },
-  {
-    name: 'Feedback',
-    domain: 'product',
-    purpose: 'user feedback and issue reports',
-    policyMode: 'blocked-direct',
-  },
-]
-
-const authTimestampTables = new Set([
-  'Accounts',
-  'Sessions',
-  'VerificationTokens',
-  'PasswordResetTokens',
-  'EmailVerificationTokens',
-])
 
 const args = new Set(process.argv.slice(2))
 const jsonOnly = args.has('--json')
@@ -309,7 +152,7 @@ async function getExactRowCount(tableName: string): Promise<number> {
 }
 
 async function main() {
-  const expectedByName = new Map(expectedTables.map((table) => [table.name, table]))
+  const expectedByName = new Map(EXPECTED_TABLES.map((table) => [table.name, table]))
   const catalogRows = await getCatalogRows()
   const timestampColumns = await getTimestampColumns()
   const catalogByName = new Map(catalogRows.map((table) => [table.tableName, table]))
@@ -323,7 +166,7 @@ async function main() {
 
   const issues: Issue[] = []
 
-  for (const table of expectedTables) {
+  for (const table of EXPECTED_TABLES) {
     const row = catalogByName.get(table.name)
 
     if (!row) {
@@ -364,7 +207,7 @@ async function main() {
     }
 
     issues.push({
-      severity: authTimestampTables.has(column.tableName) ? 'info' : 'warning',
+      severity: AUTH_TIMESTAMP_TABLES.has(column.tableName) ? 'info' : 'warning',
       message: `${column.tableName}.${column.columnName} uses TIMESTAMP WITHOUT TIME ZONE`,
     })
   }
@@ -393,7 +236,7 @@ async function main() {
     exactCounts,
     strict,
     tableCount: rows.length,
-    expectedTableCount: expectedTables.length,
+    expectedTableCount: EXPECTED_TABLES.length,
     issues,
     tables: rows,
   }
