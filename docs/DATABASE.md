@@ -31,8 +31,10 @@ stay on production, so nothing the page subscribes to ever fires.
 
 `SUPABASE_SERVICE_ROLE_KEY` is the one value no tool can read back — not the Supabase MCP,
 not `vercel env pull`. It has to be copied from
-`https://app.supabase.com/project/inmvbxfflqeblynpktay/settings/api` by hand. Until it is,
-realtime broadcast and avatar upload fail locally; everything Prisma does works.
+`https://app.supabase.com/project/inmvbxfflqeblynpktay/settings/api` by hand; until it is,
+realtime broadcast and avatar upload fail locally while everything Prisma does works. Done
+as of 2026-09-20: the key in `.env.local` now decodes (JWT payload, `ref` claim) to
+`inmvbxfflqeblynpktay`, matching the other four variables.
 
 The production values are parked in `.env.boardly-prod.local` (mode 600, gitignored) so
 switching back is a copy, not a hunt.
