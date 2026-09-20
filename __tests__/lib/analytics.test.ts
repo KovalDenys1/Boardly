@@ -6,6 +6,7 @@ import {
   trackInviteOpened,
   trackLobbyLeaveRedirect,
   trackMoveSubmitApplied,
+  trackPushPrompt,
   trackStartAloneAutoBotResult,
   trackSocketAuthRefreshFailed,
   trackSocketReconnectFailedFinal,
@@ -203,5 +204,35 @@ describe('Discord CTA (#982)', () => {
     expect(toAnalyticsGameType('chess')).toBeUndefined()
     expect(toAnalyticsGameType(undefined)).toBeUndefined()
     expect(toAnalyticsGameType(7)).toBeUndefined()
+  })
+})
+
+describe('push opt-in prompt (#984)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('carries the action, the surface and the game', () => {
+    trackPushPrompt('shown', 'after_game', 'yahtzee')
+    trackPushPrompt('accepted', 'after_game', 'yahtzee')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'push_prompt', {
+      action: 'shown',
+      source: 'after_game',
+      game_type: 'yahtzee',
+    })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'push_prompt', {
+      action: 'accepted',
+      source: 'after_game',
+      game_type: 'yahtzee',
+    })
+  })
+
+  it('keeps a browser-level denial distinct from a dismissal - only one of them may be re-asked', () => {
+    trackPushPrompt('denied', 'profile')
+    trackPushPrompt('dismissed', 'profile')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'push_prompt', { action: 'denied', source: 'profile' })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'push_prompt', { action: 'dismissed', source: 'profile' })
   })
 })

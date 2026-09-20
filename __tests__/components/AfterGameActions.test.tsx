@@ -13,6 +13,12 @@ jest.mock('@/components/GuestConversionNudge', () => {
   }
 })
 
+jest.mock('@/components/PushOptInNudge', () => {
+  return function MockPushNudge() {
+    return <div data-testid="push-nudge" />
+  }
+})
+
 const mockShare = jest.fn()
 jest.mock('@/hooks/useInviteShare', () => ({
   useInviteShare: () => mockShare,
@@ -73,10 +79,25 @@ describe('AfterGameActions (#982)', () => {
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
   })
 
+  it('offers the push ask to a registered player and never to a guest (#984)', () => {
+    const { unmount } = render(
+      <AfterGameActions gameType="alias" isRegistered registerUrl="/auth/register" />
+    )
+    expect(screen.getByTestId('push-nudge')).toBeTruthy()
+    expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    unmount()
+
+    // A guest has no account to hang a subscription on, so the two boxes can never coexist.
+    render(<AfterGameActions gameType="alias" isGuest registerUrl="/auth/register" />)
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
+    expect(screen.getByTestId('guest-nudge')).toBeTruthy()
+  })
+
   it('gives a spectator (neither guest nor registered) share and Discord only', () => {
     render(<AfterGameActions gameType="guess_the_spy" inviteCode="AB12" registerUrl="/auth/register" />)
     expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
   })
 })

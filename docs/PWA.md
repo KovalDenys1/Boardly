@@ -59,9 +59,15 @@ hand when the brand changes.
   `/api/cron/game-ops` and directly from the friend, invite and achievement paths, not from
   `/api/cron/process-notifications`, which runs the email queue – and need
   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+- There are two opt-in surfaces: the checkbox at `/profile → Settings → Notifications`, and
+  the ask a registered player gets on the end screen after a finished game
+  (`components/PushOptInNudge.tsx`, in slot 3 of `AfterGameActions`). The end-screen ask
+  hides itself when the VAPID key is absent, when the browser has no `PushManager`
+  (iOS Safari outside an installed PWA), when permission is already denied, when this
+  device already has a subscription, or within 30 days of a dismissal.
 - All three VAPID variables must be set together. The public key is inlined at build time,
-  so a deploy missing it disables the opt-in in the profile instead of granting a
+  so a deploy missing it disables both opt-in surfaces instead of granting a
   notification permission that can never produce a subscription. `sendPushNotification`
   also returns before reading any subscription when a user's `pushNotifications`
   preference is false, and that column defaults to false – subscribing is not enough on
-  its own, the preference is what the profile toggle writes.
+  its own, so both surfaces write the preference as well as the subscription.

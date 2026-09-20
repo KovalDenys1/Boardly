@@ -599,6 +599,36 @@ export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): vo
   clientLogger.log('[analytics] Signup prompt', action)
 }
 
+/** Where the push opt-in was offered. The profile toggle is the old surface, kept for comparison. */
+export type PushPromptSource = 'after_game' | 'profile'
+
+/**
+ * The push opt-in ask (#984).
+ *
+ * Unlike the Discord line, `shown` is worth storing here: the ask hides itself for anyone
+ * already subscribed, already denied, on a build with no VAPID key, or within 30 days of a
+ * dismissal, so `shown` is not "a game ended" – it is "somebody was actually asked". Without
+ * it `accepted` has no denominator and there is no way to tell a bad prompt from a prompt
+ * nobody ever saw, which is exactly how the profile checkbox stayed at zero subscriptions
+ * for months without anyone noticing (#983).
+ *
+ * `denied` is separate from `dismissed` on purpose: a dismissal is ours to re-ask after 30
+ * days, a browser-level denial is permanent for that origin and must never be retried.
+ */
+export function trackPushPrompt(
+  action: 'shown' | 'accepted' | 'dismissed' | 'denied',
+  source: PushPromptSource,
+  gameType?: GameType
+): void {
+  const payload = {
+    source,
+    ...(gameType ? { game_type: gameType } : {}),
+  } satisfies Record<string, AnalyticsPropertyValue>
+  track('push_prompt', { action, ...payload })
+  emitOperationalEvent(`push_prompt_${action}`, payload)
+  clientLogger.log('[analytics] Push prompt', action, payload)
+}
+
 /** Where an invite link was shared from; the lobby code goes in the payload so it joins. */
 export type InviteCopySource =
   | 'lobby_header_button'
