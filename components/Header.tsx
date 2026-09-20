@@ -88,7 +88,6 @@ export default function Header() {
                   fontFamily: 'var(--bd-font-display)',
                   fontWeight: 800,
                   fontSize: 20,
-                  transform: 'rotate(-6deg)',
                   boxShadow: '3px 3px 0 var(--bd-coral)',
                   flexShrink: 0,
                 }}

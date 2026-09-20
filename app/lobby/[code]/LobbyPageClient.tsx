@@ -2046,6 +2046,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
             isGuest={isGuest}
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+            lobbyCode={code}
+            isRegistered={status === 'authenticated' && !isGuest}
           />
         </div>
       ) : !isGameStarted ? (
@@ -2217,6 +2219,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+              lobbyCode={code}
+              isRegistered={status === 'authenticated' && !isGuest}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">

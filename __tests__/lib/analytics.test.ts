@@ -1,5 +1,7 @@
 import {
   MOVE_APPLY_TARGET_MS,
+  toAnalyticsGameType,
+  trackDiscordCta,
   trackInviteCopied,
   trackInviteOpened,
   trackLobbyLeaveRedirect,
@@ -162,5 +164,44 @@ describe('invite loop events (#920)', () => {
       lobby_code: 'AB12',
       referrer_host: 'discord.com',
     })
+  })
+})
+
+describe('Discord CTA (#982)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('names the surface and the game it was offered on', () => {
+    trackDiscordCta('after_game', 'yahtzee')
+    trackDiscordCta('waiting_room', 'guess_the_spy')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'feature_used', {
+      feature: 'discord_cta',
+      source: 'after_game',
+      game_type: 'yahtzee',
+    })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'feature_used', {
+      feature: 'discord_cta',
+      source: 'waiting_room',
+      game_type: 'guess_the_spy',
+    })
+  })
+
+  it('omits game_type rather than sending an empty one', () => {
+    trackDiscordCta('waiting_room')
+
+    expect(mockTrack).toHaveBeenCalledWith('feature_used', {
+      feature: 'discord_cta',
+      source: 'waiting_room',
+    })
+  })
+
+  it('narrows a loose lobby.gameType and drops anything analytics does not know', () => {
+    expect(toAnalyticsGameType('connect_four')).toBe('connect_four')
+    expect(toAnalyticsGameType('sketch_and_guess')).toBe('sketch_and_guess')
+    expect(toAnalyticsGameType('chess')).toBeUndefined()
+    expect(toAnalyticsGameType(undefined)).toBeUndefined()
+    expect(toAnalyticsGameType(7)).toBeUndefined()
   })
 })

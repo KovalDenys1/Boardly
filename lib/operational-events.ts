@@ -23,6 +23,9 @@ export const OPERATIONAL_EVENT_NAMES = [
   // attribution that fired them.
   'invite_copied',
   'invite_opened',
+  // The return channel (#982). `source` says which moment of need carried the invite —
+  // the after-game block or a lone host's waiting room.
+  'discord_cta_clicked',
 ] as const
 
 /**
@@ -181,6 +184,7 @@ export function buildOperationalEventRecord(input: {
     case 'checkout_started':
     case 'invite_copied':
     case 'invite_opened':
+    case 'discord_cta_clicked':
       // `source` carries the button or surface; the lobby code stays in the payload.
       return {
         eventName,

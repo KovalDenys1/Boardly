@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
@@ -10,7 +10,9 @@ import { sounds } from '@/lib/sounds'
 import { useInviteShare } from '@/hooks/useInviteShare'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
+import WaitingRoomDiscordHint from './WaitingRoomDiscordHint'
 import WaitingRoomGuide, { type KickedPlayer } from './WaitingRoomGuide'
+import { toAnalyticsGameType } from '@/lib/analytics'
 
 const BOT_DIFFICULTY_ICON: Record<BotDifficulty, IconName> = {
   easy: 'bot-easy',
@@ -63,6 +65,9 @@ export default function WaitingRoom({
   const lobbyTheme = getLobbyTheme(lobby?.theme)
   const hasCustomTheme = lobby?.theme && lobby.theme !== 'default'
   const showTryBotGames = missingPlayers > 0 && !!game?.createdAt && !hasBotSupport(lobby?.gameType)
+  // The one case the Discord line is for: nobody else has arrived and it is the host's
+  // lobby to fill. It disappears by itself the moment a second player joins (#982).
+  const isHostAlone = playerCount === 1 && !!lobby?.creatorId && getCurrentUserId() === lobby.creatorId
 
   // A column that is at least as tall as its scroll area, so the guide below the
   // roster can take the slack instead of leaving it empty (#899).
@@ -183,106 +188,117 @@ export default function WaitingRoom({
         const showActions = showBotAction || showInviteAction || showShareAction
 
         return (
-          <div
-            key={`empty-${i}`}
-            className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
-              isPulse
-                ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-deep'
-                : 'border-bd-line bg-bd-bg2 text-bd-ink-muted'
-            }`}>
-              {playerCount + i + 1}
-            </div>
+          <Fragment key={`empty-${i}`}>
+            <div
+              className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
+            >
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
+                isPulse
+                  ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-deep'
+                  : 'border-bd-line bg-bd-bg2 text-bd-ink-muted'
+              }`}>
+                {playerCount + i + 1}
+              </div>
 
-            {showActions && pickingBotDifficulty ? (
-              /* Bot difficulty choice takes over the row — picking adds the bot */
-              <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                {BOT_DIFFICULTIES.map((difficulty) => (
+              {showActions && pickingBotDifficulty ? (
+                /* Bot difficulty choice takes over the row — picking adds the bot */
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  {BOT_DIFFICULTIES.map((difficulty) => (
+                    <button
+                      key={difficulty}
+                      type="button"
+                      disabled={addingBot}
+                      onClick={async () => {
+                        sounds.play('click')
+                        setAddingBot(true)
+                        try {
+                          await onAddBot?.(difficulty)
+                        } finally {
+                          setAddingBot(false)
+                          setPickingBotDifficulty(false)
+                        }
+                      }}
+                      className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink disabled:opacity-50"
+                    >
+                      <Icon name={BOT_DIFFICULTY_ICON[difficulty]} size={16} />
+                      <span className="truncate">
+                        {t(`game.ui.botDifficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` as Parameters<typeof t>[0])}
+                      </span>
+                    </button>
+                  ))}
                   <button
-                    key={difficulty}
                     type="button"
                     disabled={addingBot}
-                    onClick={async () => {
-                      sounds.play('click')
-                      setAddingBot(true)
-                      try {
-                        await onAddBot?.(difficulty)
-                      } finally {
-                        setAddingBot(false)
-                        setPickingBotDifficulty(false)
-                      }
-                    }}
-                    className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink disabled:opacity-50"
+                    onClick={() => setPickingBotDifficulty(false)}
+                    aria-label={t('common.cancel')}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-coral/15 hover:text-bd-coral-deep disabled:opacity-50"
                   >
-                    <Icon name={BOT_DIFFICULTY_ICON[difficulty]} size={16} />
-                    <span className="truncate">
-                      {t(`game.ui.botDifficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` as Parameters<typeof t>[0])}
-                    </span>
+                    <Icon name="close" size={14} />
                   </button>
-                ))}
-                <button
-                  type="button"
-                  disabled={addingBot}
-                  onClick={() => setPickingBotDifficulty(false)}
-                  aria-label={t('common.cancel')}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-coral/15 hover:text-bd-coral-deep disabled:opacity-50"
-                >
-                  <Icon name="close" size={14} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <span className={`min-w-0 flex-1 truncate text-sm italic ${isRequired ? 'text-bd-ink-soft' : 'text-bd-ink-muted'}`}>
-                  {isRequired ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
-                </span>
-                {showActions && (
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {showInviteAction && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sounds.play('click')
-                          onInviteFriends?.()
-                        }}
-                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
-                      >
-                        <Icon name="mail" size={16} />
-                        <span>{t('game.ui.slotInvite')}</span>
-                      </button>
-                    )}
-                    {showShareAction && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sounds.play('click')
-                          void shareInvite('waiting_room_slot')
-                        }}
-                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
-                      >
-                        <Icon name="link" size={16} />
-                        <span>{t('game.ui.slotInvite')}</span>
-                      </button>
-                    )}
-                    {showBotAction && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sounds.play('click')
-                          setPickingBotDifficulty(true)
-                        }}
-                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
-                      >
-                        <Icon name="robot" size={16} />
-                        <span>{t('game.ui.slotAddBot')}</span>
-                        <span aria-hidden className="text-bd-ink-muted">▾</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
+                </div>
+              ) : (
+                <>
+                  <span className={`min-w-0 flex-1 truncate text-sm italic ${isRequired ? 'text-bd-ink-soft' : 'text-bd-ink-muted'}`}>
+                    {isRequired ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
+                  </span>
+                  {showActions && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {showInviteAction && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.play('click')
+                            onInviteFriends?.()
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                        >
+                          <Icon name="mail" size={16} />
+                          <span>{t('game.ui.slotInvite')}</span>
+                        </button>
+                      )}
+                      {showShareAction && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.play('click')
+                            void shareInvite('waiting_room_slot')
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                        >
+                          <Icon name="link" size={16} />
+                          <span>{t('game.ui.slotInvite')}</span>
+                        </button>
+                      )}
+                      {showBotAction && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.play('click')
+                            setPickingBotDifficulty(true)
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                        >
+                          <Icon name="robot" size={16} />
+                          <span>{t('game.ui.slotAddBot')}</span>
+                          <span aria-hidden className="text-bd-ink-muted">▾</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {/*
+              A sibling under the first empty slot rather than a third control inside it:
+              that row already cannot fit three at 320 px (see its comment above) (#982).
+            */}
+            {i === 0 && isHostAlone && !!game?.createdAt && (
+              <WaitingRoomDiscordHint
+                waitingSinceMs={new Date(game.createdAt).getTime()}
+                gameType={toAnalyticsGameType(lobby?.gameType)}
+              />
             )}
-          </div>
+          </Fragment>
         )
       })}
 

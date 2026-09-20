@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { toAnalyticsGameType } from '@/lib/analytics-game-types'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
@@ -97,25 +98,14 @@ interface LobbySnapshotResult {
   game: Game | null
 }
 
-const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
-  'yahtzee',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-  'guess_the_spy',
-  'memory',
-  'alias',
-  'liars_party',
-])
-
+// This copy was two games behind the union – `connect_four` and `sketch_and_guess`
+// both fell through to the fallback, so every Connect Four lobby action was reported
+// as Yahtzee. Narrow through the helper next to the union instead (#1044).
 function normalizeAnalyticsGameType(
   value: unknown,
   fallback: AnalyticsGameType = DEFAULT_GAME_TYPE,
 ): AnalyticsGameType {
-  if (typeof value === 'string' && ANALYTICS_GAME_TYPES.has(value as AnalyticsGameType)) {
-    return value as AnalyticsGameType
-  }
-
-  return fallback
+  return toAnalyticsGameType(value) ?? fallback
 }
 
 function readFiniteNumber(value: unknown, fallback: number): number {

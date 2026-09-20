@@ -2,9 +2,9 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { Icon } from '@/components/icons'
-import { useInviteShare } from '@/hooks/useInviteShare'
+import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import type { AnalyticsGameType } from '@/lib/analytics'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -48,6 +48,10 @@ export interface GameResultOverlayProps {
    * `?via=invite` link the lobby header does. Omit it and the button is not rendered.
    */
   inviteCode?: string
+  /** Tags the after-game block's Discord click, so the channel can be read per game (#982). */
+  gameType: AnalyticsGameType
+  /** `status === 'authenticated' && !isGuest`, decided by the caller — gates the push ask slot (#982). */
+  isRegistered?: boolean
 }
 
 const ghostBtn: React.CSSProperties = {
@@ -61,19 +65,6 @@ const ghostBtn: React.CSSProperties = {
   cursor: 'pointer',
   fontFamily: 'inherit',
   width: '100%',
-}
-
-/** The share CTA: readable against the dark overlay without competing with Play Again. */
-const shareBtn: React.CSSProperties = {
-  ...ghostBtn,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  fontWeight: 700,
-  background: 'rgba(255,255,255,0.2)',
-  border: '1px solid rgba(255,255,255,0.45)',
-  color: '#fff',
 }
 
 const platePlain: React.CSSProperties = {
@@ -105,9 +96,10 @@ export default function GameResultOverlay({
   isGuest = false,
   registerUrl,
   inviteCode,
+  gameType,
+  isRegistered = false,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
-  const shareInvite = useInviteShare(inviteCode)
 
   const defaultIcon = isDraw ? (
     <Icon name="handshake" size={44} />
@@ -218,23 +210,25 @@ export default function GameResultOverlay({
           ) : (
             <div style={platePlain}>{t('game.ui.waitingForHost')}</div>
           ))}
-          {inviteCode && (
-            <button onClick={() => void shareInvite('result_overlay')} style={shareBtn}>
-              <Icon name="link" size={16} />
-              <span>{t('game.ui.playAgainWithFriends')}</span>
-            </button>
-          )}
           {onLeave && (
             <button onClick={onLeave} style={ghostBtn}>
               {t('game.ui.leave')}
             </button>
           )}
+          {/*
+            Inside the 260 px column and under the primary actions, so it is also under
+            `actionsReplacement` — TTT's "Returning to lobby…" plate keeps share and the
+            Discord line beneath it instead of losing them with the host buttons (#982).
+          */}
+          <AfterGameActions
+            variant="overlay"
+            inviteCode={inviteCode}
+            gameType={gameType}
+            isGuest={isGuest}
+            isRegistered={isRegistered}
+            registerUrl={registerUrl}
+          />
         </div>
-        {isGuest && registerUrl && (
-          <div style={{ width: '100%', maxWidth: 260, marginTop: 8 }}>
-            <GuestConversionNudge registerUrl={registerUrl} />
-          </div>
-        )}
       </div>
     </div>
   )

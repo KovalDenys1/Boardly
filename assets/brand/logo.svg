@@ -1,11 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 256">
-  <!-- Wordmark logo: B-tile + lowercase serif "boardly" -->
+  <!-- Wordmark logo: B-tile + lowercase serif "boardly". The tile geometry is a
+       copy of assets/brand/tile.svg; change both together. -->
   <g transform="translate(24 24) scale(0.406)">
-    <g transform="rotate(-6 256 256)">
-      <rect x="76" y="76" width="360" height="360" rx="96" fill="#FF6B5B" transform="translate(26 26)"/>
-      <rect x="76" y="76" width="360" height="360" rx="96" fill="#1F1B16"/>
-      <text x="256" y="270" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="260" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
-    </g>
+    <rect x="79" y="79" width="380" height="380" rx="101" fill="#FF6B5B"/>
+    <rect x="53" y="53" width="380" height="380" rx="101" fill="#1F1B16"/>
+    <text x="243" y="258" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="274" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
   </g>
-  <text x="252" y="138" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="150" letter-spacing="-4.5" fill="#1F1B16" dominant-baseline="central">boardly</text>
+  <text x="246" y="138" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="150" letter-spacing="-4.5" fill="#1F1B16" dominant-baseline="central">boardly</text>
 </svg>

@@ -23,7 +23,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
+import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
@@ -1729,11 +1729,16 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>{t('lobby.game.leaveGame')}</button>
           </div>
 
-          {isGuest && (
-            <div style={{ width: '100%', maxWidth: 420 }}>
-              <GuestConversionNudge registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`} />
-            </div>
-          )}
+          <div style={{ width: '100%', maxWidth: 420 }}>
+            <AfterGameActions
+              variant="card"
+              inviteCode={code}
+              gameType="alias"
+              isGuest={!isSpectator && isGuest}
+              isRegistered={!isSpectator && status === 'authenticated' && !isGuest}
+              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+            />
+          </div>
         </main>
         <ConfirmModal
           isOpen={showLeaveConfirmModal}

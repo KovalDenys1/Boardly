@@ -25,8 +25,10 @@ export const ROUTE_UPDATED = {
   '/games/memory': '2026-09-15',
   '/games/connect-four': '2026-09-15',
   '/games/alias': '2026-09-15',
-  '/games/rock-paper-scissors': '2026-09-15',
-  '/guides': '2026-09-15',
+  // #1043 added the guide link to the detail page, and the new guide to the
+  // catalog the /guides index lists from.
+  '/games/rock-paper-scissors': '2026-09-20',
+  '/guides': '2026-09-20',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',
 } as const satisfies Record<string, string>

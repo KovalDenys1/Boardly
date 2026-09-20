@@ -10,22 +10,6 @@
         "${workspaceFolder}"
       ]
     },
-    // ─── PostgreSQL (Supabase DB) ──────────────────────────
-    "postgres": {
-      "type": "stdio",
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-postgres.sh"
-      ]
-    },
-    // ─── GitHub (Issues, PRs, Repos; token from .env/.env.local) ──
-    "github": {
-      "type": "stdio",
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-github.sh"
-      ]
-    },
     // ─── Memory (Knowledge Graph) ──────────────────────────
     "memory": {
       "type": "stdio",

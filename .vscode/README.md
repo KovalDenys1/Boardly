@@ -29,8 +29,6 @@ Model Context Protocol (MCP) server configuration for GitHub Copilot integration
 **Configured MCP Servers:**
 
 - **filesystem** - File system access for reading/writing project files
-- **postgres** - Database access via `scripts/mcp-postgres.sh` (`DATABASE_URL` from `.env`/`.env.local`)
-- **github** - GitHub API integration (requires `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN`)
 - **supabase** - Hosted Supabase MCP endpoint (`https://mcp.supabase.com/mcp`)
 - **memory** - Persistent memory across Copilot sessions
 - **stripe** - Stripe MCP integration (`STRIPE_SECRET_KEY` from environment)
@@ -43,10 +41,7 @@ Model Context Protocol (MCP) server configuration for GitHub Copilot integration
 **Required Setup:**
 
 1. Copy `.env.example` to `.env.local`
-2. Add your `GITHUB_TOKEN` to `.env.local` (get from <https://github.com/settings/tokens>)
-   - Required scopes: `repo`, `workflow`, `read:org`, `read:user`
-3. Ensure `DATABASE_URL` is set in `.env.local`
-4. Optional: keep `.env` for local overrides only
+2. Optional: keep `.env` for local overrides only
 
 ### `settings.json`
 
@@ -94,8 +89,6 @@ Project-wide VSCode settings:
 
    - GitHub Copilot should now have access to:
      - File system (read/write project files)
-     - PostgreSQL database (query and modify via Prisma)
-     - GitHub API (create issues, PRs, manage repo)
      - Memory (remember context across sessions)
 
 ### Working on Multiple Machines
@@ -124,16 +117,6 @@ You'll have the **exact same development environment** as on your other machines
 
 ## Troubleshooting
 
-### MCP Server Not Working
-
-**Problem**: GitHub Copilot can't access database or GitHub API
-
-**Solution**:
-
-1. Check `.env`/`.env.local` has `DATABASE_URL` and `GITHUB_TOKEN` (or `GITHUB_PERSONAL_ACCESS_TOKEN`)
-2. Restart VSCode to reload MCP servers
-3. Check Output panel -> "GitHub Copilot Chat" for errors
-
 ### Extensions Not Installing
 
 **Problem**: VSCode doesn't prompt to install extensions
@@ -143,16 +126,6 @@ You'll have the **exact same development environment** as on your other machines
 1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
 2. Run "Extensions: Show Recommended Extensions"
 3. Click "Install" on each extension
-
-### Database MCP Server Fails
-
-**Problem**: `mcp-postgres.sh` script fails
-
-**Solution**:
-
-1. Make script executable: `chmod +x scripts/mcp-postgres.sh`
-2. Verify `DATABASE_URL` in `.env` or `.env.local` is correct
-3. Test connection: `npm run db:migrate:status` or `npm run db:studio`
 
 ### Supabase MCP Fails With `unknown command "mcp" for "supabase"`
 

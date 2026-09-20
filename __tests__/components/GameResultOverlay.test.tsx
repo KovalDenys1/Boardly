@@ -7,16 +7,15 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
-jest.mock('@/components/GuestConversionNudge', () => {
-  return function MockNudge() {
-    return <div data-testid="guest-nudge" />
+// The after-game block has its own suite (AfterGameActions.test.tsx); here only the
+// handover matters — that the overlay renders it and passes the five props through.
+const mockAfterGameProps = jest.fn()
+jest.mock('@/components/game-chrome/AfterGameActions', () => {
+  return function MockAfterGameActions(props: Record<string, unknown>) {
+    mockAfterGameProps(props)
+    return <div data-testid="after-game-actions" />
   }
 })
-
-const mockShare = jest.fn()
-jest.mock('@/hooks/useInviteShare', () => ({
-  useInviteShare: () => mockShare,
-}))
 
 describe('GameResultOverlay (#736 phase 2)', () => {
   const base = {
@@ -26,7 +25,12 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     onPlayAgain: jest.fn(),
     onReturnToLobby: jest.fn(),
     onLeave: jest.fn(),
+    gameType: 'tic_tac_toe' as const,
   }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
   it('renders title, default kicker, and all host actions', () => {
     render(<GameResultOverlay {...base} />)
@@ -39,19 +43,27 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.queryByText('game.ui.waitingForHost')).toBeNull()
   })
 
-  it('offers the share CTA only when a lobby code is given (#927)', () => {
-    const { unmount } = render(<GameResultOverlay {...base} />)
-    expect(screen.queryByText('game.ui.playAgainWithFriends')).toBeNull()
-    unmount()
-
-    render(<GameResultOverlay {...base} inviteCode="AB12" />)
-    fireEvent.click(screen.getByText('game.ui.playAgainWithFriends'))
-    expect(mockShare).toHaveBeenCalledWith('result_overlay')
-  })
-
-  it('keeps the share CTA for non-hosts, who can still pull a friend in (#927)', () => {
-    render(<GameResultOverlay {...base} isHost={false} inviteCode="AB12" />)
-    expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
+  it('hands the after-game block everything it needs (#982)', () => {
+    render(
+      <GameResultOverlay
+        {...base}
+        inviteCode="AB12"
+        isGuest
+        registerUrl="/auth/register"
+        isRegistered={false}
+      />
+    )
+    expect(screen.getByTestId('after-game-actions')).toBeTruthy()
+    expect(mockAfterGameProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variant: 'overlay',
+        inviteCode: 'AB12',
+        gameType: 'tic_tac_toe',
+        isGuest: true,
+        isRegistered: false,
+        registerUrl: '/auth/register',
+      })
+    )
   })
 
   it('shows the waiting plate instead of actions for non-hosts', () => {
@@ -61,6 +73,8 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.queryByText('game.ui.returnToLobby')).toBeNull()
     // Leave stays available to everyone
     expect(screen.getByText('game.ui.leave')).toBeTruthy()
+    // …and so does the next step; a non-host can still pull a friend in (#927).
+    expect(screen.getByTestId('after-game-actions')).toBeTruthy()
   })
 
   it('disables Play Again while loading (double-submit guard)', () => {
@@ -72,7 +86,7 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(onPlayAgain).not.toHaveBeenCalled()
   })
 
-  it('supports a custom kicker and actionsReplacement', () => {
+  it('supports a custom kicker and actionsReplacement, keeping the after-game block under it', () => {
     render(
       <GameResultOverlay
         {...base}
@@ -83,13 +97,9 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.getByText('Series complete')).toBeTruthy()
     expect(screen.getByText('returning…')).toBeTruthy()
     expect(screen.queryByText('lobby.game.playAgain')).toBeNull()
-  })
-
-  it('shows the guest nudge only for guests with a registerUrl', () => {
-    const { rerender } = render(<GameResultOverlay {...base} isGuest registerUrl="/auth/register" />)
-    expect(screen.getByTestId('guest-nudge')).toBeTruthy()
-    rerender(<GameResultOverlay {...base} isGuest={false} />)
-    expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    // `actionsReplacement` replaces the host/non-host ternary only, so TTT's
+    // "Returning to lobby…" plate still gets share and the Discord line beneath it.
+    expect(screen.getByTestId('after-game-actions')).toBeTruthy()
   })
 
   it('renders the draw handshake instead of the trophy', () => {

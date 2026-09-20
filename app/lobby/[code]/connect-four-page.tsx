@@ -1071,6 +1071,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             isGuest={isGuest}
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             inviteCode={code}
+                            gameType="connect_four"
+                            isRegistered={status === 'authenticated' && !isGuest}
                         />
                     )}
                     {overlayInspecting && (
