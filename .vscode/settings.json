@@ -36,13 +36,7 @@
     "npm run ci:quick": true,
     "npm test": true,
     "npm run hooks:pre-commit": true,
-    "npm run hooks:pre-push": true,
-    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1": true,
-    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1": true,
-    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-health-check.ps1": true,
-    "bash scripts/codex-quick-check.sh": true,
-    "bash scripts/codex-mcp-setup.sh": true,
-    "bash scripts/codex-mcp-health-check.sh": true
+    "npm run hooks:pre-push": true
   },
   // Prisma settings - suppress false positive warnings
   "prisma.showPrismaDataPlatformNotification": false,

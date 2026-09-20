@@ -159,25 +159,9 @@ Recommended verification after each phase:
 
 ## Common troubleshooting
 
-### MCP Postgres health check fails with `self-signed certificate in certificate chain`
+### Postgres connection fails with `self-signed certificate in certificate chain`
 
-For hosted PostgreSQL with a custom CA chain, export the CA bundle once and write `MCP_POSTGRES_CA_CERT_PATH` into your env file:
-
-```bash
-bash scripts/export-postgres-mcp-ca.sh
-```
-
-Windows PowerShell equivalent:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/export-postgres-mcp-ca.ps1
-```
-
-Then rerun:
-
-```bash
-bash scripts/codex-mcp-health-check.sh
-```
+For hosted PostgreSQL with a custom CA chain, export the CA bundle and write its path into `MCP_POSTGRES_CA_CERT_PATH` in your env file.
 
 Runtime note:
 

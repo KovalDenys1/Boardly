@@ -2,12 +2,6 @@
   {
     "file": "AGENTS.md",
     "check": "D4",
-    "value": "GITHUB_PERSONAL_ACCESS_TOKEN",
-    "reason": "The MCP GitHub server's own variable name, offered as an alternative to GITHUB_TOKEN. Not read by this app."
-  },
-  {
-    "file": "AGENTS.md",
-    "check": "D4",
     "value": "JWT_SECRET",
     "reason": "Named only to forbid it: the rule is that no new JWT_SECRET-based logic may be added."
   },

@@ -104,49 +104,6 @@ DB / Prisma / RLS:
 - `npm run db:rls:smoke` (when relevant)
 - `npm run check:db` (safe-by-default diagnostics; use `npm run check:db:verbose` for local debugging details)
 
-## Codex Automation (MCP)
-
-This repo includes cross-platform MCP wrappers and Codex helpers (PowerShell + Bash):
-
-- `scripts/mcp-github.ps1`
-- `scripts/mcp-github.sh`
-- `scripts/mcp-postgres.ps1`
-- `scripts/mcp-postgres.sh`
-- `scripts/mcp-filesystem.ps1`
-- `scripts/mcp-filesystem.sh`
-- `scripts/mcp-memory.ps1`
-- `scripts/mcp-memory.sh`
-- `scripts/codex-mcp-setup.ps1`
-- `scripts/codex-mcp-setup.sh`
-- `scripts/codex-mcp-health-check.ps1`
-- `scripts/codex-mcp-health-check.sh`
-- `scripts/codex-quick-check.ps1`
-- `scripts/codex-quick-check.sh`
-
-Note: `codex-mcp-setup` and `codex-mcp-health-check` now use shared `tsx` orchestration (`scripts/codex-mcp-setup.ts`, `scripts/codex-mcp-health-check.ts`) with thin `.ps1/.sh` wrappers.
-
-First-time setup (registers MCP servers in `~/.codex/config.toml`):
-
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1`
-- macOS/Linux: `bash scripts/codex-mcp-setup.sh`
-
-Expected MCP server names:
-
-- `boardly-github`
-- `boardly-postgres`
-- `boardly-filesystem`
-- `boardly-memory`
-
-Requirements:
-
-- `GITHUB_TOKEN` (or `GITHUB_PERSONAL_ACCESS_TOKEN`) in `.env` / `.env.local`
-- `DATABASE_URL` in `.env` / `.env.local`
-- `MCP_POSTGRES_CA_CERT_PATH` in `.env` / `.env.local` for strict TLS trust (path to CA PEM/CRT file)
-
-External MCP scaffold template (not auto-registered):
-
-- `docs/codex-mcp.external-template.toml`
-
 ## Next.js MCP
 
 - The repo now includes root `.mcp.json` for `next-devtools-mcp`.
@@ -171,20 +128,6 @@ Use these defaults unless the user overrides them in the current chat.
 
 Use these as default automation routines when the task does not require something custom.
 
-Quick local confidence pass (recommended before/after non-trivial edits):
-
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1`
-- macOS/Linux: `bash scripts/codex-quick-check.sh`
-
-Skip DB when working offline / DB is unavailable:
-
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1 -SkipDb`
-- macOS/Linux: `bash scripts/codex-quick-check.sh --skip-db`
-
-Notes:
-
-- `codex-quick-check` uses quiet env checking by default (`npm run check:env:quiet`).
-
 Full pre-PR local gate:
 
 - `npm run ready:build-test`
@@ -195,16 +138,6 @@ Git hooks (Lefthook, auto-installed via `npm install`/`npm ci` through `prepare`
 - Run pre-commit hook manually: `npm run hooks:pre-commit`
 - Run pre-push hook manually: `npm run hooks:pre-push`
 - Emergency bypass (one-off): `git commit --no-verify` / `git push --no-verify`
-
-Refresh Codex MCP registration (after script/path changes):
-
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1 -Force`
-- macOS/Linux: `bash scripts/codex-mcp-setup.sh --force`
-
-MCP health check (detailed local sanity):
-
-- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-health-check.ps1`
-- macOS/Linux: `bash scripts/codex-mcp-health-check.sh`
 
 Suggested Codex task prompts (examples):
 
