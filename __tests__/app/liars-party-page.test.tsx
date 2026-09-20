@@ -585,6 +585,20 @@ describe('LiarsPartyLobbyPage', () => {
       expect(within(card).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
     })
 
+    it('lists the whole final ranking in the players panel, not the one survivor', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildFinishedResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
+
+      // `activePlayerIds` is ['user-3'] here. Reading it printed a one-row
+      // "Total Scores" beside the result overlay, at the moment the table most
+      // wants to compare numbers.
+      const panel = desktop().getByTestId('liars-standings')
+      for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {
+        expect(within(panel).getByText(name)).toBeTruthy()
+      }
+    })
+
     it('keeps the round-advancing button out of the scrolling region', async () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildRevealResponse() } as Response)
       render(<LiarsPartyLobbyPage code="ABCD" />)

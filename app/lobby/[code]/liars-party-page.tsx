@@ -206,6 +206,7 @@ interface LiarsPlayersPanelProps {
   players: GamePlayer[]
   maxPlayers: number
   currentUserId: string
+  isFinished: boolean
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
@@ -221,9 +222,14 @@ interface LiarsPlayersPanelProps {
  * times over (claimant, voter, eliminated) and why a spectator saw nothing at
  * all on the game's most-watched screen.
  */
-function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, t }: LiarsPlayersPanelProps) {
+function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinished, t }: LiarsPlayersPanelProps) {
   const nameOf = (pid: string) => playerNameById(players, pid, t)
   const seated = data && data.activePlayerIds.length > 0
+  // A finished game has one name left in `activePlayerIds` – everyone else was
+  // knocked out – so reading the live list printed a one-row "Total Scores"
+  // beside the result overlay, at the moment the table most wants to compare
+  // numbers. The ranking is the finished game's roster.
+  const seatIds = isFinished && data ? data.ranking : (data?.activePlayerIds ?? [])
 
   return (
     <section className="liars-panel" data-testid="liars-standings">
@@ -234,7 +240,7 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, t }: Liar
 
       <div className="liars-scroll liars-panel__list">
         {seated
-          ? data.activePlayerIds.map(pid => {
+          ? seatIds.map(pid => {
               // Only while somebody is actually claiming – the marker read as
               // stale on the reveal screen, where the claim is already settled.
               const isClaimant = data.phase === 'claim' && pid === data.currentClaimantId
@@ -261,7 +267,7 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, t }: Liar
             ))}
       </div>
 
-      {seated && data.eliminatedPlayerIds.length > 0 && (
+      {seated && !isFinished && data.eliminatedPlayerIds.length > 0 && (
         <div className="liars-panel__foot">
           {t('liarsParty.outOfTheGame', { names: data.eliminatedPlayerIds.map(nameOf).join(', ') })}
         </div>
@@ -1206,7 +1212,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   )
 
   const playersSection = (
-    <LiarsPlayersPanel data={data} players={players} maxPlayers={maxPlayers} currentUserId={currentUserId} t={t} />
+    <LiarsPlayersPanel data={data} players={players} maxPlayers={maxPlayers} currentUserId={currentUserId} isFinished={isFinished} t={t} />
   )
 
   const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()

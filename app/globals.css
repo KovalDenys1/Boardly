@@ -2256,6 +2256,14 @@ html.dark .liars-phase-card { background: var(--bd-card-warm); }
 .liars-phase__fill {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Content centred rather than pinned to the top: five rules in a card 700px
+     tall still left 300px of nothing under them at 390, which is the same fault
+     one level down. `safe` falls back to the start edge once the content
+     outgrows the card - which the round history does after a few rounds - so
+     nothing is ever centred out of reach above the scroll. */
+  justify-content: safe center;
 }
 /* What the viewer can press, pinned under the scrolling region so it is on
    screen whatever the phase has scrolled to. */
