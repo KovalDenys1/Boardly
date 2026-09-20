@@ -411,3 +411,73 @@ describe('AliasLobbyPage turn timeout resync (#1009)', () => {
     expect(lobbyGetCount()).toBe(afterGivingUp)
   })
 })
+
+describe('AliasLobbyPage in-game chrome (#905)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  /**
+   * A turn in progress, with the seats shaped the way the API really returns
+   * them: a guest Players row carries `name: null` and its display name on the
+   * joined user row. Alias read only `name`, which is why the turn line said
+   * " is describing for Team 1" against a real lobby.
+   */
+  function buildTurnResponse({ meDescribing }: { meDescribing: boolean }) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    base.activeGame.state.data.turnStartedAt = Date.now()
+    base.activeGame.state.data.currentCard = { word: 'apple', taboo: [] }
+    base.activeGame.state.data.teams[0].playerIds = meDescribing
+      ? ['user-1', 'user-2']
+      : ['user-2', 'user-1']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    base.activeGame.players = [
+      { id: 'player-1', userId: 'user-1', name: null, user: { username: 'Alice' } },
+      { id: 'player-2', userId: 'user-2', name: null, user: { username: 'Bob' } },
+      { id: 'player-3', userId: 'user-3', name: null, user: { username: 'Carol' } },
+      { id: 'player-4', userId: 'user-4', name: null, user: { username: 'Dave' } },
+    ]
+    return base
+  }
+
+  function mountWith(response: ReturnType<typeof buildTurnResponse>) {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+    return render(<AliasLobbyPage code="ABCD" />)
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  it('puts Leave in the scoreboard header, not at the bottom of the screen', async () => {
+    const { container } = mountWith(buildTurnResponse({ meDescribing: true }))
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    // The shared control, in the shared place: GameScoreboardHeader's right
+    // cell is where every other game's Leave lives (layout DoD 2026-09-06).
+    const leave = container.querySelector('.game-scoreboard-cell--right .game-leave-button')
+    expect(leave).toBeTruthy()
+
+    // ...and the old text link under the board is gone.
+    expect(screen.queryByText('lobby.game.leaveGame')).toBeNull()
+  })
+
+  it('names the describer from the user row when the Players row has no name', async () => {
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    // t() is mocked to echo `key:{"...options"}`, so the interpolation values
+    // are visible in the rendered text.
+    const line = screen.getByText(/alias\.describerTurnLine/)
+    expect(line.textContent).toContain('"name":"Bob"')
+    expect(line.textContent).toContain('"team":"Team 1"')
+  })
+
+  it('keeps the guess feed reachable on the describer screen', async () => {
+    mountWith(buildTurnResponse({ meDescribing: true }))
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+    expect(screen.getByText('alias.guesses')).toBeTruthy()
+  })
+})

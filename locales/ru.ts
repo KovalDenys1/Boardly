@@ -2269,6 +2269,8 @@ const ru = {
     spectatingWatch: 'Наблюдаешь · смотри игру',
     listenUp: 'Слушай · вводи ответ в чат',
     describer: 'Объясняющий',
+    phaseTurnKicker: 'Ход',
+    describerTurnLine: '{{name}} объясняет за {{team}}',
     turnCompleteTitle: 'Alias · Ход завершён',
     finalTitle: 'Alias · Финал',
     cardNum: 'Карточка #{{num}}',

@@ -2283,6 +2283,8 @@ const uk: Translation = {
     spectatingWatch: 'Спостерігаєш · дивися гру',
     listenUp: 'Слухай · вводи відповідь у чат',
     describer: 'Той, хто описує',
+    phaseTurnKicker: 'Хід',
+    describerTurnLine: '{{name}} пояснює за {{team}}',
     turnCompleteTitle: 'Alias · Хід завершено',
     finalTitle: 'Alias · Фінал',
     cardNum: 'Картка #{{num}}',

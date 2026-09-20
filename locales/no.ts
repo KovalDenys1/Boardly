@@ -2269,6 +2269,8 @@ const no = {
     spectatingWatch: 'Ser på · se spillet',
     listenUp: 'Lytt · skriv svaret ditt i chatten',
     describer: 'Beskriver',
+    phaseTurnKicker: 'Tur',
+    describerTurnLine: '{{name}} forklarer for {{team}}',
     turnCompleteTitle: 'Alias · Tur ferdig',
     finalTitle: 'Alias · Finale',
     cardNum: 'Kort #{{num}}',

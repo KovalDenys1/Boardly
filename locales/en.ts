@@ -2281,6 +2281,8 @@ const en = {
     spectatingWatch: 'Spectating · watch the game',
     listenUp: 'Listen up · type your guess in the chat',
     describer: 'Describer',
+    phaseTurnKicker: 'Turn',
+    describerTurnLine: '{{name}} is describing for {{team}}',
     turnCompleteTitle: 'Alias · Turn complete',
     finalTitle: 'Alias · Final',
     cardNum: 'Card #{{num}}',

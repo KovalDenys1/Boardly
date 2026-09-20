@@ -3363,3 +3363,25 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 .ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
 
 html.dark .spy-board-card { background: var(--bd-card-warm); }
+
+/* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
+   switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
+   above, which are scoped to .ttt-mobile-layout, never reach it. Same rules,
+   same breakpoint, applied to this card wherever it renders. */
+.alias-header-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .alias-header-card .game-scoreboard-right-card { display: none; }
+  .alias-header-card .game-player-card { max-width: none; }
+  .alias-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+.alias-status-slot { width: 100%; max-width: 1200px; margin: 0 auto 12px; flex-shrink: 0; }
