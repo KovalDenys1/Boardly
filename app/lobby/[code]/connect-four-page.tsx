@@ -689,6 +689,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         code,
         isGameStarted: game?.status === 'playing',
         isSpectator,
+        gameType: lobby?.gameType,
         reconcileWithServerSnapshot: loadLobby,
     })
 

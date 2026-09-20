@@ -95,8 +95,28 @@ function renderFinishedBoard() {
   return render(finishedBoardElement())
 }
 
+type Layout = 'desktop' | 'landscape' | 'mobile'
+
+/**
+ * The element each layout's subtree hangs off, and the width x height at which
+ * app/globals.css leaves it visible.
+ *
+ * `.game-landscape-layout` is `display: none` outside
+ * `(max-width: 1023px) and (orientation: landscape)` (globals.css:1933/1934),
+ * `.memory-desktop-layout` is hidden with `!important` below 1024px
+ * (globals.css:2923), and `.memory-mobile-layout` is hidden with `!important`
+ * inside the landscape query (globals.css:2939). So at 844x390 the only tree a
+ * player can see is the landscape one, and an overlay mounted in either of the
+ * others is an overlay nobody gets - no result screen, no Play Again.
+ */
+const LAYOUT_TREES: Record<Layout, { selector: string; viewport: string }> = {
+  desktop: { selector: '.memory-desktop-layout', viewport: '1280x900' },
+  landscape: { selector: '.game-landscape-layout', viewport: '844x390' },
+  mobile: { selector: '.memory-mobile-layout', viewport: '390x844' },
+}
+
 /** Drives the two media queries the stylesheet switches the three layouts on. */
-function setViewport(layout: 'desktop' | 'landscape' | 'mobile') {
+function setViewport(layout: Layout) {
   const matchesFor = (query: string) => {
     if (query === PHONE_LANDSCAPE_MEDIA_QUERY) return layout === 'landscape'
     if (query === MOBILE_MAX_MEDIA_QUERY) return layout !== 'desktop'
@@ -134,8 +154,8 @@ describe('MemoryGameBoard result overlay (#1052)', () => {
     ;(window as unknown as { matchMedia: unknown }).matchMedia = originalMatchMedia
   })
 
-  it.each(['desktop', 'landscape', 'mobile'] as const)(
-    'mounts one result overlay and one after-game block at %s',
+  it.each(Object.keys(LAYOUT_TREES) as Layout[])(
+    'mounts one result overlay, in the tree %s can see, and no other',
     async (layout) => {
       setViewport(layout)
       const { container } = renderFinishedBoard()
@@ -147,24 +167,25 @@ describe('MemoryGameBoard result overlay (#1052)', () => {
       // passes because someone deleted two layouts.
       expect(container.querySelectorAll('.memory-grid').length).toBe(3)
 
-      expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBe(1)
+      const overlays = container.querySelectorAll('[data-testid="game-result-overlay"]')
+      expect(overlays.length).toBe(1)
       expect(container.querySelectorAll('[data-testid="after-game-actions"]').length).toBe(1)
+
+      // Counting is not enough: one overlay in the wrong tree is a player at
+      // this viewport with no result screen at all. Pin which tree it is in,
+      // and that it is in neither of the two the stylesheet has hidden.
+      const overlay = overlays[0]
+      for (const [candidate, { selector, viewport }] of Object.entries(LAYOUT_TREES)) {
+        const inThisTree = overlay.closest(selector) !== null
+        expect({ layout, candidate, viewport, inThisTree }).toEqual({
+          layout,
+          candidate,
+          viewport,
+          inThisTree: candidate === layout,
+        })
+      }
     }
   )
-
-  it('puts the one overlay inside the tree that viewport can see', async () => {
-    setViewport('mobile')
-    const { container } = renderFinishedBoard()
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    const overlay = container.querySelector('[data-testid="game-result-overlay"]')
-    expect(overlay).not.toBeNull()
-    expect(overlay!.closest('.memory-mobile-layout')).not.toBeNull()
-    expect(overlay!.closest('.memory-desktop-layout')).toBeNull()
-    expect(overlay!.closest('.game-landscape-layout')).toBeNull()
-  })
 
   it('draws no overlay in the server render, where no layout is knowable', () => {
     // The server render and the first client render have to agree, and guessing

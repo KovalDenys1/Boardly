@@ -89,6 +89,7 @@ import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
+import { useYahtzeeResultsHold } from './hooks/useYahtzeeResultsHold'
 import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
@@ -171,7 +172,6 @@ const SketchAndGuessLobbyPage = dynamic(
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
-const YAHTZEE_RESULTS_HOLD_MS = 12000
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -234,16 +234,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
   const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
-  const [yahtzeeResultsHold, setYahtzeeResultsHold] = useState<{ gameId: string; releaseAt: number } | null>(null)
-  // #1052: which finished Yahtzee game has had its results screen released, rather
-  // than which one is holding it. The hold is set by an effect, so it is null on the
-  // first render after the game finishes - and on that one render the results came
-  // from the branch further down instead, which put YahtzeeResults at a different
-  // place in the tree. React unmounted one and mounted the other, and the after-game
-  // block inside reported itself twice for one finished game. Reading "not released
-  // yet" needs no effect to have run, so the first render already picks this branch
-  // and the component mounts once.
-  const [yahtzeeResultsReleasedGameId, setYahtzeeResultsReleasedGameId] = useState<string | null>(null)
 
   // Mobile tabs state
   const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
@@ -283,45 +273,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [gameEngine, code])
 
-  useEffect(() => {
-    if (
-      lobby?.gameType !== 'yahtzee' ||
-      !(gameEngine instanceof YahtzeeGame) ||
-      !game?.id ||
-      !gameEngine.isGameFinished() ||
-      // Already let go of this one - re-arming would restart the countdown for a
-      // screen nobody is looking at any more.
-      yahtzeeResultsReleasedGameId === game.id
-    ) {
-      return
-    }
-
-    setYahtzeeResultsHold((prev) => {
-      if (prev?.gameId === game.id) {
-        return prev
-      }
-
-      return {
-        gameId: game.id,
-        releaseAt: Date.now() + YAHTZEE_RESULTS_HOLD_MS,
-      }
-    })
-  }, [game?.id, gameEngine, lobby?.gameType, yahtzeeResultsReleasedGameId])
-
-  useEffect(() => {
-    if (!yahtzeeResultsHold || typeof window === 'undefined') {
-      return
-    }
-
-    const remainingMs = Math.max(0, yahtzeeResultsHold.releaseAt - Date.now())
-    const heldGameId = yahtzeeResultsHold.gameId
-    const timer = window.setTimeout(() => {
-      setYahtzeeResultsReleasedGameId(heldGameId)
-      setYahtzeeResultsHold((prev) => (prev?.gameId === heldGameId ? null : prev))
-    }, remainingMs)
-
-    return () => window.clearTimeout(timer)
-  }, [yahtzeeResultsHold])
 
   // Apply theme CSS variables to the lobby portal root so portaled components (e.g. Modal)
   // inherit them. We do NOT set these on <html> to avoid contaminating the global header/nav.
@@ -1134,6 +1085,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isSpectator: game?.status === 'playing' && !game?.players?.some(
       p => p.userId === getCurrentUserId() || (isGuest && p.userId === guestId)
     ),
+    gameType: lobby?.gameType,
     reconcileWithServerSnapshot,
   })
 
@@ -1612,11 +1564,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     gameEngine.isGameFinished()
       ? gameEngine
       : null
-  const shouldShowHeldYahtzeeResults = Boolean(
-    finishedYahtzeeEngine &&
-    game?.id &&
-    yahtzeeResultsReleasedGameId !== game.id
-  )
+  const yahtzeeResults = useYahtzeeResultsHold(game?.id, !!finishedYahtzeeEngine)
+  const shouldShowHeldYahtzeeResults = yahtzeeResults.showResults
   const joinViewerMode = status === 'authenticated'
     ? 'authenticated'
     : isGuest
@@ -2053,12 +2002,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onPlayAgain={handleStartGame}
             onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
-            onReturnToLobbyRoom={() => {
-              if (game?.id) setYahtzeeResultsReleasedGameId(game.id)
-              setYahtzeeResultsHold(null)
-            }}
+            onReturnToLobbyRoom={yahtzeeResults.release}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
-            autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
+            autoReturnAt={yahtzeeResults.autoReturnAt}
             isGuest={isGuest}
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             lobbyCode={code}

@@ -3,28 +3,15 @@ import { GameEngine } from '@/lib/game-engine'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import {
+  BOT_COMMIT_DELIVERY_ALLOWANCE_MS,
+  isBotPacedGameType,
+  resolveBotTurnGraceMs,
+} from '@/lib/bots/core/bot-turn-pace'
 
 const MAX_BOT_RETRIES = 2
 const WATCHDOG_MS = 14_000
 const RETRY_DELAY_MS = 2_000
-
-/**
- * How long the monitor waits before sending a bot-turn request of its own (#1049).
- *
- * A bot turn already has a server-side driver. `POST /api/game/[gameId]/state`
- * fires one from inside `after()` the moment a human's move hands the turn over
- * (`triggerSource: 'state-route-auto'`), and `POST /api/game/create` does the same
- * when a bot is first to act. Firing at the same instant from here only races it,
- * and the race is lost by construction: the route takes an in-memory lock before
- * it does anything, so whichever request is second gets a 409 for a turn that is
- * being played correctly.
- *
- * Nothing chains one bot to the next, so a turn that follows *another bot's* turn
- * has no server-side driver and is still triggered at once – see `followsAnotherBot`
- * below. Everything else waits out this grace and is cancelled if the turn moves
- * on, which it does as soon as the bot's first move broadcasts.
- */
-const SERVER_TRIGGER_GRACE_MS = 2_500
 
 interface GamePlayer {
   userId: string
@@ -44,6 +31,13 @@ interface UseBotTurnProps {
   code: string
   isGameStarted: boolean
   isSpectator?: boolean
+  /**
+   * The lobby's game type. It sets how long the monitor waits for the server's
+   * own driver, because that is a property of the game's bot executor. Left out,
+   * the wait falls back to the slowest game in the catalog, which is the safe
+   * direction: too long only delays a fallback, too short sends a doomed request.
+   */
+  gameType?: string | null
   reconcileWithServerSnapshot?: () => Promise<void> | void
 }
 
@@ -53,6 +47,7 @@ export function useBotTurn({
   code,
   isGameStarted,
   isSpectator = false,
+  gameType,
   reconcileWithServerSnapshot,
 }: UseBotTurnProps) {
   const botTurnInProgress = useRef(false)
@@ -68,6 +63,11 @@ export function useBotTurn({
   // is visibly running.
   const armedSignatureRef = useRef<string | null>(null)
   const armedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The armed turn this hook has already asked the server about. The grace
+  // expiring only means nothing has reached this tab; it does not mean the bot
+  // is stuck. Reconciling once before writing is what turns a late broadcast
+  // into no request at all instead of a "Not bot's turn" 400.
+  const reconciledSignatureRef = useRef<string | null>(null)
   // Ref to always hold the latest triggerBotTurn for self-referencing retries
   const triggerBotTurnRef = useRef<((botUserId: string, gameId: string) => Promise<void>) | null>(null)
 
@@ -77,6 +77,7 @@ export function useBotTurn({
       armedTimerRef.current = null
     }
     armedSignatureRef.current = null
+    reconciledSignatureRef.current = null
   }, [])
 
   useEffect(() => {
@@ -313,6 +314,29 @@ export function useBotTurn({
       return
     }
 
+    /**
+     * How long the monitor waits before sending a bot-turn request of its own (#1049).
+     *
+     * A bot turn already has a server-side driver. `POST /api/game/[gameId]/state`
+     * fires one from inside `after()` the moment a human's move hands the turn over
+     * (`triggerSource: 'state-route-auto'`), and `POST /api/game/create` does the same
+     * when a bot is first to act. Firing at the same instant from here only races it,
+     * and the race is lost by construction: the route takes an in-memory lock before
+     * it does anything, so whichever request is second gets a 409 for a turn that is
+     * being played correctly.
+     *
+     * The wait is not a constant. A bot turn can be several commits with pauses
+     * between them, and the client sees nothing during a pause - so the wait has to
+     * outlast the longest pause the game's own executor codes for, which is what
+     * `resolveBotTurnGraceMs` returns. A hand-picked 2500 ms was 189 ms longer than
+     * the Memory bot's mismatch pause at the default difficulty, which is inside the
+     * cost of one database write, so Memory kept taking the 409 this ticket is about.
+     *
+     * Nothing chains one bot to the next, so a turn that follows *another bot's* turn
+     * has no server-side driver and is still triggered at once - see `followsAnotherBot`
+     * below. Everything else waits out the grace and is cancelled if the turn moves
+     * on, which it does as soon as the bot's next move broadcasts.
+     */
     // The seat changing hands from one bot to another is the one hop nothing
     // triggers server-side, so it goes out at once and keeps the pace it had.
     // Everything else – the bot's own turn progressing move by move, or a turn
@@ -323,7 +347,9 @@ export function useBotTurn({
       lastBotPlayerId.current !== null &&
       lastBotPlayerId.current !== currentPlayer.id
 
-    const delayMs = followsAnotherBot ? 0 : SERVER_TRIGGER_GRACE_MS
+    const delayMs = followsAnotherBot
+      ? 0
+      : resolveBotTurnGraceMs(isBotPacedGameType(gameType) ? gameType : null)
 
     clientLogger.log('🤖 Bot turn detected, arming bot move trigger...', { delayMs })
 
@@ -335,11 +361,47 @@ export function useBotTurn({
     const gameId = game.id
     if (armedTimerRef.current !== null) clearTimeout(armedTimerRef.current)
     armedSignatureRef.current = signature
-    armedTimerRef.current = setTimeout(() => {
+
+    const fire = () => {
       armedTimerRef.current = null
+
+      // Measured on localhost on 2026-09-20 in a Yahtzee game against an Easy
+      // bot: the bot took the turn at t=13.5s, its `bot-action` events arrived
+      // through to "scores 17 in Chance" at t=16.3s, and no `game-update` for
+      // that final commit reached the tab before the grace expired at t=17.3s.
+      // The turn had been the human's for a second by then, so the request was
+      // a wasted write answered "Not bot's turn" - the 400 half of #1049, with
+      // the pacing already correct. The grace expiring says nothing has reached
+      // this tab, not that the bot is stuck, so ask the server before writing.
+      // Not for a bot following another bot: that hop has no server-side driver
+      // at all, so there is nothing for a read to find and the turn would just
+      // be slower by an allowance.
+      if (!followsAnotherBot && reconcileWithServerSnapshot && reconciledSignatureRef.current !== signature) {
+        reconciledSignatureRef.current = signature
+        void reconcileAfterBotTurn('bot-turn-grace-expired')
+        // Armed here rather than left to the reconcile's re-render: fresh state
+        // that matches what this tab already has renders nothing new, and a bot
+        // that really is stuck would then never be kicked at all.
+        armedTimerRef.current = setTimeout(fire, BOT_COMMIT_DELIVERY_ALLOWANCE_MS)
+        return
+      }
+
       void triggerBotTurn(botUserId, gameId)
-    }, delayMs)
-  }, [isSpectator, isGameStarted, gameEngine, game?.id, game?.players, triggerBotTurn, cancelArmedTrigger])
+    }
+
+    armedTimerRef.current = setTimeout(fire, delayMs)
+  }, [
+    isSpectator,
+    isGameStarted,
+    gameEngine,
+    game?.id,
+    game?.players,
+    gameType,
+    triggerBotTurn,
+    cancelArmedTrigger,
+    reconcileWithServerSnapshot,
+    reconcileAfterBotTurn,
+  ])
 
   return {
     triggerBotTurn,
