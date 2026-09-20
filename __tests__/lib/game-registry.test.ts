@@ -12,6 +12,7 @@ import { SpyGame } from '@/lib/games/spy-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { MemoryGame } from '@/lib/games/memory-game'
+import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
 
 describe('Game Registry', () => {
   describe('createGameEngine', () => {
@@ -292,7 +293,7 @@ describe('Game Registry', () => {
 
     it('game engine config should match metadata', () => {
       const types = getSupportedGameTypes()
-      
+
       types.forEach(type => {
         const engine = createGameEngine(type, `config-${type}`)
         const meta = getGameMetadata(type)
@@ -301,6 +302,53 @@ describe('Game Registry', () => {
         expect(config.minPlayers).toBe(meta.minPlayers)
         expect(config.maxPlayers).toBe(meta.maxPlayers)
       })
+    })
+  })
+
+  describe('Sketch & Guess is registered, not flag-gated (#1035)', () => {
+    const FLAG_KEYS = ['ENABLE_SKETCH_AND_GUESS', 'NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS'] as const
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      // The whole point is that the game is there with the flag off, so this
+      // suite proves the flag is off rather than assuming it.
+      process.env = { ...originalEnv }
+      for (const key of FLAG_KEYS) {
+        delete process.env[key]
+      }
+    })
+
+    afterAll(() => {
+      process.env = originalEnv
+    })
+
+    it('builds an engine and answers the type guards without the flag', () => {
+      expect(isRegisteredGameType('sketch_and_guess')).toBe(true)
+      expect(getSupportedGameTypes()).toContain('sketch_and_guess')
+
+      const engine = createGameEngine('sketch_and_guess', 'sketch-1035')
+      expect(engine).toBeInstanceOf(SketchAndGuessGame)
+      expect(engine.getState().id).toBe('sketch-1035')
+    })
+
+    it('carries the player range the lobby form is built from', () => {
+      // Literals on purpose: reading these back off the module under test would
+      // pass for any pair of numbers, and lib/game-catalog.ts's
+      // lobbyCreateConfig.allowedPlayers is written against exactly 3 and 10.
+      const meta = getGameMetadata('sketch_and_guess')
+      expect(meta.minPlayers).toBe(3)
+      expect(meta.maxPlayers).toBe(10)
+      expect(meta.supportsBots).toBe(false)
+      expect(meta.translationKey).toBe('guess_my_drawing')
+      expect(hasBotSupport('sketch_and_guess')).toBe(false)
+    })
+
+    it('appears exactly once in the supported list', () => {
+      // It used to be pushed in as an experimental type. Promoting it while
+      // leaving that push in place would list it twice, and the analytics
+      // coverage test iterates this list.
+      const occurrences = getSupportedGameTypes().filter((type) => type === 'sketch_and_guess')
+      expect(occurrences).toHaveLength(1)
     })
   })
 })

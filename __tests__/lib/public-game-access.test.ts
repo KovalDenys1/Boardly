@@ -59,13 +59,23 @@ describe('public game access helpers', () => {
     })
 
     it('refuses an experimental game that is enabled but has no lobbyCreateConfig', () => {
-      // These three are the reason the check is not isTemporarilyUnavailableGameType:
-      // it says false for all of them, and /lobby/create would answer with Yahtzee's form.
+      // These two are the reason the check is not isTemporarilyUnavailableGameType:
+      // it says false for both, and /lobby/create would answer with Yahtzee's form.
+      expect(isTemporarilyUnavailableGameType('fake_artist')).toBe(false)
+      expect(canCreateLobbyForGameType('fake_artist')).toBe(false)
+      expect(isTemporarilyUnavailableGameType('telephone_doodle')).toBe(false)
+      expect(canCreateLobbyForGameType('telephone_doodle')).toBe(false)
+    })
+
+    it('opens the create form for Sketch & Guess now that it has a config (#1035)', () => {
+      // It used to be the third game in the test above: promoted by its flag and
+      // still handed Yahtzee's form. The config added in #1035 is what closes
+      // that, and the flag is the only thing standing between here and #873.
       const previous = process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
       process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = 'true'
       try {
         expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
-        expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(false)
+        expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(true)
       } finally {
         if (previous === undefined) {
           delete process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
@@ -74,10 +84,10 @@ describe('public game access helpers', () => {
         }
       }
 
-      expect(isTemporarilyUnavailableGameType('fake_artist')).toBe(false)
-      expect(canCreateLobbyForGameType('fake_artist')).toBe(false)
-      expect(isTemporarilyUnavailableGameType('telephone_doodle')).toBe(false)
-      expect(canCreateLobbyForGameType('telephone_doodle')).toBe(false)
+      // With the flag off the catalog entry is in-development, so the page must
+      // still refuse it: #1035 prepared the form, it did not publish the game.
+      expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(false)
+      expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
     })
   })
 

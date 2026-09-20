@@ -342,6 +342,17 @@ export default function GameRibbon() {
       diff: t('games.rock_paper_scissors.difficulty'),
       desc: t('games.rock_paper_scissors.ribbon.desc'),
     },
+    // Ready before the game is featured (#1035): the fallback below fills tag,
+    // time and desc with empty strings, so the card this game gets the moment
+    // #873 flips it would otherwise have three blank lines in it.
+    'guess-my-drawing': {
+      name: t('games.guess_my_drawing.name'),
+      tag: t('games.guess_my_drawing.ribbon.tag'),
+      players: '3-10',
+      time: t('games.guess_my_drawing.ribbon.time'),
+      diff: t('games.guess_my_drawing.difficulty'),
+      desc: t('games.guess_my_drawing.ribbon.desc'),
+    },
   }
 
   // Every available game gets a card: `/` is one of the two pages Google

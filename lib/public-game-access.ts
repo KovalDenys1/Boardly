@@ -1,13 +1,15 @@
 import { getAvailableGameTypes, getCatalogGames, isAvailableCatalogEntry, isRegisteredGameType } from './game-catalog'
 import type { RegisteredGameType, SupportedCatalogGameType } from './game-catalog'
 
-// An experimental game that already has a public lobbies route. It is not a
-// RegisteredGameType, so it has to be named here or the route falls through
-// isTemporarilyUnavailableGameType and the page offers a create button that
-// drops the visitor into the default game's form.
-type UpcomingPublicGameType = 'sketch_and_guess'
-type LobbyRouteGameType = RegisteredGameType | UpcomingPublicGameType
-type PublicGameType = RegisteredGameType | UpcomingPublicGameType
+// Sketch & Guess was the one entry here that was not a RegisteredGameType: it
+// had a public lobbies route while its engine was still flag-gated, so it had
+// to be named separately or the route fell through
+// isTemporarilyUnavailableGameType and the page offered a create button that
+// dropped the visitor into the default game's form. #1035 registered it, so
+// the map is the registered set again. A future game in that position gets its
+// own union member back.
+type LobbyRouteGameType = RegisteredGameType
+type PublicGameType = RegisteredGameType
 
 const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
   yahtzee: '/games/yahtzee/lobbies',

@@ -14,9 +14,14 @@ export type RegisteredGameType =
   | 'connect_four'
   | 'alias'
   | 'liars_party'
+  // Registered since #1035: the engine, the lobby route and the metadata are
+  // all permanent now, so nothing about the game itself depends on
+  // ENABLE_SKETCH_AND_GUESS any more. What the flag still decides is whether
+  // the catalog entry is promoted to `available`, which is the product
+  // decision #873 makes.
+  | 'sketch_and_guess'
 export type ExperimentalGameType =
   | 'telephone_doodle'
-  | 'sketch_and_guess'
   | 'fake_artist'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
@@ -249,6 +254,20 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     engineHandlesLeave: true,
     usesTurnIndex: false,
   },
+
+  sketch_and_guess: {
+    type: 'sketch_and_guess',
+    name: 'Sketch & Guess',
+    svgId: 'guess-my-drawing',
+    accentColor: 'var(--bd-mint)',
+    minPlayers: 3,
+    maxPlayers: 10,
+    supportsBots: false,
+    translationKey: 'guess_my_drawing',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: false,
+  },
 }
 
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
@@ -260,20 +279,6 @@ const TELEPHONE_DOODLE_METADATA: GameMetadata = {
   maxPlayers: 12,
   supportsBots: false,
   translationKey: 'telephone_doodle',
-  advanceTurnOnLeave: false,
-  engineHandlesLeave: false,
-  usesTurnIndex: false,
-}
-
-const SKETCH_AND_GUESS_METADATA: GameMetadata = {
-  type: 'sketch_and_guess',
-  name: 'Sketch & Guess',
-  svgId: 'guess-my-drawing',
-  accentColor: 'var(--bd-mint)',
-  minPlayers: 3,
-  maxPlayers: 10,
-  supportsBots: false,
-  translationKey: 'guess_my_drawing',
   advanceTurnOnLeave: false,
   engineHandlesLeave: false,
   usesTurnIndex: false,
@@ -601,9 +606,45 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.guess_my_drawing.description',
     players: '3-10',
     difficultyKey: 'games.guess_my_drawing.difficulty',
+    seo: {
+      title: 'Play Sketch & Guess Online Free – Draw and Guess',
+      description: 'Play Sketch & Guess online free with 3 to 10 players. One player draws a secret prompt, everyone else races to guess it. In the browser, no download.',
+      synonyms: [
+        'sketch and guess online',
+        'draw and guess game online',
+        'online drawing and guessing game',
+        'pictionary style game online',
+        'multiplayer drawing game',
+        'drawing game with friends online',
+      ],
+      genre: [
+        'Party Game',
+        'Drawing Game',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Drawing and guessing party game for three to ten players. Each round one player draws a secret prompt on a shared canvas while everyone else types guesses, scored on how quickly they land it.',
+      questionKey: 'games.guess_my_drawing.seo.question',
+      answerKey: 'games.guess_my_drawing.seo.answer',
+    },
+    // Still in-development: #873 is where the product decision to feature it
+    // publicly is taken, and the flip belongs to that ticket alone. #1035 only
+    // removes the two things that made the flip impossible – no seo block and
+    // no lobbyCreateConfig, which `isAvailableCatalogEntry` requires.
     availability: 'in-development',
     route: '/games/sketch-and-guess/lobbies',
     color: 'from-cyan-500 to-blue-600',
+    lobbyCreateConfig: {
+      gradient: 'from-cyan-500 via-sky-500 to-indigo-500',
+      // The engine's own range (SketchAndGuessGame's default GameConfig), so the
+      // form cannot offer a lobby the game refuses to start.
+      allowedPlayers: [3, 4, 5, 6, 7, 8, 9, 10],
+      defaultMaxPlayers: 6,
+      // No turnTimer and no rounds on purpose. The game runs on its own phase
+      // clock (SKETCH_PHASE_SECONDS in lib/games/sketch-and-guess-phases.ts) and
+      // ignores the lobby's turn timer, and the create form's round picker is
+      // wired to `ticTacToeRounds`, which the lobby route drops for every other
+      // game. Either one would render a control that changes nothing.
+    },
   },
   {
     id: 'fake-artist',
@@ -689,7 +730,6 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
   return (
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
-    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
@@ -700,9 +740,6 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
     return TELEPHONE_DOODLE_METADATA
-  }
-  if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
-    return SKETCH_AND_GUESS_METADATA
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
@@ -730,7 +767,6 @@ export function getAllRegisteredGameTypes(): RegisteredGameType[] {
 export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   const types: SupportedCatalogGameType[] = getAllRegisteredGameTypes()
   if (isTelephoneDoodleEnabled()) types.push('telephone_doodle')
-  if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
   if (isFakeArtistEnabled()) types.push('fake_artist')
   return types
 }

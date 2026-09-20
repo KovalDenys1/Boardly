@@ -2,9 +2,12 @@ import { existsSync } from 'fs'
 import path from 'path'
 
 import {
+  getAllEnabledGameTypes,
+  getAllRegisteredGameTypes,
   getAvailableGameTypes,
   getBotSupportedGameTypes,
   getCatalogAvailableGames,
+  getCatalogEntryById,
   getCatalogGames,
   getGameMetadata,
   hasBotSupport,
@@ -108,6 +111,79 @@ describe('game catalog availability', () => {
 
     expect(availableGames.map((game) => game.gameType)).toContain('sketch_and_guess')
     expect(getAvailableGameTypes({ enabledExperimental: ['guess-my-drawing'] })).toContain('sketch_and_guess')
+  })
+})
+
+describe('Sketch & Guess release preparation (#1035)', () => {
+  const originalEnv = process.env
+
+  beforeEach(() => {
+    process.env = { ...originalEnv }
+    for (const key of FEATURE_ENV_KEYS) {
+      delete process.env[key]
+    }
+  })
+
+  afterAll(() => {
+    process.env = originalEnv
+  })
+
+  it('stays in-development: the flip is #873, not this ticket', () => {
+    // The one assertion in this file that is about a product decision rather
+    // than about code. #1035 removed the blockers; featuring the game publicly
+    // is Denys's call and #873 carries it.
+    const entry = getCatalogEntryById('guess-my-drawing')!
+
+    expect(entry.availability).toBe('in-development')
+    expect(getAvailableGameTypes()).not.toContain('sketch_and_guess')
+    expect(isAvailableGameType('sketch_and_guess')).toBe(false)
+  })
+
+  it('has everything an availability flip needs', () => {
+    const entry = getCatalogEntryById('guess-my-drawing')!
+
+    expect(entry.gameType).toBe('sketch_and_guess')
+    expect(entry.route).toBe('/games/sketch-and-guess/lobbies')
+    expect(entry.seo).toBeDefined()
+    expect(entry.lobbyCreateConfig).toBeDefined()
+    // isAvailableCatalogEntry demands the config, so the flip alone would not
+    // have been enough before this: promoted and still not "available".
+    expect(
+      getCatalogGames({ enabledExperimental: ['guess-my-drawing'] })
+        .filter(isAvailableCatalogEntry)
+        .map((game) => game.id)
+    ).toContain('guess-my-drawing')
+  })
+
+  it('offers exactly the seats the engine accepts, and no dead controls', () => {
+    // Literals, not a range read back from the engine: SketchAndGuessGame's
+    // default config is minPlayers 3 / maxPlayers 10, and a form offering 2 or
+    // 12 would build a lobby the game refuses to start.
+    const config = getCatalogEntryById('guess-my-drawing')!.lobbyCreateConfig!
+
+    expect(config.allowedPlayers).toEqual([3, 4, 5, 6, 7, 8, 9, 10])
+    expect(config.defaultMaxPlayers).toBe(6)
+    expect(config.allowedPlayers).toContain(config.defaultMaxPlayers)
+    // The game runs on SKETCH_PHASE_SECONDS and ignores the lobby turn timer,
+    // and the create form's round picker only ever reaches tic-tac-toe. Either
+    // key here would render a control that changes nothing about the game.
+    expect(config.turnTimer).toBeUndefined()
+    expect(config.rounds).toBeUndefined()
+  })
+
+  it('is engine metadata with the flag off, so the detail page can prerender', () => {
+    // lib/game-seo.ts resolves every page through getGameMetadata. While this
+    // returned null without ENABLE_SKETCH_AND_GUESS, building /games/sketch-and-guess
+    // threw "No engine metadata for game type".
+    const meta = getGameMetadata('sketch_and_guess')
+
+    expect(meta).not.toBeNull()
+    expect(meta!.minPlayers).toBe(3)
+    expect(meta!.maxPlayers).toBe(10)
+    expect(meta!.supportsBots).toBe(false)
+    expect(getAllRegisteredGameTypes()).toContain('sketch_and_guess')
+    // Registered games are listed once; the experimental push used to add it.
+    expect(getAllEnabledGameTypes().filter((type) => type === 'sketch_and_guess')).toHaveLength(1)
   })
 })
 

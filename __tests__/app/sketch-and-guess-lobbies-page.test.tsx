@@ -85,7 +85,7 @@ describe('Sketch & Guess lobby list page (#971)', () => {
     process.env = originalEnv
   })
 
-  it('does not send the visitor to a create form the game has no config for', async () => {
+  it('sends the visitor to the game\'s own create form once it has one (#1035)', async () => {
     // Guard on the precondition: with the flag on the game is publicly
     // available, so the denylist says nothing is wrong with it.
     expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
@@ -100,13 +100,37 @@ describe('Sketch & Guess lobby list page (#971)', () => {
       expect(screen.queryByTestId('loading-spinner')).toBeNull()
     })
 
+    // The heading is the namespaced key because `t` is mocked to echo it.
+    const createCard = screen.getByRole('button', {
+      name: /games\.guess_my_drawing\.lobbies\.createNewLobby/i,
+    })
+    expect(createCard).toHaveAttribute('aria-disabled', 'false')
+
+    fireEvent.click(createCard)
+
+    // #1035 gave the entry a lobbyCreateConfig, so /lobby/create builds this
+    // game's form instead of falling back to Yahtzee's.
+    expect(mockPush).toHaveBeenCalledWith('/lobby/create?gameType=sketch_and_guess')
+  })
+
+  it('still refuses to send the visitor anywhere while the game is in-development', async () => {
+    // The #971 regression itself: without the flag the catalog entry is
+    // in-development, the create page would answer with the default game, and
+    // the card has to stay shut whatever config the entry now carries.
+    delete process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
+    expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
+
+    render(<SketchAndGuessLobbiesPage />)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).toBeNull()
+    })
+
     const createCard = screen.getByRole('button', { name: /Lobby creation unavailable/i })
     expect(createCard).toHaveAttribute('aria-disabled', 'true')
 
     fireEvent.click(createCard)
 
-    // /lobby/create has no form for sketch_and_guess and silently falls back to
-    // Yahtzee, so the visitor would have been handed a different game.
     expect(mockPush).not.toHaveBeenCalled()
   })
 })
