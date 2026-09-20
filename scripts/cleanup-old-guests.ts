@@ -1,15 +1,17 @@
 #!/usr/bin/env tsx
 /**
  * Cleanup Old Guest Users Script
- * 
- * Deletes guest users who haven't been active for 3+ days
- * This helps keep the database clean without affecting regular users
- * 
+ *
+ * Deletes abandoned guest identities. A guest who has actually played a game is
+ * a player rather than an abandoned identity and is kept far longer - see the
+ * retention constants below.
+ *
  * Run: npm run cleanup:old-guests
- * Cron: Daily at 3 AM UTC
+ * Cron: daily at 3 AM UTC, via /api/cron/maintenance
  */
 
 import { prisma } from '../lib/db'
+import type { Prisma } from '../prisma/client'
 
 interface CleanupOptions {
   days?: number
@@ -17,7 +19,53 @@ interface CleanupOptions {
   disconnect?: boolean
 }
 
+/**
+ * Retention windows, in days of inactivity.
+ *
+ * Both windows are rolling: they count from lastActiveAt, so any visit starts
+ * the clock again.
+ *
+ * A guest's identity lives in localStorage (contexts/GuestContext.tsx,
+ * boardly_guest_identity) and the token proving it is signed for 180 days
+ * (lib/guest-auth.ts). The row that identity points at used to be deleted after
+ * three days of inactivity, and Players.userId cascades on delete
+ * (prisma/schema.prisma), so a guest who came back on day four found every game
+ * they had played gone and counted as a new person (#1047).
+ *
+ * The window therefore depends on whether there is anything worth keeping:
+ *
+ * - Never played: this is the abandoned identity the job was written for -
+ *   a display name, a placeholder email, nothing attached to it. Three days,
+ *   unchanged, still overridable with CLEANUP_GUEST_DAYS.
+ * - Played at least once: a real player. Ninety days, which is what this
+ *   repo already keeps replays for (lib/cleanup-replays.ts) and how long the
+ *   acquisition-source cookie lives, and is comfortably inside the 180-day
+ *   identity token - so a row is never kept past the point where the returning
+ *   guest could still prove it is theirs.
+ */
 const DEFAULT_GUEST_CLEANUP_DAYS = 3
+const PLAYED_GUEST_CLEANUP_DAYS = 90
+
+/**
+ * What counts as "this guest actually played".
+ *
+ * Not just `finished`. A game only reaches `playing` once it has started, and
+ * the usual way a real match ends is `abandoned`, not `finished`:
+ * lib/lobby-health.ts flips any `playing` game to `abandoned` after
+ * LOBBY_CLEANUP_PLAYING_STALE_HOURS (2 by default), and lib/lobby-leave.ts
+ * abandons a running game the moment the roster drops below what the game needs.
+ * Keying the long window on `finished` alone left #1047's own headline case
+ * open: the guest whose opponent closed the tab has no finished game, so they
+ * were still purged on day four.
+ *
+ * `waiting` and `cancelled` are excluded on purpose - both mean a lobby that
+ * never started, which is the abandoned identity this job exists to remove.
+ *
+ * `startedAt` would be the more literal test, but it was added in
+ * prisma/migrations/20260325000000_add_match_timing_metadata with no backfill,
+ * so every game played before that date has it null and would read as unplayed.
+ */
+const PLAYED_GAME_STATUSES = ['playing', 'finished', 'abandoned'] as const
 
 function resolveCleanupGuestDays(rawDays: number | undefined): number {
   if (!Number.isFinite(rawDays) || (rawDays as number) <= 0) {
@@ -25,6 +73,48 @@ function resolveCleanupGuestDays(rawDays: number | undefined): number {
   }
 
   return Math.floor(rawDays as number)
+}
+
+/**
+ * The long window is a floor, not a ceiling.
+ *
+ * CLEANUP_GUEST_DAYS (and --days=) is the operator's "keep guests longer" knob.
+ * If it is turned past 90 while the long window stayed a flat constant, the
+ * guests who had actually played would be deleted while the empty identities
+ * lived on - exactly backwards. Taking the larger of the two keeps the policy
+ * monotone: a guest who played is never removed before an identical guest who
+ * did not.
+ */
+function resolvePlayedCleanupDays(days: number): number {
+  return Math.max(days, PLAYED_GUEST_CLEANUP_DAYS)
+}
+
+/**
+ * The delete set. Built once and used for both the listing and the delete, so
+ * the count that gets logged can never describe a different set of rows from
+ * the one that is actually removed.
+ */
+function buildGuestCleanupWhere(cutoff: Date, playedCutoff: Date): Prisma.UsersWhereInput {
+  const playedAGame = { game: { status: { in: [...PLAYED_GAME_STATUSES] } } }
+
+  return {
+    isGuest: true,
+    OR: [
+      // No game ever started under this identity - nothing to lose.
+      {
+        lastActiveAt: { lt: cutoff },
+        players: { none: playedAGame },
+      },
+      // Played, but idle long enough that their identity token is nearly dead too.
+      // The relation filter is what stops this branch quietly becoming a blanket
+      // cap on CLEANUP_GUEST_DAYS: without it a never-played guest was deleted at
+      // playedCutoff however far the operator turned the knob up.
+      {
+        lastActiveAt: { lt: playedCutoff },
+        players: { some: playedAGame },
+      },
+    ],
+  }
 }
 
 async function cleanupOldGuests(opts: CleanupOptions = {}) {
@@ -38,18 +128,22 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
   try {
     console.log('🧹 Starting guest cleanup...')
 
-    // Calculate the cutoff date (N days ago)
+    // Calculate the cutoff dates (N days ago)
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - days)
 
-    console.log(`📅 Cutoff date: ${cutoff.toISOString()} (inactive for > ${days} days)`)
+    const playedDays = resolvePlayedCleanupDays(days)
+    const playedCutoff = new Date()
+    playedCutoff.setDate(playedCutoff.getDate() - playedDays)
+
+    console.log(`📅 Cutoff date: ${cutoff.toISOString()} (never played, inactive for > ${days} days)`)
+    console.log(`📅 Cutoff date: ${playedCutoff.toISOString()} (played a game, inactive for > ${playedDays} days)`)
+
+    const where = buildGuestCleanupWhere(cutoff, playedCutoff)
 
     // Find old guest users (we use lastActiveAt which is non-nullable)
     const oldGuests = await prisma.users.findMany({
-      where: {
-        isGuest: true,
-        lastActiveAt: { lt: cutoff },
-      },
+      where,
       select: {
         id: true,
         username: true,
@@ -76,12 +170,7 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     }
 
     // Delete old guests in a safe manner
-    const result = await prisma.users.deleteMany({
-      where: {
-        isGuest: true,
-        lastActiveAt: { lt: cutoff },
-      },
-    })
+    const result = await prisma.users.deleteMany({ where })
 
     console.log(`✅ Successfully deleted ${result.count} old guest user(s)`)
 
@@ -125,4 +214,11 @@ if (isMain) {
     })
 }
 
-export { cleanupOldGuests }
+export {
+  cleanupOldGuests,
+  buildGuestCleanupWhere,
+  resolvePlayedCleanupDays,
+  PLAYED_GAME_STATUSES,
+  DEFAULT_GUEST_CLEANUP_DAYS,
+  PLAYED_GUEST_CLEANUP_DAYS,
+}
