@@ -123,6 +123,15 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
+// #1054: ENABLE_IN_DEVELOPMENT_GAMES promotes every in-development game to `available`,
+// which is exactly what a developer wants in their own .env.local while playing an
+// unreleased game - and next/jest loads .env.local into the test run too. Left in place it
+// would silently invert the expectations of every suite that asserts Liar's Party or
+// Sketch & Guess is still gated, and the failures would point at the suites rather than at
+// the env file. Suites that need the flag set it themselves.
+delete process.env.ENABLE_IN_DEVELOPMENT_GAMES
+delete process.env.NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES
+
 // Mock next-auth/react
 jest.mock('next-auth/react', () => ({
   useSession() {

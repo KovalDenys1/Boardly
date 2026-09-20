@@ -260,6 +260,11 @@ function checkReadmeGames(file: string, source: string): Violation[] {
   delete process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
   delete process.env.ENABLE_FAKE_ARTIST
   delete process.env.NEXT_PUBLIC_ENABLE_FAKE_ARTIST
+  // #1054's blanket flag belongs in the same list for the same reason: with it
+  // exported, the catalog promotes every in-development entry and the audit starts
+  // reporting the README as wrong about a count the environment changed.
+  delete process.env.ENABLE_IN_DEVELOPMENT_GAMES
+  delete process.env.NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES
 
   const catalog = getCatalogGames()
   const expected: Record<string, string[]> = {

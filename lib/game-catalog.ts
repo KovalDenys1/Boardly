@@ -1,5 +1,6 @@
 import {
   isFakeArtistEnabled,
+  isInDevelopmentGamePlayEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -107,6 +108,30 @@ export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatal
 /** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
 export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
   return game.availability === 'available' && game.lobbyCreateConfig !== undefined
+}
+
+/**
+ * Is this `in-development` entry structurally finished enough for ENABLE_IN_DEVELOPMENT_GAMES
+ * to promote it (#1054)?
+ *
+ * The question is asked of the entry, never of its name. `AvailableGameCatalogEntry` requires
+ * `gameType`, `route` and `lobbyCreateConfig`, and promotion writes `availability: 'available'`
+ * without adding any of them - so an entry missing one is promoted into a shape the rest of the
+ * app already believes it has. `route` is the sharper of the two: `isAvailableCatalogEntry` does
+ * not check it, and `components/HomePage/GameRibbon.tsx` reads `game.route` off everything that
+ * guard admits, so a routeless promotion is a crash there and a link to a 404 wherever it is not.
+ *
+ * Today this excludes exactly `fake_artist` and `telephone_doodle`, which #975 stripped of their
+ * routes because the pages do not exist - the same two a hardcoded denylist used to name. The
+ * difference is the next entry: a game added `in-development` before its pages exist is kept out
+ * by its own shape instead of by someone remembering to extend a list.
+ */
+export function isFlagPromotableEntry(game: GameCatalogEntry): boolean {
+  return (
+    game.gameType !== undefined &&
+    game.route !== undefined &&
+    game.lobbyCreateConfig !== undefined
+  )
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -795,6 +820,18 @@ export function getAvailableGameTypes(options?: {
   )
 }
 
+/**
+ * The catalog with every `in-development` entry its flags have promoted to `available`.
+ *
+ * This is the single chokepoint the whole gate hangs off: `getCatalogAvailableGames` filters
+ * this list, `getAvailableGameTypes` maps that, and `isTemporarilyUnavailableGameType` - the
+ * 400 on POST /api/lobby and POST /api/game/create - is the negation of it. So the one place
+ * to open an unreleased game for local and preview work is here, and one place is why the
+ * production guard can be argued about at all.
+ *
+ * `isInDevelopmentGamePlayEnabled()` returns false on production unconditionally, so on
+ * boardly.online this branch is the same as it was before #1054.
+ */
 export function getCatalogGames(options?: {
   enabledExperimental?: readonly string[]
 }): GameCatalogEntry[] {
@@ -807,6 +844,7 @@ export function getCatalogGames(options?: {
 
     const isEnabled =
       enabledExperimental.has(game.id) ||
+      (isInDevelopmentGamePlayEnabled() && isFlagPromotableEntry(game)) ||
       (game.gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())
