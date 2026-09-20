@@ -358,6 +358,25 @@ Comono mailbox.**
 A schema change here can break a Control Panel query, and a new admin feature there can
 need data this app is not yet writing. Check both.
 
+## Driving a browser on this Mac: the keychain will stop you dead
+
+An agent that launches Chrome through Playwright on this machine gets macOS keychain
+prompts - "Google Chrome for Testing wants to use your confidential information stored in
+Chromium Safe Storage". They are **OS modal dialogs, not page dialogs**, so no browser
+tool can dismiss them, and everything the agent does next waits for an answer that never
+comes. On 2026-09-20 one agent sat blocked behind three stacked prompts for over an hour
+and had to be killed; the transcript had reached 3.6 MB.
+
+- **Launch with `--use-mock-keychain`.** Chromium then never asks. There is nothing in a
+  throwaway automation profile worth encrypting anyway.
+- A fresh `--user-data-dir` does not avoid this on its own - the prompt is about the
+  keychain, not the profile.
+- If it happens anyway, the automation instance is safe to kill: its command line carries
+  `--user-data-dir=.../ms-playwright-mcp/...` and `--remote-debugging-pipe`, which Denys's
+  own Chrome does not. Killing it dismisses the prompts and leaves his tabs alone.
+- Symptom to recognise: a browser-driving agent that stops writing to its transcript while
+  its process is still alive. Check for the dialogs before assuming it is thinking.
+
 ## Reading this database: two things that make an analysis quietly wrong
 
 Both were hit on 2026-09-20 while measuring the funnel, and both produce a confident
