@@ -77,3 +77,40 @@ describe('GameStatusBanner idle nudge (#817)', () => {
     expect(screen.queryByText('game.ui.firstMoveNudge')).toBeNull()
   })
 })
+
+describe('GameStatusBanner clock and untimed phases (#905)', () => {
+  const base = {
+    isFinished: false,
+    activeTitle: 'Question round',
+    secs: 45,
+    turnTimerLimit: 60,
+    barColor: 'var(--bd-lav)',
+  }
+
+  it('prints minutes once the clock passes 99 seconds', () => {
+    // Guess the Spy's question round is 300s; every earlier adopter ran 30-120s.
+    render(<GameStatusBanner {...base} secs={291} turnTimerLimit={300} />)
+    expect(screen.getByText('4:51')).toBeTruthy()
+    expect(screen.queryByText(':291')).toBeNull()
+  })
+
+  it('still prints a two-digit turn timer under 100 seconds', () => {
+    render(<GameStatusBanner {...base} secs={7} />)
+    expect(screen.getByText(':07')).toBeTruthy()
+  })
+
+  it('shows neither clock nor bar on a phase with no deadline', () => {
+    const { container } = render(
+      <GameStatusBanner {...base} showTimer={false} secs={0} turnTimerLimit={0} activeTitle="0/3 players ready" />
+    )
+    expect(screen.getByText('0/3 players ready')).toBeTruthy()
+    expect(screen.queryByText(':00')).toBeNull()
+    // The bar is the only element carrying a width percentage.
+    expect(container.querySelector('[style*="width: 100%"]')).toBeNull()
+  })
+
+  it('keeps the idle nudge off an untimed phase', () => {
+    render(<GameStatusBanner {...base} showTimer={false} isYourTurn secs={0} turnTimerLimit={0} />)
+    expect(screen.queryByText('game.ui.firstMoveNudge')).toBeNull()
+  })
+})

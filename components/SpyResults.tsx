@@ -4,6 +4,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import { resolveSpyOutcome } from '@/lib/games/spy-outcome'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -54,12 +55,14 @@ export default function SpyResults({
 }: SpyResultsProps) {
   const { t } = useTranslation()
 
-  const wasGuessRound = spyGuessedLocation !== undefined
-  const guessWasCorrect = spyGuessedLocation === location
-  const spyWon = wasGuessRound ? guessWasCorrect : eliminatedId !== spyId
+  const { wasGuessRound, guessWasCorrect, spyWon, noElimination } = resolveSpyOutcome({
+    spyGuessedLocation,
+    location,
+    eliminatedId,
+    spyId,
+  })
   const eliminatedPlayer = players.find((p) => p.id === eliminatedId)
   const spyPlayer = players.find((p) => p.id === spyId)
-  const noElimination = !wasGuessRound && eliminatedId.length === 0
 
   // Count votes for each player
   const voteCounts: Record<string, number> = {}

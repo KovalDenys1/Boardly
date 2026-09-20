@@ -1570,7 +1570,27 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
-  const isSpectator = isGameStarted && !isInGame
+
+  /**
+   * Guess the Spy finishes its game row on the last round (#729), and the
+   * results – the reveal, the final scores and the after-game block #982 put
+   * there – are the last thing that round produces. This page unmounts the
+   * board the moment the row stops saying 'playing', so a finished Spy game
+   * dropped the table straight into the waiting room and nobody ever saw its
+   * end screen. Verified on 2026-09-20 by voting out the last round in the
+   * browser: the page was showing the lobby roster a second later.
+   *
+   * Deliberately render-only, and deliberately only this game type.
+   * `isGameStarted` also gates the heartbeat, the lifecycle redirect and the
+   * dedicated-page switch, and Yahtzee and Memory come through the same
+   * branch – when their boards unmount is not #905's to change.
+   */
+  const keepFinishedGameSurface =
+    game?.status === 'finished' && (lobby?.gameType as string) === 'guess_the_spy'
+  const showGameSurface = isGameStarted || keepFinishedGameSurface
+  // Someone who was never at the table is a spectator of that surface, whether
+  // the game is still running or has just ended.
+  const isSpectator = showGameSurface && !isInGame
 
   // #1024's undo needs the host to see who was removed, and the waiting room is the
   // only screen with room for it (#899). Nobody but the host is offered the list.
@@ -1977,12 +1997,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })() : null
 
   return (
-    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+    <div className={`${!showGameSurface ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
       <div id="bd-lobby-portal" className="contents" />
-     <div className={!isGameStarted ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
+     <div className={!showGameSurface ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
-      {!isInGame && !isGameStarted ? (
+      {!isInGame && !showGameSurface ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
           {showAutoJoinLoadingState ? (
@@ -2050,7 +2070,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             isRegistered={status === 'authenticated' && !isGuest}
           />
         </div>
-      ) : !isGameStarted ? (
+      ) : !showGameSurface ? (
         /* Waiting Room - unified card with pinned actions */
         <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <LobbyInfo
@@ -2559,6 +2579,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
               onLeave={() => setShowLeaveConfirmModal(true)}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+              chatMessages={hasMultipleHumans ? chatMessages : undefined}
+              onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
+              chatUnreadCount={unreadMessageCount}
+              onResetChatUnread={resetUnread}
+              someoneTyping={someoneTyping}
+              playerProfiles={chatPlayerProfiles}
+              onProfileClick={setProfileUserId}
             />
           ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (
             <MemoryGameBoard
