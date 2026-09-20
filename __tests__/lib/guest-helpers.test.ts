@@ -3,7 +3,12 @@
  */
 
 import * as guestHelpers from '@/lib/guest-helpers'
-import { getOrCreateGuestUser, guestNameSuffix, releaseGuestUsername } from '@/lib/guest-helpers'
+import {
+    getOrCreateGuestUser,
+    guestNameSuffix,
+    releaseGuestUsername,
+    restoreGuestUsername,
+} from '@/lib/guest-helpers'
 import { prisma } from '@/lib/db'
 
 // createGuestId() in lib/guest-auth.ts mints `guest-<uuid>`, so that is the shape
@@ -331,6 +336,55 @@ describe('Guest Helpers', () => {
 
             expect(freed).toBe(true)
             expect((prisma.users.update as jest.Mock).mock.calls[0][0].data.username).toBe('Guest-8f14e4')
+        })
+
+        // scripts/cleanup-old-guests.ts and /api/user/upgrade-guest both delete
+        // guest rows, so either can land between the caller's lookup and this
+        // update. The name is free afterwards, which is what the caller asked;
+        // rethrowing P2025 turned that into a 500 on a signup that should have
+        // gone through.
+        it('reports the name free when the guest row has already been deleted', async () => {
+            const missing = Object.assign(
+                new Error('An operation failed because it depends on one or more records that were required but not found.'),
+                { code: 'P2025' }
+            )
+                ; (prisma.users.update as jest.Mock).mockRejectedValue(missing)
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    // The rename cannot share a transaction with the caller's own write - an
+    // interactive Prisma transaction aborts on the first failed statement, so the
+    // P2002 retry above could not run inside one - so the caller can free the name
+    // and then lose the race for it. The guest gets its name back instead of being
+    // renamed for nothing.
+    describe('restoreGuestUsername', () => {
+        it('writes the previous display name back', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys' })
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledWith({
+                where: { id: GUEST_ID },
+                data: { username: 'Denys' },
+            })
+        })
+
+        it('reports failure rather than throwing when the winner of the race holds the name', async () => {
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(
+                Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+            )
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
+        })
+
+        it('swallows any other failure, because it runs on an error path', async () => {
+            // Throwing here would turn the caller's 409 into the 500 this exists to
+            // prevent.
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(new Error('connection terminated'))
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
         })
     })
 })

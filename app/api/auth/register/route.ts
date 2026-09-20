@@ -26,6 +26,14 @@ export async function POST(request: NextRequest) {
     // Check if user already exists. `findMany`, not `findFirst`: a guest row and a
     // real account can hold the email and the username separately, and the two
     // cases are answered differently below.
+    //
+    // The username arm is case-insensitive, matching GET /api/user/check-username,
+    // which is what the register form polls. `Users_username_key` is a plain btree
+    // with no lower(), so the database itself would happily take "DENYS" next to an
+    // account called "Denys" - an exact lookup here let a signup claim the
+    // case-variant of a real account's name, which is the impersonation the same
+    // fix closes in PATCH /api/user/profile. It also means more than one row can
+    // come back on the username, which is why the split below exists.
     const conflicts = await prisma.users.findMany({
       where: {
         OR: [
@@ -35,7 +43,12 @@ export async function POST(request: NextRequest) {
               mode: 'insensitive',
             },
           },
-          { username },
+          {
+            username: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
         ],
       },
       select: { id: true, email: true, username: true, isGuest: true },
@@ -47,9 +60,15 @@ export async function POST(request: NextRequest) {
     // `some`/`find` rather than a single `find` over the whole set: a row matching
     // on email must not be read as the holder of the username, and a real account
     // must decide the answer whatever order the rows came back in.
-    const usernameHolders = conflicts.filter((row) => row.username === username)
+    const usernameHolders = conflicts.filter(
+      (row) => row.username?.toLowerCase() === username.toLowerCase()
+    )
     const usernameTakenByAccount = usernameHolders.some((row) => !row.isGuest)
-    const guestHoldingUsername = usernameHolders.find((row) => row.isGuest)
+
+    // Only an exact-case holder is actually in the way of the insert, so that is
+    // the only guest moved aside; a guest called "denys" keeps its name when the
+    // signup is for "Denys".
+    const guestHoldingUsername = usernameHolders.find((row) => row.isGuest && row.username === username)
 
     // A guest display name is not an account, and since #1047 a guest who has
     // played is kept for ninety days instead of three - so a visitor called

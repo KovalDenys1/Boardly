@@ -165,6 +165,12 @@ describe('GET /api/user/check-username', () => {
 describe('PATCH /api/user/profile - username', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    setUpProfileMocks()
+  })
+
+  function setUpProfileMocks() {
+    mockPrisma.users.findMany.mockResolvedValue([])
+    mockPrisma.users.findFirst.mockResolvedValue(null)
     mockGetServerSession.mockResolvedValue({ user: { id: ACCOUNT_ID } } as any)
     mockPrisma.users.findUnique.mockResolvedValue({
       id: ACCOUNT_ID,
@@ -213,7 +219,7 @@ describe('PATCH /api/user/profile - username', () => {
         },
       })
     )
-  })
+  }
 
   function request(username: string) {
     return new NextRequest('http://localhost:3000/api/user/profile', {
@@ -224,11 +230,9 @@ describe('PATCH /api/user/profile - username', () => {
   }
 
   it('renames the guest holding the name and takes it', async () => {
-    mockPrisma.users.findFirst.mockResolvedValue({
-      id: GUEST_ID,
-      username: 'Denys',
-      isGuest: true,
-    })
+    mockPrisma.users.findMany.mockResolvedValue([
+      { id: GUEST_ID, username: 'Denys', isGuest: true },
+    ])
 
     const response = await patchProfile(request('Denys'))
     const payload = await response.json()
@@ -242,11 +246,9 @@ describe('PATCH /api/user/profile - username', () => {
   })
 
   it('still refuses a name held by another real account', async () => {
-    mockPrisma.users.findFirst.mockResolvedValue({
-      id: OTHER_ACCOUNT_ID,
-      username: 'Denys',
-      isGuest: false,
-    })
+    mockPrisma.users.findMany.mockResolvedValue([
+      { id: OTHER_ACCOUNT_ID, username: 'Denys', isGuest: false },
+    ])
 
     const response = await patchProfile(request('Denys'))
     const payload = await response.json()
@@ -258,11 +260,9 @@ describe('PATCH /api/user/profile - username', () => {
   })
 
   it('refuses when the guest rename loses its race', async () => {
-    mockPrisma.users.findFirst.mockResolvedValue({
-      id: GUEST_ID,
-      username: 'Denys',
-      isGuest: true,
-    })
+    mockPrisma.users.findMany.mockResolvedValue([
+      { id: GUEST_ID, username: 'Denys', isGuest: true },
+    ])
     mockPrisma.users.update.mockRejectedValue(
       Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
     )
@@ -273,5 +273,111 @@ describe('PATCH /api/user/profile - username', () => {
     expect(response.status).toBe(409)
     expect(payload.error).toBe('Username is already taken')
     expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  // The lookup is case-insensitive, `Users_username_key` is not: it is
+  // `CREATE UNIQUE INDEX "Users_username_key" ON public."Users" USING btree
+  // (username)` on the live database, with no lower(). So "Denys" and "denys" are
+  // two legal rows, and getOrCreateGuestUser (lib/guest-helpers.ts) looks a new
+  // guest's name up with `where: { username }` - exact - so a guest typing
+  // "denys" while the account "Denys" exists is created under that name. Both
+  // rows then match this route's insensitive lookup.
+  describe('when a guest and a real account differ only in case', () => {
+    const bothRows = [
+      { id: GUEST_ID, username: 'denys', isGuest: true },
+      { id: OTHER_ACCOUNT_ID, username: 'Denys', isGuest: false },
+    ]
+
+    it('refuses, whichever of the two the database lists first', async () => {
+      for (const rows of [bothRows, [...bothRows].reverse()]) {
+        jest.clearAllMocks()
+        setUpProfileMocks()
+        mockPrisma.users.findMany.mockResolvedValue(rows)
+
+        const response = await patchProfile(request('DENYS'))
+        const payload = await response.json()
+
+        expect(response.status).toBe(409)
+        expect(payload.error).toBe('Username is already taken')
+        expect(mockPrisma.users.update).not.toHaveBeenCalled()
+        expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+      }
+    })
+
+    it('reads every matching row rather than one of them', async () => {
+      mockPrisma.users.findMany.mockResolvedValue(bothRows)
+
+      await patchProfile(request('DENYS'))
+
+      expect(mockPrisma.users.findMany).toHaveBeenCalledWith({
+        where: {
+          username: { equals: 'DENYS', mode: 'insensitive' },
+          NOT: { id: ACCOUNT_ID },
+        },
+        select: { id: true, username: true, isGuest: true },
+      })
+    })
+  })
+
+  it('leaves a guest whose name differs only in case alone', async () => {
+    // Nothing is in the way: the index is case-sensitive, so "DENYS" can be
+    // written while the guest keeps "denys". Renaming it would be churn on a row
+    // that is not involved.
+    mockPrisma.users.findMany.mockResolvedValue([
+      { id: GUEST_ID, username: 'denys', isGuest: true },
+    ])
+
+    const response = await patchProfile(request('DENYS'))
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.users.update).not.toHaveBeenCalled()
+  })
+
+  // The rename and the write cannot share a transaction - an interactive Prisma
+  // transaction aborts on the first failed statement, so releaseGuestUsername's
+  // P2002 retry could not run inside one. That leaves a window between freeing
+  // the name and taking it.
+  describe('when the write loses the race for the freed name', () => {
+    function loseTheRace() {
+      mockPrisma.users.findMany.mockResolvedValue([
+        { id: GUEST_ID, username: 'Denys', isGuest: true },
+      ])
+      mockPrisma.$transaction.mockRejectedValue(
+        Object.assign(new Error('Unique constraint failed on the fields: (`username`)'), {
+          code: 'P2002',
+          meta: { target: ['username'] },
+        })
+      )
+    }
+
+    it('answers 409, not 500', async () => {
+      loseTheRace()
+
+      const response = await patchProfile(request('Denys'))
+      const payload = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(payload.error).toBe('Username is already taken')
+    })
+
+    it('hands the guest its display name back', async () => {
+      loseTheRace()
+
+      await patchProfile(request('Denys'))
+
+      expect(mockPrisma.users.update).toHaveBeenLastCalledWith({
+        where: { id: GUEST_ID },
+        data: { username: 'Denys' },
+      })
+    })
+
+    it('still reports a failure that is not a collision as a server error', async () => {
+      mockPrisma.users.findMany.mockResolvedValue([])
+      mockPrisma.$transaction.mockRejectedValue(new Error('connection terminated'))
+
+      const response = await patchProfile(request('Denys'))
+
+      expect(response.status).toBe(500)
+    })
   })
 })

@@ -132,6 +132,28 @@ describe('POST /api/auth/register', () => {
     expect(mockPrisma.users.create).not.toHaveBeenCalled()
   })
 
+  // GET /api/user/check-username - what this form polls - has always answered
+  // case-insensitively, so an exact lookup here let a signup take a name the form
+  // had just called taken, and put "DENYS" next to the account "Denys".
+  it('rejects a username that a real account holds in another case', async () => {
+    mockPrisma.users.findMany.mockResolvedValue([
+      { id: REAL_USER_ID, email: 'taken@example.com', username: 'New_User', isGuest: false },
+    ] as any)
+
+    const response = await POST(
+      buildRequest({
+        email: 'new@example.com',
+        username: 'new_user',
+        password: 'ValidPass123',
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(payload.error).toBe('Email or username already exists')
+    expect(mockPrisma.users.create).not.toHaveBeenCalled()
+  })
+
   it('rejects a username collision found during initial lookup', async () => {
     mockPrisma.users.findMany.mockResolvedValue([
       { id: REAL_USER_ID, email: 'taken@example.com', username: 'new_user', isGuest: false },
@@ -229,10 +251,18 @@ describe('POST /api/auth/register', () => {
       expect(mockPrisma.users.create).not.toHaveBeenCalled()
     })
 
-    it('refuses when a real account holds the name even if a guest holds it too', async () => {
+    // The rows differ in case, which is the only way two of them can hold one
+    // name: `Users_username_key` is `CREATE UNIQUE INDEX "Users_username_key" ON
+    // public."Users" USING btree (username)` on the live database, with no
+    // lower(), and getOrCreateGuestUser looks a new guest's name up with
+    // `where: { username }` - exact - so a guest typing "new_user" while the
+    // account "New_User" exists is created under that name. An earlier version of
+    // this test gave both rows the identical username, which the unique index
+    // forbids, so it passed against a lookup that could never return two rows.
+    it('refuses when a real account holds the name in another case and a guest holds it too', async () => {
       mockPrisma.users.findMany.mockResolvedValue([
         { id: GUEST_ID, email: `guest-${GUEST_ID}@boardly.guest`, username: 'new_user', isGuest: true },
-        { id: REAL_USER_ID, email: 'taken@example.com', username: 'new_user', isGuest: false },
+        { id: REAL_USER_ID, email: 'taken@example.com', username: 'New_User', isGuest: false },
       ] as any)
 
       const response = await POST(
@@ -246,6 +276,67 @@ describe('POST /api/auth/register', () => {
       expect(response.status).toBe(400)
       expect(mockPrisma.users.update).not.toHaveBeenCalled()
       expect(mockPrisma.users.create).not.toHaveBeenCalled()
+    })
+
+    it('refuses whichever order the two rows come back in', async () => {
+      mockPrisma.users.findMany.mockResolvedValue([
+        { id: REAL_USER_ID, email: 'taken@example.com', username: 'New_User', isGuest: false },
+        { id: GUEST_ID, email: `guest-${GUEST_ID}@boardly.guest`, username: 'new_user', isGuest: true },
+      ] as any)
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+
+      expect(response.status).toBe(400)
+      expect(mockPrisma.users.update).not.toHaveBeenCalled()
+      expect(mockPrisma.users.create).not.toHaveBeenCalled()
+    })
+
+    it('leaves a guest whose name differs only in case alone', async () => {
+      // Nothing is in the way - the index is case-sensitive - so the signup goes
+      // through and the guest keeps its display name.
+      mockPrisma.users.findMany.mockResolvedValue(guestHolding('New_User') as any)
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(mockPrisma.users.update).not.toHaveBeenCalled()
+    })
+
+    it('registers the visitor when the guest row vanished before the rename', async () => {
+      // scripts/cleanup-old-guests.ts and /api/user/upgrade-guest both delete
+      // guest rows, and either can land between the lookup and the rename. The
+      // name is free, so the signup should go through; this used to be a 500.
+      mockPrisma.users.findMany.mockResolvedValue(guestHolding('new_user') as any)
+      mockPrisma.users.update.mockRejectedValue(
+        Object.assign(new Error('An operation failed because it depends on one or more records that were required but not found.'), {
+          code: 'P2025',
+        })
+      )
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+      const payload = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(payload.user.username).toBe('new_user')
+      expect(mockPrisma.users.create).toHaveBeenCalled()
     })
 
     it('gives up cleanly when every rename of the guest collides', async () => {
@@ -335,7 +426,12 @@ describe('POST /api/auth/register', () => {
               mode: 'insensitive',
             },
           },
-          { username: 'new_user' },
+          {
+            username: {
+              equals: 'new_user',
+              mode: 'insensitive',
+            },
+          },
         ],
       },
       select: { id: true, email: true, username: true, isGuest: true },
