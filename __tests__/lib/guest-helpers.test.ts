@@ -2,7 +2,7 @@
  * Unit tests for guest helper functions
  */
 
-import { getOrCreateGuestUser, cleanupOldGuests } from '@/lib/guest-helpers'
+import { getOrCreateGuestUser, cleanupOldGuests, guestNameSuffix } from '@/lib/guest-helpers'
 import { prisma } from '@/lib/db'
 
 // Mock Prisma
@@ -222,6 +222,32 @@ describe('Guest Helpers', () => {
             await getOrCreateGuestUser(guestId, guestName)
 
             expect(prisma.users.update).not.toHaveBeenCalled()
+        })
+    })
+
+    // #1047 follow-up: guest rows are now held for up to 90 days of inactivity
+    // instead of 3, so a taken display name is squatted 30x longer and this
+    // collision path runs far more often. It used to produce the same name for
+    // every guest, because createGuestId returns `guest-<uuid>` and the old
+    // suffix was guestId.slice(0, 6) - the constant prefix "guest-".
+    describe('guestNameSuffix', () => {
+        const GUEST_ID = 'guest-8f14e45f-ceea-467a-9a3b-1c2d3e4f5a6b'
+        const OTHER_GUEST_ID = 'guest-2c1a7b90-4d55-4e0f-8b71-0a9c8d7e6f54'
+
+        it('draws the suffix from the random part of the id, not the prefix', () => {
+            expect(guestNameSuffix(GUEST_ID)).toBe('8f14e4')
+            expect(guestNameSuffix(GUEST_ID)).not.toContain('guest')
+        })
+
+        it('gives two colliding guests different names', () => {
+            expect(guestNameSuffix(GUEST_ID)).not.toBe(guestNameSuffix(OTHER_GUEST_ID))
+            expect(`Denys-${guestNameSuffix(GUEST_ID)}`).toBe('Denys-8f14e4')
+        })
+
+        it('leaves no double dash on the P2002 retry name', () => {
+            const fallback = `Denys-${guestNameSuffix(GUEST_ID)}-7556`
+            expect(fallback).toBe('Denys-8f14e4-7556')
+            expect(fallback).not.toContain('--')
         })
     })
 

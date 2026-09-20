@@ -2,8 +2,8 @@
 /**
  * Cleanup Old Guest Users Script
  *
- * Deletes abandoned guest identities. A guest who has finished a game is a
- * player rather than an abandoned identity and is kept far longer - see the
+ * Deletes abandoned guest identities. A guest who has actually played a game is
+ * a player rather than an abandoned identity and is kept far longer - see the
  * retention constants below.
  *
  * Run: npm run cleanup:old-guests
@@ -34,10 +34,10 @@ interface CleanupOptions {
  *
  * The window therefore depends on whether there is anything worth keeping:
  *
- * - No finished game: this is the abandoned identity the job was written for -
+ * - Never played: this is the abandoned identity the job was written for -
  *   a display name, a placeholder email, nothing attached to it. Three days,
  *   unchanged, still overridable with CLEANUP_GUEST_DAYS.
- * - At least one finished game: a real player. Ninety days, which is what this
+ * - Played at least once: a real player. Ninety days, which is what this
  *   repo already keeps replays for (lib/cleanup-replays.ts) and how long the
  *   acquisition-source cookie lives, and is comfortably inside the 180-day
  *   identity token - so a row is never kept past the point where the returning
@@ -45,6 +45,27 @@ interface CleanupOptions {
  */
 const DEFAULT_GUEST_CLEANUP_DAYS = 3
 const PLAYED_GUEST_CLEANUP_DAYS = 90
+
+/**
+ * What counts as "this guest actually played".
+ *
+ * Not just `finished`. A game only reaches `playing` once it has started, and
+ * the usual way a real match ends is `abandoned`, not `finished`:
+ * lib/lobby-health.ts flips any `playing` game to `abandoned` after
+ * LOBBY_CLEANUP_PLAYING_STALE_HOURS (2 by default), and lib/lobby-leave.ts
+ * abandons a running game the moment the roster drops below what the game needs.
+ * Keying the long window on `finished` alone left #1047's own headline case
+ * open: the guest whose opponent closed the tab has no finished game, so they
+ * were still purged on day four.
+ *
+ * `waiting` and `cancelled` are excluded on purpose - both mean a lobby that
+ * never started, which is the abandoned identity this job exists to remove.
+ *
+ * `startedAt` would be the more literal test, but it was added in
+ * prisma/migrations/20260325000000_add_match_timing_metadata with no backfill,
+ * so every game played before that date has it null and would read as unplayed.
+ */
+const PLAYED_GAME_STATUSES = ['playing', 'finished', 'abandoned'] as const
 
 function resolveCleanupGuestDays(rawDays: number | undefined): number {
   if (!Number.isFinite(rawDays) || (rawDays as number) <= 0) {
@@ -55,21 +76,43 @@ function resolveCleanupGuestDays(rawDays: number | undefined): number {
 }
 
 /**
+ * The long window is a floor, not a ceiling.
+ *
+ * CLEANUP_GUEST_DAYS (and --days=) is the operator's "keep guests longer" knob.
+ * If it is turned past 90 while the long window stayed a flat constant, the
+ * guests who had actually played would be deleted while the empty identities
+ * lived on - exactly backwards. Taking the larger of the two keeps the policy
+ * monotone: a guest who played is never removed before an identical guest who
+ * did not.
+ */
+function resolvePlayedCleanupDays(days: number): number {
+  return Math.max(days, PLAYED_GUEST_CLEANUP_DAYS)
+}
+
+/**
  * The delete set. Built once and used for both the listing and the delete, so
  * the count that gets logged can never describe a different set of rows from
  * the one that is actually removed.
  */
 function buildGuestCleanupWhere(cutoff: Date, playedCutoff: Date): Prisma.UsersWhereInput {
+  const playedAGame = { game: { status: { in: [...PLAYED_GAME_STATUSES] } } }
+
   return {
     isGuest: true,
     OR: [
-      // Nothing was ever finished under this identity - nothing to lose.
+      // No game ever started under this identity - nothing to lose.
       {
         lastActiveAt: { lt: cutoff },
-        players: { none: { game: { status: 'finished' } } },
+        players: { none: playedAGame },
       },
       // Played, but idle long enough that their identity token is nearly dead too.
-      { lastActiveAt: { lt: playedCutoff } },
+      // The relation filter is what stops this branch quietly becoming a blanket
+      // cap on CLEANUP_GUEST_DAYS: without it a never-played guest was deleted at
+      // playedCutoff however far the operator turned the knob up.
+      {
+        lastActiveAt: { lt: playedCutoff },
+        players: { some: playedAGame },
+      },
     ],
   }
 }
@@ -89,11 +132,12 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - days)
 
+    const playedDays = resolvePlayedCleanupDays(days)
     const playedCutoff = new Date()
-    playedCutoff.setDate(playedCutoff.getDate() - PLAYED_GUEST_CLEANUP_DAYS)
+    playedCutoff.setDate(playedCutoff.getDate() - playedDays)
 
-    console.log(`📅 Cutoff date: ${cutoff.toISOString()} (no finished game, inactive for > ${days} days)`)
-    console.log(`📅 Cutoff date: ${playedCutoff.toISOString()} (finished a game, inactive for > ${PLAYED_GUEST_CLEANUP_DAYS} days)`)
+    console.log(`📅 Cutoff date: ${cutoff.toISOString()} (never played, inactive for > ${days} days)`)
+    console.log(`📅 Cutoff date: ${playedCutoff.toISOString()} (played a game, inactive for > ${playedDays} days)`)
 
     const where = buildGuestCleanupWhere(cutoff, playedCutoff)
 
@@ -170,4 +214,11 @@ if (isMain) {
     })
 }
 
-export { cleanupOldGuests, buildGuestCleanupWhere, DEFAULT_GUEST_CLEANUP_DAYS, PLAYED_GUEST_CLEANUP_DAYS }
+export {
+  cleanupOldGuests,
+  buildGuestCleanupWhere,
+  resolvePlayedCleanupDays,
+  PLAYED_GAME_STATUSES,
+  DEFAULT_GUEST_CLEANUP_DAYS,
+  PLAYED_GUEST_CLEANUP_DAYS,
+}

@@ -9,6 +9,31 @@ const log = apiLogger('/lib/guest-helpers')
 // the app and a recurring source of Users.update timeouts under DB contention (#683).
 const GUEST_ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
 
+const GUEST_ID_PREFIX = 'guest-'
+
+/**
+ * The discriminator appended to a guest display name when that name is taken.
+ *
+ * Guest ids are `guest-<uuid>` (createGuestId in lib/guest-auth.ts), so the
+ * first six characters of one are the constant prefix `guest-`: the old
+ * `guestId.slice(0, 6)` gave every colliding guest the same name, "Denys-guest-",
+ * and the P2002 retry path the double-dashed "Denys-guest--7556". Strip the
+ * prefix and the uuid's own dashes first so the suffix is drawn from the random
+ * part of the id and actually discriminates.
+ *
+ * This matters more since #1047: a guest row is now held for up to 90 days of
+ * inactivity instead of 3, so a common first name is squatted for far longer and
+ * the collision path runs far more often.
+ */
+export function guestNameSuffix(guestId: string): string {
+    const random = guestId.startsWith(GUEST_ID_PREFIX)
+        ? guestId.slice(GUEST_ID_PREFIX.length)
+        : guestId
+    const suffix = random.replace(/-/g, '').slice(0, 6)
+
+    return suffix.length > 0 ? suffix : guestId.replace(/-/g, '').slice(0, 6)
+}
+
 /**
  * Get or create a guest user based on guest ID
  * Guest users are temporary and marked with isGuest = true
@@ -104,7 +129,7 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
 
         // If username is taken, append guest ID suffix
         if (usernameExists) {
-            uniqueUsername = `${guestName}-${guestId.slice(0, 6)}`
+            uniqueUsername = `${guestName}-${guestNameSuffix(guestId)}`
             log.info('Username taken, using unique username', {
                 requestedName: guestName,
                 uniqueName: uniqueUsername
@@ -135,7 +160,7 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
                 })
                 
                 // Force unique username by appending guest ID and timestamp
-                const fallbackUsername = `${guestName}-${guestId.slice(0, 6)}-${Date.now().toString().slice(-4)}`
+                const fallbackUsername = `${guestName}-${guestNameSuffix(guestId)}-${Date.now().toString().slice(-4)}`
                 
                 const retryGuest = await prisma.users.create({
                     data: {

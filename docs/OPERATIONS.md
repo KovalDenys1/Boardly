@@ -85,7 +85,7 @@ Recommended:
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
 - `GITHUB_ALERT_TOKEN` / `GITHUB_ALERT_REPO` (optional GitHub issue creation/closure for reliability alerts; repo format is `owner/repo`)
-- `CLEANUP_GUEST_DAYS` (optional retention window for guests who never finished a game, defaults to `3`; guests who finished at least one game are kept for 90 days of inactivity and are not affected by this)
+- `CLEANUP_GUEST_DAYS` (optional retention window for guests who never played a game, defaults to `3`; guests who did play - any game that reached `playing`, `finished` or `abandoned` - are kept for 90 days of inactivity, or for `CLEANUP_GUEST_DAYS` when that is set higher, whichever is longer)
 - `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (optional shared rate-limit backend for production; when absent, app falls back to in-memory limiter)
 - GitHub Actions scheduler configuration:
