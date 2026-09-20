@@ -11,6 +11,12 @@ jest.mock('@/lib/db', () => ({
     },
     games: {
       updateMany: jest.fn(),
+      count: jest.fn(),
+      // Prisma field references, used by the #1048 recurrence counter to compare
+      // two columns of the same row.
+      fields: {
+        startedAt: 'Games.startedAt',
+      },
     },
   },
 }))
@@ -31,6 +37,7 @@ describe('cleanupStaleLobbiesAndGames', () => {
     mockPrisma.lobbies.findMany.mockResolvedValue([])
     mockPrisma.lobbies.updateMany.mockResolvedValue({ count: 0 } as any)
     mockPrisma.games.updateMany.mockResolvedValue({ count: 0 } as any)
+    mockPrisma.games.count.mockResolvedValue(0 as any)
   })
 
   it('deactivates lobbies without active waiting/playing games', async () => {
@@ -335,6 +342,55 @@ describe('cleanupStaleLobbiesAndGames', () => {
         }),
       })
     )
+  })
+
+  it('the global backstop will not abandon a game that only just started (#1048)', async () => {
+    mockPrisma.lobbies.findMany.mockResolvedValue([] as any)
+
+    await cleanupStaleLobbiesAndGames({
+      now: new Date('2026-02-27T21:00:00.000Z'),
+      waitingStaleHours: 1,
+      playingStaleHours: 2,
+    })
+
+    const cutoff = new Date('2026-02-27T19:00:00.000Z')
+    const playingCall = mockPrisma.games.updateMany.mock.calls[1][0] as any
+
+    expect(playingCall.where.status).toBe('playing')
+    // lastMoveAt is seeded on the waiting row by its column default, so on its own
+    // it says how long the lobby had been open, not how long the game has been
+    // idle. Rows written before #1048 still carry that value while playing, and
+    // unbounded this clause abandoned them the moment they started.
+    expect(playingCall.where.OR).toContainEqual({
+      AND: [
+        { lastMoveAt: { lte: cutoff } },
+        { OR: [{ startedAt: null }, { startedAt: { lte: cutoff } }] },
+      ],
+    })
+    expect(playingCall.where.OR).toContainEqual({ updatedAt: { lte: cutoff } })
+    // A bare lastMoveAt test is the defect itself.
+    expect(playingCall.where.OR).not.toContainEqual({ lastMoveAt: { lte: cutoff } })
+  })
+
+  it('counts playing games whose move clock predates their start (#1048)', async () => {
+    mockPrisma.lobbies.findMany.mockResolvedValue([] as any)
+    mockPrisma.games.count.mockResolvedValue(3 as any)
+
+    const result = await cleanupStaleLobbiesAndGames({
+      now: new Date('2026-02-27T21:00:00.000Z'),
+      playingStaleHours: 2,
+    })
+
+    // Without this the next regression is invisible until somebody runs a
+    // 30-day query and reads the negative medians as lost players.
+    expect(result.playingGamesWithPreStartMoveClock).toBe(3)
+    expect(mockPrisma.games.count).toHaveBeenCalledWith({
+      where: {
+        status: 'playing',
+        startedAt: { not: null },
+        lastMoveAt: { lte: 'Games.startedAt' },
+      },
+    })
   })
 })
 

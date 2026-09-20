@@ -1,4 +1,4 @@
-import { buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
+import { buildGameStartFields, buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
 
 const dbPlayer = (userId: string, overrides: Partial<DbPlayerRecord> = {}): DbPlayerRecord => ({
   id: `db-${userId}`,
@@ -151,5 +151,44 @@ describe('buildPartyGameTerminalUpdate (#729)', () => {
     const metadata = update!.terminalFields.terminalMetadata as { outcome?: string; isDraw?: boolean }
     expect(metadata.outcome).toBe('abandoned')
     expect(metadata.isDraw).toBe(false)
+  })
+})
+
+describe('buildGameStartFields (#1048)', () => {
+  const now = new Date('2026-09-20T12:00:00.000Z')
+
+  it('starts the move clock at the start, not at the waiting row', () => {
+    // The engine's startGame() stamps state.lastMoveAt a few ms before the route
+    // reaches the update, which is the ordinary case.
+    const fields = buildGameStartFields(now.getTime() - 3, now)
+
+    expect(fields.startedAt).toEqual(now)
+    expect(fields.lastMoveAt).toEqual(now)
+    expect(fields.lastMoveAt.getTime()).toBeGreaterThanOrEqual(fields.startedAt.getTime())
+  })
+
+  it('never returns a move clock earlier than the start it is written with', () => {
+    // A waiting row created 40 minutes before the host pressed start. This is the
+    // value the column actually held, and reading it back as play time is what
+    // produced tic_tac_toe's "MINUS 1s median seconds of real play".
+    const waitingRowCreatedAt = now.getTime() - 40 * 60 * 1000
+
+    const fields = buildGameStartFields(waitingRowCreatedAt, now)
+
+    expect(fields.lastMoveAt.getTime()).toBeGreaterThanOrEqual(fields.startedAt.getTime())
+  })
+
+  it('falls back to now when the state carries no usable stamp', () => {
+    for (const value of [undefined, null, NaN, 'nope', {}]) {
+      const fields = buildGameStartFields(value, now)
+      expect(fields.lastMoveAt).toEqual(now)
+    }
+  })
+
+  it('keeps a state stamp that is ahead of now', () => {
+    const ahead = now.getTime() + 250
+    const fields = buildGameStartFields(ahead, now)
+
+    expect(fields.lastMoveAt.getTime()).toBe(ahead)
   })
 })

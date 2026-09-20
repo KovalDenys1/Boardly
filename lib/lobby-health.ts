@@ -18,6 +18,13 @@ export type CleanupStaleLobbyGamesResult = {
   deactivatedLobbies: number
   cancelledWaitingGames: number
   abandonedPlayingGames: number
+  /**
+   * Playing games whose `lastMoveAt` is at or before their own `startedAt` (#1048).
+   * Anything above zero means a start path put a game into `playing` without
+   * stamping the move clock, so idle sweeps and play-time figures are both
+   * reading a lobby timestamp.
+   */
+  playingGamesWithPreStartMoveClock: number
   waitingStaleHours: number
   playingStaleHours: number
   batchLimit: number
@@ -73,6 +80,7 @@ export async function cleanupStaleLobbiesAndGames(
     deactivatedLobbies: 0,
     cancelledWaitingGames: 0,
     abandonedPlayingGames: 0,
+    playingGamesWithPreStartMoveClock: 0,
     waitingStaleHours,
     playingStaleHours,
     batchLimit,
@@ -246,14 +254,23 @@ export async function cleanupStaleLobbiesAndGames(
   })
   result.cancelledWaitingGames += staleWaitingUpdated.count
 
+  // A game cannot have been idle longer than it has been a game. `lastMoveAt`
+  // is seeded on the WAITING row by its column default, so every row written
+  // before #1048 - and every row whose start went through a path that forgets
+  // to stamp it - carries a pre-start value here. Tested on its own it abandons
+  // freshly started matches out from under their players. Bounding it by
+  // `startedAt` makes the backstop measure how long the game has been idle
+  // rather than how long the lobby had been sitting open. `updatedAt` needs no
+  // such guard: the start write bumps it.
   const stalePlayingUpdated = await prisma.games.updateMany({
     where: {
       status: 'playing',
       OR: [
         {
-          lastMoveAt: {
-            lte: playingStaleCutoff,
-          },
+          AND: [
+            { lastMoveAt: { lte: playingStaleCutoff } },
+            { OR: [{ startedAt: null }, { startedAt: { lte: playingStaleCutoff } }] },
+          ],
         },
         {
           updatedAt: {
@@ -268,6 +285,26 @@ export async function cleanupStaleLobbiesAndGames(
     },
   })
   result.abandonedPlayingGames += stalePlayingUpdated.count
+
+  // Recurrence detector for #1048. Every playing game should carry a move clock
+  // at or after its own start; a row that does not means some path made a game
+  // playable without stamping `lastMoveAt`, and the "seconds of real play"
+  // figures computed from that column go negative and silently wrong again.
+  // Counted every sweep so the next occurrence shows up in the cron output
+  // instead of needing a 30-day query to find.
+  result.playingGamesWithPreStartMoveClock = await prisma.games.count({
+    where: {
+      status: 'playing',
+      startedAt: { not: null },
+      lastMoveAt: { lte: prisma.games.fields.startedAt },
+    },
+  })
+  if (result.playingGamesWithPreStartMoveClock > 0) {
+    logger.warn('Playing games whose move clock predates their start (#1048)', {
+      count: result.playingGamesWithPreStartMoveClock,
+      playingStaleHours,
+    })
+  }
 
   // Final pass deactivates any lobby that no longer has waiting/playing games.
   const globallyDeactivatedLobbies = await prisma.lobbies.updateMany({
@@ -294,6 +331,7 @@ export async function cleanupStaleLobbiesAndGames(
     deactivatedLobbies: result.deactivatedLobbies,
     cancelledWaitingGames: result.cancelledWaitingGames,
     abandonedPlayingGames: result.abandonedPlayingGames,
+    playingGamesWithPreStartMoveClock: result.playingGamesWithPreStartMoveClock,
     staleWaitingBackstopUpdated: staleWaitingUpdated.count,
     stalePlayingBackstopUpdated: stalePlayingUpdated.count,
     globallyDeactivatedLobbies: globallyDeactivatedLobbies.count,

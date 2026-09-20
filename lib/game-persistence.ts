@@ -238,3 +238,42 @@ export function buildPartyGameTerminalUpdate(params: {
 
   return { terminalFields: terminalFields as TerminalFields, changedPlayerUpdates }
 }
+
+export interface GameStartFields {
+  startedAt: Date
+  lastMoveAt: Date
+  updatedAt: Date
+}
+
+/**
+ * The clock columns for the waiting -> playing transition (#1048).
+ *
+ * `Games.lastMoveAt` is declared `@default(now())`, so it is seeded when the
+ * WAITING row is created and holds a lobby timestamp, not a gameplay one. The
+ * start update wrote `startedAt` and left `lastMoveAt` where it was, so a game
+ * began life with a move clock already reading older than its own start. Two
+ * things followed from that one omission:
+ *
+ * 1. The cleanup backstop abandons a `playing` game whose `lastMoveAt` is past
+ *    the stale cutoff. A room that had been open longer than that cutoff was
+ *    therefore abandoned by the first sweep after it started, before anybody
+ *    could move, and the players watched the board disappear.
+ * 2. `lastMoveAt - startedAt` came out negative for every game that never got
+ *    a move, because it was measuring how long the lobby had sat waiting with
+ *    the sign flipped. It was never "seconds of real play".
+ *
+ * The engine already stamps `state.lastMoveAt` inside `startGame()`; this puts
+ * the same event on the column so the two clocks agree. `now` wins over a state
+ * stamp behind it, so the column can never read earlier than the `startedAt`
+ * written in the same update - that ordering is what the metric relies on.
+ */
+export function buildGameStartFields(stateLastMoveAt: unknown, now: Date = new Date()): GameStartFields {
+  const stamped =
+    typeof stateLastMoveAt === 'number' && Number.isFinite(stateLastMoveAt) ? stateLastMoveAt : null
+
+  return {
+    startedAt: now,
+    lastMoveAt: stamped !== null && stamped > now.getTime() ? new Date(stamped) : now,
+    updatedAt: now,
+  }
+}

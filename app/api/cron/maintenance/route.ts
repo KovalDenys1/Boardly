@@ -44,6 +44,8 @@ async function handleCronRequest(request: NextRequest) {
       deactivatedLobbies: lobbyCleanupResult.deactivatedLobbies,
       cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
       abandonedPlayingGames: lobbyCleanupResult.abandonedPlayingGames,
+      // Above zero means some start path is leaving the move clock unstamped (#1048).
+      playingGamesWithPreStartMoveClock: lobbyCleanupResult.playingGamesWithPreStartMoveClock,
       replayRetentionDays: replayCleanupResult.retentionDays,
       replayCutoffDate: replayCleanupResult.cutoffDate,
       deletedOversizedReplaySnapshots: replayOverflowResult.deletedSnapshots,

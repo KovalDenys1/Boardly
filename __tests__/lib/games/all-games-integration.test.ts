@@ -138,6 +138,28 @@ describe('All Games Integration', () => {
 
       jest.useRealTimers()
     })
+
+    // #1048. Everything that measures how long a seat has been sitting there -
+    // the turn timer, the auto-action guard, the idle sweep, the play-time
+    // figures - reads lastMoveAt or turnStartedAt. A start that leaves both
+    // unset makes the clock start at whatever the row happened to be carrying.
+    // Yahtzee was that start: it re-implemented the base method rather than
+    // calling it, and the assertion above passed the whole time because
+    // updatedAt was the one timestamp the copy did keep.
+    it('every engine starts the move clock in startGame', () => {
+      const startedAt = Date.now()
+
+      for (const game of makeAllGames()) {
+        testPlayers.forEach((p) => game.addPlayer(p))
+        expect(game.startGame()).toBe(true)
+
+        const state = game.getState()
+        expect(typeof state.lastMoveAt).toBe('number')
+        expect(state.lastMoveAt).toBeGreaterThanOrEqual(startedAt)
+        expect(typeof state.turnStartedAt).toBe('number')
+        expect(state.turnStartedAt).toBe(state.lastMoveAt)
+      }
+    })
   })
 
   describe('Game Rules', () => {
