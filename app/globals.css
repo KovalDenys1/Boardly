@@ -3199,4 +3199,11 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .ttt-mobile-layout .sketch-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
   .ttt-mobile-layout .sketch-header-card .game-scoreboard-right-card { display: none; }
   .ttt-mobile-layout .sketch-header-card .game-player-card { max-width: none; }
+  /* The two 1fr cells are what pushes the drawer card out of its own track:
+     the right one keeps a full share of the width for a 36px icon button. Let
+     it shrink to what it holds and the card fits inside its cell instead of
+     spilling into the round counter. */
+  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
 }
