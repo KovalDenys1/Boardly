@@ -18,6 +18,7 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
+import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { sounds } from '@/lib/sounds'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -136,6 +137,11 @@ export default function MemoryGameBoard({
   const [optimisticFlippedIds, setOptimisticFlippedIds] = useState<string[]>([])
   const [mobileTab, setMobileTab] = useState<MobileTab>('board')
   const [overlayInspecting, setOverlayInspecting] = useState(false)
+  // #1052: the three layout trees below are all mounted and two are hidden with
+  // `display: none`, so the result overlay used to mount three times and the
+  // after-game block inside it reported itself three times per finished game.
+  // The overlay renders in the one tree the player can actually see.
+  const activeGameLayout = useActiveGameLayout()
   const stuckTurnRecoveryRef = useRef(createStuckTurnRecovery())
   const resolveKeyRef = useRef<string | null>(null)
 
@@ -458,12 +464,12 @@ export default function MemoryGameBoard({
   // Shared between the mobile board tab and the phone-landscape board pane
   // (#751) — desktop keeps its own inline markup since .memory-board-panel
   // carries extra --grid-cols/--grid-rows CSS custom properties this doesn't need.
-  const renderBoardSection = (wrapClassName: string) => (
+  const renderBoardSection = (wrapClassName: string, layout: ActiveGameLayout) => (
     <>
       <div className={wrapClassName}>
         {cardGrid}
       </div>
-      {isFinished && !overlayInspecting && !isSpectator && (
+      {activeGameLayout === layout && isFinished && !overlayInspecting && !isSpectator && (
         <GameResultOverlay
           title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
           isDraw={isDraw}
@@ -482,7 +488,7 @@ export default function MemoryGameBoard({
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
       )}
-      {isFinished && overlayInspecting && (
+      {activeGameLayout === layout && isFinished && overlayInspecting && (
         <button
           onClick={() => setOverlayInspecting(false)}
           style={{
@@ -739,7 +745,7 @@ export default function MemoryGameBoard({
           <main className="memory-layout">
             <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               {cardGrid}
-              {isFinished && !overlayInspecting && !isSpectator && (
+              {activeGameLayout === 'desktop' && isFinished && !overlayInspecting && !isSpectator && (
                 <GameResultOverlay
                   title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
                   isDraw={isDraw}
@@ -758,7 +764,7 @@ export default function MemoryGameBoard({
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}
-              {isFinished && overlayInspecting && (
+              {activeGameLayout === 'desktop' && isFinished && overlayInspecting && (
                 <button
                   onClick={() => setOverlayInspecting(false)}
                   style={{
@@ -785,7 +791,7 @@ export default function MemoryGameBoard({
       {/* ── Phone landscape (#751) ─────────────────────── */}
       <div className="game-landscape-layout">
         <div className="game-landscape-board memory-landscape-board">
-          {renderBoardSection('memory-mobile-board-wrap')}
+          {renderBoardSection('memory-mobile-board-wrap', 'landscape')}
         </div>
         <div className="game-landscape-side">
           {compactHeaderSection}
@@ -823,7 +829,7 @@ export default function MemoryGameBoard({
             // wrap) so the result modal covers the whole tab, not just the
             // grid — on small grids the modal used to shrink with it (#752).
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', position: 'relative' }}>
-              {renderBoardSection('memory-mobile-board-wrap')}
+              {renderBoardSection('memory-mobile-board-wrap', 'mobile')}
             </div>
           )}
 

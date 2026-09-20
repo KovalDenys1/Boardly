@@ -12,6 +12,8 @@ const DIFFICULTY_MULTIPLIER: Record<BotDifficulty, number> = {
   hard: 0.85,
 }
 
+const MAX_DIFFICULTY_MULTIPLIER = Math.max(...Object.values(DIFFICULTY_MULTIPLIER))
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
@@ -50,5 +52,29 @@ export function resolveBotUxDelayMs(difficulty: BotDifficulty, baseDelayMs: numb
   const scaledDelayMs = Math.round(safeBaseDelayMs * resolvedScale * difficultyMultiplier)
   const candidateDelayMs = overrideDelayMs ?? scaledDelayMs
 
-  return clamp(candidateDelayMs, lowerBoundMs, upperBoundMs)
+  // The env knobs may only make a bot faster, never slower than the pace its
+  // executor codes for. `lib/bots/core/bot-turn-pace.ts` derives the client's
+  // bot-turn recovery grace from `botUxDelayUpperBoundMs` of the same base
+  // delays, and the client cannot read these server-only variables - so an
+  // operator who raised BOT_UX_DELAY_MAX_MS or BOT_UX_DELAY_MS used to be able
+  // to push a bot's in-turn pause past the grace and put a 409 on every turn
+  // (#1049). Bounding the output here is what keeps those two numbers tied.
+  return Math.min(
+    clamp(candidateDelayMs, lowerBoundMs, upperBoundMs),
+    botUxDelayUpperBoundMs(safeBaseDelayMs),
+  )
+}
+
+/**
+ * The longest `resolveBotUxDelayMs` may return for this base delay, under any
+ * configuration: the default scale ceiling times the slowest difficulty, itself
+ * capped by the module's default maximum. Env cannot raise it - see the note in
+ * `resolveBotUxDelayMs`.
+ */
+export function botUxDelayUpperBoundMs(baseDelayMs: number): number {
+  const safeBaseDelayMs = Number.isFinite(baseDelayMs) ? Math.max(0, Math.round(baseDelayMs)) : 0
+  return Math.min(
+    Math.round(safeBaseDelayMs * MAX_DELAY_SCALE * MAX_DIFFICULTY_MULTIPLIER),
+    DEFAULT_DELAY_MAX_MS,
+  )
 }

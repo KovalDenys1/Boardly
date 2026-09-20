@@ -603,6 +603,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         code,
         isGameStarted: game?.status === 'playing',
         isSpectator,
+        gameType: lobby?.gameType,
         reconcileWithServerSnapshot: loadLobby,
     })
 
