@@ -270,9 +270,11 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       expect(data.error).toBe('Game type is coming soon')
     })
 
-    it('leaves the genuinely experimental games to their own flag', async () => {
-      // Neither has a route or an engine the registry will build unflagged, so promoting
-      // them wholesale would hand a developer a 404 instead of a game (#975).
+    it('leaves the entries whose pages do not exist where they are', async () => {
+      // #975 stripped `route` from fake_artist and telephone_doodle because nothing is
+      // served under app/games for either, so promoting them hands a developer a 404
+      // instead of a game. They are held back by that missing field, not by their names -
+      // see the shape suite below.
       applyEnv({ ...FLAG_ON, VERCEL_ENV: 'preview', NEXT_PUBLIC_VERCEL_ENV: 'preview', NODE_ENV: 'development' })
 
       expect(isTemporarilyUnavailableGameType('liars_party')).toBe(false)
@@ -281,6 +283,167 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       const { getAvailableGameTypes } = await import('@/lib/game-catalog')
       expect(getAvailableGameTypes()).not.toContain('fake_artist')
       expect(getAvailableGameTypes()).not.toContain('telephone_doodle')
+    })
+  })
+
+  /**
+   * The flag is read twice, and until now no case could tell the two reads apart: every row
+   * above sets both variables, so deleting either read left the suite green. They are not
+   * interchangeable. `ENABLE_IN_DEVELOPMENT_GAMES` is the one a server route sees;
+   * `NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES` is the only one Next inlines into a client
+   * bundle. Seven `'use client'` files read the catalog through this same chokepoint, five of
+   * them on surfaces a visitor sees - `app/lobby/create/page.tsx`,
+   * `components/HomePage/GameRibbon.tsx`, `components/HomePage/QuickPlayButton.tsx`,
+   * `components/PlayerStatsDashboard.tsx` and `app/lobby/[code]/components/TryBotGamesBanner.tsx`
+   * (the other two are under `app/dev/`). A gate that only opened server-side would answer 200
+   * for a game no picker on the site ever lists - confirmed in a real browser on 2026-09-20:
+   * with only the server variable set the server-rendered home page carried
+   * `href="/games/liars-party"` and the hydrated page did not.
+   *
+   * Jest runs both halves in one process, so these cases pin that each variable alone is
+   * load-bearing; they cannot prove the browser inlining itself. That is why CLAUDE.md now
+   * names both variables everywhere it names one.
+   */
+  describe('both environment reads are load-bearing', () => {
+    it('opens the route with only the server variable set', async () => {
+      applyEnv({ ENABLE_IN_DEVELOPMENT_GAMES: 'true', NODE_ENV: 'development' })
+
+      const response = await CREATE_LOBBY(createLobbyRequest('liars_party'))
+
+      expect(response.status).toBe(200)
+      expect(mockPrisma.lobbies.create).toHaveBeenCalled()
+    })
+
+    it('opens the route and the catalog with only the NEXT_PUBLIC variable set', async () => {
+      applyEnv({ NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES: 'true', NODE_ENV: 'development' })
+
+      const response = await CREATE_LOBBY(createLobbyRequest('liars_party'))
+
+      expect(response.status).toBe(200)
+
+      // The catalog read is the client half's view of the same chokepoint.
+      const { getAvailableGameTypes } = await import('@/lib/game-catalog')
+      expect(getAvailableGameTypes()).toContain('liars_party')
+      expect(getAvailableGameTypes()).toContain('sketch_and_guess')
+    })
+
+    it('stays shut when neither variable is set', async () => {
+      applyEnv({ NODE_ENV: 'development' })
+
+      const response = await CREATE_LOBBY(createLobbyRequest('liars_party'))
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('Game type is coming soon')
+    })
+  })
+
+  /**
+   * Which entries the flag promotes is a question about the entry, not about its name.
+   *
+   * The branch first answered it with a hardcoded two-name denylist, which gives the right
+   * answer for today's catalog and the wrong one for the next entry: a game added
+   * `in-development` before its pages exist is not one of the two names, so it would be
+   * promoted straight into the 404 the exclusion exists to prevent. The synthetic entries
+   * below are that next entry. `isFlagPromotableEntry` asks for the three fields
+   * `AvailableGameCatalogEntry` declares - `gameType`, `route`, `lobbyCreateConfig` - because
+   * promotion writes `availability: 'available'` and adds none of them.
+   */
+  describe('promotion is decided by the entry shape', () => {
+    const BASE = {
+      id: 'future-game',
+      nameKey: 'games.future_game.name',
+      descriptionKey: 'games.future_game.description',
+      players: '2-4',
+      difficultyKey: 'games.future_game.difficulty',
+      color: 'from-gray-400 to-gray-600',
+      availability: 'in-development' as const,
+    }
+
+    const LOBBY_CREATE_CONFIG = {
+      gradient: 'from-gray-500 to-gray-700',
+      allowedPlayers: [2, 3, 4],
+      defaultMaxPlayers: 4,
+    }
+
+    it('withholds a future entry that has no route', async () => {
+      const { isFlagPromotableEntry } = await import('@/lib/game-catalog')
+
+      expect(
+        isFlagPromotableEntry({
+          ...BASE,
+          gameType: 'liars_party',
+          lobbyCreateConfig: LOBBY_CREATE_CONFIG,
+        })
+      ).toBe(false)
+    })
+
+    it('withholds a future entry that has no lobbyCreateConfig', async () => {
+      const { isFlagPromotableEntry } = await import('@/lib/game-catalog')
+
+      expect(
+        isFlagPromotableEntry({
+          ...BASE,
+          gameType: 'liars_party',
+          route: '/games/future-game/lobbies',
+        })
+      ).toBe(false)
+    })
+
+    it('withholds a future entry that has no gameType', async () => {
+      const { isFlagPromotableEntry } = await import('@/lib/game-catalog')
+
+      expect(
+        isFlagPromotableEntry({
+          ...BASE,
+          route: '/games/future-game/lobbies',
+          lobbyCreateConfig: LOBBY_CREATE_CONFIG,
+        })
+      ).toBe(false)
+    })
+
+    it('promotes a future entry that carries all three', async () => {
+      const { isFlagPromotableEntry } = await import('@/lib/game-catalog')
+
+      expect(
+        isFlagPromotableEntry({
+          ...BASE,
+          gameType: 'liars_party',
+          route: '/games/future-game/lobbies',
+          lobbyCreateConfig: LOBBY_CREATE_CONFIG,
+        })
+      ).toBe(true)
+    })
+
+    it('is the predicate the real catalog is filtered through', async () => {
+      applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
+
+      const { getCatalogGames, getAvailableGameTypes, isFlagPromotableEntry } = await import(
+        '@/lib/game-catalog'
+      )
+
+      // Recompute the expected split from the catalog itself, so a new in-development entry
+      // is covered the day it is added rather than the day someone remembers this file.
+      applyEnv({ NODE_ENV: 'development' })
+      const gated = getCatalogGames().filter((game) => game.availability === 'in-development')
+      const shouldPromote = gated.filter(isFlagPromotableEntry).map((game) => game.gameType)
+      const shouldWithhold = gated
+        .filter((game) => !isFlagPromotableEntry(game))
+        .map((game) => game.gameType)
+        .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
+
+      expect(shouldPromote.length).toBeGreaterThan(0)
+      expect(shouldWithhold.length).toBeGreaterThan(0)
+
+      applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
+      const promoted = getAvailableGameTypes()
+
+      for (const gameType of shouldPromote) {
+        expect(promoted).toContain(gameType)
+      }
+      for (const gameType of shouldWithhold) {
+        expect(promoted).not.toContain(gameType)
+      }
     })
   })
 })

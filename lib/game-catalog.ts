@@ -27,24 +27,6 @@ export type ExperimentalGameType =
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
 
-/**
- * The two games that are experimental in the literal sense, as opposed to built-but-unfeatured.
- *
- * They are the reason ENABLE_IN_DEVELOPMENT_GAMES cannot simply promote everything that is
- * `in-development`: neither has a `route` (#975 removed both, because a route here is a link
- * to a 404 the moment the entry is promoted) and `createGameEngine` throws for them unless
- * their own flag is on. So they keep their per-game flag as the only way in, and the blanket
- * one covers the games this repo already considers finished.
- */
-const EXPERIMENTAL_GAME_TYPES: readonly SupportedCatalogGameType[] = [
-  'telephone_doodle',
-  'fake_artist',
-]
-
-function isExperimentalGameType(gameType: SupportedCatalogGameType): boolean {
-  return EXPERIMENTAL_GAME_TYPES.includes(gameType)
-}
-
 export type LobbyCreateConfig = {
   gradient: string
   allowedPlayers: number[]
@@ -126,6 +108,30 @@ export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatal
 /** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
 export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
   return game.availability === 'available' && game.lobbyCreateConfig !== undefined
+}
+
+/**
+ * Is this `in-development` entry structurally finished enough for ENABLE_IN_DEVELOPMENT_GAMES
+ * to promote it (#1054)?
+ *
+ * The question is asked of the entry, never of its name. `AvailableGameCatalogEntry` requires
+ * `gameType`, `route` and `lobbyCreateConfig`, and promotion writes `availability: 'available'`
+ * without adding any of them - so an entry missing one is promoted into a shape the rest of the
+ * app already believes it has. `route` is the sharper of the two: `isAvailableCatalogEntry` does
+ * not check it, and `components/HomePage/GameRibbon.tsx` reads `game.route` off everything that
+ * guard admits, so a routeless promotion is a crash there and a link to a 404 wherever it is not.
+ *
+ * Today this excludes exactly `fake_artist` and `telephone_doodle`, which #975 stripped of their
+ * routes because the pages do not exist - the same two a hardcoded denylist used to name. The
+ * difference is the next entry: a game added `in-development` before its pages exist is kept out
+ * by its own shape instead of by someone remembering to extend a list.
+ */
+export function isFlagPromotableEntry(game: GameCatalogEntry): boolean {
+  return (
+    game.gameType !== undefined &&
+    game.route !== undefined &&
+    game.lobbyCreateConfig !== undefined
+  )
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -838,7 +844,7 @@ export function getCatalogGames(options?: {
 
     const isEnabled =
       enabledExperimental.has(game.id) ||
-      (isInDevelopmentGamePlayEnabled() && !isExperimentalGameType(game.gameType)) ||
+      (isInDevelopmentGamePlayEnabled() && isFlagPromotableEntry(game)) ||
       (game.gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())

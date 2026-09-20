@@ -84,6 +84,16 @@ function isNonProductionDeployment(): boolean {
  *
  * Deliberately absent from RUNTIME_FLAG_KEYS below: those are the keys the control panel may
  * override from the database, which is a route into production this flag must not have.
+ *
+ * **Set both variables.** The two reads are not interchangeable: `ENABLE_IN_DEVELOPMENT_GAMES`
+ * is what a server route sees, and only `NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES` is inlined
+ * into a client bundle - while `app/lobby/create/page.tsx`, `components/HomePage/GameRibbon.tsx`
+ * and `components/HomePage/QuickPlayButton.tsx` all render the catalog through this same gate in
+ * the browser. With only the server one set, POST /api/lobby accepts the game and no picker on
+ * the site lists it; checked in a browser on 2026-09-20, where the server-rendered home page
+ * carried a Liar's Party link and the hydrated page had dropped it. They are ORed rather than ANDed so this flag keeps the shape of the three
+ * per-game flags above; `__tests__/api/in-development-game-gate.test.ts` covers each read on its
+ * own so neither can be deleted as dead code.
  */
 export function isInDevelopmentGamePlayEnabled(): boolean {
   if (!isNonProductionDeployment()) {

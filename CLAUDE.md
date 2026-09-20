@@ -291,7 +291,8 @@ So a ticket like "build game X's UI" is done once the game is playable behind it
 about featuring it publicly. Ask; never flip it as the natural last step of closing a
 ticket.
 
-**To play one, set `ENABLE_IN_DEVELOPMENT_GAMES=true` (#1054).** Until that flag existed the
+**To play one, set both `ENABLE_IN_DEVELOPMENT_GAMES=true` and
+`NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true` (#1054).** Until that flag existed the
 rule above was circular: the decision is gated on the game being playable, and
 `isTemporarilyUnavailableGameType` made POST /api/lobby and POST /api/game/create answer 400
 for every in-development game, so nobody could play one to find out. Two agents "verified" a
@@ -302,14 +303,34 @@ most-seen screen. Run the dev server with it, or add it to `.env.local`:
 ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true pnpm dev
 ```
 
-- It promotes every in-development entry that has a route and a `lobbyCreateConfig` - today
-  Liar's Party and Sketch & Guess. `fake_artist` and `telephone_doodle` are genuinely
-  experimental, have no pages, and keep their own per-game flag.
+- **Both variables, always - one of them alone is the confusing half-state.** `ENABLE_*` is
+  what a server route reads; only `NEXT_PUBLIC_ENABLE_*` is inlined into a client bundle, and
+  the create form, the game ribbon and the quick-play button all render the catalog in the
+  browser. Set only the first and POST /api/lobby accepts `liars_party` while no picker on the
+  site lists it, which reads as "the game is broken" rather than "the flag is half set". The
+  two reads are ORed on purpose, so the same pair matches `ENABLE_SKETCH_AND_GUESS` and the
+  other per-game flags; `__tests__/api/in-development-game-gate.test.ts` pins each read
+  separately so neither can be dropped as dead code.
+- It promotes every in-development entry that carries `gameType`, `route` and a
+  `lobbyCreateConfig` - today Liar's Party and Sketch & Guess. That is a check on the entry,
+  in `isFlagPromotableEntry`, not a list of names: those three fields are what
+  `AvailableGameCatalogEntry` declares and promotion adds none of them, so an entry missing
+  one would be promoted into a shape `GameRibbon` already reads `game.route` off.
+  `fake_artist` and `telephone_doodle` have no pages and so no `route` (#975), which is what
+  holds them back; they keep their own per-game flag as the way in.
 - **It is dead on production, whatever the variable says.** `lib/feature-flags.ts` refuses it
   unless `VERCEL_ENV` / `NEXT_PUBLIC_VERCEL_ENV` positively say `preview` or `development`,
   or neither is set and `NODE_ENV` is not `production`. Unknown values are a no.
   `__tests__/api/in-development-game-gate.test.ts` drives the real POST handler through
   every production shape; do not soften it into a `!== 'production'` check.
+- **The client half depends on one Vercel project setting, and it is on.** `NEXT_PUBLIC_VERCEL_ENV`
+  only exists in a deployment if "Automatically expose System Environment Variables" is enabled;
+  checked 2026-09-20 on `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2` via `GET /v9/projects/<id>`, which
+  answers `autoExposeSystemEnvs: true`. The MCP's `get_project` does not return that field and
+  `filter_project_envs` answers 403, so read it from the API with the CLI's own token. Were it
+  ever turned off, a preview's client bundle would see nothing declared and a preview build's
+  `NODE_ENV` is `production`, so the gate would fail closed in the browser while the server
+  opened - the safe direction, and boardly.online is unaffected either way.
 - It is deliberately **not** in `RUNTIME_FLAG_KEYS`, so the Control Panel cannot switch it on.
 - **Never commit a change to `availability` to get a game running.** The flip is #873's.
 
