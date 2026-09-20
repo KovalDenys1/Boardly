@@ -68,6 +68,91 @@ function formatValue(value: string, visibleChars: number) {
   return `${value.substring(0, visibleChars)}...`
 }
 
+// Extracts the Supabase project ref (e.g. "inmvbxfflqeblynpktay") from a Prisma
+// database connection string. Never logs the string itself – only the ref, which
+// also appears in the plaintext NEXT_PUBLIC_SUPABASE_URL, so it is not a secret.
+function extractSupabaseProjectRefFromDatabaseUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl)
+    // Pooler connections (aws-0-<region>.pooler.supabase.com) carry the ref in
+    // the username: postgres.<ref>
+    const poolerMatch = url.username.match(/^postgres\.([a-z0-9]+)$/i)
+    if (poolerMatch) {
+      return poolerMatch[1].toLowerCase()
+    }
+    // Direct connections carry the ref in the hostname: db.<ref>.supabase.co
+    const directMatch = url.hostname.match(/^db\.([a-z0-9]+)\.supabase\.co$/i)
+    if (directMatch) {
+      return directMatch[1].toLowerCase()
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// Extracts the Supabase project ref from NEXT_PUBLIC_SUPABASE_URL
+// (https://<ref>.supabase.co).
+function extractSupabaseProjectRefFromClientUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl)
+    const match = url.hostname.match(/^([a-z0-9]+)\.supabase\.co$/i)
+    return match ? match[1].toLowerCase() : null
+  } catch {
+    return null
+  }
+}
+
+// Issue #893: a Prisma database URL and the Supabase client URL that point at
+// different projects is the wrong-database trap – each half looks correctly
+// configured on its own (both "present", both parse as valid URLs), and
+// nothing else catches app data (Prisma) and auth (Supabase client) landing on
+// two different projects until something breaks at runtime. This turns
+// "someone remembered to check" into "the tooling refuses to be silent".
+function checkSupabaseProjectConsistency(): boolean {
+  const supabaseClientUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  if (!supabaseClientUrl) {
+    console.log('INF NEXT_PUBLIC_SUPABASE_URL: not set (skipping cross-project check)')
+    return false
+  }
+
+  const supabaseClientRef = extractSupabaseProjectRefFromClientUrl(supabaseClientUrl)
+  if (!supabaseClientRef) {
+    console.log('WARN NEXT_PUBLIC_SUPABASE_URL: could not parse a Supabase project ref from it')
+    return false
+  }
+
+  let mismatch = false
+  const prismaUrlVars = ['DATABASE_URL', 'DIRECT_URL']
+
+  for (const name of prismaUrlVars) {
+    const value = process.env[name]
+    if (!value) {
+      continue
+    }
+
+    const dbRef = extractSupabaseProjectRefFromDatabaseUrl(value)
+    if (!dbRef) {
+      console.log(`WARN ${name}: could not parse a Supabase project ref from it`)
+      continue
+    }
+
+    if (dbRef !== supabaseClientRef) {
+      console.log(
+        `ERR  ${name} points at Supabase project "${dbRef}" but NEXT_PUBLIC_SUPABASE_URL ` +
+          `points at "${supabaseClientRef}" (CRITICAL: database and auth client are on ` +
+          `different Supabase projects)`
+      )
+      mismatch = true
+    } else {
+      console.log(`OK  ${name} and NEXT_PUBLIC_SUPABASE_URL both point at project "${dbRef}"`)
+    }
+  }
+
+  return mismatch
+}
+
 console.log('Checking environment configuration...\n')
 
 if (existsSync(envPath)) {
@@ -114,6 +199,11 @@ const vapidSet = vapidVars.filter((name) => Boolean(process.env[name]))
 if (vapidSet.length > 0 && vapidSet.length < vapidVars.length) {
   const missing = vapidVars.filter((name) => !process.env[name])
   console.log(`\nWARN Web Push is half-configured; missing: ${missing.join(', ')}`)
+}
+
+console.log('\nCross-project consistency:\n')
+if (checkSupabaseProjectConsistency()) {
+  hasErrors = true
 }
 
 console.log(`\n${'='.repeat(60)}`)
