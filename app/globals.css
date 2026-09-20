@@ -2399,11 +2399,19 @@ html.dark .liars-seat { background: var(--bd-bg2); }
     /* the landscape tree fits by construction - re-lock the shell */
     overflow: hidden;
   }
-  /* The header does not give way. It is `overflow: hidden`, so shrinking it
-     does not reflow anything, it cuts: measured at 844x390 it was handed 68px
-     for 111px of content and the seat card's bottom was sliced off. The
-     flexible member of this column is the tab panel, which has its own floor. */
-  .game-landscape-side .liars-header-card { flex: 0 0 auto; padding: 8px 10px; }
+  /* The header keeps the shared family's row sizing, and only its padding is
+     this game's. Sketch & Guess puts its header card straight in this column,
+     where `flex: 0 0 auto` means height and holds off a vertical squeeze; here
+     the card rides in a `.ttt-top-row` beside the compact room card, and that
+     row is already `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
+     container the same declaration means WIDTH, and it overrode
+     `.ttt-top-row > :first-child { flex: 1 1 auto }`: measured live at 844x390
+     it sized the header to its content and left 37 to 78px of dead row beside
+     Leave in claim, challenge and reveal, and at game over, with the winner's
+     name in the header, pushed Leave 18px past the row's right edge – side
+     column scrollWidth 318 against clientWidth 300, while the document stayed
+     at 844, which is why a page-level horizontal-scroll sweep did not see it. */
+  .game-landscape-side .liars-header-card { padding: 8px 10px; }
   .game-landscape-side .liars-counter__value { font-size: 20px; }
   .game-landscape-side > .game-tabs { flex: 0 0 auto; }
   .game-landscape-side > .liars-panel {

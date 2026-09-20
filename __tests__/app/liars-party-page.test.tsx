@@ -194,6 +194,25 @@ function desktop() {
 }
 
 /**
+ * The phone-landscape tree (#1041). It is the one tree with a two-column split:
+ * the phase in `.game-landscape-board`, and the header, the status banner, the
+ * tab strip and one panel in `.game-landscape-side`. Nothing in this suite
+ * reached it before #1041's review, which is how a landscape-only CSS defect
+ * got through a green run.
+ */
+function landscape() {
+  const tree = document.querySelector('.game-landscape-layout')
+  if (!tree) throw new Error('no .game-landscape-layout on the page')
+  return within(tree as HTMLElement)
+}
+
+function landscapeTree(): HTMLElement {
+  const tree = document.querySelector('.game-landscape-layout')
+  if (!tree) throw new Error('no .game-landscape-layout on the page')
+  return tree as HTMLElement
+}
+
+/**
  * The phase card's scrolling region, the one `.liars-phase` in the desktop
  * tree. The layout DoD's first rule is that no in-game screen has an empty
  * region – so what is inside it is the assertion, not the card's own test id,
@@ -248,6 +267,45 @@ function buildRevealResponse() {
     ],
     roundResults: [],
     currentRoundResolved: false,
+  })
+  return response
+}
+
+/**
+ * Round 2's reveal, with round 1 already resolved and sitting in
+ * `roundResults`. This is the fixture the round-1 one cannot be: with an empty
+ * `roundResults`, reading `find(r => r.round === currentRound)` and reading
+ * `roundResults[roundResults.length - 1]` both come out `undefined`, so the
+ * suite could not tell the fix from the bug it replaced. Here they differ:
+ * round 2's claim is the truth and all three voters believed it (so every row
+ * is correct and no points have moved yet), while round 1 was a caught bluff
+ * that cost the same three voters 3 points each. Read the wrong entry and this
+ * screen marks all three wrong and prints round 1's -3 beside their names.
+ */
+function buildSecondRoundRevealResponse() {
+  const response = buildPlayingResponse()
+  Object.assign(response.activeGame.state.data, {
+    phase: 'reveal',
+    currentRound: 2,
+    currentRoundResolved: false,
+    claim: { playerId: 'user-2', text: 'I really did run a marathon', isBluff: false, submittedAt: Date.now() },
+    challengeVotes: [
+      { playerId: 'user-1', decision: 'believe', submittedAt: Date.now() },
+      { playerId: 'user-3', decision: 'believe', submittedAt: Date.now() },
+      { playerId: 'user-4', decision: 'believe', submittedAt: Date.now() },
+    ],
+    roundResults: [
+      {
+        round: 1,
+        claimantId: 'user-1',
+        claimText: 'I have never lost at chess',
+        wasBluff: true,
+        bluffCaught: true,
+        voterScoreDeltas: { 'user-1': -3, 'user-3': -3, 'user-4': -3 },
+        claimantScoreDelta: -2,
+        eliminatedPlayerIds: [],
+      },
+    ],
   })
   return response
 }
@@ -523,6 +581,25 @@ describe('LiarsPartyLobbyPage', () => {
       expect(iconOf(rows[1])).toBe('close')
       expect(iconOf(rows[2])).toBe('close')
     })
+    it('reads round 2 off round 2, not off the last entry in roundResults', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildSecondRoundRevealResponse() } as Response)
+
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-vote-breakdown')).toBeTruthy())
+
+      const breakdown = desktop().getByTestId('liars-vote-breakdown')
+      const rows = [...breakdown.querySelectorAll('.space-y-2 > div')]
+      expect(rows).toHaveLength(3)
+      const iconOf = (row: Element) => row.querySelector('svg')?.getAttribute('data-icon')
+      // Round 2's claim was the truth and all three believed it.
+      expect(rows.map(iconOf)).toEqual(['check', 'check', 'check'])
+      // Round 1's deltas belong to round 1. Nothing has been scored yet here,
+      // so the rows carry no points at all.
+      expect(breakdown.textContent).not.toContain('-3')
+      // And the verdict line is this round's, not the previous round's.
+      expect(contentRegion().textContent ?? '').toContain('liarsParty.wasTruth')
+    })
+
   })
 
   // #1041: the page had no GameScoreboardHeader, no GameResultOverlay, no
@@ -547,6 +624,22 @@ describe('LiarsPartyLobbyPage', () => {
       const mobile = document.querySelector('.ttt-mobile-layout') as HTMLElement
       expect(mobile.querySelector('.game-tabs')).toBeTruthy()
       expect(within(mobile).getByRole('button', { name: 'game.ui.tabChat' })).toBeTruthy()
+    })
+
+    it('does not repeat the round in the status banner', async () => {
+      await renderPlaying()
+
+      // GameStatusBanner's `meta` rides on the title's nowrap/ellipsis line.
+      // "Round 1 / 10" overflowed it by 71px at 320x720 and 51px at 844x390 in
+      // a live round, so `overflow: hidden` cut the round off and truncated the
+      // title with it. The counter in the header carries the round already.
+      const banner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
+      expect(banner.textContent).toContain('liarsParty.isClaimingFor')
+      expect(banner.textContent).not.toContain('liarsParty.round')
+
+      const counter = document.querySelector('.ttt-desktop-layout .liars-counter__value') as HTMLElement
+      expect(counter.textContent).toBe('1/10')
+      expect(desktop().getByText('game.ui.round')).toBeTruthy()
     })
 
     it('leaves exactly one way out per layout tree', async () => {
@@ -610,6 +703,113 @@ describe('LiarsPartyLobbyPage', () => {
       const button = desktop().getByRole('button', { name: 'liarsParty.nextRound' })
       expect(button.closest('.liars-phase')).toBeNull()
       expect(button.closest('.liars-phase-action')).toBeTruthy()
+    })
+  })
+
+  // The phone-landscape tree is the one this branch built, and it had no
+  // assertion of any kind: the review deleted all 830 characters of it and the
+  // suite still reported 20 passed. Its own defect – the header card pushed
+  // Leave out of the top row at 844x390 – lived in the one tree nothing looked
+  // at. These fix the first half of that: the tree, and the shared controls in
+  // it. The geometry itself is a stylesheet contract (jsdom resolves no media
+  // queries and lays nothing out), and lives in phone-landscape-layout.test.ts.
+  describe('the phone-landscape tree (#1041)', () => {
+    const renderPlaying = async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildPlayingResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
+    }
+
+    it('splits the phase into the board column and the chrome into the side column', async () => {
+      await renderPlaying()
+
+      const tree = landscapeTree()
+      const board = tree.querySelector('.game-landscape-board')
+      const side = tree.querySelector('.game-landscape-side')
+      expect(board).toBeTruthy()
+      expect(side).toBeTruthy()
+
+      // The phase belongs to the board column and carries this tree's own id,
+      // because all three trees are in the DOM at once.
+      expect(within(board as HTMLElement).getByTestId('liars-party-claim-screen-landscape')).toBeTruthy()
+      expect((board as HTMLElement).querySelector('.game-scoreboard-header')).toBeNull()
+
+      // The side column is the header, the status line, the tab strip and one
+      // panel, in that order – it is what the landscape CSS sizes.
+      expect((side as HTMLElement).querySelector('.liars-header-card .game-scoreboard-header')).toBeTruthy()
+      // GameStatusBanner carries no class of its own (it is styled inline), so
+      // the assertion is the line it renders: whose turn it is, once.
+      expect(within(side as HTMLElement).getByText(/liarsParty\.isClaimingFor/)).toBeTruthy()
+      expect((side as HTMLElement).querySelector('.game-tabs')).toBeTruthy()
+      expect((side as HTMLElement).querySelector('.liars-panel')).toBeTruthy()
+    })
+
+    it('keeps Leave in the top row beside the header, once', async () => {
+      await renderPlaying()
+
+      // Layout DoD item 2: Leave top-right of the header row. In this tree it
+      // is the compact GameRoomCard sharing a `.ttt-top-row` with the header
+      // card, and that shared row is what sizes both – which is why a rule
+      // that took the header out of the row's sizing could push Leave past its
+      // right edge without the document scrolling at all.
+      const leaveButtons = landscape().getAllByRole('button', { name: 'game.ui.leave' })
+      expect(leaveButtons).toHaveLength(1)
+
+      const row = leaveButtons[0].closest('.ttt-top-row')
+      expect(row).toBeTruthy()
+      expect(row!.parentElement).toHaveClass('game-landscape-side')
+      expect(row!.querySelector('.liars-header-card')).toBeTruthy()
+      expect(row!.firstElementChild).toHaveClass('liars-header-card')
+      expect(leaveButtons[0].closest('.game-room-card--compact')).toBeTruthy()
+    })
+
+    it('offers Players and Chat only – the phase already owns the board column', async () => {
+      await renderPlaying()
+
+      const strip = landscapeTree().querySelector('.game-tabs') as HTMLElement
+      expect([...strip.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
+        'game.ui.tabPlayers',
+        'game.ui.tabChat',
+      ])
+      // The mobile tree does carry a Game tab, because there the phase is a tab.
+      const mobileStrip = document.querySelector('.ttt-mobile-layout .game-tabs') as HTMLElement
+      expect([...mobileStrip.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
+        'liarsParty.tabGame',
+        'game.ui.tabPlayers',
+        'game.ui.tabChat',
+      ])
+    })
+
+    it('swaps the side panel between the standings and the chat', async () => {
+      await renderPlaying()
+
+      const side = () => landscapeTree().querySelector('.game-landscape-side') as HTMLElement
+      expect(within(side()).getByTestId('liars-standings')).toBeTruthy()
+      expect(side().querySelector('.game-chat-panel')).toBeNull()
+
+      fireEvent.click(within(side()).getByRole('button', { name: 'game.ui.tabChat' }))
+
+      await waitFor(() => expect(side().querySelector('.game-chat-panel')).toBeTruthy())
+      expect(within(side()).queryByTestId('liars-standings')).toBeNull()
+      // The phase does not move with the tab: it is the other column.
+      expect(within(landscapeTree()).getByTestId('liars-party-claim-screen-landscape')).toBeTruthy()
+
+      fireEvent.click(within(side()).getByRole('button', { name: 'game.ui.tabPlayers' }))
+      await waitFor(() => expect(within(side()).getByTestId('liars-standings')).toBeTruthy())
+    })
+
+    it('puts the result overlay over the landscape board too', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildFinishedResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
+
+      const card = landscapeTree().querySelector('.liars-phase-card') as HTMLElement
+      expect(within(card).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
+      // And the standings still list everyone, not the one survivor.
+      const panel = landscape().getByTestId('liars-standings')
+      for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {
+        expect(within(panel).getByText(name)).toBeTruthy()
+      }
     })
   })
 

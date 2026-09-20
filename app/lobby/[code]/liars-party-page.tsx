@@ -1055,7 +1055,14 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           ? (isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }))
           : t('liarsParty.challengeOrBelieve')
       }
-      meta={t('liarsParty.round', { current: data!.currentRound, total: data!.maxRounds })}
+      // No `meta`. GameStatusBanner puts it on the title's nowrap/ellipsis
+      // line, and the peer pages pass 2 to 4 characters there (connect four
+      // "#12", rps "1/2", sketch "3/5"); a sentence-length "Round 4 / 10"
+      // overflowed that line by 71px at 320x720 and 51px at 844x390 measured
+      // in a live round, so the parent's `overflow: hidden` cut the round away
+      // and truncated the title as well. The round is the header's own counter
+      // one block above, under the ROUND kicker, on every viewport - layout
+      // DoD item 5: do not show the same signal twice.
       secs={timerRemaining}
       turnTimerLimit={turnTimerSeconds}
       barColor={LIARS_PARTY_ACCENT}
