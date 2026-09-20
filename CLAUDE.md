@@ -378,6 +378,13 @@ anyone actually played, use `lastMoveAt - startedAt`; the medians that come out 
 24 seconds for the fast games. A negative result there is real and means `lastMoveAt` was
 never written after the game began (#1048).
 
+**`AnalyticsUserFacts` is the Control Panel's table, not this repo's.** It has no Prisma
+model, no migration and no reader here, so grepping this tree says it does not exist - an
+agent concluded exactly that on 2026-09-20. It is real, it is populated, and it is owned by
+`~/Projects/boardly-control-panel` (its `prisma/schema.prisma` plus
+`app/api/cron/analytics-sync/route.ts`), which is the carve-out described above for
+Control-Panel-only bookkeeping. Query it through the `supabase-prod` MCP.
+
 **And the guest purge erases the evidence.** `scripts/cleanup-old-guests.ts` deletes
 guests inactive for 3 days and their `Players` rows go with them, so anything older than
 that has lost the majority of its players — guests are most of the audience. Retention
