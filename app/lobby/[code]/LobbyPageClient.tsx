@@ -235,6 +235,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
   const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
   const [yahtzeeResultsHold, setYahtzeeResultsHold] = useState<{ gameId: string; releaseAt: number } | null>(null)
+  // #1052: which finished Yahtzee game has had its results screen released, rather
+  // than which one is holding it. The hold is set by an effect, so it is null on the
+  // first render after the game finishes - and on that one render the results came
+  // from the branch further down instead, which put YahtzeeResults at a different
+  // place in the tree. React unmounted one and mounted the other, and the after-game
+  // block inside reported itself twice for one finished game. Reading "not released
+  // yet" needs no effect to have run, so the first render already picks this branch
+  // and the component mounts once.
+  const [yahtzeeResultsReleasedGameId, setYahtzeeResultsReleasedGameId] = useState<string | null>(null)
 
   // Mobile tabs state
   const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
@@ -279,7 +288,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       lobby?.gameType !== 'yahtzee' ||
       !(gameEngine instanceof YahtzeeGame) ||
       !game?.id ||
-      !gameEngine.isGameFinished()
+      !gameEngine.isGameFinished() ||
+      // Already let go of this one - re-arming would restart the countdown for a
+      // screen nobody is looking at any more.
+      yahtzeeResultsReleasedGameId === game.id
     ) {
       return
     }
@@ -294,7 +306,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         releaseAt: Date.now() + YAHTZEE_RESULTS_HOLD_MS,
       }
     })
-  }, [game?.id, gameEngine, lobby?.gameType])
+  }, [game?.id, gameEngine, lobby?.gameType, yahtzeeResultsReleasedGameId])
 
   useEffect(() => {
     if (!yahtzeeResultsHold || typeof window === 'undefined') {
@@ -302,10 +314,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
 
     const remainingMs = Math.max(0, yahtzeeResultsHold.releaseAt - Date.now())
+    const heldGameId = yahtzeeResultsHold.gameId
     const timer = window.setTimeout(() => {
-      setYahtzeeResultsHold((prev) =>
-        prev?.gameId === yahtzeeResultsHold.gameId ? null : prev
-      )
+      setYahtzeeResultsReleasedGameId(heldGameId)
+      setYahtzeeResultsHold((prev) => (prev?.gameId === heldGameId ? null : prev))
     }, remainingMs)
 
     return () => window.clearTimeout(timer)
@@ -1603,7 +1615,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const shouldShowHeldYahtzeeResults = Boolean(
     finishedYahtzeeEngine &&
     game?.id &&
-    yahtzeeResultsHold?.gameId === game.id
+    yahtzeeResultsReleasedGameId !== game.id
   )
   const joinViewerMode = status === 'authenticated'
     ? 'authenticated'
@@ -2041,7 +2053,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onPlayAgain={handleStartGame}
             onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
-            onReturnToLobbyRoom={() => setYahtzeeResultsHold(null)}
+            onReturnToLobbyRoom={() => {
+              if (game?.id) setYahtzeeResultsReleasedGameId(game.id)
+              setYahtzeeResultsHold(null)
+            }}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
             autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
             isGuest={isGuest}

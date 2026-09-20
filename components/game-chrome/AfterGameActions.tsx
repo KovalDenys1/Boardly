@@ -99,6 +99,7 @@ export default function AfterGameActions({
   return (
     <div
       className={className}
+      data-testid="after-game-actions"
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}
     >
       {/* 1 — share */}
