@@ -112,8 +112,11 @@ function buildCspHeaderValue() {
     'https://pagead2.googlesyndication.com',
     'https://fundingchoicesmessages.google.com',
     'https://csi.gstatic.com',
-    // Sodar's config fetch and its gen_204 beacons when AdSense routes them to the
-    // ad-traffic-quality host instead of pagead2 (#1045).
+    // The sodar config fetch – show_ads_impl XHRs <ep1>/getconfig/sodar when AdSense
+    // routes it to the ad-traffic-quality host instead of pagead2 (#1045). Only the
+    // XHR needs this: sodar2.js sends its /pagead/sodar and /pagead/gen_204 beacons
+    // as <img> loads, which img-src already covers, and it contains no fetch, no
+    // XMLHttpRequest and no sendBeacon at all. ep1 also needs script-src, below.
     'https://ep1.adtrafficquality.google',
   ])
 
@@ -135,11 +138,17 @@ function buildCspHeaderValue() {
   //     the ad-traffic-quality path is on; the tpc.googlesyndication.com mirrors of both were
   //     already allowed, the adtrafficquality ones were not -> connect-src and script-src.
   //   - sodar2.js then frames <ep2>/sodar/sodar2/<v>/runner.html -> frame-src.
+  //   - sodar2.js also loads botguard from <ep1>/bg/<hash>.js, and that one is script-src
+  //     too, not connect-src or frame-src: it appends a <script> to a srcless iframe, which
+  //     inherits this policy. The same config flag that sends sodar2.js and runner.html to
+  //     ep2 sends botguard to ep1, so allowing ep2 without ep1 leaves the chain broken one
+  //     step further down. Its pagead2 sibling, <pagead2>/bg/<hash>.js, was already allowed,
+  //     which is why the ep1 branch was the only one that failed.
   // Exact hosts, no wildcard: ep1 and ep2 are the only endpoints those two files name. If
   // Google moves to an ep3 this breaks the same way again, and the check is the same one –
   // load a page with an ad unit and read the CSP violations in the console.
   const adsScriptHosts =
-    'https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://tpc.googlesyndication.com https://googleads.g.doubleclick.net https://www.googletagservices.com https://ep2.adtrafficquality.google'
+    'https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://tpc.googlesyndication.com https://googleads.g.doubleclick.net https://www.googletagservices.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google'
   const scriptSrcValue = IS_DEVELOPMENT
     ? `'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com ${adsScriptHosts}`
     : `'self' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com ${adsScriptHosts}`

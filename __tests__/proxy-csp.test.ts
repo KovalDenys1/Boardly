@@ -80,8 +80,9 @@ describe('proxy CSP policy', () => {
           // The ad request and the consent message.
           'https://pagead2.googlesyndication.com',
           'https://fundingchoicesmessages.google.com',
-          // show_ads_impl_fy2021.js fetches <ep1>/getconfig/sodar, and sodar2.js beacons
-          // to <ep1>/pagead/sodar and <ep1>/pagead/gen_204.
+          // show_ads_impl_fy2021.js XHRs <ep1>/getconfig/sodar. sodar2.js's own
+          // <ep1>/pagead/sodar and /pagead/gen_204 beacons are <img> loads under
+          // img-src, so this entry exists for the getconfig XHR alone.
           'https://ep1.adtrafficquality.google',
         ])
       )
@@ -98,6 +99,11 @@ describe('proxy CSP policy', () => {
           'https://googleads.g.doubleclick.net',
           // sodar2.js comes from <ep2> whenever AdSense routes it away from tpc.
           'https://ep2.adtrafficquality.google',
+          // Both ends of the chain, or neither. sodar2.js loads botguard from
+          // <ep1>/bg/<hash>.js as a <script> in a srcless iframe, picked by the same
+          // config flag that picks ep2 for sodar2.js itself, so ep2 without ep1 is a
+          // policy that gets one step further and then blocks.
+          'https://ep1.adtrafficquality.google',
         ])
       )
     })
