@@ -10,11 +10,14 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ConfirmModal from '@/components/ConfirmModal'
+import LeaveIcon from '@/components/LeaveIcon'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
@@ -563,7 +566,14 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const [gameEngine, setGameEngine] = useState<LiarsPartyGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
+  // #1038: leaving used to be a bare router.push('/games'), so the server never
+  // heard about it. The seat stayed occupied and the table kept waiting on a
+  // claimant or a voter who had closed the tab – this game type has no bots to
+  // take over and no forfeit move. The API call is the leave; the navigation is
+  // only what this browser does afterwards.
+  const { isLeavingLobbyRef, leaveLobby } = useLeaveLobby(code, "Liar's Party")
   // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
   useLobbyHeartbeat(code, !isSpectator)
 
@@ -578,6 +588,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
+  const gameStatusRef = React.useRef<string | null>(null)
   const minPlayersRequired = 4
 
   const getCurrentUserId = useCallback(() => {
@@ -651,6 +662,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }, [game?.id])
 
   useEffect(() => {
+    gameStatusRef.current = game?.status ?? null
+  }, [game?.status])
+
+  useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
     if (isGuest && !guestToken) return
     void loadLobby()
@@ -667,19 +682,29 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   const handleGameAbandoned = useCallback(() => {
     clientLogger.log('📡 LiarsParty game abandoned')
+    // The player who is leaving caused this broadcast; they are already on their
+    // way to /games and must not be told the game they just quit was abandoned.
+    if (isLeavingLobbyRef.current) return
     void loadLobby()
     triggerLifecycleRedirect('liars-party-lifecycle-redirect')
-  }, [loadLobby, triggerLifecycleRedirect])
+  }, [loadLobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
   const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
     clientLogger.log('📡 LiarsParty player left', payload)
+    if (isLeavingLobbyRef.current) return
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
+    // Only a match in progress dies when the roster falls under the minimum.
+    // This game seats four before it can start, so a waiting room of three is an
+    // ordinary state – one more person walks in and it starts. Without the status
+    // check, the first person to leave a full waiting room evicted everyone still
+    // in it, spectators included, with an "abandoned" toast (#1038).
+    const inProgress = gameStatusRef.current === 'playing'
+    if (inProgress && !payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('liars-party-lifecycle-redirect')
       return
     }
     void loadLobby()
-  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
+  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, isLeavingLobbyRef])
 
   const handleGameReset = useCallback(() => {
     if (onGameReset) onGameReset()
@@ -774,6 +799,29 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     }
   }, [game, getCurrentUserId, isGuest, isMoveSubmitting, applyAuthoritativeState, loadLobby])
 
+  /**
+   * A spectator holds no seat, so there is nothing to give back: their way out
+   * is the lobby, not the leave API. A player is asked first – leaving a live
+   * round takes the whole table down with them once the roster falls under four.
+   */
+  const requestLeave = useCallback(() => {
+    if (isSpectator) {
+      router.push(`/lobby/${code}`)
+      return
+    }
+    setShowLeaveConfirmModal(true)
+  }, [code, isSpectator, router])
+
+  const confirmLeave = useCallback(() => {
+    if (isLeavingLobbyRef.current) return
+    setShowLeaveConfirmModal(false)
+    // Free the seat first. leaveLobby() is a keepalive fetch, so it survives the
+    // navigation that follows it; replace, not push, so Back does not walk into
+    // a lobby this player is no longer in.
+    leaveLobby()
+    router.replace('/games')
+  }, [isLeavingLobbyRef, leaveLobby, router])
+
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id || isStarting) return
     setIsStarting(true)
@@ -846,8 +894,16 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         t('liarsParty.rule5'),
       ]
 
+  // Every phase is rendered into one return so the leave confirmation is
+  // mounted once, instead of being repeated in each of the seven branches.
+  let screen: React.ReactNode = (
+    <div className="flex min-h-[var(--game-h)] items-center justify-center">
+      <LoadingSpinner />
+    </div>
+  )
+
   if (resolvedStatus === 'waiting') {
-    return (
+    screen = (
       <WaitingScreen
         players={players}
         data={data}
@@ -855,91 +911,75 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onStart={handleStartGame}
-        onLeave={() => router.push('/games')}
+        onLeave={requestLeave}
         t={t}
       />
     )
-  }
-
-  if (resolvedStatus === 'playing' && data) {
-    if (data.phase === 'claim') {
-      if (isEliminated) {
-        return (
-          <EliminatedClaimScreen
-            data={data}
-            players={players}
-            currentUserId={currentUserId}
-            timerRemaining={timerRemaining}
-            onLeave={() => router.push('/games')}
-            t={t}
-          />
-        )
-      }
-      return (
-        <>
-          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-          <ClaimScreen
-            data={data}
-            players={players}
-            currentUserId={currentUserId}
-            isMoveSubmitting={isMoveSubmitting}
-            timerRemaining={timerRemaining}
-            onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
-            onLeave={() => router.push('/games')}
-            t={t}
-          />
-        </>
-      )
-    }
-
-    if (data.phase === 'challenge') {
-      if (isEliminated) {
-        return (
-          <EliminatedChallengeScreen
-            data={data}
-            currentUserId={currentUserId}
-            timerRemaining={timerRemaining}
-            onLeave={() => router.push('/games')}
-            t={t}
-          />
-        )
-      }
-      return (
-        <>
-          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-          <ChallengeScreen
-            data={data}
-            players={players}
-            currentUserId={currentUserId}
-            isMoveSubmitting={isSpectator || isMoveSubmitting}
-            timerRemaining={timerRemaining}
-            onVote={(decision) => handleMove('submit-challenge', { decision })}
-            onLeave={() => router.push('/games')}
-            t={t}
-          />
-        </>
-      )
-    }
-
-    if (data.phase === 'reveal') {
-      return (
-        <>
-          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-          <RevealScreen
-            data={data}
-            players={players}
-            isMoveSubmitting={isMoveSubmitting}
-            onAdvanceRound={() => handleMove('advance-round', {})}
-            onLeave={() => router.push('/games')}
-            t={t}
-          />
-        </>
-      )
-    }
-  }
-
-  if (resolvedStatus === 'finished' && data) {
-    return (
+  } else if (resolvedStatus === 'playing' && data && data.phase === 'claim') {
+    screen = isEliminated ? (
+      <EliminatedClaimScreen
+        data={data}
+        players={players}
+        currentUserId={currentUserId}
+        timerRemaining={timerRemaining}
+        onLeave={requestLeave}
+        t={t}
+      />
+    ) : (
+      <>
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
+        <ClaimScreen
+          data={data}
+          players={players}
+          currentUserId={currentUserId}
+          isMoveSubmitting={isMoveSubmitting}
+          timerRemaining={timerRemaining}
+          onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
+          onLeave={requestLeave}
+          t={t}
+        />
+      </>
+    )
+  } else if (resolvedStatus === 'playing' && data && data.phase === 'challenge') {
+    screen = isEliminated ? (
+      <EliminatedChallengeScreen
+        data={data}
+        currentUserId={currentUserId}
+        timerRemaining={timerRemaining}
+        onLeave={requestLeave}
+        t={t}
+      />
+    ) : (
+      <>
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
+        <ChallengeScreen
+          data={data}
+          players={players}
+          currentUserId={currentUserId}
+          isMoveSubmitting={isSpectator || isMoveSubmitting}
+          timerRemaining={timerRemaining}
+          onVote={(decision) => handleMove('submit-challenge', { decision })}
+          onLeave={requestLeave}
+          t={t}
+        />
+      </>
+    )
+  } else if (resolvedStatus === 'playing' && data && data.phase === 'reveal') {
+    screen = (
+      <>
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
+        <RevealScreen
+          data={data}
+          players={players}
+          isMoveSubmitting={isMoveSubmitting}
+          onAdvanceRound={() => handleMove('advance-round', {})}
+          onLeave={requestLeave}
+          t={t}
+        />
+      </>
+    )
+  } else if (resolvedStatus === 'finished' && data) {
+    screen = (
       <GameOverScreen
         data={data}
         players={players}
@@ -947,7 +987,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         isStarting={isStarting}
         onPlayAgain={handleStartGame}
         onReturnToLobby={handleReturnToWaiting}
-        onBackToGames={() => router.push('/games')}
+        onBackToGames={requestLeave}
         t={t}
         code={code}
         isGuest={!isSpectator && isGuest}
@@ -957,8 +997,21 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }
 
   return (
-    <div className="flex min-h-[var(--game-h)] items-center justify-center">
-      <LoadingSpinner />
-    </div>
+    <>
+      {screen}
+      {!isSpectator && (
+        <ConfirmModal
+          isOpen={showLeaveConfirmModal}
+          onClose={() => setShowLeaveConfirmModal(false)}
+          onConfirm={confirmLeave}
+          title={t('game.ui.leave')}
+          message={t('game.ui.leaveConfirm')}
+          confirmText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          variant="danger"
+          icon={<LeaveIcon size={28} />}
+        />
+      )}
+    </>
   )
 }
