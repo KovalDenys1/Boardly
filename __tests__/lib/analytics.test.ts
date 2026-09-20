@@ -6,6 +6,7 @@ import {
   trackInviteOpened,
   trackLobbyLeaveRedirect,
   trackMoveSubmitApplied,
+  trackPushPrompt,
   trackStartAloneAutoBotResult,
   trackSocketAuthRefreshFailed,
   trackSocketReconnectFailedFinal,
@@ -203,5 +204,94 @@ describe('Discord CTA (#982)', () => {
     expect(toAnalyticsGameType('chess')).toBeUndefined()
     expect(toAnalyticsGameType(undefined)).toBeUndefined()
     expect(toAnalyticsGameType(7)).toBeUndefined()
+  })
+})
+
+describe('push opt-in prompt (#984)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('carries the action, the surface and the game', () => {
+    trackPushPrompt('shown', 'after_game', 'yahtzee')
+    trackPushPrompt('accepted', 'after_game', 'yahtzee')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'push_prompt', {
+      action: 'shown',
+      source: 'after_game',
+      game_type: 'yahtzee',
+    })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'push_prompt', {
+      action: 'accepted',
+      source: 'after_game',
+      game_type: 'yahtzee',
+    })
+  })
+
+  it('keeps a browser-level denial distinct from a dismissal - only one of them may be re-asked', () => {
+    trackPushPrompt('denied', 'profile')
+    trackPushPrompt('dismissed', 'profile')
+
+    expect(mockTrack).toHaveBeenNthCalledWith(1, 'push_prompt', { action: 'denied', source: 'profile' })
+    expect(mockTrack).toHaveBeenNthCalledWith(2, 'push_prompt', { action: 'dismissed', source: 'profile' })
+  })
+
+  it('separates an accept whose preference write failed from one that landed', () => {
+    trackPushPrompt('failed', 'after_game', 'memory')
+
+    expect(mockTrack).toHaveBeenCalledWith('push_prompt', {
+      action: 'failed',
+      source: 'after_game',
+      game_type: 'memory',
+    })
+  })
+
+  /**
+   * The Vercel `track` call and the operational beacon are two different wires, and only the
+   * first one was covered: `emitOperationalEvent` returns early on NODE_ENV === 'test', so
+   * deleting the call from trackPushPrompt left all 19 analytics and operational tests green
+   * while no push_prompt row would ever reach the Control Panel. The stored `shown` count is
+   * the denominator the whole design rests on, so the wire itself has to be asserted - which
+   * means running this one case with NODE_ENV out of the way.
+   */
+  it('posts every push_prompt action to the operational beacon, not only to Vercel', () => {
+    const posted: { url: string; eventName: string; payload: unknown }[] = []
+    const originalSendBeacon = (navigator as { sendBeacon?: unknown }).sendBeacon
+    const originalFetch = global.fetch
+    const originalNodeEnv = process.env.NODE_ENV
+
+    // Returning false makes emitOperationalEvent fall through to its fetch path, where the
+    // body is a plain string this test can read - a jsdom Blob has no synchronous reader.
+    Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: () => false })
+    global.fetch = jest.fn((url: string, init: { body: string }) => {
+      const parsed = JSON.parse(init.body)
+      posted.push({ url, eventName: parsed.eventName, payload: parsed.payload })
+      return Promise.resolve({ ok: true })
+    }) as unknown as typeof fetch
+    Object.defineProperty(process.env, 'NODE_ENV', { configurable: true, value: 'production' })
+
+    try {
+      trackPushPrompt('shown', 'after_game', 'memory')
+      trackPushPrompt('failed', 'after_game', 'memory')
+      trackPushPrompt('dismissed', 'profile')
+    } finally {
+      Object.defineProperty(process.env, 'NODE_ENV', { configurable: true, value: originalNodeEnv })
+      Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: originalSendBeacon })
+      global.fetch = originalFetch
+    }
+
+    expect(posted).toEqual([
+      {
+        url: '/api/ops/events',
+        eventName: 'push_prompt_shown',
+        payload: { source: 'after_game', game_type: 'memory' },
+      },
+      {
+        url: '/api/ops/events',
+        eventName: 'push_prompt_failed',
+        payload: { source: 'after_game', game_type: 'memory' },
+      },
+      { url: '/api/ops/events', eventName: 'push_prompt_dismissed', payload: { source: 'profile' } },
+    ])
   })
 })

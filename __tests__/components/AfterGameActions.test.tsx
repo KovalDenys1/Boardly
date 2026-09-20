@@ -13,6 +13,22 @@ jest.mock('@/components/GuestConversionNudge', () => {
   }
 })
 
+// The props are the whole point of slot 3: `source` is what separates the after-game ask
+// from the profile checkbox it exists to beat, and `gameType` is the only dimension that
+// says which end screen converts. A mock that ignored them let the real call site be
+// rewritten to `<PushOptInNudge source="profile" />` with the suite still green.
+jest.mock('@/components/PushOptInNudge', () => {
+  return function MockPushNudge(props: { source: string; gameType?: string }) {
+    return (
+      <div
+        data-testid="push-nudge"
+        data-source={props.source}
+        data-game-type={props.gameType ?? ''}
+      />
+    )
+  }
+})
+
 const mockShare = jest.fn()
 jest.mock('@/hooks/useInviteShare', () => ({
   useInviteShare: () => mockShare,
@@ -73,10 +89,27 @@ describe('AfterGameActions (#982)', () => {
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
   })
 
+  it('offers the push ask to a registered player and never to a guest (#984)', () => {
+    const { unmount } = render(
+      <AfterGameActions gameType="alias" isRegistered registerUrl="/auth/register" />
+    )
+    const nudge = screen.getByTestId('push-nudge')
+    expect(nudge.getAttribute('data-source')).toBe('after_game')
+    expect(nudge.getAttribute('data-game-type')).toBe('alias')
+    expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    unmount()
+
+    // A guest has no account to hang a subscription on, so the two boxes can never coexist.
+    render(<AfterGameActions gameType="alias" isGuest registerUrl="/auth/register" />)
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
+    expect(screen.getByTestId('guest-nudge')).toBeTruthy()
+  })
+
   it('gives a spectator (neither guest nor registered) share and Discord only', () => {
     render(<AfterGameActions gameType="guess_the_spy" inviteCode="AB12" registerUrl="/auth/register" />)
     expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
   })
 })

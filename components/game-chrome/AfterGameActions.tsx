@@ -3,6 +3,7 @@
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
+import PushOptInNudge from '@/components/PushOptInNudge'
 import { Icon } from '@/components/icons'
 import { useInviteShare } from '@/hooks/useInviteShare'
 import { trackDiscordCta, type AnalyticsGameType } from '@/lib/analytics'
@@ -90,9 +91,8 @@ export default function AfterGameActions({
   const isOverlay = variant === 'overlay'
 
   /**
-   * Slot 3's gate, computed here while the slot itself is still empty (#984 fills it).
-   * A guest has no account to attach a push subscription to, so the two boxes below are
-   * mutually exclusive by construction and at most one ever appears.
+   * Slot 3's gate. A guest has no account to attach a push subscription to, so the two
+   * boxes below are mutually exclusive by construction and at most one ever appears.
    */
   const canAskForPush = isRegistered && !isGuest
 
@@ -137,12 +137,11 @@ export default function AfterGameActions({
       </a>
 
       {/*
-        3 — EXTENSION POINT, reserved for <PushOptInNudge> (#984).
-        The whole of that ticket's change to this file is swapping the `null` below for
-            <PushOptInNudge source="after_game" gameType={gameType} />
-        Nothing above or below it moves. Nothing else may be rendered in this slot.
+        3 – the push opt-in ask (#984). It decides for itself whether it can be shown at
+        all (VAPID key, browser support, permission, an existing subscription, a dismissal
+        inside 30 days), so this gate is only about who it makes sense to ask.
       */}
-      {canAskForPush && null}
+      {canAskForPush && <PushOptInNudge source="after_game" gameType={gameType} />}
 
       {/* 4 — guest → account. Mutually exclusive with slot 3, so at most one box appears. */}
       {isGuest && registerUrl && (

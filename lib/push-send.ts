@@ -27,7 +27,18 @@ function ensureVapid() {
 export async function sendPushNotification(userId: string, payload: PushPayload): Promise<void> {
   try {
     const prefs = await getNotificationPreferences(userId)
-    if (prefs.unsubscribedAll || !prefs.pushNotifications) return
+    // `unsubscribedAll` is the EMAIL master switch, not a global one, everywhere else it is
+    // read: `/profile` labels it "Email Notifications" and binds it to
+    // `emailNotificationsEnabled = !unsubscribedAll` (app/profile/page.tsx:236), and
+    // `/api/notifications/unsubscribe` with type 'all' answers "You will no longer receive
+    // Boardly notification emails". Every other consumer gates an email with it
+    // (lib/turn-reminders.ts, lib/notification-queue.ts, the lobby invite route).
+    // This line used to gate push on it too, which meant anyone who had ever unticked the
+    // email box, or clicked one-click-unsubscribe in a footer, could opt into push on either
+    // surface, be told notifications were on, and receive nothing forever - the #983 failure
+    // with a different cause. Push has its own switch and its own off ramp: the `/profile`
+    // checkbox unsubscribes the browser and writes `pushNotifications: false`.
+    if (!prefs.pushNotifications) return
 
     const subscriptions = await prisma.pushSubscriptions.findMany({
       where: { userId },

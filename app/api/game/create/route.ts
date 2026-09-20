@@ -14,6 +14,7 @@ import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-hel
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 const limiter = rateLimit(rateLimitPresets.game)
@@ -486,14 +487,18 @@ export async function POST(request: NextRequest) {
     })
 
     // Update existing game instead of creating new one
+    const startedState = gameEngine.getState()
+    // startedAt and lastMoveAt are written together: this is the only place a
+    // game becomes `playing`, so it is the only place the move clock can be
+    // started (#1048). See buildGameStartFields for what leaving it behind cost.
+    const startFields = buildGameStartFields()
     const game = await prisma.games.update({
       where: { id: waitingGame.id },
       data: {
-        state: toPersistedGameStateInput(gameEngine.getState()),
+        state: toPersistedGameStateInput(startedState),
         status: 'playing',
         gameType: persistedGameType,
-        startedAt: new Date(),
-        updatedAt: new Date(),
+        ...startFields,
       },
       include: {
         players: {

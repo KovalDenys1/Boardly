@@ -126,7 +126,20 @@ export async function subscribeAndRegisterPush(): Promise<PushRegistrationResult
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    return res.ok ? 'registered' : 'failed'
+    if (res.ok) return 'registered'
+
+    // The browser subscription is real by this point and the server has no row for it. Left
+    // there it is an orphan that answers `getExistingPushSubscription()` with "already
+    // subscribed" on every later visit, which is how the end-screen ask (#984) suppressed
+    // itself for good on a device nothing could ever be delivered to. `/api/push-subscriptions`
+    // is rate limited, so a 429 in a burst gets here, as does any 5xx. Dropping it leaves the
+    // device exactly as it was before the click, and retryable.
+    try {
+      await subscription.unsubscribe()
+    } catch {
+      // Nothing better to do: the caller already knows this attempt failed.
+    }
+    return 'failed'
   } catch {
     return 'failed'
   }

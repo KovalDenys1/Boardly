@@ -358,6 +358,39 @@ Comono mailbox.**
 A schema change here can break a Control Panel query, and a new admin feature there can
 need data this app is not yet writing. Check both.
 
+## Reading this database: two things that make an analysis quietly wrong
+
+Both were hit on 2026-09-20 while measuring the funnel, and both produce a confident
+number rather than an error.
+
+**Bots are `Users` rows joined to a `Bots` table, not a role.** Every bot account has
+`role = 'user'` exactly like a person, and some were created months ago, so they look
+like long-standing registered users. Filtering on `role <> 'BOT'` excludes nothing and
+counts every bot as a player: a first pass reported 205 of 348 games as having "no human
+players" on that basis. Identify a bot with `"userId" in (select "userId" from "Bots")`,
+which is what the app itself does — `lib/lobby-leave.ts` asks Prisma for
+`user: { bot: { isNot: null } }`.
+
+**`abandonedAt` is when the cleanup sweep noticed, not when the player left.** It lands
+one and a half to three hours after `startedAt`, so `abandonedAt - startedAt` reads as
+"they played for ninety minutes and gave up" when the truth is the opposite. For how long
+anyone actually played, use `lastMoveAt - startedAt`; the medians that come out are 4 to
+24 seconds for the fast games. A negative result there is real and means `lastMoveAt` was
+never written after the game began (#1048).
+
+**`AnalyticsUserFacts` is the Control Panel's table, not this repo's.** It has no Prisma
+model, no migration and no reader here, so grepping this tree says it does not exist - an
+agent concluded exactly that on 2026-09-20. It is real, it is populated, and it is owned by
+`~/Projects/boardly-control-panel` (its `prisma/schema.prisma` plus
+`app/api/cron/analytics-sync/route.ts`), which is the carve-out described above for
+Control-Panel-only bookkeeping. Query it through the `supabase-prod` MCP.
+
+**And the guest purge erases the evidence.** `scripts/cleanup-old-guests.ts` deletes
+guests inactive for 3 days and their `Players` rows go with them, so anything older than
+that has lost the majority of its players — guests are most of the audience. Retention
+has to be read from `AnalyticsUserFacts`, which keeps a row after the user is gone and
+marks it `missingSince`.
+
 ## DNS
 
 `boardly.online` is registered at **Namecheap** — Domain List → boardly.online → Manage →
