@@ -77,6 +77,16 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     updated: '2026-09-15',
   },
   {
+    slug: 'how-to-play-rock-paper-scissors-online',
+    title: 'How to Play Rock Paper Scissors Online',
+    description: 'The best-of-three format, how to read an opponent, and how the bot picks its move.',
+    icon: { game: 'rps' },
+    readTime: '6 min',
+    accent: 'var(--bd-lav)',
+    category: 'how-to-play',
+    updated: '2026-09-20',
+  },
+  {
     slug: 'how-to-play-alias-online',
     title: 'How to Play Alias Online',
     description: 'Describe words, help your team guess, and score more than the other team.',
