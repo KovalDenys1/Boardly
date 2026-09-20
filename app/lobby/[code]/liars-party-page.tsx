@@ -19,6 +19,9 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import LeaveIcon from '@/components/LeaveIcon'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { getThemePageStyle } from '@/lib/lobby-themes'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
@@ -38,6 +41,7 @@ interface Lobby {
   isActive?: boolean
   turnTimer?: number
   theme?: string
+  allowSpectators?: boolean
 }
 
 interface GamePlayer {
@@ -54,6 +58,65 @@ interface Game {
   players: GamePlayer[]
 }
 
+// ─── The shell every phase renders into ───────────────────────────────────────
+
+/** The catalog accent for liars_party (lib/game-catalog.ts). */
+const LIARS_PARTY_ACCENT = 'var(--bd-lav)'
+
+interface ShellProps {
+  /** Per-phase test id, kept on the shell root so it is still one query away. */
+  testId: string
+  code: string
+  /** Already-translated game name. */
+  title: string
+  /** Already-translated Leave / Back to lobby label. */
+  leaveLabel: string
+  theme: string | undefined
+  isSpectator: boolean
+  allowSpectators: boolean
+  onLeave: () => void
+  /** GameStatusBanner, or nothing on a screen with no clock to show. */
+  status?: React.ReactNode
+  children: React.ReactNode
+}
+
+/**
+ * #1040: the seven screens each painted their own rose/orange gradient and
+ * white text, so the lobby theme the host paid for and picked stopped at the
+ * door of the game. They now share this shell: `.game-screen` for the height,
+ * `getThemePageStyle` for the palette, the shared room card for the title, the
+ * room code and the way out, and one scrolling content region underneath.
+ * Each phase supplies only its own content, unchanged.
+ */
+function LiarsPartyShell({ testId, code, title, leaveLabel, theme, isSpectator, allowSpectators, onLeave, status, children }: ShellProps) {
+  return (
+    <div className="game-screen liars-screen" style={getThemePageStyle(theme)} data-testid={testId}>
+      <div className="liars-shell">
+        <GameRoomCard
+          gameId="liars-party"
+          title={title}
+          code={code}
+          isSpectator={isSpectator}
+          leaveLabel={leaveLabel}
+          allowSpectators={allowSpectators}
+          onLeave={onLeave}
+        />
+        {status}
+        <div className="liars-content">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+/** A themed card. One class so the seven screens cannot drift apart again. */
+function LiarsCard({ children, className = '', role, testId }: { children: React.ReactNode; className?: string; role?: string; testId?: string }) {
+  return (
+    <div className={`bd-card liars-card ${className}`.trim()} role={role} data-testid={testId}>
+      {children}
+    </div>
+  )
+}
+
 // ─── Screen components ────────────────────────────────────────────────────────
 
 interface WaitingScreenProps {
@@ -63,232 +126,197 @@ interface WaitingScreenProps {
   isHost: boolean
   isStarting: boolean
   onStart: () => void
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLeave, t }: WaitingScreenProps) {
+function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, t }: WaitingScreenProps) {
   const maxRounds = data?.maxRounds ?? 10
   const eliminationThreshold = data?.eliminationThreshold ?? 2
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-waiting-room"
-    >
-      <h1 className="flex items-center gap-2 text-3xl font-bold text-white drop-shadow"><Icon name="mask" size={30} /> {t('liarsParty.name')}</h1>
-
-      <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white text-center">
-        <div className="text-lg font-semibold mb-1">{players.length} / 12</div>
-        <div className="text-sm text-white/80">
-          {t('liarsParty.roundsCount', { count: maxRounds })} · {t('liarsParty.eliminatedAfter', { count: eliminationThreshold })}
-        </div>
-      </div>
-
-      <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white">
-        <div className="font-semibold mb-3">{t('liarsParty.rules')}</div>
+    <div className="liars-columns">
+      <LiarsCard>
+        <div className="liars-card__title">{t('liarsParty.rules')}</div>
         <ol className="space-y-1.5">
           {rules.map((rule, i) => (
-            <li key={i} className="text-sm text-white/85 flex gap-2">
-              <span className="font-bold shrink-0">{i + 1}.</span>
+            <li key={i} className="flex gap-2 text-sm text-bd-ink-soft">
+              <span className="shrink-0 font-bold" style={{ color: LIARS_PARTY_ACCENT }}>{i + 1}.</span>
               <span>{rule}</span>
             </li>
           ))}
         </ol>
-      </div>
+      </LiarsCard>
 
-      <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white">
-        <div className="font-semibold mb-2">{t('liarsParty.playersHeading', { count: players.length })}</div>
+      <LiarsCard>
+        <div className="liars-card__title">{t('liarsParty.playersHeading', { count: players.length })}</div>
+        <div className="mb-3 text-sm text-bd-ink-muted">
+          {players.length} / 12 · {t('liarsParty.roundsCount', { count: maxRounds })} · {t('liarsParty.eliminatedAfter', { count: eliminationThreshold })}
+        </div>
         <div className="space-y-1">
           {players.map(p => (
-            <div key={p.id} className="text-sm text-white/90">{p.name}</div>
+            <div key={p.id} className="text-sm text-bd-ink">{p.name}</div>
           ))}
         </div>
-      </div>
-
-      {isHost ? (
-        <button
-          onClick={onStart}
-          disabled={isStarting || players.length < 4}
-          className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-        >
-          {isStarting ? t('common.loading') : t('liarsParty.startGame')}
-        </button>
-      ) : (
-        <p className="text-white/80 text-sm">{t('liarsParty.waitingForPlayers')}</p>
-      )}
-      {players.length < 4 && isHost && (
-        <p className="text-white/70 text-xs">{t('liarsParty.needMorePlayers')}</p>
-      )}
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
+        <div className="liars-card__actions">
+          {isHost ? (
+            <button
+              onClick={onStart}
+              disabled={isStarting || players.length < 4}
+              className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isStarting ? t('common.loading') : t('liarsParty.startGame')}
+            </button>
+          ) : (
+            <p className="text-sm text-bd-ink-soft">{t('liarsParty.waitingForPlayers')}</p>
+          )}
+          {players.length < 4 && isHost && (
+            <p className="text-xs text-bd-ink-muted">{t('liarsParty.needMorePlayers')}</p>
+          )}
+        </div>
+      </LiarsCard>
     </div>
   )
 }
 
 interface ClaimScreenProps {
   data: LiarsPartyGameData
-  players: GamePlayer[]
   currentUserId: string
   isMoveSubmitting: boolean
-  timerRemaining: number
   onSubmitClaim: (claim: string, isBluff: boolean) => void
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onSubmitClaim, onLeave, t }: ClaimScreenProps) {
+function ClaimScreen({ data, currentUserId, isMoveSubmitting, onSubmitClaim, t }: ClaimScreenProps) {
   const [claimText, setClaimText] = useState('')
   const [isBluffSelected, setIsBluffSelected] = useState<boolean | null>(null)
   const isClaimant = data.currentClaimantId === currentUserId
-  const claimantPlayer = players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId)
-  const claimantName = claimantPlayer?.name ?? data.currentClaimantId
   const charCount = claimText.length
   const canSubmit = charCount >= 5 && charCount <= 180 && isBluffSelected !== null && !isMoveSubmitting
 
-  return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-claim-screen"
-    >
-      <div className="text-white/80 text-sm font-mono">
-        {t('liarsParty.round', { current: data.currentRound, total: data.maxRounds })}
-      </div>
-      <div className="text-white text-2xl font-mono font-bold">{t('liarsParty.timeLeft', { seconds: timerRemaining })}</div>
+  // Everyone but the claimant is watching one person type. That is the whole
+  // phase, and the status banner above already says whose turn it is, so a card
+  // repeating the same sentence would be the duplicate signal the layout DoD
+  // warns about. The reaction overlay is what this screen is for.
+  if (!isClaimant) return null
 
-      {isClaimant ? (
-        <>
-          <h2 className="text-2xl font-bold text-white">{t('liarsParty.yourTurnToClaim')}</h2>
-          <div className="w-full max-w-md">
-            <textarea
-              className="w-full rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/60 p-4 text-base resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
-              rows={4}
-              placeholder={t('liarsParty.claimPlaceholder')}
-              maxLength={180}
-              value={claimText}
-              onChange={e => setClaimText(e.target.value)}
-            />
-            <div className="text-right text-white/60 text-xs mt-1">
-              {t('liarsParty.charsRemaining', { count: 180 - charCount })}
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setIsBluffSelected(false)}
-              className={`px-6 py-3 rounded-xl font-bold transition-all ${isBluffSelected === false ? 'bg-white text-green-600 scale-105 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
-            >
-              <Icon name="check" size={16} /> {t('liarsParty.truth')}
-            </button>
-            <button
-              onClick={() => setIsBluffSelected(true)}
-              className={`px-6 py-3 rounded-xl font-bold transition-all ${isBluffSelected === true ? 'bg-white text-rose-600 scale-105 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
-            >
-              <Icon name="mask" size={16} /> {t('liarsParty.bluff')}
-            </button>
-          </div>
+  return (
+    <div className="liars-single">
+      {/* No heading: the status banner above already reads "Your turn to make
+          a claim", and the placeholder says what goes in the box. */}
+      <LiarsCard>
+        <textarea
+          className="bd-input resize-none"
+          rows={4}
+          placeholder={t('liarsParty.claimPlaceholder')}
+          maxLength={180}
+          value={claimText}
+          onChange={e => setClaimText(e.target.value)}
+        />
+        <div className="mt-1 text-right text-xs text-bd-ink-muted">
+          {t('liarsParty.charsRemaining', { count: 180 - charCount })}
+        </div>
+
+        <div className="liars-choice-row">
+          <button
+            onClick={() => setIsBluffSelected(false)}
+            aria-pressed={isBluffSelected === false}
+            className={`bd-btn liars-choice${isBluffSelected === false ? ' liars-choice--on-truth' : ' bd-btn-soft'}`}
+          >
+            <Icon name="check" size={16} /> {t('liarsParty.truth')}
+          </button>
+          <button
+            onClick={() => setIsBluffSelected(true)}
+            aria-pressed={isBluffSelected === true}
+            className={`bd-btn liars-choice${isBluffSelected === true ? ' liars-choice--on-bluff' : ' bd-btn-soft'}`}
+          >
+            <Icon name="mask" size={16} /> {t('liarsParty.bluff')}
+          </button>
+        </div>
+
+        <div className="liars-card__actions">
           <button
             onClick={() => isBluffSelected !== null && onSubmitClaim(claimText, isBluffSelected)}
             disabled={!canSubmit}
-            className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('liarsParty.submitClaim')}
           </button>
-        </>
-      ) : (
-        <p className="text-white text-xl">{t('liarsParty.isClaimingFor', { name: claimantName })}</p>
-      )}
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
+        </div>
+      </LiarsCard>
     </div>
   )
 }
 
 interface EliminatedClaimScreenProps {
   data: LiarsPartyGameData
-  players: GamePlayer[]
   currentUserId: string
-  timerRemaining: number
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, onLeave, t }: EliminatedClaimScreenProps) {
-  const claimantPlayer = players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId)
-  const claimantName = claimantPlayer?.name ?? data.currentClaimantId
+/** The eliminated player's banner, the one piece their screens add. */
+function EliminatedBanner({ round, t }: { round: number | null | undefined; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string }) {
+  return (
+    <LiarsCard className="liars-card--danger text-center" role="alert" testId="eliminated-banner">
+      {t('liarsParty.eliminatedAt', { round: round ?? '?' })}
+    </LiarsCard>
+  )
+}
+
+function EliminatedClaimScreen({ data, currentUserId, t }: EliminatedClaimScreenProps) {
   const eliminatedRound = data.eliminatedAtRound[currentUserId]
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-eliminated-claim-screen"
-    >
-      <div
-        className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
-        role="alert"
-        data-testid="eliminated-banner"
-      >
-        {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}
-      </div>
-      <div className="text-white/80 text-sm font-mono">
-        {t('liarsParty.round', { current: data.currentRound, total: data.maxRounds })}
-      </div>
-      <div className="text-white text-2xl font-mono font-bold">{t('liarsParty.timeLeft', { seconds: timerRemaining })}</div>
-      <p className="text-white text-xl">{t('liarsParty.isClaimingFor', { name: claimantName })}</p>
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
+    <div className="liars-single">
+      <EliminatedBanner round={eliminatedRound} t={t} />
     </div>
   )
 }
 
 interface ChallengeScreenProps {
   data: LiarsPartyGameData
-  players: GamePlayer[]
   currentUserId: string
   isMoveSubmitting: boolean
-  timerRemaining: number
   onVote: (decision: 'challenge' | 'believe') => void
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onVote, onLeave, t }: ChallengeScreenProps) {
+/** The claim under vote, plus how many votes are in. Shared with the eliminated view. */
+function ClaimUnderVote({ data, heading, t }: {
+  data: LiarsPartyGameData
+  heading?: string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
+}) {
+  const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
+  return (
+    <LiarsCard>
+      {heading && <div className="liars-card__title">{heading}</div>}
+      <blockquote className="liars-claim">&ldquo;{data.claim?.text}&rdquo;</blockquote>
+      <div className="text-sm text-bd-ink-muted">{t('liarsParty.voted', { done: data.challengeVotes.length, total: totalVoters })}</div>
+    </LiarsCard>
+  )
+}
+
+function ChallengeScreen({ data, currentUserId, isMoveSubmitting, onVote, t }: ChallengeScreenProps) {
   const isClaimant = data.currentClaimantId === currentUserId
   const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
-  const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
-  const votedCount = data.challengeVotes.length
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-challenge-screen"
-    >
-      <div className="text-white/80 text-sm font-mono">
-        {t('liarsParty.round', { current: data.currentRound, total: data.maxRounds })}
-      </div>
-      <div className="text-white text-2xl font-mono font-bold">{t('liarsParty.timeLeft', { seconds: timerRemaining })}</div>
-
-      <div className="w-full max-w-md bg-white/10 backdrop-blur rounded-xl p-6 text-white">
-        <div className="text-lg font-semibold mb-2">{t('liarsParty.challengeOrBelieve')}</div>
-        <div className="text-xl text-white/90 italic mb-4">&ldquo;{data.claim?.text}&rdquo;</div>
-        <div className="text-sm text-white/70">{t('liarsParty.voted', { done: votedCount, total: totalVoters })}</div>
-      </div>
+    <div className="liars-single">
+      <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} t={t} />
 
       {!isClaimant && !myVote && (
-        <div className="flex gap-4">
+        <div className="liars-choice-row">
           <button
             onClick={() => onVote('challenge')}
             disabled={isMoveSubmitting}
-            className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold disabled:opacity-50 shadow-lg transition-all hover:scale-105"
+            className="bd-btn bd-btn-coral liars-choice disabled:opacity-50"
           >
             {t('liarsParty.challenge')}
           </button>
           <button
             onClick={() => onVote('believe')}
             disabled={isMoveSubmitting}
-            className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold disabled:opacity-50 shadow-lg transition-all hover:scale-105"
+            className="bd-btn liars-choice liars-choice--believe disabled:opacity-50"
           >
             {t('liarsParty.believe')}
           </button>
@@ -296,18 +324,17 @@ function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timer
       )}
 
       {!isClaimant && myVote && (
-        <div className="text-white text-center">
-          <div>{t('liarsParty.youVoted', { decision: myVote.decision })}</div>
-          <div className="text-sm text-white/70 mt-1">{t('liarsParty.waitingForVotes')}</div>
-        </div>
+        <LiarsCard className="text-center">
+          <div className="text-bd-ink">{t('liarsParty.youVoted', { decision: myVote.decision })}</div>
+          <div className="mt-1 text-sm text-bd-ink-muted">{t('liarsParty.waitingForVotes')}</div>
+        </LiarsCard>
       )}
 
       {isClaimant && (
-        <p className="text-white/80 text-sm">{t('liarsParty.waitingForVotes')}</p>
+        <LiarsCard className="text-center">
+          <p className="text-sm text-bd-ink-soft">{t('liarsParty.waitingForVotes')}</p>
+        </LiarsCard>
       )}
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
     </div>
   )
 }
@@ -315,39 +342,16 @@ function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timer
 interface EliminatedChallengeScreenProps {
   data: LiarsPartyGameData
   currentUserId: string
-  timerRemaining: number
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, onLeave, t }: EliminatedChallengeScreenProps) {
-  const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
-  const votedCount = data.challengeVotes.length
+function EliminatedChallengeScreen({ data, currentUserId, t }: EliminatedChallengeScreenProps) {
   const eliminatedRound = data.eliminatedAtRound[currentUserId]
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-eliminated-challenge-screen"
-    >
-      <div
-        className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
-        role="alert"
-        data-testid="eliminated-banner"
-      >
-        {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}
-      </div>
-      <div className="text-white/80 text-sm font-mono">
-        {t('liarsParty.round', { current: data.currentRound, total: data.maxRounds })}
-      </div>
-      <div className="text-white text-2xl font-mono font-bold">{t('liarsParty.timeLeft', { seconds: timerRemaining })}</div>
-      <div className="w-full max-w-md bg-white/10 backdrop-blur rounded-xl p-6 text-white">
-        <div className="text-xl text-white/90 italic mb-4">&ldquo;{data.claim?.text}&rdquo;</div>
-        <div className="text-sm text-white/70">{t('liarsParty.voted', { done: votedCount, total: totalVoters })}</div>
-      </div>
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
+    <div className="liars-single">
+      <EliminatedBanner round={eliminatedRound} t={t} />
+      <ClaimUnderVote data={data} t={t} />
     </div>
   )
 }
@@ -357,11 +361,10 @@ interface RevealScreenProps {
   players: GamePlayer[]
   isMoveSubmitting: boolean
   onAdvanceRound: () => void
-  onLeave: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave, t }: RevealScreenProps) {
+function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, t }: RevealScreenProps) {
   const lastResult: LiarsPartyRoundResult | undefined = data.roundResults[data.roundResults.length - 1]
   const isLastRound = data.currentRound >= data.maxRounds
   const eliminatedThisRound = lastResult
@@ -372,27 +375,20 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
     : []
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500 overflow-y-auto"
-      data-testid="liars-party-reveal-screen"
-    >
-      <div className="text-white/80 text-sm font-mono">
-        {t('liarsParty.round', { current: data.currentRound, total: data.maxRounds })}
-      </div>
-
+    <div className="liars-columns">
       {data.claim && (
-        <div className="w-full max-w-md bg-white/10 backdrop-blur rounded-xl p-5 text-white">
-          <div className="text-xl italic mb-3">&ldquo;{data.claim.text}&rdquo;</div>
-          <div className={`text-3xl font-extrabold ${data.claim.isBluff ? 'text-red-200' : 'text-green-200'}`}>
+        <LiarsCard>
+          <blockquote className="liars-claim">&ldquo;{data.claim.text}&rdquo;</blockquote>
+          <div className="liars-verdict" style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}>
             {data.claim.isBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
           </div>
-        </div>
+        </LiarsCard>
       )}
 
       {lastResult && (
         <>
-          <div className="w-full max-w-md bg-white/10 backdrop-blur rounded-xl p-5 text-white">
-            <div className="font-semibold mb-3">{t('liarsParty.voteBreakdown')}</div>
+          <LiarsCard>
+            <div className="liars-card__title">{t('liarsParty.voteBreakdown')}</div>
             <div className="space-y-2">
               {data.challengeVotes.map(vote => {
                 const voter = players.find(p => p.userId === vote.playerId || p.id === vote.playerId)
@@ -400,19 +396,19 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
                 const correct = vote.decision === 'challenge' ? lastResult.bluffCaught : !lastResult.bluffCaught
                 const delta = lastResult.voterScoreDeltas[vote.playerId] ?? 0
                 return (
-                  <div key={vote.playerId} className="flex items-center justify-between text-sm">
-                    <span>{voterName}</span>
-                    <span>{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
-                    <span><Icon name={correct ? 'check' : 'close'} size={14} /></span>
-                    <span className={delta >= 0 ? 'text-green-300' : 'text-red-300'}>{delta >= 0 ? `+${delta}` : delta}</span>
+                  <div key={vote.playerId} className="flex items-center justify-between gap-2 text-sm text-bd-ink">
+                    <span className="min-w-0 flex-1 truncate">{voterName}</span>
+                    <span className="text-bd-ink-soft">{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
+                    <span style={{ color: correct ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}><Icon name={correct ? 'check' : 'close'} size={14} /></span>
+                    <span style={{ color: delta >= 0 ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}>{delta >= 0 ? `+${delta}` : delta}</span>
                   </div>
                 )
               })}
             </div>
-          </div>
+          </LiarsCard>
 
-          <div className="w-full max-w-md bg-white/10 backdrop-blur rounded-xl p-5 text-white">
-            <div className="font-semibold mb-3">{t('liarsParty.totalScores')}</div>
+          <LiarsCard>
+            <div className="liars-card__title">{t('liarsParty.totalScores')}</div>
             <div className="space-y-1">
               {data.activePlayerIds.map(pid => {
                 const player = players.find(p => p.userId === pid || p.id === pid)
@@ -420,22 +416,22 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
                 const score = data.scores[pid] ?? 0
                 const strikes = data.strikes[pid] ?? 0
                 return (
-                  <div key={pid} className="flex justify-between text-sm">
-                    <span>{name}</span>
-                    <span>{score} pts · {t('liarsParty.strikes', { count: strikes, max: data.eliminationThreshold })}</span>
+                  <div key={pid} className="flex justify-between gap-2 text-sm text-bd-ink">
+                    <span className="min-w-0 truncate">{name}</span>
+                    <span className="text-bd-ink-soft">{score} pts · {t('liarsParty.strikes', { count: strikes, max: data.eliminationThreshold })}</span>
                   </div>
                 )
               })}
             </div>
-          </div>
+          </LiarsCard>
         </>
       )}
 
       {eliminatedThisRound.length > 0 && (
-        <div className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center">
-          <div className="font-semibold mb-1">{t('liarsParty.eliminatedThisRound')}</div>
+        <LiarsCard className="liars-card--danger text-center">
+          <div className="mb-1 font-semibold">{t('liarsParty.eliminatedThisRound')}</div>
           {eliminatedThisRound.map(p => <div key={p.id} className="text-sm">{p.name}</div>)}
-        </div>
+        </LiarsCard>
       )}
 
       {/*
@@ -444,16 +440,15 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
         advance). Gating this to isHost made the game permanently soft-lock for
         everyone else whenever the host didn't click through. See #642.
       */}
-      <button
-        onClick={onAdvanceRound}
-        disabled={isMoveSubmitting}
-        className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
-      >
-        {isLastRound ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
-      </button>
-      <button onClick={onLeave} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
+      <div className="liars-columns__footer">
+        <button
+          onClick={onAdvanceRound}
+          disabled={isMoveSubmitting}
+          className="bd-btn bd-btn-primary disabled:opacity-50"
+        >
+          {isLastRound ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
+        </button>
+      </div>
     </div>
   )
 }
@@ -465,7 +460,6 @@ interface GameOverScreenProps {
   isStarting: boolean
   onPlayAgain: () => void
   onReturnToLobby: () => void
-  onBackToGames: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
   /** Lobby code for the after-game share button (#982). */
   code: string
@@ -474,26 +468,39 @@ interface GameOverScreenProps {
   isRegistered: boolean
 }
 
-function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, onBackToGames, t, code, isGuest, isRegistered }: GameOverScreenProps) {
+function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, t, code, isGuest, isRegistered }: GameOverScreenProps) {
   const winner = players.find(p => p.userId === data.winnerId || p.id === data.winnerId)
   const winnerName = winner?.name ?? data.winnerId ?? '?'
 
   return (
-    <div
-      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-game-over-screen"
-    >
-      <div><Icon name="mask" size={48} /></div>
-      <h2 className="text-4xl font-extrabold text-white drop-shadow">
-        {t('liarsParty.wins', { name: winnerName })}
-      </h2>
-      <div className="text-white/80 text-sm">
-        {data.completionReason === 'last-player-standing'
-          ? t('liarsParty.lastPlayerStanding')
-          : t('liarsParty.maxRoundsReached')}
-      </div>
+    <div className="liars-columns">
+      <LiarsCard className="text-center">
+        <div style={{ color: LIARS_PARTY_ACCENT }}><Icon name="mask" size={40} /></div>
+        <h2 className="font-display text-3xl font-extrabold text-bd-ink">
+          {t('liarsParty.wins', { name: winnerName })}
+        </h2>
+        <div className="mt-1 text-sm text-bd-ink-muted">
+          {data.completionReason === 'last-player-standing'
+            ? t('liarsParty.lastPlayerStanding')
+            : t('liarsParty.maxRoundsReached')}
+        </div>
+        <div className="liars-card__actions">
+          {isHost ? (
+            <>
+              <button onClick={onPlayAgain} disabled={isStarting} className="bd-btn bd-btn-primary disabled:opacity-50">
+                {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
+              </button>
+              <button onClick={onReturnToLobby} disabled={isStarting} className="bd-btn bd-btn-soft disabled:opacity-50">
+                {t('game.ui.returnToLobby')}
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-bd-ink-soft">{t('game.ui.waitingForHost')}</p>
+          )}
+        </div>
+      </LiarsCard>
 
-      <div className="w-full max-w-sm bg-white/10 backdrop-blur rounded-xl p-5 text-white">
+      <LiarsCard>
         <div className="space-y-2">
           {data.ranking.map((pid, idx) => {
             const player = players.find(p => p.userId === pid || p.id === pid)
@@ -501,46 +508,21 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
             const score = data.scores[pid] ?? 0
             const strikes = data.strikes[pid] ?? 0
             return (
-              <div key={pid} className="flex items-center justify-between text-sm">
-                <span className="font-bold text-white/60">{t('liarsParty.rank', { position: idx + 1 })}</span>
-                <span className="flex-1 ml-3">{name}</span>
+              <div key={pid} className="flex items-center justify-between gap-2 text-sm text-bd-ink">
+                <span className="font-bold text-bd-ink-muted">{t('liarsParty.rank', { position: idx + 1 })}</span>
+                <span className="min-w-0 flex-1 truncate">{name}</span>
                 <span>{score} pts</span>
-                <span className="text-white/60 ml-2">{t('liarsParty.strikes', { count: strikes, max: data.eliminationThreshold })}</span>
+                <span className="text-bd-ink-muted">{t('liarsParty.strikes', { count: strikes, max: data.eliminationThreshold })}</span>
               </div>
             )
           })}
         </div>
-      </div>
+      </LiarsCard>
 
-      {isHost ? (
-        <div className="flex flex-col items-center gap-3">
-          <button
-            onClick={onPlayAgain}
-            disabled={isStarting}
-            className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
-          >
-            {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
-          </button>
-          <button
-            onClick={onReturnToLobby}
-            disabled={isStarting}
-            className="px-6 py-2 bg-white/20 text-white rounded-xl font-semibold text-sm hover:bg-white/30 disabled:opacity-50"
-          >
-            {t('game.ui.returnToLobby')}
-          </button>
-        </div>
-      ) : (
-        <div className="px-6 py-3 bg-white/10 text-white/60 rounded-xl font-semibold text-sm text-center">
-          {t('game.ui.waitingForHost')}
-        </div>
-      )}
-      <button onClick={onBackToGames} className="text-sm text-white/70 underline">
-        {t('lobby.leave')}
-      </button>
-      {/* Overlay variant, not card: this screen is white-on-gradient (#982). */}
-      <div className="w-full max-w-sm">
+      {/* Card variant now that the screen is themed rather than white-on-gradient (#982, #1040). */}
+      <div className="liars-columns__footer">
         <AfterGameActions
-          variant="overlay"
+          variant="card"
           inviteCode={code}
           gameType="liars_party"
           isGuest={isGuest}
@@ -864,7 +846,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   if (loading) {
     return (
-      <div className="flex min-h-[var(--game-h)] items-center justify-center">
+      <div className="game-screen liars-screen liars-screen--centered" style={getThemePageStyle(lobby?.theme)}>
         <LoadingSpinner />
       </div>
     )
@@ -894,16 +876,39 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         t('liarsParty.rule5'),
       ]
 
-  // Every phase is rendered into one return so the leave confirmation is
-  // mounted once, instead of being repeated in each of the seven branches.
-  let screen: React.ReactNode = (
-    <div className="flex min-h-[var(--game-h)] items-center justify-center">
-      <LoadingSpinner />
-    </div>
+  const claimantPlayer = data ? players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId) : undefined
+  const claimantName = claimantPlayer?.name ?? data?.currentClaimantId ?? ''
+  const isClaimant = !isSpectator && !!data && data.currentClaimantId === currentUserId
+
+  const roundMeta = data ? t('liarsParty.round', { current: data.currentRound, total: data.maxRounds }) : undefined
+
+  /** The one status line, in the one place every game puts it (layout DoD). */
+  const turnBanner = (activeTitle: string, isYourTurn: boolean) => (
+    <GameStatusBanner
+      isFinished={false}
+      activeTitle={activeTitle}
+      meta={roundMeta}
+      secs={timerRemaining}
+      turnTimerLimit={turnTimerSeconds}
+      barColor={LIARS_PARTY_ACCENT}
+      leadingIcon={<Icon name="mask" size={20} />}
+      isSpectator={isSpectator}
+      isYourTurn={isYourTurn}
+    />
   )
 
+  // Everything below renders into one shell and one return, so the theme, the
+  // header and the leave confirmation are defined once rather than seven times.
+  let content: React.ReactNode = <LoadingSpinner />
+  let testId = 'liars-party-loading'
+  let statusNode: React.ReactNode = null
+  let showReactions = false
+
   if (resolvedStatus === 'waiting') {
-    screen = (
+    // No banner: nothing is on the clock yet, and the players card carries the
+    // "N / 12, waiting for more" signal a turn banner would duplicate.
+    testId = 'liars-party-waiting-room'
+    content = (
       <WaitingScreen
         players={players}
         data={data}
@@ -911,75 +916,59 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onStart={handleStartGame}
-        onLeave={requestLeave}
         t={t}
       />
     )
   } else if (resolvedStatus === 'playing' && data && data.phase === 'claim') {
-    screen = isEliminated ? (
-      <EliminatedClaimScreen
+    showReactions = !isSpectator
+    statusNode = turnBanner(
+      isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }),
+      isClaimant
+    )
+    testId = isEliminated ? 'liars-party-eliminated-claim-screen' : 'liars-party-claim-screen'
+    content = isEliminated ? (
+      <EliminatedClaimScreen data={data} currentUserId={currentUserId} t={t} />
+    ) : (
+      <ClaimScreen
         data={data}
-        players={players}
         currentUserId={currentUserId}
-        timerRemaining={timerRemaining}
-        onLeave={requestLeave}
+        isMoveSubmitting={isMoveSubmitting}
+        onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
         t={t}
       />
-    ) : (
-      <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <ClaimScreen
-          data={data}
-          players={players}
-          currentUserId={currentUserId}
-          isMoveSubmitting={isMoveSubmitting}
-          timerRemaining={timerRemaining}
-          onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
-          onLeave={requestLeave}
-          t={t}
-        />
-      </>
     )
   } else if (resolvedStatus === 'playing' && data && data.phase === 'challenge') {
-    screen = isEliminated ? (
-      <EliminatedChallengeScreen
+    showReactions = !isSpectator
+    const hasVoted = data.challengeVotes.some(v => v.playerId === currentUserId)
+    statusNode = turnBanner(t('liarsParty.challengeOrBelieve'), !isSpectator && !isEliminated && !isClaimant && !hasVoted)
+    testId = isEliminated ? 'liars-party-eliminated-challenge-screen' : 'liars-party-challenge-screen'
+    content = isEliminated ? (
+      <EliminatedChallengeScreen data={data} currentUserId={currentUserId} t={t} />
+    ) : (
+      <ChallengeScreen
         data={data}
         currentUserId={currentUserId}
-        timerRemaining={timerRemaining}
-        onLeave={requestLeave}
+        isMoveSubmitting={isSpectator || isMoveSubmitting}
+        onVote={(decision) => handleMove('submit-challenge', { decision })}
         t={t}
       />
-    ) : (
-      <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <ChallengeScreen
-          data={data}
-          players={players}
-          currentUserId={currentUserId}
-          isMoveSubmitting={isSpectator || isMoveSubmitting}
-          timerRemaining={timerRemaining}
-          onVote={(decision) => handleMove('submit-challenge', { decision })}
-          onLeave={requestLeave}
-          t={t}
-        />
-      </>
     )
   } else if (resolvedStatus === 'playing' && data && data.phase === 'reveal') {
-    screen = (
-      <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <RevealScreen
-          data={data}
-          players={players}
-          isMoveSubmitting={isMoveSubmitting}
-          onAdvanceRound={() => handleMove('advance-round', {})}
-          onLeave={requestLeave}
-          t={t}
-        />
-      </>
+    // Reveal waits on a click, not a clock, so there is no timer to show.
+    showReactions = !isSpectator
+    testId = 'liars-party-reveal-screen'
+    content = (
+      <RevealScreen
+        data={data}
+        players={players}
+        isMoveSubmitting={isMoveSubmitting}
+        onAdvanceRound={() => handleMove('advance-round', {})}
+        t={t}
+      />
     )
   } else if (resolvedStatus === 'finished' && data) {
-    screen = (
+    testId = 'liars-party-game-over-screen'
+    content = (
       <GameOverScreen
         data={data}
         players={players}
@@ -987,7 +976,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         isStarting={isStarting}
         onPlayAgain={handleStartGame}
         onReturnToLobby={handleReturnToWaiting}
-        onBackToGames={requestLeave}
         t={t}
         code={code}
         isGuest={!isSpectator && isGuest}
@@ -996,9 +984,25 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     )
   }
 
+  // The reaction overlay and the confirm modal are siblings of the shell, not
+  // content inside it: both draw outside the flow, and a child of the scrolling
+  // content region would join its flex layout and shift the phase off centre.
   return (
     <>
-      {screen}
+      <LiarsPartyShell
+        testId={testId}
+        code={code}
+        title={t('liarsParty.name')}
+        leaveLabel={isSpectator ? t('game.ui.backToLobby') : t('game.ui.leave')}
+        theme={lobby?.theme}
+        isSpectator={isSpectator}
+        allowSpectators={!!lobby?.allowSpectators}
+        onLeave={requestLeave}
+        status={statusNode}
+      >
+        {content}
+      </LiarsPartyShell>
+      {showReactions && <ReactionOverlay lobbyCode={code} />}
       {!isSpectator && (
         <ConfirmModal
           isOpen={showLeaveConfirmModal}

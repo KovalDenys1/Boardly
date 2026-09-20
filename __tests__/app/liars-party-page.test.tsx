@@ -288,7 +288,7 @@ describe('LiarsPartyLobbyPage', () => {
     render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-    fireEvent.click(screen.getByRole('button', { name: 'lobby.leave' }))
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.leave' }))
     fireEvent.click(await screen.findByRole('button', { name: 'common.confirm' }))
 
     // keepalive is the half that makes this work at all: the request has to
@@ -311,7 +311,7 @@ describe('LiarsPartyLobbyPage', () => {
     render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-    fireEvent.click(screen.getByRole('button', { name: 'lobby.leave' }))
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.leave' }))
     fireEvent.click(await screen.findByRole('button', { name: 'common.confirm' }))
 
     // Leaving a four-player table takes the match under its minimum, so the
