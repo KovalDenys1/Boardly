@@ -1197,6 +1197,8 @@ const ru = {
       waitingForPlayer: 'Ожидание игрока...',
       openSlot: 'Свободное место',
       tryBotGamesTitle: 'Всё ещё ждёте? В эти игры можно сыграть прямо сейчас с ботом:',
+      discordAfterGame: 'Соперники всегда найдутся в Discord',
+      aloneDiscordHint: 'Всё ещё одни? Игроки общаются в нашем Discord – загляните и поделитесь кодом',
       howToPlayTitle: 'Как играть',
       howToPlayDescription: 'Краткие инструкции перед началом игры',
       howToPlayReady: 'Дождитесь, пока в лобби присоединится достаточно игроков.',

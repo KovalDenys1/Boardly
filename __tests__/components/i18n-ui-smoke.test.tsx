@@ -63,6 +63,10 @@ describe('i18n UI smoke checks', () => {
       expect(screen.queryByText(i18n.t('yahtzee.results.requestRematch'))).not.toBeNull()
       expect(screen.queryByText(i18n.t('yahtzee.results.backToLobbies'))).not.toBeNull()
       expect(screen.queryByText(i18n.t('yahtzee.results.hostCanStartNextRound'))).not.toBeNull()
+
+      // The after-game block renders here with no SessionProvider in the tree, which is
+      // why it takes `isRegistered` as a prop instead of calling useSession() (#982).
+      expect(screen.queryByText(i18n.t('game.ui.discordAfterGame'))).not.toBeNull()
     }
   )
 
@@ -107,6 +111,8 @@ describe('i18n UI smoke checks', () => {
       expect(
         screen.getAllByText(new RegExp(i18n.t('profile.gameResults.points'))).length
       ).toBeGreaterThan(0)
+
+      expect(screen.queryByText(i18n.t('game.ui.discordAfterGame'))).not.toBeNull()
     }
   )
 })

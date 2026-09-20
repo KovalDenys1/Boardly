@@ -478,6 +478,8 @@ export default function MemoryGameBoard({
           isGuest={isGuest}
           registerUrl={registerUrl}
           inviteCode={lobbyCode}
+          gameType="memory"
+          isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
       )}
       {isFinished && overlayInspecting && (
@@ -752,6 +754,8 @@ export default function MemoryGameBoard({
                   isGuest={isGuest}
                   registerUrl={registerUrl}
                   inviteCode={lobbyCode}
+                  gameType="memory"
+                  isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}
               {isFinished && overlayInspecting && (

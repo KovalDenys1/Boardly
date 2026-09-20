@@ -94,6 +94,20 @@ describe('buildOperationalEventRecord', () => {
     })
   })
 
+  it('normalizes discord_cta_clicked as a flow event carrying the surface and the game (#982)', () => {
+    const clicked = buildOperationalEventRecord({
+      eventName: 'discord_cta_clicked',
+      payload: { source: 'after_game', game_type: 'yahtzee' },
+    })
+    expect(clicked).toMatchObject({
+      eventName: 'discord_cta_clicked',
+      metricType: 'flow',
+      source: 'after_game',
+      gameType: 'yahtzee',
+    })
+    expect(OPERATIONAL_EVENT_NAMES as readonly string[]).toContain('discord_cta_clicked')
+  })
+
   it('keeps second_human_joined off the public beacon enum (#920)', () => {
     expect(SERVER_OPERATIONAL_EVENT_NAMES).toContain('second_human_joined')
     expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('second_human_joined')

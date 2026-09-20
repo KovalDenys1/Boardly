@@ -805,6 +805,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
+                    gameType="rock_paper_scissors"
+                    isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}
             {isFinished && !isSpectator && overlayInspecting && (

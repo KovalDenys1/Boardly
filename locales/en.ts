@@ -1197,6 +1197,8 @@ const en = {
       waitingForPlayer: 'Waiting for player...',
       openSlot: 'Open slot',
       tryBotGamesTitle: "Still waiting? These games are ready to play right now with a bot:",
+      discordAfterGame: 'Find players any time on Discord',
+      aloneDiscordHint: 'Still alone? Players hang out on our Discord – say hi and share your code',
       howToPlayTitle: 'How to Play',
       howToPlayDescription: 'Quick instructions before the game starts',
       howToPlayReady: 'Wait for enough players to join the lobby.',
