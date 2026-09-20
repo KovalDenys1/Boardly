@@ -55,16 +55,16 @@ export default async function Image() {
             style={{
               width: 100,
               height: 100,
-              borderRadius: 24,
+              borderRadius: 27,
               background: '#1F1B16',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '6px 6px 0 #FF6B5B',
+              boxShadow: '7px 7px 0 #FF6B5B',
               marginBottom: 36,
             }}
           >
-            <span style={{ fontSize: 60, fontWeight: 900, color: '#FFC44D', lineHeight: 1 }}>B</span>
+            <span style={{ fontSize: 72, fontWeight: 900, color: '#FFC44D', lineHeight: 1 }}>B</span>
           </div>
 
           {/* Wordmark */}

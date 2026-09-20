@@ -337,9 +337,10 @@ function textLayer(spec: TextSpec): Promise<Buffer> {
 // ---------------------------------------------------------------------------
 
 async function bTile(canvas: number, side: number, opts: { behind?: string; defs?: string; palette?: boolean } = {}): Promise<Buffer> {
-  const svg = tileSvg({ canvas, side, fill: INK, shadow: T.coral, border: null, behind: opts.behind, defs: opts.defs })
+  // rotate: 0 – the B-tile is upright everywhere since #1030; the game tiles keep the -6deg sticker tilt.
+  const svg = tileSvg({ canvas, side, rotate: 0, fill: INK, shadow: T.coral, border: null, behind: opts.behind, defs: opts.defs })
   const base = await svgToPng(svg, { palette: false })
-  const letter = await textLayer({ text: 'B', size: Math.round(side * 0.66), color: T.sun, canvas, at: tileCentre(canvas, side) })
+  const letter = await textLayer({ text: 'B', size: Math.round(side * 0.66), color: T.sun, canvas, at: tileCentre(canvas, side, 0) })
   const out = await sharp(base).composite([{ input: letter }]).png().toBuffer()
   return opts.palette === false ? out : quantise(out)
 }

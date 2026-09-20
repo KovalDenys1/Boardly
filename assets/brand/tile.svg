@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- B-tile brand mark: ink tile, coral offset shadow, amber B, -6deg rotate -->
-  <g transform="rotate(-6 256 256)">
-    <rect x="76" y="76" width="360" height="360" rx="96" fill="#FF6B5B" transform="translate(26 26)"/>
-    <rect x="76" y="76" width="360" height="360" rx="96" fill="#1F1B16"/>
-    <text x="256" y="270" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="260" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
-  </g>
+  <!-- B-tile brand mark: ink tile, coral offset shadow, amber B. Upright.
+       The tile and its shadow together span side + lift (380 + 26 = 406), so the
+       tile starts at 53, not at (512 - 380) / 2 = 66: centring the tile alone
+       would push the mark that the eye actually sees 13px down and right, which
+       is what made it read as off-centre in a browser tab and under a circular
+       PWA mask. Centre the union, not the tile. -->
+  <rect x="79" y="79" width="380" height="380" rx="101" fill="#FF6B5B"/>
+  <rect x="53" y="53" width="380" height="380" rx="101" fill="#1F1B16"/>
+  <text x="243" y="258" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="274" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
 </svg>

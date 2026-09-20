@@ -27,6 +27,25 @@ async function render(pipeline, out) {
 
 await mkdir('public/brand', { recursive: true })
 
+// The manifest/icon SVGs used to be hand-maintained copies of the tile, which is
+// how they drifted out of sync with it (#1030). Emit them from the same file so
+// the canonical geometry has exactly one home.
+const tileInner = tile.toString().replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').trim()
+const tileSvgText = tile.toString().trim() + '\n'
+for (const size of [192, 512]) {
+  await writeFile(`public/icons/icon-${size}.svg`, tileSvgText)
+  console.log('wrote', `public/icons/icon-${size}.svg`)
+  // Maskable: the mark sits inside the middle 72% on an opaque ground, so a
+  // circular mask never bites into it.
+  await writeFile(
+    `public/icons/icon-maskable-${size}.svg`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">\n` +
+      `<rect width="512" height="512" fill="${PAPER}"/>\n` +
+      `<g transform="translate(71.68 71.68) scale(0.72)">\n  ${tileInner}\n</g>\n</svg>\n`
+  )
+  console.log('wrote', `public/icons/icon-maskable-${size}.svg`)
+}
+
 // Transparent tile icons (favicons / manifest "any")
 for (const size of [192, 512]) {
   await render(sharp(tile).resize(size, size).png(), `public/icons/icon-${size}.png`)
