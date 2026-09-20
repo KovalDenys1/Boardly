@@ -287,6 +287,37 @@ describe('sanitizeSketchAndGuessStateForBroadcast – live guesses (#1032)', () 
     expect(JSON.stringify(forSecondGuesser)).not.toContain(prompt)
   })
 
+  // The third route the same leak took (#1032). The first fix closed the state route and
+  // the second the realtime broadcast; this one only opens when the drawing phase runs out
+  // of time, which no unit test reached and no reviewer hit by eye. The engine used to put
+  // `promptHint: prompt` inside the auto-submitted fallback drawing, and the sanitizer
+  // publishes `rounds[].drawingContent` verbatim - so the moment the clock expired, every
+  // guesser and the whole lobby channel were handed the word.
+  it('does not smuggle the answer into the drawing the timeout auto-submits', () => {
+    const game = new SketchAndGuessGame('sketch-timeout-leak', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: FIRST_GUESSER, name: 'Bea' })
+    game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
+    game.startGame()
+
+    const prompt = getData(game).rounds[0].prompt
+    // applyTimeoutFallback measures from state.lastMoveAt, not from the round's own
+    // phaseStartedAt, and consumes every window the interval covers - overshoot by one
+    // window too many and it runs on into reveal, where the prompt is published to
+    // everyone on purpose and the assertion below would mean nothing.
+    const base = (game.getState() as { lastMoveAt?: number }).lastMoveAt ?? Date.now()
+    game.applyTimeoutFallback(undefined, base + (SKETCH_PHASE_SECONDS.drawing + 1) * 1000)
+
+    expect(getData(game).phase).toBe('guessing')
+    expect(getData(game).rounds[0].drawingContent).toBeTruthy()
+
+    // Both the per-viewer state and the shared channel, which is where it actually went out.
+    for (const viewer of [FIRST_GUESSER, SECOND_GUESSER, null]) {
+      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer)
+      expect(JSON.stringify(published)).not.toContain(prompt)
+    }
+  })
+
   it('keeps a guesser their own guess, which is what "you have answered" is read from', () => {
     const { game, prompt } = guessingGame()
 

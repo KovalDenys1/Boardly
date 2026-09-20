@@ -333,7 +333,7 @@ export class SketchAndGuessGame extends GameEngine {
 
       if (data.phase === 'drawing') {
         if (!currentRound.drawingContent) {
-          currentRound.drawingContent = this.buildTimeoutFallbackDrawing(currentRound.prompt)
+          currentRound.drawingContent = this.buildTimeoutFallbackDrawing()
           currentRound.drawingAutoSubmitted = true
           currentRound.drawingSubmittedAt = timeoutAt
           result.autoSubmittedDrawings += 1
@@ -594,13 +594,16 @@ export class SketchAndGuessGame extends GameEngine {
     return value.trim().toLowerCase().replace(/\s+/g, ' ')
   }
 
-  private buildTimeoutFallbackDrawing(prompt: string): string {
+  // #1032: this used to carry `promptHint: prompt`, which nothing ever read - the client
+  // parses this JSON only for `type` and `strokes`. The sanitizer publishes
+  // `rounds[].drawingContent` verbatim, so the field handed the secret word to every
+  // guesser and to the shared lobby broadcast the moment the drawing phase timed out.
+  private buildTimeoutFallbackDrawing(): string {
     return JSON.stringify({
       type: 'drawing',
       version: 1,
       autoSubmitted: true,
       reason: 'timeout',
-      promptHint: prompt,
       width: 64,
       height: 64,
       strokes: [
