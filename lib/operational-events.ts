@@ -26,6 +26,16 @@ export const OPERATIONAL_EVENT_NAMES = [
   // The return channel (#982). `source` says which moment of need carried the invite —
   // the after-game block or a lone host's waiting room.
   'discord_cta_clicked',
+  // The push opt-in ask (#984). `shown` is stored because the ask suppresses itself in five
+  // separate cases, so it is the only honest denominator for `accepted`.
+  'push_prompt_shown',
+  'push_prompt_accepted',
+  'push_prompt_dismissed',
+  'push_prompt_denied',
+  // The player said yes, the browser subscribed, and the preference write came back non-ok
+  // - so the row exists and lib/push-send.ts will still never read it. Silent before #984's
+  // review; without this the accepted count includes opt-ins that deliver nothing.
+  'push_prompt_failed',
 ] as const
 
 /**
@@ -185,6 +195,11 @@ export function buildOperationalEventRecord(input: {
     case 'invite_copied':
     case 'invite_opened':
     case 'discord_cta_clicked':
+    case 'push_prompt_shown':
+    case 'push_prompt_accepted':
+    case 'push_prompt_dismissed':
+    case 'push_prompt_denied':
+    case 'push_prompt_failed':
       // `source` carries the button or surface; the lobby code stays in the payload.
       return {
         eventName,

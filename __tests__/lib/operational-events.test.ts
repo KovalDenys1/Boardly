@@ -108,6 +108,21 @@ describe('buildOperationalEventRecord', () => {
     expect(OPERATIONAL_EVENT_NAMES as readonly string[]).toContain('discord_cta_clicked')
   })
 
+  it('normalizes every push_prompt_* name as a flow event with its surface (#984)', () => {
+    for (const action of ['shown', 'accepted', 'dismissed', 'denied', 'failed'] as const) {
+      const name = `push_prompt_${action}` as const
+      expect(OPERATIONAL_EVENT_NAMES as readonly string[]).toContain(name)
+      expect(
+        buildOperationalEventRecord({ eventName: name, payload: { source: 'after_game', game_type: 'memory' } })
+      ).toMatchObject({
+        eventName: name,
+        metricType: 'flow',
+        source: 'after_game',
+        gameType: 'memory',
+      })
+    }
+  })
+
   it('keeps second_human_joined off the public beacon enum (#920)', () => {
     expect(SERVER_OPERATIONAL_EVENT_NAMES).toContain('second_human_joined')
     expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('second_human_joined')
