@@ -190,29 +190,15 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
 }
 
 /**
- * Clean up old guest users (older than 24 hours of inactivity)
- * Should be called periodically or during lobby cleanup
+ * Guest cleanup deliberately does not live here.
+ *
+ * This module used to export its own `cleanupOldGuests()` deleting every guest
+ * idle for 24 hours, with no relation filter and no retention policy. It was
+ * never wired up - both cron routes import `scripts/cleanup-old-guests.ts` - but
+ * it sat one import away from silently undoing #1047's ninety-day window for
+ * guests who have played, within a day. Removed in #1051 so the policy has a
+ * single home; import it from `@/scripts/cleanup-old-guests`.
  */
-export async function cleanupOldGuests() {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-
-    try {
-        const result = await prisma.users.deleteMany({
-            where: {
-                isGuest: true,
-                lastActiveAt: {
-                    lt: twentyFourHoursAgo,
-                },
-            },
-        })
-
-        log.info('Cleaned up old guest users', { count: result.count })
-        return result.count
-    } catch (error) {
-        log.error('Error cleaning up guest users', error as Error)
-        throw error
-    }
-}
 
 /**
  * Check if a user ID is a guest

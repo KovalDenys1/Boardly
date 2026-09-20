@@ -2,8 +2,14 @@
  * Unit tests for guest helper functions
  */
 
-import { getOrCreateGuestUser, cleanupOldGuests, guestNameSuffix } from '@/lib/guest-helpers'
+import * as guestHelpers from '@/lib/guest-helpers'
+import { getOrCreateGuestUser, guestNameSuffix } from '@/lib/guest-helpers'
 import { prisma } from '@/lib/db'
+
+// createGuestId() in lib/guest-auth.ts mints `guest-<uuid>`, so that is the shape
+// every guest row's primary key really has - and the shape guestNameSuffix has to
+// cope with.
+const GUEST_ID = 'guest-8f14e45f-ceea-467a-9a3b-1c2d3e4f5a6b'
 
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
@@ -231,7 +237,6 @@ describe('Guest Helpers', () => {
     // every guest, because createGuestId returns `guest-<uuid>` and the old
     // suffix was guestId.slice(0, 6) - the constant prefix "guest-".
     describe('guestNameSuffix', () => {
-        const GUEST_ID = 'guest-8f14e45f-ceea-467a-9a3b-1c2d3e4f5a6b'
         const OTHER_GUEST_ID = 'guest-2c1a7b90-4d55-4e0f-8b71-0a9c8d7e6f54'
 
         it('draws the suffix from the random part of the id, not the prefix', () => {
@@ -251,31 +256,19 @@ describe('Guest Helpers', () => {
         })
     })
 
-    describe('cleanupOldGuests', () => {
-        it('should delete guests inactive for more than 24 hours', async () => {
-            const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    // #1051. This module used to export a second cleanupOldGuests() that deleted
+    // every guest idle for 24 hours with no relation filter - no 3-day window for
+    // never-played guests, no 90-day window for guests who had played. It was
+    // dead code, but one import away from undoing #1047 within a day, and lib/ is
+    // where a route author looks first. The policy now lives only in
+    // scripts/cleanup-old-guests.ts, which both cron routes already import.
+    describe('guest cleanup policy', () => {
+        it('exports no cleanup entry point of its own', () => {
+            const exported = Object.keys(guestHelpers)
 
-                ; (prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 5 })
-
-            const count = await cleanupOldGuests()
-
-            expect(prisma.users.deleteMany).toHaveBeenCalledWith({
-                where: {
-                    isGuest: true,
-                    lastActiveAt: {
-                        lt: expect.any(Date),
-                    },
-                },
-            })
-            expect(count).toBe(5)
-        })
-
-        it('should return 0 if no guests to cleanup', async () => {
-            ; (prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 0 })
-
-            const count = await cleanupOldGuests()
-
-            expect(count).toBe(0)
+            expect(exported).not.toContain('cleanupOldGuests')
+            expect(exported.filter((name) => /cleanup|purge|delete/i.test(name))).toEqual([])
         })
     })
+
 })
