@@ -2168,80 +2168,247 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-leave-button--compact.game-leave-button--leave { padding: 8px 10px; }
 }
 
-/* ── Liar's Party (#1040) ──────────────────────────────────────────────────
-   One skin for all seven phases, on the shared .game-screen primitive so the
-   height still comes from --game-h. Every colour is a theme token: the screens
+/* ── Liar's Party (#1040 skin, #1041 chrome) ───────────────────────
+   The three layout trees are the shared .ttt-* family, copied rather than
+   reinvented (CLAUDE.md, responsive DoD 1). Only two blocks are this game's
+   own: the phase card, which is its board, and the players panel. Both are
+   shaped like their Sketch & Guess counterparts because both games seat up to
+   a dozen people rather than two. Every colour is a theme token – the screens
    used to paint their own rose/orange gradient, which ignored the lobby theme
    the host picked. */
 .liars-screen {
-  padding: 10px 16px 14px;
+  padding: 10px 20px 14px;
   background: var(--bd-bg);
   color: var(--bd-ink);
 }
 .liars-screen--centered { display: grid; place-items: center; }
 
-/* Header, status, then the one region that scrolls. */
-.liars-shell {
+/* The scoreboard row's card. The watermark is clipped by the card, not the
+   page, so it cannot add a scrollbar at 320px. */
+.liars-header-card {
+  overflow: hidden;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%);
+}
+.liars-header-card__mark {
+  position: absolute;
+  right: -14px;
+  top: -18px;
+  opacity: 0.12;
+  transform: rotate(10deg);
+  pointer-events: none;
+  line-height: 1;
+}
+/* The round counter inside GameScoreboardHeader's centre cell. */
+.liars-counter__kicker {
+  font-size: 10px;
+  color: var(--bd-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: ui-monospace, monospace;
+}
+.liars-counter__value {
+  font-family: var(--bd-font-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--bd-ink);
+}
+
+/* The board of a game that has no board: whichever phase is on screen.
+   `position: relative` because GameResultOverlay mounts absolutely over it. */
+.liars-phase-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  height: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  padding: 12px;
+}
+html.dark .liars-phase-card { background: var(--bd-card-warm); }
+/* Flex-sized by whichever of the three trees is on screen, exactly as
+   .ttt-board-card is – it only needs saying separately because the selectors
+   name the class. */
+.ttt-center-col > .liars-phase-card,
+.game-landscape-board > .liars-phase-card,
+.ttt-mobile-content > .liars-phase-card {
+  flex: 1 1 auto;
   min-height: 0;
 }
-/* Header and status keep their height; only the content region flexes. */
-.liars-shell > *:not(.liars-content) { flex-shrink: 0; }
-.liars-content {
+/* One scrolling region per screen, the card's inside. */
+.liars-phase {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  /* Centred while the phase is shorter than the region, so a three-card reveal
-     does not sit in the top third with a screen of nothing under it; `safe`
-     falls back to the start edge once it overflows, which plain `center` does
-     not – that clips the first card out of reach. */
-  justify-content: safe center;
+  gap: 10px;
+}
+/* The card that takes the slack when the phase's own action is short – the
+   round history under a claim form, the ranking under the winner line. Without
+   one, a 130px form sits in a 600px card with the rest of it empty, which is
+   the layout DoD's floating-card case. */
+.liars-phase__fill {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/* What the viewer can press, pinned under the scrolling region so it is on
+   screen whatever the phase has scrolled to. */
+.liars-phase-action {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 10px;
+}
+.liars-phase-action > .liars-choice-row { flex: 1 1 auto; margin-top: 0; }
+
+/* "Tap to inspect" returns from the overlay here, same control as TTT's. */
+.liars-show-results {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(31,27,22,0.75);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.liars-overlay-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
 }
 
-/* A phase with one column of cards, centred and capped so a wide screen does
-   not stretch a short form across 1100px. */
-.liars-single {
+/* The players panel: the roster before the game, the standings during it. Top
+   of the right column on desktop, the Players tab on mobile, beside the phase
+   in landscape. */
+.liars-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
+  gap: 8px;
+  max-height: 280px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+html.dark .liars-panel { background: var(--bd-card-warm); }
+.ttt-mobile-content .liars-panel { flex: 1; min-height: 0; max-height: none; }
+.liars-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bd-line);
+}
+.liars-panel__list { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; }
+.liars-panel__foot {
+  flex-shrink: 0;
+  border-top: 1px solid var(--bd-line);
+  padding-top: 8px;
+  font-size: 11px;
+  color: var(--bd-ink-muted);
+}
+.liars-chip {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bd-bg2);
+  color: var(--bd-ink-soft);
+  white-space: nowrap;
+}
+.liars-seat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-bg);
+  font-size: 13px;
+  color: var(--bd-ink);
+  min-width: 0;
+}
+html.dark .liars-seat { background: var(--bd-bg2); }
+.liars-seat--me { border-color: var(--bd-ink); }
+.liars-scroll { overflow-y: auto; min-height: 0; }
+.liars-scroll::-webkit-scrollbar { width: 6px; }
+.liars-scroll::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+
+/* Portrait phones. Two 42px seat cards plus a three-line ROUND/1-of-10/PHASE
+   block plus the room button need about 330px and a 320px screen leaves 236: at
+   which point the three grid cells overlap and the claimant's name, the round
+   and the other seat print on top of each other. Measured at 390: "Hanna" ran
+   under the round counter and the turn line was cut off. Same answer Sketch &
+   Guess reached for the same squeeze - the round drops to its short form, the
+   viewer's own card goes (they are one tap away in Players, highlighted) and the
+   right cell shrinks to what it holds. The watermark goes too: at this size it
+   sits behind the names rather than behind empty card. */
+@media (max-width: 1023px) {
+  .liars-header-card__mark { display: none; }
+  .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .liars-header-card .game-scoreboard-right-card { display: none; }
+  .liars-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
 }
 
-/* A phase with several cards: two columns once there is room for them, so the
-   width is used instead of leaving a gutter down both sides (layout DoD). */
-.liars-columns {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  /* Cards size to their own content. The grid default stretches every card in a
-     row to the tallest one, which left the short claim card with a block of
-     empty card under it next to the vote list. */
-  align-items: start;
-  align-content: start;
-  width: 100%;
+/* Phone landscape. The side column carries the header, the status banner and a
+   Players/Chat tab strip; the board column is the phase alone. Splitting the
+   board column instead was measured first and lost twice: the seat names came
+   out as "F.." in 185px, and five seats left 120px of empty card under them. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .liars-screen .ttt-mobile-layout { display: none !important; }
+  .liars-screen {
+    padding: 8px 10px 10px;
+    /* the landscape tree fits by construction - re-lock the shell */
+    overflow: hidden;
+  }
+  /* The header does not give way. It is `overflow: hidden`, so shrinking it
+     does not reflow anything, it cuts: measured at 844x390 it was handed 68px
+     for 111px of content and the seat card's bottom was sliced off. The
+     flexible member of this column is the tab panel, which has its own floor. */
+  .game-landscape-side .liars-header-card { flex: 0 0 auto; padding: 8px 10px; }
+  .game-landscape-side .liars-counter__value { font-size: 20px; }
+  .game-landscape-side > .game-tabs { flex: 0 0 auto; }
+  .game-landscape-side > .liars-panel {
+    flex: 1 1 auto;
+    max-height: none;
+    /* Same floor as chat's (#902): below this the rows are unreadable anyway,
+       and a column that scrolls still hands the player every seat. */
+    min-height: 128px;
+    padding: 10px 12px;
+  }
+  .game-landscape-side .liars-panel__head { padding-bottom: 6px; }
+  .game-landscape-side .liars-seat { padding: 5px 8px; font-size: 12px; }
 }
-/* The shared mobile/desktop switch point (lib/responsive-tokens.ts), never a
-   breakpoint of this family's own. */
-@media (min-width: 1024px) {
-  .liars-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .liars-columns__footer,
-  .liars-columns__full { grid-column: 1 / -1; }
-}
-.liars-columns__footer { display: flex; justify-content: center; }
-/* Several cards that belong to one column of the grid: the vote card and the
-   choice row have to stay together under their heading, not be split across
-   the two columns as separate grid items. */
-.liars-columns__stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .liars-card { padding: 14px 16px; }
 .liars-card__title {

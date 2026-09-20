@@ -2332,6 +2332,12 @@ const ru = {
     claimedBy: 'Заявил {{name}}',
     points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
+    phaseWaiting: 'Ожидание',
+    phaseClaim: 'Заявление',
+    phaseVote: 'Голосование',
+    phaseReveal: 'Раскрытие',
+    youWin: 'Вы победили!',
+    tabGame: 'Игра',
   },
   spectate: {
     watchingCount: 'Наблюдение · {{count}} зрителей',

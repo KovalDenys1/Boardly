@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
@@ -182,16 +182,27 @@ function buildPlayingResponse() {
 }
 
 /**
- * The shell's scrolling content region, the one `.liars-content` under the
- * header and the status banner. Every phase renders into it, and the layout
- * DoD's first rule is that no in-game screen has an empty region – so what is
- * inside it is the assertion, not the shell's own test id, which is present
- * whether or not the phase rendered anything at all. That is exactly how the
- * blank claim screen got through review the first time.
+ * Since #1041 the page renders three layout trees at once and CSS picks one, so
+ * every query has to name a tree or it matches two or three nodes. Queries go
+ * through this: the desktop tree, which is the only one that shows the phase,
+ * the players panel and the chat at the same time.
+ */
+function desktop() {
+  const tree = document.querySelector('.ttt-desktop-layout')
+  if (!tree) throw new Error('no .ttt-desktop-layout on the page')
+  return within(tree as HTMLElement)
+}
+
+/**
+ * The phase card's scrolling region, the one `.liars-phase` in the desktop
+ * tree. The layout DoD's first rule is that no in-game screen has an empty
+ * region – so what is inside it is the assertion, not the card's own test id,
+ * which is present whether or not the phase rendered anything at all. That is
+ * exactly how the blank claim screen got through review the first time.
  */
 function contentRegion(): HTMLElement {
-  const region = document.querySelector('.liars-content')
-  if (!region) throw new Error('no .liars-content region on the page')
+  const region = document.querySelector('.ttt-desktop-layout .liars-phase')
+  if (!region) throw new Error('no .liars-phase region in the desktop tree')
   return region as HTMLElement
 }
 
@@ -237,6 +248,30 @@ function buildRevealResponse() {
     ],
     roundResults: [],
     currentRoundResolved: false,
+  })
+  return response
+}
+
+/**
+ * A finished game. `activePlayerIds` is down to the one survivor, because that
+ * is what "last player standing" means to the engine – which is exactly why the
+ * players panel cannot read it once the game is over.
+ */
+function buildFinishedResponse() {
+  const response = buildPlayingResponse()
+  response.activeGame.status = 'finished'
+  response.activeGame.state.status = 'finished'
+  Object.assign(response.activeGame.state.data, {
+    phase: 'reveal',
+    activePlayerIds: ['user-3'],
+    eliminatedPlayerIds: ['user-1', 'user-2', 'user-4'],
+    eliminatedAtRound: { 'user-1': 3, 'user-2': 5, 'user-4': 6 },
+    scores: { 'user-1': 10, 'user-2': 4, 'user-3': 31, 'user-4': 7 },
+    strikes: { 'user-1': 2, 'user-2': 2, 'user-3': 1, 'user-4': 2 },
+    winnerId: 'user-3',
+    ranking: ['user-3', 'user-1', 'user-4', 'user-2'],
+    completionReason: 'last-player-standing',
+    finishedAt: Date.now(),
   })
   return response
 }
@@ -331,7 +366,7 @@ describe('LiarsPartyLobbyPage', () => {
     render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-    fireEvent.click(screen.getByRole('button', { name: 'game.ui.leave' }))
+    fireEvent.click(desktop().getByRole('button', { name: 'game.ui.leave' }))
     fireEvent.click(await screen.findByRole('button', { name: 'common.confirm' }))
 
     // keepalive is the half that makes this work at all: the request has to
@@ -354,7 +389,7 @@ describe('LiarsPartyLobbyPage', () => {
     render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-    fireEvent.click(screen.getByRole('button', { name: 'game.ui.leave' }))
+    fireEvent.click(desktop().getByRole('button', { name: 'game.ui.leave' }))
     fireEvent.click(await screen.findByRole('button', { name: 'common.confirm' }))
 
     // Leaving a four-player table takes the match under its minimum, so the
@@ -385,9 +420,9 @@ describe('LiarsPartyLobbyPage', () => {
 
       // user-1 is a voter this round; user-2 holds the floor.
       expect(contentRegion().textContent?.trim()).not.toBe('')
-      expect(screen.getByTestId('liars-standings')).toBeTruthy()
+      expect(desktop().getByTestId('liars-standings')).toBeTruthy()
       for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {
-        expect(screen.getByText(name)).toBeTruthy()
+        expect(desktop().getAllByText(name).length).toBeGreaterThan(0)
       }
     })
 
@@ -399,10 +434,10 @@ describe('LiarsPartyLobbyPage', () => {
       render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-      expect(screen.getByPlaceholderText('liarsParty.claimPlaceholder')).toBeTruthy()
+      expect(desktop().getByPlaceholderText('liarsParty.claimPlaceholder')).toBeTruthy()
       // The claimant gets the table as the second column too: one 560px form
       // alone in an 1100px region is the DoD's floating-card case.
-      expect(screen.getByTestId('liars-standings')).toBeTruthy()
+      expect(desktop().getByTestId('liars-standings')).toBeTruthy()
     })
 
     it('shows the table to a spectator', async () => {
@@ -415,7 +450,7 @@ describe('LiarsPartyLobbyPage', () => {
       await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
       expect(contentRegion().textContent?.trim()).not.toBe('')
-      expect(screen.getByTestId('liars-standings')).toBeTruthy()
+      expect(desktop().getByTestId('liars-standings')).toBeTruthy()
     })
 
     it('names players from the joined user, never a raw id', async () => {
@@ -427,7 +462,7 @@ describe('LiarsPartyLobbyPage', () => {
       render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
 
-      const region = contentRegion().textContent ?? ''
+      const region = (document.querySelector('.ttt-desktop-layout') as HTMLElement).textContent ?? ''
       expect(region).toContain('Bob')
       // The ids are what leaked through when the page read a `name` the API
       // never sends – `user-2` in this fixture, `guest-89b9ec22-…` in a real game.
@@ -450,8 +485,8 @@ describe('LiarsPartyLobbyPage', () => {
         expect(screen.getByTestId('liars-party-eliminated-claim-screen')).toBeTruthy()
       )
 
-      expect(screen.getByTestId('eliminated-banner')).toBeTruthy()
-      expect(screen.getByTestId('liars-standings')).toBeTruthy()
+      expect(desktop().getByTestId('eliminated-banner')).toBeTruthy()
+      expect(desktop().getByTestId('liars-standings')).toBeTruthy()
     })
   })
 
@@ -464,8 +499,8 @@ describe('LiarsPartyLobbyPage', () => {
       render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
 
-      expect(screen.getByTestId('liars-vote-breakdown')).toBeTruthy()
-      expect(screen.getByTestId('liars-standings')).toBeTruthy()
+      expect(desktop().getByTestId('liars-vote-breakdown')).toBeTruthy()
+      expect(desktop().getByTestId('liars-standings')).toBeTruthy()
       const region = contentRegion().textContent ?? ''
       expect(region).toContain('I have never lost at chess')
       expect(region).toContain('liarsParty.wasBluff')
@@ -475,18 +510,92 @@ describe('LiarsPartyLobbyPage', () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildRevealResponse() } as Response)
 
       render(<LiarsPartyLobbyPage code="ABCD" />)
-      await waitFor(() => expect(screen.getByTestId('liars-vote-breakdown')).toBeTruthy())
+      await waitFor(() => expect(desktop().getByTestId('liars-vote-breakdown')).toBeTruthy())
 
       // One row per voter; the tick/cross is the icon in each row. Alice
       // challenged a claim that was a bluff, so the engine pays her – the row
       // has to agree with the engine, not with the strict-majority verdict.
-      const rows = [...screen.getByTestId('liars-vote-breakdown').querySelectorAll('.space-y-2 > div')]
+      const rows = [...desktop().getByTestId('liars-vote-breakdown').querySelectorAll('.space-y-2 > div')]
       expect(rows).toHaveLength(3)
       const iconOf = (row: Element) => row.querySelector('svg')?.getAttribute('data-icon')
       expect(rows.map((r) => (r.textContent ?? '').split('liarsParty')[0].trim())).toEqual(['Alice', 'Carol', 'Dave'])
       expect(iconOf(rows[0])).toBe('check')
       expect(iconOf(rows[1])).toBe('close')
       expect(iconOf(rows[2])).toBe('close')
+    })
+  })
+
+  // #1041: the page had no GameScoreboardHeader, no GameResultOverlay, no
+  // GameTabs and no chat. CLAUDE.md calls each of those, hand-rolled, a review
+  // blocker, and a social deduction game without a chat is missing the half the
+  // bluffing happens in.
+  describe('the shared chrome is composed, not re-implemented (#1041)', () => {
+    const renderPlaying = async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildPlayingResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
+    }
+
+    it('renders the kit header, the kit chat and the kit tab strip', async () => {
+      await renderPlaying()
+
+      const tree = document.querySelector('.ttt-desktop-layout') as HTMLElement
+      expect(tree.querySelector('.game-scoreboard-header')).toBeTruthy()
+      expect(tree.querySelector('.game-chat-panel')).toBeTruthy()
+      expect(tree.querySelector('.game-room-card')).toBeTruthy()
+      // The tab strip is the mobile tree's, and chat is one of its tabs.
+      const mobile = document.querySelector('.ttt-mobile-layout') as HTMLElement
+      expect(mobile.querySelector('.game-tabs')).toBeTruthy()
+      expect(within(mobile).getByRole('button', { name: 'game.ui.tabChat' })).toBeTruthy()
+    })
+
+    it('leaves exactly one way out per layout tree', async () => {
+      await renderPlaying()
+
+      // GameRoomCard already carries GameLeaveButton, so passing `trailing` to
+      // GameScoreboardHeader as well would put two Leave buttons side by side
+      // in the same header row – which is what the ticket warned about.
+      expect(desktop().getAllByRole('button', { name: 'game.ui.leave' })).toHaveLength(1)
+    })
+
+    it('sends a chat message through the lobby chat endpoint', async () => {
+      await renderPlaying()
+
+      const input = desktop().getByPlaceholderText('chat.placeholder')
+      fireEvent.change(input, { target: { value: 'I do not believe a word of that' } })
+      fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+      await waitFor(() =>
+        expect(mockFetchWithGuest).toHaveBeenCalledWith(
+          '/api/lobby/ABCD/chat',
+          expect.objectContaining({ method: 'POST' })
+        )
+      )
+    })
+
+    it('puts the result overlay over the phase card when the game is finished', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildFinishedResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
+
+      // Over the board, not beside it: the overlay mounts inside the phase
+      // card, which is the only element it is positioned against.
+      const card = document.querySelector('.ttt-desktop-layout .liars-phase-card') as HTMLElement
+      expect(within(card).getByRole('button', { name: 'game.ui.viewBoard' })).toBeTruthy()
+      expect(within(card).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
+    })
+
+    it('keeps the round-advancing button out of the scrolling region', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildRevealResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+
+      // Measured at 390: below a verdict, a vote breakdown and the history,
+      // Next Round scrolled out of reach on the one screen whose whole purpose
+      // is that click.
+      const button = desktop().getByRole('button', { name: 'liarsParty.nextRound' })
+      expect(button.closest('.liars-phase')).toBeNull()
+      expect(button.closest('.liars-phase-action')).toBeTruthy()
     })
   })
 
