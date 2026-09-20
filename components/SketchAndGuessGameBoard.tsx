@@ -8,7 +8,7 @@ import LoadingButton from '@/components/LoadingButton'
 
 type TFn = (key: TranslationKeys, options?: string | Record<string, unknown>) => string
 
-interface SketchAndGuessPlayer {
+export interface SketchAndGuessPlayer {
   id: string
   name: string
 }
@@ -85,6 +85,13 @@ function parseDrawingContent(content: string | null): DrawingContent | null {
 // Background is always solid white regardless of theme — this is a drawn
 // object, not themed UI chrome (same principle as the game-board fixed-color
 // rule for Connect Four/Tic-Tac-Toe).
+//
+// Sizing lives entirely in .sketch-canvas-wrap / .sketch-canvas-frame
+// (app/globals.css): the wrapper is a size container, so the frame takes
+// min(its width, its height) and the canvas is square at whatever the phase's
+// controls left behind. It used to be an inline
+// `calc(var(--game-h) - 220px)` here, which guessed at the chrome around it and
+// was wrong for every phase but one.
 
 function SketchCanvas({
   strokes,
@@ -226,25 +233,18 @@ function SketchCanvas({
   }, [onStrokesChange, strokes])
 
   return (
-    <div
-      className="relative mx-auto touch-none select-none overflow-hidden rounded-xl border border-[var(--bd-line)] bg-white shadow-inner"
-      style={{ width: 'min(100%, 480px, max(180px, calc(var(--game-h) - 220px)))', aspectRatio: '1 / 1' }}
-    >
-      <canvas
-        ref={canvasRef}
-        style={{
-          width: '100%',
-          aspectRatio: '1 / 1',
-          display: 'block',
-          touchAction: 'none',
-          cursor: interactive ? 'crosshair' : 'default',
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishStroke}
-        onPointerCancel={finishStroke}
-        onPointerLeave={finishStroke}
-      />
+    <div className="sketch-canvas-wrap">
+      <div className="sketch-canvas-frame">
+        <canvas
+          ref={canvasRef}
+          style={{ cursor: interactive ? 'crosshair' : 'default', touchAction: 'none' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishStroke}
+          onPointerCancel={finishStroke}
+          onPointerLeave={finishStroke}
+        />
+      </div>
     </div>
   )
 }
@@ -282,17 +282,17 @@ function DrawerCanvasView({
   }, [strokes, onSubmit, t])
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] p-3 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-bd-ink-muted">
+    <div className="sketch-phase">
+      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-3 py-2 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-bd-ink-muted">
           {t('games.guess_my_drawing.game.yourPrompt')}
         </p>
-        <p className="mt-1 text-2xl font-extrabold text-bd-ink">{prompt}</p>
+        <p className="text-xl font-extrabold leading-tight text-bd-ink">{prompt}</p>
       </div>
 
       <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} interactive activeColor={activeColor} activeWidth={activeWidth} />
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
         {BRUSH_COLORS.map((swatch) => (
           <button
             key={swatch}
@@ -302,7 +302,7 @@ function DrawerCanvasView({
               setColor(swatch)
               setIsEraser(false)
             }}
-            className={`h-8 w-8 rounded-full border-2 transition ${
+            className={`h-7 w-7 rounded-full border-2 transition ${
               !isEraser && color === swatch ? 'scale-110 border-bd-ink' : 'border-[var(--bd-line)]'
             }`}
             style={{ backgroundColor: swatch }}
@@ -311,7 +311,7 @@ function DrawerCanvasView({
         <button
           type="button"
           onClick={() => setIsEraser((v) => !v)}
-          className={`rounded-full border-2 px-3 py-1 text-xs font-semibold ${
+          className={`rounded-full border-2 px-2.5 py-1 text-xs font-semibold ${
             isEraser ? 'border-bd-ink bg-[var(--bd-bg2)]' : 'border-[var(--bd-line)]'
           }`}
         >
@@ -320,7 +320,7 @@ function DrawerCanvasView({
         <button
           type="button"
           onClick={() => setIsThick((v) => !v)}
-          className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold"
+          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold"
         >
           <span
             aria-hidden
@@ -333,7 +333,7 @@ function DrawerCanvasView({
           type="button"
           onClick={() => setStrokes((s) => s.slice(0, -1))}
           disabled={strokes.length === 0}
-          className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold disabled:opacity-40"
+          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
         >
           <Icon name="arrow-left" size={13} /> {t('games.guess_my_drawing.game.undo')}
         </button>
@@ -341,7 +341,7 @@ function DrawerCanvasView({
           type="button"
           onClick={() => setStrokes([])}
           disabled={strokes.length === 0}
-          className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold disabled:opacity-40"
+          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
         >
           <Icon name="trash" size={13} /> {t('games.guess_my_drawing.game.clear')}
         </button>
@@ -352,10 +352,26 @@ function DrawerCanvasView({
       <LoadingButton
         onClick={handleSubmit}
         loading={isSubmitting}
-        className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-3 font-semibold"
+        className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
       >
         {t('games.guess_my_drawing.game.submitDrawing')}
       </LoadingButton>
+    </div>
+  )
+}
+
+// ─── Waiting-for-the-drawer view (phase: drawing, everyone else) ───────────
+// A blank square rather than a bare icon on a tall empty card: the drawing is
+// about to appear exactly there, so the space is the frame for it, not a hole.
+
+function AwaitingDrawingView({ drawerName, t }: { drawerName: string; t: TFn }) {
+  return (
+    <div className="sketch-phase">
+      <SketchCanvas strokes={[]} interactive={false} />
+      <p className="flex items-center justify-center gap-2 text-center text-sm font-semibold text-bd-ink-muted">
+        <Icon name="pencil" size={16} tone="muted" />
+        {t('games.guess_my_drawing.game.waitingForDrawer', { name: drawerName })}
+      </p>
     </div>
   )
 }
@@ -403,7 +419,7 @@ function GuesserCanvasView({
   }, [guess, isSubmitting, onSubmitGuess, t])
 
   return (
-    <div className="space-y-4">
+    <div className="sketch-phase">
       <SketchCanvas strokes={parsedContent?.strokes || []} interactive={false} />
 
       <p className="text-center text-xs font-semibold text-bd-ink-muted">
@@ -430,13 +446,13 @@ function GuesserCanvasView({
             disabled={isSubmitting}
             placeholder={t('games.guess_my_drawing.game.guessPlaceholder')}
             maxLength={80}
-            className="w-full rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-3 text-center text-lg font-semibold text-bd-ink"
+            className="w-full rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-2.5 text-center text-base font-semibold text-bd-ink"
           />
           {validationError && <p className="text-center text-sm font-semibold text-rose-600">{validationError}</p>}
           <LoadingButton
             onClick={handleSubmit}
             loading={isSubmitting}
-            className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-3 font-semibold"
+            className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
           >
             {t('games.guess_my_drawing.game.submitGuess')}
           </LoadingButton>
@@ -446,19 +462,20 @@ function GuesserCanvasView({
   )
 }
 
-// ─── Reveal view (phase: reveal) ───────────────────────────────────────────
+// ─── Reveal view (phase: reveal, and the finished board under the overlay) ──
 // Deliberately does NOT recompute point totals client-side — the engine's
 // scoring (first-correct bonus, drawer bonus, auto-submission penalties)
 // stays server-authoritative. This view only shows correct/incorrect per
-// guess; the scoreboard strip reflects `data.scores` as of the last
-// recompute (advanceAfterReveal), which is one round behind while the
-// current round's reveal hasn't been advanced past yet.
+// guess; the scores panel reflects `data.scores` as of the last recompute
+// (advanceAfterReveal), which is one round behind while the current round's
+// reveal hasn't been advanced past yet.
 
 function RevealView({
   round,
   players,
   currentUserId,
   canAdvance,
+  isSpectator,
   onAdvanceRound,
   isSubmitting,
   isLastRound,
@@ -468,6 +485,7 @@ function RevealView({
   players: SketchAndGuessPlayer[]
   currentUserId: string
   canAdvance: boolean
+  isSpectator: boolean
   onAdvanceRound: () => Promise<void>
   isSubmitting: boolean
   isLastRound: boolean
@@ -482,15 +500,15 @@ function RevealView({
   const drawerName = playerNameById.get(round.drawerId) || t('games.guess_my_drawing.game.unknownPlayer')
 
   return (
-    <div className="space-y-4">
+    <div className="sketch-phase">
       <SketchCanvas strokes={parsedContent?.strokes || []} interactive={false} />
 
-      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] p-3 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-bd-ink-muted">
+      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-3 py-2 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-bd-ink-muted">
           {t('games.guess_my_drawing.game.revealPrompt')}
         </p>
-        <p className="mt-1 text-2xl font-extrabold text-bd-ink">{round.prompt}</p>
-        <p className="mt-1 text-xs text-bd-ink-muted">
+        <p className="text-xl font-extrabold leading-tight text-bd-ink">{round.prompt}</p>
+        <p className="text-xs text-bd-ink-muted">
           {t('games.guess_my_drawing.game.drawnBy', { name: drawerName })}
           {round.drawingAutoSubmitted ? ` ${t('games.guess_my_drawing.game.autoSubmittedTag')}` : ''}
         </p>
@@ -503,7 +521,7 @@ function RevealView({
         {sortedGuesses.map((g) => (
           <li
             key={g.playerId}
-            className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
+            className={`flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm ${
               g.isCorrect
                 ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20'
                 : 'border-[var(--bd-line)] bg-[var(--bd-bg)]'
@@ -521,94 +539,64 @@ function RevealView({
         ))}
       </ul>
 
-      {canAdvance ? (
+      {canAdvance && (
         <LoadingButton
           onClick={onAdvanceRound}
           loading={isSubmitting}
-          className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-3 font-semibold"
+          className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
         >
           {isLastRound ? t('games.guess_my_drawing.game.seeResults') : t('games.guess_my_drawing.game.nextRound')}
         </LoadingButton>
-      ) : (
+      )}
+      {isSpectator && (
         <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.spectatorNotice')}</p>
       )}
     </div>
   )
 }
 
-// ─── Finished view ──────────────────────────────────────────────────────────
+// ─── Scores panel rows ─────────────────────────────────────────────────────
+// Every seat, which is why this is a list and not the two-card scoreboard
+// header: the game seats up to ten. Ordered by the engine's own ranking once
+// it exists, so the finished order matches the result overlay exactly.
 
-function FinishedView({
-  gameData,
-  players,
-  currentUserId,
-  t,
-}: {
-  gameData: SketchAndGuessGameData
-  players: SketchAndGuessPlayer[]
-  currentUserId: string
-  t: TFn
-}) {
-  const playerNameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players])
-  const winnerName = gameData.winnerId ? playerNameById.get(gameData.winnerId) : null
-
-  return (
-    <div className="space-y-4 text-center">
-      {winnerName && (
-        <p className="flex items-center justify-center gap-2 text-xl font-extrabold text-bd-ink">
-          <Icon name="trophy" size={20} />
-          {t('games.guess_my_drawing.game.winnerBanner', { name: winnerName })}
-        </p>
-      )}
-      <ol className="mx-auto max-w-sm space-y-1.5 text-left">
-        {gameData.ranking.map((playerId, index) => (
-          <li
-            key={playerId}
-            className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${
-              playerId === currentUserId ? 'border-bd-ink' : 'border-[var(--bd-line)]'
-            }`}
-          >
-            <span className="font-medium text-bd-ink">
-              {index + 1}. {playerNameById.get(playerId) || t('games.guess_my_drawing.game.unknownPlayer')}
-            </span>
-            <span className="font-semibold text-bd-ink-muted">{gameData.scores[playerId] || 0}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
-
-// ─── Scoreboard strip (persistent across phases) ───────────────────────────
-
-function ScoreboardStrip({
+export function SketchScoreRows({
   players,
   scores,
+  ranking,
   currentUserId,
   drawerId,
+  isFinished,
 }: {
   players: SketchAndGuessPlayer[]
   scores: Record<string, number>
+  ranking: string[]
   currentUserId: string
   drawerId?: string
+  isFinished?: boolean
 }) {
-  const sorted = useMemo(
-    () => players.slice().sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0)),
-    [players, scores]
-  )
+  const { t } = useTranslation()
+  const ordered = useMemo(() => {
+    if (isFinished && ranking.length > 0) {
+      const byId = new Map(players.map((p) => [p.id, p]))
+      const ranked = ranking.map((id) => byId.get(id)).filter((p): p is SketchAndGuessPlayer => !!p)
+      const missing = players.filter((p) => !ranking.includes(p.id))
+      return [...ranked, ...missing]
+    }
+    return players.slice().sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0))
+  }, [players, scores, ranking, isFinished])
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
-      {sorted.map((p) => (
-        <div
-          key={p.id}
-          className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-            p.id === currentUserId ? 'border-bd-ink' : 'border-[var(--bd-line)]'
-          }`}
-        >
-          {p.id === drawerId && <Icon name="pencil" size={13} />}
-          <span className="text-bd-ink">{p.name}</span>
-          <span className="text-bd-ink-muted">{scores[p.id] || 0}</span>
+    <div className="sketch-panel__list">
+      {ordered.map((p, index) => (
+        <div key={p.id} className={`sketch-score-row${p.id === currentUserId ? ' sketch-score-row--me' : ''}`}>
+          <span className="shrink-0 font-mono text-xs text-bd-ink-muted">{index + 1}</span>
+          {p.id === drawerId && !isFinished && <Icon name="pencil" size={13} />}
+          <span className="sketch-score-row__name">
+            {p.name}
+            {p.id === currentUserId ? ` ${t('game.ui.you')}` : ''}
+          </span>
+          <span className="sketch-score-row__score">{scores[p.id] || 0}</span>
         </div>
       ))}
     </div>
@@ -616,6 +604,9 @@ function ScoreboardStrip({
 }
 
 // ─── Top-level dispatcher ───────────────────────────────────────────────────
+// Phases only. Round counter, scores and the result belong to the page's
+// chrome now (#1034): GameScoreboardHeader, GameStatusBanner, the scores panel
+// and GameResultOverlay.
 
 export default function SketchAndGuessGameBoard({
   gameData,
@@ -636,65 +627,53 @@ export default function SketchAndGuessGameBoard({
   )
   const playerNameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players])
 
+  const isFinished = gameStatus === 'finished'
   const isDrawer = !isSpectator && playerId === gameData.currentDrawerId
   const totalGuessers = Math.max(0, players.length - 1)
   const hasGuessed = !isSpectator && (currentRound?.guesses.some((g) => g.playerId === playerId) ?? false)
   const drawerName = playerNameById.get(gameData.currentDrawerId) || t('games.guess_my_drawing.game.unknownPlayer')
 
+  if (!currentRound) {
+    return <div className="sketch-phase items-center justify-center text-sm text-bd-ink-muted">{t('common.loading')}</div>
+  }
+
+  // A finished game keeps the last round on the board: the result overlay sits
+  // over it and "View Board" dismisses the overlay to show exactly this.
+  if (isFinished || gameData.phase === 'reveal') {
+    return (
+      <RevealView
+        round={currentRound}
+        players={players}
+        currentUserId={playerId}
+        canAdvance={!isSpectator && !isFinished}
+        isSpectator={isSpectator}
+        onAdvanceRound={onAdvanceRound}
+        isSubmitting={isSubmitting}
+        isLastRound={gameData.currentRound >= gameData.totalRounds}
+        t={t}
+      />
+    )
+  }
+
+  if (gameData.phase === 'drawing') {
+    return isDrawer ? (
+      <DrawerCanvasView prompt={currentRound.prompt} onSubmit={onSubmitDrawing} isSubmitting={isSubmitting} t={t} />
+    ) : (
+      <AwaitingDrawingView drawerName={drawerName} t={t} />
+    )
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-bd-ink-muted">
-          {t('games.guess_my_drawing.game.roundLabel', { current: gameData.currentRound, total: gameData.totalRounds })}
-        </span>
-        {isDrawer && gameData.phase === 'drawing' && (
-          <span className="rounded-full bd-chip px-3 py-1 text-xs font-semibold">
-            {t('games.guess_my_drawing.game.drawerIntro')}
-          </span>
-        )}
-      </div>
-
-      <ScoreboardStrip players={players} scores={gameData.scores} currentUserId={playerId} drawerId={gameData.currentDrawerId} />
-
-      {gameStatus === 'finished' ? (
-        <FinishedView gameData={gameData} players={players} currentUserId={playerId} t={t} />
-      ) : !currentRound ? (
-        <div className="py-10 text-center text-sm text-bd-ink-muted">{t('common.loading')}</div>
-      ) : gameData.phase === 'drawing' ? (
-        isDrawer ? (
-          <DrawerCanvasView prompt={currentRound.prompt} onSubmit={onSubmitDrawing} isSubmitting={isSubmitting} t={t} />
-        ) : (
-          <div className="space-y-3 py-10 text-center">
-            <div><Icon name="pencil" size={48} tone="muted" /></div>
-            <p className="text-sm font-semibold text-bd-ink-muted">
-              {t('games.guess_my_drawing.game.waitingForDrawer', { name: drawerName })}
-            </p>
-          </div>
-        )
-      ) : gameData.phase === 'guessing' ? (
-        <GuesserCanvasView
-          round={currentRound}
-          canGuess={!isSpectator && !isDrawer}
-          isDrawer={isDrawer}
-          hasGuessed={hasGuessed}
-          onSubmitGuess={onSubmitGuess}
-          isSubmitting={isSubmitting}
-          submittedCount={gameData.submittedPlayerIds.length}
-          totalGuessers={totalGuessers}
-          t={t}
-        />
-      ) : (
-        <RevealView
-          round={currentRound}
-          players={players}
-          currentUserId={playerId}
-          canAdvance={!isSpectator}
-          onAdvanceRound={onAdvanceRound}
-          isSubmitting={isSubmitting}
-          isLastRound={gameData.currentRound >= gameData.totalRounds}
-          t={t}
-        />
-      )}
-    </div>
+    <GuesserCanvasView
+      round={currentRound}
+      canGuess={!isSpectator && !isDrawer}
+      isDrawer={isDrawer}
+      hasGuessed={hasGuessed}
+      onSubmitGuess={onSubmitGuess}
+      isSubmitting={isSubmitting}
+      submittedCount={gameData.submittedPlayerIds.length}
+      totalGuessers={totalGuessers}
+      t={t}
+    />
   )
 }
