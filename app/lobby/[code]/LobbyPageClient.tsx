@@ -104,6 +104,7 @@ import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
+import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
@@ -1571,26 +1572,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
   const isGameStarted = game?.status === 'playing'
 
-  /**
-   * Guess the Spy finishes its game row on the last round (#729), and the
-   * results – the reveal, the final scores and the after-game block #982 put
-   * there – are the last thing that round produces. This page unmounts the
-   * board the moment the row stops saying 'playing', so a finished Spy game
-   * dropped the table straight into the waiting room and nobody ever saw its
-   * end screen. Verified on 2026-09-20 by voting out the last round in the
-   * browser: the page was showing the lobby roster a second later.
-   *
-   * Deliberately render-only, and deliberately only this game type.
-   * `isGameStarted` also gates the heartbeat, the lifecycle redirect and the
-   * dedicated-page switch, and Yahtzee and Memory come through the same
-   * branch – when their boards unmount is not #905's to change.
-   */
-  const keepFinishedGameSurface =
-    game?.status === 'finished' && (lobby?.gameType as string) === 'guess_the_spy'
-  const showGameSurface = isGameStarted || keepFinishedGameSurface
-  // Someone who was never at the table is a spectator of that surface, whether
-  // the game is still running or has just ended.
-  const isSpectator = showGameSurface && !isInGame
+  // Which surface this viewer gets - the rule, and why it is a rule, live in
+  // lib/lobby-surface.ts. Deliberately render-only: `isGameStarted` also gates
+  // the heartbeat, the lifecycle redirect and the dedicated-page switch, and
+  // when Yahtzee's and Memory's boards unmount is not #905's to change.
+  const { showGameSurface, showJoinPrompt, isSpectator } = resolveLobbySurface({
+    gameStatus: game?.status,
+    gameType: lobby?.gameType as string | undefined,
+    isParticipant: !!isInGame,
+  })
 
   // #1024's undo needs the host to see who was removed, and the waiting room is the
   // only screen with room for it (#899). Nobody but the host is offered the list.
@@ -2002,7 +1992,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div id="bd-lobby-portal" className="contents" />
      <div className={!showGameSurface ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
-      {!isInGame && !showGameSurface ? (
+      {showJoinPrompt ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
           {showAutoJoinLoadingState ? (
@@ -2070,7 +2060,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             isRegistered={status === 'authenticated' && !isGuest}
           />
         </div>
-      ) : !showGameSurface ? (
+      ) : !showGameSurface || !game ? (
+        /* `!game` is unreachable alongside showGameSurface - it is there so the
+           game branch below narrows `game` to non-null, which the inline
+           `game?.status === 'playing'` comparison used to do on its own. */
         /* Waiting Room - unified card with pinned actions */
         <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <LobbyInfo
@@ -2577,6 +2570,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
+              isRestarting={startingGame || isReturningToWaiting}
               onLeave={() => setShowLeaveConfirmModal(true)}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}

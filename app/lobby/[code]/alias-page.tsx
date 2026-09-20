@@ -501,7 +501,17 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // `hidden md:block`, so on a phone the one player who needs to hear the
   // guesses could not see them at all; the guesser's was stacked under the
   // word card, below the fold. Both now sit behind the shared tab strip.
-  const [turnTab, setTurnTab] = useState<'word' | 'guesses'>('word')
+  //
+  // The tab is derived from the role, not stored (#905 review). Both panes are
+  // conditionally rendered rather than hidden, so whichever one is off-tab is
+  // not in the DOM at all - and a fixed 'word' default put the guesser's only
+  // action, the guess input, behind a tab they had to find, under a line
+  // reading "Listen up - type your guess in the chat". The describer's surface
+  // is the word card and the Correct/Skip buttons; the guesser's is the chat.
+  // Tapping the other tab overrides that for the current turn only, so a
+  // describer who read the feed last turn does not come back to a screen with
+  // no word on it.
+  const [turnTabOverride, setTurnTabOverride] = useState<{ turnKey: string; tab: 'word' | 'guesses' } | null>(null)
 
   // Live timer
   const [remaining, setRemaining] = useState(0)
@@ -1318,6 +1328,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const describerDisplayName =
     describerPlayer?.user?.username || describerPlayer?.name || t('game.ui.playerFallback')
 
+  // A turn is one describer's run at one card list, so it changes when the team
+  // changes, the describer changes, or the clock restarts. The override is
+  // scoped to it by key rather than cleared by an effect, because everything
+  // above is below several early returns and a hook here would be conditional.
+  const turnKey = `${data.currentTeamIndex}:${describerId ?? ''}:${data.turnStartedAt ?? 0}`
+  const turnTab: 'word' | 'guesses' =
+    turnTabOverride?.turnKey === turnKey ? turnTabOverride.tab : isDescriber ? 'word' : 'guesses'
+  const setTurnTab = (tab: 'word' | 'guesses') => setTurnTabOverride({ turnKey, tab })
+
   const chatProps = {
     guesses,
     guessInput,
@@ -1581,7 +1600,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }}>
                 {isSpectator
                   ? <BdLabel>{t('alias.spectatingWatch')}</BdLabel>
-                  : <BdLabel>{t('alias.listenUp')}</BdLabel>
+                  // "type your guess in the chat" is only true where the chat
+                  // is on screen. This pane is the other mobile tab, so there
+                  // it names the tab the input is actually on (#905 review).
+                  : <BdLabel>{isMobile ? t('alias.listenUpTab') : t('alias.listenUp')}</BdLabel>
                 }
               </div>
 

@@ -17,6 +17,42 @@ export interface SpyOutcome {
   noElimination: boolean
 }
 
+/**
+ * Who won the GAME, which is a different question from who won the round.
+ *
+ * A round is decided by the vote (or the spy's guess); the game is three rounds
+ * of cumulative scoring, and SpyGame.checkWinCondition() ranks `data.scores` to
+ * pick the top total, writing it to `state.winner` (lib/games/spy-game.ts). A
+ * tied top score leaves `state.winner` unset, which is the engine's draw.
+ *
+ * #905 shipped a GameResultOverlay that titled itself from resolveSpyOutcome
+ * instead - the last round's verdict - so a table where the spy escaped round 3
+ * read "Spy Wins!" over a score table whose top row was somebody else, and the
+ * trophy icon went to a player who had not won. The review caught it; this is
+ * the one place that answers it, so the overlay, the status banner and the
+ * results panel cannot drift apart again.
+ */
+export interface SpyGameResult {
+  winnerId: string
+  /** Finished with no single top score. */
+  isDraw: boolean
+  /** The viewer is the winner. False for everyone on a draw. */
+  isMine: boolean
+}
+
+export function resolveSpyGameResult(input: {
+  /** `state.winner` as the engine left it. */
+  winnerId?: string | null
+  currentUserId?: string | null
+}): SpyGameResult {
+  const winnerId = input.winnerId || ''
+  return {
+    winnerId,
+    isDraw: winnerId.length === 0,
+    isMine: winnerId.length > 0 && !!input.currentUserId && winnerId === input.currentUserId,
+  }
+}
+
 export function resolveSpyOutcome(input: {
   spyGuessedLocation?: string
   location: string

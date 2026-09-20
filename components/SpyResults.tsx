@@ -4,7 +4,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
-import { resolveSpyOutcome } from '@/lib/games/spy-outcome'
+import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -24,6 +24,17 @@ interface SpyResultsProps {
   onRequestRematch?: () => void
   isRequestRematchPending?: boolean
   onBackToLobby?: () => void
+  /**
+   * `state.winner` as the engine left it, or null on a tie (#905 review). The
+   * heading above is the ROUND verdict; on the last round this panel is also
+   * the end of the game, and the game is decided by the cumulative scores
+   * listed right here - so the game result is named rather than left to be
+   * inferred from a sorted list.
+   */
+  gameWinnerId?: string | null
+  /** Host-only: put the lobby back in its waiting room. */
+  onReturnToWaiting?: () => void
+  isReturningToWaiting?: boolean
   isGuest?: boolean
   registerUrl?: string
   /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
@@ -48,6 +59,9 @@ export default function SpyResults({
   onRequestRematch,
   isRequestRematchPending = false,
   onBackToLobby,
+  gameWinnerId,
+  onReturnToWaiting,
+  isReturningToWaiting = false,
   isGuest = false,
   registerUrl = '/auth/register',
   lobbyCode,
@@ -81,6 +95,11 @@ export default function SpyResults({
   })
 
   const isGameOver = currentRound >= totalRounds
+
+  // The game result, which on the last round is a different statement from the
+  // round result above and used to be printed nowhere (#905 review).
+  const gameResult = resolveSpyGameResult({ winnerId: gameWinnerId })
+  const gameWinnerName = players.find((player) => player.id === gameResult.winnerId)?.name ?? ''
 
   return (
     <div className="spy-stage">
@@ -174,6 +193,16 @@ export default function SpyResults({
           </p>
         )}
 
+        {isGameOver && (
+          <div
+            data-testid="spy-game-result"
+            className="mx-auto mt-5 flex w-full max-w-md items-center justify-center gap-2 rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-3 text-center text-base font-black text-[var(--bd-ink)]"
+          >
+            <Icon name={gameResult.isDraw ? 'handshake' : 'trophy'} size={18} />
+            {gameResult.isDraw ? t('spy.gameTie') : t('spy.gameWinner', { player: gameWinnerName })}
+          </div>
+        )}
+
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           {!isGameOver && onNextRound && (
             <button onClick={onNextRound} className="bd-btn bd-btn-primary flex-1 justify-center">
@@ -201,6 +230,15 @@ export default function SpyResults({
                   className="bd-btn bd-btn-coral flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isRequestRematchPending ? t('common.loading') : t('spy.requestRematch')}
+                </button>
+              )}
+              {onReturnToWaiting && (
+                <button
+                  onClick={onReturnToWaiting}
+                  disabled={isReturningToWaiting}
+                  className="bd-btn bd-btn-soft flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t('game.ui.returnToLobby')}
                 </button>
               )}
               {onBackToLobby && (

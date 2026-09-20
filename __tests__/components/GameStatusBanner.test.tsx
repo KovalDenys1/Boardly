@@ -109,8 +109,26 @@ describe('GameStatusBanner clock and untimed phases (#905)', () => {
     expect(container.querySelector('[style*="width: 100%"]')).toBeNull()
   })
 
-  it('keeps the idle nudge off an untimed phase', () => {
-    render(<GameStatusBanner {...base} showTimer={false} isYourTurn secs={0} turnTimerLimit={0} />)
+  /**
+   * The shape Alias actually passes (alias-page.tsx describer and guesser
+   * screens): showTimer={false} because the countdown ring below is the game's
+   * clock, and turnTimerLimit={60} because there IS a deadline - it is just
+   * drawn somewhere else. The first version of this test passed
+   * turnTimerLimit={0}, which the pre-existing `turnTimerLimit > 0` term
+   * already killed, so it held with the new `showTimer &&` term deleted (#905
+   * review). Both halves are asserted here: with the clock shown, the same
+   * numbers must still raise the nudge, or the test is proving nothing but
+   * that 25 < 15.
+   */
+  const idleShape = { ...base, isYourTurn: true, secs: 35, turnTimerLimit: 60 }
+
+  it('keeps the idle nudge off a banner whose clock is drawn elsewhere', () => {
+    render(<GameStatusBanner {...idleShape} showTimer={false} />)
     expect(screen.queryByText('game.ui.firstMoveNudge')).toBeNull()
+  })
+
+  it('still raises the idle nudge on the same turn when the banner owns the clock', () => {
+    render(<GameStatusBanner {...idleShape} />)
+    expect(screen.getByText('game.ui.firstMoveNudge')).toBeTruthy()
   })
 })

@@ -5,7 +5,7 @@ import { SpyGamePhase } from '@/lib/games/spy-game'
 import SpyRoleReveal from '@/components/SpyRoleReveal'
 import SpyVoting from '@/components/SpyVoting'
 import SpyResults from '@/components/SpyResults'
-import { resolveSpyOutcome } from '@/lib/games/spy-outcome'
+import { resolveSpyGameResult } from '@/lib/games/spy-outcome'
 import Chat from '@/components/Chat'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
@@ -75,6 +75,17 @@ interface SpyGameBoardProps {
   onRequestRematch?: () => void
   isRequestingRematch?: boolean
   onBackToLobby?: () => void
+  /**
+   * Host-only: put the lobby back in its waiting room (#905 review). #905 keeps
+   * the board mounted after a Spy game finishes so the table can read its end
+   * screen, which also means the automatic drop back to the waiting room no
+   * longer happens - and without this the lobby's settings, invite, add-bot and
+   * kick controls were unreachable for the rest of that lobby's life. Memory
+   * and Yahtzee take the same callback from the same handler.
+   */
+  onReturnToWaiting?: () => void
+  /** Disables Play Again / Return to Waiting while either is in flight. */
+  isRestarting?: boolean
   onLeave?: () => void
   registerUrl?: string
   isSpectator?: boolean
@@ -132,6 +143,8 @@ export default function SpyGameBoard({
   onRequestRematch,
   isRequestingRematch = false,
   onBackToLobby,
+  onReturnToWaiting,
+  isRestarting = false,
   onLeave,
   registerUrl = '/auth/register',
   isSpectator = false,
@@ -425,17 +438,26 @@ export default function SpyGameBoard({
   const totalRounds = data.totalRounds || 3
   const isResults = phase === SpyGamePhase.RESULTS
   const isGameOver = isResults && currentRound >= totalRounds
-  const outcome = resolveSpyOutcome({
-    spyGuessedLocation: data.spyGuessedLocation,
-    location: data.location || '',
-    eliminatedId,
-    spyId,
+  // The ROUND verdict belongs to SpyResults, which owns the reveal and already
+  // computes it from resolveSpyOutcome. The end of the GAME is the engine's: it ranks the
+  // cumulative scores across every round and writes the top total to
+  // state.winner. Titling the overlay from the round instead announced the
+  // last round's winner as the game's - contradicting the score table printed
+  // underneath it - and gave the trophy to a player who had not won (#905
+  // review, reproduced against the real engine: scores Alice 890 / Bob 690 /
+  // Carol 140, engine winner Alice, overlay title 'spy.spyWins', Bob holding
+  // the trophy).
+  const gameResult = resolveSpyGameResult({
+    winnerId: typeof state.winner === 'string' ? state.winner : null,
+    currentUserId,
   })
-  const finishedMessage = outcome.spyWon ? t('spy.spyWins') : t('spy.regularsWin')
-  // The spy id only reaches the client with the results, so this is false
-  // everywhere before them, which is exactly when it is not read.
-  const iAmSpy = !!currentUserId && currentUserId === spyId
-  const iWon = outcome.spyWon === iAmSpy
+  const gameWinnerName = playersById.get(gameResult.winnerId)?.name ?? ''
+  const finishedMessage = gameResult.isDraw
+    ? t('spy.gameTie')
+    : gameResult.isMine
+      ? t('spy.youWinGame')
+      : t('spy.gameWinner', { player: gameWinnerName })
+  const iWon = gameResult.isMine
 
   /**
    * Who the table is waiting on, which is what the left seat of the scoreboard
@@ -941,6 +963,9 @@ export default function SpyGameBoard({
             onRequestRematch={isSpectator ? undefined : onRequestRematch}
             isRequestRematchPending={isRequestingRematch}
             onBackToLobby={isSpectator ? undefined : onBackToLobby}
+            gameWinnerId={gameResult.winnerId || null}
+            onReturnToWaiting={!isSpectator && isCreator ? onReturnToWaiting : undefined}
+            isReturningToWaiting={isRestarting}
             isGuest={isSpectator ? false : isGuest}
             registerUrl={registerUrl}
             lobbyCode={lobbyCode}
@@ -959,17 +984,23 @@ export default function SpyGameBoard({
         <GameResultOverlay
           title={finishedMessage}
           kicker={t('lobby.game.gameOver')}
+          isDraw={gameResult.isDraw}
           accentColor="var(--bd-lav)"
           accentShadowColor="var(--bd-lav-deep)"
+          // A draw takes the kit's own handshake; a decided game gets the
+          // trophy for the winner and the eye for everyone else.
           icon={
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
-              <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
-            </div>
+            gameResult.isDraw ? undefined : (
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
+                <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
+              </div>
+            )
           }
           onInspect={() => setOverlayInspecting(true)}
           isHost={isCreator}
-          isLoading={isRequestingRematch || isActionLoading}
+          isLoading={isRequestingRematch || isActionLoading || isRestarting}
           onPlayAgain={onPlayAgain}
+          onReturnToLobby={onReturnToWaiting}
           onLeave={onLeave}
           isGuest={isGuest}
           registerUrl={registerUrl}
