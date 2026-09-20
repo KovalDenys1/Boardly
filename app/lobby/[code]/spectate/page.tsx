@@ -22,12 +22,13 @@ const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: f
 const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
 const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
 const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
+const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page'), { ssr: false })
 const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
 const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
 const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
 const Scorecard = dynamic(() => import('@/components/Scorecard'), { ssr: false })
 
-const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party'])
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess'])
 
 type SpectatorUser = {
   userId: string
@@ -128,11 +129,11 @@ function SpectatorTopBar({
 }
 
 /**
- * Chat for spectate paths that render a real game board full-page (the 5
+ * Chat for spectate paths that render a real game board full-page (the 6
  * DEDICATED_SPECTATOR_GAMES plus memory/yahtzee/guess_the_spy since #672
  * moved them onto the same real-board pattern) — those pages own their own
  * layout, so chat can't be docked in a sidebar like the generic fallback
- * shell below. A floating collapsible widget avoids touching 8 separate page
+ * shell below. A floating collapsible widget avoids touching 9 separate page
  * layouts just to add one shared feature (#653).
  */
 function FloatingSpectatorChat({
@@ -582,6 +583,7 @@ export default function SpectatorLobbyPage() {
         {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
         {gameType === 'alias' && <AliasPage code={code} isSpectator />}
         {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+        {gameType === 'sketch_and_guess' && <SketchAndGuessLobbyPage code={code} isSpectator />}
         <FloatingSpectatorChat
           isAuthenticated={isAuthenticated}
           isAdminView={isAdminView}
