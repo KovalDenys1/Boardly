@@ -2286,6 +2286,11 @@ const no = {
     scoreDelta: 'Poeng denne runden',
     totalScores: 'Total poeng',
     eliminatedThisRound: 'Eliminert denne runden',
+    claimingNow: 'Kommer med en påstand nå',
+    outOfTheGame: 'Ute av spillet: {{names}}',
+    roundHistory: 'Runder så langt',
+    claimedBy: 'Påstått av {{name}}',
+    points: '{{count}} p',
     timeLeft: '{{seconds}}s',
   },
   spectate: {

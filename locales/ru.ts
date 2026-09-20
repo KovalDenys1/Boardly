@@ -2286,6 +2286,11 @@ const ru = {
     scoreDelta: 'Очки за раунд',
     totalScores: 'Итоговый счёт',
     eliminatedThisRound: 'Выбыли в этом раунде',
+    claimingNow: 'Сейчас делает заявление',
+    outOfTheGame: 'Выбыли из игры: {{names}}',
+    roundHistory: 'Прошедшие раунды',
+    claimedBy: 'Заявил {{name}}',
+    points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
   },
   spectate: {

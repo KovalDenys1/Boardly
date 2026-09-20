@@ -2234,9 +2234,14 @@ input[type="range"].slider-thumb::-moz-range-track {
    breakpoint of this family's own. */
 @media (min-width: 1024px) {
   .liars-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .liars-columns__footer { grid-column: 1 / -1; }
+  .liars-columns__footer,
+  .liars-columns__full { grid-column: 1 / -1; }
 }
 .liars-columns__footer { display: flex; justify-content: center; }
+/* Several cards that belong to one column of the grid: the vote card and the
+   choice row have to stay together under their heading, not be split across
+   the two columns as separate grid items. */
+.liars-columns__stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .liars-card { padding: 14px 16px; }
 .liars-card__title {
@@ -2254,10 +2259,16 @@ input[type="range"].slider-thumb::-moz-range-track {
   gap: 10px;
   margin-top: 14px;
 }
+/* The eliminated-player alert and the "eliminated this round" card. Mixed from
+   the coral and the card ground rather than named --bd-danger-* tokens: those
+   were invented for this rule and defined nowhere, so all three var() calls
+   resolved to their initial values and the card came out with no background at
+   all and a currentColor border. Mixing keeps it right in both themes, because
+   both halves are redefined under html.dark. */
 .liars-card--danger {
-  background: var(--bd-danger-bg);
-  border-color: var(--bd-danger-border);
-  color: var(--bd-danger-text);
+  background: color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm));
+  border-color: color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line));
+  color: var(--bd-ink);
 }
 
 .liars-claim {

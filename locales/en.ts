@@ -2298,6 +2298,11 @@ const en = {
     scoreDelta: 'Points this round',
     totalScores: 'Total Scores',
     eliminatedThisRound: 'Eliminated this round',
+    claimingNow: 'Making a claim now',
+    outOfTheGame: 'Out of the game: {{names}}',
+    roundHistory: 'Rounds so far',
+    claimedBy: 'Claimed by {{name}}',
+    points: '{{count}} pts',
     timeLeft: '{{seconds}}s',
   },
   spectate: {
