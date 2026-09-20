@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { act, render, screen, waitFor } from '@testing-library/react'
-import PushOptInNudge from '@/components/PushOptInNudge'
+import PushOptInNudge, { __resetPushAskStateForTests } from '@/components/PushOptInNudge'
 
 jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
 
@@ -36,6 +36,8 @@ jest.mock('@/lib/push-subscription', () => ({
 }))
 
 const DISMISS_KEY = 'boardly:push-ask-dismissed:v1'
+const RETRY_KEY = 'boardly:push-ask-failed:v1'
+const DAY_MS = 24 * 60 * 60 * 1000
 
 function setPermission(permission: NotificationPermission) {
   ;(window as unknown as { Notification: unknown }).Notification = { permission }
@@ -58,6 +60,7 @@ describe('PushOptInNudge (#984)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     localStorage.clear()
+    __resetPushAskStateForTests()
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY = 'test-vapid-public-key'
     ;(window as unknown as { PushManager: unknown }).PushManager = function PushManager() {}
     setPermission('default')
@@ -118,7 +121,7 @@ describe('PushOptInNudge (#984)', () => {
     expect(mockTrackPushPrompt).not.toHaveBeenCalled()
   })
 
-  it('dismissal persists across a remount and holds for 30 days', async () => {
+  it('dismissal persists across a remount', async () => {
     const { unmount } = await renderNudge()
 
     act(() => {
@@ -130,13 +133,32 @@ describe('PushOptInNudge (#984)', () => {
     expect(Number(localStorage.getItem(DISMISS_KEY))).toBeGreaterThan(0)
 
     unmount()
+    __resetPushAskStateForTests()
     await renderNudge()
     expect(screen.queryByText('game.ui.pushAskHeadline')).toBeNull()
+  })
 
-    // 31 days later the ask is allowed back.
-    localStorage.setItem(DISMISS_KEY, String(Date.now() - 31 * 24 * 60 * 60 * 1000))
+  /**
+   * The literals are the point. The first version of this test asserted only
+   * hidden-right-after-dismiss and visible-at-31-days, which every window in (0, 31 days)
+   * satisfies - a one-hour TTL passed it. 30 days is load bearing: a browser grants the
+   * notification prompt once per origin and a refusal is permanent, so re-asking inside the
+   * same session spends the one thing the design is protecting.
+   */
+  it.each([
+    ['29 days after a dismissal, still inside the window', 29, true],
+    ['31 days after a dismissal, the window has passed', 31, false],
+  ])('%s', async (_name, daysAgo, expectHidden) => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() - daysAgo * DAY_MS))
+
     await renderNudge()
-    expect(screen.queryByText('game.ui.pushAskHeadline')).not.toBeNull()
+
+    if (expectHidden) {
+      expect(screen.queryByText('game.ui.pushAskHeadline')).toBeNull()
+      expect(mockTrackPushPrompt).not.toHaveBeenCalled()
+    } else {
+      expect(screen.queryByText('game.ui.pushAskHeadline')).not.toBeNull()
+    }
   })
 
   it('accepting subscribes AND turns the preference on - the subscription alone delivers nothing', async () => {
@@ -165,6 +187,86 @@ describe('PushOptInNudge (#984)', () => {
     })
   })
 
+  it('does NOT say notifications are on when the preference write is refused', async () => {
+    // The response was never read before the #984 review: a 401 or a 500 here left
+    // pushNotifications false, lib/push-send.ts returns before reading subscriptions when it
+    // is, and the player was told "Notifications on" anyway.
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 401 }) as unknown as typeof fetch
+
+    await renderNudge()
+
+    await act(async () => {
+      screen.getByText('game.ui.pushAskAccept').click()
+    })
+
+    expect(mockToastSuccess).not.toHaveBeenCalled()
+    expect(mockToastError).toHaveBeenCalledWith('profile.settings.error')
+    expect(mockTrackPushPrompt).not.toHaveBeenCalledWith('accepted', 'after_game', 'yahtzee')
+    expect(mockTrackPushPrompt).toHaveBeenCalledWith('failed', 'after_game', 'yahtzee')
+    // A failed attempt is not a refusal, so it takes the short window, not the 30-day one.
+    expect(Number(localStorage.getItem(RETRY_KEY))).toBeGreaterThan(0)
+    expect(localStorage.getItem(DISMISS_KEY)).toBeNull()
+  })
+
+  it('does not say notifications are on when the preference write throws', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch
+
+    await renderNudge()
+
+    await act(async () => {
+      screen.getByText('game.ui.pushAskAccept').click()
+    })
+
+    expect(mockToastSuccess).not.toHaveBeenCalled()
+    expect(mockToastError).toHaveBeenCalledWith('profile.settings.error')
+  })
+
+  it('stops asking for a day after an attempt that broke, and asks again after that', async () => {
+    localStorage.setItem(RETRY_KEY, String(Date.now() - 23 * 60 * 60 * 1000))
+    const { unmount } = await renderNudge()
+    expect(screen.queryByText('game.ui.pushAskHeadline')).toBeNull()
+    unmount()
+    __resetPushAskStateForTests()
+
+    // 25 hours on, the outage is somebody else's problem and the ask comes back. Without the
+    // separate key a broken attempt would either re-ask at every single game end, or borrow
+    // the 30-day dismissal window and silence a willing player for a month over one 429.
+    localStorage.setItem(RETRY_KEY, String(Date.now() - 25 * 60 * 60 * 1000))
+    await renderNudge()
+    expect(screen.queryByText('game.ui.pushAskHeadline')).not.toBeNull()
+  })
+
+  /**
+   * MemoryGameBoard.tsx renders its desktop (:743), phone-landscape (:788) and mobile-tab
+   * (:826) boards in one tree and hides two with `display: none`. React mounts all three and
+   * runs all three sets of effects, so this used to be three `push_prompt_shown` beacons per
+   * finished Memory game and a dismissal that closed one box out of three.
+   */
+  it('reports one shown and closes every copy at once when several are mounted', async () => {
+    render(
+      <>
+        <PushOptInNudge source="after_game" gameType="memory" />
+        <PushOptInNudge source="after_game" gameType="memory" />
+        <PushOptInNudge source="after_game" gameType="memory" />
+      </>
+    )
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryAllByText('game.ui.pushAskHeadline')).toHaveLength(3)
+    const shown = mockTrackPushPrompt.mock.calls.filter((call) => call[0] === 'shown')
+    expect(shown).toHaveLength(1)
+
+    act(() => {
+      screen.queryAllByText('game.ui.pushAskDismiss')[0].click()
+    })
+
+    expect(screen.queryAllByText('game.ui.pushAskHeadline')).toHaveLength(0)
+    const dismissed = mockTrackPushPrompt.mock.calls.filter((call) => call[0] === 'dismissed')
+    expect(dismissed).toHaveLength(1)
+  })
+
   it('a browser-level refusal is recorded as denied and writes no preference', async () => {
     mockSubscribe.mockResolvedValue('denied')
 
@@ -191,6 +293,24 @@ describe('PushOptInNudge (#984)', () => {
 
     expect(mockToastError).toHaveBeenCalledWith('profile.settings.notifications.pushUnavailable')
     expect(global.fetch).not.toHaveBeenCalled()
+    // Nothing was subscribed, so there is nothing to cool off from - this build cannot ask
+    // at all and the mount guard says so before the box is ever drawn.
+    expect(localStorage.getItem(RETRY_KEY)).toBeNull()
+  })
+
+  it('offers a retry, not a "not available here", when the subscription POST is refused', async () => {
+    mockSubscribe.mockResolvedValue('failed')
+
+    await renderNudge()
+
+    await act(async () => {
+      screen.getByText('game.ui.pushAskAccept').click()
+    })
+
+    expect(mockToastError).toHaveBeenCalledWith('profile.settings.notifications.pushFailed')
+    expect(mockToastSuccess).not.toHaveBeenCalled()
+    expect(mockTrackPushPrompt).toHaveBeenCalledWith('failed', 'after_game', 'yahtzee')
+    expect(Number(localStorage.getItem(RETRY_KEY))).toBeGreaterThan(0)
   })
 
   it('survives a private window, where reading localStorage throws', async () => {

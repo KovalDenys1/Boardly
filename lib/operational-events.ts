@@ -32,6 +32,10 @@ export const OPERATIONAL_EVENT_NAMES = [
   'push_prompt_accepted',
   'push_prompt_dismissed',
   'push_prompt_denied',
+  // The player said yes, the browser subscribed, and the preference write came back non-ok
+  // - so the row exists and lib/push-send.ts will still never read it. Silent before #984's
+  // review; without this the accepted count includes opt-ins that deliver nothing.
+  'push_prompt_failed',
 ] as const
 
 /**
@@ -195,6 +199,7 @@ export function buildOperationalEventRecord(input: {
     case 'push_prompt_accepted':
     case 'push_prompt_dismissed':
     case 'push_prompt_denied':
+    case 'push_prompt_failed':
       // `source` carries the button or surface; the lobby code stays in the payload.
       return {
         eventName,

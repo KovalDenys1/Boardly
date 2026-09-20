@@ -13,9 +13,19 @@ jest.mock('@/components/GuestConversionNudge', () => {
   }
 })
 
+// The props are the whole point of slot 3: `source` is what separates the after-game ask
+// from the profile checkbox it exists to beat, and `gameType` is the only dimension that
+// says which end screen converts. A mock that ignored them let the real call site be
+// rewritten to `<PushOptInNudge source="profile" />` with the suite still green.
 jest.mock('@/components/PushOptInNudge', () => {
-  return function MockPushNudge() {
-    return <div data-testid="push-nudge" />
+  return function MockPushNudge(props: { source: string; gameType?: string }) {
+    return (
+      <div
+        data-testid="push-nudge"
+        data-source={props.source}
+        data-game-type={props.gameType ?? ''}
+      />
+    )
   }
 })
 
@@ -83,7 +93,9 @@ describe('AfterGameActions (#982)', () => {
     const { unmount } = render(
       <AfterGameActions gameType="alias" isRegistered registerUrl="/auth/register" />
     )
-    expect(screen.getByTestId('push-nudge')).toBeTruthy()
+    const nudge = screen.getByTestId('push-nudge')
+    expect(nudge.getAttribute('data-source')).toBe('after_game')
+    expect(nudge.getAttribute('data-game-type')).toBe('alias')
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
     unmount()
 

@@ -614,9 +614,14 @@ export type PushPromptSource = 'after_game' | 'profile'
  *
  * `denied` is separate from `dismissed` on purpose: a dismissal is ours to re-ask after 30
  * days, a browser-level denial is permanent for that origin and must never be retried.
+ *
+ * `failed` is separate from `accepted` for the same reason: the player said yes and the
+ * browser subscribed, but the preference write did not land, so nothing will be delivered.
+ * Counting that as `accepted` is how an opt-in surface reports success while producing no
+ * notifications, which is the whole of #983.
  */
 export function trackPushPrompt(
-  action: 'shown' | 'accepted' | 'dismissed' | 'denied',
+  action: 'shown' | 'accepted' | 'dismissed' | 'denied' | 'failed',
   source: PushPromptSource,
   gameType?: GameType
 ): void {

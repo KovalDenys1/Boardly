@@ -70,9 +70,14 @@ describe('push-subscription', () => {
     const callOrder: string[] = []
     let requestPermissionMock: jest.Mock
     let fetchMock: jest.Mock
+    let unsubscribeMock: jest.Mock
 
     beforeEach(() => {
       callOrder.length = 0
+      unsubscribeMock = jest.fn(async () => {
+        callOrder.push('unsubscribe')
+        return true
+      })
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY = 'BCjD4h3jyoSIqEkl8yCpOQswsNjjJvi6YYNZss3VwCYoWhux3AeIWYuJUEdUVM0HWVDk6aD5aAT_ZnpC0V_Es-0'
 
       requestPermissionMock = jest.fn(async () => {
@@ -103,6 +108,7 @@ describe('push-subscription', () => {
                   endpoint: 'https://example.com/push',
                   getKey: (name: string) =>
                     name === 'p256dh' ? new Uint8Array([104, 105]).buffer : new Uint8Array([111, 107]).buffer,
+                  unsubscribe: () => unsubscribeMock(),
                 }),
               },
             })
@@ -178,6 +184,34 @@ describe('push-subscription', () => {
         callOrder.push('fetch')
         return { ok: false } as Response
       })
+
+      expect(await subscribeAndRegisterPush()).toBe('failed')
+    })
+
+    it('drops the browser subscription when the server refuses it, so the device stays askable', async () => {
+      // /api/push-subscriptions is rate limited, so a 429 in a burst gets here, as does any
+      // 5xx. A subscription left in the browser with no row on the server is an orphan that
+      // answers getExistingPushSubscription() with "already subscribed" - which is the one
+      // guard that hides the end-screen ask (#984) permanently, on a device nothing can ever
+      // be delivered to.
+      fetchMock.mockImplementation(async () => {
+        callOrder.push('fetch')
+        return { ok: false, status: 429 } as Response
+      })
+
+      expect(await subscribeAndRegisterPush()).toBe('failed')
+      expect(unsubscribeMock).toHaveBeenCalledTimes(1)
+      expect(callOrder).toEqual(['requestPermission', 'serviceWorker.ready', 'fetch', 'unsubscribe'])
+    })
+
+    it('keeps the subscription when the server accepts it', async () => {
+      expect(await subscribeAndRegisterPush()).toBe('registered')
+      expect(unsubscribeMock).not.toHaveBeenCalled()
+    })
+
+    it('still reports failed when dropping the orphan itself throws', async () => {
+      fetchMock.mockImplementation(async () => ({ ok: false }) as Response)
+      unsubscribeMock.mockRejectedValue(new Error('InvalidStateError'))
 
       expect(await subscribeAndRegisterPush()).toBe('failed')
     })

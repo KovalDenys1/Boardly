@@ -109,7 +109,7 @@ describe('buildOperationalEventRecord', () => {
   })
 
   it('normalizes every push_prompt_* name as a flow event with its surface (#984)', () => {
-    for (const action of ['shown', 'accepted', 'dismissed', 'denied'] as const) {
+    for (const action of ['shown', 'accepted', 'dismissed', 'denied', 'failed'] as const) {
       const name = `push_prompt_${action}` as const
       expect(OPERATIONAL_EVENT_NAMES as readonly string[]).toContain(name)
       expect(
