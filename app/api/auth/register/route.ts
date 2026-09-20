@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
+import { releaseGuestUsername } from '@/lib/guest-helpers'
 import { z } from 'zod'
 
 const limiter = rateLimit(rateLimitPresets.auth)
@@ -22,8 +23,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, username, password } = registerSchema.parse(body)
 
-    // Check if user already exists
-    const existingUser = await prisma.users.findFirst({
+    // Check if user already exists. `findMany`, not `findFirst`: a guest row and a
+    // real account can hold the email and the username separately, and the two
+    // cases are answered differently below.
+    const conflicts = await prisma.users.findMany({
       where: {
         OR: [
           {
@@ -35,9 +38,38 @@ export async function POST(request: NextRequest) {
           { username },
         ],
       },
+      select: { id: true, email: true, username: true, isGuest: true },
     })
 
-    if (existingUser) {
+    // registerSchema lowercases the email, so this compares like for like.
+    const emailTaken = conflicts.some((row) => row.email?.toLowerCase() === email)
+
+    // `some`/`find` rather than a single `find` over the whole set: a row matching
+    // on email must not be read as the holder of the username, and a real account
+    // must decide the answer whatever order the rows came back in.
+    const usernameHolders = conflicts.filter((row) => row.username === username)
+    const usernameTakenByAccount = usernameHolders.some((row) => !row.isGuest)
+    const guestHoldingUsername = usernameHolders.find((row) => row.isGuest)
+
+    // A guest display name is not an account, and since #1047 a guest who has
+    // played is kept for ninety days instead of three - so a visitor called
+    // "Denys" in one game blocked that username for a quarter of a year (#1050).
+    // The guest gives the name up instead; nothing that identifies them is lost.
+    // An email conflict is never resolved this way: it is the one field that
+    // really is the person, so it stays a hard rejection whoever holds it.
+    if (emailTaken || usernameTakenByAccount) {
+      return NextResponse.json(
+        { error: 'Email or username already exists' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      guestHoldingUsername &&
+      !(await releaseGuestUsername(guestHoldingUsername.id, guestHoldingUsername.username))
+    ) {
+      // The rename lost a race, so by now the name genuinely is taken by someone
+      // other than the guest we were about to move aside.
       return NextResponse.json(
         { error: 'Email or username already exists' },
         { status: 400 }
@@ -46,16 +78,30 @@ export async function POST(request: NextRequest) {
 
     // Create user
     const passwordHash = await hashPassword(password)
-    
-    const user = await prisma.users.create({
-      data: {
-        email,
-        username,
-        passwordHash,
-        signupSource: getSignupSourceFromRequest(request),
-        // emailVerified will be set when user clicks verification link
-      },
-    })
+
+    let user
+    try {
+      user = await prisma.users.create({
+        data: {
+          email,
+          username,
+          passwordHash,
+          signupSource: getSignupSourceFromRequest(request),
+          // emailVerified will be set when user clicks verification link
+        },
+      })
+    } catch (createError: unknown) {
+      // Two signups racing for the same name reach the unique index rather than
+      // the check above. That is a conflict, not a server fault, and it used to
+      // fall through to the 500 below - which a visitor cannot act on.
+      if (typeof createError === 'object' && createError !== null && (createError as Record<string, unknown>).code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Email or username already exists' },
+          { status: 400 }
+        )
+      }
+      throw createError
+    }
 
     // Generate verification token
     const verificationToken = nanoid(32)

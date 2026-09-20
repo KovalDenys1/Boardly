@@ -3,7 +3,7 @@
  */
 
 import * as guestHelpers from '@/lib/guest-helpers'
-import { getOrCreateGuestUser, guestNameSuffix } from '@/lib/guest-helpers'
+import { getOrCreateGuestUser, guestNameSuffix, releaseGuestUsername } from '@/lib/guest-helpers'
 import { prisma } from '@/lib/db'
 
 // createGuestId() in lib/guest-auth.ts mints `guest-<uuid>`, so that is the shape
@@ -271,4 +271,66 @@ describe('Guest Helpers', () => {
         })
     })
 
+    // #1050. Users.username is @unique, so a guest holding "Denys" blocked that
+    // signup outright - and since #1047 a guest who has played is kept 90 days,
+    // not 3. The guest gives the name up instead of the visitor being turned away.
+    describe('releaseGuestUsername', () => {
+        it('renames the guest and reports the name free', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys-8f14e4' })
+
+            const freed = await releaseGuestUsername(GUEST_ID, 'Denys')
+
+            expect(freed).toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledWith({
+                where: { id: GUEST_ID },
+                data: { username: 'Denys-8f14e4' },
+            })
+        })
+
+        it('keeps the guest row and everything that identifies it', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys-8f14e4' })
+
+            await releaseGuestUsername(GUEST_ID, 'Denys')
+
+            const call = (prisma.users.update as jest.Mock).mock.calls[0]?.[0]
+            expect(Object.keys(call.data)).toEqual(['username'])
+            expect(prisma.users.deleteMany).not.toHaveBeenCalled()
+        })
+
+        it('retries with a more specific name when the rename collides', async () => {
+            const conflict = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+                ; (prisma.users.update as jest.Mock)
+                    .mockRejectedValueOnce(conflict)
+                    .mockResolvedValueOnce({ id: GUEST_ID, username: 'Denys-8f14e4-0000' })
+
+            const freed = await releaseGuestUsername(GUEST_ID, 'Denys')
+
+            expect(freed).toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledTimes(2)
+            const secondName = (prisma.users.update as jest.Mock).mock.calls[1][0].data.username
+            expect(secondName).toMatch(/^Denys-8f14e4-\d{4}$/)
+        })
+
+        it('reports the name still taken when every rename collides', async () => {
+            const conflict = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+                ; (prisma.users.update as jest.Mock).mockRejectedValue(conflict)
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
+        })
+
+        it('rethrows a failure that is not a name collision', async () => {
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(new Error('connection terminated'))
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).rejects.toThrow('connection terminated')
+        })
+
+        it('handles a guest row with no display name at all', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Guest-8f14e4' })
+
+            const freed = await releaseGuestUsername(GUEST_ID, null)
+
+            expect(freed).toBe(true)
+            expect((prisma.users.update as jest.Mock).mock.calls[0][0].data.username).toBe('Guest-8f14e4')
+        })
+    })
 })

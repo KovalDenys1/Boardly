@@ -201,6 +201,65 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
  */
 
 /**
+ * Give up a display name that a guest row is holding, so a real account can take it.
+ *
+ * `Users.username` is `@unique` (prisma/schema.prisma), so a guest who typed
+ * "Denys" occupies that name for every signup too. Before #1047 the row vanished
+ * after three days of inactivity; a guest who has played is now kept for ninety,
+ * which turned a short annoyance into a ninety-day squat on a common first name
+ * and is the whole of #1050.
+ *
+ * Renaming the guest is preferred over simply skipping guest rows in the
+ * caller's uniqueness check, because the unique constraint is real: "ignore
+ * guests" only moves the failure from a checked 400 to a P2002 on insert. It is
+ * also preferred over deleting the guest, which would cascade their Players rows
+ * away - the exact loss #1047 was filed to stop. Nothing that identifies the
+ * guest changes: their id, their identity token and their game history are
+ * untouched, only the cosmetic display name. `getOrCreateGuestUser` above
+ * already keeps the stored name when the one the browser asks for is taken, so
+ * the returning guest settles on the new name rather than fighting for the old.
+ *
+ * Returns true when the name is free afterwards, false only when the rename
+ * itself lost a race - in which case the caller should treat the name as taken.
+ */
+export async function releaseGuestUsername(
+    guestId: string,
+    currentUsername: string | null
+): Promise<boolean> {
+    const base = currentUsername ?? 'Guest'
+    const suffix = guestNameSuffix(guestId)
+
+    // Same shape the collision paths in getOrCreateGuestUser produce, so a guest
+    // renamed here is indistinguishable from one who picked a taken name.
+    const candidates = [`${base}-${suffix}`, `${base}-${suffix}-${Date.now().toString().slice(-4)}`]
+
+    for (const candidate of candidates) {
+        try {
+            await prisma.users.update({
+                where: { id: guestId },
+                data: { username: candidate },
+            })
+
+            log.info('Released a guest display name to a registered account', {
+                guestId,
+                previousName: currentUsername,
+                newName: candidate,
+            })
+            return true
+        } catch (error: unknown) {
+            if (typeof error === 'object' && error !== null && (error as Record<string, unknown>).code === 'P2002') {
+                log.warn('Guest rename collided, trying a more specific name', { guestId, candidate })
+                continue
+            }
+            throw error
+        }
+    }
+
+    log.error('Could not free a guest-held username', undefined, { guestId, currentUsername })
+    return false
+}
+
+/**
  * Check if a user ID is a guest
  */
 export async function isGuestUser(userId: string): Promise<boolean> {

@@ -7,6 +7,7 @@ import { sendVerificationEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
+import { releaseGuestUsername } from '@/lib/guest-helpers'
 import {
   AuthenticationError,
   ConflictError,
@@ -208,10 +209,18 @@ async function patchProfileHandler(req: NextRequest) {
             id: session.user.id,
           },
         },
-        select: { id: true },
+        select: { id: true, username: true, isGuest: true },
       })
 
-      if (existingUsername) {
+      if (existingUsername && !existingUsername.isGuest) {
+        throw new ConflictError('Username is already taken')
+      }
+
+      // Same rule as registration (#1050): a guest display name does not reserve
+      // a username against a real account, so the guest is renamed instead. Kept
+      // in step with GET /api/user/check-username, which this page polls and
+      // which no longer counts guest rows as taken.
+      if (existingUsername && !(await releaseGuestUsername(existingUsername.id, existingUsername.username))) {
         throw new ConflictError('Username is already taken')
       }
 
