@@ -2168,6 +2168,140 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-leave-button--compact.game-leave-button--leave { padding: 8px 10px; }
 }
 
+/* ── Liar's Party (#1040) ──────────────────────────────────────────────────
+   One skin for all seven phases, on the shared .game-screen primitive so the
+   height still comes from --game-h. Every colour is a theme token: the screens
+   used to paint their own rose/orange gradient, which ignored the lobby theme
+   the host picked. */
+.liars-screen {
+  padding: 10px 16px 14px;
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+}
+.liars-screen--centered { display: grid; place-items: center; }
+
+/* Header, status, then the one region that scrolls. */
+.liars-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+/* Header and status keep their height; only the content region flexes. */
+.liars-shell > *:not(.liars-content) { flex-shrink: 0; }
+.liars-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* Centred while the phase is shorter than the region, so a three-card reveal
+     does not sit in the top third with a screen of nothing under it; `safe`
+     falls back to the start edge once it overflows, which plain `center` does
+     not – that clips the first card out of reach. */
+  justify-content: safe center;
+}
+
+/* A phase with one column of cards, centred and capped so a wide screen does
+   not stretch a short form across 1100px. */
+.liars-single {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* A phase with several cards: two columns once there is room for them, so the
+   width is used instead of leaving a gutter down both sides (layout DoD). */
+.liars-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  /* Cards size to their own content. The grid default stretches every card in a
+     row to the tallest one, which left the short claim card with a block of
+     empty card under it next to the vote list. */
+  align-items: start;
+  align-content: start;
+  width: 100%;
+}
+/* The shared mobile/desktop switch point (lib/responsive-tokens.ts), never a
+   breakpoint of this family's own. */
+@media (min-width: 1024px) {
+  .liars-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .liars-columns__footer,
+  .liars-columns__full { grid-column: 1 / -1; }
+}
+.liars-columns__footer { display: flex; justify-content: center; }
+/* Several cards that belong to one column of the grid: the vote card and the
+   choice row have to stay together under their heading, not be split across
+   the two columns as separate grid items. */
+.liars-columns__stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.liars-card { padding: 14px 16px; }
+.liars-card__title {
+  font-family: var(--bd-font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--bd-ink);
+  margin-bottom: 10px;
+}
+.liars-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+/* The eliminated-player alert and the "eliminated this round" card. Mixed from
+   the coral and the card ground rather than named --bd-danger-* tokens: those
+   were invented for this rule and defined nowhere, so all three var() calls
+   resolved to their initial values and the card came out with no background at
+   all and a currentColor border. Mixing keeps it right in both themes, because
+   both halves are redefined under html.dark. */
+.liars-card--danger {
+  background: color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm));
+  border-color: color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line));
+  color: var(--bd-ink);
+}
+
+.liars-claim {
+  font-size: 17px;
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--bd-ink);
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.liars-verdict {
+  font-family: var(--bd-font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* Truth / Bluff and Challenge / Believe: two equal buttons that stay on one
+   row at 320px rather than wrapping to a single-button row. */
+.liars-choice-row { display: flex; gap: 10px; margin-top: 12px; }
+.liars-choice { flex: 1 1 0; justify-content: center; min-width: 0; }
+/* Truth and Believe are the same call from two sides of the table, so they
+   carry the same colour; Bluff is the coral one. */
+.liars-choice--on-truth,
+.liars-choice--believe {
+  background: var(--bd-mint); color: var(--bd-ink);
+  box-shadow: 0 4px 0 0 var(--bd-mint-deep);
+}
+.liars-choice--on-bluff {
+  background: var(--bd-coral); color: #fff;
+  box-shadow: 0 4px 0 0 var(--bd-coral-deep);
+}
+
 /* A history/moves card that owns its whole column when nothing sits below it
    (chat hidden in bot games) – layout DoD: no gap under the last card. */
 .ttt-history-card--fill {

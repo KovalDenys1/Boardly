@@ -2330,6 +2330,11 @@ const uk: Translation = {
     scoreDelta: 'Очки за раунд',
     totalScores: 'Підсумковий рахунок',
     eliminatedThisRound: 'Вибули в цьому раунді',
+    claimingNow: 'Зараз робить заяву',
+    outOfTheGame: 'Вибули з гри: {{names}}',
+    roundHistory: 'Минулі раунди',
+    claimedBy: 'Заявив {{name}}',
+    points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
   },
   spectate: {
