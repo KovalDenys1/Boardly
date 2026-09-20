@@ -1087,6 +1087,7 @@ const ru = {
         points: '{{count}} очк.',
         youWin: 'Вы победили!',
         chatLockedForDrawer: 'Вы знаете слово – чат откроется на показе итогов',
+        spectatorGuessing: 'Игроки угадывают',
       },
     },
     liars_party: {

@@ -3122,8 +3122,6 @@ html.dark .memory-tile-face {
   box-sizing: border-box;
   min-height: 0;
 }
-.sketch-panel--fill { max-height: none; flex: 1 1 auto; }
-.ttt-right-col > .sketch-panel--fill { grid-row: 1 / -1; }
 .ttt-mobile-content .sketch-panel { flex: 1; min-height: 0; max-height: none; }
 .sketch-panel__list {
   flex: 1;
@@ -3219,4 +3217,14 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .game-landscape-side .sketch-header-card .game-scoreboard-header {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
   }
+
+  /* The header does not give way to the chat. Chat is the flexible member of
+     this column and carries the floor that absorbs a squeeze (#902); this card
+     is `overflow: hidden`, so shrinking it does not reflow anything, it cuts.
+     It needs 66px – a 42px scoreboard row inside 12px of padding – and default
+     flex shrink handed it 60 at 844x390, 58 at 667x375 and 56 at 740x360, which
+     ate the padding and clipped the bottom of the avatars and of the Leave
+     button. With this it is 68 everywhere and chat is still 146 or more, well
+     over its 128 floor. */
+  .game-landscape-side > .sketch-header-card { flex: 0 0 auto; }
 }

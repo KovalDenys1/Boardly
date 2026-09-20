@@ -1089,6 +1089,7 @@ const uk: Translation = {
         points: '{{count}} оч.',
         youWin: 'Ви перемогли!',
         chatLockedForDrawer: 'Ви знаєте слово – чат відкриється на підсумку',
+        spectatorGuessing: 'Гравці вгадують',
       },
     },
     liars_party: {

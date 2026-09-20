@@ -1087,6 +1087,7 @@ const no = {
         points: '{{count}} p',
         youWin: 'Du vant!',
         chatLockedForDrawer: 'Du vet ordet – chatten åpner for deg ved fasiten',
+        spectatorGuessing: 'Spillerne gjetter',
       },
     },
     liars_party: {

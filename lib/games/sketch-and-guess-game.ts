@@ -708,3 +708,30 @@ export function sanitizeSketchAndGuessActionEventForBroadcast(
   }
   return safe
 }
+
+/**
+ * Whether this player is the one seat that must not be talking right now.
+ *
+ * The drawer knows the word and is paid 40 points for every correct guess, so
+ * the lobby chat is a channel they profit from leaking the answer down (#1034).
+ * The page greys their composer out; this is the same rule where it binds –
+ * POST /api/lobby/[code]/chat – because a greyed-out box stops the one player
+ * with a motive to bypass it least of all.
+ *
+ * Only while the round is live: at the reveal the word is on everybody's screen
+ * and the drawer talks again, and a finished game is all reveal.
+ */
+export function isSketchAndGuessDrawerMuted(params: {
+  gameStatus: string
+  state: unknown
+  userId: string
+}): boolean {
+  const { gameStatus, state, userId } = params
+  if (gameStatus !== 'playing') return false
+
+  const data = (state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
+  if (!data || typeof data !== 'object') return false
+  if (data.phase === 'reveal') return false
+
+  return typeof data.currentDrawerId === 'string' && data.currentDrawerId === userId
+}

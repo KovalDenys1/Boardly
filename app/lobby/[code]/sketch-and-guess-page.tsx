@@ -14,7 +14,11 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
-import SketchAndGuessGameBoard, { SketchScoreRows } from '@/components/SketchAndGuessGameBoard'
+import SketchAndGuessGameBoard, {
+    SketchScoreRows,
+    emptySketchAndGuessDraft,
+    type SketchAndGuessDraft,
+} from '@/components/SketchAndGuessGameBoard'
 import { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
@@ -82,6 +86,14 @@ const SKETCH_ACCENT_DEEP = 'var(--bd-mint-deep)'
 
 /** The engine's three phases, as a number the turn timer can hang a signature off. */
 const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { drawing: 0, guessing: 1, reveal: 2 }
+
+/**
+ * What a round starts with, and what a page shows for any round the draft below
+ * is not holding. One shared frozen instance rather than a fresh object per
+ * render, so the canvas is not handed a new `strokes` array every time the
+ * lobby snapshot changes.
+ */
+const EMPTY_DRAFT: SketchAndGuessDraft = Object.freeze(emptySketchAndGuessDraft())
 
 function defaultSketchState(): SketchAndGuessGameData {
     return {
@@ -608,6 +620,24 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const hasGuessed = !!currentUserId && (currentRound?.guesses.some((g) => g.playerId === currentUserId) ?? false)
     const iOweAMove = !isFinished && !isSpectator && (phase === 'drawing' ? isDrawer : phase === 'guessing' ? !isDrawer && !hasGuessed : false)
 
+    // The strokes on the canvas and the half-typed guess belong to the round,
+    // not to a layout tree: the desktop, landscape and portrait trees each mount
+    // their own board, and only one of them is on screen at a time. Held here,
+    // a rotation or a window drag across the breakpoint re-renders the drawing
+    // in the tree that takes over instead of handing the drawer a blank canvas
+    // with the phase clock still running (#1034). Tagged with the round it was
+    // made in, so the next round starts clean without an effect that would clear
+    // it one render late.
+    const [draftForRound, setDraftForRound] = useState<{ round: number; draft: SketchAndGuessDraft }>(
+        () => ({ round: 0, draft: EMPTY_DRAFT })
+    )
+    const roundNumber = gameData.currentRound
+    const activeDraft = draftForRound.round === roundNumber ? draftForRound.draft : EMPTY_DRAFT
+    const handleDraftChange = useCallback(
+        (next: SketchAndGuessDraft) => setDraftForRound({ round: roundNumber, draft: next }),
+        [roundNumber]
+    )
+
     const timerState = useMemo(() => {
         if (!game) return null
         return {
@@ -724,11 +754,16 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             ? isDrawer
                 ? t('games.guess_my_drawing.game.drawerIntro')
                 : t('games.guess_my_drawing.game.waitingForDrawer', { name: nameOf(drawerId) })
-            : isDrawer
-              ? t('games.guess_my_drawing.game.youAreDrawingWait')
-              : hasGuessed
-                ? t('games.guess_my_drawing.game.alreadyGuessed')
-                : t('games.guess_my_drawing.game.guessNow')
+            : isSpectator
+              // A spectator has no seat and is handed no guesses at all by the
+              // sanitizer, so both branches below would be false and the banner
+              // told a watcher to guess (#1033/#1034).
+              ? t('games.guess_my_drawing.game.spectatorGuessing')
+              : isDrawer
+                ? t('games.guess_my_drawing.game.youAreDrawingWait')
+                : hasGuessed
+                  ? t('games.guess_my_drawing.game.alreadyGuessed')
+                  : t('games.guess_my_drawing.game.guessNow')
 
     const pencilBadge = (
         <div style={{
@@ -818,6 +853,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 onAdvanceRound={handleAdvanceRound}
                 isSubmitting={isSubmitting}
                 isSpectator={isSpectator}
+                draft={activeDraft}
+                onDraftChange={handleDraftChange}
             />
             {isFinished && !isSpectator && !overlayInspecting && (
                 <GameResultOverlay
@@ -927,6 +964,16 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 <div className="game-landscape-board">
                     {renderBoardSection('sketch-board-card-landscape')}
                 </div>
+                {/* No standings block here, deliberately, though this is the one
+                    tree with no way to reach the scores. Measured at 844x390 the
+                    column is 308px and already spoken for: header 68, status 53,
+                    chat's 128px floor (#902) and 18px of gaps. A standings panel
+                    added as a fourth child got 79px, of which the scrolling list
+                    was 4px, and it took the difference out of the header, which
+                    is `overflow: hidden` and cut. Landscape gets its scores by
+                    making this column's flexible region a Chat/Scores tab strip
+                    like the portrait tree's, which is a layout change of its own
+                    and wants its own ticket. */}
                 <div className="game-landscape-side">
                     {headerSection}
                     {statusSection}

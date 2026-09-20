@@ -97,6 +97,9 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   SketchScoreRows: ({ players }: { players: Array<{ id: string; name: string }> }) => (
     <div data-testid="sketch-scores">{players.map((p) => p.name).join(',')}</div>
   ),
+  // The page holds the unsubmitted strokes and guess itself, above its three
+  // layout trees, and starts them from this factory at module scope (#1034).
+  emptySketchAndGuessDraft: () => ({ strokes: [], color: '#1F1B16', isThick: false, isEraser: false, guess: '' }),
 }))
 
 jest.mock('@/components/Chat', () => ({

@@ -25,6 +25,11 @@ interface SketchAndGuessGameBoardProps {
   onAdvanceRound: () => Promise<void>
   isSubmitting: boolean
   isSpectator?: boolean
+  // #1034: the page lays the game out three times (desktop, phone landscape,
+  // phone portrait) and mounts this board in each tree, so anything the player
+  // has started and not submitted has to be owned above them – see `draft`.
+  draft?: SketchAndGuessDraft
+  onDraftChange?: (next: SketchAndGuessDraft) => void
 }
 
 // ─── Drawing content format ────────────────────────────────────────────────
@@ -37,7 +42,7 @@ interface StrokePoint {
   y: number
 }
 
-interface Stroke {
+export interface Stroke {
   color: string
   width: number
   points: StrokePoint[]
@@ -60,6 +65,29 @@ const BRUSH_COLORS = ['#1F1B16', '#E4572E', '#2E86AB', '#3FA34D', '#F2C14E']
 const ERASER_COLOR = '#FFFFFF'
 const BRUSH_WIDTH_THIN = 3
 const BRUSH_WIDTH_THICK = 9
+
+// ─── The unsubmitted half of a round ───────────────────────────────────────
+// Everything the player has produced this round and not yet sent: the strokes
+// on the canvas, the tool they are drawing with, the guess they are typing.
+// It used to live in `useState` inside the two phase views, which was right
+// while the page mounted one board; since the chrome migration (#1034) the page
+// mounts three, one per layout tree, and only the tree matching the current
+// media query is on screen. A rotation or a window drag across 1024px swaps
+// trees, and a per-instance state means the new tree comes up empty – the
+// drawer's work gone with the phase clock still running. So the page owns this
+// and hands the same object to all three.
+
+export interface SketchAndGuessDraft {
+  strokes: Stroke[]
+  color: string
+  isThick: boolean
+  isEraser: boolean
+  guess: string
+}
+
+export function emptySketchAndGuessDraft(): SketchAndGuessDraft {
+  return { strokes: [], color: BRUSH_COLORS[0], isThick: false, isEraser: false, guess: '' }
+}
 
 function parseDrawingContent(content: string | null): DrawingContent | null {
   if (!content) return null
@@ -253,20 +281,23 @@ function SketchCanvas({
 
 function DrawerCanvasView({
   prompt,
+  draft,
+  onDraftChange,
   onSubmit,
   isSubmitting,
   t,
 }: {
   prompt: string
+  draft: SketchAndGuessDraft
+  onDraftChange: (patch: Partial<SketchAndGuessDraft>) => void
   onSubmit: (content: string) => Promise<void>
   isSubmitting: boolean
   t: TFn
 }) {
-  const [strokes, setStrokes] = useState<Stroke[]>([])
-  const [color, setColor] = useState(BRUSH_COLORS[0])
-  const [isThick, setIsThick] = useState(false)
-  const [isEraser, setIsEraser] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+
+  const { strokes, color, isThick, isEraser } = draft
+  const setStrokes = useCallback((next: Stroke[]) => onDraftChange({ strokes: next }), [onDraftChange])
 
   const activeWidth = isThick ? BRUSH_WIDTH_THICK : BRUSH_WIDTH_THIN
   const activeColor = isEraser ? ERASER_COLOR : color
@@ -298,10 +329,7 @@ function DrawerCanvasView({
             key={swatch}
             type="button"
             aria-label={swatch}
-            onClick={() => {
-              setColor(swatch)
-              setIsEraser(false)
-            }}
+            onClick={() => onDraftChange({ color: swatch, isEraser: false })}
             className={`h-7 w-7 rounded-full border-2 transition ${
               !isEraser && color === swatch ? 'scale-110 border-bd-ink' : 'border-[var(--bd-line)]'
             }`}
@@ -310,7 +338,7 @@ function DrawerCanvasView({
         ))}
         <button
           type="button"
-          onClick={() => setIsEraser((v) => !v)}
+          onClick={() => onDraftChange({ isEraser: !isEraser })}
           className={`rounded-full border-2 px-2.5 py-1 text-xs font-semibold ${
             isEraser ? 'border-bd-ink bg-[var(--bd-bg2)]' : 'border-[var(--bd-line)]'
           }`}
@@ -319,7 +347,7 @@ function DrawerCanvasView({
         </button>
         <button
           type="button"
-          onClick={() => setIsThick((v) => !v)}
+          onClick={() => onDraftChange({ isThick: !isThick })}
           className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold"
         >
           <span
@@ -331,7 +359,7 @@ function DrawerCanvasView({
         </button>
         <button
           type="button"
-          onClick={() => setStrokes((s) => s.slice(0, -1))}
+          onClick={() => setStrokes(strokes.slice(0, -1))}
           disabled={strokes.length === 0}
           className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
         >
@@ -383,6 +411,8 @@ function GuesserCanvasView({
   canGuess,
   isDrawer,
   hasGuessed,
+  guess,
+  onGuessChange,
   onSubmitGuess,
   isSubmitting,
   submittedCount,
@@ -393,13 +423,14 @@ function GuesserCanvasView({
   canGuess: boolean
   isDrawer: boolean
   hasGuessed: boolean
+  guess: string
+  onGuessChange: (next: string) => void
   onSubmitGuess: (guess: string) => Promise<void>
   isSubmitting: boolean
   submittedCount: number
   totalGuessers: number
   t: TFn
 }) {
-  const [guess, setGuess] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const parsedContent = useMemo(() => parseDrawingContent(round.drawingContent), [round.drawingContent])
 
@@ -415,8 +446,8 @@ function GuesserCanvasView({
     }
     setValidationError(null)
     await onSubmitGuess(trimmed)
-    setGuess('')
-  }, [guess, isSubmitting, onSubmitGuess, t])
+    onGuessChange('')
+  }, [guess, isSubmitting, onGuessChange, onSubmitGuess, t])
 
   return (
     <div className="sketch-phase">
@@ -439,7 +470,7 @@ function GuesserCanvasView({
           <input
             type="text"
             value={guess}
-            onChange={(e) => setGuess(e.target.value)}
+            onChange={(e) => onGuessChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') void handleSubmit()
             }}
@@ -618,8 +649,26 @@ export default function SketchAndGuessGameBoard({
   onAdvanceRound,
   isSubmitting,
   isSpectator = false,
+  draft,
+  onDraftChange,
 }: SketchAndGuessGameBoardProps) {
   const { t } = useTranslation()
+
+  // A board rendered on its own – a test, or any future single-tree page – keeps
+  // its own draft. A page that mounts the board more than once must pass one in,
+  // or each copy gets its own and the player loses whichever they were not
+  // looking at (#1034).
+  const [localDraft, setLocalDraft] = useState<SketchAndGuessDraft>(emptySketchAndGuessDraft)
+  const activeDraft = draft ?? localDraft
+  const patchDraft = useCallback(
+    (patch: Partial<SketchAndGuessDraft>) => {
+      const next = { ...activeDraft, ...patch }
+      if (onDraftChange) onDraftChange(next)
+      else setLocalDraft(next)
+    },
+    [activeDraft, onDraftChange]
+  )
+  const setGuess = useCallback((next: string) => patchDraft({ guess: next }), [patchDraft])
 
   const currentRound = useMemo(
     () => gameData.rounds.find((r) => r.round === gameData.currentRound) || null,
@@ -657,7 +706,14 @@ export default function SketchAndGuessGameBoard({
 
   if (gameData.phase === 'drawing') {
     return isDrawer ? (
-      <DrawerCanvasView prompt={currentRound.prompt} onSubmit={onSubmitDrawing} isSubmitting={isSubmitting} t={t} />
+      <DrawerCanvasView
+        prompt={currentRound.prompt}
+        draft={activeDraft}
+        onDraftChange={patchDraft}
+        onSubmit={onSubmitDrawing}
+        isSubmitting={isSubmitting}
+        t={t}
+      />
     ) : (
       <AwaitingDrawingView drawerName={drawerName} t={t} />
     )
@@ -669,6 +725,8 @@ export default function SketchAndGuessGameBoard({
       canGuess={!isSpectator && !isDrawer}
       isDrawer={isDrawer}
       hasGuessed={hasGuessed}
+      guess={activeDraft.guess}
+      onGuessChange={setGuess}
       onSubmitGuess={onSubmitGuess}
       isSubmitting={isSubmitting}
       submittedCount={gameData.submittedPlayerIds.length}
