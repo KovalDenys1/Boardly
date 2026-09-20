@@ -666,3 +666,45 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
 }
+
+/**
+ * The same redaction for the other half of the broadcast.
+ *
+ * `broadcastToLobby('sketch-and-guess-action', …)` carries a `state` and a
+ * `data`: the move's own payload, echoed so a client can react to what just
+ * happened. Sanitizing `state` alone left the answer on the wire (#1032, second
+ * pass): a submit-guess move's payload is `{ guess: '<the word>' }`, and the
+ * lobby topic is the one channel every seated player is joined to
+ * (lib/lobby-channel-registry.ts), so the first correct guess – which is the
+ * prompt, spelled out – arrived at every other player the moment it was made.
+ * Nothing in the app subscribes to this event, so no client lost anything when
+ * the payload stopped carrying it; a player watching their own socket did.
+ *
+ * An allowlist rather than a denylist: a payload field reaches the whole lobby
+ * only by being named here, so a new move type leaks nothing by default. The
+ * counters below are the timeout-fallback bookkeeping, which says how many
+ * submissions the server filled in and for whom – all of it already public in
+ * the sanitized state.
+ *
+ * What the round genuinely needs to publish it publishes through `state`:
+ * `submittedPlayerIds` for who has answered, `rounds[].drawingContent` for the
+ * drawing, and the guesses themselves once the reveal makes them safe.
+ */
+const BROADCAST_SAFE_ACTION_EVENT_FIELDS = new Set([
+  'timeoutWindowsConsumed',
+  'autoSubmittedDrawings',
+  'autoSubmittedGuesses',
+  'autoSubmittedPlayerIds',
+])
+
+export function sanitizeSketchAndGuessActionEventForBroadcast(
+  data: Record<string, unknown> | undefined
+): Record<string, unknown> {
+  if (!data) return {}
+
+  const safe: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (BROADCAST_SAFE_ACTION_EVENT_FIELDS.has(key)) safe[key] = value
+  }
+  return safe
+}
