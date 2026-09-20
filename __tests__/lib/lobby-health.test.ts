@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { cleanupStaleLobbiesAndGames, sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
+import { buildGameStartFields } from '@/lib/game-persistence'
 import { prisma } from '@/lib/db'
 
 jest.mock('@/lib/db', () => ({
@@ -13,9 +14,18 @@ jest.mock('@/lib/db', () => ({
       updateMany: jest.fn(),
       count: jest.fn(),
       // Prisma field references, used by the #1048 recurrence counter to compare
-      // two columns of the same row.
+      // two columns of the same row. This is the real value the generated client
+      // hands back, printed from it rather than invented, so a test that passes
+      // here is asserting the shape production actually sends:
+      //   new PrismaClient(...).games.fields.startedAt
+      //   -> {"modelName":"Games","name":"startedAt","typeName":"DateTime","isEnum":false}
       fields: {
-        startedAt: 'Games.startedAt',
+        startedAt: {
+          modelName: 'Games',
+          name: 'startedAt',
+          typeName: 'DateTime',
+          isEnum: false,
+        },
       },
     },
   },
@@ -30,6 +40,34 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
+
+// Stands in for Postgres on a single row: takes the `lastMoveAt` clause the code
+// actually sent and applies it to a pair of stamps. It reads the operator out of
+// the call rather than restating the one lib/lobby-health.ts chose, so swapping
+// `lt` for `lte` there changes what this returns instead of being invisible here.
+const COMPARISONS = {
+  lt: (a, b) => a < b,
+  lte: (a, b) => a <= b,
+  gt: (a, b) => a > b,
+  gte: (a, b) => a >= b,
+}
+
+const countsRow = (clause, row) => {
+  const entries = Object.entries(clause)
+  expect(entries).toHaveLength(1)
+
+  const [operator, fieldRef] = entries[0]
+  // The counter compares two columns of the same row, so the right-hand side has
+  // to be the Prisma field reference and not a value.
+  expect(fieldRef).toEqual(mockPrisma.games.fields.startedAt)
+
+  const compare = COMPARISONS[operator]
+  if (!compare) {
+    throw new Error(`lastMoveAt was compared with an operator this test cannot evaluate: ${operator}`)
+  }
+
+  return compare(row.lastMoveAt.getTime(), row.startedAt.getTime())
+}
 
 describe('cleanupStaleLobbiesAndGames', () => {
   beforeEach(() => {
@@ -388,9 +426,41 @@ describe('cleanupStaleLobbiesAndGames', () => {
       where: {
         status: 'playing',
         startedAt: { not: null },
-        lastMoveAt: { lte: 'Games.startedAt' },
+        lastMoveAt: { lt: mockPrisma.games.fields.startedAt },
       },
     })
+  })
+
+  it('does not count a game that started correctly and has had no move yet (#1048)', async () => {
+    mockPrisma.lobbies.findMany.mockResolvedValue([] as any)
+
+    await cleanupStaleLobbiesAndGames({
+      now: new Date('2026-02-27T21:00:00.000Z'),
+      playingStaleHours: 2,
+    })
+
+    const clause = mockPrisma.games.count.mock.calls[0][0].where.lastMoveAt
+
+    // The stamps buildGameStartFields writes are the same instant, on purpose, so
+    // a freshly started game has lastMoveAt exactly equal to startedAt. Built here
+    // rather than hand-written, so the two modules cannot drift apart quietly.
+    const started = buildGameStartFields(new Date('2026-02-27T20:59:00.000Z'))
+    expect(countsRow(clause, started)).toBe(false)
+
+    // The defect the counter exists for: the move clock still holds the waiting
+    // row's `@default(now())`, forty minutes before anyone pressed start.
+    const unstamped = {
+      startedAt: new Date('2026-02-27T20:59:00.000Z'),
+      lastMoveAt: new Date('2026-02-27T20:19:00.000Z'),
+    }
+    expect(countsRow(clause, unstamped)).toBe(true)
+
+    // And a game somebody has actually moved in stays out of it.
+    const played = {
+      startedAt: new Date('2026-02-27T20:59:00.000Z'),
+      lastMoveAt: new Date('2026-02-27T20:59:14.000Z'),
+    }
+    expect(countsRow(clause, played)).toBe(false)
   })
 })
 

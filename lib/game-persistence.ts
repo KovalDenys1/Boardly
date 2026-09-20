@@ -262,18 +262,28 @@ export interface GameStartFields {
  *    a move, because it was measuring how long the lobby had sat waiting with
  *    the sign flipped. It was never "seconds of real play".
  *
- * The engine already stamps `state.lastMoveAt` inside `startGame()`; this puts
- * the same event on the column so the two clocks agree. `now` wins over a state
- * stamp behind it, so the column can never read earlier than the `startedAt`
- * written in the same update - that ordering is what the metric relies on.
+ * The engine already stamps `state.lastMoveAt` inside `startGame()`; this puts the
+ * same event on the column. All three stamps are the one `now`, on purpose: a
+ * started game has played for zero seconds, and writing them as the same instant
+ * is what makes that true rather than nearly true.
+ *
+ * Two readers depend on the identity, not merely on the ordering:
+ *
+ * - `lastMoveAt - startedAt` is zero before the first move, which is the honest
+ *   play time, instead of the negative the seeded column produced.
+ * - the #1048 recurrence counter in `lib/lobby-health.ts` asks for rows whose
+ *   `lastMoveAt` is STRICTLY before `startedAt`. Give the two stamps any daylight
+ *   in the wrong direction here and every healthy start is counted as a defect.
+ *
+ * An earlier revision took the engine's `state.lastMoveAt` and preferred it when
+ * it was ahead of `now`. It never could be: the only caller evaluates `now` after
+ * `startGame()` has already stamped the state, so that branch was unreachable and
+ * only the test could enter it.
  */
-export function buildGameStartFields(stateLastMoveAt: unknown, now: Date = new Date()): GameStartFields {
-  const stamped =
-    typeof stateLastMoveAt === 'number' && Number.isFinite(stateLastMoveAt) ? stateLastMoveAt : null
-
+export function buildGameStartFields(now: Date = new Date()): GameStartFields {
   return {
     startedAt: now,
-    lastMoveAt: stamped !== null && stamped > now.getTime() ? new Date(stamped) : now,
+    lastMoveAt: now,
     updatedAt: now,
   }
 }

@@ -378,8 +378,11 @@ describe('POST /api/game/create', () => {
     const { startedAt, lastMoveAt } = startUpdate.data
     expect(startedAt).toBeInstanceOf(Date)
     expect(lastMoveAt).toBeInstanceOf(Date)
-    // The invariant every reader of this column depends on.
-    expect(lastMoveAt.getTime()).toBeGreaterThanOrEqual(startedAt.getTime())
+    // The invariant every reader of this column depends on, and it is exact: the
+    // route writes one instant into both columns, so the game reads as zero
+    // seconds of play until somebody moves, and the strict comparison the #1048
+    // counter in lib/lobby-health.ts makes never matches a healthy row.
+    expect(lastMoveAt.getTime()).toBe(startedAt.getTime())
     // And it is not the value the waiting row was carrying.
     expect(lastMoveAt.getTime()).toBeGreaterThan(waitingRowCreatedAt.getTime())
 

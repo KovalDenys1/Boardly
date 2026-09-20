@@ -491,7 +491,7 @@ export async function POST(request: NextRequest) {
     // startedAt and lastMoveAt are written together: this is the only place a
     // game becomes `playing`, so it is the only place the move clock can be
     // started (#1048). See buildGameStartFields for what leaving it behind cost.
-    const startFields = buildGameStartFields(startedState.lastMoveAt)
+    const startFields = buildGameStartFields()
     const game = await prisma.games.update({
       where: { id: waitingGame.id },
       data: {

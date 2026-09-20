@@ -158,37 +158,43 @@ describe('buildGameStartFields (#1048)', () => {
   const now = new Date('2026-09-20T12:00:00.000Z')
 
   it('starts the move clock at the start, not at the waiting row', () => {
-    // The engine's startGame() stamps state.lastMoveAt a few ms before the route
-    // reaches the update, which is the ordinary case.
-    const fields = buildGameStartFields(now.getTime() - 3, now)
+    const fields = buildGameStartFields(now)
 
     expect(fields.startedAt).toEqual(now)
     expect(fields.lastMoveAt).toEqual(now)
-    expect(fields.lastMoveAt.getTime()).toBeGreaterThanOrEqual(fields.startedAt.getTime())
+    expect(fields.updatedAt).toEqual(now)
   })
 
-  it('never returns a move clock earlier than the start it is written with', () => {
-    // A waiting row created 40 minutes before the host pressed start. This is the
-    // value the column actually held, and reading it back as play time is what
-    // produced tic_tac_toe's "MINUS 1s median seconds of real play".
-    const waitingRowCreatedAt = now.getTime() - 40 * 60 * 1000
+  it('reads as zero seconds of play before the first move, never a negative', () => {
+    // The column used to hold the waiting row's `@default(now())` - a lobby that
+    // had been open forty minutes by the time the host pressed start - and
+    // lastMoveAt - startedAt was read as seconds of real play, which is where
+    // tic_tac_toe's "minus 1s median" came from. A game nobody has moved in has
+    // played for zero seconds.
+    const fields = buildGameStartFields(now)
 
-    const fields = buildGameStartFields(waitingRowCreatedAt, now)
-
-    expect(fields.lastMoveAt.getTime()).toBeGreaterThanOrEqual(fields.startedAt.getTime())
+    expect(fields.lastMoveAt.getTime() - fields.startedAt.getTime()).toBe(0)
   })
 
-  it('falls back to now when the state carries no usable stamp', () => {
-    for (const value of [undefined, null, NaN, 'nope', {}]) {
-      const fields = buildGameStartFields(value, now)
-      expect(fields.lastMoveAt).toEqual(now)
-    }
+  it('leaves no gap for the recurrence counter to read as a defect', () => {
+    // lib/lobby-health.ts counts a playing game as unstamped when lastMoveAt is
+    // STRICTLY before startedAt. That operator is only correct because these two
+    // are the same instant: a lastMoveAt even a millisecond behind startedAt here
+    // would make every healthy start show up in that count forever.
+    const fields = buildGameStartFields(now)
+
+    expect(fields.lastMoveAt.getTime()).toBe(fields.startedAt.getTime())
   })
 
-  it('keeps a state stamp that is ahead of now', () => {
-    const ahead = now.getTime() + 250
-    const fields = buildGameStartFields(ahead, now)
+  it('defaults to the current time when called with no argument', () => {
+    // How the route calls it. The bound is loose on purpose - the point is that
+    // the default is a fresh clock reading, not a fixed or absent one.
+    const before = Date.now()
+    const fields = buildGameStartFields()
+    const after = Date.now()
 
-    expect(fields.lastMoveAt.getTime()).toBe(ahead)
+    expect(fields.startedAt.getTime()).toBeGreaterThanOrEqual(before)
+    expect(fields.startedAt.getTime()).toBeLessThanOrEqual(after)
+    expect(fields.lastMoveAt.getTime()).toBe(fields.startedAt.getTime())
   })
 })

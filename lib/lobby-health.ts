@@ -19,10 +19,11 @@ export type CleanupStaleLobbyGamesResult = {
   cancelledWaitingGames: number
   abandonedPlayingGames: number
   /**
-   * Playing games whose `lastMoveAt` is at or before their own `startedAt` (#1048).
-   * Anything above zero means a start path put a game into `playing` without
-   * stamping the move clock, so idle sweeps and play-time figures are both
-   * reading a lobby timestamp.
+   * Playing games whose `lastMoveAt` is strictly before their own `startedAt`
+   * (#1048). Equal stamps are the healthy case - a started game nobody has moved
+   * in yet - so anything above zero means a start path put a game into `playing`
+   * without stamping the move clock, and idle sweeps and play-time figures are
+   * both reading a lobby timestamp.
    */
   playingGamesWithPreStartMoveClock: number
   waitingStaleHours: number
@@ -292,11 +293,20 @@ export async function cleanupStaleLobbiesAndGames(
   // figures computed from that column go negative and silently wrong again.
   // Counted every sweep so the next occurrence shows up in the cron output
   // instead of needing a 30-day query to find.
+  //
+  // The comparison is strict, and that is the whole detector. `buildGameStartFields`
+  // writes `startedAt` and `lastMoveAt` as the same instant, so a correctly started
+  // game that nobody has moved in yet has them exactly equal - `lte` would match
+  // every healthy row and the count could never read zero. Only a move clock
+  // strictly behind the start is impossible to produce by starting a game, which is
+  // what makes a nonzero count mean something. The rows that predate the fix are
+  // cleared by 20260920190000_backfill_game_move_clock, so history does not sit in
+  // this count either.
   result.playingGamesWithPreStartMoveClock = await prisma.games.count({
     where: {
       status: 'playing',
       startedAt: { not: null },
-      lastMoveAt: { lte: prisma.games.fields.startedAt },
+      lastMoveAt: { lt: prisma.games.fields.startedAt },
     },
   })
   if (result.playingGamesWithPreStartMoveClock > 0) {
