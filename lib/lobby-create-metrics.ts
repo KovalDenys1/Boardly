@@ -1,4 +1,5 @@
-import { trackLobbyCreateReady, type AnalyticsGameType } from '@/lib/analytics'
+import { trackLobbyCreateReady } from '@/lib/analytics'
+import { toAnalyticsGameType, type AnalyticsGameType } from '@/lib/analytics-game-types'
 import { clientLogger } from '@/lib/client-logger'
 import { readSession, removeSession, writeSession } from '@/lib/safe-storage'
 
@@ -12,22 +13,11 @@ interface PendingLobbyCreateMetric {
 const PENDING_LOBBY_CREATE_KEY = 'boardly.pendingLobbyCreateMetric.v1'
 const PENDING_LOBBY_CREATE_TTL_MS = 10 * 60 * 1000
 
-const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
-  'yahtzee',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-  'guess_the_spy',
-  'memory',
-  'connect_four',
-  'alias',
-  'liars_party',
-])
-
+// The list this used to keep locally went stale: it never gained `sketch_and_guess`,
+// so that game was silently recorded as Yahtzee. Narrow through the helper that lives
+// beside the union instead, so a new game can only ever be added in one place (#1044).
 function normalizeGameType(value: unknown, fallback: AnalyticsGameType = 'yahtzee'): AnalyticsGameType {
-  if (typeof value === 'string' && ANALYTICS_GAME_TYPES.has(value as AnalyticsGameType)) {
-    return value as AnalyticsGameType
-  }
-  return fallback
+  return toAnalyticsGameType(value) ?? fallback
 }
 
 function readPendingMetric(): PendingLobbyCreateMetric | null {

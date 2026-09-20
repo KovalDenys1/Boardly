@@ -4,6 +4,7 @@ import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
 import type { InviteShareMethod } from './invite-share'
 import type { PremiumPlan } from './premium-plans'
+import type { AnalyticsGameType } from './analytics-game-types'
 
 /**
  * Analytics wrapper for tracking game events
@@ -11,40 +12,12 @@ import type { PremiumPlan } from './premium-plans'
  */
 
 type AnalyticsPropertyValue = string | number | boolean | null
-export type AnalyticsGameType =
-  | 'yahtzee'
-  | 'tic_tac_toe'
-  | 'rock_paper_scissors'
-  | 'guess_the_spy'
-  | 'memory'
-  | 'alias'
-  | 'liars_party'
-  | 'connect_four'
-  | 'sketch_and_guess'
+
+// The union, the list behind it and the narrowing live in their own module so that
+// mocking this one does not take the narrowing with it (#1044). Re-exported so every
+// existing `from '@/lib/analytics'` import keeps working.
+export { ANALYTICS_GAME_TYPES, toAnalyticsGameType, type AnalyticsGameType } from './analytics-game-types'
 type GameType = AnalyticsGameType
-
-const ANALYTICS_GAME_TYPES: readonly AnalyticsGameType[] = [
-  'yahtzee',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-  'guess_the_spy',
-  'memory',
-  'alias',
-  'liars_party',
-  'connect_four',
-  'sketch_and_guess',
-]
-
-/**
- * Narrows the loosely-typed `lobby.gameType` (`string` on the `Lobby` type) to the
- * analytics union, or `undefined` when it is a game analytics does not know. Lives next
- * to the union so the list cannot drift away from it.
- */
-export function toAnalyticsGameType(value: unknown): AnalyticsGameType | undefined {
-  return typeof value === 'string' && (ANALYTICS_GAME_TYPES as readonly string[]).includes(value)
-    ? (value as AnalyticsGameType)
-    : undefined
-}
 
 type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
 type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
