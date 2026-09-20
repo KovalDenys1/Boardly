@@ -1199,6 +1199,8 @@ const uk: Translation = {
       waitingForPlayer: 'Очікування гравця...',
       openSlot: 'Вільне місце',
       tryBotGamesTitle: 'Все ще чекаєте? У ці гри можна зіграти прямо зараз із ботом:',
+      discordAfterGame: 'Суперники завжди знайдуться в Discord',
+      aloneDiscordHint: 'Усе ще самі? Гравці спілкуються в нашому Discord – зазирніть і поділіться кодом',
       howToPlayTitle: 'Як грати',
       howToPlayDescription: 'Короткі інструкції перед початком гри',
       howToPlayReady: 'Дочекайтесь, поки до лобі приєднається достатньо гравців.',

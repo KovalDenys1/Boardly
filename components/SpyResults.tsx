@@ -3,7 +3,7 @@
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
+import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -25,6 +25,10 @@ interface SpyResultsProps {
   onBackToLobby?: () => void
   isGuest?: boolean
   registerUrl?: string
+  /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
+  lobbyCode?: string
+  /** Decided by the caller — a spectator is neither registered here nor a guest (#982). */
+  isRegistered?: boolean
 }
 
 export default function SpyResults({
@@ -45,6 +49,8 @@ export default function SpyResults({
   onBackToLobby,
   isGuest = false,
   registerUrl = '/auth/register',
+  lobbyCode,
+  isRegistered = false,
 }: SpyResultsProps) {
   const { t } = useTranslation()
 
@@ -203,8 +209,17 @@ export default function SpyResults({
           )}
         </div>
 
-        {isGameOver && isGuest && (
-          <GuestConversionNudge registerUrl={registerUrl} />
+        {isGameOver && (
+          <div className="mx-auto mt-4 w-full max-w-sm">
+            <AfterGameActions
+              variant="card"
+              inviteCode={lobbyCode}
+              gameType="guess_the_spy"
+              isGuest={isGuest}
+              isRegistered={isRegistered}
+              registerUrl={registerUrl}
+            />
+          </div>
         )}
       </div>
     </div>

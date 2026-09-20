@@ -22,6 +22,30 @@ export type AnalyticsGameType =
   | 'connect_four'
   | 'sketch_and_guess'
 type GameType = AnalyticsGameType
+
+const ANALYTICS_GAME_TYPES: readonly AnalyticsGameType[] = [
+  'yahtzee',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+  'guess_the_spy',
+  'memory',
+  'alias',
+  'liars_party',
+  'connect_four',
+  'sketch_and_guess',
+]
+
+/**
+ * Narrows the loosely-typed `lobby.gameType` (`string` on the `Lobby` type) to the
+ * analytics union, or `undefined` when it is a game analytics does not know. Lives next
+ * to the union so the list cannot drift away from it.
+ */
+export function toAnalyticsGameType(value: unknown): AnalyticsGameType | undefined {
+  return typeof value === 'string' && (ANALYTICS_GAME_TYPES as readonly string[]).includes(value)
+    ? (value as AnalyticsGameType)
+    : undefined
+}
+
 type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
 type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
 
@@ -657,6 +681,25 @@ export function trackPremiumCta(source: string, plan?: PremiumPlan): void {
   track('feature_used', { feature: 'premium_cta', ...payload })
   emitOperationalEvent('premium_cta_clicked', payload)
   clientLogger.log('[analytics] Premium CTA', payload)
+}
+
+/** Where a Discord invite was offered; both surfaces are moments of need, not decoration. */
+export type DiscordCtaSource = 'after_game' | 'waiting_room'
+
+/**
+ * Someone took the Discord invite (#982). The server exists and nothing on the site ever
+ * invited a player into it at the moment it would help — alone in a waiting room, or a
+ * game that has just ended. Only the click is tracked: the line renders on every result
+ * screen, so a "shown" event would be noise at the volume of every finished game.
+ */
+export function trackDiscordCta(source: DiscordCtaSource, gameType?: GameType): void {
+  const payload = {
+    source,
+    ...(gameType ? { game_type: gameType } : {}),
+  } satisfies Record<string, AnalyticsPropertyValue>
+  track('feature_used', { feature: 'discord_cta', ...payload })
+  emitOperationalEvent('discord_cta_clicked', payload)
+  clientLogger.log('[analytics] Discord CTA', payload)
 }
 
 /**

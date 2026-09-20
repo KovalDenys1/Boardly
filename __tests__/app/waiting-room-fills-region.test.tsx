@@ -4,6 +4,9 @@
 import { render, screen } from '@testing-library/react'
 import WaitingRoom from '@/app/lobby/[code]/components/WaitingRoom'
 
+// WaitingRoom reaches lib/analytics through WaitingRoomDiscordHint (#982), and
+// @vercel/analytics ships ESM that jest does not transform.
+jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
 jest.mock('@/lib/sounds', () => ({ sounds: { play: jest.fn() } }))
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({ t: (key: string) => key }),

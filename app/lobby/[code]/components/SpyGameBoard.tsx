@@ -781,6 +781,8 @@ export default function SpyGameBoard({
             onBackToLobby={isSpectator ? undefined : onBackToLobby}
             isGuest={isSpectator ? false : isGuest}
             registerUrl={registerUrl}
+            lobbyCode={lobbyCode}
+            isRegistered={!isSpectator && !isGuest && !!currentUserId}
           />
         )}
       </div>

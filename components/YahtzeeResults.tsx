@@ -5,7 +5,7 @@ import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { YahtzeeMode, getActiveCategories } from '@/lib/yahtzee'
-import GuestConversionNudge from './GuestConversionNudge'
+import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
@@ -23,6 +23,10 @@ interface YahtzeeResultsProps {
   autoReturnAt?: number | null
   isGuest?: boolean
   registerUrl?: string
+  /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
+  lobbyCode?: string
+  /** `status === 'authenticated' && !isGuest`, decided by the caller (#982). */
+  isRegistered?: boolean
 }
 
 function RankIcon({ rank }: { rank: number }) {
@@ -59,6 +63,8 @@ export default function YahtzeeResults({
   autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
+  lobbyCode,
+  isRegistered = false,
   mode = 'classic',
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
@@ -378,11 +384,16 @@ export default function YahtzeeResults({
           </div>
         </div>
 
-        {isGuest && (
-          <div className="mt-4">
-            <GuestConversionNudge registerUrl={registerUrl} />
-          </div>
-        )}
+        <div className="mx-auto mt-4 w-full max-w-sm">
+          <AfterGameActions
+            variant="card"
+            inviteCode={lobbyCode}
+            gameType="yahtzee"
+            isGuest={isGuest}
+            isRegistered={isRegistered}
+            registerUrl={registerUrl}
+          />
+        </div>
       </div>
     </div>
   )

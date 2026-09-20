@@ -15,6 +15,7 @@ import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
@@ -463,9 +464,14 @@ interface GameOverScreenProps {
   onReturnToLobby: () => void
   onBackToGames: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
+  /** Lobby code for the after-game share button (#982). */
+  code: string
+  isGuest: boolean
+  /** Decided by the caller; gates the push ask slot (#982). */
+  isRegistered: boolean
 }
 
-function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, onBackToGames, t }: GameOverScreenProps) {
+function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, onBackToGames, t, code, isGuest, isRegistered }: GameOverScreenProps) {
   const winner = players.find(p => p.userId === data.winnerId || p.id === data.winnerId)
   const winnerName = winner?.name ?? data.winnerId ?? '?'
 
@@ -528,6 +534,17 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
       <button onClick={onBackToGames} className="text-sm text-white/70 underline">
         {t('lobby.leave')}
       </button>
+      {/* Overlay variant, not card: this screen is white-on-gradient (#982). */}
+      <div className="w-full max-w-sm">
+        <AfterGameActions
+          variant="overlay"
+          inviteCode={code}
+          gameType="liars_party"
+          isGuest={isGuest}
+          isRegistered={isRegistered}
+          registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+        />
+      </div>
     </div>
   )
 }
@@ -932,6 +949,9 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         onReturnToLobby={handleReturnToWaiting}
         onBackToGames={() => router.push('/games')}
         t={t}
+        code={code}
+        isGuest={!isSpectator && isGuest}
+        isRegistered={!isSpectator && status === 'authenticated' && !isGuest}
       />
     )
   }
