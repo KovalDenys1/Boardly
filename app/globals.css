@@ -3167,3 +3167,198 @@ html.dark .memory-score-row {
 html.dark .memory-tile-face {
   background: var(--bd-card-warm);
 }
+
+/* ===== Sketch & Guess (#1034) =====
+   The page composes the shared .ttt-* family; only three things are genuinely
+   different from a two-player board game and they live here.
+
+   1. The board card is a column, not a centred square. A drawer needs a prompt
+      strip, a toolbar and a submit button around the canvas, and a guesser an
+      input and a button, so the card stacks them and gives the canvas whatever
+      height is left.
+   2. The scoreboard row spans the whole first grid row. Every other kit game
+      puts a room card beside it; here the seat count runs to ten, so the roster
+      lives in the scores panel on the right and the header gets the full width
+      rather than a card with two names in it and a hole next to them.
+   3. The canvas sizes from its own wrapper, not from the screen: the wrapper is
+      a size container, so `100cqh` is the height actually left over after the
+      phase's controls, whichever phase is on screen. */
+
+.sketch-board-card {
+  container-type: size;
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.sketch-phase {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Last resort, the same bargain .game-landscape-side strikes: below roughly
+     420px of card height the toolbar plus the button stop fitting, and a column
+     that scrolls still hands the drawer every control. */
+  overflow-y: auto;
+}
+.sketch-phase > * { flex-shrink: 0; }
+
+.sketch-canvas-wrap {
+  flex: 1 1 auto;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+/* min() of a width-derived and a height-derived size, per the responsive DoD:
+   100% is the wrapper's width, 100cqh its height. */
+.sketch-canvas-frame {
+  width: min(100%, 100cqh, 480px);
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--bd-line);
+  background: #fff;
+  box-shadow: inset 0 2px 6px rgba(31,27,22,0.08);
+  touch-action: none;
+  user-select: none;
+}
+.sketch-canvas-frame > canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+/* The scores panel: round, phase and every seat with its score. On desktop it
+   is the top of the right column, on mobile the Scores tab. */
+.sketch-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+.ttt-mobile-content .sketch-panel { flex: 1; min-height: 0; max-height: none; }
+.sketch-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.sketch-panel__list::-webkit-scrollbar { width: 6px; }
+.sketch-panel__list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+
+.sketch-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: var(--bd-bg2);
+  font-size: 13px;
+  min-width: 0;
+}
+.sketch-score-row--me { border-color: var(--bd-ink); }
+.sketch-score-row__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--bd-ink); }
+.sketch-score-row__score { flex-shrink: 0; font-weight: 700; color: var(--bd-ink); font-family: ui-monospace, monospace; }
+
+/* The scoreboard row owns the whole first grid row (see 2 above). */
+.ttt-grid > .sketch-header-card { grid-column: 1 / -1; }
+
+.sketch-chat-note {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--bd-line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bd-ink-muted);
+  text-align: center;
+}
+
+html.dark .sketch-board-card,
+html.dark .sketch-panel { background: var(--bd-card-warm); }
+html.dark .sketch-score-row { background: var(--bd-bg2); }
+
+/* The board card is flex-sized by whichever of the three layout trees is on
+   screen, exactly as .ttt-board-card is – it only needs saying separately
+   because the selectors name the class. */
+.ttt-center-col > .sketch-board-card,
+.game-landscape-board > .sketch-board-card,
+.ttt-mobile-content > .sketch-board-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The scoreboard row spans the full grid width here (there is no room card to
+   sit beside it), and at 1280 that stretched each 1fr cell to ~580px – a
+   player card is an avatar and two short lines, so it became a wide empty
+   plate, which is exactly what the layout DoD calls a card with small content
+   floating in it. Cap the cards and let the cells keep the slack: the left card
+   stays left, the right card and Leave stay hard right. */
+.sketch-header-card .game-player-card { max-width: 340px; }
+.sketch-header-card .game-scoreboard-right-card { flex: 0 1 auto; }
+
+/* Portrait phones: the same squeeze #901 fixed for the landscape side column,
+   for the same reason. Two 42px player cards plus a three-line ROUND/1-of-3/
+   PHASE block plus Leave need about 330px and a 320px screen leaves 280 – at
+   which point the three grid cells overlap and the drawer's name, the round and
+   the opponent are printed on top of each other. The round drops to its short
+   form, and the viewer's own card goes: "me" is one tap away in Standings,
+   highlighted, while who is drawing is the thing the row exists to say. */
+@media (max-width: 1023px) {
+  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .ttt-mobile-layout .sketch-header-card .game-scoreboard-right-card { display: none; }
+  .ttt-mobile-layout .sketch-header-card .game-player-card { max-width: none; }
+  /* The two 1fr cells are what pushes the drawer card out of its own track:
+     the right one keeps a full share of the width for a 36px icon button. Let
+     it shrink to what it holds and the card fits inside its cell instead of
+     spilling into the round counter. */
+  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+
+/* Phone landscape: the side column is min(300px, 42vw) and this header has one
+   more thing in it than the other kit games put there – Leave rides in the
+   scoreboard trailing slot rather than in a room card beside it. Measured at
+   844x390 the round counter printed 13px over the opponent name, in all three
+   phases. Same answer as portrait: the viewer card goes, the drawer stays, and
+   the right cell shrinks to the button. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-landscape-side .sketch-header-card .game-scoreboard-right-card { display: none; }
+  .game-landscape-side .sketch-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+
+  /* The header does not give way to the chat. Chat is the flexible member of
+     this column and carries the floor that absorbs a squeeze (#902); this card
+     is `overflow: hidden`, so shrinking it does not reflow anything, it cuts.
+     It needs 66px – a 42px scoreboard row inside 12px of padding – and default
+     flex shrink handed it 60 at 844x390, 58 at 667x375 and 56 at 740x360, which
+     ate the padding and clipped the bottom of the avatars and of the Leave
+     button. With this it is 68 everywhere and chat is still 146 or more, well
+     over its 128 floor. */
+  .game-landscape-side > .sketch-header-card { flex: 0 0 auto; }
+}

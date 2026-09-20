@@ -1,18 +1,32 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import LeaveIcon from '@/components/LeaveIcon'
 import ConfirmModal from '@/components/ConfirmModal'
-import SketchAndGuessGameBoard from '@/components/SketchAndGuessGameBoard'
+import Chat from '@/components/Chat'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import SketchAndGuessGameBoard, {
+    SketchScoreRows,
+    emptySketchAndGuessDraft,
+    type SketchAndGuessDraft,
+} from '@/components/SketchAndGuessGameBoard'
 import { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
+import { useGameTimer } from '@/app/lobby/[code]/hooks/useGameTimer'
+import { useLobbyChat, useLobbyChatHistory } from '@/app/lobby/[code]/hooks/useLobbyChat'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -29,12 +43,19 @@ import { SKETCH_PHASE_SECONDS } from '@/lib/games/sketch-and-guess-phases'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
+interface SketchPlayer {
+    id: string
+    name: string
+    avatarUrl: string | null
+    isPremium: boolean
+}
+
 interface SketchAndGuessGame {
     id: string
     lobbyCode: string
     gameType: string
     status: SketchLifecycleStatus
-    players: Array<{ id: string; name: string }>
+    players: SketchPlayer[]
     data: SketchAndGuessGameData
     /** When the current phase started; the engine stamps it on every phase change (#1022). */
     lastMoveAt?: number
@@ -60,6 +81,19 @@ interface SketchAndGuessLobbyPageProps {
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
+const SKETCH_ACCENT = 'var(--bd-mint)'
+const SKETCH_ACCENT_DEEP = 'var(--bd-mint-deep)'
+
+/** The engine's three phases, as a number the turn timer can hang a signature off. */
+const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { drawing: 0, guessing: 1, reveal: 2 }
+
+/**
+ * What a round starts with, and what a page shows for any round the draft below
+ * is not holding. One shared frozen instance rather than a fresh object per
+ * render, so the canvas is not handed a new `strokes` array every time the
+ * lobby snapshot changes.
+ */
+const EMPTY_DRAFT: SketchAndGuessDraft = Object.freeze(emptySketchAndGuessDraft())
 
 function defaultSketchState(): SketchAndGuessGameData {
     return {
@@ -144,6 +178,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isReturningToWaiting, setIsReturningToWaiting] = useState(false)
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
+    const [mobileTab, setMobileTab] = useState<'board' | 'scores' | 'chat'>('board')
+    const [overlayInspecting, setOverlayInspecting] = useState(false)
 
     const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(
         code,
@@ -159,6 +195,17 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     const lifecycleRedirectInFlightRef = useRef(false)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'sketch_and_guess').minPlayersRequired
+
+    const {
+        chatMessages,
+        sendChatMessage,
+        unreadCount: chatUnreadCount,
+        resetUnread: resetChatUnread,
+        someoneTyping,
+        onChatMessage,
+        onPlayerTyping,
+        mergeHistoryMessages,
+    } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -230,11 +277,16 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             }
         }
 
-        const players = Array.isArray(activeGame.players)
-            ? activeGame.players.map((player: Record<string, unknown>) => ({
-                  id: String(player?.userId || player?.id || ''),
-                  name: String((player?.user as Record<string, unknown>)?.username || player?.name || 'Unknown'),
-              }))
+        const players: SketchPlayer[] = Array.isArray(activeGame.players)
+            ? activeGame.players.map((player: Record<string, unknown>) => {
+                  const user = (player?.user as Record<string, unknown>) || {}
+                  return {
+                      id: String(player?.userId || player?.id || ''),
+                      name: String(user?.username || player?.name || 'Unknown'),
+                      avatarUrl: (user?.avatarUrl as string | null) ?? (user?.image as string | null) ?? null,
+                      isPremium: !!user?.isPremium,
+                  }
+              })
             : []
 
         const normalizedStatus: SketchLifecycleStatus =
@@ -346,43 +398,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         void loadLobbyData()
     }, [status, isGuest, guestToken, isSpectator, loadLobbyData])
 
-    // #1022: this game has a server-side timeout — it runs inside GET /api/lobby/[code]
-    // — but during play the page only fetches when a broadcast arrives, and a
-    // broadcast needs somebody to still be moving. Let the drawer close their tab and
-    // nothing asks: the phase clock runs out, `applyTimeoutFallback` never runs and the
-    // round sits there until a player reloads. So when the phase is overdue, ask.
-    // Throttled by the same recovery the other games use (#989): one request per ten
-    // seconds, six at most, then it stops rather than hammering a dead round.
-    useEffect(() => {
-        const game = lobby?.game
-        if (!game || game.status !== 'playing') return
-
-        const phaseStartedAt = game.lastMoveAt
-        if (typeof phaseStartedAt !== 'number') return
-
-        const phaseSeconds = SKETCH_PHASE_SECONDS[game.data.phase] ?? SKETCH_PHASE_SECONDS.drawing
-        const overdueAt = phaseStartedAt + phaseSeconds * 1000
-
-        const check = () => {
-            const now = Date.now()
-            if (now < overdueAt) return
-            const decision = stuckPhaseRecoveryRef.current.decide(
-                turnSignatureOf(game.data.currentRound, phaseStartedAt),
-                now
-            )
-            if (decision !== 'resync') return
-            clientLogger.warn('⏰ Sketch & Guess phase overdue, asking the server', {
-                code,
-                phase: game.data.phase,
-            })
-            void loadLobbyData()
-        }
-
-        check()
-        const interval = setInterval(check, 2_000)
-        return () => clearInterval(interval)
-    }, [lobby?.game, code, loadLobbyData])
-
     const handleGameUpdate = useCallback(async (_payload: unknown) => {
         await loadLobbyData()
         clientLogger.log('📡 Sketch & Guess: Received game update')
@@ -394,11 +409,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     }, [loadLobbyData])
 
     const handleGameReset = useCallback(() => {
+        stuckPhaseRecoveryRef.current.reset()
+        setOverlayInspecting(false)
         if (onGameReset) onGameReset()
         else router.push(`/lobby/${code}`)
     }, [code, onGameReset, router])
 
-    const { isConnected: socketConnected } = useRealtimeConnection({
+    const { isConnected: socketConnected, isReconnecting } = useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
         // landed while the socket was down is gone. Without this the board
         // stayed frozen on pre-gap state and neither player could move.
@@ -410,7 +427,11 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onGameReset: handleGameReset,
+        onChatMessage,
+        onPlayerTyping,
     })
+
+    useLobbyChatHistory({ code, isConnected: socketConnected, isReconnecting, mergeHistoryMessages })
 
     const submitAction = useCallback(
         async (action: 'submit-drawing' | 'submit-guess' | 'advance-round', data: Record<string, unknown>) => {
@@ -469,10 +490,16 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                         if (!prevLobby?.game) return prevLobby
                         const responsePlayers = Array.isArray(authoritativeState?.players)
                             ? (authoritativeState.players as Array<Record<string, unknown>>)
-                                  .map((player) => ({
-                                      id: typeof player?.id === 'string' ? player.id : '',
-                                      name: prevLobby.game!.players.find((p) => p.id === player.id)?.name || 'Unknown',
-                                  }))
+                                  .map((player) => {
+                                      const id = typeof player?.id === 'string' ? player.id : ''
+                                      const known = prevLobby.game!.players.find((p) => p.id === id)
+                                      return {
+                                          id,
+                                          name: known?.name || 'Unknown',
+                                          avatarUrl: known?.avatarUrl ?? null,
+                                          isPremium: known?.isPremium ?? false,
+                                      }
+                                  })
                                   .filter((player) => player.id.length > 0)
                             : prevLobby.game.players
                         return {
@@ -483,6 +510,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                                 status: authoritativeState?.status ?? prevLobby.game.status,
                                 players: responsePlayers,
                                 data: normalizedData,
+                                lastMoveAt: readLastMoveAt(authoritativeState) ?? prevLobby.game.lastMoveAt,
                             },
                         }
                     })
@@ -542,11 +570,114 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         }
     }, [code, getCurrentUserId, lobby, handleGameReset])
 
+    /**
+     * #1032: the finished screen used to offer the host a single "back to lobby"
+     * link and everyone else nothing at all, which is a dead end at the one
+     * moment a group is most likely to want another round. Same rematch call the
+     * waiting room and Rock Paper Scissors make.
+     */
+    const handlePlayAgain = useCallback(async () => {
+        const userId = getCurrentUserId()
+        if (!lobby || !userId) { router.push(`/lobby/${code}`); return }
+        if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
+        setIsReturningToWaiting(true)
+        try {
+            const res = await fetchWithGuest('/api/game/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameType: 'sketch_and_guess',
+                    lobbyId: lobby.id,
+                    config: { maxPlayers: 10, minPlayers: minPlayersRequired },
+                }),
+            })
+            const data = await res.json().catch(() => null)
+            if (!res.ok) throw new Error((typeof data?.error === 'string' && data.error) || 'Failed to start rematch')
+            stuckPhaseRecoveryRef.current.reset()
+            setOverlayInspecting(false)
+            await loadLobbyData()
+            showToast.success('lobby.game.playAgain')
+        } catch (err) {
+            clientLogger.error('Failed to start Sketch & Guess rematch:', err)
+            showToast.errorFrom(err, 'errors.generic')
+        } finally {
+            setIsReturningToWaiting(false)
+        }
+    }, [code, getCurrentUserId, loadLobbyData, lobby, minPlayersRequired, router])
+
+    // ─── Derived play state ──────────────────────────────────────────────────
+    // Read before the early returns so the hooks below always run in the same
+    // order; `game` is null on the fallback screens and every value falls back.
+
+    const game = lobby?.game
+    const gameData = game?.data ?? defaultSketchState()
+    const currentUserId = getCurrentUserId()
+    const isFinished = game?.status === 'finished'
+    const phase = gameData.phase
+    const phaseSeconds = SKETCH_PHASE_SECONDS[phase] ?? SKETCH_PHASE_SECONDS.drawing
+    const isDrawer = !isSpectator && !!currentUserId && currentUserId === gameData.currentDrawerId
+    const currentRound = gameData.rounds.find((r) => r.round === gameData.currentRound) || null
+    const hasGuessed = !!currentUserId && (currentRound?.guesses.some((g) => g.playerId === currentUserId) ?? false)
+    const iOweAMove = !isFinished && !isSpectator && (phase === 'drawing' ? isDrawer : phase === 'guessing' ? !isDrawer && !hasGuessed : false)
+
+    // The strokes on the canvas and the half-typed guess belong to the round,
+    // not to a layout tree: the desktop, landscape and portrait trees each mount
+    // their own board, and only one of them is on screen at a time. Held here,
+    // a rotation or a window drag across the breakpoint re-renders the drawing
+    // in the tree that takes over instead of handing the drawer a blank canvas
+    // with the phase clock still running (#1034). Tagged with the round it was
+    // made in, so the next round starts clean without an effect that would clear
+    // it one render late.
+    const [draftForRound, setDraftForRound] = useState<{ round: number; draft: SketchAndGuessDraft }>(
+        () => ({ round: 0, draft: EMPTY_DRAFT })
+    )
+    const roundNumber = gameData.currentRound
+    const activeDraft = draftForRound.round === roundNumber ? draftForRound.draft : EMPTY_DRAFT
+    const handleDraftChange = useCallback(
+        (next: SketchAndGuessDraft) => setDraftForRound({ round: roundNumber, draft: next }),
+        [roundNumber]
+    )
+
+    const timerState = useMemo(() => {
+        if (!game) return null
+        return {
+            currentPlayerIndex: gameData.currentRound * 10 + PHASE_ORDINAL[phase],
+            lastMoveAt: game.lastMoveAt,
+            status: game.status,
+        }
+    }, [game, gameData.currentRound, phase])
+
+    const { timeLeft } = useGameTimer({
+        isMyTurn: iOweAMove,
+        gameState: timerState,
+        turnTimerLimit: phaseSeconds,
+        onTimeout: async (): Promise<boolean> => {
+            // #1022: this game's timeout is enforced server-side, inside
+            // GET /api/lobby/[code]. During play the page only fetches when a
+            // broadcast arrives, and a broadcast needs somebody still moving –
+            // let the drawer close their tab and nothing asks, so the phase
+            // clock runs out, `applyTimeoutFallback` never runs, and the round
+            // sits there until a player reloads. So when the phase is overdue,
+            // ask. Throttled by the recovery every other game uses (#989): one
+            // request per ten seconds, six at most, then it stops rather than
+            // hammering a dead round.
+            const decision = stuckPhaseRecoveryRef.current.decide(
+                turnSignatureOf(timerState?.currentPlayerIndex, game?.lastMoveAt),
+                Date.now()
+            )
+            if (decision === 'give-up') return true
+            if (decision === 'resync') {
+                clientLogger.warn('⏰ Sketch & Guess phase overdue, asking the server', { code, phase })
+                await loadLobbyData()
+            }
+            return false
+        },
+    })
+
     if (loading) return <LobbyPageLoadingFallback />
     if (!lobby) return <LobbyPageErrorFallback />
 
     const themeStyle = getThemePageStyle(lobby.theme)
-    const game = lobby.game
 
     if (!game) {
         return (
@@ -564,9 +695,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         )
     }
 
-    const currentUserId = getCurrentUserId()
-    const currentPlayer = game.players.find((p) => p.id === currentUserId)
-    const gameData = game.data
+    const players = game.players
+    const currentPlayer = players.find((p) => p.id === currentUserId)
 
     if (!currentPlayer && !isSpectator) {
         return (
@@ -584,91 +714,311 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     }
 
     const isCreator = !isSpectator && !!currentUserId && lobby.creatorId === currentUserId
-    const isFinished = game.status === 'finished'
+    const playerById = new Map(players.map((p) => [p.id, p]))
+    const scores = gameData.scores
+    const drawerId = gameData.currentDrawerId
+    const nameOf = (id: string) => playerById.get(id)?.name || t('game.ui.playerFallback')
+
+    // The scoreboard row seats two of up to ten, so it shows the two that
+    // matter to this viewer: whoever is drawing, and the viewer. A drawer (or a
+    // spectator, who is nobody) gets the leading opponent in the other seat, so
+    // the row never shows the same person twice and never shows an empty card.
+    const contenders = players.filter((p) => p.id !== drawerId).sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0))
+    const meSeatId = !isSpectator && currentUserId && currentUserId !== drawerId ? currentUserId : contenders[0]?.id || ''
+    // Who has answered. `submittedPlayerIds` is the public half and the only
+    // complete one: since #1032 a live round carries the viewer's own guess and
+    // nobody else's, so counting `guesses` alone would show every other seat as
+    // still thinking.
+    const guessedIds = new Set([...(currentRound?.guesses.map((g) => g.playerId) ?? []), ...gameData.submittedPlayerIds])
+    const winnerId = gameData.winnerId
+    const iWon = !!winnerId && winnerId === currentUserId
+    const totalGuessers = Math.max(0, players.length - 1)
+    const submittedCount = gameData.submittedPlayerIds.length
+
+    const phaseLabel =
+        phase === 'drawing'
+            ? t('games.guess_my_drawing.game.phaseDrawing')
+            : phase === 'guessing'
+              ? t('games.guess_my_drawing.game.phaseGuessing')
+              : t('games.guess_my_drawing.game.phaseReveal')
+
+    const finishedMessage = iWon
+        ? t('games.guess_my_drawing.game.youWin')
+        : t('games.guess_my_drawing.game.winnerBanner', { name: winnerId ? nameOf(winnerId) : t('game.ui.playerFallback') })
+
+    const activeTitle = isFinished
+        ? finishedMessage
+        : phase === 'reveal'
+          ? t('games.guess_my_drawing.game.revealHeading', { prompt: currentRound?.prompt || '' })
+          : phase === 'drawing'
+            ? isDrawer
+                ? t('games.guess_my_drawing.game.drawerIntro')
+                : t('games.guess_my_drawing.game.waitingForDrawer', { name: nameOf(drawerId) })
+            : isSpectator
+              // A spectator has no seat and is handed no guesses at all by the
+              // sanitizer, so both branches below would be false and the banner
+              // told a watcher to guess (#1033/#1034).
+              ? t('games.guess_my_drawing.game.spectatorGuessing')
+              : isDrawer
+                ? t('games.guess_my_drawing.game.youAreDrawingWait')
+                : hasGuessed
+                  ? t('games.guess_my_drawing.game.alreadyGuessed')
+                  : t('games.guess_my_drawing.game.guessNow')
+
+    const pencilBadge = (
+        <div style={{
+            position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
+            background: SKETCH_ACCENT, color: '#fff', border: '2px solid var(--bd-ink)',
+            display: 'grid', placeItems: 'center',
+        }}>
+            <Icon name="pencil" size={12} tone="on-accent" />
+        </div>
+    )
+
+    const seatCard = (id: string, side: 'left' | 'right', isActive: boolean, cornerBadge?: React.ReactNode) => (
+        <GamePlayerCard
+            name={id ? nameOf(id) : '–'}
+            isActive={isActive}
+            isMe={!!currentUserId && id === currentUserId}
+            isWinner={isFinished && !!id && winnerId === id}
+            side={side}
+            avatarSrc={id ? playerById.get(id)?.avatarUrl ?? null : null}
+            isPremium={id ? !!playerById.get(id)?.isPremium : false}
+            accentColor={side === 'left' ? SKETCH_ACCENT : 'var(--bd-lav)'}
+            turnDotColor={SKETCH_ACCENT_DEEP}
+            subline={t('games.guess_my_drawing.game.points', { count: id ? scores[id] || 0 : 0 })}
+            cornerBadge={cornerBadge}
+        />
+    )
+
+    const headerSection = (
+        <div className="ttt-card sketch-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(93,211,158,0.12) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
+            <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
+                <Icon name="palette" size={96} />
+            </div>
+            <GameScoreboardHeader
+                leftCard={seatCard(drawerId, 'left', !isFinished && phase === 'drawing', pencilBadge)}
+                center={
+                    <>
+                        <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
+                            {t('game.ui.round')}
+                        </div>
+                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                            {gameData.currentRound}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>/</span>{gameData.totalRounds}
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
+                            {phaseLabel}
+                        </div>
+                    </>
+                }
+                centerCompact={
+                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        {gameData.currentRound}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>/</span>{gameData.totalRounds}
+                    </div>
+                }
+                rightCard={seatCard(meSeatId, 'right', !isFinished && phase === 'guessing' && !!meSeatId && !guessedIds.has(meSeatId))}
+                trailing={
+                    isSpectator
+                        ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                        : <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />
+                }
+            />
+        </div>
+    )
+
+    const statusSection = (
+        <GameStatusBanner
+            isFinished={isFinished}
+            finishedMessage={finishedMessage}
+            activeTitle={activeTitle}
+            meta={phase === 'guessing' && !isFinished ? `${submittedCount}/${totalGuessers}` : undefined}
+            secs={timeLeft}
+            turnTimerLimit={phaseSeconds}
+            isYourTurn={iOweAMove}
+            barColor={SKETCH_ACCENT}
+            leadingIcon={<Icon name="palette" size={20} />}
+            isSpectator={isSpectator}
+        />
+    )
+
+    const renderBoardSection = (testId?: string) => (
+        <div className="sketch-board-card" data-testid={testId}>
+            <SketchAndGuessGameBoard
+                gameData={gameData}
+                gameStatus={game.status}
+                playerId={isSpectator ? '' : currentPlayer!.id}
+                players={players}
+                onSubmitDrawing={handleSubmitDrawing}
+                onSubmitGuess={handleSubmitGuess}
+                onAdvanceRound={handleAdvanceRound}
+                isSubmitting={isSubmitting}
+                isSpectator={isSpectator}
+                draft={activeDraft}
+                onDraftChange={handleDraftChange}
+            />
+            {isFinished && !isSpectator && !overlayInspecting && (
+                <GameResultOverlay
+                    title={finishedMessage}
+                    kicker={t('lobby.game.gameOver')}
+                    accentColor={SKETCH_ACCENT}
+                    accentShadowColor={SKETCH_ACCENT_DEEP}
+                    icon={
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? SKETCH_ACCENT_DEEP : SKETCH_ACCENT, display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
+                            <Icon name={iWon ? 'trophy' : 'palette'} size={28} tone="on-accent" />
+                        </div>
+                    }
+                    onInspect={() => setOverlayInspecting(true)}
+                    isHost={isCreator}
+                    isLoading={isReturningToWaiting}
+                    onPlayAgain={handlePlayAgain}
+                    onReturnToLobby={handleReturnToWaiting}
+                    onLeave={() => setShowLeaveConfirmModal(true)}
+                    isGuest={isGuest}
+                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+                    inviteCode={code}
+                    gameType="sketch_and_guess"
+                    isRegistered={status === 'authenticated' && !isGuest}
+                />
+            )}
+            {isFinished && !isSpectator && overlayInspecting && (
+                <button
+                    onClick={() => setOverlayInspecting(false)}
+                    style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                >
+                    {t('games.tictactoe.game.showResults')}
+                </button>
+            )}
+        </div>
+    )
+
+    const scoresSection = (
+        <section className="sketch-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>
+                    {t('games.guess_my_drawing.game.standings')}
+                </h3>
+                <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
+                    {t('games.guess_my_drawing.game.roundLabel', { current: gameData.currentRound, total: gameData.totalRounds })}
+                </span>
+            </div>
+            <SketchScoreRows
+                players={players}
+                scores={scores}
+                ranking={gameData.ranking}
+                currentUserId={isSpectator ? '' : currentUserId || ''}
+                drawerId={drawerId}
+                isFinished={isFinished}
+            />
+        </section>
+    )
+
+    // The drawer is the one player who already knows the word, and the scoring
+    // pays them 40 points for every correct guess – so the chat they can type
+    // into is a channel they are paid to leak the answer down. They read it,
+    // they do not write it, until the reveal (#1034). Everybody else talks
+    // throughout: this is a party game and the talking is the point.
+    const chatMutedForDrawer = isDrawer && !isFinished && phase !== 'reveal'
+    const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+    for (const p of players) chatPlayerProfiles.set(p.id, { avatarUrl: p.avatarUrl, isPremium: p.isPremium })
+
+    const chatSection = (
+        <section className="game-chat-panel">
+            <Chat
+                messages={chatMessages}
+                onSendMessage={sendChatMessage}
+                currentUserId={currentUserId || null}
+                playerProfiles={chatPlayerProfiles}
+                isMinimized={false}
+                onToggleMinimize={() => {}}
+                unreadCount={chatUnreadCount}
+                someoneTyping={someoneTyping}
+                fullScreen
+                readOnly={isSpectator || chatMutedForDrawer}
+            />
+            {chatMutedForDrawer && (
+                <p className="sketch-chat-note">{t('games.guess_my_drawing.game.chatLockedForDrawer')}</p>
+            )}
+        </section>
+    )
 
     return (
-        <div className="h-[var(--game-h)] overflow-y-auto" style={themeStyle}>
-            <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
-                <div className="mx-auto max-w-5xl space-y-5">
-                    <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h1 className="text-2xl font-extrabold text-bd-ink sm:text-3xl">
-                                    <Icon name="palette" size={16} /> {t('games.guess_my_drawing.name')}
-                                </h1>
-                                <p className="mt-1 text-sm text-bd-ink-muted">
-                                    {t('lobby.game.code')}: <span className="font-mono font-semibold">{code.toUpperCase()}</span>
-                                </p>
-                            </div>
+        <div className="game-screen ttt-screen" style={themeStyle}>
 
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                                        socketConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                    }`}
-                                >
-                                    <span className={`h-2 w-2 rounded-full ${socketConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                    {socketConnected ? t('games.guess_my_drawing.game.liveUpdates') : t('games.guess_my_drawing.game.reconnecting')}
-                                </span>
-                                <span className="inline-flex items-center rounded-full bd-chip px-3 py-1 text-xs font-semibold">
-                                    {game.players.length} {t('game.ui.player')}
-                                </span>
-                                {!isSpectator && (
-                                    <button
-                                        onClick={() => setShowLeaveConfirmModal(true)}
-                                        className="rounded-full px-3 py-1 text-xs font-semibold"
-                                        style={{ background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)' }}
-                                    >
-                                        {t('game.ui.leave')}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </header>
-
-                    <section className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
-                        <SketchAndGuessGameBoard
-                            gameData={gameData}
-                            gameStatus={game.status}
-                            playerId={isSpectator ? '' : currentPlayer!.id}
-                            players={game.players}
-                            onSubmitDrawing={handleSubmitDrawing}
-                            onSubmitGuess={handleSubmitGuess}
-                            onAdvanceRound={handleAdvanceRound}
-                            isSubmitting={isSubmitting}
-                            isSpectator={isSpectator}
-                        />
-                    </section>
-
-                    {isFinished && (
-                        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-                            {isCreator ? (
-                                <button
-                                    onClick={handleReturnToWaiting}
-                                    disabled={isReturningToWaiting}
-                                    className="w-full sm:w-auto bd-btn bd-btn-primary rounded-xl px-6 py-3 font-semibold transition disabled:opacity-60"
-                                >
-                                    {t('lobby.game.back_to_lobby')}
-                                </button>
-                            ) : (
-                                <p className="text-sm text-bd-ink-muted">{t('game.ui.waitingForHost')}</p>
-                            )}
-                        </div>
-                    )}
+            {/* ── DESKTOP ─────────────────────────────────────────────────── */}
+            <div className="ttt-desktop-layout">
+                <div className="ttt-grid">
+                    {headerSection}
+                    <div className="ttt-center-col">
+                        {statusSection}
+                        {renderBoardSection('sketch-board-card')}
+                    </div>
+                    <div className="ttt-right-col">
+                        {scoresSection}
+                        {chatSection}
+                    </div>
                 </div>
-
-                {!isSpectator && lobby.status === 'playing' && <ReactionOverlay lobbyCode={code} />}
             </div>
 
-            <ConfirmModal
-                isOpen={showLeaveConfirmModal}
-                onClose={() => setShowLeaveConfirmModal(false)}
-                onConfirm={handleLeave}
-                title={t('game.ui.leave')}
-                message={t('game.ui.leaveConfirm')}
-                confirmText={t('game.ui.leave')}
-                variant="danger"
-            />
+            {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
+            <div className="game-landscape-layout">
+                <div className="game-landscape-board">
+                    {renderBoardSection('sketch-board-card-landscape')}
+                </div>
+                {/* No standings block here, deliberately, though this is the one
+                    tree with no way to reach the scores. Measured at 844x390 the
+                    column is 308px and already spoken for: header 68, status 53,
+                    chat's 128px floor (#902) and 18px of gaps. A standings panel
+                    added as a fourth child got 79px, of which the scrolling list
+                    was 4px, and it took the difference out of the header, which
+                    is `overflow: hidden` and cut. Landscape gets its scores by
+                    making this column's flexible region a Chat/Scores tab strip
+                    like the portrait tree's, which is a layout change of its own
+                    and wants its own ticket. */}
+                <div className="game-landscape-side">
+                    {headerSection}
+                    {statusSection}
+                    {chatSection}
+                </div>
+            </div>
+
+            {/* ── MOBILE ──────────────────────────────────────────────────── */}
+            <div className="ttt-mobile-layout">
+                {headerSection}
+                {statusSection}
+                <GameTabs
+                    tabs={[
+                        { id: 'board' as const, label: t('game.ui.tabBoard') },
+                        { id: 'scores' as const, label: t('games.guess_my_drawing.game.standings') },
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                    ]}
+                    activeTab={mobileTab}
+                    onTabChange={(id) => {
+                        setMobileTab(id)
+                        if (id === 'chat') resetChatUnread()
+                    }}
+                />
+                <div className="ttt-mobile-content">
+                    {mobileTab === 'board' && renderBoardSection('sketch-board-mobile')}
+                    {mobileTab === 'scores' && scoresSection}
+                    {mobileTab === 'chat' && chatSection}
+                </div>
+            </div>
+
+            {/* ── MODALS ──────────────────────────────────────────────────── */}
+            {!isSpectator && (
+                <ConfirmModal
+                    isOpen={showLeaveConfirmModal}
+                    onClose={() => setShowLeaveConfirmModal(false)}
+                    onConfirm={handleLeave}
+                    title={t('game.ui.leave')}
+                    message={t('game.ui.leaveConfirm')}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    variant="danger"
+                    icon={<LeaveIcon size={28} />}
+                />
+            )}
+            {!isSpectator && game.status === 'playing' && <ReactionOverlay lobbyCode={code} />}
         </div>
     )
 }

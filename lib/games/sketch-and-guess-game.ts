@@ -333,7 +333,7 @@ export class SketchAndGuessGame extends GameEngine {
 
       if (data.phase === 'drawing') {
         if (!currentRound.drawingContent) {
-          currentRound.drawingContent = this.buildTimeoutFallbackDrawing(currentRound.prompt)
+          currentRound.drawingContent = this.buildTimeoutFallbackDrawing()
           currentRound.drawingAutoSubmitted = true
           currentRound.drawingSubmittedAt = timeoutAt
           result.autoSubmittedDrawings += 1
@@ -594,13 +594,16 @@ export class SketchAndGuessGame extends GameEngine {
     return value.trim().toLowerCase().replace(/\s+/g, ' ')
   }
 
-  private buildTimeoutFallbackDrawing(prompt: string): string {
+  // #1032: this used to carry `promptHint: prompt`, which nothing ever read - the client
+  // parses this JSON only for `type` and `strokes`. The sanitizer publishes
+  // `rounds[].drawingContent` verbatim, so the field handed the secret word to every
+  // guesser and to the shared lobby broadcast the moment the drawing phase timed out.
+  private buildTimeoutFallbackDrawing(): string {
     return JSON.stringify({
       type: 'drawing',
       version: 1,
       autoSubmitted: true,
       reason: 'timeout',
-      promptHint: prompt,
       width: 64,
       height: 64,
       strokes: [
@@ -618,11 +621,24 @@ export class SketchAndGuessGame extends GameEngine {
 }
 
 /**
- * Strips the current round's secret prompt from state before it reaches a
- * non-drawer — mirrors sanitizeSpyStateForBroadcast/sanitizeRpsStateForBroadcast.
+ * Strips the current round's secrets from state before it reaches a player who
+ * must not have them – mirrors sanitizeSpyStateForBroadcast/sanitizeRpsStateForBroadcast.
  * Only the round matching data.currentRound can ever be unrevealed (advanceAfterReveal
  * only increments currentRound after that round's reveal+scoring), so every other
  * round in the array is always safe to return untouched.
+ *
+ * There are two secrets, not one. The prompt is the obvious one and was the
+ * only one redacted until #1032. The other is the guesses themselves: a correct
+ * guess *is* the prompt, spelled out, and `isCorrect` labels it as such. Played
+ * with three seats on 2026-09-20, the second guesser's own snapshot came back
+ * carrying `[{"guess":"island","isCorrect":true}]` while they were still typing
+ * – the answer, handed to them, in every round. So a live round shows a viewer
+ * only their own guess; the count everyone is allowed to see is
+ * `data.submittedPlayerIds`, which says how many have answered and never what.
+ *
+ * `viewerUserId === null` is the shared-broadcast and spectator case: no guess
+ * has an owner to match, so all of them drop, which is the redaction those
+ * viewers should get anyway.
  */
 export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unknown; status?: string }>(
   state: T,
@@ -638,10 +654,87 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
   if (currentRoundIndex === -1) return state
 
   const currentRound = data.rounds[currentRoundIndex]
-  if (viewerUserId !== null && viewerUserId === currentRound.drawerId) return state
+  // The drawer keeps the prompt – it is their move – but not the live guesses:
+  // nobody reads another player's answer before the reveal.
+  const viewerIsDrawer = viewerUserId !== null && viewerUserId === currentRound.drawerId
 
   const sanitizedRounds = data.rounds.slice()
-  sanitizedRounds[currentRoundIndex] = { ...currentRound, prompt: '' }
+  sanitizedRounds[currentRoundIndex] = {
+    ...currentRound,
+    prompt: viewerIsDrawer ? currentRound.prompt : '',
+    guesses: Array.isArray(currentRound.guesses)
+      ? currentRound.guesses.filter((guess) => guess.playerId === viewerUserId)
+      : [],
+  }
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
+}
+
+/**
+ * The same redaction for the other half of the broadcast.
+ *
+ * `broadcastToLobby('sketch-and-guess-action', …)` carries a `state` and a
+ * `data`: the move's own payload, echoed so a client can react to what just
+ * happened. Sanitizing `state` alone left the answer on the wire (#1032, second
+ * pass): a submit-guess move's payload is `{ guess: '<the word>' }`, and the
+ * lobby topic is the one channel every seated player is joined to
+ * (lib/lobby-channel-registry.ts), so the first correct guess – which is the
+ * prompt, spelled out – arrived at every other player the moment it was made.
+ * Nothing in the app subscribes to this event, so no client lost anything when
+ * the payload stopped carrying it; a player watching their own socket did.
+ *
+ * An allowlist rather than a denylist: a payload field reaches the whole lobby
+ * only by being named here, so a new move type leaks nothing by default. The
+ * counters below are the timeout-fallback bookkeeping, which says how many
+ * submissions the server filled in and for whom – all of it already public in
+ * the sanitized state.
+ *
+ * What the round genuinely needs to publish it publishes through `state`:
+ * `submittedPlayerIds` for who has answered, `rounds[].drawingContent` for the
+ * drawing, and the guesses themselves once the reveal makes them safe.
+ */
+const BROADCAST_SAFE_ACTION_EVENT_FIELDS = new Set([
+  'timeoutWindowsConsumed',
+  'autoSubmittedDrawings',
+  'autoSubmittedGuesses',
+  'autoSubmittedPlayerIds',
+])
+
+export function sanitizeSketchAndGuessActionEventForBroadcast(
+  data: Record<string, unknown> | undefined
+): Record<string, unknown> {
+  if (!data) return {}
+
+  const safe: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (BROADCAST_SAFE_ACTION_EVENT_FIELDS.has(key)) safe[key] = value
+  }
+  return safe
+}
+
+/**
+ * Whether this player is the one seat that must not be talking right now.
+ *
+ * The drawer knows the word and is paid 40 points for every correct guess, so
+ * the lobby chat is a channel they profit from leaking the answer down (#1034).
+ * The page greys their composer out; this is the same rule where it binds –
+ * POST /api/lobby/[code]/chat – because a greyed-out box stops the one player
+ * with a motive to bypass it least of all.
+ *
+ * Only while the round is live: at the reveal the word is on everybody's screen
+ * and the drawer talks again, and a finished game is all reveal.
+ */
+export function isSketchAndGuessDrawerMuted(params: {
+  gameStatus: string
+  state: unknown
+  userId: string
+}): boolean {
+  const { gameStatus, state, userId } = params
+  if (gameStatus !== 'playing') return false
+
+  const data = (state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
+  if (!data || typeof data !== 'object') return false
+  if (data.phase === 'reveal') return false
+
+  return typeof data.currentDrawerId === 'string' && data.currentDrawerId === userId
 }

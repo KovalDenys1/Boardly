@@ -84,13 +84,28 @@ jest.mock('@/lib/analytics', () => ({
 }))
 
 // The board owns the guess input; the page only hands it a submit callback, so the mock
-// exposes one button that calls it.
+// exposes one button that calls it. `SketchScoreRows` is the page's scores panel body,
+// which the page imports by name from the same module (#1034) – a default-only mock left
+// it undefined and every render threw "Element type is invalid".
 jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   __esModule: true,
   default: ({ onSubmitGuess }: { onSubmitGuess: (guess: string) => void }) => (
     <div data-testid="sketch-board">
       <button onClick={() => onSubmitGuess('apple')}>guess</button>
     </div>
+  ),
+  SketchScoreRows: ({ players }: { players: Array<{ id: string; name: string }> }) => (
+    <div data-testid="sketch-scores">{players.map((p) => p.name).join(',')}</div>
+  ),
+  // The page holds the unsubmitted strokes and guess itself, above its three
+  // layout trees, and starts them from this factory at module scope (#1034).
+  emptySketchAndGuessDraft: () => ({ strokes: [], color: '#1F1B16', isThick: false, isEraser: false, guess: '' }),
+}))
+
+jest.mock('@/components/Chat', () => ({
+  __esModule: true,
+  default: ({ readOnly }: { readOnly?: boolean }) => (
+    <div data-testid="sketch-chat" data-readonly={readOnly ? 'true' : 'false'} />
   ),
 }))
 
@@ -271,7 +286,7 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     } as Response)
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'guess' }))
+      fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
     })
 
     await waitFor(() => {
@@ -298,13 +313,157 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
         String(call[0]).includes('/sketch-and-guess-action')
       ).length
 
-    fireEvent.click(screen.getByRole('button', { name: 'guess' }))
-    fireEvent.click(screen.getByRole('button', { name: 'guess' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
 
     expect(guessCalls()).toBe(1)
 
     await act(async () => {
       settleGuess(okResponse({ state: null }))
+    })
+  })
+})
+
+/**
+ * #1034 – the chrome contract. Each of these fails the moment a piece of
+ * `components/game-chrome/` is dropped or hand-rolled again, which is the thing
+ * the ticket calls a review blocker.
+ */
+describe('SketchAndGuessLobbyPage shared chrome', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockFetchWithGuest.mockResolvedValue(okResponse(buildLobbyResponse()))
+  })
+
+  async function renderPage(mutate?: (response: ReturnType<typeof buildLobbyResponse>) => void, props = {}) {
+    const response = buildLobbyResponse()
+    mutate?.(response)
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
+    const view = render(<SketchAndGuessLobbyPage code="ABCD" {...props} />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+    return view
+  }
+
+  it('puts Leave inside the scoreboard header trailing slot, not a header of its own', async () => {
+    const { container } = await renderPage()
+
+    // The trailing slot is the header's right cell; a Leave button anywhere else
+    // on the page is the hand-rolled corner this migration removed.
+    const trailingLeave = container.querySelectorAll('.game-scoreboard-cell--right button.game-leave-button')
+    expect(trailingLeave.length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('button.game-leave-button').length).toBe(trailingLeave.length)
+  })
+
+  it('gives a spectator the way back in that same slot and no Leave button', async () => {
+    const { container } = await renderPage(
+      (response) => {
+        response.activeGame.players = [
+          { id: 'player-2', userId: 'user-2', name: 'Bob', user: { username: 'Bob' } },
+          { id: 'player-3', userId: 'user-3', name: 'Cara', user: { username: 'Cara' } },
+        ]
+      },
+      { isSpectator: true }
+    )
+
+    const back = container.querySelectorAll('.game-scoreboard-cell--right a.game-leave-button--back')
+    expect(back.length).toBeGreaterThan(0)
+    expect(back[0].getAttribute('href')).toBe('/lobby/ABCD')
+    expect(container.querySelectorAll('button.game-leave-button').length).toBe(0)
+  })
+
+  it('renders the shared chat and the shared tab strip', async () => {
+    const { container } = await renderPage()
+
+    expect(screen.getAllByTestId('sketch-chat').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.game-tabs .game-tab').length).toBe(3)
+    expect(screen.getAllByRole('button', { name: 'game.ui.tabChat' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'games.guess_my_drawing.game.standings' }).length).toBeGreaterThan(0)
+  })
+
+  // The drawer is paid 40 points per correct guess, so an open composer is a
+  // channel they are rewarded for leaking the word down. Read-only until the reveal.
+  it('closes the chat composer for the drawer while the word is still secret', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+      response.activeGame.state.data.phase = 'drawing'
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('true')
+    }
+  })
+
+  it('leaves the composer open for everyone who is guessing', async () => {
+    await renderPage()
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('false')
+    }
+  })
+
+  it('opens the composer to the drawer again at the reveal', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+      response.activeGame.state.data.phase = 'reveal'
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('false')
+    }
+  })
+
+  // The phase clock the engine enforces was invisible before #1034: 90s to draw
+  // and 60s to guess ran down with nothing on screen. The numbers are written
+  // out here rather than imported, so a change to SKETCH_PHASE_SECONDS has to
+  // come back and change this line too.
+  it('shows the drawing phase clock counting from 90 seconds', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+    })
+
+    await waitFor(() => expect(screen.getAllByText(':90').length).toBeGreaterThan(0))
+  })
+
+  it('shows the guessing phase clock counting from 60 seconds', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'guessing'
+    })
+
+    await waitFor(() => expect(screen.getAllByText(':60').length).toBeGreaterThan(0))
+  })
+
+  it('ends the game through the shared result overlay, with a rematch for the host', async () => {
+    await renderPage((response) => {
+      response.activeGame.status = 'finished'
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.winnerId = 'user-1'
+      response.activeGame.state.data.ranking = ['user-1', 'user-2', 'user-3']
+    })
+
+    expect(screen.getAllByRole('button', { name: 'game.ui.viewBoard' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'lobby.game.playAgain' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'game.ui.returnToLobby' }).length).toBeGreaterThan(0)
+  })
+
+  it('sends the rematch to the same endpoint the waiting room uses', async () => {
+    await renderPage((response) => {
+      response.activeGame.status = 'finished'
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.winnerId = 'user-1'
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'lobby.game.playAgain' })[0])
+    })
+
+    const rematchCalls = mockFetchWithGuest.mock.calls.filter((call) => String(call[0]) === '/api/game/create')
+    expect(rematchCalls.length).toBe(1)
+    expect(JSON.parse(String(rematchCalls[0][1]?.body))).toMatchObject({
+      gameType: 'sketch_and_guess',
+      lobbyId: 'lobby-1',
     })
   })
 })
