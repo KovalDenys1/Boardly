@@ -3207,3 +3207,16 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
     grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
   }
 }
+
+/* Phone landscape: the side column is min(300px, 42vw) and this header has one
+   more thing in it than the other kit games put there – Leave rides in the
+   scoreboard trailing slot rather than in a room card beside it. Measured at
+   844x390 the round counter printed 13px over the opponent name, in all three
+   phases. Same answer as portrait: the viewer card goes, the drawer stays, and
+   the right cell shrinks to the button. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-landscape-side .sketch-header-card .game-scoreboard-right-card { display: none; }
+  .game-landscape-side .sketch-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
