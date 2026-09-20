@@ -24,6 +24,11 @@ import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
@@ -243,12 +248,40 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
   )
 }
 
-const GameContextBar: React.FC<{ code: string; title?: string; right?: React.ReactNode }> = ({ code, title = 'Alias', right }) => (
+/**
+ * The header on every in-game Alias screen (#905).
+ *
+ * Alias used to draw its own context bar - a Boardly mark, the lobby code, and
+ * Leave as a text link at the bottom of each of the five screens, which is the
+ * third place Leave sat in the catalogue. It now composes the shared kit, so
+ * Leave is top-right in the trailing slot of GameScoreboardHeader like every
+ * other game.
+ *
+ * The two scoreboard cards are teams, not players: that is what Alias has two
+ * of, and it is what the score belongs to. GamePlayerCard takes them as names
+ * with a score subline, so nothing about the card had to be special-cased.
+ */
+const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)']
+const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)']
+
+/**
+ * The pre-game bar (lobby and team selection). Those screens have no score and
+ * no turn, so they get no scoreboard - but Leave is in the same corner as on
+ * every other screen, which is what #905 is about.
+ */
+const AliasPregameHeader: React.FC<{
+  code: string
+  title?: string
+  leaveLabel: string
+  backToLobbyLabel: string
+  onLeave?: () => void
+  isSpectator?: boolean
+}> = ({ code, title = 'Alias', leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => (
   <header className="alias-context-bar" style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto',
+    padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto', gap: 12,
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
       <div className="alias-context-logo" style={{
         width: 38, height: 38, borderRadius: 12,
         background: 'var(--bd-ink)',
@@ -258,13 +291,12 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
       }}>
         <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
         <BdLabel>Boardly · word game</BdLabel>
         <span className="alias-context-title" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
       </div>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      {right}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
         background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
@@ -275,12 +307,93 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
         <span style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>LOBBY</span>
         <span style={{ color: 'var(--bd-ink)' }}>{code}</span>
       </span>
+      {isSpectator
+        ? <GameLeaveButton label={backToLobbyLabel} href={`/lobby/${code}`} variant="back" />
+        : onLeave
+          ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
+          : null}
     </div>
   </header>
 )
 
+const AliasGameHeader: React.FC<{
+  lobbyCode: string
+  /**
+   * The two seats, in board order, so they read left-to-right against the score
+   * line between them. Alias can run three teams in solo mode; the third has no
+   * card, but the score line in the middle carries every team, so no score is
+   * ever missing.
+   */
+  leftTeam?: { name: string; score: number; accent: string; accentDeep: string; isMine?: boolean }
+  rightTeam?: { name: string; score: number; accent: string; accentDeep: string; isMine?: boolean }
+  /** Index of the team on the clock, or null when nobody is. */
+  activeTeamIndex?: number | null
+  /** Every team's score, in board order. */
+  scores: number[]
+  /** Already-translated line above the score (phase name). */
+  kicker: string
+  leaveLabel: string
+  backToLobbyLabel: string
+  onLeave?: () => void
+  isSpectator?: boolean
+}> = ({ lobbyCode, leftTeam, rightTeam, activeTeamIndex = null, scores, kicker, leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => {
+  const seat = (team: typeof leftTeam, side: 'left' | 'right', isActive: boolean) => (
+    <GamePlayerCard
+      name={team?.name ?? '–'}
+      isActive={isActive && !!team}
+      isMe={!!team?.isMine}
+      isWinner={false}
+      side={side}
+      avatarSrc={null}
+      accentColor={team?.accent ?? 'var(--bd-line)'}
+      turnDotColor={team?.accentDeep ?? 'var(--bd-ink)'}
+      subline={String(team?.score ?? 0)}
+    />
+  )
+  const scoreLine = scores.length > 0
+    ? scores.map((value, i) => (
+      <React.Fragment key={i}>
+        {i > 0 && <span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>}
+        {value}
+      </React.Fragment>
+    ))
+    : '–'
+  return (
+    <div className="ttt-card alias-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,107,91,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
+      <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
+        <Icon name="chat" size={96} />
+      </div>
+      <GameScoreboardHeader
+        leftCard={seat(leftTeam, 'left', activeTeamIndex === 0)}
+        center={
+          <>
+            <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: FONT_MONO, marginBottom: 2 }}>
+              {kicker}
+            </div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</div>
+            <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: FONT_MONO }}>
+              {lobbyCode}
+            </div>
+          </>
+        }
+        centerCompact={
+          <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</div>
+        }
+        rightCard={seat(rightTeam, 'right', activeTeamIndex === 1)}
+        trailing={
+          isSpectator
+            ? <GameLeaveButton label={backToLobbyLabel} href={`/lobby/${lobbyCode}`} variant="back" />
+            : onLeave
+              ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
+              : undefined
+        }
+      />
+    </div>
+  )
+}
+
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false }: {
   guesses: GuessMessage[]
   guessInput: string
   onInputChange: (v: string) => void
@@ -289,10 +402,12 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   canType: boolean
   endRef: React.RefObject<HTMLDivElement | null>
   currentUserId: string | null | undefined
+  /** On its own mobile tab the panel owns the pane; stacked it keeps its 220px. */
+  fillHeight?: boolean
 }) {
   const { t } = useTranslation()
   return (
-    <div className="w-full md:w-[280px] md:max-w-[280px] h-[220px] md:h-full md:max-h-[560px]" style={{
+    <div className={`w-full md:w-[280px] md:max-w-[280px] ${fillHeight ? 'flex-1 min-h-0' : 'h-[220px]'} md:h-full md:max-h-[560px]`} style={{
       ...cardBase,
       display: 'flex', flexDirection: 'column',
       minWidth: 0,
@@ -382,6 +497,21 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
   const isMobile = useIsMobileViewport()
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
+  // Mobile tab for the two turn screens (#905). The describer's guess feed was
+  // `hidden md:block`, so on a phone the one player who needs to hear the
+  // guesses could not see them at all; the guesser's was stacked under the
+  // word card, below the fold. Both now sit behind the shared tab strip.
+  //
+  // The tab is derived from the role, not stored (#905 review). Both panes are
+  // conditionally rendered rather than hidden, so whichever one is off-tab is
+  // not in the DOM at all - and a fixed 'word' default put the guesser's only
+  // action, the guess input, behind a tab they had to find, under a line
+  // reading "Listen up - type your guess in the chat". The describer's surface
+  // is the word card and the Correct/Skip buttons; the guesser's is the chat.
+  // Tapping the other tab overrides that for the current turn only, so a
+  // describer who read the feed last turn does not come back to a screen with
+  // no word on it.
+  const [turnTabOverride, setTurnTabOverride] = useState<{ turnKey: string; tab: 'word' | 'guesses' } | null>(null)
 
   // Live timer
   const [remaining, setRemaining] = useState(0)
@@ -821,7 +951,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <div style={pageBg(lobby?.theme)} data-testid="alias-waiting-room">
-        <GameContextBar code={code} />
+        <AliasPregameHeader
+          code={code}
+          leaveLabel={t('game.ui.leave')}
+          backToLobbyLabel={t('game.ui.backToLobby')}
+          onLeave={() => setShowLeaveConfirmModal(true)}
+          isSpectator={isSpectator}
+        />
         <main style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{
             display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
@@ -937,8 +1073,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   // ── PHASE 1 — Team assignment ──────────────────────────────────────────────
   if (data.phase === 'team_assignment') {
-    const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)']
-    const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)']
 
     // Three players means three teams of one: nobody picks a side, because
     // there are no sides to pick (#847).
@@ -1057,7 +1191,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     return (
       <div className="alias-team-screen" style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
         <main className="alias-team-main" style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
-          <GameContextBar code={code} />
+          <AliasPregameHeader
+            code={code}
+            leaveLabel={t('game.ui.leave')}
+            backToLobbyLabel={t('game.ui.backToLobby')}
+            onLeave={() => setShowLeaveConfirmModal(true)}
+            isSpectator={isSpectator}
+          />
           <div className="alias-team-hero" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
@@ -1140,11 +1280,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             )}
           </div>
-          {!isSpectator && (
-            <button style={{ ...linkBtn, alignSelf: 'center', marginTop: 12 }} onClick={() => setShowLeaveConfirmModal(true)}>
-              {t('lobby.game.leaveGame')}
-            </button>
-          )}
           </div>
         </main>
         {!isSpectator && (
@@ -1187,6 +1322,20 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const teamAccent = teamIndex === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)'
   const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : '#7A6AE8'
   const describerPlayer = players.find(p => p.userId === describerId)
+  // Guests reach Players with `name` null and their display name on the user
+  // row, which is what every other board reads. Alias read only `name`, so the
+  // status line came out as " is describing for Team 1".
+  const describerDisplayName =
+    describerPlayer?.user?.username || describerPlayer?.name || t('game.ui.playerFallback')
+
+  // A turn is one describer's run at one card list, so it changes when the team
+  // changes, the describer changes, or the clock restarts. The override is
+  // scoped to it by key rather than cleared by an effect, because everything
+  // above is below several early returns and a hook here would be conditional.
+  const turnKey = `${data.currentTeamIndex}:${describerId ?? ''}:${data.turnStartedAt ?? 0}`
+  const turnTab: 'word' | 'guesses' =
+    turnTabOverride?.turnKey === turnKey ? turnTabOverride.tab : isDescriber ? 'word' : 'guesses'
+  const setTurnTab = (tab: 'word' | 'guesses') => setTurnTabOverride({ turnKey, tab })
 
   const chatProps = {
     guesses,
@@ -1198,6 +1347,40 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     currentUserId,
   }
 
+  // ─── Shared chrome (#905) ──────────────────────────────────────────────────
+  const myTeamIndex = data.teams.findIndex((team) => team.playerIds.includes(currentUserId ?? ''))
+  const asSeat = (index: number) => {
+    const team = data.teams[index]
+    if (!team) return undefined
+    return {
+      name: team.name,
+      score: team.score,
+      accent: TEAM_ACCENTS[index] ?? 'var(--bd-lav)',
+      accentDeep: TEAM_ACCENTS_DEEP[index] ?? '#7A6AE8',
+      isMine: index === myTeamIndex,
+    }
+  }
+  const teamScores = data.teams.map((team) => team.score)
+
+  // Board order, not "who is up": the score line in the middle is in board
+  // order, and cards that reorder under it print Team 2 on the left above
+  // `-6 : 6`. Which team is on the clock is the card's active state, and which
+  // one is yours is `isMe` - both are on the card already.
+  const renderHeader = (kicker: string) => (
+    <AliasGameHeader
+      lobbyCode={code}
+      leftTeam={asSeat(0)}
+      rightTeam={asSeat(1)}
+      activeTeamIndex={data.phase === 'turn_active' ? teamIndex : null}
+      scores={teamScores}
+      kicker={kicker}
+      leaveLabel={t('game.ui.leave')}
+      backToLobbyLabel={t('game.ui.backToLobby')}
+      onLeave={() => setShowLeaveConfirmModal(true)}
+      isSpectator={isSpectator}
+    />
+  )
+
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
   if (data.phase === 'turn_active' && isDescriber) {
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
@@ -1205,22 +1388,37 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
-          <GameContextBar
-            code={code}
-            right={
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'var(--bd-surface-raised)', border: `1.5px solid ${teamAccent}`,
-                borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
-              }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
-                {currentTeam?.name}
-              </span>
-            }
+          {renderHeader(t('alias.phaseTurnKicker'))}
+          <div className="alias-status-slot">
+          <GameStatusBanner
+            isFinished={false}
+            activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+            meta={`+${guessed} / −${skipped}`}
+            // The countdown ring below is this game's clock, and it is the
+            // thing players actually watch; a second timer in the banner would
+            // be the same signal twice (layout DoD).
+            showTimer={false}
+            secs={remaining}
+            turnTimerLimit={turnTimerSeconds}
+            barColor={teamAccent}
+            leadingIcon={<Icon name="chat" size={20} />}
+            isSpectator={isSpectator}
+            isYourTurn={!isSpectator && isDescriber}
           />
+          </div>
+          {isMobile && (
+            <GameTabs
+              tabs={[
+                { id: 'word' as const, label: t('game.ui.tabBoard') },
+                { id: 'guesses' as const, label: t('alias.guesses') },
+              ]}
+              activeTab={turnTab}
+              onTabChange={setTurnTab}
+            />
+          )}
           <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 18px',
@@ -1326,16 +1524,17 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
                 {t('alias.endTurn')}
               </button>
-              {!isSpectator && (
-                <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>
-                  {t('lobby.game.leaveGame')}
-                </button>
-              )}
             </div>
 
-            {/* Chat panel — describer sees guesses read-only; hidden on mobile via CSS */}
-            <div className="hidden md:block" style={{ width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}>
-              <GuessChatPanel {...chatProps} canType={false} />
+            {/* The describer reads the guesses and never types them. On a phone
+                it is the Guesses tab; on desktop the right column. */}
+            <div
+              className={isMobile ? undefined : 'hidden md:block'}
+              style={isMobile
+                ? { display: turnTab === 'guesses' ? 'flex' : 'none', width: '100%', flex: 1, minHeight: 0 }
+                : { width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}
+            >
+              <GuessChatPanel {...chatProps} canType={false} fillHeight={isMobile} />
             </div>
           </main>
         </div>
@@ -1358,27 +1557,42 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   // ── PHASE 3 — Guesser turn ─────────────────────────────────────────────────
   if (data.phase === 'turn_active' && !isDescriber) {
-    const describerName = describerPlayer?.name ?? 'Describer'
+    const describerName = describerDisplayName
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
-          <GameContextBar
-            code={code}
-            right={
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'var(--bd-surface-raised)', border: `1.5px solid ${teamAccent}`,
-                borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
-              }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
-                {currentTeam?.name}
-              </span>
-            }
+          {renderHeader(t('alias.phaseTurnKicker'))}
+          <div className="alias-status-slot">
+          <GameStatusBanner
+            isFinished={false}
+            activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+            meta={`+${guessed} / −${skipped}`}
+            // The countdown ring below is this game's clock, and it is the
+            // thing players actually watch; a second timer in the banner would
+            // be the same signal twice (layout DoD).
+            showTimer={false}
+            secs={remaining}
+            turnTimerLimit={turnTimerSeconds}
+            barColor={teamAccent}
+            leadingIcon={<Icon name="chat" size={20} />}
+            isSpectator={isSpectator}
+            isYourTurn={!isSpectator && isDescriber}
           />
+          </div>
+          {isMobile && (
+            <GameTabs
+              tabs={[
+                { id: 'word' as const, label: t('game.ui.tabBoard') },
+                { id: 'guesses' as const, label: t('alias.guesses') },
+              ]}
+              activeTab={turnTab}
+              onTabChange={setTurnTab}
+            />
+          )}
           <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
@@ -1386,7 +1600,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }}>
                 {isSpectator
                   ? <BdLabel>{t('alias.spectatingWatch')}</BdLabel>
-                  : <BdLabel>{t('alias.listenUp')}</BdLabel>
+                  // "type your guess in the chat" is only true where the chat
+                  // is on screen. This pane is the other mobile tab, so there
+                  // it names the tab the input is actually on (#905 review).
+                  : <BdLabel>{isMobile ? t('alias.listenUpTab') : t('alias.listenUp')}</BdLabel>
                 }
               </div>
 
@@ -1441,15 +1658,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   )}
                 </div>
               </div>
-              {!isSpectator && (
-                <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>
-                  {t('lobby.game.leaveGame')}
-                </button>
-              )}
             </div>
 
-            {/* Chat panel — guessers type here; spectators are read-only */}
-            <GuessChatPanel {...chatProps} canType={!isSpectator} />
+            {/* Guessers type here; spectators are read-only. Right column on
+                desktop, the Guesses tab on a phone. */}
+            {(!isMobile || turnTab === 'guesses') && (
+              <GuessChatPanel {...chatProps} canType={!isSpectator} fillHeight={isMobile} />
+            )}
           </main>
         </div>
         {!isSpectator && (
@@ -1486,7 +1701,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
-          <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
+          {renderHeader(t('alias.turnCompleteTitle'))}
           <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
             {/* Word list */}
             <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
@@ -1605,11 +1820,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <Icon name="hourglass" size={16} /> Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
                 </div>
               ))}
-              {!isSpectator && (
-                <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => setShowLeaveConfirmModal(true)}>
-                  {t('lobby.game.leaveGame')}
-                </button>
-              )}
             </section>
           </main>
         </div>
@@ -1664,7 +1874,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           ))}
         </div>
 
-        <GameContextBar code={code} title={t('alias.finalTitle')} />
+        {renderHeader(t('alias.finalTitle'))}
         <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? 'No winner' : 'Champions'}</BdLabel>
@@ -1726,7 +1936,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {t('game.ui.waitingForHost')}
               </div>
             )}
-            <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>{t('lobby.game.leaveGame')}</button>
           </div>
 
           <div style={{ width: '100%', maxWidth: 420 }}>

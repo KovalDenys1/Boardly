@@ -2035,22 +2035,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: auto;
 }
 
-/* Guess the Spy surface */
-.spy-screen {
-  min-height: 100%;
-  overflow-y: auto;
-  background: var(--bd-bg);
-  color: var(--bd-ink);
-  padding: 14px;
-}
-
-.spy-shell {
-  width: min(100%, 1180px);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* Guess the Spy surface. The screen shell and the hand-rolled header that
+   used to live here went with #905: the board composes .game-screen/.ttt-grid
+   and components/game-chrome like every other game. */
 
 /* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
 /* Fills the in-game container (which owns the viewport height) — never
@@ -2074,7 +2061,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   gap: 12px;
 }
 
-.spy-header,
 .memory-header,
 .spy-panel,
 .memory-board-panel,
@@ -2088,19 +2074,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
 }
 
-.spy-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 16px;
-}
-
 .memory-header {
   padding: 12px 16px;
 }
 
-.spy-header-timer,
 .spy-timer-pill {
   display: inline-flex;
   align-items: center;
@@ -2589,45 +2566,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 
-.spy-header-timer {
-  min-width: min(280px, 100%);
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-.spy-header-timer-track {
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--bd-bg2);
-}
-
-.spy-header-timer-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--bd-coral);
-  transition: width 1s linear;
-}
-
-.spy-phase-rail {
-  display: flex;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.spy-phase-dot {
-  height: 6px;
-  flex: 1;
-  border-radius: 999px;
-  background: var(--bd-line);
-}
-
-.spy-phase-dot-active {
-  background: var(--bd-ink);
-}
-
 .spy-stage {
   display: grid;
   place-items: center;
@@ -3050,19 +2988,6 @@ input[type="range"].slider-thumb::-moz-range-track {
    another width, and it re-lays the role card as two columns: identity and
    the ready control on the left, the secret on the right. */
 @media (max-width: 1023px) and (orientation: landscape) {
-  .spy-screen { padding: 8px 10px; }
-  .spy-shell { gap: 8px; }
-
-  .spy-header {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-  }
-  .spy-header-round,
-  .spy-header-lobby { display: none; }
-  .spy-header h2 { font-size: 18px; margin-top: 0; }
-
   .spy-stage {
     min-height: 0;
     padding: 0;
@@ -3284,7 +3209,9 @@ html.dark .memory-tile-face {
 .sketch-score-row__score { flex-shrink: 0; font-weight: 700; color: var(--bd-ink); font-family: ui-monospace, monospace; }
 
 /* The scoreboard row owns the whole first grid row (see 2 above). */
-.ttt-grid > .sketch-header-card { grid-column: 1 / -1; }
+.ttt-grid > .sketch-header-card,
+.ttt-grid > .spy-header-card,
+.ttt-grid > .alias-header-card { grid-column: 1 / -1; }
 
 .sketch-chat-note {
   flex-shrink: 0;
@@ -3316,8 +3243,12 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    plate, which is exactly what the layout DoD calls a card with small content
    floating in it. Cap the cards and let the cells keep the slack: the left card
    stays left, the right card and Leave stay hard right. */
-.sketch-header-card .game-player-card { max-width: 340px; }
-.sketch-header-card .game-scoreboard-right-card { flex: 0 1 auto; }
+.sketch-header-card .game-player-card,
+.spy-header-card .game-player-card,
+.alias-header-card .game-player-card { max-width: 340px; }
+.sketch-header-card .game-scoreboard-right-card,
+.spy-header-card .game-scoreboard-right-card,
+.alias-header-card .game-scoreboard-right-card { flex: 0 1 auto; }
 
 /* Portrait phones: the same squeeze #901 fixed for the landscape side column,
    for the same reason. Two 42px player cards plus a three-line ROUND/1-of-3/
@@ -3327,15 +3258,15 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    form, and the viewer's own card goes: "me" is one tap away in Standings,
    highlighted, while who is drawing is the thing the row exists to say. */
 @media (max-width: 1023px) {
-  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
-  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
-  .ttt-mobile-layout .sketch-header-card .game-scoreboard-right-card { display: none; }
-  .ttt-mobile-layout .sketch-header-card .game-player-card { max-width: none; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-player-card { max-width: none; }
   /* The two 1fr cells are what pushes the drawer card out of its own track:
      the right one keeps a full share of the width for a 36px icon button. Let
      it shrink to what it holds and the card fits inside its cell instead of
      spilling into the round counter. */
-  .ttt-mobile-layout .sketch-header-card .game-scoreboard-header {
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
   }
 }
@@ -3347,8 +3278,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    phases. Same answer as portrait: the viewer card goes, the drawer stays, and
    the right cell shrinks to the button. */
 @media (max-width: 1023px) and (orientation: landscape) {
-  .game-landscape-side .sketch-header-card .game-scoreboard-right-card { display: none; }
-  .game-landscape-side .sketch-header-card .game-scoreboard-header {
+  .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
+  .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
   }
 
@@ -3360,5 +3291,97 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
      ate the padding and clipped the bottom of the avatars and of the Leave
      button. With this it is 68 everywhere and chat is still 146 or more, well
      over its 128 floor. */
-  .game-landscape-side > .sketch-header-card { flex: 0 0 auto; }
+  .game-landscape-side > :is(.sketch-header-card, .spy-header-card, .alias-header-card) { flex: 0 0 auto; }
 }
+
+/* ===== Guess the Spy / Alias on the shared kit (#905) =====
+   Both games used to carry their own screen shell and their own Leave button.
+   They now compose .game-screen/.ttt-grid like every other game, so all that is
+   left here is the card the phase content sits in and the right column's
+   roster stack. The header squeeze rules are the many-seat ones above, shared
+   with Sketch & Guess.
+
+   The card scrolls rather than sizing its content to the viewport: unlike a
+   board, a phase here is a form – a target select, a textarea, a send button –
+   and there is no smaller version of a textarea that still takes an answer. */
+.spy-board-card {
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  /* GameResultOverlay mounts on `position: absolute; inset: 0`, so this is the
+     positioned ancestor it needs. */
+  position: relative;
+  box-sizing: border-box;
+}
+.ttt-center-col > .spy-board-card,
+.game-landscape-board > .spy-board-card,
+.ttt-mobile-content > .spy-board-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Right column, first row: your role (while a round is live) over the table.
+   Ten seats do not fit in a scoreboard header, which is why the roster is here
+   and not up there – the same call Sketch & Guess made for its standings. */
+.spy-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+/* LobbyPageClient wraps the in-game area in its own `.game-screen flex
+   flex-col`, and puts a spectator banner above it. Being a flex item that may
+   shrink is what keeps this shell inside the viewport when that banner is
+   there; the spectate page renders it in normal flow, where `.game-screen`'s
+   own height is what applies. */
+.spy-screen-kit { flex: 1 1 auto; min-height: 0; }
+
+.spy-roster-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Capped so the chat below it keeps a usable pane: ten seats would otherwise
+     take the whole column and leave the chat under its 128px floor (#902). */
+  max-height: 260px;
+}
+.spy-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
+
+html.dark .spy-board-card { background: var(--bd-card-warm); }
+
+/* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
+   switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
+   above, which are scoped to .ttt-mobile-layout, never reach it. Same rules,
+   same breakpoint, applied to this card wherever it renders. */
+.alias-header-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .alias-header-card .game-scoreboard-right-card { display: none; }
+  .alias-header-card .game-player-card { max-width: none; }
+  .alias-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+.alias-status-slot { width: 100%; max-width: 1200px; margin: 0 auto 12px; flex-shrink: 0; }
