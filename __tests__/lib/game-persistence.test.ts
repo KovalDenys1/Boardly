@@ -1,4 +1,4 @@
-import { buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
+import { buildGameStartFields, buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
 
 const dbPlayer = (userId: string, overrides: Partial<DbPlayerRecord> = {}): DbPlayerRecord => ({
   id: `db-${userId}`,
@@ -151,5 +151,50 @@ describe('buildPartyGameTerminalUpdate (#729)', () => {
     const metadata = update!.terminalFields.terminalMetadata as { outcome?: string; isDraw?: boolean }
     expect(metadata.outcome).toBe('abandoned')
     expect(metadata.isDraw).toBe(false)
+  })
+})
+
+describe('buildGameStartFields (#1048)', () => {
+  const now = new Date('2026-09-20T12:00:00.000Z')
+
+  it('starts the move clock at the start, not at the waiting row', () => {
+    const fields = buildGameStartFields(now)
+
+    expect(fields.startedAt).toEqual(now)
+    expect(fields.lastMoveAt).toEqual(now)
+    expect(fields.updatedAt).toEqual(now)
+  })
+
+  it('reads as zero seconds of play before the first move, never a negative', () => {
+    // The column used to hold the waiting row's `@default(now())` - a lobby that
+    // had been open forty minutes by the time the host pressed start - and
+    // lastMoveAt - startedAt was read as seconds of real play, which is where
+    // tic_tac_toe's "minus 1s median" came from. A game nobody has moved in has
+    // played for zero seconds.
+    const fields = buildGameStartFields(now)
+
+    expect(fields.lastMoveAt.getTime() - fields.startedAt.getTime()).toBe(0)
+  })
+
+  it('leaves no gap for the recurrence counter to read as a defect', () => {
+    // lib/lobby-health.ts counts a playing game as unstamped when lastMoveAt is
+    // STRICTLY before startedAt. That operator is only correct because these two
+    // are the same instant: a lastMoveAt even a millisecond behind startedAt here
+    // would make every healthy start show up in that count forever.
+    const fields = buildGameStartFields(now)
+
+    expect(fields.lastMoveAt.getTime()).toBe(fields.startedAt.getTime())
+  })
+
+  it('defaults to the current time when called with no argument', () => {
+    // How the route calls it. The bound is loose on purpose - the point is that
+    // the default is a fresh clock reading, not a fixed or absent one.
+    const before = Date.now()
+    const fields = buildGameStartFields()
+    const after = Date.now()
+
+    expect(fields.startedAt.getTime()).toBeGreaterThanOrEqual(before)
+    expect(fields.startedAt.getTime()).toBeLessThanOrEqual(after)
+    expect(fields.lastMoveAt.getTime()).toBe(fields.startedAt.getTime())
   })
 })

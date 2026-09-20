@@ -238,3 +238,52 @@ export function buildPartyGameTerminalUpdate(params: {
 
   return { terminalFields: terminalFields as TerminalFields, changedPlayerUpdates }
 }
+
+export interface GameStartFields {
+  startedAt: Date
+  lastMoveAt: Date
+  updatedAt: Date
+}
+
+/**
+ * The clock columns for the waiting -> playing transition (#1048).
+ *
+ * `Games.lastMoveAt` is declared `@default(now())`, so it is seeded when the
+ * WAITING row is created and holds a lobby timestamp, not a gameplay one. The
+ * start update wrote `startedAt` and left `lastMoveAt` where it was, so a game
+ * began life with a move clock already reading older than its own start. Two
+ * things followed from that one omission:
+ *
+ * 1. The cleanup backstop abandons a `playing` game whose `lastMoveAt` is past
+ *    the stale cutoff. A room that had been open longer than that cutoff was
+ *    therefore abandoned by the first sweep after it started, before anybody
+ *    could move, and the players watched the board disappear.
+ * 2. `lastMoveAt - startedAt` came out negative for every game that never got
+ *    a move, because it was measuring how long the lobby had sat waiting with
+ *    the sign flipped. It was never "seconds of real play".
+ *
+ * The engine already stamps `state.lastMoveAt` inside `startGame()`; this puts the
+ * same event on the column. All three stamps are the one `now`, on purpose: a
+ * started game has played for zero seconds, and writing them as the same instant
+ * is what makes that true rather than nearly true.
+ *
+ * Two readers depend on the identity, not merely on the ordering:
+ *
+ * - `lastMoveAt - startedAt` is zero before the first move, which is the honest
+ *   play time, instead of the negative the seeded column produced.
+ * - the #1048 recurrence counter in `lib/lobby-health.ts` asks for rows whose
+ *   `lastMoveAt` is STRICTLY before `startedAt`. Give the two stamps any daylight
+ *   in the wrong direction here and every healthy start is counted as a defect.
+ *
+ * An earlier revision took the engine's `state.lastMoveAt` and preferred it when
+ * it was ahead of `now`. It never could be: the only caller evaluates `now` after
+ * `startGame()` has already stamped the state, so that branch was unreachable and
+ * only the test could enter it.
+ */
+export function buildGameStartFields(now: Date = new Date()): GameStartFields {
+  return {
+    startedAt: now,
+    lastMoveAt: now,
+    updatedAt: now,
+  }
+}

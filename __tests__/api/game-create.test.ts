@@ -305,6 +305,93 @@ describe('POST /api/game/create', () => {
     )
   })
 
+  // #1048. Games.lastMoveAt is `@default(now())`, so the WAITING row seeds it with a
+  // lobby timestamp. Start the game without overwriting it and the row goes into
+  // `playing` with a move clock reading older than its own startedAt. The cleanup
+  // backstop then abandons it on the next sweep, before anybody can move, and
+  // `lastMoveAt - startedAt` reports negative "seconds of real play" for every game
+  // that got no move.
+  it('stamps lastMoveAt when the game starts, not when the waiting row was created', async () => {
+    // Real ids: Players.id and Users.id are cuids, and this lobby sat open for
+    // forty minutes before the host pressed start - longer than the two-hour
+    // playing-stale cutoff is generous about, and the shape production produces.
+    const waitingRowCreatedAt = new Date('2026-09-20T11:20:00.000Z')
+    const longOpenWaitingGame = {
+      ...mockWaitingGame,
+      id: 'cm1g4h2k80001l908d3xq7v2b',
+      createdAt: waitingRowCreatedAt,
+      lastMoveAt: waitingRowCreatedAt,
+      players: [
+        {
+          id: 'cm1g4h2k80002l908f1nz6a4c',
+          userId: 'creator-123',
+          score: 0,
+          position: 0,
+          user: { id: 'creator-123', username: 'creator', email: 'creator@example.com', bot: null },
+        },
+        {
+          id: 'cm1g4h2k80003l908r7pw9e5d',
+          userId: 'cm1g4h2k80004l908t2bs5k6e',
+          score: 0,
+          position: 1,
+          user: {
+            id: 'cm1g4h2k80004l908t2bs5k6e',
+            username: 'player2',
+            email: 'player2@example.com',
+            bot: null,
+          },
+        },
+      ],
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      games: [longOpenWaitingGame],
+    } as any)
+
+    let startUpdate: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      startUpdate = args
+      return Promise.resolve({
+        ...longOpenWaitingGame,
+        status: 'playing',
+        gameType: 'yahtzee',
+        state: args.data.state,
+      })
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'yahtzee',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 2 },
+      }),
+    })
+    const response = await POST(request)
+
+    expect(response.status).toBe(200)
+    expect(startUpdate.where).toEqual({ id: longOpenWaitingGame.id })
+    expect(startUpdate.data.status).toBe('playing')
+
+    const { startedAt, lastMoveAt } = startUpdate.data
+    expect(startedAt).toBeInstanceOf(Date)
+    expect(lastMoveAt).toBeInstanceOf(Date)
+    // The invariant every reader of this column depends on, and it is exact: the
+    // route writes one instant into both columns, so the game reads as zero
+    // seconds of play until somebody moves, and the strict comparison the #1048
+    // counter in lib/lobby-health.ts makes never matches a healthy row.
+    expect(lastMoveAt.getTime()).toBe(startedAt.getTime())
+    // And it is not the value the waiting row was carrying.
+    expect(lastMoveAt.getTime()).toBeGreaterThan(waitingRowCreatedAt.getTime())
+
+    // The JSON state and the column describe the same event, within the few ms
+    // between startGame() and the update being built.
+    const persisted = readPersistedState(startUpdate.data.state)
+    expect(Math.abs(lastMoveAt.getTime() - persisted.lastMoveAt)).toBeLessThan(5000)
+  })
+
   it('preserves configured Tic-Tac-Toe target rounds when starting from waiting state', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
 

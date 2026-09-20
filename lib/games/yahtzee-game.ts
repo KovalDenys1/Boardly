@@ -251,19 +251,24 @@ export class YahtzeeGame extends GameEngine {
   }
 
   startGame(): boolean {
-    if (this.state.players.length < this.config.minPlayers) {
+    // Every other engine delegates here. This one used to re-implement the base
+    // method - same min-player check, same status and updatedAt writes - and so
+    // silently missed the two clock stamps the base gained later, leaving a
+    // started Yahtzee game with no lastMoveAt and no turnStartedAt in its state
+    // until somebody moved (#1048). The turn timer and the auto-action guard
+    // both measure from those, and with neither present the guard falls back to
+    // the Games.lastMoveAt column, which still holds the waiting row's value.
+    if (!super.startGame()) {
       return false;
     }
-    
+
     // Initialize scorecards for all players
     const gameData = this.state.data as YahtzeeGameData
     gameData.scores = this.state.players.map(() => ({}))
     // Re-resolve the mode from config at start: game-create rebuilds the engine
     // with startConfig.rules mirrored from the waiting game's state (#779)
     gameData.mode = normalizeYahtzeeMode(this.config?.rules?.mode ?? gameData.mode)
-    
-    this.state.status = 'playing';
-    this.state.updatedAt = new Date();
+
     return true;
   }
 
