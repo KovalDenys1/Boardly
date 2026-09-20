@@ -2350,6 +2350,12 @@ const en = {
     claimedBy: 'Claimed by {{name}}',
     points: '{{count}} pts',
     timeLeft: '{{seconds}}s',
+    phaseWaiting: 'Waiting',
+    phaseClaim: 'Claim',
+    phaseVote: 'Vote',
+    phaseReveal: 'Reveal',
+    youWin: 'You win!',
+    tabGame: 'Game',
   },
   spectate: {
     watchingCount: 'Spectating · {{count}} watching',

@@ -12,15 +12,20 @@ import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
+import { useLobbyChat, useLobbyChatHistory } from '@/app/lobby/[code]/hooks/useLobbyChat'
 import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import LeaveIcon from '@/components/LeaveIcon'
-import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import Chat from '@/components/Chat'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
@@ -42,6 +47,14 @@ interface Lobby {
   turnTimer?: number
   theme?: string
   allowSpectators?: boolean
+  maxPlayers?: number
+}
+
+interface GamePlayerUser {
+  username?: string
+  avatarUrl?: string | null
+  image?: string | null
+  isPremium?: boolean
 }
 
 interface GamePlayer {
@@ -57,7 +70,7 @@ interface GamePlayer {
    * `name` the API does not send. Read names through `playerNameOf`.
    */
   name?: string
-  user?: { username?: string }
+  user?: GamePlayerUser
 }
 
 /**
@@ -88,67 +101,11 @@ interface Game {
   players: GamePlayer[]
 }
 
-// ─── The shell every phase renders into ───────────────────────────────────────
-
 /** The catalog accent for liars_party (lib/game-catalog.ts). */
 const LIARS_PARTY_ACCENT = 'var(--bd-lav)'
+const LIARS_PARTY_ACCENT_DEEP = 'var(--bd-lav-deep)'
 
-interface ShellProps {
-  /** Per-phase test id, kept on the shell root so it is still one query away. */
-  testId: string
-  code: string
-  /** Already-translated game name. */
-  title: string
-  /** Already-translated Leave / Back to lobby label. */
-  leaveLabel: string
-  theme: string | undefined
-  isSpectator: boolean
-  allowSpectators: boolean
-  onLeave: () => void
-  /** GameStatusBanner, or nothing on a screen with no clock to show. */
-  status?: React.ReactNode
-  children: React.ReactNode
-}
-
-/**
- * #1040: the seven screens each painted their own rose/orange gradient and
- * white text, so the lobby theme the host paid for and picked stopped at the
- * door of the game. They now share this shell: `.game-screen` for the height,
- * `getThemePageStyle` for the palette, the shared room card for the title, the
- * room code and the way out, and one scrolling content region underneath.
- * Each phase supplies only its own content.
- *
- * What is deliberately NOT here yet: `GameScoreboardHeader`,
- * `GameResultOverlay`, `GameTabs` and `Chat`. That is #1041's whole scope, and
- * #872 puts it after this ticket on purpose – #1040 is named there as "the
- * prerequisite for composing the shared chrome into this page". The two pieces
- * of the kit this screen can use today it does use: `GameRoomCard` (which is
- * where `GameLeaveButton` lives, so Leave is already in the one place the
- * layout DoD puts it) and `GameStatusBanner` directly under it. The rest is a
- * scoreboard built for two players and a chat panel that needs a right column,
- * neither of which lands without the work #1041 is for.
- */
-function LiarsPartyShell({ testId, code, title, leaveLabel, theme, isSpectator, allowSpectators, onLeave, status, children }: ShellProps) {
-  return (
-    <div className="game-screen liars-screen" style={getThemePageStyle(theme)} data-testid={testId}>
-      <div className="liars-shell">
-        <GameRoomCard
-          gameId="liars-party"
-          title={title}
-          code={code}
-          isSpectator={isSpectator}
-          leaveLabel={leaveLabel}
-          allowSpectators={allowSpectators}
-          onLeave={onLeave}
-        />
-        {status}
-        <div className="liars-content">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-/** A themed card. One class so the seven screens cannot drift apart again. */
+/** A themed card. One class so the phases cannot drift apart again. */
 function LiarsCard({ children, className = '', role, testId }: { children: React.ReactNode; className?: string; role?: string; testId?: string }) {
   return (
     <div className={`bd-card liars-card ${className}`.trim()} role={role} data-testid={testId}>
@@ -157,61 +114,38 @@ function LiarsCard({ children, className = '', role, testId }: { children: React
   )
 }
 
-// ─── Screen components ────────────────────────────────────────────────────────
+// ─── Phase content ───────────────────────────────────────────────────────────
+// Each phase renders the one thing the viewer can act on, plus whatever fills
+// the rest of the card. The roster / standings and the chat are not here: they
+// are the shared right column on desktop and their own tabs on mobile, so a
+// phase that repeated them would print the same table twice on the same screen.
 
-interface WaitingScreenProps {
-  players: GamePlayer[]
+interface WaitingContentProps {
   data: LiarsPartyGameData | undefined
   rules: string[]
-  isHost: boolean
-  isStarting: boolean
-  onStart: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, t }: WaitingScreenProps) {
+function WaitingContent({ data, rules, t }: WaitingContentProps) {
   const maxRounds = data?.maxRounds ?? 10
   const eliminationThreshold = data?.eliminationThreshold ?? 2
 
   return (
-    <div className="liars-columns">
-      <LiarsRules rules={rules} t={t} />
-
+    <>
       <LiarsCard>
-        <div className="liars-card__title">{t('liarsParty.playersHeading', { count: players.length })}</div>
-        <div className="mb-3 text-sm text-bd-ink-muted">
-          {players.length} / 12 · {t('liarsParty.roundsCount', { count: maxRounds })} · {t('liarsParty.eliminatedAfter', { count: eliminationThreshold })}
-        </div>
-        <div className="space-y-1">
-          {players.map(p => (
-            <div key={p.id} className="text-sm text-bd-ink">{playerNameOf(p, t)}</div>
-          ))}
-        </div>
-        <div className="liars-card__actions">
-          {isHost ? (
-            <button
-              onClick={onStart}
-              disabled={isStarting || players.length < 4}
-              className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isStarting ? t('common.loading') : t('liarsParty.startGame')}
-            </button>
-          ) : (
-            <p className="text-sm text-bd-ink-soft">{t('liarsParty.waitingForPlayers')}</p>
-          )}
-          {players.length < 4 && isHost && (
-            <p className="text-xs text-bd-ink-muted">{t('liarsParty.needMorePlayers')}</p>
-          )}
+        <div className="text-sm text-bd-ink-muted">
+          {t('liarsParty.roundsCount', { count: maxRounds })} · {t('liarsParty.eliminatedAfter', { count: eliminationThreshold })}
         </div>
       </LiarsCard>
-    </div>
+      <LiarsRules rules={rules} t={t} fill />
+    </>
   )
 }
 
-/** The numbered rules, shared by the waiting room and the live rounds. */
-function LiarsRules({ rules, t }: { rules: string[]; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string }) {
+/** The numbered rules, shared by the waiting room and a round with no history yet. */
+function LiarsRules({ rules, t, fill = false }: { rules: string[]; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string; fill?: boolean }) {
   return (
-    <LiarsCard testId="liars-rules">
+    <LiarsCard className={fill ? 'liars-phase__fill' : ''} testId="liars-rules">
       <div className="liars-card__title">{t('liarsParty.rules')}</div>
       <ol className="space-y-1.5">
         {rules.map((rule, i) => (
@@ -226,11 +160,11 @@ function LiarsRules({ rules, t }: { rules: string[]; t: (key: TranslationKeys, o
 }
 
 /**
- * What every earlier round turned out to be. Alongside the standings this is
- * the second half of a voter's screen: a player deciding whether to believe the
- * claimant wants to know how the last few claims went, and until a round has
- * been played the rules take the slot instead – the DoD's "when a panel is
- * hidden its space is taken by something useful".
+ * What every earlier round turned out to be. This is what a voter reads while
+ * they wait – a player deciding whether to believe the claimant wants to know
+ * how the last few claims went – and until a round has been played the rules
+ * take the slot instead: the DoD's "when a panel is hidden its space is taken
+ * by something useful".
  */
 function LiarsRoundHistory({ data, players, rules, t }: {
   data: LiarsPartyGameData
@@ -239,10 +173,10 @@ function LiarsRoundHistory({ data, players, rules, t }: {
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
   const results = data.roundResults
-  if (results.length === 0) return <LiarsRules rules={rules} t={t} />
+  if (results.length === 0) return <LiarsRules rules={rules} t={t} fill />
 
   return (
-    <LiarsCard testId="liars-round-history">
+    <LiarsCard className="liars-phase__fill" testId="liars-round-history">
       <div className="liars-card__title">{t('liarsParty.roundHistory')}</div>
       <div className="space-y-2">
         {[...results].reverse().map(result => (
@@ -267,151 +201,79 @@ function LiarsRoundHistory({ data, players, rules, t }: {
   )
 }
 
-interface LiarsStandingsProps {
-  data: LiarsPartyGameData
+interface LiarsPlayersPanelProps {
+  data: LiarsPartyGameData | undefined
   players: GamePlayer[]
+  maxPlayers: number
+  currentUserId: string
+  isFinished: boolean
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 /**
- * Who is still in, what they have scored and how close each of them is to a
- * third strike, with the player currently holding the floor marked.
+ * The right column's top card (the Players tab on mobile): before the game the
+ * roster, during it the standings – who is still in, what they have scored and
+ * how close each of them is to a strike-out, with the player holding the floor
+ * marked.
  *
- * This is the claim phase's content for everyone who is not the claimant. It
- * used to be nothing at all: `ClaimScreen` returned `null` off the claimant
- * branch, so every other player and every spectator got a header, a banner and
- * an empty scrolling region under it – the game's most-watched screen, blank,
- * at all five viewports. The reasoning in the old comment ("the banner already
- * says whose turn it is") argued against repeating the banner, which is right,
- * and then shipped an empty region, which the layout DoD forbids outright. The
- * table you are about to vote on is the thing worth showing instead, and it is
- * the same data the reveal screen already renders.
+ * This is one panel and not two because it answers one question at both ends of
+ * the game, and because the column has one slot for it. It used to be a column
+ * inside the claim phase, which is why the claim phase had to render it three
+ * times over (claimant, voter, eliminated) and why a spectator saw nothing at
+ * all on the game's most-watched screen.
  */
-function LiarsStandings({ data, players, t }: LiarsStandingsProps) {
+function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinished, t }: LiarsPlayersPanelProps) {
   const nameOf = (pid: string) => playerNameById(players, pid, t)
+  const seated = data && data.activePlayerIds.length > 0
+  // A finished game has one name left in `activePlayerIds` – everyone else was
+  // knocked out – so reading the live list printed a one-row "Total Scores"
+  // beside the result overlay, at the moment the table most wants to compare
+  // numbers. The ranking is the finished game's roster.
+  const seatIds = isFinished && data ? data.ranking : (data?.activePlayerIds ?? [])
 
   return (
-    <LiarsCard testId="liars-standings">
-      <div className="liars-card__title">{t('liarsParty.totalScores')}</div>
-      <div className="space-y-1">
-        {data.activePlayerIds.map(pid => {
-          // Only while somebody is actually claiming – the marker read as stale
-          // on the reveal screen, where the claim has already been settled.
-          const isClaimant = data.phase === 'claim' && pid === data.currentClaimantId
-          return (
-            <div key={pid} className="flex items-center justify-between gap-2 text-sm text-bd-ink">
-              <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                {isClaimant && (
-                  <span style={{ color: LIARS_PARTY_ACCENT }} title={t('liarsParty.claimingNow')}>
-                    <Icon name="mask" size={14} label={t('liarsParty.claimingNow')} />
-                  </span>
-                )}
-                <span className="truncate">{nameOf(pid)}</span>
-              </span>
-              <span className="text-bd-ink-soft">
-                {t('liarsParty.points', { count: data.scores[pid] ?? 0 })} · {t('liarsParty.strikes', { count: data.strikes[pid] ?? 0, max: data.eliminationThreshold })}
-              </span>
-            </div>
-          )
-        })}
+    <section className="liars-panel" data-testid="liars-standings">
+      <div className="liars-panel__head">
+        <h3 className="liars-card__title mb-0">{seated ? t('liarsParty.totalScores') : t('liarsParty.playersHeading', { count: players.length })}</h3>
+        <span className="liars-chip">{players.length} / {maxPlayers}</span>
       </div>
-      {data.eliminatedPlayerIds.length > 0 && (
-        <div className="mt-3 border-t border-bd-line pt-2 text-xs text-bd-ink-muted">
+
+      <div className="liars-scroll liars-panel__list">
+        {seated
+          ? seatIds.map(pid => {
+              // Only while somebody is actually claiming – the marker read as
+              // stale on the reveal screen, where the claim is already settled.
+              const isClaimant = data.phase === 'claim' && pid === data.currentClaimantId
+              return (
+                <div key={pid} className={`liars-seat${pid === currentUserId ? ' liars-seat--me' : ''}`}>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                    {isClaimant && (
+                      <span style={{ color: LIARS_PARTY_ACCENT }} title={t('liarsParty.claimingNow')}>
+                        <Icon name="mask" size={14} label={t('liarsParty.claimingNow')} />
+                      </span>
+                    )}
+                    <span className="truncate">{nameOf(pid)}</span>
+                  </span>
+                  <span className="shrink-0 text-bd-ink-soft">
+                    {t('liarsParty.points', { count: data.scores[pid] ?? 0 })} · {t('liarsParty.strikes', { count: data.strikes[pid] ?? 0, max: data.eliminationThreshold })}
+                  </span>
+                </div>
+              )
+            })
+          : players.map(p => (
+              <div key={p.id} className={`liars-seat${p.userId === currentUserId ? ' liars-seat--me' : ''}`}>
+                <span className="truncate">{playerNameOf(p, t)}</span>
+              </div>
+            ))}
+      </div>
+
+      {seated && !isFinished && data.eliminatedPlayerIds.length > 0 && (
+        <div className="liars-panel__foot">
           {t('liarsParty.outOfTheGame', { names: data.eliminatedPlayerIds.map(nameOf).join(', ') })}
         </div>
       )}
-    </LiarsCard>
+    </section>
   )
-}
-
-interface ClaimScreenProps {
-  data: LiarsPartyGameData
-  players: GamePlayer[]
-  rules: string[]
-  currentUserId: string
-  isMoveSubmitting: boolean
-  onSubmitClaim: (claim: string, isBluff: boolean) => void
-  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
-}
-
-function ClaimScreen({ data, players, rules, currentUserId, isMoveSubmitting, onSubmitClaim, t }: ClaimScreenProps) {
-  const [claimText, setClaimText] = useState('')
-  const [isBluffSelected, setIsBluffSelected] = useState<boolean | null>(null)
-  const isClaimant = data.currentClaimantId === currentUserId
-  const charCount = claimText.length
-  const canSubmit = charCount >= 5 && charCount <= 180 && isBluffSelected !== null && !isMoveSubmitting
-
-  // Everyone but the claimant is watching one person type. The status banner
-  // above already says whose turn it is, so this does not repeat that sentence –
-  // it shows the table instead, which is what a voter is reading while they wait.
-  // Two columns at desktop width and a stack below it, for both branches: a
-  // lone 560px card centred in a 1100px region is the "small content floating
-  // in it" the DoD names, which is what the first pass at this shipped.
-  if (!isClaimant) {
-    return (
-      <div className="liars-columns">
-        <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
-        <LiarsStandings data={data} players={players} t={t} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="liars-columns">
-      {/* No heading: the status banner above already reads "Your turn to make
-          a claim", and the placeholder says what goes in the box. */}
-      <LiarsCard>
-        <textarea
-          className="bd-input resize-none"
-          rows={4}
-          placeholder={t('liarsParty.claimPlaceholder')}
-          maxLength={180}
-          value={claimText}
-          onChange={e => setClaimText(e.target.value)}
-        />
-        <div className="mt-1 text-right text-xs text-bd-ink-muted">
-          {t('liarsParty.charsRemaining', { count: 180 - charCount })}
-        </div>
-
-        <div className="liars-choice-row">
-          <button
-            onClick={() => setIsBluffSelected(false)}
-            aria-pressed={isBluffSelected === false}
-            className={`bd-btn liars-choice${isBluffSelected === false ? ' liars-choice--on-truth' : ' bd-btn-soft'}`}
-          >
-            <Icon name="check" size={16} /> {t('liarsParty.truth')}
-          </button>
-          <button
-            onClick={() => setIsBluffSelected(true)}
-            aria-pressed={isBluffSelected === true}
-            className={`bd-btn liars-choice${isBluffSelected === true ? ' liars-choice--on-bluff' : ' bd-btn-soft'}`}
-          >
-            <Icon name="mask" size={16} /> {t('liarsParty.bluff')}
-          </button>
-        </div>
-
-        <div className="liars-card__actions">
-          <button
-            onClick={() => isBluffSelected !== null && onSubmitClaim(claimText, isBluffSelected)}
-            disabled={!canSubmit}
-            className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t('liarsParty.submitClaim')}
-          </button>
-        </div>
-      </LiarsCard>
-
-      <LiarsStandings data={data} players={players} t={t} />
-    </div>
-  )
-}
-
-interface EliminatedClaimScreenProps {
-  data: LiarsPartyGameData
-  players: GamePlayer[]
-  rules: string[]
-  currentUserId: string
-  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 /** The eliminated player's banner, the one piece their screens add. */
@@ -423,32 +285,107 @@ function EliminatedBanner({ round, t }: { round: number | null | undefined; t: (
   )
 }
 
-function EliminatedClaimScreen({ data, players, rules, currentUserId, t }: EliminatedClaimScreenProps) {
-  const eliminatedRound = data.eliminatedAtRound[currentUserId]
-
-  return (
-    <div className="liars-columns">
-      <div className="liars-columns__full">
-        <EliminatedBanner round={eliminatedRound} t={t} />
-      </div>
-      {/* An eliminated player still watches the table they were knocked out of;
-          the banner alone left the same empty region the claim phase had. */}
-      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
-      <LiarsStandings data={data} players={players} t={t} />
-    </div>
-  )
-}
-
-interface ChallengeScreenProps {
+interface ClaimContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
-  currentUserId: string
+  rules: string[]
   isMoveSubmitting: boolean
-  onVote: (decision: 'challenge' | 'believe') => void
+  onSubmitClaim: (claim: string, isBluff: boolean) => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-/** The claim under vote, plus how many votes are in. Shared with the eliminated view. */
+export interface LiarsClaimDraft {
+  /** The round the half-typed claim belongs to, so the next one starts clean. */
+  round: number
+  text: string
+  isBluff: boolean | null
+}
+
+/**
+ * The claimant's form. Everyone else gets the history below instead.
+ *
+ * The draft is the page's, not this component's: the desktop, landscape and
+ * portrait trees each mount their own copy of the phase card and only one is on
+ * screen, so a rotation or a window drag across the breakpoint would otherwise
+ * hand the claimant a blank box with the round clock still running (the same
+ * trap Sketch & Guess hit with its canvas, #1034).
+ */
+function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, t }: {
+  draft: LiarsClaimDraft
+  onDraftChange: (next: LiarsClaimDraft) => void
+  isMoveSubmitting: boolean
+  onSubmitClaim: (claim: string, isBluff: boolean) => void
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
+}) {
+  const claimText = draft.text
+  const isBluffSelected = draft.isBluff
+  const setClaimText = (text: string) => onDraftChange({ ...draft, text })
+  const setIsBluffSelected = (isBluff: boolean) => onDraftChange({ ...draft, isBluff })
+  const charCount = claimText.length
+  const canSubmit = charCount >= 5 && charCount <= 180 && isBluffSelected !== null && !isMoveSubmitting
+
+  return (
+    // No heading: the status banner above already reads "Your turn to make a
+    // claim", and the placeholder says what goes in the box.
+    <LiarsCard>
+      <textarea
+        className="bd-input resize-none"
+        rows={3}
+        placeholder={t('liarsParty.claimPlaceholder')}
+        maxLength={180}
+        value={claimText}
+        onChange={e => setClaimText(e.target.value)}
+      />
+      <div className="mt-1 text-right text-xs text-bd-ink-muted">
+        {t('liarsParty.charsRemaining', { count: 180 - charCount })}
+      </div>
+
+      <div className="liars-choice-row">
+        <button
+          onClick={() => setIsBluffSelected(false)}
+          aria-pressed={isBluffSelected === false}
+          className={`bd-btn liars-choice${isBluffSelected === false ? ' liars-choice--on-truth' : ' bd-btn-soft'}`}
+        >
+          <Icon name="check" size={16} /> {t('liarsParty.truth')}
+        </button>
+        <button
+          onClick={() => setIsBluffSelected(true)}
+          aria-pressed={isBluffSelected === true}
+          className={`bd-btn liars-choice${isBluffSelected === true ? ' liars-choice--on-bluff' : ' bd-btn-soft'}`}
+        >
+          <Icon name="mask" size={16} /> {t('liarsParty.bluff')}
+        </button>
+      </div>
+
+      <div className="liars-card__actions">
+        <button
+          onClick={() => isBluffSelected !== null && onSubmitClaim(claimText, isBluffSelected)}
+          disabled={!canSubmit}
+          className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {t('liarsParty.submitClaim')}
+        </button>
+      </div>
+    </LiarsCard>
+  )
+}
+
+function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, isClaimant, eliminatedRound, draft, onDraftChange, t }: ClaimContentProps & {
+  isClaimant: boolean
+  eliminatedRound: number | null | undefined
+  draft: LiarsClaimDraft
+  onDraftChange: (next: LiarsClaimDraft) => void
+}) {
+  return (
+    <>
+      {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
+      {isClaimant && <ClaimForm draft={draft} onDraftChange={onDraftChange} isMoveSubmitting={isMoveSubmitting} onSubmitClaim={onSubmitClaim} t={t} />}
+      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+    </>
+  )
+}
+
+/** The claim under vote, plus how many votes are in. */
 function ClaimUnderVote({ data, heading, t }: {
   data: LiarsPartyGameData
   heading?: string
@@ -464,83 +401,50 @@ function ClaimUnderVote({ data, heading, t }: {
   )
 }
 
-function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, onVote, t }: ChallengeScreenProps) {
-  const isClaimant = data.currentClaimantId === currentUserId
-  const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
-
-  return (
-    <div className="liars-columns">
-      <div className="liars-columns__stack">
-        <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} t={t} />
-
-        {!isClaimant && !myVote && (
-          <div className="liars-choice-row">
-            <button
-              onClick={() => onVote('challenge')}
-              disabled={isMoveSubmitting}
-              className="bd-btn bd-btn-coral liars-choice disabled:opacity-50"
-            >
-              {t('liarsParty.challenge')}
-            </button>
-            <button
-              onClick={() => onVote('believe')}
-              disabled={isMoveSubmitting}
-              className="bd-btn liars-choice liars-choice--believe disabled:opacity-50"
-            >
-              {t('liarsParty.believe')}
-            </button>
-          </div>
-        )}
-
-        {!isClaimant && myVote && (
-          <LiarsCard className="text-center">
-            <div className="text-bd-ink">{t('liarsParty.youVoted', { decision: myVote.decision })}</div>
-            <div className="mt-1 text-sm text-bd-ink-muted">{t('liarsParty.waitingForVotes')}</div>
-          </LiarsCard>
-        )}
-
-        {isClaimant && (
-          <LiarsCard className="text-center">
-            <p className="text-sm text-bd-ink-soft">{t('liarsParty.waitingForVotes')}</p>
-          </LiarsCard>
-        )}
-      </div>
-
-      <LiarsStandings data={data} players={players} t={t} />
-    </div>
-  )
-}
-
-interface EliminatedChallengeScreenProps {
+interface ChallengeContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
+  rules: string[]
   currentUserId: string
+  isClaimant: boolean
+  eliminatedRound: number | null | undefined
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedChallengeScreen({ data, players, currentUserId, t }: EliminatedChallengeScreenProps) {
-  const eliminatedRound = data.eliminatedAtRound[currentUserId]
+function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eliminatedRound, t }: ChallengeContentProps) {
+  const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
+  const canVote = !isClaimant && !myVote && eliminatedRound === undefined
 
   return (
-    <div className="liars-columns">
-      <div className="liars-columns__full">
-        <EliminatedBanner round={eliminatedRound} t={t} />
-      </div>
-      <ClaimUnderVote data={data} t={t} />
-      <LiarsStandings data={data} players={players} t={t} />
-    </div>
+    <>
+      {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
+      <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} t={t} />
+
+      {!canVote && myVote && (
+        <LiarsCard className="text-center">
+          <div className="text-bd-ink">{t('liarsParty.youVoted', { decision: myVote.decision })}</div>
+          <div className="mt-1 text-sm text-bd-ink-muted">{t('liarsParty.waitingForVotes')}</div>
+        </LiarsCard>
+      )}
+
+      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+    </>
   )
 }
 
-interface RevealScreenProps {
+/** Whether this viewer still owes a vote, so the page knows to pin the row. */
+function canVoteNow(data: LiarsPartyGameData, currentUserId: string, isClaimant: boolean, eliminatedRound: number | null | undefined) {
+  return !isClaimant && eliminatedRound === undefined && !data.challengeVotes.some(v => v.playerId === currentUserId)
+}
+
+interface RevealContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
-  isMoveSubmitting: boolean
-  onAdvanceRound: () => void
+  rules: string[]
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, t }: RevealScreenProps) {
+function RevealContent({ data, players, rules, t }: RevealContentProps) {
   // The engine only resolves a round inside `advanceAfterReveal`, which runs
   // when somebody submits `advance-round` – i.e. on the way OUT of this phase
   // (lib/games/liars-party-game.ts:479). So while this screen is on show there
@@ -553,7 +457,6 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, t }: Re
   // off the live state, which holds every fact this screen shows.
   const resolved: LiarsPartyRoundResult | undefined =
     data.roundResults.find(result => result.round === data.currentRound)
-  const isLastRound = data.currentRound >= data.maxRounds
   const wasBluff = resolved?.wasBluff ?? data.claim?.isBluff ?? false
   const eliminatedThisRound = players.filter(p => {
     const pid = p.userId || p.id
@@ -561,7 +464,7 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, t }: Re
   })
 
   return (
-    <div className="liars-columns">
+    <>
       {data.claim && (
         <LiarsCard>
           <blockquote className="liars-claim">&ldquo;{data.claim.text}&rdquo;</blockquote>
@@ -601,58 +504,37 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, t }: Re
         </LiarsCard>
       )}
 
-      <LiarsStandings data={data} players={players} t={t} />
-
       {eliminatedThisRound.length > 0 && (
-        <LiarsCard className="liars-card--danger liars-columns__full text-center">
+        <LiarsCard className="liars-card--danger text-center">
           <div className="mb-1 font-semibold">{t('liarsParty.eliminatedThisRound')}</div>
           {eliminatedThisRound.map(p => <div key={p.id} className="text-sm">{playerNameOf(p, t)}</div>)}
         </LiarsCard>
       )}
 
-      {/*
-        Open to every player, not just the host – the engine's validateMove for
-        advance-round has no player-ownership check (any known player can legally
-        advance). Gating this to isHost made the game permanently soft-lock for
-        everyone else whenever the host didn't click through. See #642.
-      */}
-      <div className="liars-columns__footer">
-        <button
-          onClick={onAdvanceRound}
-          disabled={isMoveSubmitting}
-          className="bd-btn bd-btn-primary disabled:opacity-50"
-        >
-          {isLastRound ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
-        </button>
-      </div>
-    </div>
+      {/* The vote breakdown is four to eleven rows; measured at 390 it left
+          450px of empty card under it when it was the stretching one. What
+          belongs in that space is the same thing the other phases put there. */}
+      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+    </>
   )
 }
 
-interface GameOverScreenProps {
+/**
+ * What sits under GameResultOverlay: the full final table. The winner line, the
+ * rematch buttons and the after-game actions are the overlay's, so they are not
+ * repeated here – a player who taps through to inspect wants the numbers.
+ */
+function FinishedContent({ data, players, winnerName, t }: {
   data: LiarsPartyGameData
   players: GamePlayer[]
-  isHost: boolean
-  isStarting: boolean
-  onPlayAgain: () => void
-  onReturnToLobby: () => void
+  winnerName: string
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
-  /** Lobby code for the after-game share button (#982). */
-  code: string
-  isGuest: boolean
-  /** Decided by the caller; gates the push ask slot (#982). */
-  isRegistered: boolean
-}
-
-function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, t, code, isGuest, isRegistered }: GameOverScreenProps) {
-  const winner = players.find(p => p.userId === data.winnerId || p.id === data.winnerId)
-  const winnerName = playerNameOf(winner, t)
-
+}) {
   return (
-    <div className="liars-columns">
+    <>
       <LiarsCard className="text-center">
-        <div style={{ color: LIARS_PARTY_ACCENT }}><Icon name="mask" size={40} /></div>
-        <h2 className="font-display text-3xl font-extrabold text-bd-ink">
+        <div style={{ color: LIARS_PARTY_ACCENT }}><Icon name="mask" size={28} /></div>
+        <h2 className="font-display text-2xl font-extrabold text-bd-ink">
           {t('liarsParty.wins', { name: winnerName })}
         </h2>
         <div className="mt-1 text-sm text-bd-ink-muted">
@@ -660,33 +542,19 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
             ? t('liarsParty.lastPlayerStanding')
             : t('liarsParty.maxRoundsReached')}
         </div>
-        <div className="liars-card__actions">
-          {isHost ? (
-            <>
-              <button onClick={onPlayAgain} disabled={isStarting} className="bd-btn bd-btn-primary disabled:opacity-50">
-                {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
-              </button>
-              <button onClick={onReturnToLobby} disabled={isStarting} className="bd-btn bd-btn-soft disabled:opacity-50">
-                {t('game.ui.returnToLobby')}
-              </button>
-            </>
-          ) : (
-            <p className="text-sm text-bd-ink-soft">{t('game.ui.waitingForHost')}</p>
-          )}
-        </div>
       </LiarsCard>
 
-      <LiarsCard>
+      <LiarsCard className="liars-phase__fill" testId="liars-final-ranking">
+        <div className="liars-card__title">{t('liarsParty.totalScores')}</div>
         <div className="space-y-2">
           {data.ranking.map((pid, idx) => {
             const player = players.find(p => p.userId === pid || p.id === pid)
-            const name = playerNameOf(player, t)
             const score = data.scores[pid] ?? 0
             const strikes = data.strikes[pid] ?? 0
             return (
               <div key={pid} className="flex items-center justify-between gap-2 text-sm text-bd-ink">
                 <span className="font-bold text-bd-ink-muted">{t('liarsParty.rank', { position: idx + 1 })}</span>
-                <span className="min-w-0 flex-1 truncate">{name}</span>
+                <span className="min-w-0 flex-1 truncate">{playerNameOf(player, t)}</span>
                 <span>{t('liarsParty.points', { count: score })}</span>
                 <span className="text-bd-ink-muted">{t('liarsParty.strikes', { count: strikes, max: data.eliminationThreshold })}</span>
               </div>
@@ -694,23 +562,13 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
           })}
         </div>
       </LiarsCard>
-
-      {/* Card variant now that the screen is themed rather than white-on-gradient (#982, #1040). */}
-      <div className="liars-columns__footer">
-        <AfterGameActions
-          variant="card"
-          inviteCode={code}
-          gameType="liars_party"
-          isGuest={isGuest}
-          isRegistered={isRegistered}
-          registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
-        />
-      </div>
-    </div>
+    </>
   )
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
+
+type LiarsMobileTab = 'game' | 'players' | 'chat'
 
 export default function LiarsPartyPage({ code, isSpectator = false, onGameReset }: LiarsPartyPageProps) {
   const router = useRouter()
@@ -725,6 +583,9 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
+  const [mobileTab, setMobileTab] = useState<LiarsMobileTab>('game')
+  const [overlayInspecting, setOverlayInspecting] = useState(false)
+  const [claimDraft, setClaimDraft] = useState<LiarsClaimDraft>({ round: 0, text: '', isBluff: null })
 
   // #1038: leaving used to be a bare router.push('/games'), so the server never
   // heard about it. The seat stayed occupied and the table kept waiting on a
@@ -734,6 +595,20 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const { isLeavingLobbyRef, leaveLobby } = useLeaveLobby(code, "Liar's Party")
   // Zero-signal disconnect detection (#675) – see tic-tac-toe-page.tsx for why every dedicated page needs its own.
   useLobbyHeartbeat(code, !isSpectator)
+
+  // #1041: chat is not decoration in a social deduction game – the bluffing
+  // happens in it. Same Redis-backed, server-authorized pipeline as every other
+  // kit page (#736); nothing here broadcasts chat itself.
+  const {
+    chatMessages,
+    sendChatMessage,
+    unreadCount: chatUnreadCount,
+    resetUnread: resetChatUnread,
+    someoneTyping,
+    onChatMessage,
+    onPlayerTyping,
+    mergeHistoryMessages,
+  } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
   // Timer tick – forces re-render every second for countdown displays
   const [timerTick, setTimerTick] = useState(0)
@@ -869,7 +744,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
 
-  useRealtimeConnection({
+  const { isConnected: socketConnected, isReconnecting } = useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
         // landed while the socket was down is gone. Without this the board
         // stayed frozen on pre-gap state and neither player could move.
@@ -882,7 +757,11 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     onLobbyUpdate: () => { void loadLobby() },
     onPlayerJoined: () => { void loadLobby() },
     onGameReset: handleGameReset,
+    onChatMessage,
+    onPlayerTyping,
   })
+
+  useLobbyChatHistory({ code, isConnected: socketConnected, isReconnecting, mergeHistoryMessages })
 
   // #999: this game does have a server-side timeout fallback, but it runs inside
   // GET /api/lobby/[code], and during play this page only fetches when a
@@ -1034,7 +913,17 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const currentUserId = getCurrentUserId() ?? ''
   const isHost = lobby?.creatorId === currentUserId
   const players = game?.players ?? []
+  const maxPlayers = lobby?.maxPlayers ?? 12
+  const isFinished = resolvedStatus === 'finished'
+  const isPlaying = resolvedStatus === 'playing' && !!data
+  const phase = isPlaying ? data!.phase : undefined
   const isEliminated = data?.eliminatedPlayerIds.includes(currentUserId) ?? false
+  const eliminatedRound = isEliminated ? data?.eliminatedAtRound[currentUserId] ?? null : undefined
+
+  const playerByUserId = new Map(players.filter(p => !!p.userId).map(p => [p.userId, p]))
+  const nameOf = (pid: string) => playerNameById(players, pid, t)
+  const avatarOf = (pid: string) => playerByUserId.get(pid)?.user?.avatarUrl ?? playerByUserId.get(pid)?.user?.image ?? null
+  const premiumOf = (pid: string) => !!playerByUserId.get(pid)?.user?.isPremium
 
   const turnTimerSeconds = typeof lobby?.turnTimer === 'number' ? lobby.turnTimer : 60
   const lastMoveAt = engineState?.lastMoveAt ?? null
@@ -1052,135 +941,389 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         t('liarsParty.rule5'),
       ]
 
-  const claimantPlayer = data ? players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId) : undefined
-  const claimantName = playerNameOf(claimantPlayer, t)
-  const isClaimant = !isSpectator && !!data && data.currentClaimantId === currentUserId
+  const claimantId = data?.currentClaimantId ?? ''
+  const claimantName = nameOf(claimantId)
+  const isClaimant = !isSpectator && isPlaying && claimantId === currentUserId
+  const winnerId = data?.winnerId ?? ''
+  const winnerName = nameOf(winnerId)
+  const iWon = !isSpectator && !!winnerId && winnerId === currentUserId
+  const finishedMessage = iWon ? t('liarsParty.youWin') : t('liarsParty.wins', { name: winnerName })
 
-  const roundMeta = data ? t('liarsParty.round', { current: data.currentRound, total: data.maxRounds }) : undefined
+  // ─── Header ───────────────────────────────────────────────────────────────
+  // Two seats out of up to twelve, so they are the two that matter to this
+  // viewer: whoever holds the floor (the winner once it is over, the host
+  // before it starts), and the viewer themselves. A viewer who IS the featured
+  // seat – or a spectator, who is nobody – gets the leader in the other card,
+  // so the row never shows the same person twice and never shows an empty card.
+  // The whole roster lives in the players panel; this row is the glance.
+  const featuredId = isFinished ? winnerId : isPlaying ? claimantId : (lobby?.creatorId ?? '')
+  const contenderIds = players
+    .map(p => p.userId)
+    .filter(id => !!id && id !== featuredId)
+    .sort((a, b) => (data?.scores[b] ?? 0) - (data?.scores[a] ?? 0))
+  const mySeatId = !isSpectator && currentUserId && currentUserId !== featuredId
+    ? currentUserId
+    : contenderIds[0] ?? ''
+
+  // Tagged with the round it was written in, so the next round starts clean
+  // without an effect that would clear it one render late.
+  const activeClaimDraft: LiarsClaimDraft = claimDraft.round === (data?.currentRound ?? 0)
+    ? claimDraft
+    : { round: data?.currentRound ?? 0, text: '', isBluff: null }
+
+  const hasVoted = !!data?.challengeVotes.some(v => v.playerId === currentUserId)
+  const seatCard = (id: string, side: 'left' | 'right', isActive: boolean) => (
+    <GamePlayerCard
+      name={id ? nameOf(id) : '–'}
+      isActive={isActive}
+      isMe={!isSpectator && !!currentUserId && id === currentUserId}
+      isWinner={isFinished && !!id && id === winnerId}
+      side={side}
+      avatarSrc={id ? avatarOf(id) : null}
+      isPremium={id ? premiumOf(id) : false}
+      accentColor={side === 'left' ? LIARS_PARTY_ACCENT : 'var(--bd-coral)'}
+      turnDotColor="var(--bd-mint-deep)"
+      subline={t('liarsParty.points', { count: id ? (data?.scores[id] ?? 0) : 0 })}
+    />
+  )
+
+  const phaseLabel = isFinished
+    ? t('lobby.game.gameOver')
+    : phase === 'claim'
+      ? t('liarsParty.phaseClaim')
+      : phase === 'challenge'
+        ? t('liarsParty.phaseVote')
+        : phase === 'reveal'
+          ? t('liarsParty.phaseReveal')
+          : t('liarsParty.phaseWaiting')
+  const counterKicker = isPlaying || isFinished ? t('game.ui.round') : t('game.ui.tabPlayers')
+  const counterValue = isPlaying || isFinished
+    ? `${data!.currentRound}/${data!.maxRounds}`
+    : `${players.length}/${maxPlayers}`
+
+  const roomCardProps = {
+    gameId: 'liars-party',
+    title: t('liarsParty.name'),
+    code,
+    isSpectator,
+    leaveLabel: t('game.ui.leave'),
+    allowSpectators: !!lobby?.allowSpectators,
+    onLeave: requestLeave,
+  }
+  // Leave lives in this card's own GameLeaveButton, top-right of the grid's
+  // first row, which is where the layout DoD puts it and where Tic-Tac-Toe,
+  // Connect Four and RPS already have it. That is why GameScoreboardHeader is
+  // given no `trailing` here: a second Leave would be the duplicate the ticket
+  // warned about, not a second placement.
+  const roomSection = <GameRoomCard {...roomCardProps} />
+  const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
+
+  const headerSection = (
+    <div className="ttt-card liars-header-card">
+      <div className="liars-header-card__mark" aria-hidden><Icon name="mask" size={96} /></div>
+      <GameScoreboardHeader
+        leftCard={seatCard(featuredId, 'left', isPlaying && phase === 'claim')}
+        center={
+          <>
+            <div className="liars-counter__kicker">{counterKicker}</div>
+            <div className="liars-counter__value">{counterValue}</div>
+            <div className="liars-counter__kicker">{phaseLabel}</div>
+          </>
+        }
+        centerCompact={<div className="liars-counter__value">{counterValue}</div>}
+        rightCard={seatCard(mySeatId, 'right', isPlaying && phase === 'challenge' && !!mySeatId && !hasVoted)}
+      />
+    </div>
+  )
 
   /** The one status line, in the one place every game puts it (layout DoD). */
-  const turnBanner = (activeTitle: string, isYourTurn: boolean) => (
+  const statusSection = isFinished ? (
+    <GameStatusBanner
+      isFinished
+      finishedMessage={finishedMessage}
+      activeTitle={finishedMessage}
+      secs={0}
+      turnTimerLimit={turnTimerSeconds}
+      barColor={LIARS_PARTY_ACCENT}
+      isSpectator={isSpectator}
+    />
+  ) : isPlaying && phase !== 'reveal' ? (
     <GameStatusBanner
       isFinished={false}
-      activeTitle={activeTitle}
-      meta={roundMeta}
+      activeTitle={
+        phase === 'claim'
+          ? (isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }))
+          : t('liarsParty.challengeOrBelieve')
+      }
+      // No `meta`. GameStatusBanner puts it on the title's nowrap/ellipsis
+      // line, and the peer pages pass 2 to 4 characters there (connect four
+      // "#12", rps "1/2", sketch "3/5"); a sentence-length "Round 4 / 10"
+      // overflowed that line by 71px at 320x720 and 51px at 844x390 measured
+      // in a live round, so the parent's `overflow: hidden` cut the round away
+      // and truncated the title as well. The round is the header's own counter
+      // one block above, under the ROUND kicker, on every viewport - layout
+      // DoD item 5: do not show the same signal twice.
       secs={timerRemaining}
       turnTimerLimit={turnTimerSeconds}
       barColor={LIARS_PARTY_ACCENT}
       leadingIcon={<Icon name="mask" size={20} />}
       isSpectator={isSpectator}
-      isYourTurn={isYourTurn}
+      isYourTurn={
+        phase === 'claim'
+          ? isClaimant
+          : !isSpectator && !isEliminated && !isClaimant && !hasVoted
+      }
     />
-  )
+  ) : null
+  // Reveal has no clock – it waits on a click – and the waiting room has
+  // nothing on one either, so neither gets a countdown bar that would be
+  // decoration. The region under the header is the phase card in both cases,
+  // which is full, so this is not an empty region.
 
-  // Everything below renders into one shell and one return, so the theme, the
-  // header and the leave confirmation are defined once rather than seven times.
-  let content: React.ReactNode = <LoadingSpinner />
-  let testId = 'liars-party-loading'
-  let statusNode: React.ReactNode = null
-  let showReactions = false
+  // ─── Phase card ───────────────────────────────────────────────────────────
+  // `phaseAction` is what the viewer can press, and it is rendered OUTSIDE the
+  // scrolling region: measured at 390 on the reveal screen, Next Round sat
+  // below a vote breakdown and a history and scrolled out of reach, on the one
+  // screen where the game is waiting for exactly that click.
+  let phaseTestId = 'liars-party-loading'
+  let phaseContent: React.ReactNode = <LoadingSpinner />
+  let phaseAction: React.ReactNode = null
 
   if (resolvedStatus === 'waiting') {
-    // No banner: nothing is on the clock yet, and the players card carries the
-    // "N / 12, waiting for more" signal a turn banner would duplicate.
-    testId = 'liars-party-waiting-room'
-    content = (
-      <WaitingScreen
-        players={players}
-        data={data}
-        rules={rules}
-        isHost={!isSpectator && isHost}
-        isStarting={isStarting}
-        onStart={handleStartGame}
-        t={t}
-      />
-    )
-  } else if (resolvedStatus === 'playing' && data && data.phase === 'claim') {
-    showReactions = !isSpectator
-    statusNode = turnBanner(
-      isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }),
-      isClaimant
-    )
-    testId = isEliminated ? 'liars-party-eliminated-claim-screen' : 'liars-party-claim-screen'
-    content = isEliminated ? (
-      <EliminatedClaimScreen data={data} players={players} rules={rules} currentUserId={currentUserId} t={t} />
+    phaseTestId = 'liars-party-waiting-room'
+    phaseContent = <WaitingContent data={data} rules={rules} t={t} />
+    phaseAction = !isSpectator && isHost ? (
+      <>
+        <button
+          onClick={handleStartGame}
+          disabled={isStarting || players.length < minPlayersRequired}
+          className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isStarting ? t('common.loading') : t('liarsParty.startGame')}
+        </button>
+        {players.length < minPlayersRequired && (
+          <p className="text-xs text-bd-ink-muted">{t('liarsParty.needMorePlayers')}</p>
+        )}
+      </>
     ) : (
-      <ClaimScreen
-        data={data}
+      <p className="text-sm text-bd-ink-soft">{t('liarsParty.waitingForPlayers')}</p>
+    )
+  } else if (isPlaying && phase === 'claim') {
+    phaseTestId = isEliminated ? 'liars-party-eliminated-claim-screen' : 'liars-party-claim-screen'
+    phaseContent = (
+      <ClaimContent
+        data={data!}
         players={players}
         rules={rules}
-        currentUserId={currentUserId}
+        isClaimant={isClaimant && !isEliminated}
+        eliminatedRound={eliminatedRound}
+        draft={activeClaimDraft}
+        onDraftChange={setClaimDraft}
         isMoveSubmitting={isMoveSubmitting}
         onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
         t={t}
       />
     )
-  } else if (resolvedStatus === 'playing' && data && data.phase === 'challenge') {
-    showReactions = !isSpectator
-    const hasVoted = data.challengeVotes.some(v => v.playerId === currentUserId)
-    statusNode = turnBanner(t('liarsParty.challengeOrBelieve'), !isSpectator && !isEliminated && !isClaimant && !hasVoted)
-    testId = isEliminated ? 'liars-party-eliminated-challenge-screen' : 'liars-party-challenge-screen'
-    content = isEliminated ? (
-      <EliminatedChallengeScreen data={data} players={players} currentUserId={currentUserId} t={t} />
-    ) : (
-      <ChallengeScreen
-        data={data}
+  } else if (isPlaying && phase === 'challenge') {
+    phaseTestId = isEliminated ? 'liars-party-eliminated-challenge-screen' : 'liars-party-challenge-screen'
+    phaseContent = (
+      <ChallengeContent
+        data={data!}
         players={players}
+        rules={rules}
         currentUserId={currentUserId}
-        isMoveSubmitting={isSpectator || isMoveSubmitting}
-        onVote={(decision) => handleMove('submit-challenge', { decision })}
+        isClaimant={isClaimant}
+        eliminatedRound={eliminatedRound}
         t={t}
       />
     )
-  } else if (resolvedStatus === 'playing' && data && data.phase === 'reveal') {
-    // Reveal waits on a click, not a clock, so there is no timer to show.
-    showReactions = !isSpectator
-    testId = 'liars-party-reveal-screen'
-    content = (
-      <RevealScreen
-        data={data}
-        players={players}
-        isMoveSubmitting={isMoveSubmitting}
-        onAdvanceRound={() => handleMove('advance-round', {})}
-        t={t}
-      />
-    )
-  } else if (resolvedStatus === 'finished' && data) {
-    testId = 'liars-party-game-over-screen'
-    content = (
-      <GameOverScreen
-        data={data}
-        players={players}
-        isHost={!isSpectator && isHost}
-        isStarting={isStarting}
-        onPlayAgain={handleStartGame}
-        onReturnToLobby={handleReturnToWaiting}
-        t={t}
-        code={code}
-        isGuest={!isSpectator && isGuest}
-        isRegistered={!isSpectator && status === 'authenticated' && !isGuest}
-      />
-    )
+    if (!isSpectator && canVoteNow(data!, currentUserId, isClaimant, eliminatedRound)) {
+      phaseAction = (
+        <div className="liars-choice-row" data-testid="liars-vote-buttons">
+          <button
+            onClick={() => handleMove('submit-challenge', { decision: 'challenge' })}
+            disabled={isMoveSubmitting}
+            className="bd-btn bd-btn-coral liars-choice disabled:opacity-50"
+          >
+            {t('liarsParty.challenge')}
+          </button>
+          <button
+            onClick={() => handleMove('submit-challenge', { decision: 'believe' })}
+            disabled={isMoveSubmitting}
+            className="bd-btn liars-choice liars-choice--believe disabled:opacity-50"
+          >
+            {t('liarsParty.believe')}
+          </button>
+        </div>
+      )
+    }
+  } else if (isPlaying && phase === 'reveal') {
+    phaseTestId = 'liars-party-reveal-screen'
+    phaseContent = <RevealContent data={data!} players={players} rules={rules} t={t} />
+    // Open to every player, not just the host – the engine's validateMove for
+    // advance-round has no player-ownership check (any known player can legally
+    // advance). Gating this to isHost made the game permanently soft-lock for
+    // everyone else whenever the host didn't click through. See #642.
+    phaseAction = !isSpectator ? (
+      <button
+        onClick={() => handleMove('advance-round', {})}
+        disabled={isMoveSubmitting}
+        className="bd-btn bd-btn-primary disabled:opacity-50"
+      >
+        {data!.currentRound >= data!.maxRounds ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
+      </button>
+    ) : null
+  } else if (isFinished && data) {
+    phaseTestId = 'liars-party-game-over-screen'
+    phaseContent = <FinishedContent data={data} players={players} winnerName={winnerName} t={t} />
   }
 
-  // The reaction overlay and the confirm modal are siblings of the shell, not
-  // content inside it: both draw outside the flow, and a child of the scrolling
-  // content region would join its flex layout and shift the phase off centre.
+  const showResultOverlay = isFinished && !!data && !isSpectator && !overlayInspecting
+
+  const renderPhaseSection = (treeTestId: string) => (
+    // One phase id per layout tree. All three trees are in the DOM at once and
+    // CSS picks one, so a single shared id would match three nodes.
+    <div className="liars-phase-card" data-testid={`${phaseTestId}-${treeTestId}`}>
+      <div className="liars-phase">{phaseContent}</div>
+      {phaseAction && <div className="liars-phase-action">{phaseAction}</div>}
+      {showResultOverlay && (
+        <GameResultOverlay
+          title={finishedMessage}
+          kicker={t('lobby.game.gameOver')}
+          accentColor={LIARS_PARTY_ACCENT}
+          accentShadowColor={LIARS_PARTY_ACCENT_DEEP}
+          icon={
+            <div className="liars-overlay-icon" style={{ background: iWon ? LIARS_PARTY_ACCENT_DEEP : LIARS_PARTY_ACCENT }}>
+              <Icon name={iWon ? 'trophy' : 'mask'} size={28} tone="on-accent" />
+            </div>
+          }
+          onInspect={() => setOverlayInspecting(true)}
+          isHost={isHost}
+          isLoading={isStarting}
+          onPlayAgain={handleStartGame}
+          onReturnToLobby={handleReturnToWaiting}
+          onLeave={() => setShowLeaveConfirmModal(true)}
+          isGuest={isGuest}
+          registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+          inviteCode={code}
+          gameType="liars_party"
+          isRegistered={status === 'authenticated' && !isGuest}
+        />
+      )}
+      {isFinished && !isSpectator && overlayInspecting && (
+        <button onClick={() => setOverlayInspecting(false)} className="liars-show-results">
+          {t('games.tictactoe.game.showResults')}
+        </button>
+      )}
+    </div>
+  )
+
+  const playersSection = (
+    <LiarsPlayersPanel data={data} players={players} maxPlayers={maxPlayers} currentUserId={currentUserId} isFinished={isFinished} t={t} />
+  )
+
+  const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+  for (const p of players) {
+    if (p.userId) chatPlayerProfiles.set(p.userId, { avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null, isPremium: !!p.user?.isPremium })
+  }
+
+  // No muted seat here, unlike Sketch & Guess: the claimant's advantage in this
+  // game IS talking – selling a bluff or a truth is the move – so silencing
+  // them would remove the game rather than protect it.
+  const chatSection = (
+    <section className="game-chat-panel">
+      <Chat
+        messages={chatMessages}
+        onSendMessage={sendChatMessage}
+        currentUserId={currentUserId || null}
+        playerProfiles={chatPlayerProfiles}
+        isMinimized={false}
+        onToggleMinimize={() => {}}
+        unreadCount={chatUnreadCount}
+        someoneTyping={someoneTyping}
+        fullScreen
+        readOnly={isSpectator}
+      />
+    </section>
+  )
+
+  const showReactions = !isSpectator && resolvedStatus === 'playing'
+
   return (
-    <>
-      <LiarsPartyShell
-        testId={testId}
-        code={code}
-        title={t('liarsParty.name')}
-        leaveLabel={isSpectator ? t('game.ui.backToLobby') : t('game.ui.leave')}
-        theme={lobby?.theme}
-        isSpectator={isSpectator}
-        allowSpectators={!!lobby?.allowSpectators}
-        onLeave={requestLeave}
-        status={statusNode}
-      >
-        {content}
-      </LiarsPartyShell>
+    <div className="game-screen liars-screen" style={getThemePageStyle(lobby?.theme)} data-testid={phaseTestId}>
+
+      {/* ── DESKTOP ─────────────────────────────────────────────────── */}
+      <div className="ttt-desktop-layout">
+        <div className="ttt-grid">
+          {headerSection}
+          {roomSection}
+          <div className="ttt-center-col">
+            {statusSection}
+            {renderPhaseSection('desktop')}
+          </div>
+          <div className="ttt-right-col">
+            {playersSection}
+            {chatSection}
+          </div>
+        </div>
+      </div>
+
+      {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
+      {/* Sketch & Guess had to leave its scores unreachable in this tree and
+          wrote down the answer it could not afford: make the side column's
+          flexible region a tab strip. Here that is affordable, because the
+          board column holds a card of text rather than a canvas, and it is
+          needed - a vote in this game is decided on the strike count. Two tabs,
+          not three: the phase already owns the left column.
+          Measured first as a split board column (phase 321, panel 185): the
+          seat names came out as "F.." and "G..", and five seats left 120px of
+          empty card under them. */}
+      <div className="game-landscape-layout">
+        <div className="game-landscape-board">
+          {renderPhaseSection('landscape')}
+        </div>
+        <div className="game-landscape-side">
+          <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+          {statusSection}
+          <GameTabs
+            tabs={[
+              { id: 'players' as const, label: t('game.ui.tabPlayers') },
+              { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+            ]}
+            activeTab={mobileTab === 'chat' ? 'chat' : 'players'}
+            onTabChange={(id) => {
+              setMobileTab(id)
+              if (id === 'chat') resetChatUnread()
+            }}
+          />
+          {mobileTab === 'chat' ? chatSection : playersSection}
+        </div>
+      </div>
+
+      {/* ── MOBILE ──────────────────────────────────────────────────── */}
+      <div className="ttt-mobile-layout">
+        <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+        {statusSection}
+        <GameTabs
+          tabs={[
+            { id: 'game' as const, label: t('liarsParty.tabGame') },
+            { id: 'players' as const, label: t('game.ui.tabPlayers') },
+            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+          ]}
+          activeTab={mobileTab}
+          onTabChange={(id) => {
+            setMobileTab(id)
+            if (id === 'chat') resetChatUnread()
+          }}
+        />
+        <div className="ttt-mobile-content">
+          {mobileTab === 'game' && renderPhaseSection('mobile')}
+          {mobileTab === 'players' && playersSection}
+          {mobileTab === 'chat' && chatSection}
+        </div>
+      </div>
+
+      {/* ── MODALS ──────────────────────────────────────────────────── */}
       {showReactions && <ReactionOverlay lobbyCode={code} />}
       {!isSpectator && (
         <ConfirmModal
@@ -1195,6 +1338,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           icon={<LeaveIcon size={28} />}
         />
       )}
-    </>
+    </div>
   )
 }

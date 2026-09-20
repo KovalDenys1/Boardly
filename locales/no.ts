@@ -2338,6 +2338,12 @@ const no = {
     claimedBy: 'Påstått av {{name}}',
     points: '{{count}} p',
     timeLeft: '{{seconds}}s',
+    phaseWaiting: 'Venter',
+    phaseClaim: 'Påstand',
+    phaseVote: 'Stemming',
+    phaseReveal: 'Avsløring',
+    youWin: 'Du vinner!',
+    tabGame: 'Spill',
   },
   spectate: {
     watchingCount: 'Ser på · {{count}} ser',

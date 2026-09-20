@@ -2352,6 +2352,12 @@ const uk: Translation = {
     claimedBy: 'Заявив {{name}}',
     points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
+    phaseWaiting: 'Очікування',
+    phaseClaim: 'Заява',
+    phaseVote: 'Голосування',
+    phaseReveal: 'Розкриття',
+    youWin: 'Ви перемогли!',
+    tabGame: 'Гра',
   },
   spectate: {
     watchingCount: 'Спостереження · {{count}} глядачів',
