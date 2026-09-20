@@ -23,7 +23,8 @@ const root = process.cwd()
 
 /**
  * Every `/games/<slug>` route with a detail page of its own. `sketch-and-guess`
- * has only a `lobbies/` sub-route, so it has nothing to give an seo block to.
+ * joined them in #1036; the slug is the one in the catalog entry's `route`, not
+ * the entry's id, which for this game is `guess-my-drawing`.
  */
 const PAGE_SLUGS = readdirSync(path.join(root, 'app/games'))
   .filter((entry) => statSync(path.join(root, 'app/games', entry)).isDirectory())

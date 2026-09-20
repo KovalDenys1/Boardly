@@ -3,8 +3,10 @@ import GameLobbiesPage from '@/app/games/components/GameLobbiesPage'
 
 export const metadata: Metadata = {
   robots: { index: false, follow: true },
-  // No /games/sketch-and-guess detail page exists yet, so the catalog is the nearest indexable parent.
-  alternates: { canonical: 'https://boardly.online/games' },
+  // The game's own detail page since #1036, the way every other lobbies list
+  // points at its parent. It is noindex itself until #873, which is why this
+  // list stays noindex too.
+  alternates: { canonical: 'https://boardly.online/games/sketch-and-guess' },
 }
 
 export default function SketchAndGuessLobbiesPage() {
