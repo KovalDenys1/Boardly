@@ -618,11 +618,24 @@ export class SketchAndGuessGame extends GameEngine {
 }
 
 /**
- * Strips the current round's secret prompt from state before it reaches a
- * non-drawer — mirrors sanitizeSpyStateForBroadcast/sanitizeRpsStateForBroadcast.
+ * Strips the current round's secrets from state before it reaches a player who
+ * must not have them – mirrors sanitizeSpyStateForBroadcast/sanitizeRpsStateForBroadcast.
  * Only the round matching data.currentRound can ever be unrevealed (advanceAfterReveal
  * only increments currentRound after that round's reveal+scoring), so every other
  * round in the array is always safe to return untouched.
+ *
+ * There are two secrets, not one. The prompt is the obvious one and was the
+ * only one redacted until #1032. The other is the guesses themselves: a correct
+ * guess *is* the prompt, spelled out, and `isCorrect` labels it as such. Played
+ * with three seats on 2026-09-20, the second guesser's own snapshot came back
+ * carrying `[{"guess":"island","isCorrect":true}]` while they were still typing
+ * – the answer, handed to them, in every round. So a live round shows a viewer
+ * only their own guess; the count everyone is allowed to see is
+ * `data.submittedPlayerIds`, which says how many have answered and never what.
+ *
+ * `viewerUserId === null` is the shared-broadcast and spectator case: no guess
+ * has an owner to match, so all of them drop, which is the redaction those
+ * viewers should get anyway.
  */
 export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unknown; status?: string }>(
   state: T,
@@ -638,10 +651,18 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
   if (currentRoundIndex === -1) return state
 
   const currentRound = data.rounds[currentRoundIndex]
-  if (viewerUserId !== null && viewerUserId === currentRound.drawerId) return state
+  // The drawer keeps the prompt – it is their move – but not the live guesses:
+  // nobody reads another player's answer before the reveal.
+  const viewerIsDrawer = viewerUserId !== null && viewerUserId === currentRound.drawerId
 
   const sanitizedRounds = data.rounds.slice()
-  sanitizedRounds[currentRoundIndex] = { ...currentRound, prompt: '' }
+  sanitizedRounds[currentRoundIndex] = {
+    ...currentRound,
+    prompt: viewerIsDrawer ? currentRound.prompt : '',
+    guesses: Array.isArray(currentRound.guesses)
+      ? currentRound.guesses.filter((guess) => guess.playerId === viewerUserId)
+      : [],
+  }
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
 }
