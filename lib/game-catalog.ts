@@ -1,5 +1,6 @@
 import {
   isFakeArtistEnabled,
+  isInDevelopmentGamePlayEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -25,6 +26,24 @@ export type ExperimentalGameType =
   | 'fake_artist'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
+
+/**
+ * The two games that are experimental in the literal sense, as opposed to built-but-unfeatured.
+ *
+ * They are the reason ENABLE_IN_DEVELOPMENT_GAMES cannot simply promote everything that is
+ * `in-development`: neither has a `route` (#975 removed both, because a route here is a link
+ * to a 404 the moment the entry is promoted) and `createGameEngine` throws for them unless
+ * their own flag is on. So they keep their per-game flag as the only way in, and the blanket
+ * one covers the games this repo already considers finished.
+ */
+const EXPERIMENTAL_GAME_TYPES: readonly SupportedCatalogGameType[] = [
+  'telephone_doodle',
+  'fake_artist',
+]
+
+function isExperimentalGameType(gameType: SupportedCatalogGameType): boolean {
+  return EXPERIMENTAL_GAME_TYPES.includes(gameType)
+}
 
 export type LobbyCreateConfig = {
   gradient: string
@@ -795,6 +814,18 @@ export function getAvailableGameTypes(options?: {
   )
 }
 
+/**
+ * The catalog with every `in-development` entry its flags have promoted to `available`.
+ *
+ * This is the single chokepoint the whole gate hangs off: `getCatalogAvailableGames` filters
+ * this list, `getAvailableGameTypes` maps that, and `isTemporarilyUnavailableGameType` - the
+ * 400 on POST /api/lobby and POST /api/game/create - is the negation of it. So the one place
+ * to open an unreleased game for local and preview work is here, and one place is why the
+ * production guard can be argued about at all.
+ *
+ * `isInDevelopmentGamePlayEnabled()` returns false on production unconditionally, so on
+ * boardly.online this branch is the same as it was before #1054.
+ */
 export function getCatalogGames(options?: {
   enabledExperimental?: readonly string[]
 }): GameCatalogEntry[] {
@@ -807,6 +838,7 @@ export function getCatalogGames(options?: {
 
     const isEnabled =
       enabledExperimental.has(game.id) ||
+      (isInDevelopmentGamePlayEnabled() && !isExperimentalGameType(game.gameType)) ||
       (game.gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())

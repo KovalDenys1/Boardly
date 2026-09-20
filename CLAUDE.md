@@ -291,6 +291,28 @@ So a ticket like "build game X's UI" is done once the game is playable behind it
 about featuring it publicly. Ask; never flip it as the natural last step of closing a
 ticket.
 
+**To play one, set `ENABLE_IN_DEVELOPMENT_GAMES=true` (#1054).** Until that flag existed the
+rule above was circular: the decision is gated on the game being playable, and
+`isTemporarilyUnavailableGameType` made POST /api/lobby and POST /api/game/create answer 400
+for every in-development game, so nobody could play one to find out. Two agents "verified" a
+game by reading its code instead, and a reviewer then found an empty content region on its
+most-seen screen. Run the dev server with it, or add it to `.env.local`:
+
+```bash
+ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true pnpm dev
+```
+
+- It promotes every in-development entry that has a route and a `lobbyCreateConfig` - today
+  Liar's Party and Sketch & Guess. `fake_artist` and `telephone_doodle` are genuinely
+  experimental, have no pages, and keep their own per-game flag.
+- **It is dead on production, whatever the variable says.** `lib/feature-flags.ts` refuses it
+  unless `VERCEL_ENV` / `NEXT_PUBLIC_VERCEL_ENV` positively say `preview` or `development`,
+  or neither is set and `NODE_ENV` is not `production`. Unknown values are a no.
+  `__tests__/api/in-development-game-gate.test.ts` drives the real POST handler through
+  every production shape; do not soften it into a `!== 'production'` check.
+- It is deliberately **not** in `RUNTIME_FLAG_KEYS`, so the Control Panel cannot switch it on.
+- **Never commit a change to `availability` to get a game running.** The flip is #873's.
+
 ## Testing a game that needs three or more real players
 
 Games with `supportsBots: false` (Guess the Spy `minPlayers` 3, Alias 4, Liar's Party 4)
@@ -308,6 +330,21 @@ curl -s -X POST http://localhost:3000/api/lobby/<code>/join-guest \
 `app/api/lobby/[code]/join-guest/route.ts` needs no auth: it mints a guest and adds them if
 a slot is open. This is the same public API the app's own UI calls — not a DB hack and not
 hand-minted JWTs — so it is safe against the local dev server.
+
+Two things that cost a run on 2026-09-20. The host's identity travels in an `X-Guest-Token`
+header, not a cookie, so a curl cookie jar gets `Unauthorized`; take the token from the
+`/api/auth/guest-session` body and put it in the header, and into `boardly_guest_token` /
+`boardly_guest_id` / `boardly_guest_name` in localStorage for the browser. And rate limiting
+is shared Upstash state across every agent on this machine, so `/api/auth/guest-session`
+answers 429 for reasons that have nothing to do with your run - retry with a backoff rather
+than concluding the endpoint is broken.
+
+**Clean up by id, never by name.** `boardly-dev` is shared with every other agent running
+right now, and `join-guest` hands out names from a small pool, so `username startsWith
+'Filler'` matches their seats as well as yours. On 2026-09-20 a cleanup written that way
+deleted four guests and four `Players` rows belonging to another agent's live lobby. Collect
+the ids your own run created and delete those, or give your fixtures a run-unique prefix and
+match on that.
 
 ## Redis — Upstash, and two traps that have both been hit
 
