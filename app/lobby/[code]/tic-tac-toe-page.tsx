@@ -912,13 +912,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 center={
                     <>
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                            Round {roundNum}
+                            {t('games.tictactoe.game.roundNumber', { num: roundNum })}
                         </div>
                         <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
                         </div>
                         <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                            {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
+                            {t('games.tictactoe.game.drawsCount', { count: drawsCount })}{targetRounds ? ` · BO${targetRounds}` : ''}
                         </div>
                     </>
                 }

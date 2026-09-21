@@ -1,3 +1,4 @@
+import { useTranslation } from '@/lib/i18n-helpers'
 import type { ReplayRendererProps } from './types'
 import { Icon } from '@/components/icons'
 
@@ -21,6 +22,8 @@ function isWinningLine(value: unknown): value is [number, number][] {
 }
 
 export default function TTTReplayRenderer({ snapshotState, players, playerNameById }: ReplayRendererProps) {
+  const { t } = useTranslation()
+
   const state = snapshotState as Record<string, unknown> | null
   if (!state || typeof state !== 'object') return null
 
@@ -51,7 +54,7 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
   return (
     <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-800/50 sm:p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">
-        Board
+        {t('game.ui.tabBoard')}
       </p>
 
       <div className="flex flex-col sm:flex-row gap-5 items-start">
@@ -113,15 +116,15 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
 
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/70">
             {winner === 'draw' ? (
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Draw</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('profile.gameReplay.draw')}</p>
             ) : winner ? (
               <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                {winner === 'X' ? xPlayer : oPlayer} wins this round
+                {t('profile.gameReplay.board.winsRound', { player: winner === 'X' ? xPlayer : oPlayer })}
               </p>
             ) : currentSymbol ? (
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 <span className="font-semibold">{currentSymbol === 'X' ? xPlayer : oPlayer}</span>
-                {' '}to move
+                {' '}{t('profile.gameReplay.board.toMove')}
               </p>
             ) : null}
           </div>

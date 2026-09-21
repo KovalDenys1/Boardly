@@ -131,7 +131,7 @@ export function OnboardingModal() {
               color: 'var(--bd-ink)',
               lineHeight: 1,
             }}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <Icon name="close" size={16} />
           </button>

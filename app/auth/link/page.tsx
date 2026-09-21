@@ -5,10 +5,12 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { showToast } from '@/lib/i18n-toast'
+import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { Icon } from '@/components/icons'
 
 function LinkAccountContent() {
+  const { t } = useTranslation()
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -101,25 +103,29 @@ function LinkAccountContent() {
               className="text-2xl font-extrabold text-bd-ink"
               style={{ fontFamily: 'var(--bd-font-display)' }}
             >
-              Link {getProviderName()} Account?
+              {t('auth.linkAccount.title', { provider: getProviderName() })}
             </h1>
           </div>
 
           <div className="mb-6 rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
             <p className="mb-2 text-sm font-semibold text-bd-lav-deep">
-              You're about to link your {getProviderName()} account to this profile.
+              {t('auth.linkAccount.intro', { provider: getProviderName() })}
             </p>
             <p className="text-xs leading-5 text-bd-ink-soft">
-              <strong>Note:</strong> Your {getProviderName()} email may differ from your current account email ({session?.user?.email}). That's fine — you'll be able to sign in with either after linking.
+              <strong>{t('auth.linkAccount.noteLabel')}</strong>{' '}
+              {t('auth.linkAccount.noteBody', {
+                provider: getProviderName(),
+                email: session?.user?.email ?? '',
+              })}
             </p>
           </div>
 
           <div className="mb-6 space-y-2">
             {[
-              `Your ${getProviderName()} account will be linked to this profile`,
-              `You can sign in using ${getProviderName()} in the future`,
-              'Your current email and password login will still work',
-              'All your game data remains on this account',
+              t('auth.linkAccount.benefitLinked', { provider: getProviderName() }),
+              t('auth.linkAccount.benefitFuture', { provider: getProviderName() }),
+              t('auth.linkAccount.benefitPassword'),
+              t('auth.linkAccount.benefitData'),
             ].map((item) => (
               <div key={item} className="flex items-start gap-2 text-sm text-bd-ink-soft">
                 <Icon name="check" size={16} className="mt-0.5 shrink-0 text-bd-mint-deep" />
@@ -130,10 +136,10 @@ function LinkAccountContent() {
 
           <div className="flex gap-3">
             <button onClick={handleConfirmLink} className="bd-btn bd-btn-primary flex-1 justify-center">
-              Continue to {getProviderName()} →
+              {t('auth.linkAccount.continueTo', { provider: getProviderName() })} →
             </button>
             <button onClick={() => router.push('/profile')} className="bd-btn bd-btn-ghost justify-center px-5">
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -152,14 +158,14 @@ function LinkAccountContent() {
           className="mb-2 text-2xl font-extrabold text-bd-ink"
           style={{ fontFamily: 'var(--bd-font-display)' }}
         >
-          Linking {getProviderName()} Account
+          {t('auth.linkAccount.linkingTitle', { provider: getProviderName() })}
         </h1>
         <p className="mb-6 text-sm leading-6 text-bd-ink-soft">
-          Please wait while we connect your {getProviderName()} account…
+          {t('auth.linkAccount.linkingBody', { provider: getProviderName() })}
         </p>
         <LoadingSpinner />
         <p className="mt-5 text-xs text-bd-ink-muted">
-          You'll be redirected to {getProviderName()} to authorize the connection
+          {t('auth.linkAccount.redirectNote', { provider: getProviderName() })}
         </p>
       </div>
     </div>

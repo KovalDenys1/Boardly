@@ -23,7 +23,7 @@
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "audit:emoji": "tsx scripts/check-emoji.ts",
     "audit:docs": "tsx scripts/audit-docs.ts",
-    "ci:quick": "npm run lint && npm run typecheck && npm run arch:audit && npm run audit:responsive && npm run audit:emoji && npm run audit:docs",
+    "ci:quick": "npm run lint && npm run typecheck && npm run arch:audit && npm run audit:responsive && npm run audit:emoji && npm run audit:i18n && npm run audit:docs",
     "ci:quality": "npm run ci:quick && npm test",
     "postinstall": "prisma generate",
     "test": "jest --runInBand",
@@ -59,7 +59,8 @@
     "hooks:pre-push": "node --import tsx scripts/git-hook-pre-push.ts",
     "prepare": "node scripts/install-hooks-if-available.js",
     "discord:assets": "tsx scripts/discord/render-assets.tsx --out ../boardly-discord/assets/out/code",
-    "test:fast": "jest --maxWorkers=75%"
+    "test:fast": "jest --maxWorkers=75%",
+    "audit:i18n": "tsx scripts/audit-i18n.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

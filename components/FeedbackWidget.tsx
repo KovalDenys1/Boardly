@@ -142,6 +142,7 @@ export default function FeedbackWidget() {
             <div className="relative flex items-center justify-between border-b border-bd-line px-5 py-4 dark:border-slate-700">
               <div>
                 <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                  {/* i18n-allow: brand name, identical in all four locales */}
                   Boardly
                 </p>
                 <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
@@ -161,7 +162,7 @@ export default function FeedbackWidget() {
             {submitted ? (
               <div className="relative px-5 py-10 text-center">
                 <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav font-display text-xl font-black text-white shadow-[3px_3px_0_var(--bd-lav-deep)]">
-                  OK
+                  {t('feedback.successBadge')}
                 </div>
                 <p className="mb-1 font-display text-2xl font-bold text-bd-ink dark:text-white">
                   {t('feedback.successTitle')}

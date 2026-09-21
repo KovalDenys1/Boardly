@@ -82,7 +82,7 @@ export default function GameDetailPage({
   return (
     <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label="Breadcrumb">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label={t('breadcrumbs.label')}>
           <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
           <Link href="/games" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
@@ -199,6 +199,7 @@ export default function GameDetailPage({
         <section className="mt-8 rounded-[1.75rem] border border-bd-line bg-bd-card-warm p-6 sm:p-8">
           <div className="grid gap-6 lg:grid-cols-[0.7fr_minmax(0,1fr)] lg:items-start">
             <div>
+              {/* i18n-allow: brand name, identical in all four locales */}
               <span className="bd-kicker mb-2 block">Boardly</span>
               <h2 className="font-display text-3xl font-black text-bd-ink">{benefitsTitle}</h2>
             </div>

@@ -95,7 +95,7 @@ export default function FaqSection({ facts }: { facts: FaqFacts }) {
       />
       <section className="home-faq-section" aria-labelledby="home-faq-title">
         <div className="home-faq-intro">
-          <span className="home-faq-kicker">FAQ</span>
+          <span className="home-faq-kicker">{t('faq.kicker')}</span>
           <h2 id="home-faq-title">{t('faq.title')}</h2>
           <p>{t('faq.intro')}</p>
         </div>

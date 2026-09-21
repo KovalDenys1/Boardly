@@ -44,6 +44,7 @@ export default function Footer() {
                 B
               </span>
               <span>
+                {/* i18n-allow: brand name, identical in all four locales */}
                 Boardly
                 <span className="font-semibold" style={{ fontSize: 15, letterSpacing: 0, color: 'var(--bd-ink-soft)' }}>
                   {' – '}{t('footer.brandLine')}
@@ -171,6 +172,7 @@ export default function Footer() {
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                 >
+                  {/* i18n-allow: product name, identical in all four locales */}
                   GitHub
                 </a>
               </li>

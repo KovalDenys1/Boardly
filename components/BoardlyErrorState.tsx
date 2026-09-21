@@ -67,7 +67,7 @@ export default function BoardlyErrorState({
 
           {error?.digest && (
             <div className="mt-5 flex justify-center">
-              <span className="bd-chip px-3 py-1.5 text-xs">ID: {error.digest}</span>
+              <span className="bd-chip px-3 py-1.5 text-xs">{t('errorPage.errorId')}: {error.digest}</span>
             </div>
           )}
 

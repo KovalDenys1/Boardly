@@ -136,7 +136,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
         <nav
           className="mb-6 flex items-center gap-2 text-sm"
           style={{ color: 'var(--bd-ink-muted)' }}
-          aria-label="Breadcrumb"
+          aria-label={t('breadcrumbs.label')}
         >
           <Link href="/" className="transition-colors hover:text-bd-ink">
             {t('breadcrumbs.home')}

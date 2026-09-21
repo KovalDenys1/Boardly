@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { sounds } from '@/lib/sounds'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface DiceProps {
   value: number
@@ -12,6 +13,7 @@ interface DiceProps {
 }
 
 export default function Dice({ value, held, onToggleHold, isRolling = false, disabled = false }: DiceProps) {
+  const { t } = useTranslation()
   const [isPopping, setIsPopping] = useState(false)
   const prevHeldRef = useRef(held)
 
@@ -112,10 +114,10 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       {/* Held indicator */}
       {held && (
         <div
-          className="absolute -top-2 -right-2 min-w-[28px] h-7 rounded-full flex items-center justify-center px-1.5 text-white text-[11px] font-bold shadow-sm border-2 border-white"
+          className="absolute -top-2 -right-2 min-w-[28px] h-7 rounded-full flex items-center justify-center px-1.5 text-white text-[11px] font-bold uppercase shadow-sm border-2 border-white"
           style={{ background: 'var(--bd-coral)' }}
         >
-          HOLD
+          {t('yahtzee.actions.hold')}
         </div>
       )}
     </button>

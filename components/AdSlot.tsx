@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 // One AdSense display slot, shown to free readers only.
 //
@@ -37,6 +38,7 @@ interface AdSlotProps {
 export default function AdSlot({ slot, className }: AdSlotProps) {
   const enabled = adsEnabled()
   const { status } = useSession()
+  const { t } = useTranslation()
   const [premium, setPremium] = useState<PremiumState>('unknown')
   const [unfilled, setUnfilled] = useState(false)
   const insRef = useRef<HTMLModElement | null>(null)
@@ -112,7 +114,7 @@ export default function AdSlot({ slot, className }: AdSlotProps) {
         className="mb-2 text-center text-[11px] uppercase tracking-widest"
         style={{ color: 'var(--bd-ink-muted)' }}
       >
-        Advertisement
+        {t('common.advertisement')}
       </p>
       <ins
         ref={watchFill}

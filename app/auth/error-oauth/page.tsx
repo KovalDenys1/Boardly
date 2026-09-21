@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { signIn } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { Icon } from '@/components/icons'
@@ -13,6 +14,7 @@ import {
 } from '@/lib/auth-redirect'
 
 function OAuthErrorContent() {
+  const { t } = useTranslation()
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -89,23 +91,23 @@ function OAuthErrorContent() {
             className="mb-3 text-2xl font-extrabold text-bd-ink"
             style={{ fontFamily: 'var(--bd-font-display)' }}
           >
-            Email Already Registered
+            {t('auth.oauthError.emailTakenTitle')}
           </h1>
           <p className="mb-5 text-sm leading-6 text-bd-ink-soft">
-            An account with this email already exists. You can either:
+            {t('auth.oauthError.emailTakenBody')}
           </p>
 
           <div className="mb-6 space-y-3 text-left">
             <div className="rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
-              <p className="text-sm font-bold text-bd-lav-deep">1. Sign in with {getProviderName()}</p>
+              <p className="text-sm font-bold text-bd-lav-deep">{t('auth.oauthError.optionProviderTitle', { provider: getProviderName() })}</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
-                If this is your {getProviderName()} account, sign in to access your profile
+                {t('auth.oauthError.optionProviderBody', { provider: getProviderName() })}
               </p>
             </div>
             <div className="rounded-xl border border-bd-mint/40 bg-bd-mint/10 p-4">
-              <p className="text-sm font-bold text-bd-mint-deep">2. Sign in with your existing account</p>
+              <p className="text-sm font-bold text-bd-mint-deep">{t('auth.oauthError.optionExistingTitle')}</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
-                Then link {getProviderName()} from your profile settings
+                {t('auth.oauthError.optionExistingBody', { provider: getProviderName() })}
               </p>
             </div>
           </div>
@@ -116,10 +118,12 @@ function OAuthErrorContent() {
               disabled={merging}
               className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {merging ? 'Redirecting…' : `Sign in with ${getProviderName()}`}
+              {merging
+                ? t('games.redirecting')
+                : t('auth.oauthError.signInWithProvider', { provider: getProviderName() })}
             </button>
             <button onClick={handleSignInDifferent} className="bd-btn bd-btn-ghost w-full justify-center">
-              Sign in with Email/Password
+              {t('auth.oauthError.signInWithPassword')}
             </button>
           </div>
         </div>
@@ -139,21 +143,21 @@ function OAuthErrorContent() {
             className="text-2xl font-extrabold text-bd-ink"
             style={{ fontFamily: 'var(--bd-font-display)' }}
           >
-            Cannot Link Account
+            {t('auth.oauthError.cannotLinkTitle')}
           </h1>
         </div>
 
         <div className="mb-6 rounded-xl border border-bd-coral/40 bg-bd-coral/10 p-4">
           <p className="text-sm font-semibold text-bd-coral-deep">
-            This {getProviderName()} account is already registered with a different email address.
+            {t('auth.oauthError.cannotLinkBody', { provider: getProviderName() })}
           </p>
         </div>
 
         <div className="mb-6 space-y-2">
           {[
-            `Sign out and sign in with ${getProviderName()} instead`,
-            'Continue using your current account',
-            'Contact support to merge accounts manually',
+            t('auth.oauthError.optionSignOut', { provider: getProviderName() }),
+            t('auth.oauthError.optionContinue'),
+            t('auth.oauthError.optionSupport'),
           ].map((option, i) => (
             <div key={option} className="flex items-start gap-2 text-sm text-bd-ink-soft">
               <span className="shrink-0 font-bold text-bd-ink">{i + 1}.</span>
@@ -168,10 +172,12 @@ function OAuthErrorContent() {
             disabled={merging}
             className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {merging ? 'Redirecting…' : `Use ${getProviderName()}`}
+            {merging
+              ? t('games.redirecting')
+              : t('auth.oauthError.useProvider', { provider: getProviderName() })}
           </button>
           <button onClick={handleTryAgain} className="bd-btn bd-btn-ghost justify-center px-5">
-            Go Back
+            {t('notFoundPage.goBack')}
           </button>
         </div>
       </div>

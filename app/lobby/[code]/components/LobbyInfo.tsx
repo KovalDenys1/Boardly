@@ -51,7 +51,7 @@ export default function LobbyInfo({
         {/* Utility bar: breadcrumbs left, action buttons right — same on all sizes */}
         <div className="flex items-center gap-3">
           {/* Breadcrumbs — ultra-compact, single line (truncates instead of wrapping) */}
-          <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden whitespace-nowrap text-[10px] text-bd-ink-muted" aria-label="breadcrumb">
+          <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden whitespace-nowrap text-[10px] text-bd-ink-muted" aria-label={t('breadcrumbs.ariaLabel')}>
             <button
               onClick={() => router.push('/')}
               aria-label={t('common.goHome')}
