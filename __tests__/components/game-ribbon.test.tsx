@@ -57,22 +57,25 @@ describe('GameRibbon', () => {
   })
 
   /**
-   * The xl half of the same DoD, and it does not hold any more.
+   * The xl half of the same DoD.
    *
-   * #873 took the ribbon to ten cards on a 1 / 2 / 4 column grid: 4 + 4 + 2, so the
-   * last row at 1280 ends with two empty slots - the exact layout the eighth card
-   * was added in #921 to remove. This is a product regression the release left
-   * behind, not a stale test, so the assertion is kept exactly as it was rather
-   * than softened or deleted, and marked `failing` so the branch is honest about
-   * which way round it is. Jest turns this red again the moment the ribbon is
-   * fixed - twelve cards, a different xl column count, or a last-row span - and
-   * that is when it goes back to a plain `it`.
+   * #873 took the ribbon to ten cards, and on the four-column grid it had until
+   * then that is 4 + 4 + 2 - the last row at 1280 ending with two empty slots,
+   * the exact layout the eighth card was added in #921 to remove. Denys chose
+   * five columns over spanning the last card, because a span only holds while
+   * the game count is odd and would break again on the tenth game.
+   *
+   * The assertion reads the column count out of the class rather than repeating
+   * it, so the next time the grid changes this test asks the new question
+   * instead of quietly testing the old one.
    */
-  it.failing('fills the 4-column grid, so no row ends with an empty slot', () => {
+  it('fills the xl grid, so no row ends with an empty slot', () => {
     const { container } = render(<GameRibbon />)
 
-    const cardCount = container.querySelector('.grid')!.children.length
+    const grid = container.querySelector('.grid')!
+    const columns = Number(/xl:grid-cols-(\d+)/.exec(grid.className)?.[1])
 
-    expect(cardCount % 4).toBe(0)
+    expect(columns).toBeGreaterThan(1)
+    expect(grid.children.length % columns).toBe(0)
   })
 })
