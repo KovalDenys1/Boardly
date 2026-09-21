@@ -54,6 +54,64 @@ type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'premium' | 'settin
 const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'premium', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
 
+/**
+ * Everything below is copy rendered from a list, so it is held as translation
+ * KEYS rather than text: these arrays are built at module scope, where `t()`
+ * — a hook-backed function — does not exist yet. The key is resolved at render
+ * time, the way components/Footer.tsx resolves `link.labelKey`.
+ */
+type FeatureRow = { icon: IconName; labelKey: TranslationKeys; descKey: TranslationKeys }
+
+const FREE_FEATURES: FeatureRow[] = [
+  { icon: 'gamepad', labelKey: 'profile.premiumTab.free.gamesLabel', descKey: 'profile.premiumTab.free.gamesDesc' },
+  { icon: 'mask', labelKey: 'profile.premiumTab.free.avatarsLabel', descKey: 'profile.premiumTab.free.avatarsDesc' },
+  { icon: 'pencil', labelKey: 'premium.free.bio.label', descKey: 'profile.premiumTab.free.bioDesc' },
+  { icon: 'link', labelKey: 'premium.free.profile.label', descKey: 'profile.premiumTab.free.profileDesc' },
+]
+
+const PREMIUM_FEATURES: FeatureRow[] = [
+  { icon: 'camera', labelKey: 'premium.features.upload.label', descKey: 'profile.premiumTab.paid.uploadDesc' },
+  { icon: 'crown', labelKey: 'profile.premiumTab.paid.badgeLabel', descKey: 'profile.premiumTab.paid.badgeDesc' },
+  { icon: 'palette', labelKey: 'premium.features.cardStyle.label', descKey: 'profile.premiumTab.paid.cardStyleDesc' },
+  { icon: 'drop', labelKey: 'profile.premiumTab.paid.accentLabel', descKey: 'profile.premiumTab.paid.accentDesc' },
+  { icon: 'trophy', labelKey: 'premium.features.featuredGame.label', descKey: 'profile.premiumTab.paid.featuredGameDesc' },
+]
+
+const ACCENT_COLORS: { hex: string; nameKey: TranslationKeys }[] = [
+  { hex: '#FF6B5B', nameKey: 'profile.customization.colors.coral' },
+  { hex: '#4FA3E8', nameKey: 'profile.customization.colors.sky' },
+  { hex: '#48BB78', nameKey: 'profile.customization.colors.green' },
+  { hex: '#F6AD55', nameKey: 'profile.customization.colors.orange' },
+  { hex: '#9B8CFF', nameKey: 'profile.customization.colors.lavender' },
+  { hex: '#F687B3', nameKey: 'profile.customization.colors.pink' },
+  { hex: '#FC8181', nameKey: 'profile.customization.colors.red' },
+  { hex: '#68D391', nameKey: 'profile.customization.colors.mint' },
+]
+
+const FEATURED_GAMES: { id: string; glyph: string; labelKey: TranslationKeys }[] = [
+  { id: 'yahtzee', glyph: 'yahtzee', labelKey: 'games.yahtzee.name' },
+  { id: 'connect_four', glyph: 'connect-four', labelKey: 'games.connect_four.name' },
+  { id: 'tic_tac_toe', glyph: 'tic-tac-toe', labelKey: 'games.tictactoe.name' },
+  { id: 'memory', glyph: 'memory', labelKey: 'games.memory.name' },
+  { id: 'guess_the_spy', glyph: 'spy', labelKey: 'spy.roles.spy' },
+  { id: 'alias', glyph: 'alias', labelKey: 'games.alias.name' },
+  { id: 'rock_paper_scissors', glyph: 'rps', labelKey: 'profile.customization.featuredRps' },
+  { id: 'liars_party', glyph: 'liars-party', labelKey: 'games.liars_party.name' },
+]
+
+const PREMIUM_CARD_STYLES: {
+  id: string
+  nameKey: TranslationKeys
+  descKey: TranslationKeys
+  preview: string
+  text: string
+}[] = [
+  { id: 'gold',  nameKey: 'profile.customization.cardStyles.goldName',  descKey: 'profile.customization.cardStyles.goldDesc',  preview: '#FAF2D8',                                                       text: '#3A2800' },
+  { id: 'glass', nameKey: 'profile.customization.cardStyles.glassName', descKey: 'profile.customization.cardStyles.glassDesc', preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)',          text: '#1F1B16' },
+  { id: 'holo',  nameKey: 'profile.customization.cardStyles.holoName',  descKey: 'profile.customization.cardStyles.holoDesc',  preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)', text: '#2D2266' },
+  { id: 'dark',  nameKey: 'profile.customization.cardStyles.darkName',  descKey: 'profile.customization.cardStyles.darkDesc',  preview: 'linear-gradient(135deg, #2A2522, #16120E)',                    text: '#4FC9A6' },
+]
+
 function isTabType(value: string | null): value is TabType {
   return value !== null && PROFILE_TABS.includes(value as TabType)
 }
@@ -1686,7 +1744,7 @@ export default function ProfilePage() {
                           textClassName="font-display text-5xl font-bold"
                         />
                         <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
-                          Lv. {Math.max(
+                          {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(
                               (profileSummary?.achievementStats?.completedGamesCount ??
@@ -1915,7 +1973,7 @@ export default function ProfilePage() {
                 {/* Avatar picker */}
                 <div className={profileSurfaceClassName}>
                   <div className="mb-5">
-                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">Avatar</h3>
+                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">{t('profile.avatarSection')}</h3>
                   </div>
                   <AvatarPicker
                     currentAvatarUrl={profileSummary?.avatarUrl ?? null}
@@ -1942,7 +2000,7 @@ export default function ProfilePage() {
 
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>
                   <div className="mb-5">
-                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">Profile details</h3>
+                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">{t('profile.detailsSection')}</h3>
                   </div>
 
                   <div className="space-y-5">
@@ -2549,9 +2607,11 @@ export default function ProfilePage() {
           {activeTab === 'premium' && (
             <div role="tabpanel" id="profile-tab-panel-premium" aria-labelledby="profile-tab-premium" className="space-y-5">
               <div className="max-w-2xl">
-                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
+                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">{t('premium.title')}</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                  {!hasUploadPack ? `Unlock exclusive features from ${PREMIUM_BASE_PRICE}/month, converted to your currency at checkout.` : 'Manage your subscription and customize your profile.'}
+                  {!hasUploadPack
+                    ? t('profile.premiumTab.leadFree', { price: PREMIUM_BASE_PRICE })
+                    : t('profile.premiumTab.leadPremium')}
                 </p>
               </div>
 
@@ -2565,12 +2625,14 @@ export default function ProfilePage() {
                       </span>
                       <div>
                         <p className="font-bold text-amber-800 dark:text-amber-300">
-                          {premiumCancelAtPeriodEnd ? `Cancels on ${formatPremiumDate(premiumUntilDate)}` : 'Premium is active'}
+                          {premiumCancelAtPeriodEnd
+                            ? t('profile.premiumTab.cancelsOn', { date: formatPremiumDate(premiumUntilDate) })
+                            : t('profile.premiumTab.active')}
                         </p>
                         <p className="mt-0.5 text-sm text-amber-700/70 dark:text-amber-400/70">
                           {premiumCancelAtPeriodEnd
-                            ? 'You will lose access to premium features after this date.'
-                            : `Renews on ${formatPremiumDate(premiumUntilDate)}`}
+                            ? t('profile.premiumTab.loseAccess')
+                            : t('profile.premiumTab.renewsOn', { date: formatPremiumDate(premiumUntilDate) })}
                         </p>
                       </div>
                     </div>
@@ -2582,7 +2644,7 @@ export default function ProfilePage() {
                           disabled={premiumActionLoading}
                           className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
                         >
-                          {premiumActionLoading ? '...' : 'Cancel'}
+                          {premiumActionLoading ? '...' : t('common.cancel')}
                         </button>
                       )}
                       {hasSubscriptionId && premiumCancelAtPeriodEnd && (
@@ -2593,7 +2655,7 @@ export default function ProfilePage() {
                           className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
                         >
                           <Icon name="star" size={16} />
-                          <span>{premiumActionLoading ? '...' : 'Reactivate'}</span>
+                          <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
                         </button>
                       )}
                       {hasSubscriptionId && (
@@ -2602,7 +2664,7 @@ export default function ProfilePage() {
                           onClick={() => void handleManageBilling()}
                           className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
                         >
-                          Manage billing
+                          {t('profile.premiumTab.manageBilling')}
                         </button>
                       )}
                       {!hasSubscriptionId && (
@@ -2611,7 +2673,7 @@ export default function ProfilePage() {
                           onClick={() => void handleManageBilling()}
                           className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
                         >
-                          Manage subscription
+                          {t('premium.ctaManage')}
                         </button>
                       )}
                     </div>
@@ -2621,22 +2683,17 @@ export default function ProfilePage() {
 
               {/* Feature overview */}
               <div className={profileSurfaceClassName}>
-                <h3 className="mb-4 text-base font-bold text-bd-ink dark:text-white">What&apos;s included</h3>
+                <h3 className="mb-4 text-base font-bold text-bd-ink dark:text-white">{t('profile.premiumTab.included')}</h3>
 
                 {/* Free features */}
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">Free forever</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">{t('profile.premiumTab.freeForever')}</p>
                 <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {[
-                    { icon: 'gamepad' as IconName, label: 'Play all games', desc: 'Full access to every game mode' },
-                    { icon: 'mask' as IconName, label: '16 built-in avatars', desc: 'Choose from all avatar styles' },
-                    { icon: 'pencil' as IconName, label: 'Bio', desc: 'Show a short bio on your profile' },
-                    { icon: 'link' as IconName, label: 'Public profile', desc: 'Shareable profile link' },
-                  ].map(({ icon, label, desc }) => (
-                    <div key={label} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+                  {FREE_FEATURES.map(({ icon, labelKey, descKey }) => (
+                    <div key={labelKey} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
                       <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
-                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
-                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{t(labelKey)}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{t(descKey)}</p>
                       </div>
                       <span className="ml-auto shrink-0 text-bd-mint-deep dark:text-bd-mint"><Icon name="check" size={15} /></span>
                     </div>
@@ -2644,17 +2701,11 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Premium features */}
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium exclusive</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">{t('profile.premiumTab.premiumExclusive')}</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {[
-                    { icon: 'camera' as IconName, label: 'Custom photo upload', desc: 'Use any photo as your avatar' },
-                    { icon: 'crown' as IconName, label: 'Badge & gold name', desc: 'Crown icon + gold color in every lobby' },
-                    { icon: 'palette' as IconName, label: 'Profile card style', desc: 'Gold, Glass, Holographic or Dark Glow' },
-                    { icon: 'drop' as IconName, label: 'Accent color', desc: 'Custom color for your username' },
-                    { icon: 'trophy' as IconName, label: 'Featured game', desc: 'Show your favorite game on your profile' },
-                  ].map(({ icon, label, desc }) => (
+                  {PREMIUM_FEATURES.map(({ icon, labelKey, descKey }) => (
                     <div
-                      key={label}
+                      key={labelKey}
                       className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
                         hasUploadPack
                           ? 'border-amber-200/70 bg-amber-50/60 dark:border-amber-700/30 dark:bg-amber-950/20'
@@ -2663,8 +2714,8 @@ export default function ProfilePage() {
                     >
                       <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
-                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
-                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{t(labelKey)}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{t(descKey)}</p>
                       </div>
                       <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}>
                         {hasUploadPack ? <Icon name="check" size={15} /> : '—'}
@@ -2685,36 +2736,36 @@ export default function ProfilePage() {
                       {premiumActionLoading ? (
                         <>
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          <span>Loading...</span>
+                          <span>{t('common.loading')}</span>
                         </>
                       ) : (
                         <>
                           <Icon name="star" size={16} />
-                          <span>Get Premium — from {PREMIUM_BASE_PRICE}/mo</span>
+                          <span>{t('profile.premiumTab.getPremium', { price: PREMIUM_BASE_PRICE })}</span>
                         </>
                       )}
                     </button>
-                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">Cancel anytime · final amount shown at checkout</p>
+                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">{t('profile.premiumTab.cancelAnytime')}</p>
                   </div>
                 )}
               </div>
 
               {/* Profile Customization */}
               <div className={profileSurfaceClassName}>
-                <h3 className="mb-1 text-lg font-bold text-bd-ink dark:text-white">Profile Customization</h3>
+                <h3 className="mb-1 text-lg font-bold text-bd-ink dark:text-white">{t('profile.customization.title')}</h3>
                 <p className="mb-5 text-sm text-bd-ink-muted dark:text-slate-400">
-                  Personalize your public profile.
+                  {t('profile.customization.subtitle')}
                 </p>
 
                 {/* Bio — free */}
                 <div className="mb-6">
                   <label className="mb-1.5 block text-sm font-semibold text-bd-ink dark:text-white">
-                    Bio <span className="text-xs font-normal text-bd-ink-muted">(max 160 chars · free)</span>
+                    {t('premium.free.bio.label')} <span className="text-xs font-normal text-bd-ink-muted">{t('profile.customization.bioHint')}</span>
                   </label>
                   <textarea
                     value={profileBio}
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
-                    placeholder="Tell others about yourself..."
+                    placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
                     className="w-full rounded-xl border border-bd-line bg-white px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   />
@@ -2731,9 +2782,9 @@ export default function ProfilePage() {
                       {customizeSaving ? (
                         <>
                           <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          Saving…
+                          {t('profile.saving')}
                         </>
-                      ) : 'Save bio'}
+                      ) : t('profile.customization.saveBio')}
                     </button>
                   </div>
                 </div>
@@ -2743,21 +2794,12 @@ export default function ProfilePage() {
                 {/* Accent color — premium */}
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Accent Color</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.accentTitle')}</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Applied to your username on your public profile.</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.accentHint')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {([
-                      { hex: '#FF6B5B', name: 'Coral' },
-                      { hex: '#4FA3E8', name: 'Sky' },
-                      { hex: '#48BB78', name: 'Green' },
-                      { hex: '#F6AD55', name: 'Orange' },
-                      { hex: '#9B8CFF', name: 'Lavender' },
-                      { hex: '#F687B3', name: 'Pink' },
-                      { hex: '#FC8181', name: 'Red' },
-                      { hex: '#68D391', name: 'Mint' },
-                    ] as const).map(({ hex, name }) => (
+                    {ACCENT_COLORS.map(({ hex, nameKey }) => (
                       <button
                         key={hex}
                         type="button"
@@ -2770,9 +2812,11 @@ export default function ProfilePage() {
                           setProfileAccentColor(next)
                           void handleSaveCustomization({ accentColor: next })
                         }}
-                        aria-label={hasUploadPack ? `${name} accent color${profileAccentColor === hex ? ' (active)' : ''}` : `${name} — Premium required`}
+                        aria-label={hasUploadPack
+                          ? t(profileAccentColor === hex ? 'profile.customization.accentAriaActive' : 'profile.customization.accentAria', { name: t(nameKey) })
+                          : t('profile.customization.premiumRequiredFor', { name: t(nameKey) })}
                         aria-pressed={profileAccentColor === hex}
-                        title={hasUploadPack ? name : 'Premium required'}
+                        title={hasUploadPack ? t(nameKey) : t('profile.customization.premiumRequired')}
                         style={{
                           width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
                           outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
@@ -2785,8 +2829,11 @@ export default function ProfilePage() {
                   </div>
                   {profileAccentColor && (
                     <p className="mt-1.5 text-xs text-bd-ink-muted">
-                      Active: <span style={{ color: profileAccentColor, fontWeight: 700 }}>
-                        {({ '#FF6B5B': 'Coral', '#4FA3E8': 'Sky', '#48BB78': 'Green', '#F6AD55': 'Orange', '#9B8CFF': 'Lavender', '#F687B3': 'Pink', '#FC8181': 'Red', '#68D391': 'Mint' } as Record<string, string>)[profileAccentColor] ?? profileAccentColor}
+                      {t('profile.customization.accentActive')} <span style={{ color: profileAccentColor, fontWeight: 700 }}>
+                        {(() => {
+                          const active = ACCENT_COLORS.find((color) => color.hex === profileAccentColor)
+                          return active ? t(active.nameKey) : profileAccentColor
+                        })()}
                       </span>
                     </p>
                   )}
@@ -2795,21 +2842,12 @@ export default function ProfilePage() {
                 {/* Featured game — premium */}
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Featured Game</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.featuredTitle')}</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Shown as a badge on your public profile. Click again to remove.</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.featuredHint')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: 'yahtzee', glyph: 'yahtzee', label: 'Yahtzee' },
-                      { id: 'connect_four', glyph: 'connect-four', label: 'Connect Four' },
-                      { id: 'tic_tac_toe', glyph: 'tic-tac-toe', label: 'Tic-Tac-Toe' },
-                      { id: 'memory', glyph: 'memory', label: 'Memory' },
-                      { id: 'guess_the_spy', glyph: 'spy', label: 'Spy' },
-                      { id: 'alias', glyph: 'alias', label: 'Alias' },
-                      { id: 'rock_paper_scissors', glyph: 'rps', label: 'RPS' },
-                      { id: 'liars_party', glyph: 'liars-party', label: "Liar's Party" },
-                    ].map(({ id, glyph, label }) => (
+                    {FEATURED_GAMES.map(({ id, glyph, labelKey }) => (
                       <button
                         key={id}
                         type="button"
@@ -2830,7 +2868,7 @@ export default function ProfilePage() {
                         style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: 'pointer' }}
                       >
                         <GameIcon gameId={glyph} accentColor="currentColor" size={14} variant="bare" />
-                        {label}
+                        {t(labelKey)}
                       </button>
                     ))}
                   </div>
@@ -2839,24 +2877,21 @@ export default function ProfilePage() {
                 {/* Premium profile card style */}
                 <div>
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.cardStyleTitle')}</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">How your profile card looks to others on your public page.</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.cardStyleHint')}</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {[
-                      { id: 'gold',  name: 'Gold',        desc: 'Champagne & gold accents', preview: '#FAF2D8',                                                          text: '#3A2800' },
-                      { id: 'glass', name: 'Glass',       desc: 'Frosted glass',           preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)',             text: '#1F1B16' },
-                      { id: 'holo',  name: 'Holographic', desc: 'Iridescent shimmer',      preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)',    text: '#2D2266' },
-                      { id: 'dark',  name: 'Dark Glow',   desc: 'Dark with mint glow',     preview: 'linear-gradient(135deg, #2A2522, #16120E)',                       text: '#4FC9A6' },
-                    ].map(({ id, name, desc, preview, text }) => {
+                    {PREMIUM_CARD_STYLES.map(({ id, nameKey, descKey, preview, text }) => {
                       const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
                       return (
                         <button
                           key={id}
                           type="button"
                           aria-pressed={active}
-                          aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
+                          aria-label={hasUploadPack
+                            ? t(active ? 'profile.customization.cardStyleAriaActive' : 'profile.customization.cardStyleAria', { name: t(nameKey) })
+                            : t('profile.customization.premiumRequiredFor', { name: t(nameKey) })}
                           onClick={() => {
                             if (!hasUploadPack) {
                               showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
@@ -2874,8 +2909,8 @@ export default function ProfilePage() {
                           }}
                           className="relative flex flex-col justify-end rounded-xl px-3 py-5 text-left transition"
                         >
-                          <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
-                          <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{desc}</span>
+                          <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t(nameKey)}</span>
+                          <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{t(descKey)}</span>
                           {active && (
                             <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bd-ink shadow-sm"><Icon name="check" size={10} /></span>
                           )}
