@@ -103,7 +103,7 @@ describe('evaluateReliabilityAlerts – discord_bot_stale', () => {
     expect(rule.breached).toBe(false)
   })
 
-  it('keeps the three original rules in place', async () => {
+  it('keeps the earlier rules in place', async () => {
     const evaluation = await evaluateReliabilityAlerts()
 
     expect(evaluation.rules.map((rule) => rule.alertKey)).toEqual([
@@ -111,6 +111,124 @@ describe('evaluateReliabilityAlerts – discord_bot_stale', () => {
       'auth_refresh_failed',
       'move_apply_timeout',
       'discord_bot_stale',
+      'site_silent',
     ])
   })
+})
+
+const HOUR_MS = 60 * 60 * 1000
+const DAY_MS = 24 * HOUR_MS
+
+function hoursAgo(hours) {
+    return new Date(Date.now() - hours * HOUR_MS)
+}
+
+/**
+ * `count` human events inside the window-length slot that ended `dayOffset` days ago,
+ * i.e. the same hours of the day as the window currently under test.
+ */
+function humanEventsInSlot(dayOffset, count) {
+    const slotEnd = Date.now() - dayOffset * DAY_MS
+    return Array.from({ length: count }, (_, index) => ({
+        eventName: 'move_submit_applied',
+        gameType: 'connect_four',
+        latencyMs: 120,
+        success: true,
+        applied: true,
+        // Spread across the slot but never on its closing edge, which is exclusive.
+        occurredAt: new Date(slotEnd - HOUR_MS - index * 60 * 1000),
+    }))
+}
+
+async function siteSilentRule() {
+    const evaluation = await evaluateReliabilityAlerts()
+    const rule = evaluation.rules.find((candidate) => candidate.alertKey === 'site_silent')
+    expect(rule).toBeDefined()
+    return rule
+}
+
+describe('evaluateReliabilityAlerts – site_silent', () => {
+    beforeEach(() => {
+        jest.clearAllMocks()
+        mockPrisma.operationalEvents.findFirst.mockResolvedValue({ occurredAt: minutesAgo(3) })
+    })
+
+    it('fires when the site goes quiet in hours that are normally busy', async () => {
+        // Six ordinary days behind a silent one - 19 September, in miniature.
+        const baseline = [1, 2, 3, 4, 5, 6].flatMap((day) => humanEventsInSlot(day, 8))
+        mockPrisma.operationalEvents.findMany.mockResolvedValue(baseline)
+
+        const rule = await siteSilentRule()
+
+        expect(rule.breached).toBe(true)
+        expect(rule.severity).toBe('critical')
+        expect(rule.currentValue).toBe(0)
+        expect(rule.baselineValue).toBe(8)
+    })
+
+    it('stays quiet at an hour that is always quiet', async () => {
+        // Nothing on any of the prior days either: this is 04:00, not an outage.
+        mockPrisma.operationalEvents.findMany.mockResolvedValue([])
+
+        const rule = await siteSilentRule()
+
+        expect(rule.breached).toBe(false)
+        expect(rule.baselineValue).toBe(0)
+    })
+
+    it('still fires on the second day of an outage, when a mean would have given up', async () => {
+        // Day 1 is already dead. A mean of [0,8,8,8,8,8] is 6.7 and falling; by day three
+        // it would drop under the threshold and switch the alarm off mid-outage.
+        const baseline = [2, 3, 4, 5, 6].flatMap((day) => humanEventsInSlot(day, 8))
+        mockPrisma.operationalEvents.findMany.mockResolvedValue(baseline)
+
+        const rule = await siteSilentRule()
+
+        expect(rule.breached).toBe(true)
+        expect(rule.baselineValue).toBe(8)
+    })
+
+    it('keeps firing on day four, when a median of the prior days would have given up', async () => {
+        // Three of the six comparison days are already dead. Their median is 4, under the
+        // threshold, so a median baseline would stop breaching here and post a recovery
+        // in the middle of the outage. The 75th percentile still reads the live days.
+        const baseline = [4, 5, 6].flatMap((day) => humanEventsInSlot(day, 8))
+        mockPrisma.operationalEvents.findMany.mockResolvedValue(baseline)
+
+        const rule = await siteSilentRule()
+
+        expect(rule.breached).toBe(true)
+        expect(rule.baselineValue).toBe(8)
+    })
+
+    it('does not fire while people are still playing', async () => {
+        const baseline = [1, 2, 3, 4, 5, 6].flatMap((day) => humanEventsInSlot(day, 8))
+        const live = humanEventsInSlot(0, 4)
+        mockPrisma.operationalEvents.findMany.mockResolvedValue([...baseline, ...live])
+
+        const rule = await siteSilentRule()
+
+        expect(rule.breached).toBe(false)
+        expect(rule.currentValue).toBe(4)
+    })
+
+    it('counts every kind of event a human has to be present to produce', async () => {
+        const baseline = [1, 2, 3, 4, 5, 6].flatMap((day) => humanEventsInSlot(day, 8))
+        const live = ['lobby_create_ready', 'invite_opened', 'second_human_joined', 'signup_prompt_shown'].map(
+            (eventName) => ({
+                eventName,
+                gameType: null,
+                latencyMs: null,
+                success: null,
+                applied: null,
+                occurredAt: hoursAgo(1),
+            })
+        )
+        mockPrisma.operationalEvents.findMany.mockResolvedValue([...baseline, ...live])
+
+        const rule = await siteSilentRule()
+
+        expect(rule.currentValue).toBe(4)
+        expect(rule.breached).toBe(false)
+    })
 })
