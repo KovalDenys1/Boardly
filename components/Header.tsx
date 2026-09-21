@@ -94,6 +94,7 @@ export default function Header() {
               >
                 B
               </span>
+              {/* i18n-allow: brand wordmark, identical in all four locales */}
               boardly
             </button>
 

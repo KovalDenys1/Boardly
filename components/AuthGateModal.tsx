@@ -119,7 +119,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady }: AuthGateModalProp
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
-          <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)' }}>or</span>
+          <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)' }}>{t('common.or')}</span>
           <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
         </div>
 

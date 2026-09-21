@@ -362,6 +362,22 @@ function CreateLobbyPage() {
 
   const isTTT = selectedGameType === 'tic_tac_toe'
 
+  // The game name is drawn in the accent colour inside the heading, so the
+  // sentence cannot be one JSX text node. Translating it as a whole sentence and
+  // splitting on the placeholder keeps word order free for every locale — a
+  // prefix/suffix pair would force "<game>" into the middle in all four.
+  const HEADING_GAME_SLOT = '\u0000'
+  const [headingBeforeGame, headingAfterGame = ''] = t('lobby.create.setUpRoom', {
+    game: HEADING_GAME_SLOT,
+  }).split(HEADING_GAME_SLOT)
+
+  const difficultyLabel = (difficulty: MemoryDifficulty) =>
+    difficulty === 'easy'
+      ? t('lobby.create.difficultyEasy')
+      : difficulty === 'medium'
+        ? t('lobby.create.difficultyMedium')
+        : t('lobby.create.difficultyHard')
+
   const MiniBoard = ({ size }: { size: 3 | 4 | 5 }) => {
     const dim = 168
     const demoCells: Record<number, 'x' | 'o'> =
@@ -398,8 +414,8 @@ function CreateLobbyPage() {
         <div className="flex flex-col items-center gap-5">
           <MiniBoard size={boardSize} />
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Tic-Tac-Toe</p>
-            <p className="text-sm text-bd-ink-muted">{boardSize}×{boardSize} grid</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.grid', { size: boardSize })}</p>
           </div>
         </div>
       )
@@ -418,8 +434,8 @@ function CreateLobbyPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Yahtzee!</p>
-            <p className="text-sm text-bd-ink-muted">Roll dice · score combos</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.yahtzeeCaption')}</p>
           </div>
         </div>
       )
@@ -447,17 +463,17 @@ function CreateLobbyPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Memory</p>
-            <p className="text-sm text-bd-ink-muted capitalize">{formData.memoryDifficulty} · find pairs</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted capitalize">{t('lobby.create.preview.memoryCaption', { difficulty: difficultyLabel(formData.memoryDifficulty) })}</p>
           </div>
         </div>
       )
     }
     if (selectedGameType === 'guess_the_spy') {
       const cards: { icon: IconName; label: string; dark: boolean }[] = [
-        { icon: 'map', label: 'Beach', dark: false },
+        { icon: 'map', label: t('lobby.create.preview.spyCardBeach'), dark: false },
         { icon: 'mask', label: '???', dark: true },
-        { icon: 'map', label: 'Mountain', dark: false },
+        { icon: 'map', label: t('lobby.create.preview.spyCardMountain'), dark: false },
       ]
       const rotations = [-6, 0, 6]
       const offsets = [4, 0, 4]
@@ -481,15 +497,15 @@ function CreateLobbyPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Guess the Spy</p>
-            <p className="text-sm text-bd-ink-muted">Find the impostor</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.spyCaption')}</p>
           </div>
         </div>
       )
     }
     if (selectedGameType === 'rock_paper_scissors') {
       const choices: { i: IconName; l: string }[] = [
-        { i: 'rock', l: 'Rock' }, { i: 'paper', l: 'Paper' }, { i: 'scissors', l: 'Scissors' },
+        { i: 'rock', l: t('lobby.choice.rock') }, { i: 'paper', l: t('lobby.choice.paper') }, { i: 'scissors', l: t('lobby.choice.scissors') },
       ]
       const rotations = [-5, 0, 5]
       const offsets = [4, 0, 4]
@@ -497,7 +513,7 @@ function CreateLobbyPage() {
         <div className="flex flex-col items-center gap-5">
           <div className="flex items-end gap-3">
             {choices.map((c, i) => (
-              <div key={c.l} style={{
+              <div key={c.i} style={{
                 width: 74, height: 94, borderRadius: 14, background: 'white',
                 border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -509,8 +525,8 @@ function CreateLobbyPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Rock Paper Scissors</p>
-            <p className="text-sm text-bd-ink-muted">2 players · classic showdown</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.rpsCaption')}</p>
           </div>
         </div>
       )
@@ -524,10 +540,10 @@ function CreateLobbyPage() {
             padding: '18px 20px', transform: 'rotate(-2deg)',
           }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-              Describe this:
+              {t('lobby.create.preview.aliasPrompt')}
             </div>
             <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 14, lineHeight: 1.1 }}>
-              ALGORITHM
+              {t('lobby.create.preview.aliasWord')}
             </div>
             <div style={{ height: 6, borderRadius: 3, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
               <div style={{ width: '60%', height: '100%', background: 'var(--bd-mint)', borderRadius: 3 }} />
@@ -535,8 +551,8 @@ function CreateLobbyPage() {
             <div style={{ marginTop: 6, fontSize: 11, color: 'var(--bd-ink-muted)', textAlign: 'right' }}>0:35</div>
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Alias</p>
-            <p className="text-sm text-bd-ink-muted">Describe without saying it</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.aliasCaption')}</p>
           </div>
         </div>
       )
@@ -564,8 +580,8 @@ function CreateLobbyPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Liar's Party</p>
-            <p className="text-sm text-bd-ink-muted">Bluff your way to victory</p>
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
+            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.liarsPartyCaption')}</p>
           </div>
         </div>
       )
@@ -639,21 +655,21 @@ function CreateLobbyPage() {
           </div>
           <div className="shrink-0 border-t border-bd-line p-4">
             <div className="bd-card p-4">
-              <p className="bd-kicker mb-2">Lobby preview</p>
+              <p className="bd-kicker mb-2">{t('lobby.create.preview.title')}</p>
               <p className="mb-3 text-[17px] font-extrabold leading-tight text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
-                {formData.name || <span className="text-sm font-normal italic text-bd-ink-muted">Untitled lobby</span>}
+                {formData.name || <span className="text-sm font-normal italic text-bd-ink-muted">{t('lobby.create.preview.untitled')}</span>}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 <span className={`bd-chip ${formData.password ? 'bd-chip-coral' : 'bd-chip-mint'}`}>
                   <Icon name={formData.password ? 'lock' : 'globe'} size={12} />{' '}
-                  {formData.password ? 'Private' : 'Public'}
+                  {formData.password ? t('lobby.privateLobby') : t('lobby.publicLobby')}
                 </span>
                 <span className="bd-chip"><Icon name="users" size={12} /> {formData.maxPlayers}</span>
                 {isTTT && formData.ticTacToeRounds && (
-                  <span className="bd-chip bd-chip-lav">Bo{formData.ticTacToeRounds}</span>
+                  <span className="bd-chip bd-chip-lav">{t('lobby.create.bestOfShort', { rounds: formData.ticTacToeRounds })}</span>
                 )}
                 {selectedGameType === 'memory' && (
-                  <span className="bd-chip bd-chip-mint capitalize">{formData.memoryDifficulty}</span>
+                  <span className="bd-chip bd-chip-mint capitalize">{difficultyLabel(formData.memoryDifficulty)}</span>
                 )}
               </div>
             </div>
@@ -670,12 +686,14 @@ function CreateLobbyPage() {
 
             {/* Title */}
             <div>
-              <span className="bd-kicker mb-1 block">Create Lobby</span>
+              <span className="bd-kicker mb-1 block">{t('lobby.create.title')}</span>
               <h1
                 className="text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
-                Set up your <span style={{ color: 'var(--bd-coral)' }}>{t(gameInfo.nameKey as TranslationKeys)}</span> room
+                {headingBeforeGame}
+                <span style={{ color: 'var(--bd-coral)' }}>{t(gameInfo.nameKey as TranslationKeys)}</span>
+                {headingAfterGame}
               </h1>
             </div>
 
@@ -770,7 +788,7 @@ function CreateLobbyPage() {
               <>
                 <div className="flex items-center gap-3 pt-1">
                   <div className="h-px flex-1 bg-bd-line" />
-                  <span className="bd-kicker text-[10px]">Game settings</span>
+                  <span className="bd-kicker text-[10px]">{t('lobby.create.sectionGameSettings')}</span>
                   <div className="h-px flex-1 bg-bd-line" />
                 </div>
 
@@ -781,7 +799,7 @@ function CreateLobbyPage() {
                         <label className="block text-sm font-semibold text-bd-ink"><Icon name="target" size={14} /> {t('lobby.create.bestOf')}</label>
                         <div className="flex gap-2">
                           {[3, 5, 10].map((r) => (
-                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>Bo{r}</button>
+                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{t('lobby.create.bestOfShort', { rounds: r })}</button>
                           ))}
                           <button type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
                         </div>
@@ -797,7 +815,7 @@ function CreateLobbyPage() {
                       {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
                         <button key={d} type="button" onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
                           <Icon name={d === 'easy' ? 'bot-easy' : d === 'medium' ? 'bot-medium' : 'bot-hard'} size={13} />{' '}
-                          {d === 'easy' ? 'Easy' : d === 'medium' ? 'Medium' : 'Hard'}
+                          {difficultyLabel(d)}
                         </button>
                       ))}
                     </div>
@@ -834,12 +852,12 @@ function CreateLobbyPage() {
             {/* Lobby theme — premium */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-bd-ink"><Icon name="palette" size={14} /> Lobby Theme</label>
-                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> Premium</span>}
+                <label className="text-sm font-semibold text-bd-ink"><Icon name="palette" size={14} /> {t('lobby.create.themeTitle')}</label>
+                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {LOBBY_THEME_IDS.map((themeId) => {
-                  const t = LOBBY_THEMES[themeId]
+                  const theme = LOBBY_THEMES[themeId]
                   const isPremiumTheme = themeId !== 'default'
                   const isLocked = isPremiumTheme && !isPremiumUser
                   const isSelected = selectedTheme === themeId
@@ -858,13 +876,13 @@ function CreateLobbyPage() {
                         }
                         setSelectedTheme(themeId)
                       }}
-                      title={isLocked ? `${t.name} — Premium only` : t.name}
+                      title={isLocked ? t('lobby.create.themePremiumOnly', { name: theme.name }) : theme.name}
                       style={{
                         position: 'relative',
                         width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                        background: t.bg,
-                        border: isSelected ? `3px solid ${t.accent}` : '2px solid var(--bd-line)',
-                        boxShadow: isSelected ? `0 0 0 2px ${t.accent}40` : undefined,
+                        background: theme.bg,
+                        border: isSelected ? `3px solid ${theme.accent}` : '2px solid var(--bd-line)',
+                        boxShadow: isSelected ? `0 0 0 2px ${theme.accent}40` : undefined,
                         cursor: isLocked ? 'not-allowed' : 'pointer',
                         opacity: isLocked ? 0.5 : 1,
                         overflow: 'hidden',
@@ -873,7 +891,7 @@ function CreateLobbyPage() {
                     >
                       <span style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
-                        height: 8, background: t.accent,
+                        height: 8, background: theme.accent,
                       }} />
                       {isLocked && <Icon name="crown" size={10} tone="premium" style={{ position: 'absolute', top: 1, right: 1 }} />}
                     </button>
@@ -881,15 +899,17 @@ function CreateLobbyPage() {
                 })}
               </div>
               <p className="text-[12px] text-bd-ink-muted">
-                {selectedTheme === 'default' ? 'Classic warm look' : `${LOBBY_THEMES[selectedTheme].name} theme selected`}
-                {!isPremiumUser && ' · Upgrade to unlock custom themes'}
+                {selectedTheme === 'default'
+                  ? t('lobby.create.themeDefaultHint')
+                  : t('lobby.create.themeSelected', { name: LOBBY_THEMES[selectedTheme].name })}
+                {!isPremiumUser && ` · ${t('lobby.create.themeUpgradeHint')}`}
               </p>
             </div>
 
             {/* Lobby options */}
             <div className="flex items-center gap-3 pt-1">
               <div className="h-px flex-1 bg-bd-line" />
-              <span className="bd-kicker text-[10px]">Lobby options</span>
+              <span className="bd-kicker text-[10px]">{t('lobby.create.sectionLobbyOptions')}</span>
               <div className="h-px flex-1 bg-bd-line" />
             </div>
 
@@ -897,11 +917,11 @@ function CreateLobbyPage() {
             <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold text-bd-ink">Spectators</p>
-                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> Premium</span>}
+                  <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
+                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                 </div>
                 <p className="text-[13px] text-bd-ink-muted">
-                  {isPremiumUser ? 'Allow others to watch' : 'Upgrade to allow spectators'}
+                  {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}
                 </p>
               </div>
               <button
@@ -916,7 +936,7 @@ function CreateLobbyPage() {
                   setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
                 }}
                 aria-pressed={formData.allowSpectators}
-                aria-label="Toggle spectators"
+                aria-label={t('lobby.create.spectatorsToggle')}
                 style={{
                   position: 'relative', display: 'inline-flex', height: 28, width: 52,
                   alignItems: 'center', borderRadius: 999, border: 'none',
@@ -942,7 +962,7 @@ function CreateLobbyPage() {
                   <p className="font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.invite.title')}</p>
                   <p className="text-[13px] text-bd-ink-muted">
                     {selectedFriendIds.length > 0
-                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {selectedFriendIds.length} selected</span>
+                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {t('lobby.create.friendsSelected', { value: selectedFriendIds.length })}</span>
                       : t('lobby.invite.description')}
                   </p>
                 </div>
@@ -951,7 +971,7 @@ function CreateLobbyPage() {
                   onClick={() => setShowFriendsModal(true)}
                   className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
                 >
-                  {selectedFriendIds.length > 0 ? 'Edit' : t('lobby.invite.title')}
+                  {selectedFriendIds.length > 0 ? t('common.edit') : t('lobby.invite.title')}
                 </button>
               </div>
             )}
@@ -986,7 +1006,7 @@ function CreateLobbyPage() {
         style={{ background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)' }}
       >
         <span className="hidden text-sm sm:block" style={{ color: 'rgba(251,246,238,0.4)' }}>
-          Invite code generated on create
+          {t('lobby.create.inviteCodeNotice')}
         </span>
         <div className="ml-auto flex items-center gap-3">
           <button
@@ -1033,11 +1053,12 @@ function CreateLobbyPage() {
 }
 
 export default function CreateLobbyPageWrapper() {
+  const { t } = useTranslation()
   // translate="no" (#772): 36% of the Google-Translate-induced removeChild
   // crashes in Sentry came from this route. See app/lobby/[code]/layout.tsx.
   return (
     <div translate="no" className="contents">
-      <Suspense fallback={<div className="bd-page bd-screen flex-1 flex items-center justify-center"><div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>Loading...</div></div>}>
+      <Suspense fallback={<div className="bd-page bd-screen flex-1 flex items-center justify-center"><div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>{t('common.loading')}</div></div>}>
         <CreateLobbyPage />
       </Suspense>
     </div>

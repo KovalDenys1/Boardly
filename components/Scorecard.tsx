@@ -209,11 +209,11 @@ const Scorecard = React.memo(function Scorecard({
       state === 'filled'
         ? t('yahtzee.ui.scored')
         : state === 'high-value'
-          ? 'Strong'
+          ? t('yahtzee.ui.strong')
           : state === 'low-value'
-            ? 'Playable'
+            ? t('yahtzee.ui.playable')
             : state === 'sacrifice'
-              ? 'Fallback'
+              ? t('yahtzee.ui.fallbackOption')
               : t('yahtzee.ui.notAvailable')
 
     const handleClick = () => {
@@ -256,7 +256,7 @@ const Scorecard = React.memo(function Scorecard({
           ) : isBestOption ? (
             <span className="flex items-center gap-1">
               <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200">
-                Best
+                {t('yahtzee.ui.best')}
               </span>
               <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 min-w-[1.5rem] text-right">
                 +{potentialScore}
@@ -342,14 +342,14 @@ const Scorecard = React.memo(function Scorecard({
           )}
           <div className="flex shrink-0 items-center gap-1.5">
             <span className="bd-chip px-2.5 py-1 text-[10px]">
-              {filledCategories}/{activeUpperSection.length + lowerSection.length} filled
+              {t('yahtzee.ui.filledCount', { filled: filledCategories, total: activeUpperSection.length + lowerSection.length })}
             </span>
             <span className="bd-chip px-2.5 py-1 text-[10px]">
-              {remainingCategories} left
+              {t('yahtzee.ui.remainingCount', { count: remainingCategories })}
             </span>
             {showUpperSection && (
               <span className={`bd-chip px-2.5 py-1 text-[10px] ${bonus > 0 ? 'bd-chip-mint' : 'bd-chip-sun'}`}>
-                {bonus > 0 ? '+35 bonus ready' : `${bonusNeeded} to bonus`}
+                {bonus > 0 ? t('yahtzee.ui.bonusReady') : t('yahtzee.ui.toBonus', { count: bonusNeeded })}
               </span>
             )}
             {isCurrentPlayer && canSelectCategory && (
@@ -371,7 +371,7 @@ const Scorecard = React.memo(function Scorecard({
             className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left"
           >
             <span className="min-w-0 truncate text-xs font-semibold text-bd-ink">
-              <Icon name="trophy" size={14} /> {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
+              <Icon name="trophy" size={14} /> {scoringInsights.bestPotentialScore === 0 ? t('yahtzee.ui.burnSlot') : t('yahtzee.ui.bestPlus', { score: scoringInsights.bestPotentialScore })}
               {' · '}{bestOptionPreview}
             </span>
             <span
@@ -386,7 +386,7 @@ const Scorecard = React.memo(function Scorecard({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-bd-ink">
-                    {scoringInsights.bestPotentialScore === 0 ? 'No strong combo landed yet.' : 'You can bank a strong score right now.'}
+                    {scoringInsights.bestPotentialScore === 0 ? t('yahtzee.ui.noStrongCombo') : t('yahtzee.ui.bankStrongScore')}
                   </p>
                   <p className="mt-0.5 text-xs text-bd-ink-soft truncate">
                     {bestOptionPreview}
@@ -395,10 +395,10 @@ const Scorecard = React.memo(function Scorecard({
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="bd-chip bd-chip-mint">
-                    {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
+                    {scoringInsights.bestPotentialScore === 0 ? t('yahtzee.ui.burnSlot') : t('yahtzee.ui.bestPlus', { score: scoringInsights.bestPotentialScore })}
                   </div>
                   <p className="mt-1 text-[11px] font-medium text-bd-ink-muted">
-                    {rollsLeft > 0 ? `${rollsLeft} roll${rollsLeft === 1 ? '' : 's'} left` : 'No rolls left'}
+                    {rollsLeft > 0 ? t('yahtzee.ui.rollsLeftCount', { count: rollsLeft }) : t('yahtzee.ui.noRollsLeft')}
                   </p>
                 </div>
               </div>
@@ -461,7 +461,7 @@ const Scorecard = React.memo(function Scorecard({
           {/* Upper subtotal */}
           <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t" style={{ borderColor: 'var(--bd-line)' }}>
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-bd-ink-muted">
-              Subtotal
+              {t('yahtzee.ui.subtotal')}
             </span>
             <span className="text-base font-bold text-bd-ink">
               {upperTotal}
@@ -494,7 +494,7 @@ const Scorecard = React.memo(function Scorecard({
           {/* Lower subtotal */}
           <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t" style={{ borderColor: 'var(--bd-line)' }}>
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-bd-ink-muted">
-              Subtotal
+              {t('yahtzee.ui.subtotal')}
             </span>
             <span className="text-base font-bold text-bd-ink">{lowerTotal}</span>
           </div>
@@ -504,7 +504,7 @@ const Scorecard = React.memo(function Scorecard({
       {/* Total score footer */}
       <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-t" style={{ borderColor: 'var(--bd-line)', background: 'linear-gradient(90deg, rgba(255,196,77,0.14) 0%, rgba(155,140,255,0.14) 100%)' }}>
         <span className="bd-kicker">
-          Total
+          {t('yahtzee.ui.total')}
         </span>
         <span className="text-xl font-black text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
           {total}

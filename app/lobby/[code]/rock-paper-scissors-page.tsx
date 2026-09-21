@@ -856,7 +856,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 {rpsData.rounds.length === 0
                     ? (
                         <div className="rps-rounds-empty">
-                            <span className="rps-rounds-empty__arena" aria-hidden><Icon name="rock" size={22} /><span className="rps-rounds-empty__vs">vs</span><Icon name="rock" size={22} /></span>
+                            <span className="rps-rounds-empty__arena" aria-hidden><Icon name="rock" size={22} /><span className="rps-rounds-empty__vs">{t('game.ui.vs')}</span><Icon name="rock" size={22} /></span>
                             <span>{t('games.rock_paper_scissors.noRoundsYet')}</span>
                         </div>
                     )
@@ -872,7 +872,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                                 <span className="rps-round-row__num">#{String(number).padStart(2, '0')}</span>
                                 <span className="rps-round-row__pair">
                                     <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}><Icon name={getChoiceIcon(leftChoice)} size={18} /></span>
-                                    <span className="rps-round-row__vs">vs</span>
+                                    <span className="rps-round-row__vs">{t('game.ui.vs')}</span>
                                     <span aria-label={rightChoice ? t(CHOICE_LABEL_KEY[rightChoice]) : undefined}><Icon name={getChoiceIcon(rightChoice)} size={18} /></span>
                                 </span>
                                 <span className="rps-round-row__who">{who}</span>

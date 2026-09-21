@@ -240,6 +240,7 @@ export function MobileMenu({
                   letterSpacing: '-0.01em',
                 }}
               >
+                {/* i18n-allow: brand wordmark, identical in all four locales */}
                 boardly
               </span>
               <button

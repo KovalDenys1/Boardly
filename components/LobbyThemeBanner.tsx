@@ -1,6 +1,7 @@
 import type { LobbyTheme } from '@/lib/lobby-themes'
 import { Icon } from '@/components/icons'
 import { LOBBY_THEMES } from '@/lib/lobby-themes'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface LobbyThemeBannerProps {
   theme: LobbyTheme
@@ -8,20 +9,22 @@ interface LobbyThemeBannerProps {
 
 // Minimal banners for the existing 5 themes (no rich texture treatment)
 function SimpleBanner({ theme }: { theme: LobbyTheme }) {
-  const t = LOBBY_THEMES[theme]
+  const { t } = useTranslation()
+  const style = LOBBY_THEMES[theme]
   return (
     <div
       className="mb-2 -mx-4 sm:-mx-6 -mt-4 px-5 sm:px-6 py-2 flex items-center gap-2 text-xs font-semibold"
-      style={{ background: t.bg, borderBottom: `3px solid ${t.accent}`, color: t.text }}
+      style={{ background: style.bg, borderBottom: `3px solid ${style.accent}`, color: style.text }}
     >
-      <span style={{ color: t.accent }}>●</span>
-      {t.name} theme
+      <span style={{ color: style.accent }}>●</span>
+      {t('lobby.themeBanner.label', { name: style.name })}
     </div>
   )
 }
 
 function SakuraBanner() {
-  const t = LOBBY_THEMES.sakura
+  const { t } = useTranslation()
+  const style = LOBBY_THEMES.sakura
   return (
     <div
       className="-mx-4 sm:-mx-6 -mt-4 mb-3"
@@ -29,7 +32,7 @@ function SakuraBanner() {
         height: 88,
         position: 'relative',
         background: 'linear-gradient(110deg, #FCEEF0 0%, #FBE1E6 55%, #F5D0D9 100%)',
-        borderBottom: `3px solid ${t.accent}`,
+        borderBottom: `3px solid ${style.accent}`,
         padding: '0 22px',
         display: 'flex',
         alignItems: 'center',
@@ -60,15 +63,15 @@ function SakuraBanner() {
         fontSize: 26, position: 'relative', zIndex: 1,
       }}><Icon name="flower" size={28} /></div>
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: t.text, letterSpacing: '-0.01em', lineHeight: 1 }}>
-          Sakura
+        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: style.text, letterSpacing: '-0.01em', lineHeight: 1 }}>
+          {style.name}
         </div>
-        <div style={{ fontSize: 11, color: 'rgba(61,39,48,0.6)', marginTop: 4 }}>Spring · cherry blossom drift</div>
+        <div style={{ fontSize: 11, color: 'rgba(61,39,48,0.6)', marginTop: 4 }}>{t('lobby.themeBanner.sakuraTagline')}</div>
       </div>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
         <div style={{ width: 3, height: 44, borderRadius: 3, background: 'linear-gradient(180deg, #E48AA0, #F4A8B8)' }} />
         <div style={{ fontSize: 10, color: 'rgba(61,39,48,0.5)', fontFamily: 'ui-monospace, monospace', lineHeight: 1.4 }}>
-          mood<br /><span style={{ color: t.text, fontSize: 12, fontFamily: '"Fraunces", serif', fontWeight: 600 }}>tender</span>
+          {t('lobby.themeBanner.mood')}<br /><span style={{ color: style.text, fontSize: 12, fontFamily: '"Fraunces", serif', fontWeight: 600 }}>{t('lobby.themeBanner.sakuraMood')}</span>
         </div>
       </div>
     </div>
@@ -77,7 +80,8 @@ function SakuraBanner() {
 
 
 function NeonCityBanner() {
-  const t = LOBBY_THEMES.neon_city
+  const { t } = useTranslation()
+  const style = LOBBY_THEMES.neon_city
   return (
     <div
       className="-mx-4 sm:-mx-6 -mt-4 mb-3"
@@ -85,7 +89,7 @@ function NeonCityBanner() {
         height: 88,
         position: 'relative',
         background: 'linear-gradient(110deg, #0E0B1F 0%, #1B0F36 50%, #2B0A3D 100%)',
-        borderBottom: `3px solid ${t.accent}`,
+        borderBottom: `3px solid ${style.accent}`,
         padding: '0 22px',
         display: 'flex',
         alignItems: 'center',
@@ -116,21 +120,21 @@ function NeonCityBanner() {
         background: 'linear-gradient(140deg, #2B0A3D, #1B0F36)',
         boxShadow: '0 0 0 1px #FF3FA4, 0 0 20px rgba(255,63,164,0.55), inset 0 0 14px rgba(255,63,164,0.3)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 26, color: t.accent, position: 'relative', zIndex: 1,
+        fontSize: 26, color: style.accent, position: 'relative', zIndex: 1,
         textShadow: '0 0 10px rgba(255,63,164,0.9)',
       }}><Icon name="bolt" size={28} /></div>
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: t.text, letterSpacing: '-0.01em', lineHeight: 1, textShadow: '0 0 12px rgba(58,224,255,0.4)' }}>
-          Neon City
+        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: style.text, letterSpacing: '-0.01em', lineHeight: 1, textShadow: '0 0 12px rgba(58,224,255,0.4)' }}>
+          {style.name}
         </div>
         <div style={{ fontSize: 11, color: 'rgba(240,233,255,0.55)', marginTop: 4, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.04em' }}>
-          04:21 · sector 7
+          {t('lobby.themeBanner.neonTagline')}
         </div>
       </div>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
         <div style={{ width: 3, height: 44, borderRadius: 3, background: 'linear-gradient(180deg, #FF3FA4, #3AE0FF)', boxShadow: '0 0 10px rgba(255,63,164,0.6)' }} />
         <div style={{ fontSize: 10, color: 'rgba(240,233,255,0.5)', fontFamily: 'ui-monospace, monospace', lineHeight: 1.4 }}>
-          mood<br /><span style={{ color: '#3AE0FF', fontSize: 12, fontFamily: '"Fraunces", serif', fontWeight: 600 }}>electric</span>
+          {t('lobby.themeBanner.mood')}<br /><span style={{ color: '#3AE0FF', fontSize: 12, fontFamily: '"Fraunces", serif', fontWeight: 600 }}>{t('lobby.themeBanner.neonMood')}</span>
         </div>
       </div>
     </div>

@@ -7,6 +7,12 @@ jest.mock('next-auth/react', () => ({
   useSession: () => mockUseSession(),
 }))
 
+jest.mock('@/lib/i18n-helpers', () => ({
+  useTranslation: () => ({
+    t: (key: string) => (key === 'common.advertisement' ? 'Advertisement' : key),
+  }),
+}))
+
 function renderSlot({ adsEnabled }: { adsEnabled: boolean }) {
   if (adsEnabled) {
     process.env.NEXT_PUBLIC_ADS_ENABLED = 'true'

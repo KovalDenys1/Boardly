@@ -324,7 +324,7 @@ describe('ProfilePage', () => {
   it('updates profile email via the form and requests verification', async () => {
     render(<ProfilePage />)
 
-    const emailInput = await screen.findByLabelText('profile-email-input')
+    const emailInput = await screen.findByLabelText(/profile\.email/)
     fireEvent.change(emailInput, { target: { value: 'new@example.com' } })
 
     await waitFor(() => {
@@ -354,7 +354,7 @@ describe('ProfilePage', () => {
     fireEvent.doubleClick(await screen.findByTitle('profile.inline.editEmail'))
 
     const inlineEmailInput = await screen.findByLabelText('inline-email-input')
-    const profileEmailInput = await screen.findByLabelText('profile-email-input')
+    const profileEmailInput = await screen.findByLabelText(/profile\.email/)
 
     fireEvent.change(inlineEmailInput, { target: { value: 'draft@example.com' } })
     expect((profileEmailInput as HTMLInputElement).value).toBe('draft@example.com')

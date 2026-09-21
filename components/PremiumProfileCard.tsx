@@ -1,6 +1,7 @@
 'use client'
 
 import { Icon } from '@/components/icons'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export type PremiumCardStyle = 'gold' | 'glass' | 'holo' | 'dark'
 
@@ -47,6 +48,8 @@ function StatBlock({ label, value, sub, color }: { label: string; value: string 
 }
 
 function GoldCard({ profile }: { profile: ProfileData }) {
+  const { t } = useTranslation()
+
   return (
     <div style={{
       position: 'relative', overflow: 'hidden', borderRadius: 24,
@@ -79,7 +82,7 @@ function GoldCard({ profile }: { profile: ProfileData }) {
           fontSize: 11, color: '#7A5800', display: 'flex', alignItems: 'center', gap: 5,
           letterSpacing: '0.04em',
         }}>
-          <Icon name="crown" size={16} /> Premium
+          <Icon name="crown" size={16} /> {t('common.premium')}
         </div>
       </div>
       <div style={{ position: 'relative' }}>
@@ -87,7 +90,7 @@ function GoldCard({ profile }: { profile: ProfileData }) {
           {profile.displayName}
         </div>
         <div style={{ fontSize: 11, color: 'rgba(58,40,0,0.5)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
-          Member since {profile.memberSince}
+          {t('profile.memberSince')} {profile.memberSince}
         </div>
       </div>
       {profile.bio && (
@@ -102,15 +105,17 @@ function GoldCard({ profile }: { profile: ProfileData }) {
         borderRadius: 14, padding: '10px 12px',
         display: 'flex', justifyContent: 'space-between', color: '#3A2800',
       }}>
-        <StatBlock label="Games"  value={profile.gamesPlayed} />
+        <StatBlock label={t('header.games')}  value={profile.gamesPlayed} />
         <div style={{ width: 1, background: 'rgba(184,140,30,0.2)' }} />
-        <StatBlock label="Level"  value={`Lv. ${profile.level}`} />
+        <StatBlock label={t('profile.premiumCard.level')}  value={`Lv. ${profile.level}`} />
       </div>
     </div>
   )
 }
 
 function GlassCard({ profile }: { profile: ProfileData }) {
+  const { t } = useTranslation()
+
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 24, background: 'linear-gradient(135deg, #FF6B5B 0%, #FFC44D 45%, #4FC9A6 100%)', padding: 16 }}>
       <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', background: '#8B7EC8', top: -36, right: -36, opacity: 0.8 }} />
@@ -150,20 +155,20 @@ function GlassCard({ profile }: { profile: ProfileData }) {
             padding: '4px 9px', borderRadius: 999,
             background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.7)',
             fontSize: 10, fontWeight: 700, color: '#1F1B16', letterSpacing: '0.07em', textTransform: 'uppercase',
-          }}>Premium</div>
+          }}>{t('common.premium')}</div>
         </div>
         <div>
           <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 24, fontWeight: 600, color: '#1F1B16', letterSpacing: '-0.015em', lineHeight: 1 }}>{profile.displayName}</div>
-          <div style={{ fontSize: 11, color: 'rgba(31,27,22,0.6)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Joined {profile.memberSince}</div>
+          <div style={{ fontSize: 11, color: 'rgba(31,27,22,0.6)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t('profile.premiumCard.joined')} {profile.memberSince}</div>
         </div>
         {profile.bio && <div style={{ fontSize: 12, color: 'rgba(31,27,22,0.75)', lineHeight: 1.45 }}>{profile.bio}</div>}
         <div style={{
           marginTop: 'auto', background: 'rgba(255,255,255,0.38)', border: '1px solid rgba(255,255,255,0.5)',
           borderRadius: 12, padding: '9px 11px', display: 'flex', justifyContent: 'space-between',
         }}>
-          <StatBlock label="Games" value={profile.gamesPlayed} />
+          <StatBlock label={t('header.games')} value={profile.gamesPlayed} />
           <div style={{ width: 1, background: 'rgba(31,27,22,0.1)' }} />
-          <StatBlock label="Level" value={`Lv. ${profile.level}`} />
+          <StatBlock label={t('profile.premiumCard.level')} value={`Lv. ${profile.level}`} />
         </div>
       </div>
     </div>
@@ -171,6 +176,8 @@ function GlassCard({ profile }: { profile: ProfileData }) {
 }
 
 function HoloCard({ profile }: { profile: ProfileData }) {
+  const { t } = useTranslation()
+
   return (
     <>
       <style>{`
@@ -201,13 +208,13 @@ function HoloCard({ profile }: { profile: ProfileData }) {
               fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
               boxShadow: '0 2px 5px rgba(31,27,22,0.16)',
             }}>
-              <span style={{ background: 'linear-gradient(115deg, #FF6B5B, #8B7EC8, #4FC9A6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>Holo · Premium</span>
+              <span style={{ background: 'linear-gradient(115deg, #FF6B5B, #8B7EC8, #4FC9A6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>{t('profile.premiumCard.holoBadge')}</span>
             </div>
           </div>
           <div>
             <div className="bd-holo-name" style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 26, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1 }}>{profile.displayName}</div>
             <div style={{ fontSize: 10, color: 'rgba(31,27,22,0.6)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>
-              foiled · since {profile.memberSince}
+              {t('profile.premiumCard.foiledSince')} {profile.memberSince}
             </div>
           </div>
           {profile.bio && (
@@ -219,9 +226,9 @@ function HoloCard({ profile }: { profile: ProfileData }) {
             marginTop: 'auto', background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.75)',
             borderRadius: 12, padding: '9px 11px', display: 'flex', justifyContent: 'space-between', color: '#1F1B16',
           }}>
-            <StatBlock label="Games" value={profile.gamesPlayed} />
+            <StatBlock label={t('header.games')} value={profile.gamesPlayed} />
             <div style={{ width: 1, background: 'rgba(31,27,22,0.1)' }} />
-            <StatBlock label="Level" value={`Lv. ${profile.level}`} />
+            <StatBlock label={t('profile.premiumCard.level')} value={`Lv. ${profile.level}`} />
           </div>
         </div>
       </div>
@@ -230,6 +237,8 @@ function HoloCard({ profile }: { profile: ProfileData }) {
 }
 
 function DarkCard({ profile }: { profile: ProfileData }) {
+  const { t } = useTranslation()
+
   return (
     <div style={{
       position: 'relative', overflow: 'hidden', borderRadius: 24,
@@ -255,13 +264,13 @@ function DarkCard({ profile }: { profile: ProfileData }) {
           boxShadow: '0 0 12px rgba(79,201,166,0.22)',
         }}>
           <span style={{ width: 5, height: 5, borderRadius: 999, background: '#4FC9A6', boxShadow: '0 0 5px #4FC9A6' }} />
-          Premium
+          {t('common.premium')}
         </div>
       </div>
       <div style={{ position: 'relative' }}>
         <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 26, fontWeight: 600, color: '#F2EBDF', letterSpacing: '-0.015em', lineHeight: 1 }}>{profile.displayName}</div>
         <div style={{ fontSize: 10, color: '#4FC9A6', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.18em', fontFamily: 'ui-monospace, "SF Mono", monospace' }}>
-          ◆ member · {profile.memberSince}
+          {t('profile.premiumCard.memberMark')} {profile.memberSince}
         </div>
       </div>
       {profile.bio && <div style={{ fontSize: 12, color: 'rgba(242,235,223,0.68)', lineHeight: 1.5, position: 'relative' }}>{profile.bio}</div>}
@@ -270,9 +279,9 @@ function DarkCard({ profile }: { profile: ProfileData }) {
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 12, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', color: '#F2EBDF',
       }}>
-        <StatBlock label="Games" value={profile.gamesPlayed} color="#F2EBDF" />
+        <StatBlock label={t('header.games')} value={profile.gamesPlayed} color="#F2EBDF" />
         <div style={{ width: 1, background: 'rgba(255,255,255,0.07)' }} />
-        <StatBlock label="Level" value={`Lv. ${profile.level}`} color="#4FC9A6" />
+        <StatBlock label={t('profile.premiumCard.level')} value={`Lv. ${profile.level}`} color="#4FC9A6" />
       </div>
     </div>
   )

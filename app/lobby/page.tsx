@@ -81,7 +81,7 @@ function LobbyListPageContent() {
                   ← {t('lobby.backToGames')}
                 </button>
               </div>
-              <span className="bd-kicker mb-2 block">Lobbies</span>
+              <span className="bd-kicker mb-2 block">{t('header.lobbies')}</span>
               <h1
                 className="mb-2 text-[clamp(32px,4vw,52px)] font-extrabold leading-none tracking-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}

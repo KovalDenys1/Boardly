@@ -336,6 +336,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
           <h1
             className="mb-6 font-display text-5xl font-extrabold leading-none text-bd-ink sm:text-6xl lg:text-7xl"
           >
+            {/* i18n-allow: brand name, identical in all four locales */}
             Boardly.<br />
             <span style={{ color: 'var(--bd-coral)' }}>{t('home.heroTagline')}</span>
           </h1>

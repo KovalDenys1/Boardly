@@ -1003,7 +1003,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                                 {m.disc === 1 ? p1Name : p2Name}
                             </span>
                             <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'ui-monospace,monospace', fontWeight: 700, flexShrink: 0, color: 'var(--bd-ink)' }}>
-                                col {COLUMN_LABELS[m.col]}
+                                {t('games.connect_four.game.moveColumn', { col: COLUMN_LABELS[m.col] })}
                             </span>
                         </div>
                     ))

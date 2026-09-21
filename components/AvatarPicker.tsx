@@ -5,6 +5,7 @@ import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 
 const ALL_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8, 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
@@ -29,6 +30,7 @@ export default function AvatarPicker({
   onSaved,
   onUnlockUpload,
 }: AvatarPickerProps) {
+  const { t } = useTranslation()
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { update: updateSession } = useSession()
@@ -120,11 +122,11 @@ export default function AvatarPicker({
           textClassName="text-2xl font-bold"
         />
         <div>
-          <p className="text-sm font-semibold text-bd-ink dark:text-white">Profile photo</p>
+          <p className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.inline.avatarCaption')}</p>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {currentImage && !currentAvatarUrl
-              ? 'Using your connected account photo — pick one below to override'
-              : 'Pick an avatar below or upload your own photo'}
+              ? t('profile.avatarPicker.usingConnectedPhoto')
+              : t('profile.avatarPicker.pickOrUpload')}
           </p>
         </div>
       </div>
@@ -132,7 +134,7 @@ export default function AvatarPicker({
       {/* Avatar grid — all free */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Choose an avatar
+          {t('profile.avatarPicker.chooseAvatar')}
         </p>
         <div className="flex flex-wrap gap-2">
           {ALL_AVATARS.map((id) => {
@@ -148,10 +150,10 @@ export default function AvatarPicker({
                     ? 'border-indigo-500 shadow-[0_0_0_2px_#6366f1]'
                     : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
-                aria-label={`Avatar ${id}`}
+                aria-label={t('profile.avatarPicker.avatarAlt', { id })}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Avatar ${id}`} className="h-full w-full" />
+                <img src={url} alt={t('profile.avatarPicker.avatarAlt', { id })} className="h-full w-full" />
               </button>
             )
           })}
@@ -162,15 +164,15 @@ export default function AvatarPicker({
       <div>
         <div className="mb-2 flex items-center gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Custom photo
+            {t('profile.avatarPicker.customPhoto')}
           </p>
           {hasUploadPack ? (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-              UNLOCKED
+              {t('profile.avatarPicker.unlocked')}
             </span>
           ) : (
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-              from {PREMIUM_BASE_PRICE}
+              {t('profile.avatarPicker.fromPrice', { price: PREMIUM_BASE_PRICE })}
             </span>
           )}
         </div>
@@ -184,7 +186,7 @@ export default function AvatarPicker({
                 disabled={saving}
                 className="rounded-xl border border-bd-line bg-white px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-card-warm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
               >
-                {saving ? 'Saving…' : 'Upload photo'}
+                {saving ? t('profile.avatarPicker.saving') : t('profile.avatarPicker.uploadPhoto')}
               </button>
               {currentAvatarUrl && (
                 <button
@@ -193,7 +195,7 @@ export default function AvatarPicker({
                   disabled={saving}
                   className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
                 >
-                  Remove
+                  {t('profile.friends.remove')}
                 </button>
               )}
               <input
@@ -211,7 +213,7 @@ export default function AvatarPicker({
               className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
             >
               <Icon name="star" size={14} />
-              <span>Get Premium — from {PREMIUM_BASE_PRICE}/mo</span>
+              <span>{t('profile.avatarPicker.getPremium', { price: PREMIUM_BASE_PRICE })}</span>
             </button>
           )}
         </div>

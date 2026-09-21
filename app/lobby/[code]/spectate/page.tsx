@@ -767,7 +767,7 @@ export default function SpectatorLobbyPage() {
             <p className="bd-kicker mb-1">{t('spectate.modeKicker')}</p>
             <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl">{data.lobby.name}</h1>
             <p className="mt-1 text-sm font-medium text-bd-ink-muted">
-              Code <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
+              {t('game.ui.code')} <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
               {data.activeGame?.status && (
                 <span className="ml-2 inline-flex items-center rounded-full bg-bd-mint/20 px-2 py-0.5 text-xs font-semibold text-bd-mint-deep">
                   {data.activeGame.status}
@@ -820,7 +820,7 @@ export default function SpectatorLobbyPage() {
             {/* Players */}
             <section className="bd-card p-4">
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
-                Players · {players.length}/{data.lobby.maxPlayers}
+                {t('spectate.playersHeading', { count: players.length, max: data.lobby.maxPlayers })}
               </h2>
               <div className="space-y-2">
                 {players.map((player: GamePlayer) => (
@@ -840,7 +840,7 @@ export default function SpectatorLobbyPage() {
             {/* Spectators */}
             <section className="bd-card p-4">
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
-                Spectators · {spectatorCount}
+                {t('spectate.spectatorsHeading', { count: spectatorCount })}
               </h2>
               <div className="space-y-2">
                 {spectators.map((spectator) => (

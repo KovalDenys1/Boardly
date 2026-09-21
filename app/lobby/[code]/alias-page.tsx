@@ -184,6 +184,7 @@ const BdAvatar: React.FC<{ name?: string; color?: string; size?: number }> = ({ 
 )
 
 const CountdownRing: React.FC<{ remaining: number; total: number; size?: number }> = ({ remaining, total, size = 148 }) => {
+  const { t } = useTranslation()
   const stroke = 12
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
@@ -195,7 +196,7 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number 
   return (
     <div
       role="timer"
-      aria-label={`${remaining} seconds remaining`}
+      aria-label={t('alias.secondsRemainingAria', { count: remaining })}
       className={danger ? 'bd-pulse' : undefined}
       style={{ position: 'relative', width: size, height: size }}
     >
@@ -221,13 +222,14 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number 
           color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
           fontVariantNumeric: 'tabular-nums', lineHeight: 1,
         }}>{label}</span>
-        <BdLabel style={{ fontSize: 10 }}>seconds</BdLabel>
+        <BdLabel style={{ fontSize: 10 }}>{t('alias.secondsLabel')}</BdLabel>
       </div>
     </div>
   )
 }
 
 const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ kind, count }) => {
+  const { t } = useTranslation()
   const ok = kind === 'guessed'
   return (
     <span style={{
@@ -242,7 +244,7 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
       <Icon name={ok ? 'check' : 'close'} size={16} />
       <span>{ok ? '+' : '−'}{count}</span>
       <span style={{ fontSize: 11, opacity: 0.7, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
-        {ok ? 'guessed' : 'skipped'}
+        {ok ? t('alias.tallyGuessed') : t('alias.tallySkipped')}
       </span>
     </span>
   )
@@ -276,45 +278,48 @@ const AliasPregameHeader: React.FC<{
   backToLobbyLabel: string
   onLeave?: () => void
   isSpectator?: boolean
-}> = ({ code, title = 'Alias', leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => (
-  <header className="alias-context-bar" style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto', gap: 12,
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-      <div className="alias-context-logo" style={{
-        width: 38, height: 38, borderRadius: 12,
-        background: 'var(--bd-ink)',
-        display: 'grid', placeItems: 'center',
-        boxShadow: '0 3px 0 var(--bd-coral)',
-        flexShrink: 0,
-      }}>
-        <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
+}> = ({ code, title = 'Alias', leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => {
+  const { t } = useTranslation()
+  return (
+    <header className="alias-context-bar" style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto', gap: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+        <div className="alias-context-logo" style={{
+          width: 38, height: 38, borderRadius: 12,
+          background: 'var(--bd-ink)',
+          display: 'grid', placeItems: 'center',
+          boxShadow: '0 3px 0 var(--bd-coral)',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <BdLabel>{t('alias.headerKicker')}</BdLabel>
+          <span className="alias-context-title" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
+        </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <BdLabel>Boardly · word game</BdLabel>
-        <span className="alias-context-title" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
+          borderRadius: 999, padding: '6px 12px',
+          fontFamily: FONT_MONO,
+          fontSize: 13, fontWeight: 600,
+        }}>
+          <span style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{t('alias.lobbyCodeLabel')}</span>
+          <span style={{ color: 'var(--bd-ink)' }}>{code}</span>
+        </span>
+        {isSpectator
+          ? <GameLeaveButton label={backToLobbyLabel} href={`/lobby/${code}`} variant="back" />
+          : onLeave
+            ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
+            : null}
       </div>
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
-        borderRadius: 999, padding: '6px 12px',
-        fontFamily: FONT_MONO,
-        fontSize: 13, fontWeight: 600,
-      }}>
-        <span style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>LOBBY</span>
-        <span style={{ color: 'var(--bd-ink)' }}>{code}</span>
-      </span>
-      {isSpectator
-        ? <GameLeaveButton label={backToLobbyLabel} href={`/lobby/${code}`} variant="back" />
-        : onLeave
-          ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
-          : null}
-    </div>
-  </header>
-)
+    </header>
+  )
+}
 
 const AliasGameHeader: React.FC<{
   lobbyCode: string
@@ -907,11 +912,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         }} />
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <BdLabel style={{ color: accentDeep }}>{side === 'left' ? 'Team 01' : 'Team 02'}</BdLabel>
+            <BdLabel style={{ color: accentDeep }}>{t('alias.teamNumbered', { num: side === 'left' ? '01' : '02' })}</BdLabel>
             <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30 }}>{name}</span>
           </div>
           <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
-            {list.length} {list.length === 1 ? 'player' : 'players'}
+            {t('alias.playersCount', { count: list.length })}
           </span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -920,7 +925,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               padding: '20px 16px', border: `1.5px dashed ${accent}`, borderRadius: 14,
               color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
               background: 'var(--bd-surface-raised)',
-            }}>Waiting for players…</div>
+            }}>{t('lobby.game.waitingForPlayers')}</div>
           )}
           {list.map((p, i) => (
             <div key={p.id} style={{
@@ -938,7 +943,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                     color: accentDeep, background: 'var(--bd-surface-raised)',
                     padding: '2px 8px', borderRadius: 999,
                     border: `1px solid ${accent}`, letterSpacing: '0.08em',
-                  }}>YOU</span>
+                  }}>{t('alias.youBadge')}</span>
                 )}
               </span>
               <span style={{ flex: 1 }} />
@@ -964,19 +969,23 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             gap: 24, marginBottom: 16, flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 540 }}>
-              <BdLabel>Lobby · Pre-game</BdLabel>
+              <BdLabel>{t('alias.pregameKicker')}</BdLabel>
               <h1 style={{
                 fontFamily: FONT_DISPLAY, fontWeight: 700,
                 fontSize: 'clamp(36px, 6vw, 56px)', lineHeight: 1.02, margin: 0, letterSpacing: '-0.02em',
               }}>
-                Describe it.<br />
+                {t('alias.pregameTitle')}<br />
                 <span style={{ color: 'var(--bd-coral-deep)' }}>{t('alias.doNotSayItShort')}</span>
               </h1>
+              {/* The scoring rule is one key, ±1 included: a locale has to be
+                  able to move the numbers inside its own sentence, which a
+                  bolded <strong>+1</strong> spliced into English word order
+                  cannot do. */}
               <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, lineHeight: 1.55, margin: 0, maxWidth: 480 }}>
                 {isSoloPlayerCount(players.length)
                   ? t('alias.soloModeSubtitle')
-                  : 'Two teams take turns. One player describes, the rest guess.'}{' '}
-                <strong>+1</strong> for every word you nail, <strong>−1</strong> for skips.
+                  : t('alias.pregameSubtitleTeams')}{' '}
+                {t('alias.scoringRule')}
               </p>
             </div>
             <div style={{
@@ -986,12 +995,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               boxShadow: '0 6px 0 var(--bd-coral), 0 14px 28px -10px rgba(31,27,22,0.4)',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <BdLabel style={{ color: 'rgba(251,246,238,0.6)' }}>Turn timer</BdLabel>
+                <BdLabel style={{ color: 'rgba(251,246,238,0.6)' }}>{t('alias.turnTimerLabel')}</BdLabel>
                 <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32 }}>{turnTimerSeconds}s</span>
               </div>
               <span style={{ width: 1, height: 36, background: 'rgba(251,246,238,0.2)' }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <BdLabel style={{ color: 'rgba(251,246,238,0.6)' }}>Min players</BdLabel>
+                <BdLabel style={{ color: 'rgba(251,246,238,0.6)' }}>{t('alias.minPlayersLabel')}</BdLabel>
                 <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32 }}>{minPlayersRequired}</span>
               </div>
             </div>
@@ -1014,7 +1023,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
             <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
             <div className="hidden md:flex items-center justify-center">
-              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>{t('game.ui.vs')}</span>
             </div>
             <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
             </div>
@@ -1042,7 +1051,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 onClick={handleStartGame}
                 disabled={isStarting || !ready}
               >
-                {isStarting ? 'Starting…' : 'Pick Teams'}
+                {isStarting ? t('alias.starting') : t('alias.pickTeams')}
                 <span aria-hidden style={{ fontSize: 18 }}>→</span>
               </button>
             ) : (
@@ -1110,7 +1119,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
             </div>
             <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
-              {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
+              {t('alias.playersCount', { count: team.playerIds.length })}
             </span>
           </div>
 
@@ -1119,7 +1128,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <div style={{
                 padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
                 color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
-              }}>Empty — be the first</div>
+              }}>{t('alias.emptyTeamCta')}</div>
             )}
             {team.playerIds.map(pid => {
               const name = getPlayerName(pid)
@@ -1142,7 +1151,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                       marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
                       color: accentDeep, background: 'var(--bd-surface-raised)',
                       padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
-                    }}>YOU</span>
+                    }}>{t('alias.youBadge')}</span>
                   )}
                   {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
                     <Icon name="star" size={14} style={{ marginLeft: isMyTeam ? 0 : 'auto' }} />
@@ -1167,7 +1176,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 opacity: isMoveSubmitting ? 0.5 : 1,
               }}
             >
-              Join {team.name}
+              {t('alias.joinTeam', { team: team.name })}
             </button>
           ) : (
             <div className="alias-team-join" style={{
@@ -1181,7 +1190,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               fontWeight: 600, fontSize: 14,
               color: accentDeep,
             }}>
-              <Icon name="check" size={15} /> You&apos;re on this team
+              <Icon name="check" size={15} /> {t('alias.onThisTeam')}
             </div>
           )}
         </div>
@@ -1199,17 +1208,17 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             isSpectator={isSpectator}
           />
           <div className="alias-team-hero" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            <BdLabel>Team selection</BdLabel>
+            <BdLabel>{t('alias.teamSelectionKicker')}</BdLabel>
             <h1 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               fontSize: 'clamp(32px, 5vw, 48px)', lineHeight: 1.05, margin: 0,
             }}>
-              {isSolo ? t('alias.soloModeTitle') : 'Choose your side.'}
+              {isSolo ? t('alias.soloModeTitle') : t('alias.chooseSideTitle')}
             </h1>
             <p style={{ color: 'var(--bd-ink-soft)', fontSize: 15, margin: 0 }}>
               {isSolo
                 ? t('alias.soloModeSubtitle')
-                : "Pick a team — then host starts when everyone's ready."}
+                : t('alias.chooseSideSubtitle')}
             </p>
           </div>
 
@@ -1229,7 +1238,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {renderTeamCard(data.teams[0], 0)}
               </div>
               <div className="flex items-center justify-center py-1 shrink-0 md:pt-20">
-                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>{t('game.ui.vs')}</span>
               </div>
               {data.teams[1] && (
                 <div className="flex-1 min-w-0">
@@ -1255,8 +1264,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }} />
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
                 {teamsValid
-                  ? 'Teams ready — host can start.'
-                  : 'Each team needs at least 1 player.'}
+                  ? t('alias.teamsReady')
+                  : t('alias.teamsNeedPlayer')}
               </span>
             </div>
             {isHost ? (
@@ -1265,7 +1274,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 onClick={() => handleMove('start_round', {})}
                 disabled={isMoveSubmitting || !teamsValid}
               >
-                Start Rounds
+                {t('alias.startRounds')}
                 <span aria-hidden>→</span>
               </button>
             ) : (
@@ -1484,7 +1493,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               {/* Action buttons */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%' }}>
                 <button
-                  aria-label="Guessed correctly"
+                  aria-label={t('alias.guessedCorrectly')}
                   onClick={() => handleMove('word_action', { action: 'guess' })}
                   disabled={isMoveSubmitting}
                   style={{
@@ -1502,7 +1511,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
                 </button>
                 <button
-                  aria-label="Skip word"
+                  aria-label={t('alias.skipWord')}
                   onClick={() => handleMove('word_action', { action: 'skip' })}
                   disabled={isMoveSubmitting}
                   style={{
@@ -1646,14 +1655,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
                 <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <BdLabel>Live tally</BdLabel>
+                  <BdLabel>{t('alias.liveTally')}</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <ScorePill kind="guessed" count={guessed} />
                     <ScorePill kind="skipped" count={skipped} />
                   </div>
                   {danger && (
                     <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      <Icon name="bolt" size={12} /> Final seconds — go go go!
+                      <Icon name="bolt" size={12} /> {t('alias.finalSeconds')}
                     </span>
                   )}
                 </div>
@@ -1709,7 +1718,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
                   <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 28, margin: 0 }}>
-                    {wordResults.length} {wordResults.length === 1 ? 'word' : 'words'}
+                    {t('alias.wordsCount', { count: wordResults.length })}
                   </h2>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -1719,7 +1728,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </div>
               <div style={{ marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
-                  <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
+                  <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>{t('alias.noWordsThisTurn')}</div>
                 )}
                 {wordResults.map((w, i) => {
                   const ok = w.result === 'guessed'
@@ -1762,7 +1771,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 display: 'flex', alignItems: 'center', gap: 18,
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                  <BdLabel style={{ color: positive ? 'rgba(251,246,238,0.7)' : 'var(--bd-ink-muted)' }}>Turn score</BdLabel>
+                  <BdLabel style={{ color: positive ? 'rgba(251,246,238,0.7)' : 'var(--bd-ink-muted)' }}>{t('alias.turnScoreLabel')}</BdLabel>
                   <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1 }}>
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
                   </span>
@@ -1788,7 +1797,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                         <span style={{ width: 14, height: 14, borderRadius: 999, background: accent, boxShadow: isActive ? `0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}` : 'none' }} />
                         <div>
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
-                          {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>Just played</BdLabel>}
+                          {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>{t('alias.justPlayed')}</BdLabel>}
                         </div>
                         <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
                       </div>
@@ -1796,7 +1805,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   })}
                 </div>
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--bd-line)', fontFamily: FONT_MONO, fontSize: 11, color: 'var(--bd-ink-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center' }}>
-                  3 turns per team · most points wins
+                  {t('alias.formatNote')}
                 </div>
               </div>
 
@@ -1817,7 +1826,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   borderRadius: 14, padding: '16px 22px',
                   fontSize: 15, fontWeight: 600, color: 'var(--bd-ink-soft)',
                 }}>
-                  <Icon name="hourglass" size={16} /> Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
+                  <Icon name="hourglass" size={16} /> {t('alias.waitingForTeamTurn', { team: nextTeam?.name ?? t('alias.nextTeamFallback') })}
                 </div>
               ))}
             </section>
@@ -1877,20 +1886,26 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         {renderHeader(t('alias.finalTitle'))}
         <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <BdLabel>{isTie ? 'No winner' : 'Champions'}</BdLabel>
+            <BdLabel>{isTie ? t('alias.noWinnerLabel') : t('alias.championsLabel')}</BdLabel>
             <h1 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               fontSize: 'clamp(56px, 10vw, 96px)',
               lineHeight: 0.98, textAlign: 'center', letterSpacing: '-0.025em', margin: 0,
             }}>
               {isTie ? (
-                <>It's a <span style={{ color: 'var(--bd-sun-deep)' }}>tie</span>.</>
+                t('alias.tie')
               ) : (
-                <><span style={{ color: 'var(--bd-coral-deep)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>wins.</span></>
+                /* Two nodes rather than one interpolated sentence: the winner's
+                   name is the display line and the verb is the italic line under
+                   it. Subject then verb is the order in all four locales, and
+                   the <br /> is layout, not grammar. */
+                <><span style={{ color: 'var(--bd-coral-deep)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>{t('alias.winsWord')}</span></>
               )}
             </h1>
             <p style={{ fontSize: 16, color: 'var(--bd-ink-soft)', textAlign: 'center', maxWidth: 460, margin: 0 }}>
-              {isTie ? 'Both teams locked in at the same score. Run it back?' : `Sharp tongues, sharper guesses. ${(winner?.name ?? '').split(' ')[0]} took it home.`}
+              {isTie
+                ? t('alias.tieSubtitle')
+                : t('alias.winnerSubtitle', { name: (winner?.name ?? '').split(' ')[0] })}
             </p>
           </div>
 
@@ -1904,12 +1919,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <React.Fragment key={team.id}>
                     <div style={{ textAlign: i === 0 ? 'right' : 'left', opacity: isTie ? 1 : (isWinner ? 1 : 0.55) }}>
                       <BdLabel style={{ color: 'rgba(251,246,238,0.6)', display: 'block', marginBottom: 6 }}>
-                        {isWinner ? <><Icon name="star" size={12} /> Winner</> : (isTie ? 'Team' : 'Runner-up')}
+                        {isWinner
+                          ? <><Icon name="star" size={12} /> {t('lobby.game.winner')}</>
+                          : (isTie ? t('alias.teamLabel') : t('alias.runnerUpLabel'))}
                       </BdLabel>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>{team.name}</div>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>{team.score}</div>
                     </div>
-                    {i === 0 && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>vs</span>}
+                    {i === 0 && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>{t('game.ui.vs')}</span>}
                   </React.Fragment>
                 )
               })}
@@ -1920,7 +1937,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             {isHost ? (
               <>
                 <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
-                  {isStarting ? 'Starting…' : t('alias.playAgain')}
+                  {isStarting ? t('alias.starting') : t('alias.playAgain')}
                   <span aria-hidden style={{ fontSize: 18 }}>↻</span>
                 </button>
                 <button

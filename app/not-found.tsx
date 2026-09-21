@@ -18,6 +18,7 @@ export default function NotFound() {
     >
       <div className="relative mx-auto grid h-full w-full max-w-4xl place-items-center p-4 sm:p-6">
         <div className="bd-card w-full max-w-xl px-6 py-8 text-center sm:px-10 sm:py-10">
+          {/* i18n-allow: brand name, identical in all four locales */}
           <span className="bd-kicker">Boardly · {t('notFoundPage.lostRoute')}</span>
 
           <p
