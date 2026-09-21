@@ -28,8 +28,11 @@ const ru = {
     in_development: 'Эта игра всё ещё в разработке',
     enabled: 'Включено',
     disabled: 'Отключено',
+    advertisement: 'Реклама',
+    premium: 'Premium',
   },
   breadcrumbs: {
+    label: 'Навигационная цепочка',
     home: 'Главная',
     games: 'Игры'
   },
@@ -1320,9 +1323,27 @@ const ru = {
       removedPlayersHint: 'Они не смогут вернуться, пока вы их не впустите.',
       letBackIn: 'Впустить снова',
       settings: 'Настройки',
+      versus: 'против',
+      botBadge: 'ИИ',
+      playerLeft: 'вышел',
+      viewPlayerProfile: 'Открыть профиль игрока',
+      stepOf: 'Шаг {{current}} из {{total}}',
     }
   },
   yahtzee: {
+    history: {
+      kicker: 'Последние события',
+      title: 'Последние броски',
+      empty: 'Бросков пока нет',
+      turnBadge: 'Ход {{turn}}',
+      holdBadge: 'Удержано {{count}}',
+      scoredCategory: 'Записал {{category}}',
+      rollOfTurn: 'Бросок {{roll}} в ходе {{turn}}',
+      burned: 'Слил эту категорию, чтобы не тормозить ход.',
+      banked: 'Записано {{points}} очков в {{category}}.',
+      heldForNext: 'Удержано кубиков для следующего решения: {{count}}.',
+      freshRoll: 'Новый бросок, кубики не удержаны.',
+    },
     categories: {
       ones: 'Единицы',
       twos: 'Двойки',
@@ -1438,11 +1459,33 @@ const ru = {
       scored: 'Набрано',
       notAvailable: 'Недоступно',
       bonusProgress: '{{current}}/63 для бонуса',
+      strong: 'Отлично',
+      playable: 'Средне',
+      fallbackOption: 'Слив',
+      best: 'Лучшее',
+      bestPlus: 'Лучшее +{{score}}',
+      burnSlot: 'Слить категорию',
+      subtotal: 'Подытог',
+      total: 'Итого',
+      filledCount: '{{filled}}/{{total}} заполнено',
+      remainingCount: 'осталось {{count}}',
+      bonusReady: 'бонус +35 готов',
+      toBonus: '{{count}} до бонуса',
+      noStrongCombo: 'Сильной комбинации пока нет.',
+      bankStrongScore: 'Сейчас можно записать сильный результат.',
+      rollsLeftCount: 'осталось бросков: {{count}}',
+      rollsLeftCount_other: 'осталось бросков: {{count}}',
+      noRollsLeft: 'Бросков не осталось',
+      holdingDice: 'Удерживает кубиков: {{count}}',
+      holdingDice_other: 'Удерживает кубиков: {{count}}',
       scorecardTitle: 'Таблица очков',
       hotHand: 'Горячая рука',
     }
   },
   chat: {
+    kicker: 'Чат Boardly',
+    controls: 'Управление чатом',
+    scrollToBottom: 'Прокрутить вниз',
     open: 'Чат',
     title: 'Игровой чат',
     openChat: 'Открыть чат',
@@ -1638,6 +1681,21 @@ const ru = {
     },
   },
   profile: {
+    playerCard: {
+      unavailable: 'Профиль недоступен',
+      guestBadge: 'Гость',
+      viewFullProfile: 'Открыть профиль →',
+      favourite: 'Любимая игра:',
+      requestSent: 'Запрос отправлен',
+      requestReceived: 'Получен запрос в друзья',
+    },
+    premiumCard: {
+      level: 'Уровень',
+      joined: 'Присоединился',
+      holoBadge: 'Holo · Premium',
+      foiledSince: 'фольга · с',
+      memberMark: '◆ участник ·',
+    },
     title: 'Профиль',
     username: 'Имя пользователя',
     email: 'Эл. почта',
@@ -2045,6 +2103,8 @@ const ru = {
       challengeSubmitted: 'Ответ на вызов отправлен',
       roundAdvanced: 'Раунд продолжен',
       board: {
+        dice: 'Кубики',
+        winsRound: '{{player}} выигрывает этот раунд',
         redDisc: 'Красный',
         yellowDisc: 'Жёлтый',
         toMove: 'ходит',
@@ -2154,6 +2214,8 @@ const ru = {
       }
     },
     publicProfile: {
+      levelBadge: 'Ур. {{level}}',
+      lockBadge: 'Замок',
       eyebrow: 'Профиль Boardly',
       subtitle: 'Посмотрите публичный профиль игрока и отправьте запрос в друзья по постоянной ссылке.',
       friendsOnlyTitle: 'Этот профиль виден только друзьям',
@@ -2649,6 +2711,7 @@ const ru = {
     apology: 'Извините за неудобства.',
   },
   errorPage: {
+    errorId: 'ID',
     title: 'Упс! Что-то пошло не так',
     message: 'Извините, произошло что-то неожиданное. Пожалуйста, попробуйте снова.',
     tryAgain: 'Попробовать снова',
@@ -2674,6 +2737,7 @@ const ru = {
     scorePoints: '+{{count}} очков',
   },
   faq: {
+    kicker: 'FAQ',
     title: 'Часто задаваемые вопросы',
     intro: 'Короткие ответы перед тем, как создать комнату, позвать друзей или зайти гостем.',
     // Conjunction for the generated game lists in q3 and q4
@@ -2916,6 +2980,7 @@ const ru = {
     },
   },
   feedback: {
+    successBadge: 'ОК',
     buttonLabel: 'Отзыв',
     buttonAriaLabel: 'Отправить отзыв',
     title: 'Отправить отзыв',

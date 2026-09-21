@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Modal from './Modal'
 import GameIcon from '@/components/GameIcon'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameMetadata } from '@/lib/game-catalog'
 
 interface PlayerCardData {
@@ -30,6 +31,7 @@ interface PlayerProfileCardProps {
 
 
 export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCardProps) {
+  const { t } = useTranslation()
   const { status } = useSession()
   const [data, setData] = useState<PlayerCardData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -85,7 +87,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
           onClick={onClose}
           className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-[var(--bd-bg2)]"
           style={{ color: 'var(--bd-ink-soft)' }}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           ×
         </button>
@@ -106,7 +108,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
           </div>
         ) : !data ? (
           <p className="text-center py-6 text-sm" style={{ color: 'var(--bd-ink-muted)' }}>
-            Profile unavailable
+            {t('profile.playerCard.unavailable')}
           </p>
         ) : (
           <>
@@ -130,7 +132,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`font-bold text-base truncate ${data.isPremium ? 'text-amber-500' : ''}`} style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}>
-                    {data.username ?? 'Unknown'}
+                    {data.username ?? t('game.ui.playerFallback')}
                   </span>
                   {data.isPremium && (
                     <Icon name="crown" size={16} tone="premium" label="Premium" />
@@ -140,7 +142,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                       className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
                     >
-                      Guest
+                      {t('profile.playerCard.guestBadge')}
                     </span>
                   )}
                 </div>
@@ -153,7 +155,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     style={{ color: 'var(--bd-coral)' }}
                     onClick={onClose}
                   >
-                    View full profile →
+                    {t('profile.playerCard.viewFullProfile')}
                   </Link>
                 )}
               </div>
@@ -163,9 +165,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
             {!data.isGuest && (
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: 'Games', value: data.gamesPlayed },
-                  { label: 'Wins', value: data.wins },
-                  { label: 'Win rate', value: `${data.winRate}%` },
+                  { label: t('header.games'), value: data.gamesPlayed },
+                  { label: t('profile.stats.dashboard.summary.wins'), value: data.wins },
+                  { label: t('profile.stats.dashboard.summary.winRate'), value: `${data.winRate}%` },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
@@ -184,7 +186,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
             {/* Favourite game */}
             {!data.isGuest && gameLabel && (
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-                <span>Favourite:</span>
+                <span>{t('profile.playerCard.favourite')}</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--bd-ink)' }}>
                   <GameIcon gameId={gameLabel.svgId} accentColor={gameLabel.accentColor} size={16} variant="bare" />
                   {gameLabel.name}
@@ -197,12 +199,12 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               <div>
                 {data.relation === 'friends' ? (
                   <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>
-                    <Icon name="check" size={14} /> Friends
+                    <Icon name="check" size={14} /> {t('profile.friends.tabs.friends')}
                   </p>
                 ) : data.relation === 'request_sent' ? (
-                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}><Icon name="mail" size={15} /> Request sent</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}><Icon name="mail" size={15} /> {t('profile.playerCard.requestSent')}</p>
                 ) : data.relation === 'request_received' ? (
-                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}><Icon name="mail" size={15} /> Friend request received</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}><Icon name="mail" size={15} /> {t('profile.playerCard.requestReceived')}</p>
                 ) : data.relation === 'can_send' ? (
                   <button
                     onClick={handleAddFriend}
@@ -210,7 +212,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     className="w-full py-2 px-4 text-white rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
                     style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
                   >
-                    {friendState === 'loading' ? 'Sending…' : '+ Add Friend'}
+                    {friendState === 'loading' ? t('profile.sending') : `+ ${t('profile.friends.addFriend')}`}
                   </button>
                 ) : null}
               </div>

@@ -1,6 +1,10 @@
 {
   "files": {
     "app/api/og/lobby/[code]/route.tsx": "Route handler returning an ImageResponse. It renders one cached PNG per lobby code for link-preview crawlers (Slack, Discord, iMessage), not for a signed-in viewer, so there is no locale to render in and useTranslation() cannot run outside a component.",
+    "app/games/alias/page.tsx": "Server page: exports metadata and passes SEO copy as props to the client GameDetailPage. useTranslation() cannot run here, and the audit only catches the `title` prop out of ~40 English strings in the file — translating that one alone would leave the page half English. The fix is the `<Game>DetailContent` client-wrapper pattern the other game pages use; tracked separately from #889.",
+    "app/games/liars-party/page.tsx": "Server page: exports metadata and passes SEO copy as props to the client GameDetailPage. See app/games/alias/page.tsx.",
+    "app/games/rock-paper-scissors/page.tsx": "Server page: exports metadata and passes SEO copy as props to the client GameDetailPage. See app/games/alias/page.tsx.",
+    "app/layout.tsx": "Root server layout. The only string is the brand wordmark in the pre-hydration header skeleton, which renders before any locale is known and outside a client component, so useTranslation() cannot run here.",
     "app/opengraph-image.tsx": "Next.js metadata image convention: a build-time ImageResponse, one static PNG for the whole site. No request, no viewer and no React component, so there is no locale to pick and no hook to call.",
     "app/twitter-image.tsx": "Next.js metadata image convention: a build-time ImageResponse, one static PNG for the whole site. No request, no viewer and no React component, so there is no locale to pick and no hook to call."
   }

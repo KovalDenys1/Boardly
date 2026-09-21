@@ -13,7 +13,7 @@ jest.mock('@/lib/i18n-toast', () => ({
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const dictionary: Record<string, string> = {
         'profile.publicProfile.eyebrow': 'Boardly Profile',
         'profile.publicProfile.friendsOnlyTitle': 'This profile is visible to friends only',
@@ -30,9 +30,12 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'profile.achievements.title': 'Achievements',
         'achievements.first_win.name': 'First Win',
         'achievements.first_win.description': 'Win your first game',
+        'profile.publicProfile.levelBadge': 'Lvl. {{level}}',
       }
 
-      return dictionary[key] ?? key
+      const template = dictionary[key] ?? key
+      if (!options) return template
+      return template.replace(/{{(\w+)}}/g, (_match, name: string) => String(options[name] ?? ''))
     },
   }),
 }))

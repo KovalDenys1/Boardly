@@ -839,7 +839,7 @@ export default function Friends() {
                               </span>
                               {friend.publicProfileId ? (
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-bd-lav-deep dark:bg-slate-900 dark:text-bd-lav">
-                                  View profile
+                                  {t('leaderboard.viewProfile')}
                                   <ArrowRightIcon />
                                 </span>
                               ) : null}
@@ -848,13 +848,13 @@ export default function Friends() {
                             {friend.statistics && friend.statistics.totalGames > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                                 <span className="rounded-full bg-bd-card-warm px-2.5 py-1 font-semibold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-200">
-                                  Games {friend.statistics.totalGames}
+                                  {t('header.games')} {friend.statistics.totalGames}
                                 </span>
                                 <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
-                                  Wins {friend.statistics.totalWins}
+                                  {t('profile.stats.dashboard.summary.wins')} {friend.statistics.totalWins}
                                 </span>
                                 <span className="rounded-full bg-bd-lav/20 px-2.5 py-1 font-semibold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
-                                  Win rate {Math.round(friend.statistics.winRate)}%
+                                  {t('profile.stats.dashboard.summary.winRate')} {Math.round(friend.statistics.winRate)}%
                                 </span>
                               </div>
                             )}

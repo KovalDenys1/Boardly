@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 
 import { Icon, type IconName } from '@/components/icons'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface ToastProps {
   message: string
@@ -12,6 +13,8 @@ interface ToastProps {
 }
 
 export default function Toast({ message, type = 'info', onClose, duration = 3000 }: ToastProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     const timer = setTimeout(onClose, duration)
     return () => clearTimeout(timer)
@@ -42,7 +45,7 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
       <button
         onClick={onClose}
         className="ml-4 flex items-center opacity-70 hover:opacity-100 transition-opacity"
-        aria-label="Close"
+        aria-label={t('common.close')}
       >
         <Icon name="close" size={18} />
       </button>

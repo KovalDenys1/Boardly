@@ -28,8 +28,11 @@ const no = {
     in_development: 'Dette spillet er fortsatt under utvikling',
     enabled: 'Aktivert',
     disabled: 'Deaktivert',
+    advertisement: 'Annonse',
+    premium: 'Premium',
   },
   breadcrumbs: {
+    label: 'Brødsmulesti',
     home: 'Hjem',
     games: 'Spill'
   },
@@ -1320,9 +1323,27 @@ const no = {
       removedPlayersHint: 'De kan ikke bli med igjen før du slipper dem inn.',
       letBackIn: 'Slipp inn igjen',
       settings: 'Innstillinger',
+      versus: 'mot',
+      botBadge: 'AI',
+      playerLeft: 'forlot',
+      viewPlayerProfile: 'Se spillerprofil',
+      stepOf: 'Steg {{current}} av {{total}}',
     }
   },
   yahtzee: {
+    history: {
+      kicker: 'Siste aktivitet',
+      title: 'Siste kast',
+      empty: 'Ingen kast ennå',
+      turnBadge: 'Runde {{turn}}',
+      holdBadge: 'Hold {{count}}',
+      scoredCategory: 'Førte opp {{category}}',
+      rollOfTurn: 'Kast {{roll}} i runde {{turn}}',
+      burned: 'Strøk denne ruten for å holde runden i gang.',
+      banked: '{{points}} poeng sikret i {{category}}.',
+      heldForNext: 'Holder {{count}} terninger til neste valg.',
+      freshRoll: 'Nytt kast uten terninger holdt.',
+    },
     categories: {
       ones: 'Enere',
       twos: 'Toere',
@@ -1438,11 +1459,33 @@ const no = {
       scored: 'Scoret',
       notAvailable: 'Ikke tilgjengelig',
       bonusProgress: '{{current}}/63 for bonus',
+      strong: 'Sterkt',
+      playable: 'Greit',
+      fallbackOption: 'Strykning',
+      best: 'Best',
+      bestPlus: 'Best +{{score}}',
+      burnSlot: 'Stryk en rute',
+      subtotal: 'Delsum',
+      total: 'Sum',
+      filledCount: '{{filled}}/{{total}} fylt',
+      remainingCount: '{{count}} igjen',
+      bonusReady: '+35 bonus klar',
+      toBonus: '{{count}} til bonus',
+      noStrongCombo: 'Ingen sterk kombinasjon ennå.',
+      bankStrongScore: 'Du kan sikre en sterk score nå.',
+      rollsLeftCount: '{{count}} kast igjen',
+      rollsLeftCount_other: '{{count}} kast igjen',
+      noRollsLeft: 'Ingen kast igjen',
+      holdingDice: 'Holder {{count}} terning',
+      holdingDice_other: 'Holder {{count}} terninger',
       scorecardTitle: 'Poengtabell',
       hotHand: 'Varm hånd',
     }
   },
   chat: {
+    kicker: 'Boardly-chat',
+    controls: 'Chatkontroller',
+    scrollToBottom: 'Rull til bunnen',
     open: 'Åpne chat',
     title: 'Spillchat',
     openChat: 'Åpne chat',
@@ -1638,6 +1681,21 @@ const no = {
     },
   },
   profile: {
+    playerCard: {
+      unavailable: 'Profilen er utilgjengelig',
+      guestBadge: 'Gjest',
+      viewFullProfile: 'Se hele profilen →',
+      favourite: 'Favoritt:',
+      requestSent: 'Forespørsel sendt',
+      requestReceived: 'Venneforespørsel mottatt',
+    },
+    premiumCard: {
+      level: 'Nivå',
+      joined: 'Ble med',
+      holoBadge: 'Holo · Premium',
+      foiledSince: 'folie · siden',
+      memberMark: '◆ medlem ·',
+    },
     title: 'Profil',
     username: 'Brukernavn',
     email: 'E-post',
@@ -2045,6 +2103,8 @@ const no = {
       challengeSubmitted: 'Svar på utfordring sendt',
       roundAdvanced: 'Runden gikk videre',
       board: {
+        dice: 'Terninger',
+        winsRound: '{{player}} vinner denne runden',
         redDisc: 'Rød',
         yellowDisc: 'Gul',
         toMove: 'skal flytte',
@@ -2154,6 +2214,8 @@ const no = {
       }
     },
     publicProfile: {
+      levelBadge: 'Nivå {{level}}',
+      lockBadge: 'Lås',
       eyebrow: 'Boardly-profil',
       subtitle: 'Se spillerens offentlige profil og send en venneforespørsel via en stabil profillenke.',
       friendsOnlyTitle: 'Denne profilen er bare synlig for venner',
@@ -2649,6 +2711,7 @@ const no = {
     apology: 'Beklager ulempen.',
   },
   errorPage: {
+    errorId: 'ID',
     title: 'Oops! Noe gikk galt',
     message: 'Vi beklager, men noe uventet skjedde. Vær så snill, prøv igjen.',
     tryAgain: 'Prøv igjen',
@@ -2674,6 +2737,7 @@ const no = {
     scorePoints: '+{{count}} poeng',
   },
   faq: {
+    kicker: 'FAQ',
     title: 'Ofte stilte spørsmål',
     intro: 'Raske svar før du starter et rom, inviterer venner eller spiller som gjest.',
     // Conjunction for the generated game lists in q3 and q4
@@ -2916,6 +2980,7 @@ const no = {
     },
   },
   feedback: {
+    successBadge: 'OK',
     buttonLabel: 'Tilbakemelding',
     buttonAriaLabel: 'Send tilbakemelding',
     title: 'Send tilbakemelding',

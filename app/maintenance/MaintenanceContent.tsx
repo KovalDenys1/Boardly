@@ -105,6 +105,7 @@ export default function MaintenanceContent() {
         {/* Boardly branding */}
         <div className="mt-8 pt-6" style={{ borderTop: '1.5px solid var(--bd-line)' }}>
           <p className="text-2xl font-bold" style={{ color: 'var(--bd-ink)' }}>
+            {/* i18n-allow: brand wordmark, identical in all four locales */}
             boardly
           </p>
         </div>

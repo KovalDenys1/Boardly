@@ -358,14 +358,14 @@ export default function PublicProfileView({
         )}
       </div>
       <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-        Lvl. {level}
+        {t('profile.publicProfile.levelBadge', { level })}
       </div>
       {profile.isPremium && (
         <div
           className="absolute -top-3 -left-4 z-10 -rotate-[8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
           style={{ background: '#FBBF24' }}
         >
-          Premium
+          {t('common.premium')}
         </div>
       )}
     </div>
@@ -376,7 +376,7 @@ export default function PublicProfileView({
       return (
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-6 py-10 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10">
           <div className="grid h-20 w-20 place-items-center rounded-[1.4rem] border-2 border-bd-ink bg-bd-sun font-display text-sm font-black uppercase tracking-[0.12em] text-bd-ink shadow-[4px_4px_0_var(--bd-ink)]">
-            Lock
+            {t('profile.publicProfile.lockBadge')}
           </div>
           <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
             {t('profile.publicProfile.eyebrow')}

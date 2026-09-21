@@ -13,7 +13,7 @@ export default function AboutContent() {
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label="Breadcrumb">
+        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
           <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--bd-ink)' }}>{t('about.breadcrumb')}</span>

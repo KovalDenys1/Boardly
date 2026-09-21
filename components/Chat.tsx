@@ -195,7 +195,7 @@ export default function Chat({
         <div className="flex min-w-0 items-center gap-3">
           <div className="bd-live-dot" aria-hidden="true" />
           <div className="min-w-0">
-            <div className="chat-titlebar-kicker bd-kicker">Boardly Chat</div>
+            <div className="chat-titlebar-kicker bd-kicker">{t('chat.kicker')}</div>
             <h3 className="truncate text-base font-bold text-bd-ink" id="chat-title">
               {t('chat.title')}
             </h3>
@@ -208,7 +208,7 @@ export default function Chat({
         </div>
 
         {!fullScreen && (
-          <div className="flex items-center gap-1" role="group" aria-label="Chat controls">
+          <div className="flex items-center gap-1" role="group" aria-label={t('chat.controls')}>
             {onClearChat && messages.length > 0 && (
               <button
                 onClick={onClearChat}
@@ -342,7 +342,7 @@ export default function Chat({
           <button
             onClick={scrollToBottom}
             className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full !p-3 shadow-lg hover:scale-110 active:scale-95 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none animate-[bounce-in_0.3s_ease-out]"
-            aria-label="Scroll to bottom"
+            aria-label={t('chat.scrollToBottom')}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />

@@ -37,13 +37,13 @@ export default function RollHistory({ entries }: RollHistoryProps) {
         <div className="mb-3 flex items-center gap-2">
           <Icon name="clipboard" size={20} />
           <div>
-            <div className="bd-kicker">Recent Activity</div>
-            <h3 className="text-base font-bold text-bd-ink">Recent Rolls</h3>
+            <div className="bd-kicker">{t('yahtzee.history.kicker')}</div>
+            <h3 className="text-base font-bold text-bd-ink">{t('yahtzee.history.title')}</h3>
           </div>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-bd-ink-soft">
-            No rolls yet
+            {t('yahtzee.history.empty')}
           </p>
         </div>
       </div>
@@ -58,8 +58,8 @@ export default function RollHistory({ entries }: RollHistoryProps) {
       <div className="mb-3 flex items-center gap-2">
         <Icon name="clipboard" size={20} />
         <div className="min-w-0 flex-1">
-          <div className="bd-kicker">Recent Activity</div>
-          <h3 className="truncate text-base font-bold text-bd-ink">Recent Rolls</h3>
+          <div className="bd-kicker">{t('yahtzee.history.kicker')}</div>
+          <h3 className="truncate text-base font-bold text-bd-ink">{t('yahtzee.history.title')}</h3>
         </div>
         <span className="bd-chip px-2 py-0.5 text-xs">
           {entries.length}
@@ -106,18 +106,18 @@ export default function RollHistory({ entries }: RollHistoryProps) {
                       {entry.playerName}
                     </span>
                     {isBotEntry && (
-                      <span className="bd-chip bd-chip-lav px-2 py-0.5 text-[10px]">AI</span>
+                      <span className="bd-chip bd-chip-lav px-2 py-0.5 text-[10px]">{t('game.ui.botBadge')}</span>
                     )}
                   </div>
                   <p className="mt-1 text-xs text-bd-ink-soft">
                     {entryType === 'score'
-                      ? `Scored ${categoryLabel}`
-                      : `Roll ${entry.rollNumber ?? 1} of turn ${entry.turnNumber}`}
+                      ? t('yahtzee.history.scoredCategory', { category: categoryLabel })
+                      : t('yahtzee.history.rollOfTurn', { roll: entry.rollNumber ?? 1, turn: entry.turnNumber })}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <span className="bd-chip px-2 py-0.5 text-[10px]">
-                    Turn {entry.turnNumber}
+                    {t('yahtzee.history.turnBadge', { turn: entry.turnNumber })}
                   </span>
                   {entryType === 'score' && (
                     <span className="bd-chip bd-chip-mint px-2 py-0.5 text-[10px] font-bold">
@@ -130,7 +130,9 @@ export default function RollHistory({ entries }: RollHistoryProps) {
               {entryType === 'score' ? (
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm text-bd-ink-soft">
-                    {entry.scoredPoints === 0 ? 'Burned this category to keep the turn moving.' : `${entry.scoredPoints ?? 0} points banked in ${categoryLabel}.`}
+                    {entry.scoredPoints === 0
+                      ? t('yahtzee.history.burned')
+                      : t('yahtzee.history.banked', { points: entry.scoredPoints ?? 0, category: categoryLabel })}
                   </p>
                 </div>
               ) : (
@@ -165,12 +167,12 @@ export default function RollHistory({ entries }: RollHistoryProps) {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-bd-ink-soft">
                       {heldCount > 0
-                        ? `${heldCount} dice held for the next decision.`
-                        : 'Fresh roll with no dice held.'}
+                        ? t('yahtzee.history.heldForNext', { count: heldCount })
+                        : t('yahtzee.history.freshRoll')}
                     </p>
                     {heldCount > 0 && (
                       <span className="bd-chip bd-chip-sun px-2 py-0.5 text-[10px] font-bold">
-                        Hold {heldCount}
+                        {t('yahtzee.history.holdBadge', { count: heldCount })}
                       </span>
                     )}
                   </div>

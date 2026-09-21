@@ -215,14 +215,14 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           {playerName}
                         </span>
                         {isDeparted && (
-                          <span className="bd-chip shrink-0 text-bd-ink-muted" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>left</span>
+                          <span className="bd-chip shrink-0 text-bd-ink-muted" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>{t('game.ui.playerLeft')}</span>
                         )}
                         {!isDeparted && isPremium && (
                           <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />
                         )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
-                            AI
+                            {t('game.ui.botBadge')}
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
@@ -271,8 +271,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         onProfileClick(player.userId)
                       }}
                       className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-bd-ink-muted hover:bg-[#FFC44D30] hover:text-bd-ink transition-all"
-                      title="View profile"
-                      aria-label="View player profile"
+                      title={t('leaderboard.viewProfile')}
+                      aria-label={t('game.ui.viewPlayerProfile')}
                     >
                       <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                         <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
@@ -348,7 +348,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
-                            AI
+                            {t('game.ui.botBadge')}
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
@@ -400,7 +400,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         className="px-4 py-2 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
                         style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink)', border: '1.5px solid var(--bd-line)' }}
                       >
-                        <Icon name="user" size={16} /> Profile
+                        <Icon name="user" size={16} /> {t('header.profile')}
                       </button>
                     )}
 
