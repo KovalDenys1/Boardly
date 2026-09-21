@@ -2005,7 +2005,7 @@ export default function ProfilePage() {
 
                   <div className="space-y-5">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                      <label htmlFor="profile-email-input" className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
                         {t('profile.email')}
                         {effectiveEmailVerified && (
                           <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-xs font-bold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
@@ -2018,7 +2018,7 @@ export default function ProfilePage() {
                         type="email"
                         value={email}
                         onChange={(event) => updateEmailDraft(event.target.value)}
-                        aria-label="profile-email-input"
+                        id="profile-email-input"
                         className={`${fieldInputClassName} ${
                           emailStatus === 'available'
                             ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
