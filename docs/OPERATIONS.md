@@ -239,6 +239,56 @@ When it fires:
 
 The alert resolves itself once a heartbeat lands; the GitHub issue closes with it.
 
+### Runbook: site_silent
+
+The dead-man's switch. Every other reliability rule counts something going *wrong*, so all of them
+read healthy when nothing happens at all – which is how 19–20 September 2026 passed unnoticed: the
+site served 36 visitors over two days and recorded no lobby, no game, no move and no invite, while
+`reliability-alerts` ran every ten minutes and reported nothing.
+
+This rule fires on absence. It counts the events a human has to be present to produce
+(`HUMAN_ACTIVITY_EVENT_NAMES`: lobby created, move applied, invite opened, second human joined,
+signup prompt shown) over the trailing 18 hours, and compares them against the *same hours* on each
+of the preceding days, summarised by their 75th percentile. It breaches when the current window is
+exactly zero and that baseline is at least 5.
+
+Why those numbers, all measured against September 2026 traffic and not chosen by feel:
+
+- **18-hour window.** Boardly is quiet enough that a 6-hour window cannot tell an outage from a
+  lull: replayed over the 168 healthy hours of 12–18 September it would have cried on 23 of them.
+  18 hours cried once. The cost is detection speed – on 19 September a 6-hour window fires at 08:00
+  UTC, this fires at 18:00. An alert that is wrong once a fortnight gets muted, and a muted alert is
+  what this rule exists to prevent.
+- **Same hours, not a flat rate.** 04:00 is genuinely empty; comparing it to a daytime average
+  would alert every night.
+- **75th percentile, not a median or a mean.** The baseline has to survive the outage it describes.
+  A mean gives up on day two, a median on day four – at which point the rule stops breaching and
+  posts a recovery that never happened.
+
+When it fires:
+
+1. **Is the site actually serving?** Load `https://boardly.online/` and `/lobby/create`, with the
+   browser console open. Both pages rendering with no console error means the fault is deeper than
+   the shell – keep going.
+2. **Walk the funnel as a stranger.** A private window, no session: create a lobby, copy the invite,
+   open it in a second private window, make one move. Do it on a phone viewport too – a break that
+   only hits mobile is invisible from a desktop check, and most arrivals are mobile.
+3. **Did the writes land?** `Users` (a fresh `isGuest` row), `Lobbies`, `Games`, and
+   `OperationalEvents` for the events step 2 should have produced. Writes failing while pages render
+   points at the API, not the front end.
+4. **Is it only the telemetry?** If lobbies and games *are* being created but the human events are
+   missing, the fault is `/api/ops/events` or the client emitter, not the product. The site is fine;
+   fix the instrument.
+5. **What shipped?** `git log --first-parent origin/main` around the last healthy hour. Correlate
+   against the hour human events stopped:
+   `select date_trunc('hour', "occurredAt"), count(*) from "OperationalEvents"
+    where "eventName" <> 'cron_run' group by 1 order by 1 desc limit 48;`
+6. **Nothing shipped and everything works?** Then arrivals themselves fell. Check Vercel Analytics
+   visitors and Bing Webmaster clicks for the same days before touching any code – and note that
+   Bing's Total Clicks includes Copilot and chat verticals, which are not necessarily site visits.
+
+The alert resolves itself on the first human event; the GitHub issue closes with it.
+
 ### CSP hardening verification (preview/production)
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
