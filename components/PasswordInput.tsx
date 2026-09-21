@@ -30,7 +30,7 @@ interface PasswordStrength {
 export default function PasswordInput({
   value,
   onChange,
-  label = 'Password',
+  label,
   placeholder = '••••••••',
   error,
   showStrength = false,
@@ -83,7 +83,11 @@ export default function PasswordInput({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label className="label !mb-0">{label}</label>
+        {/* The default used to be the literal 'Password', which is a default
+            parameter value rather than JSX, so audit-i18n could not see it and
+            it shipped English onto the Russian login page. Resolved here, where
+            the hook is available, instead of in the signature. */}
+        <label className="label !mb-0">{label ?? t('auth.password.label')}</label>
         <div className="flex items-center gap-2">
           {statusText ? (
             <span className={`text-xs font-semibold ${statusClassName ?? ''}`} style={!statusClassName ? { color: 'var(--bd-ink-muted)' } : undefined}>

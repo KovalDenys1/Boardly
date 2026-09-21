@@ -1642,6 +1642,7 @@ const no = {
       backToHome: 'Tilbake til hjem'
     },
     password: {
+      label: 'Passord',
       veryWeak: 'Veldig svakt',
       weak: 'Svakt',
       fair: 'Middels',

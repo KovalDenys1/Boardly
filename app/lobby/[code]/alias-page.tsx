@@ -278,6 +278,7 @@ const AliasPregameHeader: React.FC<{
   backToLobbyLabel: string
   onLeave?: () => void
   isSpectator?: boolean
+  // i18n-allow: the game's own name, spelled Alias in all four locales
 }> = ({ code, title = 'Alias', leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => {
   const { t } = useTranslation()
   return (

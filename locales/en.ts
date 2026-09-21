@@ -1642,6 +1642,7 @@ const en = {
       backToHome: 'Back to Home',
     },
     password: {
+      label: 'Password',
       veryWeak: 'Very Weak',
       weak: 'Weak',
       fair: 'Fair',
