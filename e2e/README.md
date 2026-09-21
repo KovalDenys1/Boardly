@@ -86,13 +86,14 @@ Each of these stands in for a check that used to be done by hand:
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
 | `rps.spec.ts` — two players pick, both see the reveal, the host holds the rematch | a Rock Paper Scissors match between two humans (#870) |
 | `sketch-and-guess.spec.ts` – a drawing is submitted and the room is asked to guess | a three-handed Sketch & Guess round (#1037) |
+| `liars-party.spec.ts` – a claim is made and the room is asked to vote | a four-handed Liar's Party round (#1042) |
 
 These found #852, both halves of #854, and #862 — where the test written to guard #845 showed that #845 had broken spectating an hour after shipping.
 
 ## Games that are not released yet
 
-`sketch-and-guess.spec.ts` drives a game the catalog still marks
-`in-development`, so it needs **both** halves of the #1054 flag:
+`sketch-and-guess.spec.ts` and `liars-party.spec.ts` drive games the catalog
+still marks `in-development`, so they need **both** halves of the #1054 flag:
 
 ```
 ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true npm run test:e2e
@@ -105,10 +106,10 @@ server half it gets further and no picker in the browser lists the game. The
 flag is dead on production whatever the variable says, so this cannot change
 what a release run sees.
 
-It is also the reason `createGuestLobby` takes a `hostRole`. One creator may
-hold one lobby whose game is `waiting` or `playing`, and this test does not play
-its game to a finish, so it asks for a cached identity of its own instead of the
-shared `host`.
+These two are also the reason `createGuestLobby` takes a `hostRole`. One creator
+may hold one lobby whose game is `waiting` or `playing`, and neither test plays
+its game to a finish, so both ask for a cached identity of their own instead of
+the shared `host`.
 
 ## How they are built
 

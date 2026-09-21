@@ -99,6 +99,16 @@ function uniqueName(prefix: string): string {
 
 export interface CreateGuestLobbyOptions {
   /**
+   * The lobby's turn timer, in seconds; POST /api/lobby accepts 30-180.
+   *
+   * It is the deadline every engine that reads it measures a phase against, so
+   * a game whose phase the test has to live through needs it set above however
+   * long the test takes - otherwise `applyTimeoutFallback` auto-plays the phase
+   * and the test's own move comes back 400 "Invalid move" (#1042). Sketch &
+   * Guess is the exception: it ignores this and runs on SKETCH_PHASE_SECONDS.
+   */
+  turnTimer?: number
+  /**
    * Which cached identity in e2e/.auth hosts the lobby. Default 'host'.
    *
    * One creator may have one lobby with a waiting or playing game
@@ -127,6 +137,7 @@ export async function createGuestLobby(
   options?: CreateGuestLobbyOptions
 ): Promise<E2ELobby> {
   const role = options?.hostRole ?? 'host'
+  const turnTimer = options?.turnTimer ?? 60
   let host = hostOverride ?? readCachedGuest(role) ?? (await createGuest(request, baseURL))
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -136,7 +147,7 @@ export async function createGuestLobby(
         name: `${E2E_LOBBY_MARKER} ${gameType}`,
         gameType,
         maxPlayers,
-        turnTimer: 60,
+        turnTimer,
         allowSpectators: false,
         theme: 'default',
       },
