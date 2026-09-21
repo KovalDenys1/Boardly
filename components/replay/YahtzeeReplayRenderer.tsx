@@ -1,7 +1,10 @@
 import Die from '@/components/ui/Die'
+import { useTranslation } from '@/lib/i18n-helpers'
 import type { ReplayRendererProps } from './types'
 
 export default function YahtzeeReplayRenderer({ snapshotState, players, playerNameById }: ReplayRendererProps) {
+  const { t } = useTranslation()
+
   const state = snapshotState as Record<string, unknown> | null
   if (!state || typeof state !== 'object') return null
 
@@ -31,7 +34,7 @@ export default function YahtzeeReplayRenderer({ snapshotState, players, playerNa
   return (
     <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-800/50 sm:p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">
-        Dice
+        {t('profile.gameReplay.board.dice')}
       </p>
 
       <div className="flex flex-col gap-4">
@@ -51,7 +54,7 @@ export default function YahtzeeReplayRenderer({ snapshotState, players, playerNa
           {/* Rolls remaining */}
           {rollsLeft !== null && (
             <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Rolls left: </span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('yahtzee.actions.rollsLeft')}: </span>
               <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{rollsLeft}</span>
             </div>
           )}
@@ -59,7 +62,7 @@ export default function YahtzeeReplayRenderer({ snapshotState, players, playerNa
           {/* Current player */}
           {currentPlayerName && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-700 dark:bg-blue-950/30">
-              <span className="text-xs font-semibold text-blue-500 dark:text-blue-400">Turn: </span>
+              <span className="text-xs font-semibold text-blue-500 dark:text-blue-400">{t('game.ui.turn')}: </span>
               <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{currentPlayerName}</span>
             </div>
           )}

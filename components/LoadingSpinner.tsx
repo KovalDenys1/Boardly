@@ -1,9 +1,15 @@
+'use client'
+
+import { useTranslation } from '@/lib/i18n-helpers'
+
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
 export default function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+  const { t } = useTranslation()
+
   const sizeStyles = {
     sm: { width: `clamp(14px, 1.4vw, 18px)`, height: `clamp(14px, 1.4vw, 18px)`, borderWidth: `clamp(1.5px, 0.15vw, 2.5px)` },
     md: { width: `clamp(28px, 2.8vw, 36px)`, height: `clamp(28px, 2.8vw, 36px)`, borderWidth: `clamp(2.5px, 0.25vw, 3.5px)` },
@@ -15,7 +21,7 @@ export default function LoadingSpinner({ size = 'md', className = '' }: LoadingS
       className={`border-blue-600 border-t-transparent rounded-full animate-spin ${className}`}
       style={sizeStyles[size]}
       role="status"
-      aria-label="Loading"
+      aria-label={t('common.loading')}
     />
   )
 }

@@ -445,7 +445,7 @@ export default function GameHistory() {
                             </span>
                             {(player.isBot || player.bot) && (
                               <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400">
-                                Bot
+                                {t('profile.gameReplay.bot')}
                               </span>
                             )}
                             {player.finalScore !== null ? (
@@ -455,7 +455,7 @@ export default function GameHistory() {
                             ) : null}
                             {player.isWinner ? (
                               <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
-                                Win
+                                {t('lobby.game.win')}
                               </span>
                             ) : null}
                           </div>

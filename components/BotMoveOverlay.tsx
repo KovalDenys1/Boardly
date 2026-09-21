@@ -164,7 +164,7 @@ export default function BotMoveOverlay({
             )}
             {currentStep.data?.held && currentStep.data.held.length > 0 && (
               <p className="text-center" style={{ fontSize: `clamp(11px, 1vw, 14px)`, color: 'var(--bd-ink-muted)' }}>
-                Holding {currentStep.data.held.length} {currentStep.data.held.length === 1 ? 'die' : 'dice'}
+                {t('yahtzee.ui.holdingDice', { count: currentStep.data.held.length })}
               </p>
             )}
           </div>
@@ -202,7 +202,7 @@ export default function BotMoveOverlay({
                     color: '#16A34A',
                   }}
                 >
-                  +{currentStep.data.score} points
+                  +{t('yahtzee.results.points', { count: currentStep.data.score })}
                 </p>
               </div>
             )}
@@ -270,7 +270,7 @@ export default function BotMoveOverlay({
               color: 'var(--bd-ink-muted)',
             }}
           >
-            Step {currentStepIndex + 1} of {steps.length}
+            {t('game.ui.stepOf', { current: currentStepIndex + 1, total: steps.length })}
           </p>
         </div>
 
