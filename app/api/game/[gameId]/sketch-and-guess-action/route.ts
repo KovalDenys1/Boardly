@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SketchAndGuessGame, sanitizeSketchAndGuessStateForBroadcast } from '@/lib/games/sketch-and-guess-game'
+import {
+  SketchAndGuessGame,
+  sanitizeSketchAndGuessActionEventForBroadcast,
+  sanitizeSketchAndGuessStateForBroadcast,
+} from '@/lib/games/sketch-and-guess-game'
 import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -224,10 +228,13 @@ export async function POST(
         const broadcastState = sanitizeSketchAndGuessStateForBroadcast(nextState, null)
 
         if (emitActionEvent) {
+          // The move payload needs the same redaction as the state: for a
+          // submit-guess it is `{ guess: '<the word>' }`, and this topic is the
+          // one every seated player is joined to (#1032).
           void broadcastToLobby(game.lobby.code, 'sketch-and-guess-action', {
             action: emitActionEvent.action,
             playerId: emitActionEvent.playerId ?? null,
-            data: emitActionEvent.data ?? {},
+            data: sanitizeSketchAndGuessActionEventForBroadcast(emitActionEvent.data),
             state: broadcastState,
           })
         }

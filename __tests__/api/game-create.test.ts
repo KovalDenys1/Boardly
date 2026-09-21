@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db'
 import { getOrCreateBotUser } from '@/lib/bot-helpers'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { broadcastToLobby } from '@/lib/supabase-server'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -759,6 +760,82 @@ describe('POST /api/game/create', () => {
     expect(capturedState?.data?.phase).toBe('role_reveal')
     expect(typeof capturedState?.data?.location).toBe('string')
     expect(capturedState?.data?.location.length).toBeGreaterThan(0)
+  })
+
+  it('strips the round secret from the state it broadcasts when the game starts (#1032)', async () => {
+    // Every other state broadcast in the app goes through
+    // sanitizeStateForBroadcast; the one that starts the game did not, so the
+    // first payload a lobby ever sees carried the secret the game is built on.
+    // Found by the #1037 Sketch & Guess smoke spec, which reads the lobby topic
+    // instead of the board. Guess the Spy stands in for the whole family: the
+    // sanitizer is dispatched by game type, so what is under test is the
+    // missing call, not the game.
+    const spyLobby = {
+      ...mockLobby,
+      gameType: 'guess_the_spy',
+    }
+
+    const spyWaitingGame = {
+      ...mockWaitingGame,
+      players: [
+        ...mockWaitingGame.players,
+        {
+          id: 'player-3',
+          userId: 'user-789',
+          score: 0,
+          position: 2,
+          user: {
+            id: 'user-789',
+            username: 'player3',
+            email: 'player3@example.com',
+            isBot: false,
+          },
+        },
+      ],
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...spyLobby,
+      games: [spyWaitingGame],
+    } as any)
+    mockPrisma.spyLocations.findMany.mockResolvedValue([] as any)
+
+    let persistedState: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      persistedState = readPersistedState(args.data.state)
+      return Promise.resolve({
+        ...spyWaitingGame,
+        status: 'playing',
+        gameType: 'guess_the_spy',
+        state: args.data.state,
+        players: spyWaitingGame.players.map((p: any) => ({ ...p, user: { ...p.user, bot: null } })),
+      } as any)
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'guess_the_spy',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 10, minPlayers: 3 },
+      }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(200)
+
+    // The row keeps the secret - it is the game - and the broadcast does not.
+    expect(typeof persistedState?.data?.location).toBe('string')
+    expect(persistedState?.data?.spyPlayerId).toBeDefined()
+
+    const stateBroadcast = (broadcastToLobby as jest.Mock).mock.calls.find(
+      (call: any[]) => call[1] === 'game-update'
+    )
+    expect(stateBroadcast).toBeDefined()
+    const broadcastState = stateBroadcast![2].payload.state
+    expect(broadcastState.data.location).toBeUndefined()
+    expect(broadcastState.data.spyPlayerId).toBeUndefined()
+    expect(broadcastState.data.playerRoles).toBeUndefined()
   })
 
   it('should create new waiting game after finished game', async () => {

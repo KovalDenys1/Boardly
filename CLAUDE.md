@@ -291,6 +291,49 @@ So a ticket like "build game X's UI" is done once the game is playable behind it
 about featuring it publicly. Ask; never flip it as the natural last step of closing a
 ticket.
 
+**To play one, set both `ENABLE_IN_DEVELOPMENT_GAMES=true` and
+`NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true` (#1054).** Until that flag existed the
+rule above was circular: the decision is gated on the game being playable, and
+`isTemporarilyUnavailableGameType` made POST /api/lobby and POST /api/game/create answer 400
+for every in-development game, so nobody could play one to find out. Two agents "verified" a
+game by reading its code instead, and a reviewer then found an empty content region on its
+most-seen screen. Run the dev server with it, or add it to `.env.local`:
+
+```bash
+ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true pnpm dev
+```
+
+- **Both variables, always - one of them alone is the confusing half-state.** `ENABLE_*` is
+  what a server route reads; only `NEXT_PUBLIC_ENABLE_*` is inlined into a client bundle, and
+  the create form, the game ribbon and the quick-play button all render the catalog in the
+  browser. Set only the first and POST /api/lobby accepts `liars_party` while no picker on the
+  site lists it, which reads as "the game is broken" rather than "the flag is half set". The
+  two reads are ORed on purpose, so the same pair matches `ENABLE_SKETCH_AND_GUESS` and the
+  other per-game flags; `__tests__/api/in-development-game-gate.test.ts` pins each read
+  separately so neither can be dropped as dead code.
+- It promotes every in-development entry that carries `gameType`, `route` and a
+  `lobbyCreateConfig` - today Liar's Party and Sketch & Guess. That is a check on the entry,
+  in `isFlagPromotableEntry`, not a list of names: those three fields are what
+  `AvailableGameCatalogEntry` declares and promotion adds none of them, so an entry missing
+  one would be promoted into a shape `GameRibbon` already reads `game.route` off.
+  `fake_artist` and `telephone_doodle` have no pages and so no `route` (#975), which is what
+  holds them back; they keep their own per-game flag as the way in.
+- **It is dead on production, whatever the variable says.** `lib/feature-flags.ts` refuses it
+  unless `VERCEL_ENV` / `NEXT_PUBLIC_VERCEL_ENV` positively say `preview` or `development`,
+  or neither is set and `NODE_ENV` is not `production`. Unknown values are a no.
+  `__tests__/api/in-development-game-gate.test.ts` drives the real POST handler through
+  every production shape; do not soften it into a `!== 'production'` check.
+- **The client half depends on one Vercel project setting, and it is on.** `NEXT_PUBLIC_VERCEL_ENV`
+  only exists in a deployment if "Automatically expose System Environment Variables" is enabled;
+  checked 2026-09-20 on `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2` via `GET /v9/projects/<id>`, which
+  answers `autoExposeSystemEnvs: true`. The MCP's `get_project` does not return that field and
+  `filter_project_envs` answers 403, so read it from the API with the CLI's own token. Were it
+  ever turned off, a preview's client bundle would see nothing declared and a preview build's
+  `NODE_ENV` is `production`, so the gate would fail closed in the browser while the server
+  opened - the safe direction, and boardly.online is unaffected either way.
+- It is deliberately **not** in `RUNTIME_FLAG_KEYS`, so the Control Panel cannot switch it on.
+- **Never commit a change to `availability` to get a game running.** The flip is #873's.
+
 ## Testing a game that needs three or more real players
 
 Games with `supportsBots: false` (Guess the Spy `minPlayers` 3, Alias 4, Liar's Party 4)
@@ -308,6 +351,21 @@ curl -s -X POST http://localhost:3000/api/lobby/<code>/join-guest \
 `app/api/lobby/[code]/join-guest/route.ts` needs no auth: it mints a guest and adds them if
 a slot is open. This is the same public API the app's own UI calls — not a DB hack and not
 hand-minted JWTs — so it is safe against the local dev server.
+
+Two things that cost a run on 2026-09-20. The host's identity travels in an `X-Guest-Token`
+header, not a cookie, so a curl cookie jar gets `Unauthorized`; take the token from the
+`/api/auth/guest-session` body and put it in the header, and into `boardly_guest_token` /
+`boardly_guest_id` / `boardly_guest_name` in localStorage for the browser. And rate limiting
+is shared Upstash state across every agent on this machine, so `/api/auth/guest-session`
+answers 429 for reasons that have nothing to do with your run - retry with a backoff rather
+than concluding the endpoint is broken.
+
+**Clean up by id, never by name.** `boardly-dev` is shared with every other agent running
+right now, and `join-guest` hands out names from a small pool, so `username startsWith
+'Filler'` matches their seats as well as yours. On 2026-09-20 a cleanup written that way
+deleted four guests and four `Players` rows belonging to another agent's live lobby. Collect
+the ids your own run created and delete those, or give your fixtures a run-unique prefix and
+match on that.
 
 ## Redis — Upstash, and two traps that have both been hit
 
@@ -357,6 +415,25 @@ Comono mailbox.**
 
 A schema change here can break a Control Panel query, and a new admin feature there can
 need data this app is not yet writing. Check both.
+
+## Driving a browser on this Mac: the keychain will stop you dead
+
+An agent that launches Chrome through Playwright on this machine gets macOS keychain
+prompts - "Google Chrome for Testing wants to use your confidential information stored in
+Chromium Safe Storage". They are **OS modal dialogs, not page dialogs**, so no browser
+tool can dismiss them, and everything the agent does next waits for an answer that never
+comes. On 2026-09-20 one agent sat blocked behind three stacked prompts for over an hour
+and had to be killed; the transcript had reached 3.6 MB.
+
+- **Launch with `--use-mock-keychain`.** Chromium then never asks. There is nothing in a
+  throwaway automation profile worth encrypting anyway.
+- A fresh `--user-data-dir` does not avoid this on its own - the prompt is about the
+  keychain, not the profile.
+- If it happens anyway, the automation instance is safe to kill: its command line carries
+  `--user-data-dir=.../ms-playwright-mcp/...` and `--remote-debugging-pipe`, which Denys's
+  own Chrome does not. Killing it dismisses the prompts and leaves his tabs alone.
+- Symptom to recognise: a browser-driving agent that stops writing to its transcript while
+  its process is still alive. Check for the dialogs before assuming it is thinking.
 
 ## Reading this database: two things that make an analysis quietly wrong
 

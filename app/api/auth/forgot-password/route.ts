@@ -5,6 +5,7 @@ import { sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { insensitiveEquals } from '@/lib/username-match'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
@@ -24,12 +25,13 @@ export async function POST(request: NextRequest) {
     // doesn't return 500 — instead log and return generic success.
     let user
     try {
+      // `insensitiveEquals`: a bare `equals` + `mode` compiles to an unescaped
+      // ILIKE, so an address with `_` or `%` in it was a pattern and the reset
+      // could be raised against a different account than the one that asked
+      // (#1055).
       user = await prisma.users.findFirst({
         where: {
-          email: {
-            equals: email,
-            mode: 'insensitive',
-          },
+          email: insensitiveEquals(email),
         },
       })
     } catch (dbError) {

@@ -121,6 +121,7 @@ export default function GameResultOverlay({
 
   return (
     <div
+      data-testid="game-result-overlay"
       style={{
         position: 'absolute',
         inset: 0,

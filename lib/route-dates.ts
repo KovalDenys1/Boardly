@@ -28,6 +28,9 @@ export const ROUTE_UPDATED = {
   // #1043 added the guide link to the detail page, and the new guide to the
   // catalog the /guides index lists from.
   '/games/rock-paper-scissors': '2026-09-20',
+  // Released by #873 on 2026-09-21, the day they became indexable.
+  '/games/liars-party': '2026-09-21',
+  '/games/sketch-and-guess': '2026-09-21',
   '/guides': '2026-09-20',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',

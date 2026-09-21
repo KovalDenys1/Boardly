@@ -3,6 +3,11 @@ import { GameEngine } from '@/lib/game-engine'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import {
+  BOT_COMMIT_DELIVERY_ALLOWANCE_MS,
+  isBotPacedGameType,
+  resolveBotTurnGraceMs,
+} from '@/lib/bots/core/bot-turn-pace'
 
 const MAX_BOT_RETRIES = 2
 const WATCHDOG_MS = 14_000
@@ -26,6 +31,13 @@ interface UseBotTurnProps {
   code: string
   isGameStarted: boolean
   isSpectator?: boolean
+  /**
+   * The lobby's game type. It sets how long the monitor waits for the server's
+   * own driver, because that is a property of the game's bot executor. Left out,
+   * the wait falls back to the slowest game in the catalog, which is the safe
+   * direction: too long only delays a fallback, too short sends a doomed request.
+   */
+  gameType?: string | null
   reconcileWithServerSnapshot?: () => Promise<void> | void
 }
 
@@ -35,6 +47,7 @@ export function useBotTurn({
   code,
   isGameStarted,
   isSpectator = false,
+  gameType,
   reconcileWithServerSnapshot,
 }: UseBotTurnProps) {
   const botTurnInProgress = useRef(false)
@@ -43,13 +56,35 @@ export function useBotTurn({
   const retryAttemptRef = useRef(0)
   const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The bot turn this hook has already armed a deferred request for, as
+  // "<gameId>:<botUserId>:<currentPlayerIndex>:<lastMoveAt>". lastMoveAt is in
+  // there on purpose: a Memory bot commits a flip at a time inside one turn, and
+  // every commit must re-arm the timer rather than let it fire into a turn that
+  // is visibly running.
+  const armedSignatureRef = useRef<string | null>(null)
+  const armedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The armed turn this hook has already asked the server about. The grace
+  // expiring only means nothing has reached this tab; it does not mean the bot
+  // is stuck. Reconciling once before writing is what turns a late broadcast
+  // into no request at all instead of a "Not bot's turn" 400.
+  const reconciledSignatureRef = useRef<string | null>(null)
   // Ref to always hold the latest triggerBotTurn for self-referencing retries
   const triggerBotTurnRef = useRef<((botUserId: string, gameId: string) => Promise<void>) | null>(null)
+
+  const cancelArmedTrigger = useCallback(() => {
+    if (armedTimerRef.current !== null) {
+      clearTimeout(armedTimerRef.current)
+      armedTimerRef.current = null
+    }
+    armedSignatureRef.current = null
+    reconciledSignatureRef.current = null
+  }, [])
 
   useEffect(() => {
     return () => {
       if (watchdogTimerRef.current !== null) clearTimeout(watchdogTimerRef.current)
       if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
+      if (armedTimerRef.current !== null) clearTimeout(armedTimerRef.current)
     }
   }, [])
 
@@ -72,6 +107,7 @@ export function useBotTurn({
     retryTimerRef.current = setTimeout(() => {
       lastBotPlayerId.current = null
       lastPlayerIndex.current = null
+      armedSignatureRef.current = null
       void triggerBotTurnRef.current?.(botUserId, gameId)
     }, delayMs)
   }, [])
@@ -115,14 +151,21 @@ export function useBotTurn({
       if (!response.ok) {
         const error = responseData as { error?: string }
 
-        // 409 — concurrent execution: clear refs and retry in case both instances failed
-        // and no broadcast arrives (which would leave isSameTurn=true forever with no watchdog running)
+        // 409 – this exact turn is already being played, or already was, by
+        // whoever holds the route's lock. #1049: this used to clear the refs and
+        // POST again two seconds later, which is how one bot turn ended in a
+        // "Not bot's turn" 400 – by then the bot had moved and the turn was back
+        // with the human. There is nothing to retry into. Reconcile instead: if
+        // the fresh state still has the bot on turn, the monitor below arms a new
+        // request from that state, which is recovery driven by what the server
+        // says rather than by a timer.
         if (response.status === 409) {
           clientLogger.debug('🤖 Bot turn skipped (409 concurrent execution):', { status: response.status })
           lastBotPlayerId.current = null
           lastPlayerIndex.current = null
+          armedSignatureRef.current = null
           retryAttemptRef.current = 0
-          scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
+          await reconcileAfterBotTurn('bot-turn-conflict')
           return
         }
 
@@ -131,6 +174,7 @@ export function useBotTurn({
           clientLogger.debug('🤖 Not bot\'s turn — resetting tracking')
           lastBotPlayerId.current = null
           lastPlayerIndex.current = null
+          armedSignatureRef.current = null
           retryAttemptRef.current = 0
           return
         }
@@ -194,7 +238,10 @@ export function useBotTurn({
 
   // Monitor for bot turns
   useEffect(() => {
-    if (isSpectator) return
+    if (isSpectator) {
+      cancelArmedTrigger()
+      return
+    }
     if (!isGameStarted || !gameEngine || !game?.id || !game?.players || !Array.isArray(game.players)) {
       clientLogger.debug('🤖 [BOT-TURN-MONITOR] Skipping - preconditions not met:', {
         isGameStarted,
@@ -203,6 +250,7 @@ export function useBotTurn({
         hasPlayers: !!game?.players,
         isPlayersArray: game?.players ? Array.isArray(game.players) : false
       })
+      cancelArmedTrigger()
       return
     }
 
@@ -210,24 +258,17 @@ export function useBotTurn({
 
     // Don't trigger if game is finished
     if (gameState.status !== 'playing') {
+      cancelArmedTrigger()
       return
     }
 
     const currentPlayer = gameEngine.getCurrentPlayer()
     if (!currentPlayer) {
+      cancelArmedTrigger()
       return
     }
 
-    // Check if it's a new turn - player index changed OR it's a different bot
     const currentPlayerIndex = gameState.currentPlayerIndex
-    const isSameTurn =
-      lastPlayerIndex.current === currentPlayerIndex &&
-      lastBotPlayerId.current === currentPlayer.id
-
-    if (isSameTurn) {
-      // Same turn as before, don't trigger again
-      return
-    }
 
     // Find the current player in the game.players array
     const currentGamePlayer = game.players.find(
@@ -243,6 +284,7 @@ export function useBotTurn({
           hasBot: p.user ? !!p.user.bot : false
         }))
       })
+      cancelArmedTrigger()
       return
     }
 
@@ -257,22 +299,109 @@ export function useBotTurn({
       botData: currentGamePlayer.user.bot,
     })
 
-    if (isBot) {
-      clientLogger.log('🤖 Bot turn detected, triggering bot move...')
-
-      // Update tracking variables before triggering
-      lastBotPlayerId.current = currentPlayer.id
-      lastPlayerIndex.current = currentPlayerIndex
-
-      // Trigger immediately when turn starts.
-      // We keep in-hook locking/race guards in triggerBotTurn for safety.
-      void triggerBotTurn(currentPlayer.id, game.id)
-    } else {
-      // Not a bot turn, reset tracking
+    if (!isBot) {
+      // Not a bot turn: drop anything still armed, so a request cannot arrive
+      // after the turn has come back to a human – which is the 400 half of #1049.
+      cancelArmedTrigger()
       lastBotPlayerId.current = null
       lastPlayerIndex.current = currentPlayerIndex
+      return
     }
-  }, [isSpectator, isGameStarted, gameEngine, game?.id, game?.players, triggerBotTurn])
+
+    const signature = `${game.id}:${currentPlayer.id}:${currentPlayerIndex}:${gameState.lastMoveAt ?? 'none'}`
+    if (armedSignatureRef.current === signature) {
+      // Already waiting on this exact state – a re-render is not a new turn.
+      return
+    }
+
+    /**
+     * How long the monitor waits before sending a bot-turn request of its own (#1049).
+     *
+     * A bot turn already has a server-side driver. `POST /api/game/[gameId]/state`
+     * fires one from inside `after()` the moment a human's move hands the turn over
+     * (`triggerSource: 'state-route-auto'`), and `POST /api/game/create` does the same
+     * when a bot is first to act. Firing at the same instant from here only races it,
+     * and the race is lost by construction: the route takes an in-memory lock before
+     * it does anything, so whichever request is second gets a 409 for a turn that is
+     * being played correctly.
+     *
+     * The wait is not a constant. A bot turn can be several commits with pauses
+     * between them, and the client sees nothing during a pause - so the wait has to
+     * outlast the longest pause the game's own executor codes for, which is what
+     * `resolveBotTurnGraceMs` returns. A hand-picked 2500 ms was 189 ms longer than
+     * the Memory bot's mismatch pause at the default difficulty, which is inside the
+     * cost of one database write, so Memory kept taking the 409 this ticket is about.
+     *
+     * Nothing chains one bot to the next, so a turn that follows *another bot's* turn
+     * has no server-side driver and is still triggered at once - see `followsAnotherBot`
+     * below. Everything else waits out the grace and is cancelled if the turn moves
+     * on, which it does as soon as the bot's next move broadcasts.
+     */
+    // The seat changing hands from one bot to another is the one hop nothing
+    // triggers server-side, so it goes out at once and keeps the pace it had.
+    // Everything else – the bot's own turn progressing move by move, or a turn
+    // handed over by a human – waits, because the server is already on it.
+    const followsAnotherBot =
+      lastPlayerIndex.current !== null &&
+      lastPlayerIndex.current !== currentPlayerIndex &&
+      lastBotPlayerId.current !== null &&
+      lastBotPlayerId.current !== currentPlayer.id
+
+    const delayMs = followsAnotherBot
+      ? 0
+      : resolveBotTurnGraceMs(isBotPacedGameType(gameType) ? gameType : null)
+
+    clientLogger.log('🤖 Bot turn detected, arming bot move trigger...', { delayMs })
+
+    // Update tracking variables before arming
+    lastBotPlayerId.current = currentPlayer.id
+    lastPlayerIndex.current = currentPlayerIndex
+
+    const botUserId = currentPlayer.id
+    const gameId = game.id
+    if (armedTimerRef.current !== null) clearTimeout(armedTimerRef.current)
+    armedSignatureRef.current = signature
+
+    const fire = () => {
+      armedTimerRef.current = null
+
+      // Measured on localhost on 2026-09-20 in a Yahtzee game against an Easy
+      // bot: the bot took the turn at t=13.5s, its `bot-action` events arrived
+      // through to "scores 17 in Chance" at t=16.3s, and no `game-update` for
+      // that final commit reached the tab before the grace expired at t=17.3s.
+      // The turn had been the human's for a second by then, so the request was
+      // a wasted write answered "Not bot's turn" - the 400 half of #1049, with
+      // the pacing already correct. The grace expiring says nothing has reached
+      // this tab, not that the bot is stuck, so ask the server before writing.
+      // Not for a bot following another bot: that hop has no server-side driver
+      // at all, so there is nothing for a read to find and the turn would just
+      // be slower by an allowance.
+      if (!followsAnotherBot && reconcileWithServerSnapshot && reconciledSignatureRef.current !== signature) {
+        reconciledSignatureRef.current = signature
+        void reconcileAfterBotTurn('bot-turn-grace-expired')
+        // Armed here rather than left to the reconcile's re-render: fresh state
+        // that matches what this tab already has renders nothing new, and a bot
+        // that really is stuck would then never be kicked at all.
+        armedTimerRef.current = setTimeout(fire, BOT_COMMIT_DELIVERY_ALLOWANCE_MS)
+        return
+      }
+
+      void triggerBotTurn(botUserId, gameId)
+    }
+
+    armedTimerRef.current = setTimeout(fire, delayMs)
+  }, [
+    isSpectator,
+    isGameStarted,
+    gameEngine,
+    game?.id,
+    game?.players,
+    gameType,
+    triggerBotTurn,
+    cancelArmedTrigger,
+    reconcileWithServerSnapshot,
+    reconcileAfterBotTurn,
+  ])
 
   return {
     triggerBotTurn,

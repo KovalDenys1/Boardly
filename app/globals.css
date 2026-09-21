@@ -1626,10 +1626,45 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-board-card {
   /* The ONLY place board-cell math lives. The card is flex-sized by its
      column (definite height), so container units are the real available
-     space on every screen. 80/98 = the board's own internal chrome only
-     (card/grid paddings, gaps, drop-arrow row) — no screen-chrome guesses. */
+     space on every screen. 107/125 = the board's own internal chrome only
+     (surface padding and border, grid padding, gaps, drop-arrow row) – no
+     screen-chrome guesses.
+
+     It no longer paints (#903). A size container's box cannot be derived from
+     its contents, so as long as the cream surface and the measuring box were
+     the same element, every pixel the board did not take stayed cream: 151px
+     under tic-tac-toe's board at 390 and 255px under Connect Four's at 768,
+     because both boards stop growing at their own caps. The surface below is
+     a separate box that hugs the board; this one stretches, unseen, and the
+     space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6)), 52px);
+  --c4-cell: clamp(22px, min(calc((100cqw - 107px) / 7), calc((100cqh - 125px) / 6)), 52px);
+  /* Not decoration: .ttt-board-overlay takes its radius from here. */
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+/* The painted card: sized by the board it holds, centred in what the card
+   above leaves (#903). Anything that is a board goes inside one of these -
+   and so is anything drawn over the board.
+
+   `position: relative` is load-bearing, not tidiness. The "show results" pill
+   is `position: absolute; bottom`, so it hangs off its nearest positioned
+   ancestor. That used to be `.ttt-board-card` / `.memory-board-panel`, which
+   this ticket stopped painting: in the inspect state - one click from the
+   result overlay's "View Board" - the pill sat on bare page below the board.
+   Measured at 1280x800 in Rock Paper Scissors: the surface ended at y=598 and
+   the pill was at y=744, 146px past it, over nothing. This is now the
+   painted box AND the anchor, so the pill cannot outlive what is under it.
+   `overflow: hidden` clips the pill to the board it sits on, which is what
+   keeps it from reaching back out over bare page at any viewport. */
+.ttt-board-surface {
   background: #FFF8EC;
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
@@ -1637,11 +1672,36 @@ input[type="range"].slider-thumb::-moz-range-track {
   align-items: center;
   justify-content: center;
   padding: 12px;
-  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
+}
+/* Rock Paper Scissors is the one adopter whose board is not a fixed-aspect
+   grid: `.rps-stage` is `min(100%, 640px)` and the composition is laid out from
+   the card's own container height. Hugging it on both axes collapsed the stage
+   from 640px to 387px at 1280x800 and left 491px of horizontal slack around a
+   413x290 card - a smaller composition in a larger empty region than #903 was
+   filed about. So this surface takes the card's width and only its own height. */
+.ttt-board-surface--wide {
+  width: 100%;
+}
+/* The overlay mount point paints for exactly as long as the result overlay is
+   mounted (#903 review). GameResultOverlay is `position:absolute; inset:0` on
+   this box, so once the card stopped painting the 82%-opaque slab hung over
+   bare page: measured at 1280x800 on tic-tac-toe, 904x502 of overlay around a
+   501x501 board, ~200px of opaque dark down each side with no card under it.
+   At game over there is no board to hug - the overlay is the content - so the
+   card is the right box for it, and painting it is what puts a card back under
+   the slab. The ring is an inset shadow rather than a border on purpose: a
+   border would change the size container's content box, and --c4-cell reads it,
+   so the board would shift a pixel at the moment the game ends. */
+.ttt-board-card--result {
+  background: #FFF8EC;
+  box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
 }
 .ttt-board-overlay {
   position: absolute;
@@ -1776,7 +1836,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Board */
 .ttt-board-wrap {
-  width: min(100%, calc(100cqh - 24px), 560px);
+  /* Both terms read the board card, which is the size container – the surface
+     between them hugs, so a percentage here would have nothing to resolve
+     against. 27px is the surface's own padding and border on one axis. */
+  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 560px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -2035,22 +2098,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: auto;
 }
 
-/* Guess the Spy surface */
-.spy-screen {
-  min-height: 100%;
-  overflow-y: auto;
-  background: var(--bd-bg);
-  color: var(--bd-ink);
-  padding: 14px;
-}
-
-.spy-shell {
-  width: min(100%, 1180px);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* Guess the Spy surface. The screen shell and the hand-rolled header that
+   used to live here went with #905: the board composes .game-screen/.ttt-grid
+   and components/game-chrome like every other game. */
 
 /* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
 /* Fills the in-game container (which owns the viewport height) — never
@@ -2074,10 +2124,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   gap: 12px;
 }
 
-.spy-header,
 .memory-header,
 .spy-panel,
-.memory-board-panel,
 .memory-score-panel,
 .spy-role-card,
 .spy-vote-card,
@@ -2088,19 +2136,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
 }
 
-.spy-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 16px;
-}
-
 .memory-header {
   padding: 12px 16px;
 }
 
-.spy-header-timer,
 .spy-timer-pill {
   display: inline-flex;
   align-items: center;
@@ -2168,6 +2207,323 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-leave-button--compact.game-leave-button--leave { padding: 8px 10px; }
 }
 
+/* ── Liar's Party (#1040 skin, #1041 chrome) ───────────────────────
+   The three layout trees are the shared .ttt-* family, copied rather than
+   reinvented (CLAUDE.md, responsive DoD 1). Only two blocks are this game's
+   own: the phase card, which is its board, and the players panel. Both are
+   shaped like their Sketch & Guess counterparts because both games seat up to
+   a dozen people rather than two. Every colour is a theme token – the screens
+   used to paint their own rose/orange gradient, which ignored the lobby theme
+   the host picked. */
+.liars-screen {
+  padding: 10px 20px 14px;
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+}
+.liars-screen--centered { display: grid; place-items: center; }
+
+/* The scoreboard row's card. The watermark is clipped by the card, not the
+   page, so it cannot add a scrollbar at 320px. */
+.liars-header-card {
+  overflow: hidden;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%);
+}
+.liars-header-card__mark {
+  position: absolute;
+  right: -14px;
+  top: -18px;
+  opacity: 0.12;
+  transform: rotate(10deg);
+  pointer-events: none;
+  line-height: 1;
+}
+/* The round counter inside GameScoreboardHeader's centre cell. */
+.liars-counter__kicker {
+  font-size: 10px;
+  color: var(--bd-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: ui-monospace, monospace;
+}
+.liars-counter__value {
+  font-family: var(--bd-font-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--bd-ink);
+}
+
+/* The board of a game that has no board: whichever phase is on screen.
+   `position: relative` because GameResultOverlay mounts absolutely over it. */
+.liars-phase-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  padding: 12px;
+}
+html.dark .liars-phase-card { background: var(--bd-card-warm); }
+/* Flex-sized by whichever of the three trees is on screen, exactly as
+   .ttt-board-card is – it only needs saying separately because the selectors
+   name the class. */
+.ttt-center-col > .liars-phase-card,
+.game-landscape-board > .liars-phase-card,
+.ttt-mobile-content > .liars-phase-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/* One scrolling region per screen, the card's inside. */
+.liars-phase {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* The card that takes the slack when the phase's own action is short – the
+   round history under a claim form, the ranking under the winner line. Without
+   one, a 130px form sits in a 600px card with the rest of it empty, which is
+   the layout DoD's floating-card case. */
+.liars-phase__fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Content centred rather than pinned to the top: five rules in a card 700px
+     tall still left 300px of nothing under them at 390, which is the same fault
+     one level down. `safe` falls back to the start edge once the content
+     outgrows the card - which the round history does after a few rounds - so
+     nothing is ever centred out of reach above the scroll. */
+  justify-content: safe center;
+}
+/* What the viewer can press, pinned under the scrolling region so it is on
+   screen whatever the phase has scrolled to. */
+.liars-phase-action {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 10px;
+}
+.liars-phase-action > .liars-choice-row { flex: 1 1 auto; margin-top: 0; }
+
+/* "Tap to inspect" returns from the overlay here, same control as TTT's. */
+.liars-show-results {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(31,27,22,0.75);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.liars-overlay-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+}
+
+/* The players panel: the roster before the game, the standings during it. Top
+   of the right column on desktop, the Players tab on mobile, beside the phase
+   in landscape. */
+.liars-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+html.dark .liars-panel { background: var(--bd-card-warm); }
+.ttt-mobile-content .liars-panel { flex: 1; min-height: 0; max-height: none; }
+.liars-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bd-line);
+}
+.liars-panel__list { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; }
+.liars-panel__foot {
+  flex-shrink: 0;
+  border-top: 1px solid var(--bd-line);
+  padding-top: 8px;
+  font-size: 11px;
+  color: var(--bd-ink-muted);
+}
+.liars-chip {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bd-bg2);
+  color: var(--bd-ink-soft);
+  white-space: nowrap;
+}
+.liars-seat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-bg);
+  font-size: 13px;
+  color: var(--bd-ink);
+  min-width: 0;
+}
+html.dark .liars-seat { background: var(--bd-bg2); }
+.liars-seat--me { border-color: var(--bd-ink); }
+.liars-scroll { overflow-y: auto; min-height: 0; }
+.liars-scroll::-webkit-scrollbar { width: 6px; }
+.liars-scroll::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+
+/* Portrait phones. Two 42px seat cards plus a three-line ROUND/1-of-10/PHASE
+   block plus the room button need about 330px and a 320px screen leaves 236: at
+   which point the three grid cells overlap and the claimant's name, the round
+   and the other seat print on top of each other. Measured at 390: "Hanna" ran
+   under the round counter and the turn line was cut off. Same answer Sketch &
+   Guess reached for the same squeeze - the round drops to its short form, the
+   viewer's own card goes (they are one tap away in Players, highlighted) and the
+   right cell shrinks to what it holds. The watermark goes too: at this size it
+   sits behind the names rather than behind empty card. */
+@media (max-width: 1023px) {
+  .liars-header-card__mark { display: none; }
+  .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .liars-header-card .game-scoreboard-right-card { display: none; }
+  .liars-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+
+/* Phone landscape. The side column carries the header, the status banner and a
+   Players/Chat tab strip; the board column is the phase alone. Splitting the
+   board column instead was measured first and lost twice: the seat names came
+   out as "F.." in 185px, and five seats left 120px of empty card under them. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .liars-screen .ttt-mobile-layout { display: none !important; }
+  .liars-screen {
+    padding: 8px 10px 10px;
+    /* the landscape tree fits by construction - re-lock the shell */
+    overflow: hidden;
+  }
+  /* The header keeps the shared family's row sizing, and only its padding is
+     this game's. Sketch & Guess puts its header card straight in this column,
+     where `flex: 0 0 auto` means height and holds off a vertical squeeze; here
+     the card rides in a `.ttt-top-row` beside the compact room card, and that
+     row is already `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
+     container the same declaration means WIDTH, and it overrode
+     `.ttt-top-row > :first-child { flex: 1 1 auto }`: measured live at 844x390
+     it sized the header to its content and left 37 to 78px of dead row beside
+     Leave in claim, challenge and reveal, and at game over, with the winner's
+     name in the header, pushed Leave 18px past the row's right edge – side
+     column scrollWidth 318 against clientWidth 300, while the document stayed
+     at 844, which is why a page-level horizontal-scroll sweep did not see it. */
+  .game-landscape-side .liars-header-card { padding: 8px 10px; }
+  .game-landscape-side .liars-counter__value { font-size: 20px; }
+  .game-landscape-side > .game-tabs { flex: 0 0 auto; }
+  .game-landscape-side > .liars-panel {
+    flex: 1 1 auto;
+    max-height: none;
+    /* Same floor as chat's (#902): below this the rows are unreadable anyway,
+       and a column that scrolls still hands the player every seat. */
+    min-height: 128px;
+    padding: 10px 12px;
+  }
+  .game-landscape-side .liars-panel__head { padding-bottom: 6px; }
+  .game-landscape-side .liars-seat { padding: 5px 8px; font-size: 12px; }
+}
+
+.liars-card { padding: 14px 16px; }
+.liars-card__title {
+  font-family: var(--bd-font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--bd-ink);
+  margin-bottom: 10px;
+}
+.liars-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+/* The eliminated-player alert and the "eliminated this round" card. Mixed from
+   the coral and the card ground rather than named --bd-danger-* tokens: those
+   were invented for this rule and defined nowhere, so all three var() calls
+   resolved to their initial values and the card came out with no background at
+   all and a currentColor border. Mixing keeps it right in both themes, because
+   both halves are redefined under html.dark. */
+.liars-card--danger {
+  background: color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm));
+  border-color: color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line));
+  color: var(--bd-ink);
+}
+
+.liars-claim {
+  font-size: 17px;
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--bd-ink);
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.liars-verdict {
+  font-family: var(--bd-font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+
+/* Truth / Bluff and Challenge / Believe: two equal buttons that stay on one
+   row at 320px rather than wrapping to a single-button row. */
+.liars-choice-row { display: flex; gap: 10px; margin-top: 12px; }
+.liars-choice { flex: 1 1 0; justify-content: center; min-width: 0; }
+/* Truth and Believe are the same call from two sides of the table, so they
+   carry the same colour; Bluff is the coral one. */
+.liars-choice--on-truth,
+.liars-choice--believe {
+  background: var(--bd-mint); color: var(--bd-ink);
+  box-shadow: 0 4px 0 0 var(--bd-mint-deep);
+}
+.liars-choice--on-bluff {
+  background: var(--bd-coral); color: #fff;
+  box-shadow: 0 4px 0 0 var(--bd-coral-deep);
+}
+
 /* A history/moves card that owns its whole column when nothing sits below it
    (chat hidden in bot games) – layout DoD: no gap under the last card. */
 .ttt-history-card--fill {
@@ -2181,18 +2537,21 @@ input[type="range"].slider-thumb::-moz-range-track {
 /* Rock Paper Scissors board, composed as a duel: an arena (glow + watermark),
    a stage with two hands in the players' colours, the match score between
    them, and three same-sized tiles. One scale for everything, from the board
-   card's container height, with hard caps so a tall window centres the
-   composition instead of inflating it. Animations: transform and opacity. */
+   card's container height (the card is still the size container), with hard
+   caps so a tall window does not inflate the composition. It takes its own
+   height and the card centres it, which is what `.ttt-board-surface--wide`
+   above is for; `height: 100%` and `justify-content: space-evenly` used to
+   spread it down a stretched card and were the 120-200px bands #903 measured.
+   Animations: transform and opacity. */
 .rps-board {
   position: relative;
   width: 100%;
-  height: 100%;
   min-height: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: center;
   gap: clamp(8px, 2cqh, 20px);
   overflow: hidden;
   --rps-emoji-xl: clamp(48px, 12cqh, 96px);
@@ -2455,45 +2814,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 
-.spy-header-timer {
-  min-width: min(280px, 100%);
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-.spy-header-timer-track {
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--bd-bg2);
-}
-
-.spy-header-timer-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--bd-coral);
-  transition: width 1s linear;
-}
-
-.spy-phase-rail {
-  display: flex;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.spy-phase-dot {
-  height: 6px;
-  flex: 1;
-  border-radius: 999px;
-  background: var(--bd-line);
-}
-
-.spy-phase-dot-active {
-  background: var(--bd-ink);
-}
-
 .spy-stage {
   display: grid;
   place-items: center;
@@ -2638,14 +2958,25 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-board-panel {
+  /* Same split as .ttt-board-card (#903): this box is the available space the
+     grid reads with container units, and .ttt-board-surface inside it is the
+     card the player sees. While they were one element every pixel the grid did
+     not take stayed warm cream - 530px of panel around a 384px grid at 1280.
+     The radius stays because GameResultOverlay mounts here and inherits it. */
   container-type: size;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: clamp(10px, 2vw, 16px);
+  border-radius: 18px;
+}
+/* Same as .ttt-board-card--result: the desktop Memory overlay mounts here, so
+   this box paints for as long as it is mounted and the slab has a card under
+   it again (#903 review). */
+.memory-board-panel--result {
   background: var(--bd-card-warm);
+  box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
 }
 
 .memory-score-panel {
@@ -2693,7 +3024,10 @@ input[type="range"].slider-thumb::-moz-range-track {
    --grid-cols / --grid-rows are injected as CSS vars from JSX. */
 @container (min-height: 100px) {
   .memory-grid {
-    width: min(100%, 780px, calc((100cqh - 60px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+    /* Both terms read the panel, which is the size container; 27px is the
+       surface's padding and border on one axis (#903). A percentage would have
+       nothing to resolve against now that the surface hugs this grid. */
+    width: min(calc(100cqw - 27px), 780px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
   }
 }
 
@@ -2916,19 +3250,6 @@ input[type="range"].slider-thumb::-moz-range-track {
    another width, and it re-lays the role card as two columns: identity and
    the ready control on the left, the secret on the right. */
 @media (max-width: 1023px) and (orientation: landscape) {
-  .spy-screen { padding: 8px 10px; }
-  .spy-shell { gap: 8px; }
-
-  .spy-header {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-  }
-  .spy-header-round,
-  .spy-header-lobby { display: none; }
-  .spy-header h2 { font-size: 18px; margin-top: 0; }
-
   .spy-stage {
     min-height: 0;
     padding: 0;
@@ -2993,7 +3314,8 @@ html.dark .game-chat-panel {
   background: var(--bd-card-warm);
 }
 
-html.dark .ttt-board-card {
+html.dark .ttt-board-surface,
+html.dark .ttt-board-card--result {
   background: var(--bd-card-warm);
 }
 
@@ -3010,7 +3332,6 @@ html.dark .memory-history-card { background: var(--bd-card-warm); }
 
 html.dark .memory-header,
 html.dark .spy-panel,
-html.dark .memory-board-panel,
 html.dark .memory-score-panel,
 html.dark .spy-role-card,
 html.dark .spy-vote-card,
@@ -3033,3 +3354,301 @@ html.dark .memory-score-row {
 html.dark .memory-tile-face {
   background: var(--bd-card-warm);
 }
+
+/* ===== Sketch & Guess (#1034) =====
+   The page composes the shared .ttt-* family; only three things are genuinely
+   different from a two-player board game and they live here.
+
+   1. The board card is a column, not a centred square. A drawer needs a prompt
+      strip, a toolbar and a submit button around the canvas, and a guesser an
+      input and a button, so the card stacks them and gives the canvas whatever
+      height is left.
+   2. The scoreboard row spans the whole first grid row. Every other kit game
+      puts a room card beside it; here the seat count runs to ten, so the roster
+      lives in the scores panel on the right and the header gets the full width
+      rather than a card with two names in it and a hole next to them.
+   3. The canvas sizes from its own wrapper, not from the screen: the wrapper is
+      a size container, so `100cqh` is the height actually left over after the
+      phase's controls, whichever phase is on screen. */
+
+.sketch-board-card {
+  container-type: size;
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.sketch-phase {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Last resort, the same bargain .game-landscape-side strikes: below roughly
+     420px of card height the toolbar plus the button stop fitting, and a column
+     that scrolls still hands the drawer every control. */
+  overflow-y: auto;
+}
+.sketch-phase > * { flex-shrink: 0; }
+
+.sketch-canvas-wrap {
+  flex: 1 1 auto;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+/* min() of a width-derived and a height-derived size, per the responsive DoD:
+   100% is the wrapper's width, 100cqh its height. */
+.sketch-canvas-frame {
+  width: min(100%, 100cqh, 480px);
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--bd-line);
+  background: #fff;
+  box-shadow: inset 0 2px 6px rgba(31,27,22,0.08);
+  touch-action: none;
+  user-select: none;
+}
+.sketch-canvas-frame > canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+/* The scores panel: round, phase and every seat with its score. On desktop it
+   is the top of the right column, on mobile the Scores tab. */
+.sketch-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+.ttt-mobile-content .sketch-panel { flex: 1; min-height: 0; max-height: none; }
+.sketch-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.sketch-panel__list::-webkit-scrollbar { width: 6px; }
+.sketch-panel__list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+
+.sketch-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: var(--bd-bg2);
+  font-size: 13px;
+  min-width: 0;
+}
+.sketch-score-row--me { border-color: var(--bd-ink); }
+.sketch-score-row__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--bd-ink); }
+.sketch-score-row__score { flex-shrink: 0; font-weight: 700; color: var(--bd-ink); font-family: ui-monospace, monospace; }
+
+/* The scoreboard row owns the whole first grid row (see 2 above). */
+.ttt-grid > .sketch-header-card,
+.ttt-grid > .spy-header-card,
+.ttt-grid > .alias-header-card { grid-column: 1 / -1; }
+
+.sketch-chat-note {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--bd-line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bd-ink-muted);
+  text-align: center;
+}
+
+html.dark .sketch-board-card,
+html.dark .sketch-panel { background: var(--bd-card-warm); }
+html.dark .sketch-score-row { background: var(--bd-bg2); }
+
+/* The board card is flex-sized by whichever of the three layout trees is on
+   screen, exactly as .ttt-board-card is – it only needs saying separately
+   because the selectors name the class. */
+.ttt-center-col > .sketch-board-card,
+.game-landscape-board > .sketch-board-card,
+.ttt-mobile-content > .sketch-board-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The scoreboard row spans the full grid width here (there is no room card to
+   sit beside it), and at 1280 that stretched each 1fr cell to ~580px – a
+   player card is an avatar and two short lines, so it became a wide empty
+   plate, which is exactly what the layout DoD calls a card with small content
+   floating in it. Cap the cards and let the cells keep the slack: the left card
+   stays left, the right card and Leave stay hard right. */
+.sketch-header-card .game-player-card,
+.spy-header-card .game-player-card,
+.alias-header-card .game-player-card { max-width: 340px; }
+.sketch-header-card .game-scoreboard-right-card,
+.spy-header-card .game-scoreboard-right-card,
+.alias-header-card .game-scoreboard-right-card { flex: 0 1 auto; }
+
+/* Portrait phones: the same squeeze #901 fixed for the landscape side column,
+   for the same reason. Two 42px player cards plus a three-line ROUND/1-of-3/
+   PHASE block plus Leave need about 330px and a 320px screen leaves 280 – at
+   which point the three grid cells overlap and the drawer's name, the round and
+   the opponent are printed on top of each other. The round drops to its short
+   form, and the viewer's own card goes: "me" is one tap away in Standings,
+   highlighted, while who is drawing is the thing the row exists to say. */
+@media (max-width: 1023px) {
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-player-card { max-width: none; }
+  /* The two 1fr cells are what pushes the drawer card out of its own track:
+     the right one keeps a full share of the width for a 36px icon button. Let
+     it shrink to what it holds and the card fits inside its cell instead of
+     spilling into the round counter. */
+  .ttt-mobile-layout :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+
+/* Phone landscape: the side column is min(300px, 42vw) and this header has one
+   more thing in it than the other kit games put there – Leave rides in the
+   scoreboard trailing slot rather than in a room card beside it. Measured at
+   844x390 the round counter printed 13px over the opponent name, in all three
+   phases. Same answer as portrait: the viewer card goes, the drawer stays, and
+   the right cell shrinks to the button. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
+  .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+
+  /* The header does not give way to the chat. Chat is the flexible member of
+     this column and carries the floor that absorbs a squeeze (#902); this card
+     is `overflow: hidden`, so shrinking it does not reflow anything, it cuts.
+     It needs 66px – a 42px scoreboard row inside 12px of padding – and default
+     flex shrink handed it 60 at 844x390, 58 at 667x375 and 56 at 740x360, which
+     ate the padding and clipped the bottom of the avatars and of the Leave
+     button. With this it is 68 everywhere and chat is still 146 or more, well
+     over its 128 floor. */
+  .game-landscape-side > :is(.sketch-header-card, .spy-header-card, .alias-header-card) { flex: 0 0 auto; }
+}
+
+/* ===== Guess the Spy / Alias on the shared kit (#905) =====
+   Both games used to carry their own screen shell and their own Leave button.
+   They now compose .game-screen/.ttt-grid like every other game, so all that is
+   left here is the card the phase content sits in and the right column's
+   roster stack. The header squeeze rules are the many-seat ones above, shared
+   with Sketch & Guess.
+
+   The card scrolls rather than sizing its content to the viewport: unlike a
+   board, a phase here is a form – a target select, a textarea, a send button –
+   and there is no smaller version of a textarea that still takes an answer. */
+.spy-board-card {
+  background: #FFF8EC;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  /* GameResultOverlay mounts on `position: absolute; inset: 0`, so this is the
+     positioned ancestor it needs. */
+  position: relative;
+  box-sizing: border-box;
+}
+/* `0 1 auto`, not `1 1 auto` (#903): the card takes its content's height and
+   still shrinks and scrolls when a phase is taller than the column. Growing
+   was what left 185px of cream under the role panel at 768 and 103px at
+   844x390 - a phase here is a form, and a form has nothing to give that space
+   to. */
+.ttt-center-col > .spy-board-card,
+.game-landscape-board > .spy-board-card,
+.ttt-mobile-content > .spy-board-card {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+/* Right column, first row: your role (while a round is live) over the table.
+   Ten seats do not fit in a scoreboard header, which is why the roster is here
+   and not up there – the same call Sketch & Guess made for its standings. */
+.spy-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+/* LobbyPageClient wraps the in-game area in its own `.game-screen flex
+   flex-col`, and puts a spectator banner above it. Being a flex item that may
+   shrink is what keeps this shell inside the viewport when that banner is
+   there; the spectate page renders it in normal flow, where `.game-screen`'s
+   own height is what applies. */
+.spy-screen-kit { flex: 1 1 auto; min-height: 0; }
+
+.spy-roster-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Capped so the chat below it keeps a usable pane: ten seats would otherwise
+     take the whole column and leave the chat under its 128px floor (#902). */
+  max-height: 260px;
+}
+.spy-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
+
+html.dark .spy-board-card { background: var(--bd-card-warm); }
+
+/* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
+   switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
+   above, which are scoped to .ttt-mobile-layout, never reach it. Same rules,
+   same breakpoint, applied to this card wherever it renders. */
+.alias-header-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .alias-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+  .alias-header-card .game-scoreboard-right-card { display: none; }
+  .alias-header-card .game-player-card { max-width: none; }
+  .alias-header-card .game-scoreboard-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
+}
+.alias-status-slot { width: 100%; max-width: 1200px; margin: 0 auto 12px; flex-shrink: 0; }

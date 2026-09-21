@@ -247,3 +247,134 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
     expect((forOutsider.data as SketchAndGuessGameData).rounds[0].prompt).toBe(prompt)
   })
 })
+
+/**
+ * #1032, found by playing it: the prompt was redacted and the guesses were not,
+ * so a player who had not answered yet could read the first correct guess –
+ * which is the prompt, spelled out, with `isCorrect: true` beside it. The ids
+ * here are the shapes the wire actually carries: `Players.userId` is a cuid for
+ * a registered player and `guest-<uuid>` for a guest, and both were in the
+ * lobby this was reproduced in.
+ */
+describe('sanitizeSketchAndGuessStateForBroadcast – live guesses (#1032)', () => {
+  const DRAWER = 'cmua6hebe0000aksighngh8r3'
+  const FIRST_GUESSER = 'guest-4f9bcf7e-1167-4596-abe3-a3983f932586'
+  const SECOND_GUESSER = 'guest-0a7a332d-a9dc-42c4-8a34-375259b2f741'
+
+  function guessingGame() {
+    const game = new SketchAndGuessGame('sketch-leak', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: FIRST_GUESSER, name: 'Bea' })
+    game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
+    game.startGame()
+    expect(getData(game).currentDrawerId).toBe(DRAWER)
+
+    const prompt = getData(game).rounds[0].prompt
+    game.makeMove(createMove(DRAWER, 'submit-drawing', { content: '{"strokes":[1]}' }))
+    game.makeMove(createMove(FIRST_GUESSER, 'submit-guess', { guess: prompt }))
+    expect(getData(game).phase).toBe('guessing')
+    return { game, prompt }
+  }
+
+  const liveRound = (state: { data?: unknown }) => (state.data as SketchAndGuessGameData).rounds[0]
+
+  it('does not hand a still-choosing guesser the answer another player already typed', () => {
+    const { game, prompt } = guessingGame()
+
+    const forSecondGuesser = sanitizeSketchAndGuessStateForBroadcast(game.getState(), SECOND_GUESSER)
+
+    expect(liveRound(forSecondGuesser).guesses).toHaveLength(0)
+    expect(JSON.stringify(forSecondGuesser)).not.toContain(prompt)
+  })
+
+  // The third route the same leak took (#1032). The first fix closed the state route and
+  // the second the realtime broadcast; this one only opens when the drawing phase runs out
+  // of time, which no unit test reached and no reviewer hit by eye. The engine used to put
+  // `promptHint: prompt` inside the auto-submitted fallback drawing, and the sanitizer
+  // publishes `rounds[].drawingContent` verbatim - so the moment the clock expired, every
+  // guesser and the whole lobby channel were handed the word.
+  it('does not smuggle the answer into the drawing the timeout auto-submits', () => {
+    const game = new SketchAndGuessGame('sketch-timeout-leak', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: FIRST_GUESSER, name: 'Bea' })
+    game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
+    game.startGame()
+
+    const prompt = getData(game).rounds[0].prompt
+    // applyTimeoutFallback measures from state.lastMoveAt, not from the round's own
+    // phaseStartedAt, and consumes every window the interval covers - overshoot by one
+    // window too many and it runs on into reveal, where the prompt is published to
+    // everyone on purpose and the assertion below would mean nothing.
+    const base = (game.getState() as { lastMoveAt?: number }).lastMoveAt ?? Date.now()
+    game.applyTimeoutFallback(undefined, base + (SKETCH_PHASE_SECONDS.drawing + 1) * 1000)
+
+    expect(getData(game).phase).toBe('guessing')
+    expect(getData(game).rounds[0].drawingContent).toBeTruthy()
+
+    // Both the per-viewer state and the shared channel, which is where it actually went out.
+    for (const viewer of [FIRST_GUESSER, SECOND_GUESSER, null]) {
+      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer)
+      expect(JSON.stringify(published)).not.toContain(prompt)
+    }
+  })
+
+  it('keeps a guesser their own guess, which is what "you have answered" is read from', () => {
+    const { game, prompt } = guessingGame()
+
+    const forFirstGuesser = sanitizeSketchAndGuessStateForBroadcast(game.getState(), FIRST_GUESSER)
+    const guesses = liveRound(forFirstGuesser).guesses
+
+    expect(guesses).toHaveLength(1)
+    expect(guesses[0].playerId).toBe(FIRST_GUESSER)
+    expect(guesses[0].guess).toBe(prompt)
+  })
+
+  it('leaves the head count intact, so the board can still say how many have answered', () => {
+    const { game } = guessingGame()
+
+    const forSecondGuesser = sanitizeSketchAndGuessStateForBroadcast(game.getState(), SECOND_GUESSER)
+
+    expect((forSecondGuesser.data as SketchAndGuessGameData).submittedPlayerIds).toEqual([FIRST_GUESSER])
+  })
+
+  it('hides live guesses from the drawer too, while still giving them their prompt', () => {
+    const { game, prompt } = guessingGame()
+
+    const forDrawer = sanitizeSketchAndGuessStateForBroadcast(game.getState(), DRAWER)
+
+    expect(liveRound(forDrawer).prompt).toBe(prompt)
+    expect(liveRound(forDrawer).guesses).toHaveLength(0)
+  })
+
+  it('hides every live guess from a spectator and from the shared broadcast', () => {
+    const { game, prompt } = guessingGame()
+
+    const forSpectator = sanitizeSketchAndGuessStateForBroadcast(game.getState(), null)
+
+    expect(liveRound(forSpectator).prompt).toBe('')
+    expect(liveRound(forSpectator).guesses).toHaveLength(0)
+    expect(JSON.stringify(forSpectator)).not.toContain(prompt)
+  })
+
+  it('shows every guess to everyone once the round reaches the reveal', () => {
+    const { game, prompt } = guessingGame()
+    game.makeMove(createMove(SECOND_GUESSER, 'submit-guess', { guess: 'wrongwrong' }))
+    expect(getData(game).phase).toBe('reveal')
+
+    const forSecondGuesser = sanitizeSketchAndGuessStateForBroadcast(game.getState(), SECOND_GUESSER)
+    const guesses = liveRound(forSecondGuesser).guesses
+
+    expect(guesses).toHaveLength(2)
+    expect(guesses.map((g) => g.guess).sort()).toEqual([prompt, 'wrongwrong'].sort())
+    expect(liveRound(forSecondGuesser).prompt).toBe(prompt)
+  })
+
+  it("does not mutate the engine's own state while redacting", () => {
+    const { game, prompt } = guessingGame()
+
+    sanitizeSketchAndGuessStateForBroadcast(game.getState(), SECOND_GUESSER)
+
+    expect(getData(game).rounds[0].prompt).toBe(prompt)
+    expect(getData(game).rounds[0].guesses).toHaveLength(1)
+  })
+})

@@ -2,7 +2,7 @@
  * Integration tests for guest user flow (guest helper + client guest fetch)
  */
 
-import { getOrCreateGuestUser, cleanupOldGuests } from '@/lib/guest-helpers'
+import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { fetchWithGuest, getGuestHeaders, getGuestData, isGuestMode } from '@/lib/fetch-with-guest'
 
 const localStorageMock = (() => {
@@ -137,19 +137,22 @@ describe('Guest user flow integration', () => {
     )
   })
 
-  it('cleans up stale guests older than 24 hours', async () => {
-    ;(prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 7 })
-
-    const deletedCount = await cleanupOldGuests()
-
-    expect(deletedCount).toBe(7)
-    expect(prisma.users.deleteMany).toHaveBeenCalledWith({
-      where: {
-        isGuest: true,
-        lastActiveAt: {
-          lt: expect.any(Date),
-        },
-      },
+  // The 24-hour cleanup this suite used to exercise was lib/guest-helpers' own
+  // copy: no relation filter, no retention policy, and one import away from
+  // undoing #1047's ninety-day window for guests who have played. It was deleted
+  // in #1051 and the one surviving policy is covered by
+  // __tests__/scripts/cleanup-old-guests.test.ts.
+  it('does not delete a guest on any path this flow takes', async () => {
+    ;(prisma.users.findFirst as jest.Mock).mockResolvedValue(null)
+    ;(prisma.users.create as jest.Mock).mockResolvedValue({
+      id: 'guest-6b3c1f22-90ad-4c5e-9c7a-51d0e4f7a8b2',
+      username: 'Denys',
+      isGuest: true,
+      lastActiveAt: new Date(),
     })
+
+    await getOrCreateGuestUser('guest-6b3c1f22-90ad-4c5e-9c7a-51d0e4f7a8b2', 'Denys')
+
+    expect(prisma.users.deleteMany).not.toHaveBeenCalled()
   })
 })

@@ -43,6 +43,12 @@ const optionalVars = [
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'VAPID_SUBJECT',
+  // Set by Vercel itself, never by hand and never in .env.example - they are listed
+  // here because that is the only other place the docs audit accepts a declaration,
+  // and #1054's gate reads them to decide whether an unreleased game may be started.
+  // Absent locally, which is exactly what makes the ENABLE_* flags usable there.
+  'VERCEL_ENV',
+  'NEXT_PUBLIC_VERCEL_ENV',
 ]
 
 const vapidVars = ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT']

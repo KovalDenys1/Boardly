@@ -689,6 +689,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         code,
         isGameStarted: game?.status === 'playing',
         isSpectator,
+        gameType: lobby?.gameType,
         reconcileWithServerSnapshot: loadLobby,
     })
 
@@ -1041,22 +1042,43 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // withdraws their own request rather than leaving the board stuck (#997).
     const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = () => (
-        <div className="ttt-board-card" style={{ position: 'relative' }}>
-            <C4Board
-                board={gameData.board}
-                winningLine={gameData.winningLine}
-                hoverCol={hoverCol}
-                onColHover={setHoverCol}
-                onColClick={handleColClick}
-                disabled={boardDisabled}
-                currentDisc={gameData.currentDisc}
-                lastDroppedRow={gameData.lastDroppedRow}
-                lastDroppedCol={gameData.lastDroppedCol}
-            />
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`} style={{ position: 'relative' }}>
+            <div className="ttt-board-surface">
+                <C4Board
+                    board={gameData.board}
+                    winningLine={gameData.winningLine}
+                    hoverCol={hoverCol}
+                    onColHover={setHoverCol}
+                    onColClick={handleColClick}
+                    disabled={boardDisabled}
+                    currentDisc={gameData.currentDisc}
+                    lastDroppedRow={gameData.lastDroppedRow}
+                    lastDroppedCol={gameData.lastDroppedCol}
+                />
+                {/* Inside the surface, not beside it: this pill is
+                    `position: absolute; bottom`, so it hangs off the nearest
+                    positioned ancestor, and the card stopped painting in this
+                    state (#903). On the card it was drawn on bare page below
+                    the board. The surface is the box the player can see. */}
+                {isFinished && !isSpectator && overlayInspecting && (
+                    <button
+                        data-testid="show-results-pill"
+                        onClick={() => setOverlayInspecting(false)}
+                        style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                    >
+                        {t('games.connect_four.game.showResults')}
+                    </button>
+                )}
+            </div>
             {isFinished && !isSpectator && (
                 <>
-                    {!overlayInspecting && (
+                    {showsResultOverlay && (
                         <GameResultOverlay
                             title={isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
                             isDraw={isDraw}
@@ -1074,14 +1096,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             gameType="connect_four"
                             isRegistered={status === 'authenticated' && !isGuest}
                         />
-                    )}
-                    {overlayInspecting && (
-                        <button
-                            onClick={() => setOverlayInspecting(false)}
-                            style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
-                        >
-                            {t('games.connect_four.game.showResults')}
-                        </button>
                     )}
                 </>
             )}

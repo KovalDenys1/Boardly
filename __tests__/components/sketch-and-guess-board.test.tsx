@@ -94,3 +94,46 @@ describe('SketchAndGuessGameBoard guess input (#1006)', () => {
     expect(props.onSubmitGuess).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * #1033 put this game on the spectator route, and #1032/#1034 must not take it
+ * away again: a spectator watches the drawing appear and never gets the prompt
+ * or a way to play. The prompt half is enforced server-side by
+ * sanitizeSketchAndGuessStateForBroadcast; this is the half the board owns.
+ */
+describe('SketchAndGuessGameBoard for a spectator', () => {
+  it('gives a spectator the drawing but no guess box', () => {
+    const props = buildProps({ isSpectator: true, playerId: '' })
+    const { container } = render(<SketchAndGuessGameBoard {...props} />)
+
+    expect(container.querySelector('canvas')).not.toBeNull()
+    expect(screen.queryByPlaceholderText('games.guess_my_drawing.game.guessPlaceholder')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.submitGuess')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.spectatorNotice')).not.toBeNull()
+  })
+
+  it('never puts the drawing tools in front of a spectator, even on the drawer seat', () => {
+    // The drawing phase with the spectator sitting on the drawer's own id: the
+    // one case where a missing !isSpectator would hand over the prompt.
+    const gameData = buildGameData()
+    gameData.phase = 'drawing'
+    const props = buildProps({ gameData, isSpectator: true, playerId: 'user-2' })
+    render(<SketchAndGuessGameBoard {...props} />)
+
+    expect(screen.queryByText('games.guess_my_drawing.game.submitDrawing')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.yourPrompt')).toBeNull()
+    expect(screen.queryByText('apple')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.waitingForDrawer')).not.toBeNull()
+  })
+
+  it('does not offer a spectator the button that ends the reveal', () => {
+    const gameData = buildGameData()
+    gameData.phase = 'reveal'
+    const props = buildProps({ gameData, isSpectator: true, playerId: '' })
+    render(<SketchAndGuessGameBoard {...props} />)
+
+    expect(screen.queryByText('games.guess_my_drawing.game.nextRound')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.seeResults')).toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.spectatorNotice')).not.toBeNull()
+  })
+})

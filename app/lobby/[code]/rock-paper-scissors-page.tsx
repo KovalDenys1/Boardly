@@ -777,19 +777,40 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         />
     )
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = (testId?: string) => (
-        <div className="ttt-board-card">
-            <RockPaperScissorsGameBoard
-                gameData={rpsData}
-                playerId={isSpectator ? '' : currentUserId ?? ''}
-                players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
-                onSubmitChoice={async (choice) => { await submitChoice(choice) }}
-                disabled={isSpectator || isFinished}
-                isSubmitting={isSubmitting}
-                isSpectator={isSpectator}
-                testId={testId}
-            />
-            {isFinished && !isSpectator && !overlayInspecting && (
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`}>
+            <div className="ttt-board-surface ttt-board-surface--wide">
+                <RockPaperScissorsGameBoard
+                    gameData={rpsData}
+                    playerId={isSpectator ? '' : currentUserId ?? ''}
+                    players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
+                    onSubmitChoice={async (choice) => { await submitChoice(choice) }}
+                    disabled={isSpectator || isFinished}
+                    isSubmitting={isSubmitting}
+                    isSpectator={isSpectator}
+                    testId={testId}
+                />
+                {/* Inside the surface, not beside it: this pill is
+                    `position: absolute; bottom`, so it hangs off the nearest
+                    positioned ancestor, and the card stopped painting in this
+                    state (#903). On the card it was drawn on bare page below
+                    the board. The surface is the box the player can see. */}
+                {isFinished && !isSpectator && overlayInspecting && (
+                    <button
+                        data-testid="show-results-pill"
+                        onClick={() => setOverlayInspecting(false)}
+                        style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                    >
+                        {t('games.tictactoe.game.showResults')}
+                    </button>
+                )}
+            </div>
+            {showsResultOverlay && (
                 <GameResultOverlay
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
@@ -808,14 +829,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     gameType="rock_paper_scissors"
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
-            )}
-            {isFinished && !isSpectator && overlayInspecting && (
-                <button
-                    onClick={() => setOverlayInspecting(false)}
-                    style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
-                >
-                    {t('games.tictactoe.game.showResults')}
-                </button>
             )}
         </div>
     )

@@ -603,6 +603,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         code,
         isGameStarted: game?.status === 'playing',
         isSpectator,
+        gameType: lobby?.gameType,
         reconcileWithServerSnapshot: loadLobby,
     })
 
@@ -1012,16 +1013,37 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     ) : null
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = (testId?: string) => (
-        <div className="ttt-board-card">
-            <TttBoard
-                board={gameData.board}
-                winningLine={gameData.winningLine}
-                onCellClick={handleCellClick}
-                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
-                testId={testId}
-            />
-            {isFinished && !isSpectator && !overlayInspecting && (
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`}>
+            <div className="ttt-board-surface">
+                <TttBoard
+                    board={gameData.board}
+                    winningLine={gameData.winningLine}
+                    onCellClick={handleCellClick}
+                    disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
+                    testId={testId}
+                />
+                {/* Inside the surface, not beside it: this pill is
+                    `position: absolute; bottom`, so it hangs off the nearest
+                    positioned ancestor, and the card stopped painting in this
+                    state (#903). On the card it was drawn on bare page below
+                    the board. The surface is the box the player can see. */}
+                {isFinished && !isSpectator && overlayInspecting && (
+                    <button
+                        data-testid="show-results-pill"
+                        onClick={() => setOverlayInspecting(false)}
+                        style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                    >
+                        {t('games.tictactoe.game.showResults')}
+                    </button>
+                )}
+            </div>
+            {showsResultOverlay && (
                 <GameResultOverlay
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
                     kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
@@ -1059,14 +1081,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     gameType="tic_tac_toe"
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
-            )}
-            {isFinished && !isSpectator && overlayInspecting && (
-                <button
-                    onClick={() => setOverlayInspecting(false)}
-                    style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
-                >
-                    {t('games.tictactoe.game.showResults')}
-                </button>
             )}
         </div>
     )

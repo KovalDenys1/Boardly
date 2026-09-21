@@ -38,8 +38,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/games/connect-four', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/alias', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/rock-paper-scissors', { changeFrequency: 'monthly', priority: 0.85 }),
-    // liars-party and sketch-and-guess are in-development — excluded from the sitemap
-    // and noindex on their own pages until they are released
+    page('/games/liars-party', { changeFrequency: 'monthly', priority: 0.85 }),
+    page('/games/sketch-and-guess', { changeFrequency: 'monthly', priority: 0.85 }),
 
     // Guides index
     page('/guides', { changeFrequency: 'weekly', priority: 0.85 }),

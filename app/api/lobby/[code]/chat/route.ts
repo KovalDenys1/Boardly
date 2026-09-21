@@ -4,6 +4,8 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getChatHistory, persistChatMessage } from '@/lib/chat-history'
 import { broadcastToLobby } from '@/lib/supabase-server'
+import { isSketchAndGuessDrawerMuted } from '@/lib/games/sketch-and-guess-game'
+import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 
@@ -86,7 +88,12 @@ export async function POST(
       id: true,
       games: {
         where: { status: { in: ['waiting', 'playing', 'finished'] } },
-        select: { players: { where: { userId: user.id }, select: { id: true } } },
+        select: {
+          id: true,
+          gameType: true,
+          status: true,
+          players: { where: { userId: user.id }, select: { id: true } },
+        },
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
@@ -100,6 +107,32 @@ export async function POST(
   const isPlayer = lobby.games.some((g) => g.players.length > 0)
   if (!isPlayer) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Sketch & Guess mutes the drawer for the live part of the round: they know
+  // the word and are paid for every correct guess (#1034). The page greys their
+  // composer out, which stops everyone except the one player with a reason to
+  // go round it, so the rule is enforced here as well. The state blob is read
+  // in a second query rather than added to the one above, so every other game's
+  // chat keeps paying for exactly the columns it did before.
+  const activeGame = lobby.games[0]
+  if (activeGame?.gameType === 'sketch_and_guess' && activeGame.status === 'playing') {
+    const row = await prisma.games.findUnique({
+      where: { id: activeGame.id },
+      select: { state: true },
+    })
+    let parsedState: unknown = null
+    try {
+      parsedState = parsePersistedGameState(row?.state)
+    } catch {
+      parsedState = null
+    }
+    if (isSketchAndGuessDrawerMuted({ gameStatus: activeGame.status, state: parsedState, userId: user.id })) {
+      return NextResponse.json(
+        { error: 'The drawer cannot chat until the reveal', code: 'DRAWER_CHAT_MUTED' },
+        { status: 403 }
+      )
+    }
   }
 
   const username = user.username || 'Player'

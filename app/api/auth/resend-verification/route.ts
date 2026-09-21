@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { normalizeProfileEmail } from '@/lib/profile-email'
+import { insensitiveEquals } from '@/lib/username-match'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/auth/resend-verification')
@@ -54,21 +55,14 @@ export async function POST(request: NextRequest) {
 
       const normalizedEmail = normalizeProfileEmail(email)
 
+      // `insensitiveEquals`: a bare `equals` + `mode` compiles to an unescaped
+      // ILIKE, so `a_b@example.com` matched the account `aXb@example.com` and the
+      // verification mail went to a stranger's pending address (#1055).
       user = await prisma.users.findFirst({
         where: {
           OR: [
-            {
-              email: {
-                equals: normalizedEmail,
-                mode: 'insensitive',
-              },
-            },
-            {
-              pendingEmail: {
-                equals: normalizedEmail,
-                mode: 'insensitive',
-              },
-            },
+            { email: insensitiveEquals(normalizedEmail) },
+            { pendingEmail: insensitiveEquals(normalizedEmail) },
           ],
         },
         select: {

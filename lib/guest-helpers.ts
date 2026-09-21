@@ -12,6 +12,32 @@ const GUEST_ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
 const GUEST_ID_PREFIX = 'guest-'
 
 /**
+ * The Prisma error code on a rejected write, or null when there is not one.
+ *
+ * Duck-typed rather than `instanceof Prisma.PrismaClientKnownRequestError`,
+ * which is what the rest of this tree does (lib/lobby.ts, lib/bot-helpers.ts):
+ * the generated client is re-exported through several entry points and an
+ * instanceof against the wrong one silently answers false.
+ */
+export function prismaErrorCode(error: unknown): string | null {
+    if (typeof error !== 'object' || error === null) return null
+    const code = (error as Record<string, unknown>).code
+    return typeof code === 'string' ? code : null
+}
+
+/**
+ * The columns a P2002 names, lower-cased. Prisma puts them in `meta.target`, as
+ * an array on Postgres and occasionally a string; it can also be absent, and
+ * callers have to cope with an empty answer rather than guess.
+ */
+export function uniqueConstraintFields(error: unknown): string[] {
+    if (typeof error !== 'object' || error === null) return []
+    const target = (error as { meta?: { target?: unknown } }).meta?.target
+    const fields = Array.isArray(target) ? target : typeof target === 'string' ? [target] : []
+    return fields.filter((field): field is string => typeof field === 'string').map((field) => field.toLowerCase())
+}
+
+/**
  * The discriminator appended to a guest display name when that name is taken.
  *
  * Guest ids are `guest-<uuid>` (createGuestId in lib/guest-auth.ts), so the
@@ -190,26 +216,190 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
 }
 
 /**
- * Clean up old guest users (older than 24 hours of inactivity)
- * Should be called periodically or during lobby cleanup
+ * Guest cleanup deliberately does not live here.
+ *
+ * This module used to export its own `cleanupOldGuests()` deleting every guest
+ * idle for 24 hours, with no relation filter and no retention policy. It was
+ * never wired up - both cron routes import `scripts/cleanup-old-guests.ts` - but
+ * it sat one import away from silently undoing #1047's ninety-day window for
+ * guests who have played, within a day. Removed in #1051 so the policy has a
+ * single home; import it from `@/scripts/cleanup-old-guests`.
  */
-export async function cleanupOldGuests() {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
+/**
+ * Give up a display name that a guest row is holding, so a real account can take it.
+ *
+ * `Users.username` is `@unique` (prisma/schema.prisma), so a guest who typed
+ * "Denys" occupies that name for every signup too. Before #1047 the row vanished
+ * after three days of inactivity; a guest who has played is now kept for ninety,
+ * which turned a short annoyance into a ninety-day squat on a common first name
+ * and is the whole of #1050.
+ *
+ * Renaming the guest is preferred over simply skipping guest rows in the
+ * caller's uniqueness check, because the unique constraint is real: "ignore
+ * guests" only moves the failure from a checked 400 to a P2002 on insert. It is
+ * also preferred over deleting the guest, which would cascade their Players rows
+ * away - the exact loss #1047 was filed to stop. Nothing that identifies the
+ * guest changes: their id, their identity token and their game history are
+ * untouched, only the cosmetic display name. `getOrCreateGuestUser` above
+ * already keeps the stored name when the one the browser asks for is taken, so
+ * the returning guest settles on the new name rather than fighting for the old.
+ *
+ * Returns true when the name is free afterwards, false only when the rename
+ * itself lost a race - in which case the caller should treat the name as taken.
+ */
+export async function releaseGuestUsername(
+    guestId: string,
+    currentUsername: string | null
+): Promise<boolean> {
+    const base = currentUsername ?? 'Guest'
+    const suffix = guestNameSuffix(guestId)
+
+    // Same shape the collision paths in getOrCreateGuestUser produce, so a guest
+    // renamed here is indistinguishable from one who picked a taken name.
+    const candidates = [`${base}-${suffix}`, `${base}-${suffix}-${Date.now().toString().slice(-4)}`]
+
+    for (const candidate of candidates) {
+        try {
+            await prisma.users.update({
+                where: { id: guestId },
+                data: { username: candidate },
+            })
+
+            log.info('Released a guest display name to a registered account', {
+                guestId,
+                previousName: currentUsername,
+                newName: candidate,
+            })
+            return true
+        } catch (error: unknown) {
+            const code = prismaErrorCode(error)
+
+            if (code === 'P2002') {
+                log.warn('Guest rename collided, trying a more specific name', { guestId, candidate })
+                continue
+            }
+
+            // P2025 - the guest row is gone. scripts/cleanup-old-guests.ts and
+            // /api/user/upgrade-guest both delete guest rows, and either can land
+            // between the caller's lookup and this update. The name is free, which
+            // is the whole of what the caller asked; rethrowing turned that into a
+            // 500 on a signup that should have gone through. If something else has
+            // taken the name since, the caller's own insert meets the unique index
+            // and answers that as a conflict.
+            if (code === 'P2025') {
+                log.info('Guest row was already gone, so the display name is free', {
+                    guestId,
+                    previousName: currentUsername,
+                })
+                return true
+            }
+
+            throw error
+        }
+    }
+
+    log.error('Could not free a guest-held username', undefined, { guestId, currentUsername })
+    return false
+}
+
+/**
+ * Put a guest's display name back after the caller that freed it failed to take it.
+ *
+ * `releaseGuestUsername` is not transactional - it cannot be, because an
+ * interactive Prisma transaction aborts on the first failed statement, so the
+ * P2002 retry above could not run inside one. That leaves a window: the guest is
+ * renamed, and the caller's own write then loses the race for the freed name. The
+ * guest would be renamed for nothing.
+ *
+ * Best effort by design, and it never throws. A failure here means the name is
+ * genuinely gone (P2002 - whoever won the race holds it) or the guest row is
+ * (P2025), and in both cases the right answer is to leave the guest as it is
+ * rather than turn the caller's conflict into a server error.
+ */
+export async function restoreGuestUsername(
+    guestId: string,
+    previousUsername: string | null
+): Promise<boolean> {
     try {
-        const result = await prisma.users.deleteMany({
-            where: {
-                isGuest: true,
-                lastActiveAt: {
-                    lt: twentyFourHoursAgo,
-                },
-            },
+        await prisma.users.update({
+            where: { id: guestId },
+            data: { username: previousUsername },
         })
 
-        log.info('Cleaned up old guest users', { count: result.count })
-        return result.count
+        log.info('Restored a guest display name after the caller failed to take it', {
+            guestId,
+            previousName: previousUsername,
+        })
+        return true
+    } catch (error: unknown) {
+        log.warn('Could not restore a guest display name', {
+            guestId,
+            previousName: previousUsername,
+            code: prismaErrorCode(error),
+        })
+        return false
+    }
+}
+
+/**
+ * The name a guest was holding could not be freed, so it is not available.
+ *
+ * Thrown by `withGuestUsernameReleased` only; every caller of that helper has to
+ * answer it, which is the point of a type rather than a boolean return.
+ */
+export class UsernameUnavailableError extends Error {
+    constructor(message = 'Username is already taken') {
+        super(message)
+        this.name = 'UsernameUnavailableError'
+    }
+}
+
+/**
+ * Run `operation` with a guest's display name freed for it, and put the name
+ * back if the operation does not complete.
+ *
+ * Freeing a guest name is a compensating action waiting to happen: the rename is
+ * a committed write of its own (it cannot be in the caller's transaction - see
+ * `restoreGuestUsername`), so every way out of the caller between that rename
+ * and the write that takes the name leaves an uninvolved visitor renamed for
+ * nothing. #1050 answered one of those ways out, in PATCH /api/user/profile, by
+ * restoring inside the `catch` that recognises P2002. Two were left: the same
+ * route throws a validation or conflict error for the *email* after renaming the
+ * guest, and POST /api/auth/register answers its own lost race with a 400 and no
+ * restore at all (#1055).
+ *
+ * Enumerating failure paths is what produced that gap, so this does not: the
+ * release and the restore are one scope, and anything that leaves `operation`
+ * abnormally puts the name back. A path added later is covered by having been
+ * written inside the callback. The rule for callers is therefore just: put
+ * everything that can still fail inside `operation`, and nothing that runs after
+ * the name is legitimately taken.
+ *
+ * The release itself is inside too, so a caller cannot rename a guest without
+ * arranging to undo it. A release that loses its own race throws
+ * `UsernameUnavailableError` and never runs `operation`.
+ *
+ * Restoring is best effort and never throws - see `restoreGuestUsername`. The
+ * original error always propagates; failing to hand the name back must not
+ * replace a conflict the caller can act on with a server error.
+ */
+export async function withGuestUsernameReleased<T>(
+    guest: { id: string; username: string | null } | null | undefined,
+    operation: () => Promise<T>
+): Promise<T> {
+    if (!guest) {
+        return operation()
+    }
+
+    if (!(await releaseGuestUsername(guest.id, guest.username))) {
+        throw new UsernameUnavailableError()
+    }
+
+    try {
+        return await operation()
     } catch (error) {
-        log.error('Error cleaning up guest users', error as Error)
+        await restoreGuestUsername(guest.id, guest.username)
         throw error
     }
 }

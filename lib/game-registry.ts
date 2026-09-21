@@ -20,7 +20,6 @@ import { FakeArtistGame } from './games/fake-artist-game'
 import { AliasGame } from './games/alias'
 import {
   isFakeArtistEnabled,
-  isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
 
@@ -37,9 +36,14 @@ export type RegisteredGameType =
   | 'connect_four'
   | 'alias'
   | 'liars_party'
+  // Registered since #1035. The engine has been built, played and covered by
+  // tests since #253; keeping it behind ENABLE_SKETCH_AND_GUESS meant
+  // `createGameEngine` threw for a game whose lobby route, dedicated page and
+  // GameType enum value are all permanent. Whether players are offered it is
+  // the catalog's `availability`, which #873 flips.
+  | 'sketch_and_guess'
 export type ExperimentalGameType =
   | 'telephone_doodle'
-  | 'sketch_and_guess'
   | 'fake_artist'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
@@ -169,6 +173,19 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     create: (id, cfg) =>
       new LiarsPartyGame(id, { maxPlayers: 12, minPlayers: 4, ...cfg }),
   },
+
+  sketch_and_guess: {
+    metadata: {
+      type: 'sketch_and_guess',
+      name: 'Sketch & Guess',
+      minPlayers: 3,
+      maxPlayers: 10,
+      supportsBots: false,
+      translationKey: 'guess_my_drawing',
+    },
+    create: (id, cfg) =>
+      new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
+  },
 }
 
 const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
@@ -182,19 +199,6 @@ const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
   },
   create: (id, cfg) =>
     new TelephoneDoodleGame(id, { maxPlayers: 12, minPlayers: 3, ...cfg }),
-}
-
-const SKETCH_AND_GUESS_ENTRY: GameRegistryEntry = {
-  metadata: {
-    type: 'sketch_and_guess',
-    name: 'Sketch & Guess',
-    minPlayers: 3,
-    maxPlayers: 10,
-    supportsBots: false,
-    translationKey: 'guess_my_drawing',
-  },
-  create: (id, cfg) =>
-    new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
 }
 
 const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
@@ -218,10 +222,6 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
 
   if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
     return TELEPHONE_DOODLE_ENTRY
-  }
-
-  if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
-    return SKETCH_AND_GUESS_ENTRY
   }
 
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
@@ -285,9 +285,6 @@ export function getSupportedGameTypes(): SupportedGameType[] {
   if (isTelephoneDoodleEnabled()) {
     experimentalTypes.push('telephone_doodle')
   }
-  if (isSketchAndGuessEnabled()) {
-    experimentalTypes.push('sketch_and_guess')
-  }
   if (isFakeArtistEnabled()) {
     experimentalTypes.push('fake_artist')
   }
@@ -314,7 +311,6 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
   return (
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
-    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }

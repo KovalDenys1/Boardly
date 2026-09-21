@@ -8,6 +8,13 @@ import { apiLogger } from '@/lib/logger'
 import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import {
+  prismaErrorCode,
+  uniqueConstraintFields,
+  UsernameUnavailableError,
+  withGuestUsernameReleased,
+} from '@/lib/guest-helpers'
+import { insensitiveEquals, sameName } from '@/lib/username-match'
+import {
   AuthenticationError,
   ConflictError,
   ValidationError,
@@ -188,6 +195,12 @@ async function patchProfileHandler(req: NextRequest) {
     pendingEmail?: string | null
   } = {}
 
+  // The guest whose display name is in the way of this request, if any. Only
+  // noted here - the rename itself waits until every check has passed and the
+  // write is the next thing to run, so a request rejected for its email can no
+  // longer rename an uninvolved visitor on its way out (#1055).
+  let guestHoldingUsername: { id: string; username: string | null } | null = null
+
   if (nextUsername !== undefined) {
     if (nextUsername.length < 3 || nextUsername.length > 20) {
       throw new ValidationError('Username must be between 3 and 20 characters')
@@ -198,23 +211,48 @@ async function patchProfileHandler(req: NextRequest) {
     }
 
     if (nextUsername !== (currentUser.username ?? '')) {
-      const existingUsername = await prisma.users.findFirst({
+      // `findMany`, not `findFirst`. `Users_username_key` is a plain btree on
+      // `username` with no lower() (checked against the live database), so the
+      // constraint is case-sensitive and "Denys" and "denys" are two legal rows -
+      // and getOrCreateGuestUser looks a new guest's name up with an exact match,
+      // so a guest really can take the lower-case twin of an account's name. A
+      // case-insensitive `findFirst` over that pair returns one of them with no
+      // orderBy: when it returned the guest, this route renamed an uninvolved
+      // guest and then handed the caller a name a real account holds, because the
+      // write itself does not collide. Reading every match is the same fix
+      // registration got.
+      //
+      // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to
+      // an unescaped ILIKE, so the `_` this route's own validation allows in a
+      // name was a wildcard, and asking for "new_user" while the account
+      // "newXuser" existed came back 409 for a name nobody held (#1055). The rows
+      // are narrowed by hand below too - see lib/username-match.ts.
+      const candidateHolders = await prisma.users.findMany({
         where: {
-          username: {
-            equals: nextUsername,
-            mode: 'insensitive',
-          },
+          username: insensitiveEquals(nextUsername),
           NOT: {
             id: session.user.id,
           },
         },
-        select: { id: true },
+        select: { id: true, username: true, isGuest: true },
       })
 
-      if (existingUsername) {
+      const usernameHolders = candidateHolders.filter((row) => sameName(row.username, nextUsername))
+
+      // A real account decides the answer whatever order the rows came back in.
+      if (usernameHolders.some((row) => !row.isGuest)) {
         throw new ConflictError('Username is already taken')
       }
 
+      // Same rule as registration (#1050): a guest display name does not reserve
+      // a username against a real account, so the guest is renamed instead. Kept
+      // in step with GET /api/user/check-username, which this page polls and
+      // which no longer counts guest rows as taken.
+      //
+      // Only an exact-case match can collide with the unique index, so that is
+      // the only guest worth moving: a guest called "denys" is left alone when
+      // the caller asks for "DENYS", because nothing is in the way.
+      guestHoldingUsername = usernameHolders.find((row) => row.username === nextUsername) ?? null
       updateData.username = nextUsername
     }
   }
@@ -229,26 +267,23 @@ async function patchProfileHandler(req: NextRequest) {
     const pendingEmail = currentUser.pendingEmail ? normalizeProfileEmail(currentUser.pendingEmail) : null
 
     if (nextEmail !== currentEmail && nextEmail !== pendingEmail) {
-      const existingEmail = await prisma.users.findFirst({
+      // Same wildcard as the username lookup above, and an address is far likelier
+      // to contain an underscore than a display name: "a_b@x.com" matched
+      // "aXb@x.com" and refused an address nobody had registered (#1055).
+      const emailCandidates = await prisma.users.findMany({
         where: {
           NOT: { id: session.user.id },
           OR: [
-            {
-              email: {
-                equals: nextEmail,
-                mode: 'insensitive',
-              },
-            },
-            {
-              pendingEmail: {
-                equals: nextEmail,
-                mode: 'insensitive',
-              },
-            },
+            { email: insensitiveEquals(nextEmail) },
+            { pendingEmail: insensitiveEquals(nextEmail) },
           ],
         },
-        select: { id: true },
+        select: { id: true, email: true, pendingEmail: true },
       })
+
+      const existingEmail = emailCandidates.some(
+        (row) => sameName(row.email, nextEmail) || sameName(row.pendingEmail, nextEmail)
+      )
 
       if (existingEmail) {
         throw new ConflictError('Email is already in use')
@@ -277,7 +312,7 @@ async function patchProfileHandler(req: NextRequest) {
     })
   }
 
-  const updateResult = await prisma.$transaction(async (tx) => {
+  const writeProfile = () => prisma.$transaction(async (tx) => {
     if (verificationEmailTarget) {
       await tx.emailVerificationTokens.deleteMany({
         where: { userId: session.user.id },
@@ -322,6 +357,44 @@ async function patchProfileHandler(req: NextRequest) {
 
     return { user, verificationToken }
   })
+
+  let updateResult: Awaited<ReturnType<typeof writeProfile>>
+
+  try {
+    // The guest is renamed here and nowhere else, so the only code that can run
+    // between the rename and the write that needs it is the write itself, and
+    // anything that throws inside hands the name back. #1050 restored the name
+    // from the P2002 branch below, which covered the write losing its race and
+    // nothing else (#1055).
+    updateResult = await withGuestUsernameReleased(guestHoldingUsername, writeProfile)
+  } catch (error) {
+    // The guest name could not be freed, so it is genuinely held by someone else
+    // by now - the same answer the checks above would have given.
+    if (error instanceof UsernameUnavailableError) {
+      throw new ConflictError('Username is already taken')
+    }
+
+    // The write can still lose a race the checks above passed - another request
+    // takes the same username, or puts the same address in pendingEmail, between
+    // the lookup and this update. That is a conflict the caller can act on, and
+    // it reached withErrorHandler unrecognised before, which maps anything with
+    // no statusCode to 500.
+    if (prismaErrorCode(error) !== 'P2002') {
+      throw error
+    }
+
+    // Prisma names the columns in meta.target, but not always - fall back to
+    // whichever field this request was actually writing.
+    const fields = uniqueConstraintFields(error)
+    const onEmail = fields.includes('pendingemail') || fields.includes('email')
+    const onUsername = fields.includes('username')
+
+    throw new ConflictError(
+      onUsername || (!onEmail && updateData.username !== undefined)
+        ? 'Username is already taken'
+        : 'Email is already in use'
+    )
+  }
 
   if (updateResult.verificationToken && updateResult.user.pendingEmail) {
     await sendVerificationEmail(

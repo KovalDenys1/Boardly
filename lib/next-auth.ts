@@ -14,6 +14,7 @@ import {
   REMEMBER_ME_MAX_AGE_SECONDS,
 } from './auth-session-policy'
 import { loginSchema } from './validation/auth'
+import { insensitiveEquals } from './username-match'
 
 function getOAuthProfileEmail(profile: unknown): string {
   if (!profile || typeof profile !== 'object') {
@@ -79,12 +80,14 @@ export const authOptions: NextAuthOptions = {
 
         const { email, password } = parsedCredentials.data
 
+        // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles
+        // to an unescaped ILIKE, so an address with `_` or `%` in it was matched
+        // as a pattern and this lookup could hand back a different account's row
+        // (#1055). The password check below then fails, so the user is locked
+        // out of their own account with the right password.
         const user = await prisma.users.findFirst({
           where: {
-            email: {
-              equals: email,
-              mode: 'insensitive',
-            },
+            email: insensitiveEquals(email),
           },
           select: {
             id: true,
@@ -228,12 +231,15 @@ export const authOptions: NextAuthOptions = {
           }
 
           // New OAuth account - check if user with this email already exists
+          // `insensitiveEquals`, not a bare `equals` + `mode`: that pair
+          // compiles to an unescaped ILIKE (#1055), and this is the lookup that
+          // links a new OAuth identity to an existing account. A pattern match
+          // here links it to the wrong account: `john_smith@example.com` signing
+          // in with a provider matched the account `john.smith@example.com`, one
+          // character apart at the `_`, and adopted it.
           const existingUserByEmail = await prisma.users.findFirst({
             where: {
-              email: {
-                equals: normalizedOAuthEmail,
-                mode: 'insensitive',
-              },
+              email: insensitiveEquals(normalizedOAuthEmail),
             },
             select: {
               id: true,
@@ -308,12 +314,12 @@ export const authOptions: NextAuthOptions = {
       // Ensure we have user data from database
       if (!token.id && token.email) {
         const tokenEmail = String(token.email).trim().toLowerCase()
+        // `insensitiveEquals`: same unescaped-ILIKE pattern match as the two
+        // lookups above, and this one decides which row a token is filled in
+        // from (#1055).
         const dbUser = await prisma.users.findFirst({
           where: {
-            email: {
-              equals: tokenEmail,
-              mode: 'insensitive',
-            },
+            email: insensitiveEquals(tokenEmail),
           },
           select: {
             id: true,

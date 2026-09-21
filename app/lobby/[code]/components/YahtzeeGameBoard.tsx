@@ -94,7 +94,11 @@ export default function GameBoard({
   }
 
   return (
-    <div className="h-full flex flex-col">
+    // justify-center, not stretch (#903): the card below hugs its content, so
+    // the height it no longer takes is page padding above and below it rather
+    // than empty card. Centring is safe because the card shrinks before it
+    // overflows - `flex: 0 1 auto` plus min-h-0 plus its own scroll.
+    <div className="h-full flex flex-col justify-center">
       {/* Dice Area with Timer + Controls. overflow-y-auto (not hidden) is
           load-bearing: on a real iPhone with Safari's address bar expanded,
           measured real-device math shows timer(~59px) + dice's own
@@ -102,8 +106,14 @@ export default function GameBoard({
           can exceed the ~424-428px actually available, which would silently
           clip the Roll button under overflow:hidden. Scrolling ~20-30px is
           the acceptable worst case; an unreachable Roll button is not. */}
+      {/* No flex-1 (#903): #903's second cause names this line - the card was
+          `flex-1`, so it took the column's whole height while the dice kept
+          theirs. Measured on the branch at 768x1024 before this change: a
+          744x797 card around a 112px dice strip, ~197px of empty card above it
+          and ~246px below. The flex-item default `0 1 auto` hugs the content
+          and still shrinks, which is what the scroll below is for. */}
       <div
-        className="bd-card flex-1 overflow-y-auto flex flex-col min-h-0"
+        className="bd-card overflow-y-auto flex flex-col min-h-0"
         style={{
           background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
         }}
@@ -125,8 +135,10 @@ export default function GameBoard({
             size when iOS Safari's address-bar toggle momentarily shrinks
             the resolved 100dvh of the fixed game viewport (see
             LobbyPageClient.tsx's scroll-lock comment for the same class of
-            bug) */}
-        <div className={`flex-1 ${compact ? 'min-h-[110px]' : 'min-h-[190px]'}`}>
+            bug). It is a floor and nothing else now: `flex-1` here made this
+            box absorb whatever the card was given, which is how a 112px strip
+            of dice ended up centred in 557px of it (#903). */}
+        <div className={compact ? 'min-h-[110px]' : 'min-h-[190px]'}>
           <DiceGroup
             compact={compact}
             dice={gameEngine.getDice()}

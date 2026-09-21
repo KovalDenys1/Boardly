@@ -98,6 +98,32 @@ jest.mock('@/lib/lobby-snapshot', () => ({
   pickRelevantLobbyGame: jest.fn((games: any[]) => games[0] || null),
 }))
 
+/**
+ * One in-development catalog entry, simulated, so the coming-soon refusal below still
+ * has a game to be refused with.
+ *
+ * #873 released Liar's Party and Sketch & Guess, and the two entries left
+ * in-development carry no route (#975), so `isTemporarilyUnavailableGameType` has never
+ * heard of them and the route would answer 200 for either - the test would go green on
+ * the wrong branch. Only `getAvailableGameTypes` is touched, and only for this one game
+ * type: the route, the guard and the route map are real, which is what the test is
+ * about. Unconditionally, because this suite is about guests and never sets
+ * ENABLE_IN_DEVELOPMENT_GAMES - what the flag then does with such an entry is the
+ * subject of `__tests__/api/in-development-game-gate.test.ts`, which carries the full
+ * reasoning and the version of this stand-in that reads the flag.
+ */
+jest.mock('@/lib/game-catalog', () => {
+  const actual = jest.requireActual('@/lib/game-catalog')
+
+  return {
+    ...actual,
+    getAvailableGameTypes: (options?: { enabledExperimental?: readonly string[] }) =>
+      actual
+        .getAvailableGameTypes(options)
+        .filter((type: string) => type !== 'liars_party'),
+  }
+})
+
 jest.mock('@/lib/csrf', () => ({
   verifyCsrfToken: jest.fn(() => true),
 }))
@@ -183,7 +209,7 @@ describe('Guest mode API endpoints', () => {
     expect(createArgs.data.name).toBe('Lobby TEST123')
   })
 
-  it('rejects lobby creation for temporarily in-development games (liars_party)', async () => {
+  it('rejects lobby creation for a game the catalog has not released', async () => {
     const req = new NextRequest('http://localhost:3000/api/lobby', {
       method: 'POST',
       body: JSON.stringify({
@@ -194,8 +220,14 @@ describe('Guest mode API endpoints', () => {
     })
 
     const response = await CREATE_LOBBY(req)
+    const data = await response.json()
 
     expect(response.status).toBe(400)
+    // The error, not just the status: this route has four other 400s and a guest
+    // hits several of them, so a status on its own would let the test pass on the
+    // wrong branch - which is what it would do today without the stand-in above.
+    expect(data.error).toBe('Game type is coming soon')
+    expect(mockPrisma.lobbies.create).not.toHaveBeenCalled()
   })
 
   it('joins waiting lobby as guest player', async () => {

@@ -1,5 +1,6 @@
 import {
   isFakeArtistEnabled,
+  isInDevelopmentGamePlayEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -14,9 +15,14 @@ export type RegisteredGameType =
   | 'connect_four'
   | 'alias'
   | 'liars_party'
+  // Registered since #1035: the engine, the lobby route and the metadata are
+  // all permanent now, so nothing about the game itself depends on
+  // ENABLE_SKETCH_AND_GUESS any more. What the flag still decides is whether
+  // the catalog entry is promoted to `available`, which is the product
+  // decision #873 makes.
+  | 'sketch_and_guess'
 export type ExperimentalGameType =
   | 'telephone_doodle'
-  | 'sketch_and_guess'
   | 'fake_artist'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
@@ -102,6 +108,30 @@ export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatal
 /** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
 export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
   return game.availability === 'available' && game.lobbyCreateConfig !== undefined
+}
+
+/**
+ * Is this `in-development` entry structurally finished enough for ENABLE_IN_DEVELOPMENT_GAMES
+ * to promote it (#1054)?
+ *
+ * The question is asked of the entry, never of its name. `AvailableGameCatalogEntry` requires
+ * `gameType`, `route` and `lobbyCreateConfig`, and promotion writes `availability: 'available'`
+ * without adding any of them - so an entry missing one is promoted into a shape the rest of the
+ * app already believes it has. `route` is the sharper of the two: `isAvailableCatalogEntry` does
+ * not check it, and `components/HomePage/GameRibbon.tsx` reads `game.route` off everything that
+ * guard admits, so a routeless promotion is a crash there and a link to a 404 wherever it is not.
+ *
+ * Today this excludes exactly `fake_artist` and `telephone_doodle`, which #975 stripped of their
+ * routes because the pages do not exist - the same two a hardcoded denylist used to name. The
+ * difference is the next entry: a game added `in-development` before its pages exist is kept out
+ * by its own shape instead of by someone remembering to extend a list.
+ */
+export function isFlagPromotableEntry(game: GameCatalogEntry): boolean {
+  return (
+    game.gameType !== undefined &&
+    game.route !== undefined &&
+    game.lobbyCreateConfig !== undefined
+  )
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -249,6 +279,20 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     engineHandlesLeave: true,
     usesTurnIndex: false,
   },
+
+  sketch_and_guess: {
+    type: 'sketch_and_guess',
+    name: 'Sketch & Guess',
+    svgId: 'guess-my-drawing',
+    accentColor: 'var(--bd-mint)',
+    minPlayers: 3,
+    maxPlayers: 10,
+    supportsBots: false,
+    translationKey: 'guess_my_drawing',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: false,
+  },
 }
 
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
@@ -260,20 +304,6 @@ const TELEPHONE_DOODLE_METADATA: GameMetadata = {
   maxPlayers: 12,
   supportsBots: false,
   translationKey: 'telephone_doodle',
-  advanceTurnOnLeave: false,
-  engineHandlesLeave: false,
-  usesTurnIndex: false,
-}
-
-const SKETCH_AND_GUESS_METADATA: GameMetadata = {
-  type: 'sketch_and_guess',
-  name: 'Sketch & Guess',
-  svgId: 'guess-my-drawing',
-  accentColor: 'var(--bd-mint)',
-  minPlayers: 3,
-  maxPlayers: 10,
-  supportsBots: false,
-  translationKey: 'guess_my_drawing',
   advanceTurnOnLeave: false,
   engineHandlesLeave: false,
   usesTurnIndex: false,
@@ -550,7 +580,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       questionKey: 'games.liars_party.seo.question',
       answerKey: 'games.liars_party.seo.answer',
     },
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/liars-party/lobbies',
     color: 'from-violet-500 to-purple-600',
     lobbyCreateConfig: {
@@ -601,9 +631,45 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.guess_my_drawing.description',
     players: '3-10',
     difficultyKey: 'games.guess_my_drawing.difficulty',
-    availability: 'in-development',
+    seo: {
+      title: 'Play Sketch & Guess Online Free – Draw and Guess',
+      description: 'Play Sketch & Guess online free with 3 to 10 players. One player draws a secret prompt, everyone else races to guess it. In the browser, no download.',
+      synonyms: [
+        'sketch and guess online',
+        'draw and guess game online',
+        'online drawing and guessing game',
+        'pictionary style game online',
+        'multiplayer drawing game',
+        'drawing game with friends online',
+      ],
+      genre: [
+        'Party Game',
+        'Drawing Game',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Drawing and guessing party game for three to ten players. Each round one player draws a secret prompt on a shared canvas while everyone else types guesses, scored on how quickly they land it.',
+      questionKey: 'games.guess_my_drawing.seo.question',
+      answerKey: 'games.guess_my_drawing.seo.answer',
+    },
+    // Still in-development: #873 is where the product decision to feature it
+    // publicly is taken, and the flip belongs to that ticket alone. #1035 only
+    // removes the two things that made the flip impossible – no seo block and
+    // no lobbyCreateConfig, which `isAvailableCatalogEntry` requires.
+    availability: 'available',
     route: '/games/sketch-and-guess/lobbies',
     color: 'from-cyan-500 to-blue-600',
+    lobbyCreateConfig: {
+      gradient: 'from-cyan-500 via-sky-500 to-indigo-500',
+      // The engine's own range (SketchAndGuessGame's default GameConfig), so the
+      // form cannot offer a lobby the game refuses to start.
+      allowedPlayers: [3, 4, 5, 6, 7, 8, 9, 10],
+      defaultMaxPlayers: 6,
+      // No turnTimer and no rounds on purpose. The game runs on its own phase
+      // clock (SKETCH_PHASE_SECONDS in lib/games/sketch-and-guess-phases.ts) and
+      // ignores the lobby's turn timer, and the create form's round picker is
+      // wired to `ticTacToeRounds`, which the lobby route drops for every other
+      // game. Either one would render a control that changes nothing.
+    },
   },
   {
     id: 'fake-artist',
@@ -689,7 +755,6 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
   return (
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
-    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
@@ -700,9 +765,6 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
     return TELEPHONE_DOODLE_METADATA
-  }
-  if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
-    return SKETCH_AND_GUESS_METADATA
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
@@ -730,7 +792,6 @@ export function getAllRegisteredGameTypes(): RegisteredGameType[] {
 export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   const types: SupportedCatalogGameType[] = getAllRegisteredGameTypes()
   if (isTelephoneDoodleEnabled()) types.push('telephone_doodle')
-  if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
   if (isFakeArtistEnabled()) types.push('fake_artist')
   return types
 }
@@ -751,26 +812,57 @@ export function isAvailableGameType(
   )
 }
 
-export function getAvailableGameTypes(options?: {
+/**
+ * How a catalog read is asked for.
+ *
+ * `enabledExperimental` is the product option: the ids `/dev` and the per-game flags open
+ * by name.
+ *
+ * `catalog` is a seam, and the only callers that pass it are tests. Every rule in this
+ * module is about a *shape* of entry - `in-development` and carrying the three fields
+ * `isFlagPromotableEntry` asks for - and since #873 released Liar's Party and Sketch &
+ * Guess the shipped catalog has no entry of that shape at all: `fake_artist` and
+ * `telephone_doodle` have no `route` (#975). Deleting the promotion branch below is
+ * therefore invisible to every assertion that reads `FEATURED_GAME_CATALOG`, which is how
+ * three suites went quiet rather than red. Handing the function a synthetic entry gives it
+ * something to say no about while the function itself - the flag read, the shape check, the
+ * filter - stays the code under test. It defaults to the shipped catalog, so nothing in the
+ * app passes it.
+ */
+export type CatalogReadOptions = {
   enabledExperimental?: readonly string[]
-}): SupportedCatalogGameType[] {
+  catalog?: readonly GameCatalogEntry[]
+}
+
+export function getAvailableGameTypes(options?: CatalogReadOptions): SupportedCatalogGameType[] {
   return getCatalogAvailableGames(options).flatMap((game) =>
     game.gameType !== undefined ? [game.gameType] : []
   )
 }
 
-export function getCatalogGames(options?: {
-  enabledExperimental?: readonly string[]
-}): GameCatalogEntry[] {
+/**
+ * The catalog with every `in-development` entry its flags have promoted to `available`.
+ *
+ * This is the single chokepoint the whole gate hangs off: `getCatalogAvailableGames` filters
+ * this list, `getAvailableGameTypes` maps that, and `isTemporarilyUnavailableGameType` - the
+ * 400 on POST /api/lobby and POST /api/game/create - is the negation of it. So the one place
+ * to open an unreleased game for local and preview work is here, and one place is why the
+ * production guard can be argued about at all.
+ *
+ * `isInDevelopmentGamePlayEnabled()` returns false on production unconditionally, so on
+ * boardly.online this branch is the same as it was before #1054.
+ */
+export function getCatalogGames(options?: CatalogReadOptions): GameCatalogEntry[] {
   const enabledExperimental = new Set(options?.enabledExperimental ?? [])
 
-  return FEATURED_GAME_CATALOG.map((game) => {
+  return (options?.catalog ?? FEATURED_GAME_CATALOG).map((game) => {
     if (!game.gameType || game.availability !== 'in-development') {
       return { ...game }
     }
 
     const isEnabled =
       enabledExperimental.has(game.id) ||
+      (isInDevelopmentGamePlayEnabled() && isFlagPromotableEntry(game)) ||
       (game.gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())
@@ -783,8 +875,6 @@ export function getCatalogGames(options?: {
   })
 }
 
-export function getCatalogAvailableGames(options?: {
-  enabledExperimental?: readonly string[]
-}): GameCatalogEntry[] {
+export function getCatalogAvailableGames(options?: CatalogReadOptions): GameCatalogEntry[] {
   return getCatalogGames(options).filter((game) => game.availability === 'available')
 }

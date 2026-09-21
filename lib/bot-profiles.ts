@@ -48,6 +48,16 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Bluff Tactician',
     hard: 'Deception Master',
   },
+  // Sketch & Guess has supportsBots: false and always will – a canned-phrase
+  // opponent cannot draw or read a drawing. The names are here because the
+  // record is keyed by RegisteredGameType and #1035 registered the game, the
+  // same reason guess_the_spy, alias and liars_party carry entries. Nothing
+  // reaches them: /api/lobby/[code]/add-bot refuses on hasBotSupport first.
+  sketch_and_guess: {
+    easy: 'Sketch Rookie',
+    medium: 'Line Tactician',
+    hard: 'Ink Master',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {

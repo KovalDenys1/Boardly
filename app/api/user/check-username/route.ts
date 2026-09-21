@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { ValidationError, withErrorHandler } from '@/lib/error-handler'
+import { insensitiveEquals, sameName } from '@/lib/username-match'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('GET /api/user/check-username')
@@ -44,20 +45,35 @@ async function checkUsernameHandler(req: NextRequest) {
     )
   }
 
-  // Check if username exists (case-insensitive)
-  const existingUser = await prisma.users.findFirst({
+  // Check if username exists (case-insensitive).
+  //
+  // Guest rows are excluded on purpose (#1050). A guest display name is not an
+  // account, and both writers that take a username - POST /api/auth/register and
+  // PATCH /api/user/profile - now rename the guest out of the way rather than
+  // refuse. Reporting a guest-held name as taken here would leave this endpoint
+  // telling a visitor to pick something else while registration would have
+  // accepted it, and since #1047 raised guest retention from 3 days to 90 that
+  // wrong answer would stand for a quarter of a year.
+  //
+  // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to an
+  // unescaped ILIKE and the `_` this endpoint's own validation allows two lines
+  // up was therefore a wildcard. "new_user" matched the account "newXuser", and
+  // this is the endpoint the register form polls - so the form told a visitor to
+  // pick another name while registration would have taken the one they typed,
+  // which is the whole of #1055's first finding. `findMany` and an exact compare
+  // rather than `findFirst`: the filter narrows, the comparison decides.
+  const candidates = await prisma.users.findMany({
     where: {
-      username: {
-        equals: username,
-        mode: 'insensitive',
-      },
+      username: insensitiveEquals(username),
+      isGuest: false,
     },
     select: {
       id: true,
+      username: true,
     },
   })
 
-  const isAvailable = !existingUser
+  const isAvailable = !candidates.some((user) => sameName(user.username, username))
 
   // Generate suggestions if username is taken
   let suggestions: string[] = []
@@ -116,8 +132,10 @@ async function generateUsernameSuggestions(baseUsername: string): Promise<string
   // `mode: 'insensitive'` is only reliably applied to prefix/equality filters.
   // Bounded so a very common prefix can't return an unbounded result set; if it
   // truncates, the worst case is suggesting a name that turns out to be taken.
+  // Guests excluded for the same reason as the availability check above: a name a
+  // guest is holding is one a signup can still take, so suggesting it is correct.
   const taken = await prisma.users.findMany({
-    where: { username: { startsWith: baseUsername, mode: 'insensitive' } },
+    where: { username: { startsWith: baseUsername, mode: 'insensitive' }, isGuest: false },
     select: { username: true },
     take: 1000,
   })

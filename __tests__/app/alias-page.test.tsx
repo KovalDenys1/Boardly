@@ -101,6 +101,15 @@ jest.mock('@/lib/lobby-realtime-topic-client', () => ({
   fetchLobbyTopic: jest.fn(async (code: string) => `lobby:${code}:test-secret`),
 }))
 
+// The mobile/desktop split is the shared hook, and in jsdom it answers false
+// forever - matchMedia reports no match at the 1024px default width. #905 put
+// both turn screens behind a tab strip that only exists on a phone, so a test
+// that cannot set this covers the desktop layout only.
+let mockIsMobileViewport = false
+jest.mock('@/hooks/useIsMobileViewport', () => ({
+  useIsMobileViewport: () => mockIsMobileViewport,
+}))
+
 jest.mock('@/lib/supabase-client', () => ({
   getSupabaseClient: jest.fn(() => ({
     channel: jest.fn(() => mockChannel),
@@ -261,7 +270,7 @@ describe('AliasLobbyPage turn timer with an already-expired turn (#770)', () => 
     base.activeGame.state.data.phase = 'turn_active'
     // Turn started well beyond the 60s turnTimer → first tick computes r === 0
     base.activeGame.state.data.turnStartedAt = Date.now() - 10 * 60 * 1000
-    base.activeGame.state.data.currentCard = { word: 'apple', taboo: [] }
+    base.activeGame.state.data.currentCard = ['apple', 'pear']
     base.activeGame.state.data.teams[0].playerIds = ['user-1', 'user-2']
     base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
     base.activeGame.state.players = [
@@ -320,7 +329,7 @@ describe('AliasLobbyPage turn timeout resync (#1009)', () => {
     // Expired well past the 60s turnTimer, and every answer carries the same
     // turnStartedAt: the server is refusing the fallback every time.
     base.activeGame.state.data.turnStartedAt = stuckTurnStartedAt
-    base.activeGame.state.data.currentCard = { word: 'apple', taboo: [] }
+    base.activeGame.state.data.currentCard = ['apple', 'pear']
     base.activeGame.state.data.teams[0].playerIds = ['user-1', 'user-2']
     base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
     base.activeGame.state.players = [
@@ -409,5 +418,171 @@ describe('AliasLobbyPage turn timeout resync (#1009)', () => {
     })
     await flushPendingWork()
     expect(lobbyGetCount()).toBe(afterGivingUp)
+  })
+})
+
+describe('AliasLobbyPage in-game chrome (#905)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  /**
+   * A turn in progress, with the seats shaped the way the API really returns
+   * them: a guest Players row carries `name: null` and its display name on the
+   * joined user row. Alias read only `name`, which is why the turn line said
+   * " is describing for Team 1" against a real lobby.
+   */
+  function buildTurnResponse({ meDescribing }: { meDescribing: boolean }) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    base.activeGame.state.data.turnStartedAt = Date.now()
+    base.activeGame.state.data.currentCard = ['apple', 'pear']
+    base.activeGame.state.data.teams[0].playerIds = meDescribing
+      ? ['user-1', 'user-2']
+      : ['user-2', 'user-1']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    base.activeGame.players = [
+      { id: 'player-1', userId: 'user-1', name: null, user: { username: 'Alice' } },
+      { id: 'player-2', userId: 'user-2', name: null, user: { username: 'Bob' } },
+      { id: 'player-3', userId: 'user-3', name: null, user: { username: 'Carol' } },
+      { id: 'player-4', userId: 'user-4', name: null, user: { username: 'Dave' } },
+    ]
+    return base
+  }
+
+  function mountWith(response: ReturnType<typeof buildTurnResponse>) {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+    return render(<AliasLobbyPage code="ABCD" />)
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  it('puts Leave in the scoreboard header, not at the bottom of the screen', async () => {
+    const { container } = mountWith(buildTurnResponse({ meDescribing: true }))
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    // The shared control, in the shared place: GameScoreboardHeader's right
+    // cell is where every other game's Leave lives (layout DoD 2026-09-06).
+    const leave = container.querySelector('.game-scoreboard-cell--right .game-leave-button')
+    expect(leave).toBeTruthy()
+
+    // ...and the old text link under the board is gone.
+    expect(screen.queryByText('lobby.game.leaveGame')).toBeNull()
+  })
+
+  it('names the describer from the user row when the Players row has no name', async () => {
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    // t() is mocked to echo `key:{"...options"}`, so the interpolation values
+    // are visible in the rendered text.
+    const line = screen.getByText(/alias\.describerTurnLine/)
+    expect(line.textContent).toContain('"name":"Bob"')
+    expect(line.textContent).toContain('"team":"Team 1"')
+  })
+
+  it('keeps the guess feed reachable on the describer screen', async () => {
+    mountWith(buildTurnResponse({ meDescribing: true }))
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+    expect(screen.getByText('alias.guesses')).toBeTruthy()
+  })
+})
+
+describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  function buildTurnResponse({ meDescribing }: { meDescribing: boolean }) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    base.activeGame.state.data.turnStartedAt = Date.now()
+    base.activeGame.state.data.currentCard = ['apple', 'pear']
+    base.activeGame.state.data.teams[0].playerIds = meDescribing
+      ? ['user-1', 'user-2']
+      : ['user-2', 'user-1']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    return base
+  }
+
+  function mountWith(response: ReturnType<typeof buildTurnResponse>) {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+    return render(<AliasLobbyPage code="ABCD" />)
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockIsMobileViewport = true
+  })
+
+  afterEach(() => {
+    mockIsMobileViewport = false
+  })
+
+  /**
+   * The guesser's only action in Alias is typing the guess, and on a phone the
+   * chat is mounted on one tab and absent from the other - a conditional
+   * render, not display:none. #905 defaulted both roles to the word tab, which
+   * left the guesser looking at "Listen up - type your guess in the chat" with
+   * no input anywhere in the document. The tab now follows the role.
+   */
+  it('gives the guesser the guess input on the tab they land on', async () => {
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    expect(screen.getByPlaceholderText('alias.guessPlaceholder')).toBeTruthy()
+  })
+
+  it('leaves the describer on the word card, with the feed one tap away', async () => {
+    mountWith(buildTurnResponse({ meDescribing: true }))
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    // The describer acts on the word, so the card and Correct/Skip are the
+    // landing tab and the read-only feed is behind the other one.
+    expect(screen.getByText('apple')).toBeTruthy()
+    const wordTab = screen.getByRole('button', { name: 'game.ui.tabBoard' })
+    const guessesTab = screen.getByRole('button', { name: 'alias.guesses' })
+    expect(wordTab.className).toContain('game-tab-active')
+    expect(guessesTab.className).not.toContain('game-tab-active')
+
+    // ...and tapping the other tab still works, for the turn it was tapped on.
+    await act(async () => {
+      guessesTab.click()
+    })
+    expect(screen.getByRole('button', { name: 'alias.guesses' }).className).toContain('game-tab-active')
+    expect(screen.getByRole('button', { name: 'game.ui.tabBoard' }).className).not.toContain('game-tab-active')
+  })
+
+  /**
+   * A tab that outlives the turn it was tapped on is the other half of this:
+   * a describer who read the feed came back next turn to a screen with the
+   * word card under display:none and nothing to act on. The tap is scoped to
+   * the turn, so a new turn lands on the role's own tab again.
+   */
+  it('drops a tapped tab when the next turn starts', async () => {
+    const first = buildTurnResponse({ meDescribing: true })
+    mountWith(first)
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'alias.guesses' }).click()
+    })
+    expect(screen.getByRole('button', { name: 'alias.guesses' }).className).toContain('game-tab-active')
+
+    const nextTurn = buildTurnResponse({ meDescribing: true })
+    nextTurn.activeGame.state.data.turnStartedAt = Number(first.activeGame.state.data.turnStartedAt) + 90_000
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => nextTurn } as Response)
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: {} })
+    })
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'game.ui.tabBoard' }).className).toContain('game-tab-active')
+    )
+    expect(screen.getByRole('button', { name: 'alias.guesses' }).className).not.toContain('game-tab-active')
   })
 })

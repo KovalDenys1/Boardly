@@ -2,8 +2,19 @@
  * Unit tests for guest helper functions
  */
 
-import { getOrCreateGuestUser, cleanupOldGuests, guestNameSuffix } from '@/lib/guest-helpers'
+import * as guestHelpers from '@/lib/guest-helpers'
+import {
+    getOrCreateGuestUser,
+    guestNameSuffix,
+    releaseGuestUsername,
+    restoreGuestUsername,
+} from '@/lib/guest-helpers'
 import { prisma } from '@/lib/db'
+
+// createGuestId() in lib/guest-auth.ts mints `guest-<uuid>`, so that is the shape
+// every guest row's primary key really has - and the shape guestNameSuffix has to
+// cope with.
+const GUEST_ID = 'guest-8f14e45f-ceea-467a-9a3b-1c2d3e4f5a6b'
 
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
@@ -231,7 +242,6 @@ describe('Guest Helpers', () => {
     // every guest, because createGuestId returns `guest-<uuid>` and the old
     // suffix was guestId.slice(0, 6) - the constant prefix "guest-".
     describe('guestNameSuffix', () => {
-        const GUEST_ID = 'guest-8f14e45f-ceea-467a-9a3b-1c2d3e4f5a6b'
         const OTHER_GUEST_ID = 'guest-2c1a7b90-4d55-4e0f-8b71-0a9c8d7e6f54'
 
         it('draws the suffix from the random part of the id, not the prefix', () => {
@@ -251,31 +261,130 @@ describe('Guest Helpers', () => {
         })
     })
 
-    describe('cleanupOldGuests', () => {
-        it('should delete guests inactive for more than 24 hours', async () => {
-            const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    // #1051. This module used to export a second cleanupOldGuests() that deleted
+    // every guest idle for 24 hours with no relation filter - no 3-day window for
+    // never-played guests, no 90-day window for guests who had played. It was
+    // dead code, but one import away from undoing #1047 within a day, and lib/ is
+    // where a route author looks first. The policy now lives only in
+    // scripts/cleanup-old-guests.ts, which both cron routes already import.
+    describe('guest cleanup policy', () => {
+        it('exports no cleanup entry point of its own', () => {
+            const exported = Object.keys(guestHelpers)
 
-                ; (prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 5 })
+            expect(exported).not.toContain('cleanupOldGuests')
+            expect(exported.filter((name) => /cleanup|purge|delete/i.test(name))).toEqual([])
+        })
+    })
 
-            const count = await cleanupOldGuests()
+    // #1050. Users.username is @unique, so a guest holding "Denys" blocked that
+    // signup outright - and since #1047 a guest who has played is kept 90 days,
+    // not 3. The guest gives the name up instead of the visitor being turned away.
+    describe('releaseGuestUsername', () => {
+        it('renames the guest and reports the name free', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys-8f14e4' })
 
-            expect(prisma.users.deleteMany).toHaveBeenCalledWith({
-                where: {
-                    isGuest: true,
-                    lastActiveAt: {
-                        lt: expect.any(Date),
-                    },
-                },
+            const freed = await releaseGuestUsername(GUEST_ID, 'Denys')
+
+            expect(freed).toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledWith({
+                where: { id: GUEST_ID },
+                data: { username: 'Denys-8f14e4' },
             })
-            expect(count).toBe(5)
         })
 
-        it('should return 0 if no guests to cleanup', async () => {
-            ; (prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 0 })
+        it('keeps the guest row and everything that identifies it', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys-8f14e4' })
 
-            const count = await cleanupOldGuests()
+            await releaseGuestUsername(GUEST_ID, 'Denys')
 
-            expect(count).toBe(0)
+            const call = (prisma.users.update as jest.Mock).mock.calls[0]?.[0]
+            expect(Object.keys(call.data)).toEqual(['username'])
+            expect(prisma.users.deleteMany).not.toHaveBeenCalled()
+        })
+
+        it('retries with a more specific name when the rename collides', async () => {
+            const conflict = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+                ; (prisma.users.update as jest.Mock)
+                    .mockRejectedValueOnce(conflict)
+                    .mockResolvedValueOnce({ id: GUEST_ID, username: 'Denys-8f14e4-0000' })
+
+            const freed = await releaseGuestUsername(GUEST_ID, 'Denys')
+
+            expect(freed).toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledTimes(2)
+            const secondName = (prisma.users.update as jest.Mock).mock.calls[1][0].data.username
+            expect(secondName).toMatch(/^Denys-8f14e4-\d{4}$/)
+        })
+
+        it('reports the name still taken when every rename collides', async () => {
+            const conflict = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+                ; (prisma.users.update as jest.Mock).mockRejectedValue(conflict)
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
+        })
+
+        it('rethrows a failure that is not a name collision', async () => {
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(new Error('connection terminated'))
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).rejects.toThrow('connection terminated')
+        })
+
+        it('handles a guest row with no display name at all', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Guest-8f14e4' })
+
+            const freed = await releaseGuestUsername(GUEST_ID, null)
+
+            expect(freed).toBe(true)
+            expect((prisma.users.update as jest.Mock).mock.calls[0][0].data.username).toBe('Guest-8f14e4')
+        })
+
+        // scripts/cleanup-old-guests.ts and /api/user/upgrade-guest both delete
+        // guest rows, so either can land between the caller's lookup and this
+        // update. The name is free afterwards, which is what the caller asked;
+        // rethrowing P2025 turned that into a 500 on a signup that should have
+        // gone through.
+        it('reports the name free when the guest row has already been deleted', async () => {
+            const missing = Object.assign(
+                new Error('An operation failed because it depends on one or more records that were required but not found.'),
+                { code: 'P2025' }
+            )
+                ; (prisma.users.update as jest.Mock).mockRejectedValue(missing)
+
+            await expect(releaseGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    // The rename cannot share a transaction with the caller's own write - an
+    // interactive Prisma transaction aborts on the first failed statement, so the
+    // P2002 retry above could not run inside one - so the caller can free the name
+    // and then lose the race for it. The guest gets its name back instead of being
+    // renamed for nothing.
+    describe('restoreGuestUsername', () => {
+        it('writes the previous display name back', async () => {
+            ; (prisma.users.update as jest.Mock).mockResolvedValue({ id: GUEST_ID, username: 'Denys' })
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(true)
+            expect(prisma.users.update).toHaveBeenCalledWith({
+                where: { id: GUEST_ID },
+                data: { username: 'Denys' },
+            })
+        })
+
+        it('reports failure rather than throwing when the winner of the race holds the name', async () => {
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(
+                Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+            )
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
+        })
+
+        it('swallows any other failure, because it runs on an error path', async () => {
+            // Throwing here would turn the caller's 409 into the 500 this exists to
+            // prevent.
+            ; (prisma.users.update as jest.Mock).mockRejectedValue(new Error('connection terminated'))
+
+            await expect(restoreGuestUsername(GUEST_ID, 'Denys')).resolves.toBe(false)
         })
     })
 })

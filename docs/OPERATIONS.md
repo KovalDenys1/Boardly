@@ -76,7 +76,7 @@ Recommended:
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side Supabase client for `broadcastToLobby`)
 - `MCP_POSTGRES_CA_CERT_PATH` (optional CA bundle path for hosted/TLS PostgreSQL used by Prisma 7 adapter and MCP scripts; not needed for local localhost PostgreSQL)
 - hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
-- `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
+- `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls). They can only make a bot **faster or equal**, never slower than the pace its executor codes for: `resolveBotUxDelayMs` caps its own result at `botUxDelayUpperBoundMs(base)`. The client's bot-turn recovery grace is derived from that same bound and runs in a browser, where these server-only variables are invisible, so a setting that outran it would put a 409 on every bot turn (#1049)
 - `OPS_ALERT_WEBHOOK_URL` (Discord webhook for reliability alerts; the payload is a Discord embed, not a Slack one)
 - `FEEDBACK_DISCORD_WEBHOOK_URL` (optional Discord webhook that mirrors `/api/feedback` submissions into the staff feedback channel)
 - `NEXT_PUBLIC_DISCORD_INVITE` (optional; the invite `/discord` redirects to, inlined at build time, falling back to the invite compiled into `lib/discord.ts`)

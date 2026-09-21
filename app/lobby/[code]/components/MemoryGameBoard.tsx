@@ -18,6 +18,7 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
+import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { sounds } from '@/lib/sounds'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -136,6 +137,11 @@ export default function MemoryGameBoard({
   const [optimisticFlippedIds, setOptimisticFlippedIds] = useState<string[]>([])
   const [mobileTab, setMobileTab] = useState<MobileTab>('board')
   const [overlayInspecting, setOverlayInspecting] = useState(false)
+  // #1052: the three layout trees below are all mounted and two are hidden with
+  // `display: none`, so the result overlay used to mount three times and the
+  // after-game block inside it reported itself three times per finished game.
+  // The overlay renders in the one tree the player can actually see.
+  const activeGameLayout = useActiveGameLayout()
   const stuckTurnRecoveryRef = useRef(createStuckTurnRecovery())
   const resolveKeyRef = useRef<string | null>(null)
 
@@ -455,15 +461,44 @@ export default function MemoryGameBoard({
     </div>
   )
 
+  // One flag for both the class and the mount, so the desktop panel can never
+  // paint without the overlay over it or - the #903 review's blocker - the
+  // overlay hang over an unpainted panel. The mobile and landscape trees mount
+  // their overlay on the whole board area rather than on this panel (#752), and
+  // that area has never painted, on this branch or before it.
+  const desktopShowsResultOverlay =
+    activeGameLayout === 'desktop' && isFinished && !overlayInspecting && !isSpectator
+
   // Shared between the mobile board tab and the phone-landscape board pane
   // (#751) — desktop keeps its own inline markup since .memory-board-panel
   // carries extra --grid-cols/--grid-rows CSS custom properties this doesn't need.
-  const renderBoardSection = (wrapClassName: string) => (
+  const renderBoardSection = (wrapClassName: string, layout: ActiveGameLayout) => (
     <>
       <div className={wrapClassName}>
-        {cardGrid}
+        <div className="ttt-board-surface">
+          {cardGrid}
+          {/* Inside the surface, not beside it: this pill is
+              `position: absolute; bottom`, so it hangs off the nearest
+              positioned ancestor, and neither the panel nor the mobile board
+              area paints (#903). The surface is the box the player can see. */}
+          {activeGameLayout === layout && isFinished && overlayInspecting && (
+            <button
+              data-testid="show-results-pill"
+              onClick={() => setOverlayInspecting(false)}
+              style={{
+                position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                background: 'rgba(31,27,22,0.75)', color: '#fff',
+                border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+                padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+              }}
+            >
+              {t('games.memory.game.showResults')}
+            </button>
+          )}
+        </div>
       </div>
-      {isFinished && !overlayInspecting && !isSpectator && (
+      {activeGameLayout === layout && isFinished && !overlayInspecting && !isSpectator && (
         <GameResultOverlay
           title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
           isDraw={isDraw}
@@ -481,20 +516,6 @@ export default function MemoryGameBoard({
           gameType="memory"
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
-      )}
-      {isFinished && overlayInspecting && (
-        <button
-          onClick={() => setOverlayInspecting(false)}
-          style={{
-            position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(31,27,22,0.75)', color: '#fff',
-            border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-            padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
-          }}
-        >
-          {t('games.memory.game.showResults')}
-        </button>
       )}
     </>
   )
@@ -737,9 +758,29 @@ export default function MemoryGameBoard({
           {statusSection}
 
           <main className="memory-layout">
-            <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
-              {cardGrid}
-              {isFinished && !overlayInspecting && !isSpectator && (
+            <section className={`memory-board-panel${desktopShowsResultOverlay ? ' memory-board-panel--result' : ''}`} style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
+              <div className="ttt-board-surface">
+                {cardGrid}
+                {/* Inside the surface, not beside it - see renderBoardSection
+                    above: the panel stopped painting in this state (#903), so
+                    on the panel the pill was drawn on bare page. */}
+                {activeGameLayout === 'desktop' && isFinished && overlayInspecting && (
+                  <button
+                    data-testid="show-results-pill"
+                    onClick={() => setOverlayInspecting(false)}
+                    style={{
+                      position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(31,27,22,0.75)', color: '#fff',
+                      border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+                      padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {t('games.memory.game.showResults')}
+                  </button>
+                )}
+              </div>
+              {desktopShowsResultOverlay && (
                 <GameResultOverlay
                   title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
                   isDraw={isDraw}
@@ -758,20 +799,6 @@ export default function MemoryGameBoard({
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}
-              {isFinished && overlayInspecting && (
-                <button
-                  onClick={() => setOverlayInspecting(false)}
-                  style={{
-                    position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(31,27,22,0.75)', color: '#fff',
-                    border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-                    padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    zIndex: 5, backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {t('games.memory.game.showResults')}
-                </button>
-              )}
             </section>
 
             <aside className="memory-side-stack">
@@ -785,7 +812,7 @@ export default function MemoryGameBoard({
       {/* ── Phone landscape (#751) ─────────────────────── */}
       <div className="game-landscape-layout">
         <div className="game-landscape-board memory-landscape-board">
-          {renderBoardSection('memory-mobile-board-wrap')}
+          {renderBoardSection('memory-mobile-board-wrap', 'landscape')}
         </div>
         <div className="game-landscape-side">
           {compactHeaderSection}
@@ -823,7 +850,7 @@ export default function MemoryGameBoard({
             // wrap) so the result modal covers the whole tab, not just the
             // grid — on small grids the modal used to shrink with it (#752).
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', position: 'relative' }}>
-              {renderBoardSection('memory-mobile-board-wrap')}
+              {renderBoardSection('memory-mobile-board-wrap', 'mobile')}
             </div>
           )}
 

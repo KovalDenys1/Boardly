@@ -74,7 +74,7 @@ to a different realtime topic than the server broadcasts to, or a message whose
 body never arrives. Neither raises an error anywhere — the lobby just goes
 quiet.
 
-Three tests, each standing in for a check that used to be done by hand:
+Each of these stands in for a check that used to be done by hand:
 
 | Test | Replaces |
 |---|---|
@@ -85,8 +85,43 @@ Three tests, each standing in for a check that used to be done by hand:
 | `spectator.spec.ts` — a lobby with spectators disabled gives out no topic | — |
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
 | `rps.spec.ts` — two players pick, both see the reveal, the host holds the rematch | a Rock Paper Scissors match between two humans (#870) |
+| `sketch-and-guess.spec.ts` – a drawing is submitted and the room is asked to guess | a three-handed Sketch & Guess round (#1037) |
+| `liars-party.spec.ts` – a claim is made and the room is asked to vote | a four-handed Liar's Party round (#1042) |
 
 These found #852, both halves of #854, and #862 — where the test written to guard #845 showed that #845 had broken spectating an hour after shipping.
+
+## Games that are not released yet
+
+`sketch-and-guess.spec.ts` and `liars-party.spec.ts` drive games the catalog
+still marks `in-development`, so they need **both** halves of the #1054 flag:
+
+```
+ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true npm run test:e2e
+```
+
+or the same two lines in `.env.local`, which is what a dev server adopted by
+`reuseExistingServer` will have read. Without them the run stops in
+`createGuestLobby` on `400 {"error":"Game type is coming soon"}`; with only the
+server half it gets further and no picker in the browser lists the game. The
+flag is dead on production whatever the variable says, so this cannot change
+what a release run sees.
+
+#1054 is what made `liars-party.spec.ts` possible; it is not what made
+`sketch-and-guess.spec.ts` possible. Sketch & Guess has carried its own release
+flag since it was built, and `getCatalogGames` reads it on a branch of its own
+(`lib/game-catalog.ts`), so that spec also runs on:
+
+```
+ENABLE_SKETCH_AND_GUESS=true NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS=true npm run test:e2e
+```
+
+Liar's Party has no per-game flag, so for it the #1054 pair is the only way in -
+run that pair and both specs are covered.
+
+These two are also the reason `createGuestLobby` takes a `hostRole`. One creator
+may hold one lobby whose game is `waiting` or `playing`, and neither test plays
+its game to a finish, so both ask for a cached identity of their own instead of
+the shared `host`.
 
 ## How they are built
 

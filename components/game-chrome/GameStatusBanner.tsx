@@ -29,10 +29,31 @@ export interface GameStatusBannerProps {
   isSpectator?: boolean
   /** Whether the viewer is the acting player — drives the idle nudge below. */
   isYourTurn?: boolean
+  /**
+   * False for a phase that has no deadline (#905: Guess the Spy's role reveal
+   * and results). With `secs` and `turnTimerLimit` both 0 the banner would
+   * otherwise print a stopped `:00` over a full bar, which reads as "time is
+   * up" on a phase that is simply untimed. The bar and the clock go; the line
+   * and its meta stay.
+   */
+  showTimer?: boolean
 }
 
 /** Single danger threshold for every game (was 5s in TTT/C4, 10s in Memory). */
 const DANGER_SECONDS = 10
+
+/**
+ * `:07` for a turn timer, `4:51` once there are minutes on the clock.
+ *
+ * Every adopter until #905 ran a 30-120s turn timer, so two digits after a
+ * colon was the whole format. Guess the Spy's question round is 300 seconds and
+ * printed `:291`.
+ */
+function formatSeconds(secs: number): string {
+  const safe = Math.max(0, Math.floor(secs))
+  if (safe < 100) return `:${String(safe).padStart(2, '0')}`
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
+}
 
 /**
  * How long the acting player may sit on their turn before the banner says so.
@@ -56,6 +77,7 @@ export default function GameStatusBanner({
   leadingIcon,
   isSpectator = false,
   isYourTurn = false,
+  showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
 
@@ -100,7 +122,7 @@ export default function GameStatusBanner({
   // secs counts down, so elapsed is what the timer has already spent. With no
   // timer configured there is nothing to measure against, so no nudge.
   const elapsed = turnTimerLimit > 0 ? turnTimerLimit - secs : 0
-  const showIdleNudge = isYourTurn && turnTimerLimit > 0 && elapsed >= IDLE_NUDGE_SECONDS
+  const showIdleNudge = showTimer && isYourTurn && turnTimerLimit > 0 && elapsed >= IDLE_NUDGE_SECONDS
   return (
     <>
     <div style={{
@@ -116,20 +138,24 @@ export default function GameStatusBanner({
             <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{meta}</span>
           )}
         </div>
-        <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', width: pct + '%',
-            background: danger ? 'var(--bd-coral)' : barColor,
-            transition: 'width 1s linear, background 0.2s',
-          }} />
+        {showTimer && (
+          <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: pct + '%',
+              background: danger ? 'var(--bd-coral)' : barColor,
+              transition: 'width 1s linear, background 0.2s',
+            }} />
+          </div>
+        )}
+      </div>
+      {showTimer && (
+        <div style={{
+          fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
+          color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+        }}>
+          {formatSeconds(secs)}
         </div>
-      </div>
-      <div style={{
-        fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-        color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
-      }}>
-        :{String(secs).padStart(2, '0')}
-      </div>
+      )}
       </div>
       {showIdleNudge && (
         <div style={{

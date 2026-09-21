@@ -334,6 +334,14 @@ export default function GameRibbon() {
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),
     },
+    'liars-party': {
+      name: t('games.liars_party.name'),
+      tag: t('games.liars_party.ribbon.tag'),
+      players: '4-12',
+      time: t('games.liars_party.ribbon.time'),
+      diff: t('games.liars_party.difficulty'),
+      desc: t('games.liars_party.ribbon.desc'),
+    },
     rps: {
       name: t('games.rock_paper_scissors.name'),
       tag: t('games.rock_paper_scissors.ribbon.tag'),
@@ -341,6 +349,17 @@ export default function GameRibbon() {
       time: t('games.rock_paper_scissors.ribbon.time'),
       diff: t('games.rock_paper_scissors.difficulty'),
       desc: t('games.rock_paper_scissors.ribbon.desc'),
+    },
+    // Ready before the game is featured (#1035): the fallback below fills tag,
+    // time and desc with empty strings, so the card this game gets the moment
+    // #873 flips it would otherwise have three blank lines in it.
+    'guess-my-drawing': {
+      name: t('games.guess_my_drawing.name'),
+      tag: t('games.guess_my_drawing.ribbon.tag'),
+      players: '3-10',
+      time: t('games.guess_my_drawing.ribbon.time'),
+      diff: t('games.guess_my_drawing.difficulty'),
+      desc: t('games.guess_my_drawing.ribbon.desc'),
     },
   }
 
@@ -430,7 +449,7 @@ export default function GameRibbon() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
         {cards.map((g) => (
           <GameCard key={g.name} {...g} />
         ))}
