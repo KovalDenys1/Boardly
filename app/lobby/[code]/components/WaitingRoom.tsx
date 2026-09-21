@@ -139,7 +139,7 @@ export default function WaitingRoom({
               )}
               {isBot && (
                 <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  AI
+                  {t('game.ui.aiBadge')}
                 </span>
               )}
               {isBot && difficultyLabel && (
@@ -154,7 +154,7 @@ export default function WaitingRoom({
               <button
                 onClick={() => onKickBot(p.id)}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
-                title="Remove bot"
+                title={t('game.ui.removeBot')}
               >
                 <Icon name="close" size={14} />
               </button>

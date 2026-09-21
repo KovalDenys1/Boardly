@@ -1824,7 +1824,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div className="bd-page page-shell flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" />
-          <p className="text-bd-ink-muted">Loading session...</p>
+          <p className="text-bd-ink-muted">{t('lobby.loadingSession')}</p>
         </div>
       </div>
     )
@@ -1849,16 +1849,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             className="mb-3 text-2xl font-extrabold text-bd-ink"
             style={{ fontFamily: 'var(--bd-font-display)' }}
           >
-            Lobby Not Found
+            {t('lobby.notFoundTitle')}
           </h1>
           <p className="mb-6 text-sm text-bd-ink-soft">
-            The lobby you're looking for doesn't exist or has been closed.
+            {t('lobby.notFoundDescription')}
           </p>
           <button
             onClick={() => router.push('/games')}
             className="bd-btn bd-btn-primary mx-auto"
           >
-            Back to Games
+            {t('lobby.backToGames')}
           </button>
         </div>
       </div>
@@ -2171,7 +2171,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onClick={() => router.push(`/lobby/${code}/spectate`)}
                   className="shrink-0 rounded-xl border-2 border-bd-ink bg-[var(--bd-bg2)] px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
                 >
-                  Open spectator view →
+                  {t('lobby.spectatingOpenView')}
                 </button>
               )}
             </div>
@@ -2569,12 +2569,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
               <div className="w-full max-w-2xl bg-[var(--bd-bg2)] border border-[var(--bd-line)] rounded-2xl p-8 text-center">
-                <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">Game Started</h2>
+                <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">{t('lobby.gameStartedTitle')}</h2>
+                {/* The game type is interpolated into the sentence rather than
+                    wrapped in its own <code> chip: every locale needs to place
+                    it itself, and splitting the sentence around the chip would
+                    fix English word order for all four. */}
                 <p className="text-bd-ink-soft">
-                  The game type <code className="rounded bg-[var(--bd-bg)] px-2 py-0.5 text-bd-ink">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
+                  {t('lobby.gameTypeActive', { gameType: String(lobby?.gameType || DEFAULT_GAME_TYPE) })}
                 </p>
                 <p className="mt-2 text-sm text-white/50">
-                  This lobby view currently has no dedicated in-game renderer for it.
+                  {t('lobby.noDedicatedRenderer')}
                 </p>
               </div>
             </div>
