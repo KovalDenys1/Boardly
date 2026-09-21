@@ -5,6 +5,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { withErrorHandler, AuthenticationError, assertExists } from '@/lib/error-handler'
 import { apiLogger } from '@/lib/logger'
 import { loginSchema } from '@/lib/validation/auth'
+import { insensitiveEquals } from '@/lib/username-match'
 
 // NOTE: the web app does NOT use this route — it signs in via
 // signIn('credentials'), which NextAuth handles in app/api/auth/[...nextauth].
@@ -28,12 +29,13 @@ async function loginHandler(request: NextRequest) {
   log.info('Login attempt', { email })
 
   // Find user
+  // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to an
+  // unescaped ILIKE, so an address carrying `_` or `%` was a pattern and this
+  // lookup could answer with a different account's row - which here reads as
+  // "Invalid credentials" for a correct password (#1055).
   const user = await prisma.users.findFirst({
     where: {
-      email: {
-        equals: email,
-        mode: 'insensitive',
-      },
+      email: insensitiveEquals(email),
     },
   })
 

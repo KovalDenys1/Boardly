@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
     //
     // `insensitiveEquals` rather than a bare `equals` + `mode`: that pair compiles
     // to an unescaped ILIKE, where the `_` a username may contain is a wildcard
-    // (#1055). The rows are still narrowed by hand below, which is what actually
-    // decides - see lib/username-match.ts for why it is split that way.
+    // (#1055). The rows are still compared by hand below - the filter decides
+    // what the database may return, the comparison decides which of those rows
+    // answers the question, and lib/username-match.ts has what neither half
+    // covers.
     const conflicts = await prisma.users.findMany({
       where: {
         OR: [

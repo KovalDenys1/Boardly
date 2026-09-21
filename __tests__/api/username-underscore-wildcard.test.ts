@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 /**
- * #1055, first finding - a free username can be refused.
+ * #1055, first finding - a free username or address can be refused.
  *
  * Prisma's `equals` with `mode: 'insensitive'` compiles to `ILIKE <value>` and
  * passes the value through unescaped, so the LIKE metacharacters in it stay
@@ -19,12 +19,35 @@
  * on 2026-09-21 with two real rows, `probe_1055_zz` and `probeX1055Xzz`:
  * `equals: 'probe_1055_zz', mode: 'insensitive'` returned both of them, and
  * escaping the underscores returned only the first.
+ *
+ * Every test here fails against origin/develop. Three groups, one per thing the
+ * fix is made of:
+ *
+ * 1. The four routes, against a database that honours the escaping - the answers
+ *    the product gives. Each case asserts the free name is offered *and* that a
+ *    name really held is still refused, in one test, because a "still refuses"
+ *    test on its own passes on develop too (develop refuses everything) and
+ *    would pad the suite with a guard that cannot fail for this change.
+ *
+ * 2. The same routes with `driverHonoursEscapes` off: a driver that drops the
+ *    escaping and applies the raw pattern. That is not hypothetical - it is what
+ *    these routes did before this branch, and what they do again if the escaping
+ *    stops reaching the database. `sameName` is the step that keeps the answer
+ *    right there, so that is the condition it is tested under.
+ *
+ * 3. `escapeLikeValue` itself, through an independent implementation of LIKE.
+ *
+ * What none of this can check is that Prisma still compiles the filter to a
+ * pattern at all - see the note in lib/username-match.ts, which carries the
+ * queries to re-run against a real database on an upgrade.
  */
 
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
+import { escapeLikeValue } from '@/lib/username-match'
 import { GET as checkUsername } from '@/app/api/user/check-username/route'
+import { GET as checkEmail } from '@/app/api/user/check-email/route'
 import { PATCH as patchProfile } from '@/app/api/user/profile/route'
 
 jest.mock('next-auth', () => ({
@@ -110,6 +133,17 @@ const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 
 /**
+ * Whether the fake database honours a `\` escape in the pattern it is given.
+ *
+ * True is Postgres. False is a driver that drops the escaping on its way to the
+ * database - the state these routes were in before this branch, and the state
+ * they return to if the escape is ever neutered, forgotten at a call site, or
+ * escaped a second time by Prisma itself. The routes have to answer correctly
+ * either way, and that is `sameName`'s job.
+ */
+let driverHonoursEscapes = true
+
+/**
  * Postgres `ILIKE`, as the database applies it: `_` matches one character, `%`
  * matches any run, a backslash escapes the next character, and the comparison
  * ignores case. Written out rather than imported from anywhere in `lib/` so the
@@ -123,6 +157,12 @@ function ilike(value: unknown, pattern: string): boolean {
     const character = pattern[index]
 
     if (character === '\\') {
+      if (!driverHonoursEscapes) {
+        // The escape never reaches the database: the character it was protecting
+        // is read as a metacharacter again.
+        continue
+      }
+
       const escaped = pattern[index + 1]
       index++
       source += escaped === undefined ? '\\\\' : escaped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -208,63 +248,93 @@ const account = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-describe('GET /api/user/check-username', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-    rows = []
-    installFakeDatabase()
-  })
+function resetDatabase() {
+  jest.clearAllMocks()
+  rows = []
+  driverHonoursEscapes = true
+  installFakeDatabase()
+}
 
-  function check(username: string) {
-    return checkUsername(
+describe('GET /api/user/check-username', () => {
+  beforeEach(resetDatabase)
+
+  async function available(username: string) {
+    const response = await checkUsername(
       new NextRequest(`http://localhost:3000/api/user/check-username?username=${username}`)
     )
+    return (await response.json()).available
   }
 
   // The register form polls this endpoint, so a wrong answer here is the visible
   // half of the bug: the form refuses a name registration would have accepted.
-  it('offers a name that only matches an account through the ILIKE wildcard', async () => {
+  it('offers a name only the wildcard ties to an account, and still refuses the account holding it', async () => {
+    rows = [account({ username: 'newXuser' })]
+    expect(await available('new_user')).toBe(true)
+
+    rows = [account({ username: 'someone_else' })]
+    expect(await available('new_user')).toBe(true)
+
+    rows = [account({ username: 'new_user' })]
+    expect(await available('new_user')).toBe(false)
+
+    rows = [account({ username: 'New_User' })]
+    expect(await available('new_user')).toBe(false)
+  })
+
+  it('answers from the rows it compared when the escape does not reach the database', async () => {
+    driverHonoursEscapes = false
     rows = [account({ username: 'newXuser' })]
 
-    const response = await check('new_user')
-    const payload = await response.json()
+    // The filter hands back a stranger's row, as it did before this branch. The
+    // comparison is what stops that row being read as the holder of the name.
+    expect(await available('new_user')).toBe(true)
 
-    expect(payload.available).toBe(true)
-  })
-
-  it('still refuses a name an account holds with a literal underscore', async () => {
     rows = [account({ username: 'new_user' })]
+    expect(await available('new_user')).toBe(false)
+  })
+})
 
-    const response = await check('new_user')
-    const payload = await response.json()
+describe('GET /api/user/check-email', () => {
+  beforeEach(resetDatabase)
 
-    expect(payload.available).toBe(false)
+  async function available(email: string) {
+    const response = await checkEmail(
+      new NextRequest(`http://localhost:3000/api/user/check-email?email=${encodeURIComponent(email)}`)
+    )
+    return (await response.json()).available
+  }
+
+  // app/profile/page.tsx returns before sending the PATCH when this endpoint
+  // answers `available: false` (:832, :921, :941), so the writer being fixed
+  // changes nothing a user can see until this one is fixed as well.
+  it('offers an address only the wildcard ties to an account, and still refuses the ones really held', async () => {
+    rows = [account({ email: 'aXb@example.com' })]
+    expect(await available('a_b@example.com')).toBe(true)
+
+    rows = [account({ email: 'a_b@example.com' })]
+    expect(await available('a_b@example.com')).toBe(false)
+
+    rows = [account({ email: 'A_B@example.com' })]
+    expect(await available('a_b@example.com')).toBe(false)
+
+    rows = [account({ email: 'other@example.com', pendingEmail: 'a_b@example.com' })]
+    expect(await available('a_b@example.com')).toBe(false)
   })
 
-  it('still refuses the same name in another case', async () => {
-    rows = [account({ username: 'New_User' })]
+  it('answers from the rows it compared when the escape does not reach the database', async () => {
+    driverHonoursEscapes = false
+    rows = [account({ email: 'aXb@example.com' })]
 
-    const response = await check('new_user')
-    const payload = await response.json()
+    expect(await available('a_b@example.com')).toBe(true)
 
-    expect(payload.available).toBe(false)
-  })
-
-  it('still offers a name nobody holds', async () => {
-    rows = [account({ username: 'someone_else' })]
-
-    const response = await check('new_user')
-    const payload = await response.json()
-
-    expect(payload.available).toBe(true)
+    rows = [account({ email: 'other@example.com', pendingEmail: 'aXb@example.com' })]
+    expect(await available('a_b@example.com')).toBe(true)
   })
 })
 
 describe('PATCH /api/user/profile', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-    rows = []
-    installFakeDatabase()
+    resetDatabase()
 
     mockGetServerSession.mockResolvedValue({ user: { id: CALLER_ID } } as any)
     mockPrisma.users.findUnique.mockResolvedValue({
@@ -322,43 +392,73 @@ describe('PATCH /api/user/profile', () => {
     )
   }
 
-  it('accepts a username that only matches an account through the ILIKE wildcard', async () => {
+  it('takes a username only the wildcard ties to an account, and still refuses the account holding it', async () => {
     rows = [account({ username: 'newXuser' })]
 
-    const response = await patch({ username: 'new_user' })
-    const payload = await response.json()
+    const accepted = await patch({ username: 'new_user' })
+    expect(accepted.status).toBe(200)
+    expect((await accepted.json()).user.username).toBe('new_user')
 
-    expect(response.status).toBe(200)
-    expect(payload.user.username).toBe('new_user')
-  })
-
-  it('still refuses a username an account holds with a literal underscore', async () => {
     rows = [account({ username: 'new_user' })]
 
-    const response = await patch({ username: 'new_user' })
-    const payload = await response.json()
+    const refused = await patch({ username: 'new_user' })
+    expect(refused.status).toBe(409)
+    expect((await refused.json()).error).toBe('Username is already taken')
+  })
 
-    expect(response.status).toBe(409)
-    expect(payload.error).toBe('Username is already taken')
+  it('answers a username from the rows it compared when the escape does not reach the database', async () => {
+    driverHonoursEscapes = false
+    rows = [account({ username: 'newXuser' })]
+
+    expect((await patch({ username: 'new_user' })).status).toBe(200)
+
+    rows = [account({ username: 'new_user' })]
+    expect((await patch({ username: 'new_user' })).status).toBe(409)
   })
 
   // The address is likelier to carry an underscore than the display name is, and
   // the lookup two blocks below the username one had the same unescaped filter.
-  it('accepts an email that only matches another account through the wildcard', async () => {
+  it('takes an address only the wildcard ties to an account, and still refuses the one really held', async () => {
     rows = [account({ email: 'aXb@example.com' })]
+    expect((await patch({ email: 'a_b@example.com' })).status).toBe(200)
 
-    const response = await patch({ email: 'a_b@example.com' })
-
-    expect(response.status).toBe(200)
-  })
-
-  it('still refuses an email another account really holds', async () => {
     rows = [account({ email: 'a_b@example.com' })]
 
-    const response = await patch({ email: 'a_b@example.com' })
-    const payload = await response.json()
+    const refused = await patch({ email: 'a_b@example.com' })
+    expect(refused.status).toBe(409)
+    expect((await refused.json()).error).toBe('Email is already in use')
+  })
 
-    expect(response.status).toBe(409)
-    expect(payload.error).toBe('Email is already in use')
+  it('answers an address from the rows it compared when the escape does not reach the database', async () => {
+    driverHonoursEscapes = false
+    rows = [account({ email: 'aXb@example.com' })]
+
+    expect((await patch({ email: 'a_b@example.com' })).status).toBe(200)
+
+    rows = [account({ email: 'other@example.com', pendingEmail: 'aXb@example.com' })]
+    expect((await patch({ email: 'a_b@example.com' })).status).toBe(200)
+
+    rows = [account({ email: 'a_b@example.com' })]
+    expect((await patch({ email: 'a_b@example.com' })).status).toBe(409)
+  })
+})
+
+describe('escapeLikeValue', () => {
+  beforeEach(() => {
+    driverHonoursEscapes = true
+  })
+
+  // Run through the independent LIKE above, not through an assertion on the
+  // string it returns: what matters is which rows the pattern can reach.
+  it('escapes the LIKE metacharacters so a pattern matches only its own literal', () => {
+    expect(ilike('new_user', escapeLikeValue('new_user'))).toBe(true)
+    expect(ilike('newXuser', escapeLikeValue('new_user'))).toBe(false)
+    expect(ilike('NEW_USER', escapeLikeValue('new_user'))).toBe(true)
+
+    expect(ilike('a%b@example.com', escapeLikeValue('a%b@example.com'))).toBe(true)
+    expect(ilike('aZZb@example.com', escapeLikeValue('a%b@example.com'))).toBe(false)
+
+    expect(ilike('a\\b', escapeLikeValue('a\\b'))).toBe(true)
+    expect(ilike('a_b', escapeLikeValue('a\\b'))).toBe(false)
   })
 })
