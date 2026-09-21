@@ -10,19 +10,70 @@ const KPI_EVENT_NAMES = [
   'start_alone_auto_bot_result',
 ] as const
 
+/**
+ * The events a human has to be present to produce. Every other rule in this file
+ * counts something going *wrong*, which is why 19-20 September went unnoticed: the
+ * site served 36 visitors over two days and recorded no lobby, no game and no move,
+ * and because failures are also events, every rule read healthy through all of it.
+ * `site_silent` is the dead-man's switch that closes that gap - it fires on the
+ * absence of these, not on the presence of anything.
+ */
+export const HUMAN_ACTIVITY_EVENT_NAMES = [
+  'lobby_create_ready',
+  'move_submit_applied',
+  'invite_opened',
+  'second_human_joined',
+  'signup_prompt_shown',
+] as const
+
 const ALERT_EVENT_NAMES = [
   'rejoin_timeout',
   'auth_refresh_failed',
   'move_apply_timeout',
-  'move_submit_applied',
   'socket_reconnect_recovered',
   'socket_reconnect_failed_final',
+  ...HUMAN_ACTIVITY_EVENT_NAMES,
 ] as const
 
 export const RECONNECT_SUCCESS_RATIO_TARGET_PCT = 99
 export const RECONNECT_RECOVERY_P95_TARGET_MS = 12000
 export const START_ALONE_AUTO_BOT_SUCCESS_TARGET_PCT = 99.5
 export const AUTH_REFRESH_FAILED_ALERT_THRESHOLD_PCT = 2
+
+/**
+ * Eighteen hours, and the number is measured rather than chosen. Boardly is quiet
+ * enough that shorter windows cannot tell an outage from an ordinary lull: replayed
+ * against the 168 healthy hours of 12-18 September, a six-hour window cried on 23 of
+ * them (14%) and was still crying on 12 at the harshest threshold tried. Eighteen
+ * hours cried once.
+ *
+ * The cost is ten hours of detection speed - on 19 September a six-hour window would
+ * have fired at 08:00 UTC and this fires at 18:00. That trade is deliberate: an alert
+ * that is wrong once a fortnight gets muted, and a muted alert is the situation this
+ * rule exists to end.
+ */
+export const SITE_SILENT_WINDOW_MINUTES = 18 * 60
+
+/**
+ * The comparison is against the *same hours* on each earlier day, so a quiet night is
+ * measured against other nights and never alerts. The summary of those days has to
+ * reach this for silence to count as a fault rather than a slow one. At an eighteen
+ * hour window every value from 3 to 15 gave the same single false alarm, so this sits
+ * low: the window is doing the filtering, not the threshold.
+ */
+export const SITE_SILENT_MIN_EXPECTED_EVENTS = 5
+
+/**
+ * The prior days are summarised by their 75th percentile rather than their median,
+ * because the baseline has to survive the outage it is describing. A median of six
+ * days gives up once three of them are dead - on day four of an outage it falls under
+ * the threshold, the rule stops breaching and the alert reports a recovery that never
+ * happened. The 75th percentile still reads 8 where the median reads 4.
+ *
+ * It costs nothing to be this robust: replayed over 12-18 September both summaries
+ * produced the same single false alarm and caught the same 30 outage hours.
+ */
+export const SITE_SILENT_BASELINE_PERCENTILE = 75
 
 /**
  * The Discord bot on the Raspberry Pi posts `POST /api/internal/discord/heartbeat` every
@@ -95,6 +146,7 @@ export type ReliabilityAlertKey =
   | 'auth_refresh_failed'
   | 'move_apply_timeout'
   | 'discord_bot_stale'
+  | 'site_silent'
 
 export interface ReliabilityAlertRuleStatus {
   alertKey: ReliabilityAlertKey
@@ -423,6 +475,65 @@ export async function getOperationalKpiDashboard(
   }
 }
 
+interface SiteSilentStatus {
+  breached: boolean
+  currentValue: number
+  baselineValue: number
+  summary: string
+}
+
+/**
+ * Compare the trailing window of human activity against the same hours on each of the
+ * preceding days. Comparing like hour with like hour is the whole point: Boardly is
+ * genuinely empty at 04:00, and a rule that did not know that would cry every night and
+ * be muted within a week.
+ *
+ * The baseline is a percentile rather than a mean so that already-dead days cannot drag
+ * the expectation to zero and quietly switch the alarm off - which is exactly what a
+ * mean would do on the second day of a two-day outage.
+ */
+function evaluateSiteSilent(
+  events: OperationalEventRow[],
+  now: Date,
+  baselineDays: number
+): SiteSilentStatus {
+  const humanEventNames = new Set<string>(HUMAN_ACTIVITY_EVENT_NAMES)
+  const windowMs = SITE_SILENT_WINDOW_MINUTES * 60 * 1000
+  const dayMs = 24 * 60 * 60 * 1000
+
+  const countInSlot = (endOffsetMs: number): number => {
+    const end = now.getTime() - endOffsetMs
+    const start = end - windowMs
+    return events.filter(
+      (event) =>
+        humanEventNames.has(event.eventName) &&
+        event.occurredAt.getTime() >= start &&
+        event.occurredAt.getTime() < end
+    ).length
+  }
+
+  const currentValue = countInSlot(0)
+
+  // Day 0 is the window under test, so the comparison days start at 1. The fetched
+  // range is baselineDays back from the start of a short window, so the last full
+  // same-hour slot we can read without running off the end is baselineDays - 1.
+  const priorDayCounts: number[] = []
+  for (let day = 1; day <= baselineDays - 1; day += 1) {
+    priorDayCounts.push(countInSlot(day * dayMs))
+  }
+
+  const baselineValue = percentile(priorDayCounts, SITE_SILENT_BASELINE_PERCENTILE) ?? 0
+
+  const breached = currentValue === 0 && baselineValue >= SITE_SILENT_MIN_EXPECTED_EVENTS
+
+  const hours = SITE_SILENT_WINDOW_MINUTES / 60
+  const summary = breached
+    ? `no human activity for ${hours}h; the same hours on the last ${priorDayCounts.length} days normally carry ${baselineValue}`
+    : `${currentValue} human events in ${hours}h (same-hours baseline ${baselineValue})`
+
+  return { breached, currentValue, baselineValue, summary }
+}
+
 export async function evaluateReliabilityAlerts(
   rawWindowMinutes?: number,
   rawBaselineDays?: number
@@ -464,6 +575,11 @@ export async function evaluateReliabilityAlerts(
   }
 
   const discordBotStale = await evaluateDiscordBotStale(now)
+
+  // Reads the whole fetched range rather than the split, because its window is six
+  // hours and its baseline is the same six hours on earlier days - both of which live
+  // in what `splitCurrentAndBaseline` calls the baseline.
+  const siteSilent = evaluateSiteSilent(events, now, baselineDays)
 
   const { current, baseline } = splitCurrentAndBaseline(events, currentStart)
 
@@ -578,6 +694,18 @@ export async function evaluateReliabilityAlerts(
         summary: discordBotStale.summary,
         windowMinutes,
         runbookPath: 'docs/OPERATIONS.md#runbook-discord_bot_stale',
+      },
+      {
+        alertKey: 'site_silent',
+        breached: siteSilent.breached,
+        severity: 'critical',
+        currentValue: siteSilent.currentValue,
+        thresholdValue: SITE_SILENT_MIN_EXPECTED_EVENTS,
+        baselineValue: siteSilent.baselineValue,
+        unit: 'count',
+        summary: siteSilent.summary,
+        windowMinutes: SITE_SILENT_WINDOW_MINUTES,
+        runbookPath: 'docs/OPERATIONS.md#runbook-site_silent',
       },
     ],
   }
