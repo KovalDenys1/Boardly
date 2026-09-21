@@ -293,7 +293,15 @@ const ru = {
       noUnread: 'Нет непрочитанных сообщений',
       sendHelp: 'Нажмите Enter для отправки',
       maxLength: '{{current}} / {{max}}'
-    }
+    },
+    themeBanner: {
+      label: 'Тема «{{name}}»',
+      mood: 'настроение',
+      sakuraTagline: 'Весна · лепестки сакуры',
+      sakuraMood: 'нежное',
+      neonTagline: '04:21 · сектор 7',
+      neonMood: 'электрическое',
+    },
   },
   connection: {
     reconnecting: 'Переподключение...',
@@ -1448,7 +1456,9 @@ const ru = {
       loggingIn: 'Входим...',
       rememberMe: 'Запомнить меня',
       invited: 'Вас пригласили в игру!',
-      loginToJoin: 'Войдите, чтобы присоединиться к лобби'
+      loginToJoin: 'Войдите, чтобы присоединиться к лобби',
+      welcomeBack: 'С возвращением',
+      differentAccount: 'Войти в другой аккаунт',
     },
     guestConversion: {
       headline: 'Сохраните прогресс — это бесплатно',
@@ -1568,7 +1578,37 @@ const ru = {
       tooLong: 'Имя пользователя должно быть не более 20 символов',
       invalidChars: 'Имя пользователя может содержать только буквы, цифры и подчёркивание',
       suggestions: 'Попробуйте эти доступные имена пользователей'
-    }
+    },
+    linkAccount: {
+      title: 'Привязать аккаунт {{provider}}?',
+      intro: 'Вы собираетесь привязать аккаунт {{provider}} к этому профилю.',
+      noteLabel: 'Важно:',
+      noteBody: 'Почта в {{provider}} может отличаться от почты вашего аккаунта ({{email}}). Это нормально — после привязки вы сможете входить любым из двух способов.',
+      benefitLinked: 'Аккаунт {{provider}} будет привязан к этому профилю',
+      benefitFuture: 'В дальнейшем вы сможете входить через {{provider}}',
+      benefitPassword: 'Вход по почте и паролю продолжит работать',
+      benefitData: 'Все игровые данные останутся на этом аккаунте',
+      continueTo: 'Перейти в {{provider}}',
+      linkingTitle: 'Привязываем аккаунт {{provider}}',
+      linkingBody: 'Подождите, мы подключаем ваш аккаунт {{provider}}…',
+      redirectNote: 'Вы будете перенаправлены в {{provider}}, чтобы подтвердить подключение',
+    },
+    oauthError: {
+      emailTakenTitle: 'Эта почта уже зарегистрирована',
+      emailTakenBody: 'Аккаунт с этой почтой уже существует. Вы можете:',
+      optionProviderTitle: '1. Войти через {{provider}}',
+      optionProviderBody: 'Если это ваш аккаунт {{provider}}, войдите — и попадёте в свой профиль',
+      optionExistingTitle: '2. Войти в существующий аккаунт',
+      optionExistingBody: 'А затем привязать {{provider}} в настройках профиля',
+      signInWithProvider: 'Войти через {{provider}}',
+      signInWithPassword: 'Войти по почте и паролю',
+      cannotLinkTitle: 'Не удалось привязать аккаунт',
+      cannotLinkBody: 'Этот аккаунт {{provider}} уже зарегистрирован на другой адрес почты.',
+      optionSignOut: 'Выйти и войти через {{provider}}',
+      optionContinue: 'Продолжить с текущим аккаунтом',
+      optionSupport: 'Написать в поддержку, чтобы объединить аккаунты вручную',
+      useProvider: 'Использовать {{provider}}',
+    },
   },
   profile: {
     title: 'Профиль',
@@ -2034,7 +2074,19 @@ const ru = {
       lovesGame: 'Любит {{game}}',
       copyLink: 'Скопировать ссылку',
       linkCopied: 'Скопировано!',
-    }
+    },
+    avatarPicker: {
+      usingConnectedPhoto: 'Используется фото из привязанного аккаунта — выберите аватар ниже, чтобы заменить его',
+      pickOrUpload: 'Выберите аватар ниже или загрузите своё фото',
+      chooseAvatar: 'Выберите аватар',
+      avatarAlt: 'Аватар {{id}}',
+      customPhoto: 'Своё фото',
+      unlocked: 'ОТКРЫТО',
+      fromPrice: 'от {{price}}',
+      saving: 'Сохраняем…',
+      uploadPhoto: 'Загрузить фото',
+      getPremium: 'Купить Premium — от {{price}}/мес',
+    },
   },
   achievements: {
     first_win: {

@@ -293,7 +293,15 @@ const no = {
       noUnread: 'Ingen uleste meldinger',
       sendHelp: 'Trykk Enter for å sende',
       maxLength: '{{current}} / {{max}}'
-    }
+    },
+    themeBanner: {
+      label: '{{name}}-tema',
+      mood: 'stemning',
+      sakuraTagline: 'Vår · kirsebærblomster som daler',
+      sakuraMood: 'mild',
+      neonTagline: '04:21 · sektor 7',
+      neonMood: 'elektrisk',
+    },
   },
   connection: {
     reconnecting: 'Kobler til på nytt...',
@@ -1448,7 +1456,9 @@ const no = {
       loggingIn: 'Logger inn...',
       rememberMe: 'Husk meg',
       invited: 'Du er invitert til et spill!',
-      loginToJoin: 'Logg inn for å bli med i lobbyen'
+      loginToJoin: 'Logg inn for å bli med i lobbyen',
+      welcomeBack: 'Velkommen tilbake',
+      differentAccount: 'Logg inn med en annen konto',
     },
     guestConversion: {
       headline: 'Lagre fremgangen din — det er gratis',
@@ -1568,7 +1578,37 @@ const no = {
       tooLong: 'Brukernavn må være maksimalt 20 tegn',
       invalidChars: 'Brukernavn kan bare inneholde bokstaver, tall og understrek',
       suggestions: 'Prøv disse tilgjengelige brukernavnene'
-    }
+    },
+    linkAccount: {
+      title: 'Koble til {{provider}}-kontoen?',
+      intro: 'Du er i ferd med å koble {{provider}}-kontoen din til denne profilen.',
+      noteLabel: 'Merk:',
+      noteBody: 'E-postadressen din hos {{provider}} kan være en annen enn e-posten på kontoen din ({{email}}). Det går fint — etter koblingen kan du logge inn med begge.',
+      benefitLinked: '{{provider}}-kontoen din blir koblet til denne profilen',
+      benefitFuture: 'Du kan logge inn med {{provider}} senere',
+      benefitPassword: 'Innlogging med e-post og passord fungerer fortsatt',
+      benefitData: 'Alle spilldataene dine blir liggende på denne kontoen',
+      continueTo: 'Fortsett til {{provider}}',
+      linkingTitle: 'Kobler til {{provider}}-kontoen',
+      linkingBody: 'Vent litt mens vi kobler til {{provider}}-kontoen din…',
+      redirectNote: 'Du blir sendt videre til {{provider}} for å godkjenne koblingen',
+    },
+    oauthError: {
+      emailTakenTitle: 'E-posten er allerede registrert',
+      emailTakenBody: 'Det finnes allerede en konto med denne e-posten. Du kan enten:',
+      optionProviderTitle: '1. Logge inn med {{provider}}',
+      optionProviderBody: 'Er dette din {{provider}}-konto, logger du inn og kommer rett til profilen din',
+      optionExistingTitle: '2. Logge inn med kontoen du har fra før',
+      optionExistingBody: 'Deretter kobler du til {{provider}} i profilinnstillingene',
+      signInWithProvider: 'Logg inn med {{provider}}',
+      signInWithPassword: 'Logg inn med e-post/passord',
+      cannotLinkTitle: 'Kan ikke koble til kontoen',
+      cannotLinkBody: 'Denne {{provider}}-kontoen er allerede registrert med en annen e-postadresse.',
+      optionSignOut: 'Logg ut og logg inn med {{provider}} i stedet',
+      optionContinue: 'Fortsett med kontoen du bruker nå',
+      optionSupport: 'Kontakt kundestøtte for å slå sammen kontoene manuelt',
+      useProvider: 'Bruk {{provider}}',
+    },
   },
   profile: {
     title: 'Profil',
@@ -2034,7 +2074,19 @@ const no = {
       lovesGame: 'Elsker {{game}}',
       copyLink: 'Kopier profillenke',
       linkCopied: 'Kopiert!',
-    }
+    },
+    avatarPicker: {
+      usingConnectedPhoto: 'Bruker bildet fra den tilkoblede kontoen din — velg et under for å bytte',
+      pickOrUpload: 'Velg en avatar under, eller last opp ditt eget bilde',
+      chooseAvatar: 'Velg en avatar',
+      avatarAlt: 'Avatar {{id}}',
+      customPhoto: 'Eget bilde',
+      unlocked: 'LÅST OPP',
+      fromPrice: 'fra {{price}}',
+      saving: 'Lagrer…',
+      uploadPhoto: 'Last opp bilde',
+      getPremium: 'Få Premium — fra {{price}}/mnd',
+    },
   },
   achievements: {
     first_win: {

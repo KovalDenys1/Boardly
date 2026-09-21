@@ -4,34 +4,6 @@
     "count": 1
   },
   {
-    "file": "app/api/og/lobby/[code]/route.tsx",
-    "count": 4
-  },
-  {
-    "file": "app/auth/error-oauth/page.tsx",
-    "count": 13
-  },
-  {
-    "file": "app/auth/forgot-password/page.tsx",
-    "count": 2
-  },
-  {
-    "file": "app/auth/link/page.tsx",
-    "count": 16
-  },
-  {
-    "file": "app/auth/login/LoginForm.tsx",
-    "count": 5
-  },
-  {
-    "file": "app/auth/register/RegisterForm.tsx",
-    "count": 3
-  },
-  {
-    "file": "app/auth/reset-password/page.tsx",
-    "count": 2
-  },
-  {
     "file": "app/games/alias/page.tsx",
     "count": 1
   },
@@ -108,10 +80,6 @@
     "count": 1
   },
   {
-    "file": "app/opengraph-image.tsx",
-    "count": 3
-  },
-  {
     "file": "app/premium/PremiumContent.tsx",
     "count": 1
   },
@@ -120,20 +88,12 @@
     "count": 30
   },
   {
-    "file": "app/twitter-image.tsx",
-    "count": 3
-  },
-  {
     "file": "components/AdSlot.tsx",
     "count": 1
   },
   {
     "file": "components/AuthGateModal.tsx",
     "count": 1
-  },
-  {
-    "file": "components/AvatarPicker.tsx",
-    "count": 8
   },
   {
     "file": "components/BoardlyErrorState.tsx",
@@ -186,10 +146,6 @@
   {
     "file": "components/LoadingSpinner.tsx",
     "count": 1
-  },
-  {
-    "file": "components/LobbyThemeBanner.tsx",
-    "count": 9
   },
   {
     "file": "components/Onboarding/OnboardingModal.tsx",

@@ -84,6 +84,7 @@ function ResetPasswordForm() {
             <div className="px-5 py-5 sm:px-8 sm:py-6">
               <div className="mx-auto max-w-2xl text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
+                  {/* i18n-allow: product name, spelled the same in every locale */}
                   Boardly
                 </p>
                 <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
@@ -133,6 +134,7 @@ function ResetPasswordForm() {
           <div className="px-5 py-5 sm:px-8 sm:py-6">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
+                {/* i18n-allow: product name, spelled the same in every locale */}
                 Boardly
               </p>
               <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
