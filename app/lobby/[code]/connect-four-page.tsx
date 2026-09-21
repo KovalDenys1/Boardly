@@ -1042,8 +1042,13 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // withdraws their own request rather than leaving the board stuck (#997).
     const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = () => (
-        <div className="ttt-board-card" style={{ position: 'relative' }}>
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`} style={{ position: 'relative' }}>
             <div className="ttt-board-surface">
                 <C4Board
                     board={gameData.board}
@@ -1059,7 +1064,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
             {isFinished && !isSpectator && (
                 <>
-                    {!overlayInspecting && (
+                    {showsResultOverlay && (
                         <GameResultOverlay
                             title={isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
                             isDraw={isDraw}

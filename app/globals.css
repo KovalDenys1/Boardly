@@ -1667,6 +1667,29 @@ input[type="range"].slider-thumb::-moz-range-track {
   overflow: hidden;
   box-sizing: border-box;
 }
+/* Rock Paper Scissors is the one adopter whose board is not a fixed-aspect
+   grid: `.rps-stage` is `min(100%, 640px)` and the composition is laid out from
+   the card's own container height. Hugging it on both axes collapsed the stage
+   from 640px to 387px at 1280x800 and left 491px of horizontal slack around a
+   413x290 card - a smaller composition in a larger empty region than #903 was
+   filed about. So this surface takes the card's width and only its own height. */
+.ttt-board-surface--wide {
+  width: 100%;
+}
+/* The overlay mount point paints for exactly as long as the result overlay is
+   mounted (#903 review). GameResultOverlay is `position:absolute; inset:0` on
+   this box, so once the card stopped painting the 82%-opaque slab hung over
+   bare page: measured at 1280x800 on tic-tac-toe, 904x502 of overlay around a
+   501x501 board, ~200px of opaque dark down each side with no card under it.
+   At game over there is no board to hug - the overlay is the content - so the
+   card is the right box for it, and painting it is what puts a card back under
+   the slab. The ring is an inset shadow rather than a border on purpose: a
+   border would change the size container's content box, and --c4-cell reads it,
+   so the board would shift a pixel at the moment the game ends. */
+.ttt-board-card--result {
+  background: #FFF8EC;
+  box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
+}
 .ttt-board-overlay {
   position: absolute;
   inset: 0;
@@ -2501,18 +2524,21 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 /* Rock Paper Scissors board, composed as a duel: an arena (glow + watermark),
    a stage with two hands in the players' colours, the match score between
    them, and three same-sized tiles. One scale for everything, from the board
-   card's container height, with hard caps so a tall window centres the
-   composition instead of inflating it. Animations: transform and opacity. */
+   card's container height (the card is still the size container), with hard
+   caps so a tall window does not inflate the composition. It takes its own
+   height and the card centres it, which is what `.ttt-board-surface--wide`
+   above is for; `height: 100%` and `justify-content: space-evenly` used to
+   spread it down a stretched card and were the 120-200px bands #903 measured.
+   Animations: transform and opacity. */
 .rps-board {
   position: relative;
   width: 100%;
-  height: 100%;
   min-height: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: center;
   gap: clamp(8px, 2cqh, 20px);
   overflow: hidden;
   --rps-emoji-xl: clamp(48px, 12cqh, 96px);
@@ -2932,6 +2958,13 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   min-height: 0;
   border-radius: 18px;
 }
+/* Same as .ttt-board-card--result: the desktop Memory overlay mounts here, so
+   this box paints for as long as it is mounted and the slab has a card under
+   it again (#903 review). */
+.memory-board-panel--result {
+  background: var(--bd-card-warm);
+  box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
+}
 
 .memory-score-panel {
   flex-shrink: 0;
@@ -3268,7 +3301,8 @@ html.dark .game-chat-panel {
   background: var(--bd-card-warm);
 }
 
-html.dark .ttt-board-surface {
+html.dark .ttt-board-surface,
+html.dark .ttt-board-card--result {
   background: var(--bd-card-warm);
 }
 

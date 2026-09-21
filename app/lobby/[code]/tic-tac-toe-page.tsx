@@ -1013,8 +1013,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     ) : null
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = (testId?: string) => (
-        <div className="ttt-board-card">
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`}>
             <div className="ttt-board-surface">
                 <TttBoard
                     board={gameData.board}
@@ -1024,7 +1029,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     testId={testId}
                 />
             </div>
-            {isFinished && !isSpectator && !overlayInspecting && (
+            {showsResultOverlay && (
                 <GameResultOverlay
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
                     kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}

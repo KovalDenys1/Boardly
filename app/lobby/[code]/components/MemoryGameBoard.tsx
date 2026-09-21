@@ -461,6 +461,14 @@ export default function MemoryGameBoard({
     </div>
   )
 
+  // One flag for both the class and the mount, so the desktop panel can never
+  // paint without the overlay over it or - the #903 review's blocker - the
+  // overlay hang over an unpainted panel. The mobile and landscape trees mount
+  // their overlay on the whole board area rather than on this panel (#752), and
+  // that area has never painted, on this branch or before it.
+  const desktopShowsResultOverlay =
+    activeGameLayout === 'desktop' && isFinished && !overlayInspecting && !isSpectator
+
   // Shared between the mobile board tab and the phone-landscape board pane
   // (#751) — desktop keeps its own inline markup since .memory-board-panel
   // carries extra --grid-cols/--grid-rows CSS custom properties this doesn't need.
@@ -743,9 +751,9 @@ export default function MemoryGameBoard({
           {statusSection}
 
           <main className="memory-layout">
-            <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
+            <section className={`memory-board-panel${desktopShowsResultOverlay ? ' memory-board-panel--result' : ''}`} style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               <div className="ttt-board-surface">{cardGrid}</div>
-              {activeGameLayout === 'desktop' && isFinished && !overlayInspecting && !isSpectator && (
+              {desktopShowsResultOverlay && (
                 <GameResultOverlay
                   title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
                   isDraw={isDraw}

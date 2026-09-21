@@ -777,9 +777,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         />
     )
 
+    // One flag for both the class and the mount, so the card can never paint
+    // without the overlay over it or - the #903 review's blocker - the overlay
+    // hang over an unpainted card.
+    const showsResultOverlay = isFinished && !isSpectator && !overlayInspecting
+
     const renderBoardSection = (testId?: string) => (
-        <div className="ttt-board-card">
-            <div className="ttt-board-surface">
+        <div className={`ttt-board-card${showsResultOverlay ? ' ttt-board-card--result' : ''}`}>
+            <div className="ttt-board-surface ttt-board-surface--wide">
                 <RockPaperScissorsGameBoard
                     gameData={rpsData}
                     playerId={isSpectator ? '' : currentUserId ?? ''}
@@ -791,7 +796,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     testId={testId}
                 />
             </div>
-            {isFinished && !isSpectator && !overlayInspecting && (
+            {showsResultOverlay && (
                 <GameResultOverlay
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
