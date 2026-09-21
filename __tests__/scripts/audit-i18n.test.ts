@@ -99,3 +99,28 @@ describe('audit-i18n — default prop values', () => {
     expect(scan(source)).toEqual([])
   })
 })
+
+describe('audit-i18n — prop names matched by kind, not by an exact list', () => {
+  /**
+   * The exact list missed `primaryCtaLabel = 'Play now'` on the day it was
+   * written, and that default shipped an English button to two more pages.
+   * Prop names here read `<what><Kind>`, so the kind is a suffix.
+   */
+  it.each([
+    ['primaryCtaLabel', 'Play now'],
+    ['emptyStateText', 'Nothing here yet'],
+    ['dialogTitle', 'Are you sure?'],
+    ['errorMessage', 'Something went wrong'],
+    ['searchPlaceholder', 'Find a game'],
+  ])('flags %s', (prop, value) => {
+    const source = `const A = ({ ${prop} = '${value}' }) => <p>{${prop}}</p>`
+
+    expect(scan(source)).toEqual([value])
+  })
+
+  it('still ignores a prop whose name only happens to end in a word', () => {
+    const source = "const A = ({ cancelled = 'yes', total = 'sum', isLabelled = 'no' }) => <div />"
+
+    expect(scan(source)).toEqual([])
+  })
+})
