@@ -97,6 +97,19 @@ function uniqueName(prefix: string): string {
   return `${prefix}${Math.random().toString(36).slice(2, 7)}`
 }
 
+export interface CreateGuestLobbyOptions {
+  /**
+   * Which cached identity in e2e/.auth hosts the lobby. Default 'host'.
+   *
+   * One creator may have one lobby with a waiting or playing game
+   * (`checkOpenLobbyLimit`), so two tests that both leave their game mid-play
+   * cannot share a host: the second gets 409 LOBBY_ALREADY_OPEN out of the
+   * create below. A test that does not play its game to a finish asks for a
+   * role of its own.
+   */
+  hostRole?: string
+}
+
 /**
  * Create a lobby owned by a fresh guest.
  *
@@ -110,9 +123,11 @@ export async function createGuestLobby(
   maxPlayers = 4,
   // A caller-supplied host is used as is and never cached: the screenshot
   // capture mints guests with display names and deletes them by id afterwards.
-  hostOverride?: Guest
+  hostOverride?: Guest,
+  options?: CreateGuestLobbyOptions
 ): Promise<E2ELobby> {
-  let host = hostOverride ?? readCachedGuest('host') ?? (await createGuest(request, baseURL))
+  const role = options?.hostRole ?? 'host'
+  let host = hostOverride ?? readCachedGuest(role) ?? (await createGuest(request, baseURL))
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const res = await request.post(`${baseURL}/api/lobby`, {
@@ -129,7 +144,7 @@ export async function createGuestLobby(
 
     if (res.status() === 401 && attempt === 0) {
       // The cached token has expired. Mint one and try again.
-      forgetCachedGuest('host')
+      forgetCachedGuest(role)
       host = await createGuest(request, baseURL)
       continue
     }
@@ -144,7 +159,7 @@ export async function createGuestLobby(
       throw new Error(`Lobby create returned no code: ${JSON.stringify(body)}`)
     }
 
-    if (!hostOverride) cacheGuest('host', host)
+    if (!hostOverride) cacheGuest(role, host)
     return { code, host }
   }
 

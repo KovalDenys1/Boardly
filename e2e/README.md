@@ -74,7 +74,7 @@ to a different realtime topic than the server broadcasts to, or a message whose
 body never arrives. Neither raises an error anywhere — the lobby just goes
 quiet.
 
-Three tests, each standing in for a check that used to be done by hand:
+Each of these stands in for a check that used to be done by hand:
 
 | Test | Replaces |
 |---|---|
@@ -85,8 +85,30 @@ Three tests, each standing in for a check that used to be done by hand:
 | `spectator.spec.ts` — a lobby with spectators disabled gives out no topic | — |
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
 | `rps.spec.ts` — two players pick, both see the reveal, the host holds the rematch | a Rock Paper Scissors match between two humans (#870) |
+| `sketch-and-guess.spec.ts` – a drawing is submitted and the room is asked to guess | a three-handed Sketch & Guess round (#1037) |
 
 These found #852, both halves of #854, and #862 — where the test written to guard #845 showed that #845 had broken spectating an hour after shipping.
+
+## Games that are not released yet
+
+`sketch-and-guess.spec.ts` drives a game the catalog still marks
+`in-development`, so it needs **both** halves of the #1054 flag:
+
+```
+ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true npm run test:e2e
+```
+
+or the same two lines in `.env.local`, which is what a dev server adopted by
+`reuseExistingServer` will have read. Without them the run stops in
+`createGuestLobby` on `400 {"error":"Game type is coming soon"}`; with only the
+server half it gets further and no picker in the browser lists the game. The
+flag is dead on production whatever the variable says, so this cannot change
+what a release run sees.
+
+It is also the reason `createGuestLobby` takes a `hostRole`. One creator may
+hold one lobby whose game is `waiting` or `playing`, and this test does not play
+its game to a finish, so it asks for a cached identity of its own instead of the
+shared `host`.
 
 ## How they are built
 
