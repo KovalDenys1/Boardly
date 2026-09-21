@@ -106,6 +106,18 @@ server half it gets further and no picker in the browser lists the game. The
 flag is dead on production whatever the variable says, so this cannot change
 what a release run sees.
 
+#1054 is what made `liars-party.spec.ts` possible; it is not what made
+`sketch-and-guess.spec.ts` possible. Sketch & Guess has carried its own release
+flag since it was built, and `getCatalogGames` reads it on a branch of its own
+(`lib/game-catalog.ts`), so that spec also runs on:
+
+```
+ENABLE_SKETCH_AND_GUESS=true NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS=true npm run test:e2e
+```
+
+Liar's Party has no per-game flag, so for it the #1054 pair is the only way in -
+run that pair and both specs are covered.
+
 These two are also the reason `createGuestLobby` takes a `hostRole`. One creator
 may hold one lobby whose game is `waiting` or `playing`, and neither test plays
 its game to a finish, so both ask for a cached identity of their own instead of
