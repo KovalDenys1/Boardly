@@ -72,9 +72,23 @@ const userVisibleProps = new Set([
   'alt',
   'caption',
   'heading',
-  'emptyText',
-  'buttonLabel',
+  'text',
+  'message',
 ])
+
+/**
+ * An exact list is not enough, and the gap was found the day the list was
+ * written: `GameDetailPage` defaults `primaryCtaLabel = 'Play now'`, which is
+ * the same fault as `PasswordInput`'s `label = 'Password'` but named for its
+ * position rather than its kind, so it walked straight past the set above and
+ * shipped an English button to two more pages. Prop names here follow
+ * `<what><Kind>`, so match the kind as a suffix.
+ */
+const userVisiblePropSuffix = /(Label|Text|Title|Placeholder|Caption|Heading|Message|Alt)$/
+
+function isUserVisibleProp(name: string): boolean {
+  return userVisibleProps.has(name) || userVisiblePropSuffix.test(name)
+}
 
 const baselinePath = path.join(repoRoot, 'scripts', 'i18n-baseline.json')
 const allowlistPath = path.join(repoRoot, 'scripts', 'i18n-allowlist.json')
@@ -173,7 +187,7 @@ export function findUntranslatedStrings(file: string, source: string): Finding[]
       }
     } else if (ts.isBindingElement(node) && node.initializer) {
       const name = (node.propertyName ?? node.name).getText(sourceFile)
-      if (userVisibleProps.has(name) && ts.isStringLiteral(node.initializer)) {
+      if (isUserVisibleProp(name) && ts.isStringLiteral(node.initializer)) {
         record(node, node.initializer.text)
       }
     }

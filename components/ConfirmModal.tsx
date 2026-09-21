@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Icon } from '@/components/icons'
+import { useTranslation } from '@/lib/i18n-helpers'
 import Modal from './Modal'
 
 interface ConfirmModalProps {
@@ -22,11 +23,18 @@ export default function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   variant = 'danger',
   icon
 }: ConfirmModalProps) {
+  const { t } = useTranslation()
+  // Resolved here, not defaulted in the signature: a default parameter value is
+  // not JSX, so `confirmText = 'Confirm'` rendered English buttons to every
+  // non-English viewer who did not pass the props (#889).
+  const confirmLabel = confirmText ?? t('common.confirm')
+  const cancelLabel = cancelText ?? t('common.cancel')
+
   const handleConfirm = () => {
     onConfirm()
     onClose()
@@ -87,7 +95,7 @@ export default function ConfirmModal({
               border: '1.5px solid var(--bd-line)',
             }}
           >
-            {cancelText}
+            {cancelLabel}
           </button>
           <button
             onClick={handleConfirm}
@@ -95,7 +103,7 @@ export default function ConfirmModal({
             style={{ background: style.buttonBg }}
             autoFocus
           >
-            {confirmText}
+            {confirmLabel}
           </button>
         </div>
       </div>

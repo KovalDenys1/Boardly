@@ -58,7 +58,7 @@ export default function GameDetailPage({
   accentColor,
   accent,
   lobbiesHref,
-  primaryCtaLabel = 'Play now',
+  primaryCtaLabel,
   primaryCtaDisabled = false,
   facts,
   introTitle,
@@ -74,6 +74,11 @@ export default function GameDetailPage({
   const { t } = useTranslation()
   const { status } = useSession()
   const { isGuest } = useGuest()
+  // Resolved here rather than defaulted in the signature: a default parameter
+  // value is not JSX, so `primaryCtaLabel = 'Play now'` shipped an English
+  // button to every non-English viewer of the pages that omit the prop - the
+  // same fault as PasswordInput's `label = 'Password'` (#889).
+  const ctaLabel = primaryCtaLabel ?? t('games.playNow')
   // The "you can play as a guest" pitch only makes sense for anonymous visitors.
   const showGuestHint = status === 'unauthenticated' && !isGuest
   // The question this page answers, and its answer, live on the catalog entry
@@ -110,11 +115,11 @@ export default function GameDetailPage({
               <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
                   <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:w-[190px]" aria-disabled="true">
-                    {primaryCtaLabel}
+                    {ctaLabel}
                   </span>
                 ) : (
                   <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:w-[190px]">
-                    {primaryCtaLabel}
+                    {ctaLabel}
                   </Link>
                 )}
                 {playVsBotGameType && !primaryCtaDisabled && (
@@ -232,7 +237,7 @@ export default function GameDetailPage({
         <div className="py-10 text-center">
           {primaryCtaDisabled ? (
             <span className="bd-btn bd-btn-coral bd-btn-lg cursor-not-allowed justify-center opacity-70" aria-disabled="true">
-              {primaryCtaLabel}
+              {ctaLabel}
             </span>
           ) : (
             <Link href={lobbiesHref} className="bd-btn bd-btn-coral bd-btn-lg justify-center">
