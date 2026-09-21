@@ -71,7 +71,7 @@ export default function ConnectFourReplayRenderer({
   return (
     <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-800/50 sm:p-5">
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-        {t('profile.gameReplay.board.redDisc')} {t('game.ui.versus')} {t('profile.gameReplay.board.yellowDisc')}
+        {t('profile.gameReplay.board.redDisc')} {t('game.ui.vs')} {t('profile.gameReplay.board.yellowDisc')}
       </p>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">

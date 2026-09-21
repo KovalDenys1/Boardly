@@ -147,7 +147,7 @@ export default function RockPaperScissorsGameBoard({
       <section className={`rps-stage${showReveal ? ' rps-stage--reveal' : ''}`} aria-live="polite">
         <Hand key={`l-${revealKey}`} player={leftPlayer} accent={leftAccent} reveal={showReveal} {...handFor(leftPlayer)} />
         <div className="rps-stage__center">
-          <span className="rps-stage__vs">{t('game.ui.versus')}</span>
+          <span className="rps-stage__vs">{t('game.ui.vs')}</span>
           <span key={`s-${leftScore}-${rightScore}`} className="rps-stage__score">
             {leftScore}<span className="rps-stage__colon">:</span>{rightScore}
           </span>

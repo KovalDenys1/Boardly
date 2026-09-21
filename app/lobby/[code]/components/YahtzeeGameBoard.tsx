@@ -170,7 +170,7 @@ export default function GameBoard({
                 the card's edge sliced the last chip mid-glyph (#906). */}
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <p className="bd-kicker shrink-0">
-                Next Move
+                {t('yahtzee.ui.nextMove')}
               </p>
               <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 text-[11px] font-semibold">
                 <span className={`bd-chip px-2 py-1 ${isMyTurn && timeLeft <= 10 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' : isMyTurn ? 'bd-chip-mint' : ''}`}>
@@ -183,10 +183,10 @@ export default function GameBoard({
                   )}
                 </span>
                 <span className="bd-chip px-2 py-1">
-                  {rollsLeft} left
+                  {t('yahtzee.ui.rollsLeftChip', { count: rollsLeft })}
                 </span>
                 <span className="bd-chip px-2 py-1">
-                  Hold {heldCount}/5
+                  {t('yahtzee.ui.holdChip', { held: heldCount, total: 5 })}
                 </span>
               </div>
             </div>
@@ -209,7 +209,7 @@ export default function GameBoard({
                 }}
                 className="bd-btn bd-btn-soft mt-2 !rounded-full !px-3 !py-2 !text-xs"
               >
-                Review Scorecard
+                {t('yahtzee.ui.reviewScorecard')}
               </button>
             )}
           </div>
