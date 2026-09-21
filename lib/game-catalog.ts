@@ -812,9 +812,29 @@ export function isAvailableGameType(
   )
 }
 
-export function getAvailableGameTypes(options?: {
+/**
+ * How a catalog read is asked for.
+ *
+ * `enabledExperimental` is the product option: the ids `/dev` and the per-game flags open
+ * by name.
+ *
+ * `catalog` is a seam, and the only callers that pass it are tests. Every rule in this
+ * module is about a *shape* of entry - `in-development` and carrying the three fields
+ * `isFlagPromotableEntry` asks for - and since #873 released Liar's Party and Sketch &
+ * Guess the shipped catalog has no entry of that shape at all: `fake_artist` and
+ * `telephone_doodle` have no `route` (#975). Deleting the promotion branch below is
+ * therefore invisible to every assertion that reads `FEATURED_GAME_CATALOG`, which is how
+ * three suites went quiet rather than red. Handing the function a synthetic entry gives it
+ * something to say no about while the function itself - the flag read, the shape check, the
+ * filter - stays the code under test. It defaults to the shipped catalog, so nothing in the
+ * app passes it.
+ */
+export type CatalogReadOptions = {
   enabledExperimental?: readonly string[]
-}): SupportedCatalogGameType[] {
+  catalog?: readonly GameCatalogEntry[]
+}
+
+export function getAvailableGameTypes(options?: CatalogReadOptions): SupportedCatalogGameType[] {
   return getCatalogAvailableGames(options).flatMap((game) =>
     game.gameType !== undefined ? [game.gameType] : []
   )
@@ -832,12 +852,10 @@ export function getAvailableGameTypes(options?: {
  * `isInDevelopmentGamePlayEnabled()` returns false on production unconditionally, so on
  * boardly.online this branch is the same as it was before #1054.
  */
-export function getCatalogGames(options?: {
-  enabledExperimental?: readonly string[]
-}): GameCatalogEntry[] {
+export function getCatalogGames(options?: CatalogReadOptions): GameCatalogEntry[] {
   const enabledExperimental = new Set(options?.enabledExperimental ?? [])
 
-  return FEATURED_GAME_CATALOG.map((game) => {
+  return (options?.catalog ?? FEATURED_GAME_CATALOG).map((game) => {
     if (!game.gameType || game.availability !== 'in-development') {
       return { ...game }
     }
@@ -857,8 +875,6 @@ export function getCatalogGames(options?: {
   })
 }
 
-export function getCatalogAvailableGames(options?: {
-  enabledExperimental?: readonly string[]
-}): GameCatalogEntry[] {
+export function getCatalogAvailableGames(options?: CatalogReadOptions): GameCatalogEntry[] {
   return getCatalogGames(options).filter((game) => game.availability === 'available')
 }

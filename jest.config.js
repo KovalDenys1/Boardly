@@ -44,6 +44,10 @@ const customJestConfig = {
     // Playwright specs, run by `npm run test:e2e` against a real server and a
     // real Supabase project. Jest would match them by filename and fail.
     '<rootDir>/e2e/',
+    // Test data shared by several suites. testMatch takes everything under
+    // __tests__, so without this a fixture is loaded as a suite of its own and
+    // fails with "must contain at least one test".
+    '<rootDir>/__tests__/fixtures/',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/standalone/',

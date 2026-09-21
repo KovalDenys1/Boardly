@@ -6,6 +6,40 @@ import {
   isTemporarilyUnavailableGameType,
   getPublicRegisteredGameTypes,
 } from '@/lib/public-game-access'
+import {
+  HELD_BACK_GAME_TYPE,
+  HELD_BACK_LOBBIES_ROUTE,
+  heldBackCatalog,
+} from '../fixtures/held-back-catalog'
+
+const IN_DEVELOPMENT_FLAG_KEYS = [
+  'ENABLE_IN_DEVELOPMENT_GAMES',
+  'NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES',
+] as const
+
+/**
+ * CLAUDE.md tells a developer to put both of these in `.env.local` to play an unreleased
+ * game, and next/jest loads that file, so anything asserting that a game is held back has
+ * to say which environment it is asking about instead of inheriting one.
+ */
+function withoutInDevelopmentFlag(run: () => void): void {
+  const previous = IN_DEVELOPMENT_FLAG_KEYS.map((key) => [key, process.env[key]] as const)
+
+  for (const [key] of previous) {
+    delete process.env[key]
+  }
+  try {
+    run()
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
+    }
+  }
+}
 
 describe('public game access helpers', () => {
   it('maps supported lobby routes to the correct slug pages', () => {
@@ -37,10 +71,8 @@ describe('public game access helpers', () => {
 
     // The rule those rows are examples of, derived so it cannot go stale: a game
     // with a lobbies route is held back exactly while the catalog says it is not
-    // available. #873 released the last two routed entries that were not, so the
-    // `true` side has no subject in today's catalog - it is proven at the route,
-    // against a stand-in entry, in __tests__/api/in-development-game-gate.test.ts.
-    // The day an in-development entry gets a route, this loop demands the 400.
+    // available. #873 released the last two routed entries that were not, so every
+    // entry this loop reaches in the shipped catalog is on the `false` side of it.
     for (const game of getCatalogGames()) {
       if (!game.gameType || getGameLobbiesRoute(game.gameType) === null) continue
       expect({ id: game.id, held: isTemporarilyUnavailableGameType(game.gameType) }).toEqual({
@@ -48,6 +80,33 @@ describe('public game access helpers', () => {
         held: game.availability !== 'available',
       })
     }
+  })
+
+  it('holds back a routed game while the catalog has not released it', () => {
+    // The same rule, and the half the shipped catalog can no longer demonstrate. Run over
+    // a catalog where one routed, registered entry is still in-development, the loop above
+    // has a `true` side again - and `held` is counted, because a loop that agrees with an
+    // empty set is what this file was doing before.
+    withoutInDevelopmentFlag(() => {
+      const catalog = heldBackCatalog(getCatalogGames())
+      let held = 0
+
+      for (const game of getCatalogGames({ catalog })) {
+        if (!game.gameType || getGameLobbiesRoute(game.gameType) === null) continue
+        const isHeld = isTemporarilyUnavailableGameType(game.gameType, { catalog })
+        if (isHeld) held += 1
+        expect({ id: game.id, held: isHeld }).toEqual({
+          id: game.id,
+          held: game.availability !== 'available',
+        })
+      }
+
+      expect(held).toBe(1)
+      // A route is where the game would live, not permission to go there: the entry is in
+      // the route map throughout, and it is the catalog that keeps it shut.
+      expect(getGameLobbiesRoute(HELD_BACK_GAME_TYPE)).toBe(HELD_BACK_LOBBIES_ROUTE)
+      expect(isTemporarilyUnavailableGameType(HELD_BACK_GAME_TYPE, { catalog })).toBe(true)
+    })
   })
 
   describe('canCreateLobbyForGameType', () => {
@@ -139,5 +198,25 @@ describe('public game access helpers', () => {
         .map((game) => game.gameType)
         .sort()
     )
+  })
+
+  it('getPublicRegisteredGameTypes leaves out a registered game the catalog has not released', () => {
+    // Today every key of GAME_LOBBIES_ROUTES is an available game, so the whole route map
+    // and the answer are the same list and the test above holds whether this function reads
+    // availability or the map. They are not the same question: the map says a page exists,
+    // availability says the game is public. Every game shipped so far spent time as one and
+    // not the other, and the list feeds the sitemap and the lobby pickers.
+    withoutInDevelopmentFlag(() => {
+      const catalog = heldBackCatalog(getCatalogGames())
+      const publicTypes = getPublicRegisteredGameTypes({ catalog })
+
+      expect(getGameLobbiesRoute(HELD_BACK_GAME_TYPE)).toBe(HELD_BACK_LOBBIES_ROUTE)
+      expect(publicTypes).not.toContain(HELD_BACK_GAME_TYPE)
+      // The rest of the catalog is unaffected, so the absence above is the filter working
+      // and not an empty list.
+      expect(publicTypes).toContain('yahtzee')
+      expect(publicTypes).toContain('sketch_and_guess')
+      expect(publicTypes.length).toBe(getPublicRegisteredGameTypes().length - 1)
+    })
   })
 })

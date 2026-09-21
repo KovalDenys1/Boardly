@@ -27,6 +27,7 @@ import { isInDevelopmentGamePlayEnabled } from '@/lib/feature-flags'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { heldBackCatalog } from '../fixtures/held-back-catalog'
 
 /**
  * The stand-in for the catalog state #873 took away, and the only thing in this file
@@ -41,52 +42,32 @@ import { getRequestAuthUser } from '@/lib/request-auth'
  * the real catalog alone the production rule is no longer provable at the route: not
  * because it stopped holding, but because there is nothing left to hold it against.
  *
- * So one entry is simulated, and only one thing about it. `getAvailableGameTypes` is
- * asked to answer for `liars_party` the way the real chokepoint answers for any
- * in-development entry, and the rule is not re-implemented here: it is the real
- * `isInDevelopmentGamePlayEnabled()` and the real `isFlagPromotableEntry`, applied to
- * an entry with the three fields promotion needs - which is exactly what
- * `getCatalogGames` does to every in-development entry. Everything downstream is
- * untouched and real: the route, its handler, `isTemporarilyUnavailableGameType`, the
- * route map. Delete the guard from the route, or the production check inside the flag,
- * and these cases go red - checked by doing both on 2026-09-21.
+ * So the catalog is the stand-in, and nothing else is. `heldBackCatalog` winds one
+ * entry's availability back to where it was on 2026-09-19 and hands the result to the
+ * real `getAvailableGameTypes`, so every step of the answer is still the product's:
+ * the real `isInDevelopmentGamePlayEnabled()`, the real `isFlagPromotableEntry`, the
+ * real filter in `getCatalogGames`. The first version of this mock computed promotion
+ * itself, which is why deleting the promotion branch from `getCatalogGames` left this
+ * file 24/24 green - a mock that answers the question under test cannot fail with the
+ * product. Everything downstream is untouched: the route, its handler,
+ * `isTemporarilyUnavailableGameType`, the route map. Delete the guard from the route,
+ * the production check inside the flag, or the promotion branch itself, and these cases
+ * go red - checked by doing all three on 2026-09-21.
  *
  * Where a test is about the real catalog rather than about the gate it says so by
  * reading through `jest.requireActual`.
  */
 jest.mock('@/lib/game-catalog', () => {
   const actual = jest.requireActual('@/lib/game-catalog')
-  const { isInDevelopmentGamePlayEnabled: flagEnabled } = jest.requireActual('@/lib/feature-flags')
-
-  const STAND_IN = {
-    id: 'liars-party',
-    gameType: 'liars_party',
-    nameKey: 'games.liars_party.name',
-    descriptionKey: 'games.liars_party.description',
-    players: '4-12',
-    difficultyKey: 'games.liars_party.difficulty',
-    color: 'from-gray-400 to-gray-600',
-    availability: 'in-development',
-    route: '/games/liars-party/lobbies',
-    lobbyCreateConfig: {
-      gradient: 'from-gray-500 to-gray-700',
-      allowedPlayers: [4, 5, 6, 7, 8],
-      defaultMaxPlayers: 8,
-    },
-  }
+  const { heldBackCatalog } = jest.requireActual('../fixtures/held-back-catalog')
 
   return {
     ...actual,
-    getAvailableGameTypes: (options?: { enabledExperimental?: readonly string[] }) => {
-      const promoted =
-        (options?.enabledExperimental ?? []).includes(STAND_IN.id) ||
-        (flagEnabled() && actual.isFlagPromotableEntry(STAND_IN))
-      const types = actual
-        .getAvailableGameTypes(options)
-        .filter((type: string) => type !== STAND_IN.gameType)
-
-      return promoted ? [...types, STAND_IN.gameType] : types
-    },
+    getAvailableGameTypes: (options?: { enabledExperimental?: readonly string[] }) =>
+      actual.getAvailableGameTypes({
+        ...options,
+        catalog: heldBackCatalog(actual.getCatalogGames()),
+      }),
   }
 })
 
@@ -510,33 +491,73 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       ).toBe(true)
     })
 
-    it('is the predicate the real catalog is filtered through', () => {
+    it('withholds every in-development entry the shipped catalog has', () => {
       // The real module, not the stand-in: this test is the one that is about the
       // catalog as it ships.
       const { getCatalogGames, getAvailableGameTypes, isFlagPromotableEntry } =
         jest.requireActual('@/lib/game-catalog')
 
-      // Recompute the expected split from the catalog itself, so a new in-development entry
-      // is covered the day it is added rather than the day someone remembers this file.
+      // Recompute the split from the catalog itself, so a new in-development entry is
+      // covered the day it is added rather than the day someone remembers this file.
       applyEnv({ NODE_ENV: 'development' })
       const gated = getCatalogGames().filter((game) => game.availability === 'in-development')
-      const shouldPromote = gated.filter(isFlagPromotableEntry).map((game) => game.gameType)
       const shouldWithhold = gated
         .filter((game) => !isFlagPromotableEntry(game))
         .map((game) => game.gameType)
         .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
 
-      // This asked for a non-empty promote side until #873, and the release is what
-      // emptied it: the last two in-development entries with a route went `available`,
-      // and fake-artist and telephone-doodle have none. Pinned rather than dropped -
-      // the day one of them gets its pages, this line goes red and the loop below
-      // starts covering it. Until then the promote side is proven by the synthetic
-      // entries above, which is what they are for.
-      expect(shouldPromote).toEqual([])
-      expect(shouldWithhold.length).toBeGreaterThan(0)
+      // Every one of them, today: #873 released the last two in-development entries that
+      // had a route, and fake-artist and telephone-doodle have none. The day one of them
+      // gets its pages this line goes red, and the entry it names moves to the test below.
+      expect(gated.length).toBeGreaterThan(0)
+      expect(shouldWithhold.length).toBe(gated.length)
 
       applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
       const promoted = getAvailableGameTypes()
+
+      for (const gameType of shouldWithhold) {
+        expect(promoted).not.toContain(gameType)
+      }
+    })
+
+    it('promotes an in-development entry that carries all three, through the catalog itself', () => {
+      // The promote side of the same split, which the shipped catalog has had no subject
+      // for since #873. This is the one place the branch inside `getCatalogGames` -
+      // `isInDevelopmentGamePlayEnabled() && isFlagPromotableEntry(game)` - is exercised
+      // end to end rather than a field at a time: the entry goes in in-development and has
+      // to come back out `available`, with the real flag read deciding it. The four cases
+      // above call `isFlagPromotableEntry` directly, so they hold even when nothing calls
+      // it; this one does not.
+      const { getCatalogGames, getAvailableGameTypes, isFlagPromotableEntry } =
+        jest.requireActual('@/lib/game-catalog')
+
+      applyEnv({ NODE_ENV: 'development' })
+      const catalog = heldBackCatalog(getCatalogGames())
+      const gated = getCatalogGames({ catalog }).filter(
+        (game) => game.availability === 'in-development'
+      )
+      const shouldPromote = gated
+        .filter(isFlagPromotableEntry)
+        .map((game) => game.gameType)
+        .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
+      const shouldWithhold = gated
+        .filter((game) => !isFlagPromotableEntry(game))
+        .map((game) => game.gameType)
+        .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
+
+      // Both loops below have something to iterate, which is the whole point of the
+      // fixture: a loop that never executes is not coverage.
+      expect(shouldPromote.length).toBeGreaterThan(0)
+      expect(shouldWithhold.length).toBeGreaterThan(0)
+
+      // Flag off, so what the flag does is visible rather than assumed.
+      const withoutFlag = getAvailableGameTypes({ catalog })
+      for (const gameType of shouldPromote) {
+        expect(withoutFlag).not.toContain(gameType)
+      }
+
+      applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
+      const promoted = getAvailableGameTypes({ catalog })
 
       for (const gameType of shouldPromote) {
         expect(promoted).toContain(gameType)

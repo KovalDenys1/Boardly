@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import GamesClient from '@/app/games/GamesClient'
 import { getCatalogGames, isAvailableCatalogEntry } from '@/lib/game-catalog'
+import {
+  HELD_BACK_DETAIL_HREF,
+  HELD_BACK_LOBBIES_ROUTE,
+  heldBackCatalog,
+} from '../fixtures/held-back-catalog'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -47,6 +52,29 @@ describe('GamesClient', () => {
       }
     }
     expect(hrefs.some((href) => href?.startsWith('/games/'))).toBe(true)
+  })
+
+  it('does not link a routed game the catalog has not released', () => {
+    // The card's anchor hangs off `isAvailable && href !== null`, and since #873 only the
+    // second half of that has a subject: the entries left in-development carry no route, so
+    // `detailHref` answers null for them and the availability check is never what keeps the
+    // link off the page. Deleting it left the three tests above green.
+    //
+    // A routed entry the catalog has not released is the case that tells the two halves
+    // apart. It is also the real one: every game released so far sat in exactly this state
+    // first, with its pages built and its route live, waiting on the product decision.
+    const games = heldBackCatalog(getCatalogGames())
+    render(<GamesClient games={games} />)
+
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+
+    // The card is on the page - so the absences below are about the gate, not about a
+    // catalog that dropped the game.
+    expect(screen.getByText('games.liars_party.name')).toBeInTheDocument()
+    expect(hrefs).not.toContain(HELD_BACK_DETAIL_HREF)
+    expect(hrefs).not.toContain(HELD_BACK_LOBBIES_ROUTE)
+    // And the released games are still linked, so the render itself is not the reason.
+    expect(hrefs).toContain('/games/yahtzee')
   })
 
   it('does not link a promoted game that has no page (#975)', () => {
