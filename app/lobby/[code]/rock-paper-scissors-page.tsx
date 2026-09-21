@@ -779,16 +779,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     const renderBoardSection = (testId?: string) => (
         <div className="ttt-board-card">
-            <RockPaperScissorsGameBoard
-                gameData={rpsData}
-                playerId={isSpectator ? '' : currentUserId ?? ''}
-                players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
-                onSubmitChoice={async (choice) => { await submitChoice(choice) }}
-                disabled={isSpectator || isFinished}
-                isSubmitting={isSubmitting}
-                isSpectator={isSpectator}
-                testId={testId}
-            />
+            <div className="ttt-board-surface">
+                <RockPaperScissorsGameBoard
+                    gameData={rpsData}
+                    playerId={isSpectator ? '' : currentUserId ?? ''}
+                    players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
+                    onSubmitChoice={async (choice) => { await submitChoice(choice) }}
+                    disabled={isSpectator || isFinished}
+                    isSubmitting={isSubmitting}
+                    isSpectator={isSpectator}
+                    testId={testId}
+                />
+            </div>
             {isFinished && !isSpectator && !overlayInspecting && (
                 <GameResultOverlay
                     title={finishedMessage}

@@ -467,7 +467,7 @@ export default function MemoryGameBoard({
   const renderBoardSection = (wrapClassName: string, layout: ActiveGameLayout) => (
     <>
       <div className={wrapClassName}>
-        {cardGrid}
+        <div className="ttt-board-surface">{cardGrid}</div>
       </div>
       {activeGameLayout === layout && isFinished && !overlayInspecting && !isSpectator && (
         <GameResultOverlay
@@ -744,7 +744,7 @@ export default function MemoryGameBoard({
 
           <main className="memory-layout">
             <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
-              {cardGrid}
+              <div className="ttt-board-surface">{cardGrid}</div>
               {activeGameLayout === 'desktop' && isFinished && !overlayInspecting && !isSpectator && (
                 <GameResultOverlay
                   title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}

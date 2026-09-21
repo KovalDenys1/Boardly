@@ -1044,17 +1044,19 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const renderBoardSection = () => (
         <div className="ttt-board-card" style={{ position: 'relative' }}>
-            <C4Board
-                board={gameData.board}
-                winningLine={gameData.winningLine}
-                hoverCol={hoverCol}
-                onColHover={setHoverCol}
-                onColClick={handleColClick}
-                disabled={boardDisabled}
-                currentDisc={gameData.currentDisc}
-                lastDroppedRow={gameData.lastDroppedRow}
-                lastDroppedCol={gameData.lastDroppedCol}
-            />
+            <div className="ttt-board-surface">
+                <C4Board
+                    board={gameData.board}
+                    winningLine={gameData.winningLine}
+                    hoverCol={hoverCol}
+                    onColHover={setHoverCol}
+                    onColClick={handleColClick}
+                    disabled={boardDisabled}
+                    currentDisc={gameData.currentDisc}
+                    lastDroppedRow={gameData.lastDroppedRow}
+                    lastDroppedCol={gameData.lastDroppedCol}
+                />
+            </div>
             {isFinished && !isSpectator && (
                 <>
                     {!overlayInspecting && (

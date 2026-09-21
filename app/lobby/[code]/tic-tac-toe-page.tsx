@@ -1015,13 +1015,15 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const renderBoardSection = (testId?: string) => (
         <div className="ttt-board-card">
-            <TttBoard
-                board={gameData.board}
-                winningLine={gameData.winningLine}
-                onCellClick={handleCellClick}
-                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
-                testId={testId}
-            />
+            <div className="ttt-board-surface">
+                <TttBoard
+                    board={gameData.board}
+                    winningLine={gameData.winningLine}
+                    onCellClick={handleCellClick}
+                    disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
+                    testId={testId}
+                />
+            </div>
             {isFinished && !isSpectator && !overlayInspecting && (
                 <GameResultOverlay
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}

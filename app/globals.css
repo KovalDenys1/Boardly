@@ -1626,10 +1626,33 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-board-card {
   /* The ONLY place board-cell math lives. The card is flex-sized by its
      column (definite height), so container units are the real available
-     space on every screen. 80/98 = the board's own internal chrome only
-     (card/grid paddings, gaps, drop-arrow row) — no screen-chrome guesses. */
+     space on every screen. 107/125 = the board's own internal chrome only
+     (surface padding and border, grid padding, gaps, drop-arrow row) – no
+     screen-chrome guesses.
+
+     It no longer paints (#903). A size container's box cannot be derived from
+     its contents, so as long as the cream surface and the measuring box were
+     the same element, every pixel the board did not take stayed cream: 151px
+     under tic-tac-toe's board at 390 and 255px under Connect Four's at 768,
+     because both boards stop growing at their own caps. The surface below is
+     a separate box that hugs the board; this one stretches, unseen, and the
+     space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6)), 52px);
+  --c4-cell: clamp(22px, min(calc((100cqw - 107px) / 7), calc((100cqh - 125px) / 6)), 52px);
+  /* Not decoration: .ttt-board-overlay takes its radius from here. */
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+/* The painted card: sized by the board it holds, centred in what the card
+   above leaves (#903). Anything that is a board goes inside one of these. */
+.ttt-board-surface {
   background: #FFF8EC;
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
@@ -1637,10 +1660,11 @@ input[type="range"].slider-thumb::-moz-range-track {
   align-items: center;
   justify-content: center;
   padding: 12px;
-  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  position: relative;
   box-sizing: border-box;
 }
 .ttt-board-overlay {
@@ -1776,7 +1800,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Board */
 .ttt-board-wrap {
-  width: min(100%, calc(100cqh - 24px), 560px);
+  /* Both terms read the board card, which is the size container – the surface
+     between them hugs, so a percentage here would have nothing to resolve
+     against. 27px is the surface's own padding and border on one axis. */
+  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 560px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -2063,7 +2090,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .memory-header,
 .spy-panel,
-.memory-board-panel,
 .memory-score-panel,
 .spy-role-card,
 .spy-vote-card,
@@ -2893,14 +2919,18 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 
 .memory-board-panel {
+  /* Same split as .ttt-board-card (#903): this box is the available space the
+     grid reads with container units, and .ttt-board-surface inside it is the
+     card the player sees. While they were one element every pixel the grid did
+     not take stayed warm cream - 530px of panel around a 384px grid at 1280.
+     The radius stays because GameResultOverlay mounts here and inherits it. */
   container-type: size;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: clamp(10px, 2vw, 16px);
-  background: var(--bd-card-warm);
+  border-radius: 18px;
 }
 
 .memory-score-panel {
@@ -2948,7 +2978,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
    --grid-cols / --grid-rows are injected as CSS vars from JSX. */
 @container (min-height: 100px) {
   .memory-grid {
-    width: min(100%, 780px, calc((100cqh - 60px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+    /* Both terms read the panel, which is the size container; 27px is the
+       surface's padding and border on one axis (#903). A percentage would have
+       nothing to resolve against now that the surface hugs this grid. */
+    width: min(calc(100cqw - 27px), 780px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
   }
 }
 
@@ -3235,7 +3268,7 @@ html.dark .game-chat-panel {
   background: var(--bd-card-warm);
 }
 
-html.dark .ttt-board-card {
+html.dark .ttt-board-surface {
   background: var(--bd-card-warm);
 }
 
@@ -3252,7 +3285,6 @@ html.dark .memory-history-card { background: var(--bd-card-warm); }
 
 html.dark .memory-header,
 html.dark .spy-panel,
-html.dark .memory-board-panel,
 html.dark .memory-score-panel,
 html.dark .spy-role-card,
 html.dark .spy-vote-card,
@@ -3503,10 +3535,15 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   position: relative;
   box-sizing: border-box;
 }
+/* `0 1 auto`, not `1 1 auto` (#903): the card takes its content's height and
+   still shrinks and scrolls when a phase is taller than the column. Growing
+   was what left 185px of cream under the role panel at 768 and 103px at
+   844x390 - a phase here is a form, and a form has nothing to give that space
+   to. */
 .ttt-center-col > .spy-board-card,
 .game-landscape-board > .spy-board-card,
 .ttt-mobile-content > .spy-board-card {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
 }
 
