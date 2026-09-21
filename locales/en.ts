@@ -3119,3 +3119,28 @@ type DeepStringify<T> = {
   ? DeepStringify<T[K]>
   : string
 }
+
+// CLDR plural categories i18next appends to a key when `count` is passed.
+type PluralCategory = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other'
+
+/**
+ * Same shape as `Translation`, plus an optional `<key>_<category>` sibling for
+ * every leaf string.
+ *
+ * Russian and Ukrainian need three plural forms where English needs two
+ * (`one` / `few` for 2-4 / `many` for 5+), so `ru` and `uk` carry keys such as
+ * `send_few` that `en` has no use for. Annotating a locale with plain
+ * `Translation` rejects those as excess properties, which is the type-level
+ * half of the same problem #1059 describes in `scripts/check-locales.ts`.
+ * The plural siblings are optional, so completeness against `en` is still
+ * enforced exactly as before.
+ */
+export type TranslationWithPlurals = WithPluralForms<Translation>
+
+type WithPluralForms<T> = {
+  [K in keyof T]: T[K] extends object ? WithPluralForms<T[K]> : T[K]
+} & {
+  [K in keyof T & string as T[K] extends object
+    ? never
+    : `${K}_${PluralCategory}`]?: string
+}
