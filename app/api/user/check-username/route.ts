@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { ValidationError, withErrorHandler } from '@/lib/error-handler'
+import { insensitiveEquals, sameName } from '@/lib/username-match'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('GET /api/user/check-username')
@@ -53,20 +54,26 @@ async function checkUsernameHandler(req: NextRequest) {
   // telling a visitor to pick something else while registration would have
   // accepted it, and since #1047 raised guest retention from 3 days to 90 that
   // wrong answer would stand for a quarter of a year.
-  const existingUser = await prisma.users.findFirst({
+  //
+  // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to an
+  // unescaped ILIKE and the `_` this endpoint's own validation allows two lines
+  // up was therefore a wildcard. "new_user" matched the account "newXuser", and
+  // this is the endpoint the register form polls - so the form told a visitor to
+  // pick another name while registration would have taken the one they typed,
+  // which is the whole of #1055's first finding. `findMany` and an exact compare
+  // rather than `findFirst`: the filter narrows, the comparison decides.
+  const candidates = await prisma.users.findMany({
     where: {
-      username: {
-        equals: username,
-        mode: 'insensitive',
-      },
+      username: insensitiveEquals(username),
       isGuest: false,
     },
     select: {
       id: true,
+      username: true,
     },
   })
 
-  const isAvailable = !existingUser
+  const isAvailable = !candidates.some((user) => sameName(user.username, username))
 
   // Generate suggestions if username is taken
   let suggestions: string[] = []
