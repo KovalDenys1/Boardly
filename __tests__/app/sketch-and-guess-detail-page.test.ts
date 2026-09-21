@@ -48,17 +48,22 @@ describe('Sketch & Guess detail page (#1036)', () => {
     // /games/sketch-and-guess/lobbies, and the page directory is the other half
     // of the agreement. A page under app/games/guess-my-drawing (the catalog id)
     // would canonical to a URL that 404s.
-    const metadata = buildGameMetadata('guess-my-drawing', { index: false })
+    const metadata = buildGameMetadata('guess-my-drawing')
 
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/games/sketch-and-guess')
-    expect(readFileSync(PAGE, 'utf8')).toContain("buildGameMetadata('guess-my-drawing', { index: false })")
+    expect(readFileSync(PAGE, 'utf8')).toContain("buildGameMetadata('guess-my-drawing')")
   })
 
-  it('stays out of the index while the game is in-development', () => {
-    expect(buildGameMetadata('guess-my-drawing', { index: false }).robots).toEqual({
-      index: false,
+  it('is in the index now that the game is released (#873)', () => {
+    // This asserted the noindex until #873: the page shipped in #1036 while the
+    // catalog entry was still in-development, linked from nowhere Google crawls.
+    // The flip is what changed the expected value, so it is stated both ways -
+    // what the page asks for, and that it no longer asks to be left out.
+    expect(buildGameMetadata('guess-my-drawing').robots).toEqual({
+      index: true,
       follow: true,
     })
+    expect(readFileSync(PAGE, 'utf8')).not.toContain('{ index: false }')
   })
 
   it('describes the game the engine actually runs', () => {

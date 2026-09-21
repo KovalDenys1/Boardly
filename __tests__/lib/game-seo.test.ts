@@ -149,8 +149,24 @@ describe('game metadata and JSON-LD (#929)', () => {
 
   it('indexes the available games and keeps the in-development ones out', () => {
     expect(buildGameMetadata('yahtzee').robots).toEqual({ index: true, follow: true })
+    // The opt-out itself, which outlives the games that needed it: it was how
+    // /games/liars-party shipped from #872 until #873 released the game.
     expect(buildGameMetadata('liars-party', { index: false }).robots).toEqual({ index: false, follow: true })
-    expect(readFileSync(path.join(root, 'app/games/liars-party/page.tsx'), 'utf8')).toContain('{ index: false }')
+    expect(buildGameMetadata('liars-party').robots).toEqual({ index: true, follow: true })
+
+    // Which pages pass it is the part that must not go stale, so it is read off
+    // the catalog rather than named here: a detail page is noindex exactly while
+    // its game is not available. #873 flipped the last two, so no page passes the
+    // option today - and the day an in-development game gets a page, this is the
+    // line that asks it for the noindex.
+    for (const game of SEO_GAMES) {
+      const slug = game.route!.replace(/\/lobbies$/, '')
+      const source = readFileSync(path.join(root, 'app', `${slug}/page.tsx`), 'utf8')
+      expect({ slug, noindex: source.includes('{ index: false }') }).toEqual({
+        slug,
+        noindex: game.availability !== 'available',
+      })
+    }
   })
 
   it('takes the player range from the catalog, so the schema cannot outrun the page', () => {

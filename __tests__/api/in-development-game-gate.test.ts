@@ -15,13 +15,80 @@
  *
  * The suite drives the real POST handler rather than the helper it calls: the helper
  * returning true is not the promise made to Denys, the route answering 400 is.
+ *
+ * Since #873 the catalog has no in-development game the route can refuse, so the entry
+ * the handler is driven with is simulated - see the `@/lib/game-catalog` mock below for
+ * what that does and does not stand in for.
  */
 
 import { NextRequest } from 'next/server'
 import { POST as CREATE_LOBBY } from '@/app/api/lobby/route'
+import { isInDevelopmentGamePlayEnabled } from '@/lib/feature-flags'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
+
+/**
+ * The stand-in for the catalog state #873 took away, and the only thing in this file
+ * that is simulated.
+ *
+ * Until #873 the suite drove the route with `liars_party`: a real entry that was
+ * `in-development` and carried a lobbies route, so the guard had a game to refuse.
+ * That release made it and `sketch_and_guess` available, and the two entries still
+ * `in-development` - fake_artist and telephone_doodle - have no route (#975), so they
+ * are not in GAME_LOBBIES_ROUTES, `isTemporarilyUnavailableGameType` has never heard
+ * of them, and POST /api/lobby would answer 200 for them whatever the flag says. With
+ * the real catalog alone the production rule is no longer provable at the route: not
+ * because it stopped holding, but because there is nothing left to hold it against.
+ *
+ * So one entry is simulated, and only one thing about it. `getAvailableGameTypes` is
+ * asked to answer for `liars_party` the way the real chokepoint answers for any
+ * in-development entry, and the rule is not re-implemented here: it is the real
+ * `isInDevelopmentGamePlayEnabled()` and the real `isFlagPromotableEntry`, applied to
+ * an entry with the three fields promotion needs - which is exactly what
+ * `getCatalogGames` does to every in-development entry. Everything downstream is
+ * untouched and real: the route, its handler, `isTemporarilyUnavailableGameType`, the
+ * route map. Delete the guard from the route, or the production check inside the flag,
+ * and these cases go red - checked by doing both on 2026-09-21.
+ *
+ * Where a test is about the real catalog rather than about the gate it says so by
+ * reading through `jest.requireActual`.
+ */
+jest.mock('@/lib/game-catalog', () => {
+  const actual = jest.requireActual('@/lib/game-catalog')
+  const { isInDevelopmentGamePlayEnabled: flagEnabled } = jest.requireActual('@/lib/feature-flags')
+
+  const STAND_IN = {
+    id: 'liars-party',
+    gameType: 'liars_party',
+    nameKey: 'games.liars_party.name',
+    descriptionKey: 'games.liars_party.description',
+    players: '4-12',
+    difficultyKey: 'games.liars_party.difficulty',
+    color: 'from-gray-400 to-gray-600',
+    availability: 'in-development',
+    route: '/games/liars-party/lobbies',
+    lobbyCreateConfig: {
+      gradient: 'from-gray-500 to-gray-700',
+      allowedPlayers: [4, 5, 6, 7, 8],
+      defaultMaxPlayers: 8,
+    },
+  }
+
+  return {
+    ...actual,
+    getAvailableGameTypes: (options?: { enabledExperimental?: readonly string[] }) => {
+      const promoted =
+        (options?.enabledExperimental ?? []).includes(STAND_IN.id) ||
+        (flagEnabled() && actual.isFlagPromotableEntry(STAND_IN))
+      const types = actual
+        .getAvailableGameTypes(options)
+        .filter((type: string) => type !== STAND_IN.gameType)
+
+      return promoted ? [...types, STAND_IN.gameType] : types
+    },
+  }
+})
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -220,13 +287,25 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
         expect(data.error).toBe('Game type is coming soon')
         expect(mockPrisma.lobbies.create).not.toHaveBeenCalled()
       })
+
+      it(`refuses to read the flag at all on ${label}`, () => {
+        // The one claim in this suite that needs no catalog entry, and the one the
+        // stand-in above cannot flatter: the real flag function, the real
+        // environment, both variables on, and the answer is still no.
+        applyEnv(env)
+
+        expect(isInDevelopmentGamePlayEnabled()).toBe(false)
+      })
     }
 
-    it('leaves the gate itself closed for every in-development game on production', () => {
+    it('leaves the gate itself closed for the in-development game on production', () => {
       applyEnv(PRODUCTION_ENVIRONMENTS[0].env)
 
       expect(isTemporarilyUnavailableGameType('liars_party')).toBe(true)
-      expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
+      // Sketch & Guess was the second half of this line until #873 released it.
+      // It is `available` in the static catalog now, on production like everywhere
+      // else, so the gate is open for it and this says which of the two it is.
+      expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
     })
 
     it('still lets a released game through on production', async () => {
@@ -274,15 +353,23 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       // #975 stripped `route` from fake_artist and telephone_doodle because nothing is
       // served under app/games for either, so promoting them hands a developer a 404
       // instead of a game. They are held back by that missing field, not by their names -
-      // see the shape suite below.
+      // see the shape suite below. Since #873 they are also the only in-development
+      // entries left, which is why this is read off the real catalog: the stand-in must
+      // not be able to answer for them.
       applyEnv({ ...FLAG_ON, VERCEL_ENV: 'preview', NEXT_PUBLIC_VERCEL_ENV: 'preview', NODE_ENV: 'development' })
 
       expect(isTemporarilyUnavailableGameType('liars_party')).toBe(false)
       expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
 
-      const { getAvailableGameTypes } = await import('@/lib/game-catalog')
+      const { getAvailableGameTypes, getCatalogGames } = jest.requireActual('@/lib/game-catalog')
       expect(getAvailableGameTypes()).not.toContain('fake_artist')
       expect(getAvailableGameTypes()).not.toContain('telephone_doodle')
+      // Both are still in-development in the real catalog, so the two lines above are
+      // about entries the flag was asked to promote and would not.
+      const inDevelopment = getCatalogGames()
+        .filter((game: { availability: string }) => game.availability === 'in-development')
+        .map((game: { id: string }) => game.id)
+      expect([...inDevelopment].sort()).toEqual(['fake-artist', 'telephone-doodle'])
     })
   })
 
@@ -324,6 +411,14 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       // The catalog read is the client half's view of the same chokepoint.
       const { getAvailableGameTypes } = await import('@/lib/game-catalog')
       expect(getAvailableGameTypes()).toContain('liars_party')
+
+      // And the variable is what put it there: cleared, the same read drops it again.
+      // Sketch & Guess used to be the second name on this line, and since #873 it is
+      // in the list with the flag on or off, so it is no longer evidence about the
+      // flag - it is evidence that the release is in the catalog and not in an
+      // environment variable, which is what this pair of lines now says.
+      applyEnv({ NODE_ENV: 'development' })
+      expect(getAvailableGameTypes()).not.toContain('liars_party')
       expect(getAvailableGameTypes()).toContain('sketch_and_guess')
     })
 
@@ -415,12 +510,11 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       ).toBe(true)
     })
 
-    it('is the predicate the real catalog is filtered through', async () => {
-      applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
-
-      const { getCatalogGames, getAvailableGameTypes, isFlagPromotableEntry } = await import(
-        '@/lib/game-catalog'
-      )
+    it('is the predicate the real catalog is filtered through', () => {
+      // The real module, not the stand-in: this test is the one that is about the
+      // catalog as it ships.
+      const { getCatalogGames, getAvailableGameTypes, isFlagPromotableEntry } =
+        jest.requireActual('@/lib/game-catalog')
 
       // Recompute the expected split from the catalog itself, so a new in-development entry
       // is covered the day it is added rather than the day someone remembers this file.
@@ -432,7 +526,13 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
         .map((game) => game.gameType)
         .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
 
-      expect(shouldPromote.length).toBeGreaterThan(0)
+      // This asked for a non-empty promote side until #873, and the release is what
+      // emptied it: the last two in-development entries with a route went `available`,
+      // and fake-artist and telephone-doodle have none. Pinned rather than dropped -
+      // the day one of them gets its pages, this line goes red and the loop below
+      // starts covering it. Until then the promote side is proven by the synthetic
+      // entries above, which is what they are for.
+      expect(shouldPromote).toEqual([])
       expect(shouldWithhold.length).toBeGreaterThan(0)
 
       applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })

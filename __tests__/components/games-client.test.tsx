@@ -28,11 +28,24 @@ describe('GamesClient', () => {
   })
 
   it('does not link games that are not available yet', () => {
-    render(<GamesClient games={getCatalogGames()} />)
+    const games = getCatalogGames()
+    render(<GamesClient games={games} />)
 
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+    const unreleased = games.filter((game) => game.availability !== 'available')
 
-    expect(hrefs).not.toContain('/games/liars-party')
+    // Liar's Party was the named case here until #873 released it. Read off the
+    // catalog instead: an entry the catalog has not released gets a card and no
+    // anchor - checked by its id, which is how the href used to be guessed, and
+    // by its route if it carries one. A game added in-development is covered on
+    // its first day rather than the day someone remembers this file.
+    expect(unreleased.length).toBeGreaterThan(0)
+    for (const game of unreleased) {
+      expect(hrefs).not.toContain(`/games/${game.id}`)
+      if (game.route) {
+        expect(hrefs).not.toContain(game.route.replace(/\/lobbies$/, ''))
+      }
+    }
     expect(hrefs.some((href) => href?.startsWith('/games/'))).toBe(true)
   })
 

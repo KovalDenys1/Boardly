@@ -1,3 +1,4 @@
+import { getCatalogGames, isRegisteredGameType } from '@/lib/game-catalog'
 import {
   canCreateLobbyForGameType,
   getGameLobbiesRoute,
@@ -22,17 +23,31 @@ describe('public game access helpers', () => {
     expect(getLobbyCreateRoute(null)).toBeNull()
   })
 
-  it('marks coming-soon games as temporarily unavailable', () => {
-    // Liar's Party is still in-development (#872); RPS went public in #870
+  it('marks exactly the routed games the catalog has not released', () => {
+    // RPS went public in #870, Liar's Party and Sketch & Guess in #873.
     expect(isTemporarilyUnavailableGameType('rock_paper_scissors')).toBe(false)
-    expect(isTemporarilyUnavailableGameType('liars_party')).toBe(true)
+    expect(isTemporarilyUnavailableGameType('liars_party')).toBe(false)
     expect(isTemporarilyUnavailableGameType('alias')).toBe(false)
     expect(isTemporarilyUnavailableGameType('yahtzee')).toBe(false)
     expect(isTemporarilyUnavailableGameType(undefined)).toBe(false)
-    // Sketch & Guess has a live lobbies route but is gated behind
-    // ENABLE_SKETCH_AND_GUESS, which is off here — without it in the route map
-    // the page would offer a create button that lands on the default game (#871)
-    expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
+    // Sketch & Guess used to be the interesting row here: a live lobbies route
+    // behind ENABLE_SKETCH_AND_GUESS, which without an entry in the route map
+    // offered a create button that landed on the default game (#871).
+    expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
+
+    // The rule those rows are examples of, derived so it cannot go stale: a game
+    // with a lobbies route is held back exactly while the catalog says it is not
+    // available. #873 released the last two routed entries that were not, so the
+    // `true` side has no subject in today's catalog - it is proven at the route,
+    // against a stand-in entry, in __tests__/api/in-development-game-gate.test.ts.
+    // The day an in-development entry gets a route, this loop demands the 400.
+    for (const game of getCatalogGames()) {
+      if (!game.gameType || getGameLobbiesRoute(game.gameType) === null) continue
+      expect({ id: game.id, held: isTemporarilyUnavailableGameType(game.gameType) }).toEqual({
+        id: game.id,
+        held: game.availability !== 'available',
+      })
+    }
   })
 
   describe('canCreateLobbyForGameType', () => {
@@ -46,11 +61,15 @@ describe('public game access helpers', () => {
       expect(canCreateLobbyForGameType('yahtzee')).toBe(true)
       expect(canCreateLobbyForGameType('guess_the_spy')).toBe(true)
       expect(canCreateLobbyForGameType('alias')).toBe(true)
+      // Released by #873, so a shared link can now land on either of them too.
+      expect(canCreateLobbyForGameType('liars_party')).toBe(true)
+      expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(true)
     })
 
     it('refuses a game the create page has no form for', () => {
-      // In-development, so the page refuses it too.
-      expect(canCreateLobbyForGameType('liars_party')).toBe(false)
+      // In-development, so the page refuses it too. This was Liar's Party until
+      // #873 released it; Telephone Doodle is the in-development entry now.
+      expect(canCreateLobbyForGameType('telephone_doodle')).toBe(false)
       // Not in the catalog at all, and a GameType the database accepts.
       expect(canCreateLobbyForGameType('other')).toBe(false)
       expect(canCreateLobbyForGameType(null)).toBe(false)
@@ -67,13 +86,22 @@ describe('public game access helpers', () => {
       expect(canCreateLobbyForGameType('telephone_doodle')).toBe(false)
     })
 
-    it('opens the create form for Sketch & Guess now that it has a config (#1035)', () => {
+    it('opens the create form for Sketch & Guess, with or without its flag (#1035, #873)', () => {
       // It used to be the third game in the test above: promoted by its flag and
-      // still handed Yahtzee's form. The config added in #1035 is what closes
-      // that, and the flag is the only thing standing between here and #873.
+      // still handed Yahtzee's form. The config added in #1035 is what closed that.
       const previous = process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
-      process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = 'true'
       try {
+        // This half used to assert the opposite, and it was the point of the test:
+        // with the flag off the entry was in-development and the page had to refuse
+        // it, because #1035 prepared the form without publishing the game. #873
+        // published it, so the answer now comes from the static catalog entry and
+        // the flag decides nothing. The refusal itself is still covered above, by
+        // the two entries that are in-development today.
+        delete process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS
+        expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
+        expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(true)
+
+        process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = 'true'
         expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(false)
         expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(true)
       } finally {
@@ -83,11 +111,6 @@ describe('public game access helpers', () => {
           process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS = previous
         }
       }
-
-      // With the flag off the catalog entry is in-development, so the page must
-      // still refuse it: #1035 prepared the form, it did not publish the game.
-      expect(canCreateLobbyForGameType('sketch_and_guess')).toBe(false)
-      expect(isTemporarilyUnavailableGameType('sketch_and_guess')).toBe(true)
     })
   })
 
@@ -98,8 +121,23 @@ describe('public game access helpers', () => {
     expect(publicTypes).toContain('tic_tac_toe')
     expect(publicTypes).toContain('memory')
     expect(publicTypes).toContain('alias')
-    // LP excluded while in-development; RPS is public (#870)
+    // RPS is public since #870, Liar's Party and Sketch & Guess since #873
     expect(publicTypes).toContain('rock_paper_scissors')
-    expect(publicTypes).not.toContain('liars_party')
+    expect(publicTypes).toContain('liars_party')
+    expect(publicTypes).toContain('sketch_and_guess')
+    // The exclusion this used to make with Liar's Party, derived instead of named:
+    // the list is the registered games the catalog calls available, and nothing
+    // else. An entry added in-development is kept out by this line on its first day.
+    expect([...publicTypes].sort()).toEqual(
+      getCatalogGames()
+        .filter(
+          (game) =>
+            game.availability === 'available' &&
+            game.gameType !== undefined &&
+            isRegisteredGameType(game.gameType)
+        )
+        .map((game) => game.gameType)
+        .sort()
+    )
   })
 })

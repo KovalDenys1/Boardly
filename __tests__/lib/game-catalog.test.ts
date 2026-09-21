@@ -52,13 +52,20 @@ describe('game catalog availability', () => {
     expect(available).toContain('memory')
     expect(available).toContain('connect_four')
     expect(available).toContain('alias')
-    // RPS is public again (#870); Liar's Party stays in-development until #872
+    // RPS is public again (#870); Liar's Party and Sketch & Guess were released by #873
     expect(available).toContain('rock_paper_scissors')
-    expect(available).not.toContain('liars_party')
+    expect(available).toContain('liars_party')
+    expect(available).toContain('sketch_and_guess')
+    // The in-development entries are what this list has to keep out. Both flags are
+    // deleted in beforeEach, so these two are unpromoted here.
+    expect(available).not.toContain('fake_artist')
+    expect(available).not.toContain('telephone_doodle')
     expect(isAvailableGameType('yahtzee')).toBe(true)
     expect(isAvailableGameType('rock_paper_scissors')).toBe(true)
-    expect(isAvailableGameType('liars_party')).toBe(false)
-    expect(isAvailableGameType('sketch_and_guess')).toBe(false)
+    expect(isAvailableGameType('liars_party')).toBe(true)
+    expect(isAvailableGameType('sketch_and_guess')).toBe(true)
+    expect(isAvailableGameType('fake_artist')).toBe(false)
+    expect(isAvailableGameType('telephone_doodle')).toBe(false)
   })
 
   it('exposes memory as a bot-supported game type', () => {
@@ -107,14 +114,20 @@ describe('game catalog availability', () => {
   })
 
   it('can promote experimental catalog entries through the shared availability path', () => {
-    const availableGames = getCatalogAvailableGames({ enabledExperimental: ['guess-my-drawing'] })
+    // Pointed at fake-artist since #873: guess-my-drawing is `available` in the static
+    // catalog now, so promoting it proves nothing – the assertion would hold with the
+    // promotion path deleted. fake-artist is in-development, so it still has to travel
+    // that path to reach either list.
+    expect(getCatalogAvailableGames().map((game) => game.gameType)).not.toContain('fake_artist')
 
-    expect(availableGames.map((game) => game.gameType)).toContain('sketch_and_guess')
-    expect(getAvailableGameTypes({ enabledExperimental: ['guess-my-drawing'] })).toContain('sketch_and_guess')
+    const availableGames = getCatalogAvailableGames({ enabledExperimental: ['fake-artist'] })
+
+    expect(availableGames.map((game) => game.gameType)).toContain('fake_artist')
+    expect(getAvailableGameTypes({ enabledExperimental: ['fake-artist'] })).toContain('fake_artist')
   })
 })
 
-describe('Sketch & Guess release preparation (#1035)', () => {
+describe('Sketch & Guess release (#1035 prepared it, #873 shipped it)', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
@@ -128,15 +141,18 @@ describe('Sketch & Guess release preparation (#1035)', () => {
     process.env = originalEnv
   })
 
-  it('stays in-development: the flip is #873, not this ticket', () => {
+  it('is available: #1035 removed the blockers, #873 took the decision', () => {
     // The one assertion in this file that is about a product decision rather
-    // than about code. #1035 removed the blockers; featuring the game publicly
-    // is Denys's call and #873 carries it.
+    // than about code. It said `in-development` until #873, which is Denys's
+    // call of 2026-09-20 and the reason this line changed at all.
     const entry = getCatalogEntryById('guess-my-drawing')!
 
-    expect(entry.availability).toBe('in-development')
-    expect(getAvailableGameTypes()).not.toContain('sketch_and_guess')
-    expect(isAvailableGameType('sketch_and_guess')).toBe(false)
+    expect(entry.availability).toBe('available')
+    // beforeEach deletes both ENABLE_SKETCH_AND_GUESS variables, so what puts the
+    // game in these lists is the static entry: the release lives in the catalog
+    // now, not in an environment variable.
+    expect(getAvailableGameTypes()).toContain('sketch_and_guess')
+    expect(isAvailableGameType('sketch_and_guess')).toBe(true)
   })
 
   it('has everything an availability flip needs', () => {
@@ -147,9 +163,11 @@ describe('Sketch & Guess release preparation (#1035)', () => {
     expect(entry.seo).toBeDefined()
     expect(entry.lobbyCreateConfig).toBeDefined()
     // isAvailableCatalogEntry demands the config, so the flip alone would not
-    // have been enough before this: promoted and still not "available".
+    // have been enough before this: promoted and still not "available". Read
+    // off the plain catalog since #873 – the entry has to clear that guard with
+    // no promotion propping it up.
     expect(
-      getCatalogGames({ enabledExperimental: ['guess-my-drawing'] })
+      getCatalogGames()
         .filter(isAvailableCatalogEntry)
         .map((game) => game.id)
     ).toContain('guess-my-drawing')

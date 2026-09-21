@@ -19,9 +19,13 @@ describe('home page FAQ facts', () => {
     // The two the old copy got wrong in both directions
     expect(named).toContain('Alias')
     expect(named).toContain('Rock Paper Scissors')
-    // Still unreleased — naming them on the home page would be a promise
-    expect(named).not.toContain("Liar's Party")
-    expect(named).not.toContain('Sketch & Guess')
+    // Released by #873, and the FAQ picked them up without anyone editing the
+    // copy – which is what #878 was for.
+    expect(named).toContain("Liar's Party")
+    expect(named).toContain('Sketch & Guess')
+    // Still unreleased – naming one here would be a promise the site cannot keep
+    expect(named).not.toContain('Fake Artist')
+    expect(named).not.toContain('Telephone Doodle')
   })
 
   it('names only the games that actually take bots', () => {
