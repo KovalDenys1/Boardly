@@ -7,7 +7,12 @@ import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
-import { releaseGuestUsername } from '@/lib/guest-helpers'
+import {
+  prismaErrorCode,
+  UsernameUnavailableError,
+  withGuestUsernameReleased,
+} from '@/lib/guest-helpers'
+import { insensitiveEquals, sameName } from '@/lib/username-match'
 import { z } from 'zod'
 
 const limiter = rateLimit(rateLimitPresets.auth)
@@ -34,35 +39,28 @@ export async function POST(request: NextRequest) {
     // case-variant of a real account's name, which is the impersonation the same
     // fix closes in PATCH /api/user/profile. It also means more than one row can
     // come back on the username, which is why the split below exists.
+    //
+    // `insensitiveEquals` rather than a bare `equals` + `mode`: that pair compiles
+    // to an unescaped ILIKE, where the `_` a username may contain is a wildcard
+    // (#1055). The rows are still narrowed by hand below, which is what actually
+    // decides - see lib/username-match.ts for why it is split that way.
     const conflicts = await prisma.users.findMany({
       where: {
         OR: [
-          {
-            email: {
-              equals: email,
-              mode: 'insensitive',
-            },
-          },
-          {
-            username: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
+          { email: insensitiveEquals(email) },
+          { username: insensitiveEquals(username) },
         ],
       },
       select: { id: true, email: true, username: true, isGuest: true },
     })
 
     // registerSchema lowercases the email, so this compares like for like.
-    const emailTaken = conflicts.some((row) => row.email?.toLowerCase() === email)
+    const emailTaken = conflicts.some((row) => sameName(row.email, email))
 
     // `some`/`find` rather than a single `find` over the whole set: a row matching
     // on email must not be read as the holder of the username, and a real account
     // must decide the answer whatever order the rows came back in.
-    const usernameHolders = conflicts.filter(
-      (row) => row.username?.toLowerCase() === username.toLowerCase()
-    )
+    const usernameHolders = conflicts.filter((row) => sameName(row.username, username))
     const usernameTakenByAccount = usernameHolders.some((row) => !row.isGuest)
 
     // Only an exact-case holder is actually in the way of the insert, so that is
@@ -83,43 +81,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (
-      guestHoldingUsername &&
-      !(await releaseGuestUsername(guestHoldingUsername.id, guestHoldingUsername.username))
-    ) {
-      // The rename lost a race, so by now the name genuinely is taken by someone
-      // other than the guest we were about to move aside.
-      return NextResponse.json(
-        { error: 'Email or username already exists' },
-        { status: 400 }
-      )
-    }
-
-    // Create user
+    // Hashed before the guest is renamed, not after: bcrypt is the slowest step
+    // in this handler, and every millisecond of it spent with the name already
+    // freed is a millisecond another signup can take the name out from under us.
     const passwordHash = await hashPassword(password)
 
+    // The guest rename and the insert that needs it are one scope. The rename is
+    // its own committed write, so a failure between the two used to leave an
+    // uninvolved visitor renamed for a signup that never happened - here the
+    // create losing the unique-index race answered 400 and left it that way
+    // (#1055). withGuestUsernameReleased hands the name back on any exit.
     let user
     try {
-      user = await prisma.users.create({
-        data: {
-          email,
-          username,
-          passwordHash,
-          signupSource: getSignupSourceFromRequest(request),
-          // emailVerified will be set when user clicks verification link
-        },
-      })
-    } catch (createError: unknown) {
+      user = await withGuestUsernameReleased(guestHoldingUsername, () =>
+        prisma.users.create({
+          data: {
+            email,
+            username,
+            passwordHash,
+            signupSource: getSignupSourceFromRequest(request),
+            // emailVerified will be set when user clicks verification link
+          },
+        })
+      )
+    } catch (error: unknown) {
       // Two signups racing for the same name reach the unique index rather than
-      // the check above. That is a conflict, not a server fault, and it used to
-      // fall through to the 500 below - which a visitor cannot act on.
-      if (typeof createError === 'object' && createError !== null && (createError as Record<string, unknown>).code === 'P2002') {
+      // the check above, and the rename can lose that same race before the insert
+      // is even attempted. Both are conflicts, not server faults, and P2002 used
+      // to fall through to the 500 below - which a visitor cannot act on.
+      if (error instanceof UsernameUnavailableError || prismaErrorCode(error) === 'P2002') {
         return NextResponse.json(
           { error: 'Email or username already exists' },
           { status: 400 }
         )
       }
-      throw createError
+      throw error
     }
 
     // Generate verification token

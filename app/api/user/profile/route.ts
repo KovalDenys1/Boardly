@@ -9,10 +9,11 @@ import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import {
   prismaErrorCode,
-  releaseGuestUsername,
-  restoreGuestUsername,
   uniqueConstraintFields,
+  UsernameUnavailableError,
+  withGuestUsernameReleased,
 } from '@/lib/guest-helpers'
+import { insensitiveEquals, sameName } from '@/lib/username-match'
 import {
   AuthenticationError,
   ConflictError,
@@ -194,9 +195,11 @@ async function patchProfileHandler(req: NextRequest) {
     pendingEmail?: string | null
   } = {}
 
-  // The guest whose display name was freed for this request, if any, so the
-  // write below can hand it back when it loses the race for that name.
-  let releasedGuest: { id: string; username: string | null } | null = null
+  // The guest whose display name is in the way of this request, if any. Only
+  // noted here - the rename itself waits until every check has passed and the
+  // write is the next thing to run, so a request rejected for its email can no
+  // longer rename an uninvolved visitor on its way out (#1055).
+  let guestHoldingUsername: { id: string; username: string | null } | null = null
 
   if (nextUsername !== undefined) {
     if (nextUsername.length < 3 || nextUsername.length > 20) {
@@ -218,18 +221,23 @@ async function patchProfileHandler(req: NextRequest) {
       // guest and then handed the caller a name a real account holds, because the
       // write itself does not collide. Reading every match is the same fix
       // registration got.
-      const usernameHolders = await prisma.users.findMany({
+      //
+      // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to
+      // an unescaped ILIKE, so the `_` this route's own validation allows in a
+      // name was a wildcard, and asking for "new_user" while the account
+      // "newXuser" existed came back 409 for a name nobody held (#1055). The rows
+      // are narrowed by hand below too - see lib/username-match.ts.
+      const candidateHolders = await prisma.users.findMany({
         where: {
-          username: {
-            equals: nextUsername,
-            mode: 'insensitive',
-          },
+          username: insensitiveEquals(nextUsername),
           NOT: {
             id: session.user.id,
           },
         },
         select: { id: true, username: true, isGuest: true },
       })
+
+      const usernameHolders = candidateHolders.filter((row) => sameName(row.username, nextUsername))
 
       // A real account decides the answer whatever order the rows came back in.
       if (usernameHolders.some((row) => !row.isGuest)) {
@@ -244,16 +252,7 @@ async function patchProfileHandler(req: NextRequest) {
       // Only an exact-case match can collide with the unique index, so that is
       // the only guest worth moving: a guest called "denys" is left alone when
       // the caller asks for "DENYS", because nothing is in the way.
-      const guestHoldingUsername = usernameHolders.find((row) => row.username === nextUsername)
-
-      if (
-        guestHoldingUsername &&
-        !(await releaseGuestUsername(guestHoldingUsername.id, guestHoldingUsername.username))
-      ) {
-        throw new ConflictError('Username is already taken')
-      }
-
-      releasedGuest = guestHoldingUsername ?? null
+      guestHoldingUsername = usernameHolders.find((row) => row.username === nextUsername) ?? null
       updateData.username = nextUsername
     }
   }
@@ -268,26 +267,23 @@ async function patchProfileHandler(req: NextRequest) {
     const pendingEmail = currentUser.pendingEmail ? normalizeProfileEmail(currentUser.pendingEmail) : null
 
     if (nextEmail !== currentEmail && nextEmail !== pendingEmail) {
-      const existingEmail = await prisma.users.findFirst({
+      // Same wildcard as the username lookup above, and an address is far likelier
+      // to contain an underscore than a display name: "a_b@x.com" matched
+      // "aXb@x.com" and refused an address nobody had registered (#1055).
+      const emailCandidates = await prisma.users.findMany({
         where: {
           NOT: { id: session.user.id },
           OR: [
-            {
-              email: {
-                equals: nextEmail,
-                mode: 'insensitive',
-              },
-            },
-            {
-              pendingEmail: {
-                equals: nextEmail,
-                mode: 'insensitive',
-              },
-            },
+            { email: insensitiveEquals(nextEmail) },
+            { pendingEmail: insensitiveEquals(nextEmail) },
           ],
         },
-        select: { id: true },
+        select: { id: true, email: true, pendingEmail: true },
       })
+
+      const existingEmail = emailCandidates.some(
+        (row) => sameName(row.email, nextEmail) || sameName(row.pendingEmail, nextEmail)
+      )
 
       if (existingEmail) {
         throw new ConflictError('Email is already in use')
@@ -365,8 +361,19 @@ async function patchProfileHandler(req: NextRequest) {
   let updateResult: Awaited<ReturnType<typeof writeProfile>>
 
   try {
-    updateResult = await writeProfile()
+    // The guest is renamed here and nowhere else, so the only code that can run
+    // between the rename and the write that needs it is the write itself, and
+    // anything that throws inside hands the name back. #1050 restored the name
+    // from the P2002 branch below, which covered the write losing its race and
+    // nothing else (#1055).
+    updateResult = await withGuestUsernameReleased(guestHoldingUsername, writeProfile)
   } catch (error) {
+    // The guest name could not be freed, so it is genuinely held by someone else
+    // by now - the same answer the checks above would have given.
+    if (error instanceof UsernameUnavailableError) {
+      throw new ConflictError('Username is already taken')
+    }
+
     // The write can still lose a race the checks above passed - another request
     // takes the same username, or puts the same address in pendingEmail, between
     // the lookup and this update. That is a conflict the caller can act on, and
@@ -374,14 +381,6 @@ async function patchProfileHandler(req: NextRequest) {
     // no statusCode to 500.
     if (prismaErrorCode(error) !== 'P2002') {
       throw error
-    }
-
-    // A guest gave up its display name for a write that then failed, so hand it
-    // back rather than leave it renamed for nothing. Best effort: when the
-    // request that won the race holds the name now, restoring is impossible and
-    // correctly does nothing.
-    if (releasedGuest) {
-      await restoreGuestUsername(releasedGuest.id, releasedGuest.username)
     }
 
     // Prisma names the columns in meta.target, but not always - fall back to

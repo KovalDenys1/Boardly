@@ -343,6 +343,68 @@ export async function restoreGuestUsername(
 }
 
 /**
+ * The name a guest was holding could not be freed, so it is not available.
+ *
+ * Thrown by `withGuestUsernameReleased` only; every caller of that helper has to
+ * answer it, which is the point of a type rather than a boolean return.
+ */
+export class UsernameUnavailableError extends Error {
+    constructor(message = 'Username is already taken') {
+        super(message)
+        this.name = 'UsernameUnavailableError'
+    }
+}
+
+/**
+ * Run `operation` with a guest's display name freed for it, and put the name
+ * back if the operation does not complete.
+ *
+ * Freeing a guest name is a compensating action waiting to happen: the rename is
+ * a committed write of its own (it cannot be in the caller's transaction - see
+ * `restoreGuestUsername`), so every way out of the caller between that rename
+ * and the write that takes the name leaves an uninvolved visitor renamed for
+ * nothing. #1050 answered one of those ways out, in PATCH /api/user/profile, by
+ * restoring inside the `catch` that recognises P2002. Two were left: the same
+ * route throws a validation or conflict error for the *email* after renaming the
+ * guest, and POST /api/auth/register answers its own lost race with a 400 and no
+ * restore at all (#1055).
+ *
+ * Enumerating failure paths is what produced that gap, so this does not: the
+ * release and the restore are one scope, and anything that leaves `operation`
+ * abnormally puts the name back. A path added later is covered by having been
+ * written inside the callback. The rule for callers is therefore just: put
+ * everything that can still fail inside `operation`, and nothing that runs after
+ * the name is legitimately taken.
+ *
+ * The release itself is inside too, so a caller cannot rename a guest without
+ * arranging to undo it. A release that loses its own race throws
+ * `UsernameUnavailableError` and never runs `operation`.
+ *
+ * Restoring is best effort and never throws - see `restoreGuestUsername`. The
+ * original error always propagates; failing to hand the name back must not
+ * replace a conflict the caller can act on with a server error.
+ */
+export async function withGuestUsernameReleased<T>(
+    guest: { id: string; username: string | null } | null | undefined,
+    operation: () => Promise<T>
+): Promise<T> {
+    if (!guest) {
+        return operation()
+    }
+
+    if (!(await releaseGuestUsername(guest.id, guest.username))) {
+        throw new UsernameUnavailableError()
+    }
+
+    try {
+        return await operation()
+    } catch (error) {
+        await restoreGuestUsername(guest.id, guest.username)
+        throw error
+    }
+}
+
+/**
  * Check if a user ID is a guest
  */
 export async function isGuestUser(userId: string): Promise<boolean> {

@@ -124,17 +124,19 @@ describe('GET /api/user/check-username', () => {
   }
 
   it('excludes guest rows from the lookup, so a guest name reads as available', async () => {
-    mockPrisma.users.findFirst.mockResolvedValue(null)
+    mockPrisma.users.findMany.mockResolvedValue([])
 
     const payload = await (await checkUsername(request('Denys'))).json()
 
     expect(payload.available).toBe(true)
-    expect(mockPrisma.users.findFirst).toHaveBeenCalledWith({
+    // `findMany` and an exact compare since #1055 - the insensitive filter is an
+    // ILIKE and can return a name that is not this one.
+    expect(mockPrisma.users.findMany).toHaveBeenCalledWith({
       where: {
         username: { equals: 'Denys', mode: 'insensitive' },
         isGuest: false,
       },
-      select: { id: true },
+      select: { id: true, username: true },
     })
   })
 
@@ -378,6 +380,56 @@ describe('PATCH /api/user/profile - username', () => {
       const response = await patchProfile(request('Denys'))
 
       expect(response.status).toBe(500)
+    })
+  })
+
+  // #1055. One request can carry both fields, and the email is validated and
+  // looked up after the username block. The rename used to happen in that block,
+  // so a request rejected for its email had already renamed a guest who has
+  // nothing to do with it, and the restore #1050 added sits in the P2002 branch
+  // this never reaches. The rename now waits for the write.
+  describe('when the same request is rejected for its email', () => {
+    function requestBoth(username: string, email: string) {
+      return new NextRequest('http://localhost:3000/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email }),
+      })
+    }
+
+    it('leaves the guest holding its name when the address is invalid', async () => {
+      mockPrisma.users.findMany.mockResolvedValue([
+        { id: GUEST_ID, username: 'Denys', isGuest: true },
+      ])
+
+      const response = await patchProfile(requestBoth('Denys', 'not-an-email'))
+      const payload = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(payload.error).toBe('Invalid email address')
+      expect(mockPrisma.users.update).not.toHaveBeenCalled()
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('leaves the guest holding its name when the address is already in use', async () => {
+      mockPrisma.users.findMany
+        .mockResolvedValueOnce([{ id: GUEST_ID, username: 'Denys', isGuest: true }])
+        .mockResolvedValueOnce([
+          { id: OTHER_ACCOUNT_ID, email: 'taken@example.com', pendingEmail: null },
+        ])
+      // The email lookup was a `findFirst` before #1055 and is a `findMany` after,
+      // so both are answered here. Otherwise the older shape simply finds no
+      // conflict and this passes on a 200 without ever reaching the rejection the
+      // test is about.
+      mockPrisma.users.findFirst.mockResolvedValue({ id: OTHER_ACCOUNT_ID })
+
+      const response = await patchProfile(requestBoth('Denys', 'taken@example.com'))
+      const payload = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(payload.error).toBe('Email is already in use')
+      expect(mockPrisma.users.update).not.toHaveBeenCalled()
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled()
     })
   })
 })

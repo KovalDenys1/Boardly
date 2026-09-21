@@ -358,6 +358,83 @@ describe('POST /api/auth/register', () => {
     })
   })
 
+  // #1055. The rename is a committed write of its own, so the guest is renamed
+  // for a signup that then does not happen - and this route answered its own
+  // lost race with a 400 and left the visitor renamed for nothing.
+  describe('when the signup fails after the guest name was freed', () => {
+    function guestHoldsTheName() {
+      mockPrisma.users.findMany.mockResolvedValue([
+        {
+          id: GUEST_ID,
+          email: `guest-${GUEST_ID}@boardly.guest`,
+          username: 'new_user',
+          isGuest: true,
+        },
+      ] as any)
+    }
+
+    it('hands the name back when the create loses the unique-index race', async () => {
+      guestHoldsTheName()
+      mockPrisma.users.create.mockRejectedValue(uniqueConstraintError())
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+      const payload = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(payload.error).toBe('Email or username already exists')
+      expect(mockPrisma.users.update).toHaveBeenLastCalledWith({
+        where: { id: GUEST_ID },
+        data: { username: 'new_user' },
+      })
+    })
+
+    it('hands the name back when the create fails for a reason nobody enumerated', async () => {
+      // The point of doing this in one place rather than per known failure: a
+      // path nobody listed is covered by having been written inside the scope.
+      guestHoldsTheName()
+      mockPrisma.users.create.mockRejectedValue(new Error('connection terminated'))
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+
+      expect(response.status).toBe(500)
+      expect(mockPrisma.users.update).toHaveBeenLastCalledWith({
+        where: { id: GUEST_ID },
+        data: { username: 'new_user' },
+      })
+    })
+
+    it('leaves the guest renamed once the account actually holds the name', async () => {
+      guestHoldsTheName()
+
+      const response = await POST(
+        buildRequest({
+          email: 'new@example.com',
+          username: 'new_user',
+          password: 'ValidPass123',
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(mockPrisma.users.update).toHaveBeenCalledTimes(1)
+      expect(mockPrisma.users.update).toHaveBeenCalledWith({
+        where: { id: GUEST_ID },
+        data: { username: 'new_user-8f14e4' },
+      })
+    })
+  })
+
   it('answers a create that loses the unique-index race with 400, not 500', async () => {
     mockPrisma.users.create.mockRejectedValue(uniqueConstraintError())
 
@@ -417,6 +494,8 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).toBe(200)
     expect(mockHashPassword).toHaveBeenCalledWith('ValidPass123')
+    // The underscores are escaped because the insensitive filter compiles to an
+    // ILIKE, where a bare `_` matches any character (#1055).
     expect(mockPrisma.users.findMany).toHaveBeenCalledWith({
       where: {
         OR: [
@@ -428,7 +507,7 @@ describe('POST /api/auth/register', () => {
           },
           {
             username: {
-              equals: 'new_user',
+              equals: 'new\\_user',
               mode: 'insensitive',
             },
           },
