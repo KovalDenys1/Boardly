@@ -31,10 +31,20 @@
  *  - nothing pinned `.ttt-board-surface`'s `padding: 12px`, which is where the
  *    107/125 in `--c4-cell` and the two 27px terms come from. The arithmetic is
  *    checked here, so changing one without the others fails.
+ *
+ * The second review found the same root cause once more, in the state none of
+ * the above reaches: the INSPECT state, one click from the result overlay's
+ * "View Board". There the overlay is gone and the `--result` class with it, so
+ * the card paints nothing - and the "show results" pill was still hanging off
+ * that card. Measured at 1280x800 in Rock Paper Scissors: `.ttt-board-surface`
+ * 904x175 at (20,423), bottom 598; the pill 107x30 at (419,744), 146px below
+ * it, on bare page. The pill now lives inside the surface, and the check for
+ * it reads globals.css per element rather than naming a game - see
+ * `expectPillHangsOffThePaintedBoard`.
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import TicTacToeLobbyPage from '@/app/lobby/[code]/tic-tac-toe-page'
 import ConnectFourLobbyPage from '@/app/lobby/[code]/connect-four-page'
 import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
@@ -113,8 +123,10 @@ jest.mock('@/lib/supabase-client', () => ({
 // (#1052); jsdom's matchMedia answers `matches: false` for both queries, so the
 // elected tree is 'desktop'. Saying so here rather than relying on it keeps the
 // Memory desktop assertions from turning into assertions about jsdom.
+const mockLayout: { current: 'desktop' | 'mobile' | 'landscape' } = { current: 'desktop' }
+
 jest.mock('@/hooks/useActiveGameLayout', () => ({
-  useActiveGameLayout: () => 'desktop',
+  useActiveGameLayout: () => mockLayout.current,
 }))
 
 const PLAYERS = [
@@ -240,6 +252,138 @@ function expectBoardIsInsideASurface(card: Element) {
     if (child === surfaces[0]) continue
     expect((child as HTMLElement).style.position).toBe('absolute')
   }
+}
+
+/* ── the stylesheet, read as rules rather than as text ──────────────────────
+ *
+ * The "show results" pill is `position: absolute; bottom`, so what it hangs off
+ * is its nearest POSITIONED ancestor, and what the player sees under it is
+ * whatever that box paints. Neither fact is in the TSX: both are in
+ * globals.css. So the check below reads the real stylesheet and asks it, per
+ * element, with `Element.matches` - which means a rule written for a phone, a
+ * theme or a compound selector counts exactly as the browser would count it,
+ * and no list of class names has to be kept in step here.
+ */
+const GLOBALS_CSS = fs
+  .readFileSync(path.join(process.cwd(), 'app', 'globals.css'), 'utf8')
+  // Comments in this file quote selectors and declarations at length; leaving
+  // them in would have the parser find rules that do not exist.
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+
+interface CssRule { selectors: string[]; body: string }
+
+/** Every style rule in the file, including the ones nested in `@media`. */
+function parseCssRules(css: string): CssRule[] {
+  const rules: CssRule[] = []
+  const walk = (from: number, to: number) => {
+    let start = from
+    for (let i = from; i < to; i++) {
+      const ch = css[i]
+      if (ch === ';' && start === i) start = i + 1
+      if (ch !== '{') continue
+      const prelude = css.slice(start, i).trim()
+      let depth = 1
+      let end = i + 1
+      while (end < to && depth > 0) {
+        if (css[end] === '{') depth++
+        else if (css[end] === '}') depth--
+        end++
+      }
+      const body = css.slice(i + 1, end - 1)
+      if (prelude.startsWith('@')) walk(i + 1, end - 1)
+      else if (prelude) rules.push({ selectors: prelude.split(',').map((s) => s.trim()).filter(Boolean), body })
+      i = end - 1
+      start = end
+    }
+  }
+  walk(0, css.length)
+  return rules
+}
+
+const CSS_RULES = parseCssRules(GLOBALS_CSS)
+
+/** jsdom throws on selectors it cannot parse (`::-webkit-*`, `:has()`). */
+function matchesSafely(el: Element, selector: string): boolean {
+  try {
+    return el.matches(selector)
+  } catch {
+    return false
+  }
+}
+
+const rulesFor = (el: Element): CssRule[] =>
+  CSS_RULES.filter((rule) => rule.selectors.some((selector) => matchesSafely(el, selector)))
+
+const declares = (el: Element, re: RegExp): boolean => rulesFor(el).some((rule) => re.test(rule.body))
+
+/** Does an absolutely-positioned child of this element hang off it? */
+function isPositioned(el: HTMLElement): boolean {
+  const inline = el.style.position
+  if (inline && inline !== 'static') return true
+  return declares(el, /(^|[;\s])position\s*:\s*(relative|absolute|fixed|sticky)/)
+}
+
+const NOT_A_COLOR = /^(none|transparent|initial|inherit|unset|revert)\b/
+
+/** Does this element put anything on the screen behind its children? */
+function paints(el: HTMLElement): boolean {
+  const inline = (el.style.background || el.style.backgroundColor || '').trim()
+  if (inline && !NOT_A_COLOR.test(inline)) return true
+  return rulesFor(el).some((rule) => {
+    const declaration = /(^|[;\s])background(-color)?\s*:\s*([^;]+)/.exec(rule.body)
+    return !!declaration && !NOT_A_COLOR.test(declaration[3].trim())
+  })
+}
+
+const describeBox = (el: Element) => `<${el.tagName.toLowerCase()} class="${el.className}">`
+
+/**
+ * The review's remaining major, stated as a shape.
+ *
+ * In the inspect state - one click from the result overlay's "View Board" -
+ * the overlay is gone and the mount point's `--result` class with it, so the
+ * card paints nothing by design (#903). The pill kept hanging off that card,
+ * which put it on bare page below the board: measured at 1280x800 in Rock
+ * Paper Scissors, the painted surface ended at y=598 and the pill sat at
+ * y=744, 146px past it. Anything a player is shown has to hang off a box that
+ * paints, and for this pill that box also has to be the one holding the board
+ * - "the pill sits over the board" is the whole of what it is for.
+ */
+function expectPillHangsOffThePaintedBoard(pill: HTMLElement) {
+  let anchor: HTMLElement | null = null
+  const climbed: string[] = []
+  for (let parent = pill.parentElement; parent; parent = parent.parentElement) {
+    climbed.push(describeBox(parent))
+    if (isPositioned(parent)) { anchor = parent; break }
+  }
+
+  if (!anchor) {
+    throw new Error(
+      `the "show results" pill is absolutely positioned but nothing above it is, so it hangs off ` +
+      `the page itself. Climbed: ${climbed.join(' -> ')}`
+    )
+  }
+
+  if (!paints(anchor)) {
+    throw new Error(
+      `the "show results" pill hangs off ${describeBox(anchor)}, which paints nothing in this state - ` +
+      `it would be drawn on bare page (#903 review). Anchor it to the box that paints.`
+    )
+  }
+
+  expect(pill.closest('.ttt-board-surface')).toBeTruthy()
+}
+
+const pillsIn = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>('[data-testid="show-results-pill"]'))
+
+/** The overlay's primary action, which is the only way into the inspect state. */
+async function inspectTheBoard(container: HTMLElement) {
+  await waitFor(() =>
+    expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+  )
+  fireEvent.click(screen.getAllByText('game.ui.viewBoard')[0])
+  await waitFor(() => expect(pillsIn(container).length).toBeGreaterThan(0))
 }
 
 /**
@@ -387,6 +531,74 @@ describe('the board card does not paint the space the board leaves (#903)', () =
     })
   })
 
+  /**
+   * One test per tree rather than one per game, and the check itself names no
+   * game: the first round's suite covered tic-tac-toe only and the reviewer
+   * reverted the other three files with everything green, so what is asserted
+   * here is the shape - an absolutely positioned pill hangs off a box, and
+   * that box has to paint. Moving any one of these pills back out of its
+   * surface fails the test for that tree, and nothing else has to change.
+   */
+  describe('the "show results" pill hangs off a box that paints (#903 review)', () => {
+    beforeEach(() => {
+      mockLayout.current = 'desktop'
+    })
+
+    it('tic-tac-toe', async () => {
+      respondWith(ticTacToeResponse('finished'))
+      const { container } = render(<TicTacToeLobbyPage code="ABCD" />)
+      await inspectTheBoard(container)
+
+      const pills = pillsIn(container)
+      expect(pills.length).toBeGreaterThan(0)
+      pills.forEach(expectPillHangsOffThePaintedBoard)
+    })
+
+    it('connect four', async () => {
+      respondWith(connectFourResponse('finished'))
+      const { container } = render(<ConnectFourLobbyPage code="ABCD" />)
+      await inspectTheBoard(container)
+
+      const pills = pillsIn(container)
+      expect(pills.length).toBeGreaterThan(0)
+      pills.forEach(expectPillHangsOffThePaintedBoard)
+    })
+
+    it('rock paper scissors', async () => {
+      respondWith(rockPaperScissorsResponse('finished'))
+      const { container } = render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await inspectTheBoard(container)
+
+      const pills = pillsIn(container)
+      expect(pills.length).toBeGreaterThan(0)
+      pills.forEach(expectPillHangsOffThePaintedBoard)
+    })
+
+    // Memory mounts three trees and elects one, and the pill is rendered by
+    // two different call sites: the desktop panel has its own inline markup,
+    // and `renderBoardSection` is shared by the mobile tab and the phone
+    // -landscape pane. Both have to be driven, or half of Memory is uncovered.
+    it.each(['desktop', 'mobile', 'landscape'] as const)('memory, %s', async (layout) => {
+      mockLayout.current = layout
+      const { container } = renderMemory('finished')
+      await inspectTheBoard(container)
+
+      const pills = pillsIn(container)
+      expect(pills.length).toBeGreaterThan(0)
+      pills.forEach(expectPillHangsOffThePaintedBoard)
+    })
+
+    // The pill only exists while the board is being inspected. If it showed up
+    // over a live board it would sit on top of playable cells.
+    it('and there is no pill while the game is still being played', async () => {
+      respondWith(ticTacToeResponse('playing'))
+      const { container } = render(<TicTacToeLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('ttt-board').length).toBeGreaterThan(0))
+
+      expect(pillsIn(container)).toHaveLength(0)
+    })
+  })
+
   describe('yahtzee hugs its dice instead of stretching around them (#903)', () => {
     function renderYahtzee(compact: boolean) {
       const engine = new YahtzeeGame('game-1')
@@ -524,6 +736,9 @@ describe('the board card does not paint the space the board leaves (#903)', () =
       // It must not become a size container, or it would stop taking its height
       // from the board and start stretching in the card's place.
       for (const block of surfaceBlocks) expect(block).not.toContain('container-type')
+      // And it has to be the anchor, or the pill inside it falls back to the
+      // card - which is the box this ticket stopped painting.
+      expect(surfaceBlocks.some((b) => /position:\s*relative/.test(b))).toBe(true)
     })
 
     it('paints the overlay mount points for as long as the overlay is mounted', () => {

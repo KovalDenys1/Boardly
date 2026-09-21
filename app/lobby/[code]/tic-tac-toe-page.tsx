@@ -1028,6 +1028,20 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
                     testId={testId}
                 />
+                {/* Inside the surface, not beside it: this pill is
+                    `position: absolute; bottom`, so it hangs off the nearest
+                    positioned ancestor, and the card stopped painting in this
+                    state (#903). On the card it was drawn on bare page below
+                    the board. The surface is the box the player can see. */}
+                {isFinished && !isSpectator && overlayInspecting && (
+                    <button
+                        data-testid="show-results-pill"
+                        onClick={() => setOverlayInspecting(false)}
+                        style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                    >
+                        {t('games.tictactoe.game.showResults')}
+                    </button>
+                )}
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
@@ -1067,14 +1081,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     gameType="tic_tac_toe"
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
-            )}
-            {isFinished && !isSpectator && overlayInspecting && (
-                <button
-                    onClick={() => setOverlayInspecting(false)}
-                    style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
-                >
-                    {t('games.tictactoe.game.showResults')}
-                </button>
             )}
         </div>
     )

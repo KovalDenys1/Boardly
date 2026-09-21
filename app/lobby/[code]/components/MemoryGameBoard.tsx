@@ -475,7 +475,28 @@ export default function MemoryGameBoard({
   const renderBoardSection = (wrapClassName: string, layout: ActiveGameLayout) => (
     <>
       <div className={wrapClassName}>
-        <div className="ttt-board-surface">{cardGrid}</div>
+        <div className="ttt-board-surface">
+          {cardGrid}
+          {/* Inside the surface, not beside it: this pill is
+              `position: absolute; bottom`, so it hangs off the nearest
+              positioned ancestor, and neither the panel nor the mobile board
+              area paints (#903). The surface is the box the player can see. */}
+          {activeGameLayout === layout && isFinished && overlayInspecting && (
+            <button
+              data-testid="show-results-pill"
+              onClick={() => setOverlayInspecting(false)}
+              style={{
+                position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                background: 'rgba(31,27,22,0.75)', color: '#fff',
+                border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+                padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+              }}
+            >
+              {t('games.memory.game.showResults')}
+            </button>
+          )}
+        </div>
       </div>
       {activeGameLayout === layout && isFinished && !overlayInspecting && !isSpectator && (
         <GameResultOverlay
@@ -495,20 +516,6 @@ export default function MemoryGameBoard({
           gameType="memory"
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
-      )}
-      {activeGameLayout === layout && isFinished && overlayInspecting && (
-        <button
-          onClick={() => setOverlayInspecting(false)}
-          style={{
-            position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(31,27,22,0.75)', color: '#fff',
-            border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-            padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
-          }}
-        >
-          {t('games.memory.game.showResults')}
-        </button>
       )}
     </>
   )
@@ -752,7 +759,27 @@ export default function MemoryGameBoard({
 
           <main className="memory-layout">
             <section className={`memory-board-panel${desktopShowsResultOverlay ? ' memory-board-panel--result' : ''}`} style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
-              <div className="ttt-board-surface">{cardGrid}</div>
+              <div className="ttt-board-surface">
+                {cardGrid}
+                {/* Inside the surface, not beside it - see renderBoardSection
+                    above: the panel stopped painting in this state (#903), so
+                    on the panel the pill was drawn on bare page. */}
+                {activeGameLayout === 'desktop' && isFinished && overlayInspecting && (
+                  <button
+                    data-testid="show-results-pill"
+                    onClick={() => setOverlayInspecting(false)}
+                    style={{
+                      position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(31,27,22,0.75)', color: '#fff',
+                      border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+                      padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {t('games.memory.game.showResults')}
+                  </button>
+                )}
+              </div>
               {desktopShowsResultOverlay && (
                 <GameResultOverlay
                   title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
@@ -771,20 +798,6 @@ export default function MemoryGameBoard({
                   gameType="memory"
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
-              )}
-              {activeGameLayout === 'desktop' && isFinished && overlayInspecting && (
-                <button
-                  onClick={() => setOverlayInspecting(false)}
-                  style={{
-                    position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(31,27,22,0.75)', color: '#fff',
-                    border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-                    padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    zIndex: 5, backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  {t('games.memory.game.showResults')}
-                </button>
               )}
             </section>
 

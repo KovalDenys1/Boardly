@@ -1651,7 +1651,19 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-sizing: border-box;
 }
 /* The painted card: sized by the board it holds, centred in what the card
-   above leaves (#903). Anything that is a board goes inside one of these. */
+   above leaves (#903). Anything that is a board goes inside one of these -
+   and so is anything drawn over the board.
+
+   `position: relative` is load-bearing, not tidiness. The "show results" pill
+   is `position: absolute; bottom`, so it hangs off its nearest positioned
+   ancestor. That used to be `.ttt-board-card` / `.memory-board-panel`, which
+   this ticket stopped painting: in the inspect state - one click from the
+   result overlay's "View Board" - the pill sat on bare page below the board.
+   Measured at 1280x800 in Rock Paper Scissors: the surface ended at y=598 and
+   the pill was at y=744, 146px past it, over nothing. This is now the
+   painted box AND the anchor, so the pill cannot outlive what is under it.
+   `overflow: hidden` clips the pill to the board it sits on, which is what
+   keeps it from reaching back out over bare page at any viewport. */
 .ttt-board-surface {
   background: #FFF8EC;
   border-radius: 18px;
@@ -1665,6 +1677,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  position: relative;
   box-sizing: border-box;
 }
 /* Rock Paper Scissors is the one adopter whose board is not a fixed-aspect
