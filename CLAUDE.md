@@ -468,6 +468,22 @@ that has lost the majority of its players — guests are most of the audience. R
 has to be read from `AnalyticsUserFacts`, which keeps a row after the user is gone and
 marks it `missingSince`.
 
+**So `Users` cannot be read as a daily series at all.** Grouping `Users` by `createdAt`
+makes every day older than the retention window look empty, because those rows were
+cleaned rather than never created — on 2026-09-21 it showed 0-3 guests a day for 14-17
+September while `AnalyticsUserFacts` showed 5, 8, 17 and 7 for the same days. Use
+`AnalyticsUserFacts` for anything that compares days, and remember its sync runs nightly
+around 02:29 UTC, so today's rows are not in it yet.
+
+**When you need "did anything happen", ask `OperationalEvents` for the *kinds*, not the
+count.** `count(distinct "eventName") by day` is the cheapest health check this database
+has. Human events are `lobby_create_ready`, `move_submit_applied`, `invite_opened`,
+`second_human_joined`, `signup_prompt_shown`; `cron_run` is our own schedulers and is
+written whatever happens to the site. A day holding only `cron_run` is a dead day, which
+is what 19 and 20 September 2026 were, against 4-9 kinds on every other day. The
+`site_silent` reliability rule (#1057, `lib/operational-metrics.ts`) now watches exactly
+this; its runbook is `docs/OPERATIONS.md#runbook-site_silent`.
+
 ## DNS
 
 `boardly.online` is registered at **Namecheap** — Domain List → boardly.online → Manage →
