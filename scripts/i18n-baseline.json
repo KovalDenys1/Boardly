@@ -1,0 +1,242 @@
+[
+  {
+    "file": "app/about/AboutContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/api/og/lobby/[code]/route.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/auth/error-oauth/page.tsx",
+    "count": 13
+  },
+  {
+    "file": "app/auth/forgot-password/page.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/auth/link/page.tsx",
+    "count": 16
+  },
+  {
+    "file": "app/auth/login/LoginForm.tsx",
+    "count": 5
+  },
+  {
+    "file": "app/auth/register/RegisterForm.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/auth/reset-password/page.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/games/alias/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/components/GameDetailPage.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/games/liars-party/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/rock-paper-scissors/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/layout.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/alias-page.tsx",
+    "count": 34
+  },
+  {
+    "file": "app/lobby/[code]/components/JoinPrompt.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/components/LobbyInfo.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/components/WaitingRoom.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/[code]/components/YahtzeeGameBoard.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/lobby/[code]/connect-four-page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "count": 9
+  },
+  {
+    "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/[code]/spectate/page.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/lobby/[code]/tic-tac-toe-page.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/create/page.tsx",
+    "count": 33
+  },
+  {
+    "file": "app/lobby/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/maintenance/MaintenanceContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/not-found.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/opengraph-image.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/premium/PremiumContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/profile/page.tsx",
+    "count": 30
+  },
+  {
+    "file": "app/twitter-image.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/AdSlot.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/AuthGateModal.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/AvatarPicker.tsx",
+    "count": 8
+  },
+  {
+    "file": "components/BoardlyErrorState.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/BotMoveOverlay.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/Chat.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/Dice.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/FeedbackWidget.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/Footer.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/Friends.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/GameHistory.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/Header.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/Header/MobileMenu.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/FaqSection.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/HeroSectionRedesign.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/LoadingSpinner.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/LobbyThemeBanner.tsx",
+    "count": 9
+  },
+  {
+    "file": "components/Onboarding/OnboardingModal.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/PlayerList.tsx",
+    "count": 6
+  },
+  {
+    "file": "components/PlayerProfileCard.tsx",
+    "count": 8
+  },
+  {
+    "file": "components/PremiumProfileCard.tsx",
+    "count": 8
+  },
+  {
+    "file": "components/PublicProfileView.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/replay/ConnectFourReplayRenderer.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/replay/TTTReplayRenderer.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/replay/YahtzeeReplayRenderer.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/RockPaperScissorsGameBoard.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/RollHistory.tsx",
+    "count": 8
+  },
+  {
+    "file": "components/Scorecard.tsx",
+    "count": 6
+  },
+  {
+    "file": "components/Toast.tsx",
+    "count": 1
+  }
+]
