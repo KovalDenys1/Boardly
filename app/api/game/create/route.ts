@@ -16,6 +16,7 @@ import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -542,9 +543,17 @@ export async function POST(request: NextRequest) {
       lobbyCode: lobby.code,
       gameId: game.id,
     })
+    // Sanitized like every other state broadcast. This is the first state a
+    // lobby ever sees and it is the one that was missed: a Sketch & Guess game
+    // row is created with round 1's prompt already in it, so this payload put
+    // the word on the lobby topic - the channel every seated player is joined
+    // to - before the drawer had touched the canvas (#1032, third pass; found
+    // by the #1037 smoke spec). No single viewer for a shared broadcast, so it
+    // redacts for everyone; each client re-fetches its own viewer-sanitized
+    // snapshot from GET /api/lobby/[code].
     void broadcastToLobby(lobby.code, 'game-update', {
       action: 'state-change',
-      payload: { state: gameEngine.getState() },
+      payload: { state: sanitizeStateForBroadcast(gameType, gameEngine.getState(), null) },
     })
 
     // Check if first player is a bot and trigger bot turn
