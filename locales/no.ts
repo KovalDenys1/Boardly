@@ -1124,6 +1124,11 @@ const no = {
       name: 'Løgnerfest',
       description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
       difficulty: 'Vanskelig',
+      ribbon: {
+        desc: 'Kom med en påstand og håp den holder - bordet stemmer over om du snakker sant.',
+        tag: 'Bløff',
+        time: '15 min',
+      },
       seo: {
         question: 'Kan du spille Løgnerfest online med en gjeng?',
         answer: 'Ja, med fire til tolv personer. En spiller kommer med en påstand, sann eller bløff, og den regnes som avslørt bare når et klart flertall utfordrer den – samler du nok avslørte bløffer, er du ute. Det finnes ingen boter: å lese folkene i rommet er hele spillet.',

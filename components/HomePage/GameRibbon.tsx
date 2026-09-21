@@ -334,6 +334,14 @@ export default function GameRibbon() {
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),
     },
+    'liars-party': {
+      name: t('games.liars_party.name'),
+      tag: t('games.liars_party.ribbon.tag'),
+      players: '4-12',
+      time: t('games.liars_party.ribbon.time'),
+      diff: t('games.liars_party.difficulty'),
+      desc: t('games.liars_party.ribbon.desc'),
+    },
     rps: {
       name: t('games.rock_paper_scissors.name'),
       tag: t('games.rock_paper_scissors.ribbon.tag'),

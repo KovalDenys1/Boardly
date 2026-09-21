@@ -1124,6 +1124,11 @@ const en = {
       name: 'Liar\'s Party',
       description: 'Bluff, read the room, and catch the best liars before they fool everyone.',
       difficulty: 'Hard',
+      ribbon: {
+        desc: 'Make a claim and hope it holds - the table votes on whether you are telling the truth.',
+        tag: 'Bluffing',
+        time: '15 min',
+      },
       seo: {
         question: "Can you play Liar's Party online with a group?",
         answer: 'Yes, with four to twelve people. One player makes a claim, true or bluffed, and it only counts as caught when a strict majority challenges it – collect enough caught bluffs and you are out. There are no bots: reading the people in the room is the whole game.',

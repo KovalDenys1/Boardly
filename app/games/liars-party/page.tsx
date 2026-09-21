@@ -3,7 +3,7 @@ import { buildGameMetadata } from '@/lib/game-seo'
 import GameJsonLd from '../components/GameJsonLd'
 import GameDetailPage from '../components/GameDetailPage'
 
-export const metadata: Metadata = buildGameMetadata('liars-party', { index: false })
+export const metadata: Metadata = buildGameMetadata('liars-party')
 
 export default function LiarsPartyGamePage() {
   return (

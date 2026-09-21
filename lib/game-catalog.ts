@@ -580,7 +580,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       questionKey: 'games.liars_party.seo.question',
       answerKey: 'games.liars_party.seo.answer',
     },
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/liars-party/lobbies',
     color: 'from-violet-500 to-purple-600',
     lobbyCreateConfig: {
@@ -655,7 +655,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     // publicly is taken, and the flip belongs to that ticket alone. #1035 only
     // removes the two things that made the flip impossible – no seo block and
     // no lobbyCreateConfig, which `isAvailableCatalogEntry` requires.
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/sketch-and-guess/lobbies',
     color: 'from-cyan-500 to-blue-600',
     lobbyCreateConfig: {
