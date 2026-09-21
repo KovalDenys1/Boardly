@@ -1644,6 +1644,7 @@ const uk: Translation = {
       backToHome: 'На головну',
     },
     password: {
+      label: 'Пароль',
       veryWeak: 'Дуже слабкий',
       weak: 'Слабкий',
       fair: 'Середній',

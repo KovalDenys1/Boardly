@@ -68,3 +68,34 @@ describe('audit-i18n', () => {
     ])
   })
 })
+
+describe('audit-i18n — default prop values', () => {
+  /**
+   * The hole that shipped English onto the Russian login page in v1.24.0:
+   * `label = 'Password'` is a default parameter value, not JSX, so the JsxText
+   * and attribute checks both walk straight past it.
+   */
+  it('flags a user-visible prop whose default is an English literal', () => {
+    const source = "export default function PasswordInput({ value, label = 'Password' }) { return <label>{label}</label> }"
+
+    expect(scan(source)).toEqual(['Password'])
+  })
+
+  it('flags a renamed binding by the prop name, not the local name', () => {
+    const source = "const A = ({ title: heading = 'Untitled lobby' }) => <h2>{heading}</h2>"
+
+    expect(scan(source)).toEqual(['Untitled lobby'])
+  })
+
+  it('ignores defaults on props nobody reads', () => {
+    const source = "const A = ({ variant = 'primary', size = 'lg', testId = 'seat-row' }) => <div />"
+
+    expect(scan(source)).toEqual([])
+  })
+
+  it('ignores a default that is not copy', () => {
+    const source = "const A = ({ placeholder = '••••••••' }) => <input placeholder={placeholder} />"
+
+    expect(scan(source)).toEqual([])
+  })
+})

@@ -54,6 +54,28 @@ const outOfScopePrefixes = ['app/guides/', 'app/privacy/', 'app/terms/', 'app/de
 /** Attributes a screen reader or a tooltip renders verbatim. */
 const userVisibleAttributes = new Set(['title', 'placeholder', 'aria-label', 'alt'])
 
+/**
+ * Destructured props whose default value is painted if the caller omits them.
+ *
+ * `function PasswordInput({ label = 'Password' })` is a default parameter value,
+ * not JSX, so the two checks above cannot see it - and that exact line shipped
+ * the English word "Password" onto the Russian login page in v1.24.0, sitting
+ * directly under a correctly translated "Эл. почта". Found by loading the page,
+ * not by any test. A default belongs to whoever renders it, so resolve it with
+ * `t()` inside the component instead.
+ */
+const userVisibleProps = new Set([
+  'label',
+  'title',
+  'placeholder',
+  'ariaLabel',
+  'alt',
+  'caption',
+  'heading',
+  'emptyText',
+  'buttonLabel',
+])
+
 const baselinePath = path.join(repoRoot, 'scripts', 'i18n-baseline.json')
 const allowlistPath = path.join(repoRoot, 'scripts', 'i18n-allowlist.json')
 const updateBaseline = process.argv.includes('--update-baseline')
@@ -148,6 +170,11 @@ export function findUntranslatedStrings(file: string, source: string): Finding[]
       const initializer = node.initializer
       if (userVisibleAttributes.has(name) && initializer && ts.isStringLiteral(initializer)) {
         record(node, initializer.text)
+      }
+    } else if (ts.isBindingElement(node) && node.initializer) {
+      const name = (node.propertyName ?? node.name).getText(sourceFile)
+      if (userVisibleProps.has(name) && ts.isStringLiteral(node.initializer)) {
+        record(node, node.initializer.text)
       }
     }
     ts.forEachChild(node, visit)

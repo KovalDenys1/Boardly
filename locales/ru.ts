@@ -1642,6 +1642,7 @@ const ru = {
       backToHome: 'Назад на главную'
     },
     password: {
+      label: 'Пароль',
       veryWeak: 'Очень слабый',
       weak: 'Слабый',
       fair: 'Средний',
