@@ -30,7 +30,6 @@ interface GuideLayoutProps {
   question: string
   /** One sentence. If it needs two, the question is really two questions. */
   answer: string
-  breadcrumbLabel: string
   accentColor: string
   cta: {
     href: string
@@ -275,7 +274,6 @@ export default function GuideLayout({
   subtitle,
   question,
   answer,
-  breadcrumbLabel,
   accentColor,
   cta,
   related,
@@ -287,6 +285,9 @@ export default function GuideLayout({
   // Until this, seven of twelve guides sent every link to `/lobbies`, which is
   // noindex and canonicals to the game page, so the page that ranks got none of
   // the guide's link equity.
+  // The visible crumb and the BreadcrumbList node now read the same catalog
+  // field, so the two cannot drift – they were a prop and a literal before.
+  const breadcrumbLabel = guide.seo.breadcrumbLabel
   const gamePath = getGuideGamePath(guide)
   const gameName = guide.game ? englishText(getCatalogEntryById(guide.game)!.nameKey) : null
 

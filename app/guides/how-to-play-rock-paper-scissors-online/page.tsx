@@ -1,50 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'How to Play Rock Paper Scissors Online - Complete Guide',
-  description:
-    'Learn how to play Rock Paper Scissors online. Rules, the best-of-three format, how to read an opponent, and how to beat the bot. Free 2-player game in your browser.',
-  keywords: [
-    'how to play rock paper scissors online',
-    'rock paper scissors rules',
-    'rock paper scissors strategy',
-    'play rock paper scissors with friends',
-    'rock paper scissors online free',
-  ],
-  openGraph: {
-    title: 'How to Play Rock Paper Scissors Online | Boardly',
-    description: 'Complete Rock Paper Scissors guide – rules, the best-of-three format, and strategy that actually works. Free 2-player game in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-rock-paper-scissors-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-rock-paper-scissors-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-rock-paper-scissors-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Rock Paper Scissors Online – Complete Guide',
-  description: 'Rules, the best-of-three format, and strategy for Rock Paper Scissors.',
-  url: 'https://boardly.online/guides/how-to-play-rock-paper-scissors-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-09-20',
-  dateModified: getGuideBySlug('how-to-play-rock-paper-scissors-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-rock-paper-scissors-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Rock Paper Scissors Online', item: 'https://boardly.online/guides/how-to-play-rock-paper-scissors-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-rock-paper-scissors-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -98,7 +61,6 @@ export default function HowToPlayRockPaperScissorsGuide() {
         subtitle="6 min read · Free to play on Boardly · 2 players or vs AI"
         question="How do you play Rock Paper Scissors online?"
         answer="Both players pick Rock, Paper or Scissors at the same time, the two choices are revealed together, and the first player to win two rounds takes the match – Rock beats Scissors, Scissors beats Paper, and Paper beats Rock."
-        breadcrumbLabel="How to Play Rock Paper Scissors Online"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games/rock-paper-scissors/lobbies', label: 'Play Rock Paper Scissors Now', detail: 'Ready to throw your first move?' }}
         related={[

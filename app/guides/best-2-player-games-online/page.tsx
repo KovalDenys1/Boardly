@@ -1,54 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
-export const metadata: Metadata = {
-  title: 'Best 2 Player Games Online Free - No Download',
-  description:
-    'The best free 2 player games you can play online right now. Tic Tac Toe, Memory, and more — no download, no account required. Play with a friend in seconds.',
-  keywords: [
-    'best 2 player games online',
-    '2 player games online free',
-    'two player games online no download',
-    'online games for 2 players',
-    'free 2 player browser games',
-    '2 player board games online',
-    'play games with one friend online',
-    'two player games free',
-  ],
-  openGraph: {
-    title: 'Best 2 Player Games Online Free | Boardly',
-    description: 'Top free 2 player games you can play in your browser right now — no download, no account needed.',
-    url: 'https://boardly.online/guides/best-2-player-games-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/best-2-player-games-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('best-2-player-games-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Best 2 Player Games Online Free — No Download Required',
-  description: 'A curated list of the best free 2 player games you can play in any browser instantly.',
-  url: 'https://boardly.online/guides/best-2-player-games-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-08',
-  dateModified: getGuideBySlug('best-2-player-games-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('best-2-player-games-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Best 2 Player Games Online', item: 'https://boardly.online/guides/best-2-player-games-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('best-2-player-games-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -146,7 +106,6 @@ export default function Best2PlayerGamesGuide() {
         subtitle="5 min read · All games free on Boardly · No account required"
         question="What are the best 2 player games to play online?"
         answer="Tic Tac Toe for a round that ends in under a minute, Connect Four for something tactical that still ends fast, Memory for a close contest of attention, and Yahtzee when you have twenty minutes – all four free in the browser, with no download and no account for either player."
-        breadcrumbLabel="Best 2 Player Games Online"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick a game and challenge your friend now.' }}
         related={[

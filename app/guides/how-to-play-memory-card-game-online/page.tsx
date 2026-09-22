@@ -1,50 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'How to Play Memory Card Game Online - Complete Guide',
-  description:
-    'Rules, difficulty levels, and strategy tips for the classic card-matching game. Free multiplayer in your browser.',
-  keywords: [
-    'how to play memory card game online',
-    'memory game rules',
-    'concentration card game guide',
-    'memory game strategy',
-    'play memory with friends online',
-  ],
-  openGraph: {
-    title: 'How to Play Memory Card Game Online | Boardly',
-    description: 'Complete Memory guide — rules, difficulty levels, strategy tips. Free 2–4 player game in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-memory-card-game-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-memory-card-game-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-memory-card-game-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Memory Card Game Online — Complete Guide',
-  description: 'Rules, difficulty levels, and strategy tips for Memory.',
-  url: 'https://boardly.online/guides/how-to-play-memory-card-game-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2025-01-01',
-  dateModified: getGuideBySlug('how-to-play-memory-card-game-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-memory-card-game-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Memory Card Game', item: 'https://boardly.online/guides/how-to-play-memory-card-game-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-memory-card-game-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -94,7 +57,6 @@ export default function HowToPlayMemoryGuide() {
         subtitle="5 min read · Free to play on Boardly · 2–4 players"
         question="How do you play the Memory card game online?"
         answer="Every card starts face down; on your turn you flip two, keep the pair and go again if they match, and turn them back if they do not – when the last pair is gone the player holding the most pairs wins."
-        breadcrumbLabel="How to Play Memory Card Game"
         accentColor="var(--bd-mint)"
         cta={{ href: '/games/memory/lobbies', label: 'Play Memory Now', detail: 'Ready to test your memory?' }}
         related={[
