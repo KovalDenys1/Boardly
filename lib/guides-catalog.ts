@@ -7,6 +7,7 @@
  */
 
 import type { IconName } from '@/components/icons/names'
+import { getCatalogEntryById } from '@/lib/game-catalog'
 
 export type GuideCategory = 'how-to-play' | 'strategy' | 'best-of'
 
@@ -21,6 +22,13 @@ export interface GuideEntry {
   readTime: string
   accent: string
   category: GuideCategory
+  /**
+   * The catalog id of the game this guide teaches, when it teaches one. It is
+   * what points the guide at `/games/<slug>` and the game page back at every
+   * guide about it, so neither side hand-types the other's URL. A best-of list
+   * covers several games and leaves it unset.
+   */
+  game?: string
   /** Last content change (YYYY-MM-DD) – drives sitemap lastModified. */
   updated: string
 }
@@ -34,7 +42,8 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-sky)',
     category: 'how-to-play',
-    updated: '2026-09-15',
+    game: 'yahtzee',
+    updated: '2026-09-22',
   },
   {
     slug: 'how-to-play-spy-game-online',
@@ -44,7 +53,8 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-lav)',
     category: 'how-to-play',
-    updated: '2026-09-15',
+    game: 'spy',
+    updated: '2026-09-22',
   },
   {
     slug: 'how-to-play-memory-card-game-online',
@@ -54,7 +64,8 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-mint)',
     category: 'how-to-play',
-    updated: '2026-09-15',
+    game: 'memory',
+    updated: '2026-09-22',
   },
   {
     slug: 'how-to-play-tic-tac-toe-online',
@@ -64,7 +75,8 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
-    updated: '2026-09-15',
+    game: 'tic-tac-toe',
+    updated: '2026-09-22',
   },
   {
     slug: 'how-to-play-connect-four-online',
@@ -74,7 +86,8 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '3 min',
     accent: 'var(--bd-sun)',
     category: 'how-to-play',
-    updated: '2026-09-15',
+    game: 'connect-four',
+    updated: '2026-09-22',
   },
   {
     slug: 'how-to-play-rock-paper-scissors-online',
@@ -84,6 +97,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '6 min',
     accent: 'var(--bd-lav)',
     category: 'how-to-play',
+    game: 'rps',
     updated: '2026-09-20',
   },
   {
@@ -94,6 +108,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
+    game: 'alias',
     updated: '2026-09-15',
   },
 ]
@@ -107,7 +122,8 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     readTime: '6 min',
     accent: 'var(--bd-sky)',
     category: 'strategy',
-    updated: '2026-09-15',
+    game: 'yahtzee',
+    updated: '2026-09-22',
   },
   {
     slug: 'connect-four-strategy-guide',
@@ -117,7 +133,8 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     readTime: '5 min',
     accent: 'var(--bd-sun)',
     category: 'strategy',
-    updated: '2026-09-15',
+    game: 'connect-four',
+    updated: '2026-09-22',
   },
 ]
 
@@ -160,5 +177,25 @@ export function getGuideBySlug(slug: string): GuideEntry {
   const guide = ALL_GUIDES.find((entry) => entry.slug === slug)
   if (!guide) throw new Error(`Guide "${slug}" is not in ALL_GUIDES`)
   return guide
+}
+
+/**
+ * `/games/<slug>` for the game a guide teaches – the detail page, not the
+ * lobbies list under it, derived from the catalog route the same way
+ * `lib/game-seo.ts` derives the canonical. Null for a guide with no `game`.
+ * A `game` that names nothing in the catalog is a typo, and the guides
+ * prerender at build time, so it fails the build rather than ship a dead link.
+ */
+export function getGuideGamePath(guide: GuideEntry): string | null {
+  if (!guide.game) return null
+  const entry = getCatalogEntryById(guide.game)
+  if (!entry) throw new Error(`Guide "${guide.slug}" names catalog game "${guide.game}", which does not exist`)
+  if (!('route' in entry) || !entry.route) throw new Error(`Guide "${guide.slug}" names "${guide.game}", which has no route`)
+  return entry.route.replace(/\/lobbies$/, '')
+}
+
+/** Every guide about one catalog game, how-to first, then strategy – the order the game page lists them in. */
+export function getGuidesForGame(gameId: string): GuideEntry[] {
+  return ALL_GUIDES.filter((guide) => guide.game === gameId)
 }
 

@@ -40,7 +40,6 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.benefit3'),
         t('games.tictactoe.detail.benefit4'),
       ]}
-      guideHref="/guides/how-to-play-tic-tac-toe-online"
       playVsBotGameType="tic_tac_toe"
     />
   )

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
@@ -124,7 +125,7 @@ export default function HowToPlayMemoryGuide() {
 
         <GuideSection title="Difficulty Levels">
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            Boardly Memory has three difficulty levels that change the grid size and number of pairs.
+            <Link href="/games/memory" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Boardly Memory</Link> has three difficulty levels that change the grid size and number of pairs.
           </p>
           <div className="space-y-3">
             {[

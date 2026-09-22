@@ -16,7 +16,6 @@ export default function AliasDetailContent() {
       accentColor="var(--bd-coral)"
       accent="var(--bd-coral)"
       lobbiesHref="/games/alias/lobbies"
-      guideHref="/guides/how-to-play-alias-online"
       primaryCtaLabel={t('games.playNow')}
       // minPlayers is 4 and supportsBots is false, so a visitor arriving alone
       // cannot start anything (#780).

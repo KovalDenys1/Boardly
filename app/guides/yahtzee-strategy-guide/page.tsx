@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideSteps, GuideChecklist } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
@@ -72,6 +73,9 @@ export default function YahtzeeStrategyGuide() {
         <GuideSection title="The Most Important Rule: Chase the Bonus">
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             The single biggest thing separating winning players from losing ones is the upper section bonus. If your scores for Aces, Twos, Threes, Fours, Fives, and Sixes add up to 63 or more, you get an extra 35 points — that is a huge number in a game where scores usually land between 200 and 300.
+          </p>
+          <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            If the categories are new to you, read <Link href="/guides/how-to-play-yahtzee-online" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>how to play Yahtzee online</Link> first. The bonus, short mode and the turn timer are all described on the <Link href="/games/yahtzee" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee game page</Link>.
           </p>
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             To hit 63, you need to average at least three of each number per category. That means:
