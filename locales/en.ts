@@ -496,6 +496,7 @@ const en = {
     guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
     screenshotAlt: 'A round of {{gameName}} in progress on Boardly',
     readGuide: 'Read the guide →',
+    readStrategyGuide: 'Read the strategy guide →',
     detail: {
       labels: {
         players: 'Players',

@@ -542,6 +542,7 @@ const uk: TranslationWithPlurals = {
     guideCallout: 'Вперше в {{gameName}}? Читай повні правила та поради.',
     screenshotAlt: 'Партія в {{gameName}} на Boardly',
     readGuide: 'Читати гайд →',
+    readStrategyGuide: 'Читати гайд зі стратегії →',
     detail: {
       labels: {
         players: 'Гравці',

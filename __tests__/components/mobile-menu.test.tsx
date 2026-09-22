@@ -45,6 +45,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'header.games': 'Games',
         'header.lobbies': 'Lobbies',
         'header.leaderboard': 'Leaderboard',
+        'header.guides': 'Guides',
 
         'header.profile': 'Open profile',
         'header.settings': 'Settings',
@@ -200,5 +201,17 @@ describe('MobileMenu', () => {
     fireEvent.click(screen.getByLabelText('Open menu'))
 
     expect(screen.getByTestId('mobile-language-switcher')).toBeTruthy()
+  })
+
+  it('lists the public guides route, as the desktop nav does', () => {
+    render(
+      <MobileMenu
+        isAuthenticated={false}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('Open menu'))
+
+    expect(screen.getByRole('link', { name: 'Guides' })).toHaveAttribute('href', '/guides')
   })
 })

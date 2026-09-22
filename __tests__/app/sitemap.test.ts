@@ -4,7 +4,7 @@ import sitemap from '@/app/sitemap'
 import { getCatalogGames } from '@/lib/game-catalog'
 import { getGameCanonical } from '@/lib/game-seo'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
-import { ROUTE_UPDATED } from '@/lib/route-dates'
+import { ROUTE_UPDATED, getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
 
 const BASE = 'https://boardly.online'
 const root = process.cwd()
@@ -20,13 +20,31 @@ describe('sitemap (#922)', () => {
     const nonGuides = entries.filter((e) => !guidePaths.has(pathOf(e.url)))
     expect(nonGuides.length).toBeGreaterThan(0)
     for (const entry of nonGuides) {
-      const route = pathOf(entry.url) as keyof typeof ROUTE_UPDATED
+      const route = pathOf(entry.url) as DatedRoute
       expect(ROUTE_UPDATED[route]).toMatch(ISO_DAY)
-      expect(entry.lastModified).toEqual(new Date(ROUTE_UPDATED[route]))
+      expect(getRouteUpdated(route)).toMatch(ISO_DAY)
+      expect(entry.lastModified).toEqual(new Date(getRouteUpdated(route)))
     }
     // and every dated route is in the sitemap, so the map never carries dead keys
     const urls = new Set(entries.map((e) => pathOf(e.url)))
     for (const route of Object.keys(ROUTE_UPDATED)) expect(urls.has(route)).toBe(true)
+  })
+
+  it('dates an index page no earlier than the newest page it lists', () => {
+    // /games read 2026-09-07 for two weeks after two games shipped on
+    // 2026-09-21: the index's own date is a floor, the children lift it.
+    const gameDates = Object.entries(ROUTE_UPDATED)
+      .filter(([route]) => route.startsWith('/games/'))
+      .map(([, date]) => date)
+    expect(gameDates.length).toBeGreaterThan(0)
+    for (const date of gameDates) expect(getRouteUpdated('/games') >= date).toBe(true)
+    expect(getRouteUpdated('/games') >= ROUTE_UPDATED['/games']).toBe(true)
+
+    for (const guide of ALL_GUIDES) expect(getRouteUpdated('/guides') >= guide.updated).toBe(true)
+    expect(getRouteUpdated('/guides') >= ROUTE_UPDATED['/guides']).toBe(true)
+
+    // and a leaf route is its own date, nothing derived
+    expect(getRouteUpdated('/games/yahtzee')).toBe(ROUTE_UPDATED['/games/yahtzee'])
   })
 
   it('takes every guide lastModified from the guide catalog', () => {

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
 
 export default function Footer() {
   const { t } = useTranslation()
@@ -65,21 +66,19 @@ export default function Footer() {
               {t('footer.games')}
             </h3>
             <ul className="space-y-2.5">
-              {[
-                { label: 'Yahtzee', href: '/games/yahtzee' },
-                { label: 'Tic-Tac-Toe', href: '/games/tic-tac-toe' },
-                { label: 'Guess the Spy', href: '/games/spy' },
-                { label: 'Memory', href: '/games/memory' },
-              ].map((link) => (
-                <li key={link.href}>
+              {/* Every available game, from the catalog: this column is on every
+                  page, so it is the one set of links to the game pages a crawler
+                  finds everywhere. Four were hand-typed here while nine were live. */}
+              {getCatalogAvailableGames().map((game) => (
+                <li key={game.id}>
                   <Link
-                    href={link.href}
+                    href={(game.route ?? '').replace(/\/lobbies$/, '')}
                     className="text-sm transition-colors hover:opacity-100"
                     style={{ color: 'var(--bd-ink-soft)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                   >
-                    {link.label}
+                    {t(game.nameKey as TranslationKeys)}
                   </Link>
                 </li>
               ))}
@@ -101,6 +100,8 @@ export default function Footer() {
                 { labelKey: 'footer.createRoom', href: '/lobby/create' },
                 { labelKey: 'footer.leaderboard', href: '/leaderboard' },
                 { labelKey: 'footer.guides', href: '/guides' },
+                // The only crawlable link to /premium on the site.
+                { labelKey: 'common.premium', href: '/premium' },
               ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
                 <li key={link.href}>
                   <Link

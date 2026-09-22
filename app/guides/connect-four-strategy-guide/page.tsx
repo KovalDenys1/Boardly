@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
@@ -110,6 +111,9 @@ export default function ConnectFourStrategyGuide() {
           </p>
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
             Your first disc should almost always go in column 4. If you play second and your opponent takes the center, play column 3 or 5 — never let them build freely from the middle.
+          </p>
+          <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            New to the game? The <Link href="/guides/how-to-play-connect-four-online" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four rules guide</Link> covers the basics, and the <Link href="/games/connect-four" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four game page</Link> has the board, the turn timer and the bot.
           </p>
           <GuideChecklist verdict items={[
             { mark: 'yes', text: 'First move: always column 4 (center)' },

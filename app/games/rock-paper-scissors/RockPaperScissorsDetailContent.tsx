@@ -22,7 +22,6 @@ export default function RockPaperScissorsDetailContent() {
       accentColor="var(--bd-lav)"
       accent="var(--bd-lav)"
       lobbiesHref="/games/rock-paper-scissors/lobbies"
-      guideHref="/guides/how-to-play-rock-paper-scissors-online"
       primaryCtaLabel={t('games.playNow')}
       playVsBotGameType="rock_paper_scissors"
       facts={[

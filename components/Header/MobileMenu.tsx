@@ -38,7 +38,7 @@ export function MobileMenu({
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
 
-  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
+  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard', '/guides']
 
   // Nav items are real anchors (#921); a signed-out visitor on a non-public
   // route gets the auth prompt instead of the navigation.
@@ -341,6 +341,9 @@ export function MobileMenu({
               </Link>
               <Link href="/leaderboard" onClick={guardMobile('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
                 {t('header.leaderboard')}
+              </Link>
+              <Link href="/guides" onClick={guardMobile('/guides')} style={navBtn(isActiveStart('/guides'))}>
+                {t('header.guides')}
               </Link>
               {isAuthenticated && (
                 <Link href="/friends" style={navBtn(isActiveStart('/friends'))}>

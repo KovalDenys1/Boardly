@@ -540,6 +540,7 @@ const ru = {
     guideCallout: 'Впервые в {{gameName}}? Читай полные правила и советы.',
     screenshotAlt: 'Партия в {{gameName}} на Boardly',
     readGuide: 'Читать гайд →',
+    readStrategyGuide: 'Читать гайд по стратегии →',
     detail: {
       labels: {
         players: 'Игроки',

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import '@/i18n'
 import Footer from '@/components/Footer'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
 
 /**
  * Guards #938. The footer's Community column is where a visitor looks for the server, and
@@ -24,5 +25,33 @@ describe('Footer community links', () => {
       'href',
       'https://github.com/KovalDenys1/Boardly'
     )
+  })
+})
+
+/**
+ * The footer is on every page, so its Games column is the one set of links to
+ * the game pages a crawler meets everywhere. It hand-typed four games while
+ * nine were live; now it lists the catalog.
+ */
+describe('Footer crawl links', () => {
+  it('links every available game to its detail page, never to /lobbies', () => {
+    const { container } = render(<Footer />)
+    const hrefs = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+
+    const games = getCatalogAvailableGames()
+    expect(games.length).toBeGreaterThanOrEqual(9)
+    for (const game of games) {
+      const detail = game.route!.replace(/\/lobbies$/, '')
+      expect(hrefs).toContain(detail)
+      expect(hrefs).not.toContain(game.route)
+    }
+  })
+
+  it('links /premium and /guides – the only crawlable link to /premium on the site', () => {
+    const { container } = render(<Footer />)
+    const hrefs = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+
+    expect(hrefs).toContain('/premium')
+    expect(hrefs).toContain('/guides')
   })
 })

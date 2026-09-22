@@ -13,10 +13,16 @@ type PublicProfilePageProps = {
   params: Promise<{ publicProfileId: string }>
 }
 
+// An empty Metadata inherits the root layout's `index: true`, so an invalid id,
+// a guest, a bot or a private profile would each be offered to Google as an
+// indexable page with no title. Nothing under /u is in the sitemap and nobody
+// searches usernames; the only correct answer on those branches is noindex.
+const HIDDEN: Metadata = { robots: { index: false, follow: false } }
+
 export async function generateMetadata({ params }: PublicProfilePageProps): Promise<Metadata> {
   const { publicProfileId } = await params
   if (!isValidPublicProfileId(publicProfileId)) {
-    return {}
+    return HIDDEN
   }
 
   const profile = await prisma.users.findUnique({
@@ -31,10 +37,13 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
   })
 
   if (!profile || profile.isGuest || profile.bot) {
-    return {}
+    return HIDDEN
   }
 
   const isPublic = (profile.accountPreferences?.profileVisibility ?? 'public') === 'public'
+  if (!isPublic) {
+    return { title: `${profile.username}'s Profile`, ...HIDDEN }
+  }
 
   return {
     title: `${profile.username}'s Profile`,
@@ -43,7 +52,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
       canonical: `https://boardly.online/u/${publicProfileId}`,
     },
     robots: {
-      index: isPublic,
+      index: true,
       follow: true,
     },
   }
