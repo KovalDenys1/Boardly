@@ -1,50 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'How to Play Tic Tac Toe Online - Complete Guide',
-  description:
-    'Complete Tic Tac Toe guide — rules, all 8 winning lines, and strategies to never lose. Free vs AI or 2 players.',
-  keywords: [
-    'how to play tic tac toe online',
-    'tic tac toe rules',
-    'noughts and crosses guide',
-    'tic tac toe strategy',
-    'play tic tac toe with friends',
-  ],
-  openGraph: {
-    title: 'How to Play Tic Tac Toe Online | Boardly',
-    description: 'Complete Tic Tac Toe guide — rules, winning lines, and never-lose strategy. Free vs AI or 2 players.',
-    url: 'https://boardly.online/guides/how-to-play-tic-tac-toe-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-tic-tac-toe-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-tic-tac-toe-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Tic Tac Toe Online — Complete Guide',
-  description: 'Rules, winning lines, and strategy for Tic Tac Toe.',
-  url: 'https://boardly.online/guides/how-to-play-tic-tac-toe-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2025-01-01',
-  dateModified: getGuideBySlug('how-to-play-tic-tac-toe-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-tic-tac-toe-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Tic Tac Toe Online', item: 'https://boardly.online/guides/how-to-play-tic-tac-toe-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-tic-tac-toe-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -94,7 +57,6 @@ export default function HowToPlayTicTacToeGuide() {
         subtitle="5 min read · Free to play on Boardly · 2 players or vs AI"
         question="How do you play Tic Tac Toe online?"
         answer="Two players take turns claiming squares on a 3×3 grid, X first, and whoever gets three of their own mark in a row – along one of the three rows, three columns or two diagonals – wins the round."
-        breadcrumbLabel="How to Play Tic Tac Toe Online"
         accentColor="var(--bd-coral)"
         cta={{ href: '/games/tic-tac-toe/lobbies', label: 'Play Tic Tac Toe Now', detail: 'Ready to put your strategy to the test?' }}
         related={[

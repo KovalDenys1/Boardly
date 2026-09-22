@@ -1,53 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
-export const metadata: Metadata = {
-  title: 'Best Games to Play on Zoom — Free, No Download',
-  description:
-    'The best free browser games to play while on a Zoom call. No app needed — just share the link in chat and everyone joins instantly. Works with any video call.',
-  keywords: [
-    'best games to play on zoom',
-    'zoom games free',
-    'games to play on video call',
-    'online games for zoom calls',
-    'zoom game night ideas',
-    'free games to play on video call with friends',
-    'games to play while on facetime',
-  ],
-  openGraph: {
-    title: 'Best Games to Play on Zoom | Boardly',
-    description: 'Free browser games that work perfectly on Zoom — share a link in chat and play together instantly.',
-    url: 'https://boardly.online/guides/best-games-to-play-on-zoom',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/best-games-to-play-on-zoom' },
-}
+export const metadata: Metadata = buildGuideMetadata('best-games-to-play-on-zoom')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Best Games to Play on Zoom — Free, No Download',
-  description: 'Free browser games that work perfectly alongside any video call.',
-  url: 'https://boardly.online/guides/best-games-to-play-on-zoom',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('best-games-to-play-on-zoom').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('best-games-to-play-on-zoom')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Best Games to Play on Zoom', item: 'https://boardly.online/guides/best-games-to-play-on-zoom' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('best-games-to-play-on-zoom')
 
 const games = [
   {
@@ -121,7 +82,6 @@ export default function BestGamesToPlayOnZoomGuide() {
         subtitle="5 min read · Works with Zoom, Google Meet, FaceTime, and any video call"
         question="What are the best games to play on a Zoom call?"
         answer="Guess the Spy and Alias, because the whole game is people talking and the call is already doing that work, with Yahtzee, Memory and Tic Tac Toe for a quieter call – the host pastes a lobby link into the Zoom chat and nobody screen shares, downloads or signs in."
-        breadcrumbLabel="Best Games to Play on Zoom"
         accentColor="var(--bd-sky)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick a game, share the link in your call chat, and start.' }}
         related={[

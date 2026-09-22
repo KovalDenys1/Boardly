@@ -1,52 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
-export const metadata: Metadata = {
-  title: 'How to Play Alias Online - Complete Guide',
-  description:
-    'Learn how to play Alias online with friends. Rules, how to describe words, team tips, and how to win. Free multiplayer word game in your browser.',
-  keywords: [
-    'how to play alias online',
-    'alias game rules',
-    'alias word game guide',
-    'alias game tips',
-    'play alias with friends online',
-    'alias online free',
-  ],
-  openGraph: {
-    title: 'How to Play Alias Online | Boardly',
-    description: 'Complete Alias guide — rules, how to describe words well, and tips to help your team win. Free multiplayer in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-alias-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-alias-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-alias-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Alias Online — Complete Guide',
-  description: 'Rules, tips for describing words, and how to win at Alias.',
-  url: 'https://boardly.online/guides/how-to-play-alias-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('how-to-play-alias-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-alias-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Alias Online', item: 'https://boardly.online/guides/how-to-play-alias-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-alias-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -96,7 +58,6 @@ export default function HowToPlayAliasGuide() {
         subtitle="5 min read · Free to play on Boardly · 3–16 players"
         question="How do you play Alias online?"
         answer="The group splits into two teams – or into three teams of one, when exactly three of you play – and on each turn one player describes words on their screen to their own side against the clock without using the word itself, where a guessed word is a point and a skipped one costs a point, and after three turns each the highest score wins."
-        breadcrumbLabel="How to Play Alias Online"
         accentColor="var(--bd-coral)"
         cta={{ href: '/games/alias/lobbies', label: 'Play Alias Now', detail: 'Gather your teams and start describing.' }}
         related={[

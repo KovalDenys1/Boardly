@@ -1,51 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideSteps, GuideChecklist } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'Yahtzee Strategy Guide — How to Win More Often',
-  description:
-    'Proven Yahtzee strategies to boost your score every game. Learn when to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-  keywords: [
-    'yahtzee strategy',
-    'how to win at yahtzee',
-    'yahtzee tips',
-    'yahtzee scoring strategy',
-    'best yahtzee strategy',
-    'yahtzee category order',
-  ],
-  openGraph: {
-    title: 'Yahtzee Strategy Guide | Boardly',
-    description: 'Proven Yahtzee strategies — when to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-    url: 'https://boardly.online/guides/yahtzee-strategy-guide',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/yahtzee-strategy-guide' },
-}
+export const metadata: Metadata = buildGuideMetadata('yahtzee-strategy-guide')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Yahtzee Strategy Guide — How to Win More Often',
-  description: 'Proven Yahtzee strategies: upper section bonus, category order, when to go for Yahtzee.',
-  url: 'https://boardly.online/guides/yahtzee-strategy-guide',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('yahtzee-strategy-guide').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('yahtzee-strategy-guide')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Yahtzee Strategy Guide', item: 'https://boardly.online/guides/yahtzee-strategy-guide' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('yahtzee-strategy-guide')
 
 export default function YahtzeeStrategyGuide() {
   return (
@@ -60,7 +22,6 @@ export default function YahtzeeStrategyGuide() {
         subtitle="6 min read · Strategy tips for all skill levels · Free on Boardly"
         question="What is the best strategy for winning at Yahtzee?"
         answer="Protect the 35-point upper bonus first, treat the low-value categories as the place to put a bad roll rather than something to chase, and decide what to keep by what the whole scorecard still needs – not by what this one roll looks like."
-        breadcrumbLabel="Yahtzee Strategy Guide"
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Put these strategies to the test.' }}
         related={[

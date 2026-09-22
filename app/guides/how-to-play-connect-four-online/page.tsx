@@ -1,51 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
 
-export const metadata: Metadata = {
-  title: 'How to Play Connect Four Online - Complete Guide',
-  description:
-    'Learn how to play Connect Four online. Simple rules, winning patterns, and tips to beat your opponent every time. Free 2-player game in your browser.',
-  keywords: [
-    'how to play connect four online',
-    'connect four rules',
-    'connect four strategy',
-    'play connect four with friends',
-    'connect four online free',
-  ],
-  openGraph: {
-    title: 'How to Play Connect Four Online | Boardly',
-    description: 'Complete Connect Four guide — rules, winning patterns, and strategy tips. Free 2-player game in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-connect-four-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-connect-four-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-connect-four-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Connect Four Online — Complete Guide',
-  description: 'Rules, winning patterns, and strategy for Connect Four.',
-  url: 'https://boardly.online/guides/how-to-play-connect-four-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('how-to-play-connect-four-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-connect-four-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Connect Four Online', item: 'https://boardly.online/guides/how-to-play-connect-four-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-connect-four-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -95,7 +58,6 @@ export default function HowToPlayConnectFourGuide() {
         subtitle="5 min read · Free to play on Boardly · 2 players or vs AI"
         question="How do you play Connect Four online?"
         answer="Two players take turns dropping a disc into one of seven columns, where it falls to the lowest free row, and the first to line up four of their own colour – across, up, or along a diagonal – wins."
-        breadcrumbLabel="How to Play Connect Four Online"
         accentColor="var(--bd-sun)"
         cta={{ href: '/games/connect-four/lobbies', label: 'Play Connect Four Now', detail: 'Ready to drop your first disc?' }}
         related={[

@@ -1,51 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'How to Play Guess the Spy Online - Complete Guide',
-  description:
-    'Learn how to play Guess the Spy online. Rules, tips for finding the spy, how to survive as the spy, and how to run a great game night.',
-  keywords: [
-    'how to play guess the spy online',
-    'spy game rules',
-    'social deduction game guide',
-    'spy game strategy',
-    'play guess the spy with friends',
-    'spy game tips',
-  ],
-  openGraph: {
-    title: 'How to Play Guess the Spy Online | Boardly',
-    description: 'Complete Guess the Spy guide — rules, tips for innocents and the spy. Free 3–10 player game in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-spy-game-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-spy-game-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-spy-game-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Guess the Spy Online — Complete Guide',
-  description: 'Rules, tips for finding the spy, and survival tips as the spy.',
-  url: 'https://boardly.online/guides/how-to-play-spy-game-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2025-01-01',
-  dateModified: getGuideBySlug('how-to-play-spy-game-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-spy-game-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Guess the Spy', item: 'https://boardly.online/guides/how-to-play-spy-game-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-spy-game-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -95,7 +57,6 @@ export default function HowToPlaySpyGuide() {
         subtitle="5 min read · Free to play on Boardly · 3–10 players"
         question="How do you play Guess the Spy online?"
         answer="Everyone but one player is shown the same secret location, and the group asks each other questions until it can vote out the player who does not know it – while the spy listens for the answer and can win outright by naming the location first."
-        breadcrumbLabel="How to Play Guess the Spy"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games/spy/lobbies', label: 'Play Guess the Spy', detail: 'Gather 3–10 friends and try it now.' }}
         related={[
