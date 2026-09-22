@@ -1904,7 +1904,7 @@ const ru = {
     avatarSection: 'Аватар',
     detailsSection: 'Данные профиля',
     premiumTab: {
-      leadFree: 'Откройте эксклюзивные возможности от {{price}} в месяц — сумма конвертируется в вашу валюту при оплате.',
+      leadFree: 'Откройте эксклюзивные возможности с месячной или годовой подпиской — сумма конвертируется в вашу валюту при оплате.',
       leadPremium: 'Управляйте подпиской и настраивайте профиль.',
       active: 'Premium активен',
       cancelsOn: 'Отменяется {{date}}',
@@ -1915,7 +1915,7 @@ const ru = {
       included: 'Что входит',
       freeForever: 'Всегда бесплатно',
       premiumExclusive: 'Только в Premium',
-      getPremium: 'Получить Premium — от {{price}}/мес',
+      getPremium: 'Получить Premium',
       cancelAnytime: 'Отмена в любой момент · итоговая сумма — на странице оплаты',
       free: {
         gamesLabel: 'Играйте во все игры',
@@ -2424,10 +2424,10 @@ const ru = {
       avatarAlt: 'Аватар {{id}}',
       customPhoto: 'Своё фото',
       unlocked: 'ОТКРЫТО',
-      fromPrice: 'от {{price}}',
+      premiumOnly: 'Только Premium',
       saving: 'Сохраняем…',
       uploadPhoto: 'Загрузить фото',
-      getPremium: 'Купить Premium — от {{price}}/мес',
+      getPremium: 'Купить Premium',
     },
   },
   achievements: {

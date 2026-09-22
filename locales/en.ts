@@ -1809,7 +1809,7 @@ const en = {
     avatarSection: 'Avatar',
     detailsSection: 'Profile details',
     premiumTab: {
-      leadFree: 'Unlock exclusive features from {{price}}/month, converted to your currency at checkout.',
+      leadFree: 'Unlock exclusive features with a monthly or yearly plan, converted to your currency at checkout.',
       leadPremium: 'Manage your subscription and customize your profile.',
       active: 'Premium is active',
       cancelsOn: 'Cancels on {{date}}',
@@ -1820,7 +1820,7 @@ const en = {
       included: 'What\'s included',
       freeForever: 'Free forever',
       premiumExclusive: 'Premium exclusive',
-      getPremium: 'Get Premium — from {{price}}/mo',
+      getPremium: 'Get Premium',
       cancelAnytime: 'Cancel anytime · final amount shown at checkout',
       free: {
         gamesLabel: 'Play all games',
@@ -2340,10 +2340,10 @@ const en = {
       avatarAlt: 'Avatar {{id}}',
       customPhoto: 'Custom photo',
       unlocked: 'UNLOCKED',
-      fromPrice: 'from {{price}}',
+      premiumOnly: 'Premium only',
       saving: 'Saving…',
       uploadPhoto: 'Upload photo',
-      getPremium: 'Get Premium — from {{price}}/mo',
+      getPremium: 'Get Premium',
     },
   },
   achievements: {

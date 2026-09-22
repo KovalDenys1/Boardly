@@ -378,6 +378,27 @@ describe('ProfilePage', () => {
     expect((inlineUsernameInput as HTMLInputElement).value).toBe('DraftNameTwo')
   })
 
+  it('sends the premium CTA to the plan chooser instead of buying the monthly plan', async () => {
+    // The button used to POST /api/stripe/checkout with no body, and the route
+    // reads a missing `plan` as monthly — so nobody arriving from the profile
+    // could see the yearly price, let alone choose it. Assert both halves: the
+    // navigation happens and no checkout session is created from here.
+    window.history.replaceState({}, '', '/profile?tab=premium')
+
+    render(<ProfilePage />)
+
+    const cta = await screen.findByRole('button', { name: /profile\.premiumTab\.getPremium/ })
+    fireEvent.click(cta)
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith('/premium')
+    })
+    expect(mockFetch).not.toHaveBeenCalledWith(
+      '/api/stripe/checkout',
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
+
   it('does not force a session update when the page regains visibility', async () => {
     render(<ProfilePage />)
 

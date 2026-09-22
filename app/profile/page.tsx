@@ -20,7 +20,6 @@ import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
-import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 import PublicProfileView from '@/components/PublicProfileView'
 import {
   getStoredAppearancePreferences,
@@ -440,20 +439,16 @@ export default function ProfilePage() {
     }
   }, [])
 
-  const handleCheckout = useCallback(async () => {
+  // Posting straight to the checkout API sends no `plan`, and the route reads a
+  // missing field as monthly — so every buyer arriving from the profile was put
+  // on the monthly price with no way to see, let alone pick, the yearly one. The
+  // plan chooser lives on /premium, priced from Stripe at runtime, so send them
+  // there instead of building a second pricing UI that can drift from the first.
+  const handleCheckout = useCallback(() => {
     trackPremiumCta('profile_premium_tab')
     setPremiumActionLoading(true)
-    try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-      const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
-    } catch {
-      showToast.error('errors.generic', 'Failed to start checkout')
-    } finally {
-      setPremiumActionLoading(false)
-    }
-  }, [])
+    router.push('/premium')
+  }, [router])
 
   useEffect(() => {
     if (!sessionUserName) return
@@ -1985,15 +1980,10 @@ export default function ProfilePage() {
                       setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
                       await update()
                     }}
-                    onUnlockUpload={async () => {
-                      try {
-                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-                        const data = await res.json()
-                        if (data.url) window.location.href = data.url
-                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
-                      } catch {
-                        showToast.error('errors.generic', 'Failed to start checkout')
-                      }
+                    onUnlockUpload={() => {
+                      // Same reason as handleCheckout: the avatar unlock used to
+                      // buy the monthly plan outright.
+                      router.push('/premium')
                     }}
                   />
                 </div>
@@ -2610,7 +2600,7 @@ export default function ProfilePage() {
                 <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">{t('premium.title')}</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
                   {!hasUploadPack
-                    ? t('profile.premiumTab.leadFree', { price: PREMIUM_BASE_PRICE })
+                    ? t('profile.premiumTab.leadFree')
                     : t('profile.premiumTab.leadPremium')}
                 </p>
               </div>
@@ -2741,7 +2731,7 @@ export default function ProfilePage() {
                       ) : (
                         <>
                           <Icon name="star" size={16} />
-                          <span>{t('profile.premiumTab.getPremium', { price: PREMIUM_BASE_PRICE })}</span>
+                          <span>{t('profile.premiumTab.getPremium')}</span>
                         </>
                       )}
                     </button>
