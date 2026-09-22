@@ -1,10 +1,23 @@
 /**
  * Acquisition-source attribution.
  *
- * The client captures where a visitor came from on their first page view
- * (UTM params or the referrer hostname) into a first-party cookie. The server
- * then copies that value onto `Users.signupSource` when the account is created
- * (guest, e-mail registration, or OAuth). Nothing else reads the cookie.
+ * The client derives where a visitor came from (UTM params or the referrer hostname) on
+ * first read and keeps it in memory for the lifetime of the page. It rides along on the
+ * request that creates the account, in the `X-Signup-Source` header, and the server copies
+ * it onto `Users.signupSource` (guest, e-mail registration, or OAuth).
+ *
+ * **Nothing is stored on the visitor's device.** This used to be a 90-day `bd_src` cookie,
+ * written unconditionally by the proxy and by the client. Attribution is not strictly
+ * necessary for the service, so under ePrivacy Art. 5(3) that cookie needed consent before
+ * it was written, and it had none — the Google CMP that ships with the AdSense loader turns
+ * out to display nothing and produce no TC string while ads are off, so there was also no
+ * consent signal to gate it on (#1067, verified against production 2026-09-22). A header
+ * carrying an in-memory value is not terminal-equipment storage, so the question does not
+ * arise and no cookie banner is needed.
+ *
+ * The OAuth path cannot use the header: the redirect to Google throws the page away. There
+ * the value travels in the `callbackUrl` query instead and is written back afterwards by
+ * POST /api/auth/attribution, first-touch-wins (only when `signupSource` is still null).
  *
  * Value shapes: `utm:<source>[/<medium>[/<campaign>]]`, `ref:<hostname>`, `direct`.
  *
@@ -12,9 +25,11 @@
  * and the Revenue Plan's way of testing a channel is to run it for three weeks and compare.
  */
 
-export const SIGNUP_SOURCE_COOKIE = 'bd_src'
+/** Carries the in-memory value on the request that creates the account. */
+export const SIGNUP_SOURCE_HEADER = 'X-Signup-Source'
+/** Carries it across an OAuth redirect, where no page survives to send a header. */
+export const SIGNUP_SOURCE_PARAM = 'bd_src'
 export const SIGNUP_SOURCE_MAX_LENGTH = 120
-export const SIGNUP_SOURCE_COOKIE_MAX_AGE_SECONDS = 90 * 24 * 60 * 60
 
 const SAFE_CHARS = /[^a-z0-9._:\/-]/g
 
@@ -65,10 +80,10 @@ export function deriveSignupSource(input: {
 
 /** Structural subset of NextRequest so route handlers and tests can both pass it. */
 export interface SignupSourceRequestLike {
-  cookies: { get(name: string): { value: string } | undefined }
+  headers: { get(name: string): string | null }
 }
 
-/** Server side: read the attribution cookie off an incoming request. */
+/** Server side: read the attribution value off an incoming request header. */
 export function getSignupSourceFromRequest(request: SignupSourceRequestLike): string | null {
-  return sanitizeSignupSource(request.cookies.get(SIGNUP_SOURCE_COOKIE)?.value)
+  return sanitizeSignupSource(request.headers.get(SIGNUP_SOURCE_HEADER))
 }

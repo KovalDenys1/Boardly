@@ -57,10 +57,13 @@ jest.mock('@/lib/bot-helpers', () => ({
   isPrismaUniqueConstraintError: jest.fn(() => false),
 }))
 
-const makeRequest = (body: unknown, cookie?: string) =>
+const makeRequest = (body: unknown, signupSource?: string) =>
   new NextRequest('http://localhost/api/quick-play', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(cookie ? { cookie } : {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(signupSource ? { 'X-Signup-Source': signupSource } : {}),
+    },
     body: JSON.stringify(body),
   })
 
@@ -165,8 +168,8 @@ describe('POST /api/quick-play', () => {
   })
 
   describe('participation (#920)', () => {
-    it('records the human who created a fresh lobby, with the acquisition cookie', async () => {
-      const res = await POST(makeRequest({ gameType: 'tic_tac_toe' }, 'bd_src=utm:reddit/post'))
+    it('records the human who created a fresh lobby, with the acquisition header', async () => {
+      const res = await POST(makeRequest({ gameType: 'tic_tac_toe' }, 'utm:reddit/post'))
       expect(res.status).toBe(200)
 
       expect(recordLobbyParticipation).toHaveBeenCalledTimes(1)

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { captureSignupSource } from '@/lib/signup-source-client'
+import { signupSourceHeaders } from '@/lib/signup-source-client'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -67,11 +67,6 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     const guestStateGenerationRef = useRef(0)
     const lastUpgradeAttemptTokenRef = useRef<string | null>(null)
 
-    // First-touch acquisition attribution — must run before any account is created.
-    useEffect(() => {
-        captureSignupSource()
-    }, [])
-
     const applyGuestSession = useCallback((session: GuestSessionResponse, generation = guestStateGenerationRef.current) => {
         // Ignore stale async results from previous guest sessions.
         if (generation !== guestStateGenerationRef.current) {
@@ -95,6 +90,7 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...signupSourceHeaders(),
             },
             body: JSON.stringify({
                 guestName: name,

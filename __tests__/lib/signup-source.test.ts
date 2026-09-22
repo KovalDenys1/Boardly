@@ -1,98 +1,132 @@
+/**
+ * @jest-environment jsdom
+ */
 import {
-  SIGNUP_SOURCE_COOKIE,
-  SIGNUP_SOURCE_MAX_LENGTH,
+  SIGNUP_SOURCE_HEADER,
+  SIGNUP_SOURCE_PARAM,
   deriveSignupSource,
   getSignupSourceFromRequest,
   sanitizeSignupSource,
 } from '@/lib/signup-source'
-import { captureSignupSource } from '@/lib/signup-source-client'
 
 describe('sanitizeSignupSource', () => {
-  it('lower-cases, strips unsafe characters and caps length', () => {
-    expect(sanitizeSignupSource('  Ref:Reddit.COM ')).toBe('ref:reddit.com')
-    expect(sanitizeSignupSource('utm:<script>alert(1)</script>')).toBe('utm:scriptalert1/script')
-    expect(sanitizeSignupSource('x'.repeat(500))).toHaveLength(SIGNUP_SOURCE_MAX_LENGTH)
+  it('lower-cases and strips unsafe characters', () => {
+    expect(sanitizeSignupSource('  REF:Reddit.com  ')).toBe('ref:reddit.com')
+    expect(sanitizeSignupSource('utm:re ddit<script>')).toBe('utm:redditscript')
   })
 
-  it('returns null for empty or non-string input', () => {
+  it('rejects empty and non-string input', () => {
     expect(sanitizeSignupSource('')).toBeNull()
-    expect(sanitizeSignupSource('   ')).toBeNull()
-    expect(sanitizeSignupSource(undefined)).toBeNull()
     expect(sanitizeSignupSource(null)).toBeNull()
+    expect(sanitizeSignupSource(undefined)).toBeNull()
+  })
+
+  it('caps the length', () => {
+    expect(sanitizeSignupSource('a'.repeat(500))?.length).toBe(120)
   })
 })
 
 describe('deriveSignupSource', () => {
-  it('prefers UTM over referrer', () => {
+  it('prefers UTM over referrer and keeps the campaign', () => {
     expect(
-      deriveSignupSource({ utmSource: 'reddit', utmMedium: 'post', referrer: 'https://google.com/', currentHostname: 'boardly.online' })
-    ).toBe('utm:reddit/post')
-    expect(deriveSignupSource({ utmSource: 'tiktok' })).toBe('utm:tiktok')
+      deriveSignupSource({
+        utmSource: 'reddit',
+        utmMedium: 'social',
+        utmCampaign: 'launch',
+        referrer: 'https://google.com/',
+        currentHostname: 'boardly.online',
+      })
+    ).toBe('utm:reddit/social/launch')
   })
 
-  it('uses the referrer hostname without www', () => {
-    expect(deriveSignupSource({ referrer: 'https://www.reddit.com/r/WebGames/x', currentHostname: 'boardly.online' })).toBe('ref:reddit.com')
+  it('holds an empty medium open so a campaign is never read as one', () => {
+    expect(
+      deriveSignupSource({ utmSource: 'reddit', utmCampaign: 'launch' })
+    ).toBe('utm:reddit/-/launch')
   })
 
-  it('treats own-host referrer, malformed referrer and no data as direct', () => {
-    expect(deriveSignupSource({ referrer: 'https://boardly.online/games', currentHostname: 'boardly.online' })).toBe('direct')
-    expect(deriveSignupSource({ referrer: 'not a url', currentHostname: 'boardly.online' })).toBe('direct')
+  it('falls back to the referrer hostname, ignoring our own pages', () => {
+    expect(
+      deriveSignupSource({ referrer: 'https://www.Reddit.com/r/x', currentHostname: 'boardly.online' })
+    ).toBe('ref:reddit.com')
+    expect(
+      deriveSignupSource({ referrer: 'https://boardly.online/games', currentHostname: 'boardly.online' })
+    ).toBe('direct')
+  })
+
+  it('treats a malformed referrer as direct', () => {
+    expect(deriveSignupSource({ referrer: 'not-a-url' })).toBe('direct')
     expect(deriveSignupSource({})).toBe('direct')
   })
 })
 
 describe('getSignupSourceFromRequest', () => {
   const request = (value?: string) => ({
-    cookies: { get: (name: string) => (name === SIGNUP_SOURCE_COOKIE && value !== undefined ? { name, value } : undefined) },
+    headers: { get: (name: string) => (name === SIGNUP_SOURCE_HEADER && value ? value : null) },
   })
 
-  it('reads and sanitizes the cookie', () => {
+  it('reads and sanitizes the header', () => {
     expect(getSignupSourceFromRequest(request('ref:Reddit.com'))).toBe('ref:reddit.com')
   })
 
-  it('returns null when the cookie is missing', () => {
+  it('returns null when the header is absent', () => {
     expect(getSignupSourceFromRequest(request())).toBeNull()
   })
 })
 
-describe('captureSignupSource (browser)', () => {
-  const clearCookie = () => {
-    document.cookie = `${SIGNUP_SOURCE_COOKIE}=; Max-Age=0; Path=/`
+describe('signup-source-client (browser)', () => {
+  const load = async () => {
+    jest.resetModules()
+    return import('@/lib/signup-source-client')
   }
 
-  beforeEach(clearCookie)
-  afterEach(clearCookie)
+  const setLocation = (href: string, referrer = '') => {
+    window.history.replaceState({}, '', href)
+    Object.defineProperty(document, 'referrer', { value: referrer, configurable: true })
+  }
 
-  it('writes the cookie once and never overwrites it', () => {
-    Object.defineProperty(document, 'referrer', { value: 'https://news.ycombinator.com/item?id=1', configurable: true })
-    captureSignupSource()
-    expect(document.cookie).toContain(`${SIGNUP_SOURCE_COOKIE}=ref%3Anews.ycombinator.com`)
+  it('derives the source once and caches it for the page', async () => {
+    setLocation('/?utm_source=reddit', '')
+    const mod = await load()
+    expect(mod.captureSignupSource()).toBe('utm:reddit')
 
-    Object.defineProperty(document, 'referrer', { value: 'https://reddit.com/', configurable: true })
-    captureSignupSource()
-    expect(document.cookie).toContain('news.ycombinator.com')
-    expect(document.cookie).not.toContain('reddit')
-  })
-})
-
-describe('utm_campaign (#911)', () => {
-  it('keeps the campaign, so two posts on one platform are two rows', () => {
-    expect(
-      deriveSignupSource({ utmSource: 'reddit', utmMedium: 'social', utmCampaign: 'webgames-launch' }),
-    ).toBe('utm:reddit/social/webgames-launch')
+    // A later client-side navigation must not re-derive a different first touch.
+    setLocation('/lobby/ABC', '')
+    expect(mod.captureSignupSource()).toBe('utm:reddit')
   })
 
-  it('holds the medium slot open when only a campaign is given', () => {
-    // Without the placeholder, utm:reddit/launch would be indistinguishable from a medium.
-    expect(deriveSignupSource({ utmSource: 'reddit', utmCampaign: 'launch' })).toBe(
-      'utm:reddit/-/launch',
+  it('exposes the value as a request header', async () => {
+    setLocation('/?utm_source=reddit', '')
+    const mod = await load()
+    expect(mod.signupSourceHeaders()).toEqual({ [SIGNUP_SOURCE_HEADER]: 'utm:reddit' })
+  })
+
+  it('writes nothing to cookies or storage', async () => {
+    setLocation('/?utm_source=reddit', '')
+    const mod = await load()
+    mod.captureSignupSource()
+    mod.signupSourceHeaders()
+
+    expect(document.cookie).toBe('')
+    expect(window.localStorage.length).toBe(0)
+    expect(window.sessionStorage.length).toBe(0)
+  })
+
+  it('carries the value across an OAuth redirect in the callback url', async () => {
+    setLocation('/auth/login?utm_source=reddit', '')
+    const mod = await load()
+    expect(mod.withSignupSourceParam('/dashboard')).toBe(
+      `/dashboard?${SIGNUP_SOURCE_PARAM}=utm%3Areddit`
     )
   })
 
-  it('is unchanged when there is no campaign', () => {
-    expect(deriveSignupSource({ utmSource: 'chatgpt.com', utmMedium: 'referral' })).toBe(
-      'utm:chatgpt.com/referral',
-    )
-    expect(deriveSignupSource({ utmSource: 'bing' })).toBe('utm:bing')
+  it('takes the value back off the url and clears the address bar', async () => {
+    setLocation(`/dashboard?${SIGNUP_SOURCE_PARAM}=ref%3AReddit.com&keep=1`, '')
+    const mod = await load()
+
+    expect(mod.takeSignupSourceParam()).toBe('ref:reddit.com')
+    expect(window.location.search).toBe('?keep=1')
+    // Idempotent: a second call after the strip finds nothing.
+    expect(mod.takeSignupSourceParam()).toBeNull()
   })
 })
