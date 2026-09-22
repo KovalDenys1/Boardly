@@ -1906,7 +1906,7 @@ const uk: TranslationWithPlurals = {
     avatarSection: 'Аватар',
     detailsSection: 'Дані профілю',
     premiumTab: {
-      leadFree: 'Відкрийте ексклюзивні можливості від {{price}} на місяць — суму конвертують у вашу валюту під час оплати.',
+      leadFree: 'Відкрийте ексклюзивні можливості з місячною або річною підпискою — суму конвертують у вашу валюту під час оплати.',
       leadPremium: 'Керуйте підпискою та налаштовуйте профіль.',
       active: 'Premium активний',
       cancelsOn: 'Скасовується {{date}}',
@@ -1917,7 +1917,7 @@ const uk: TranslationWithPlurals = {
       included: 'Що входить',
       freeForever: 'Завжди безкоштовно',
       premiumExclusive: 'Лише в Premium',
-      getPremium: 'Отримати Premium — від {{price}}/міс',
+      getPremium: 'Отримати Premium',
       cancelAnytime: 'Скасування будь-коли · підсумкова сума — на сторінці оплати',
       free: {
         gamesLabel: 'Грайте в усі ігри',
@@ -2437,10 +2437,10 @@ const uk: TranslationWithPlurals = {
       avatarAlt: 'Аватар {{id}}',
       customPhoto: 'Своє фото',
       unlocked: 'ВІДКРИТО',
-      fromPrice: 'від {{price}}',
+      premiumOnly: 'Лише Premium',
       saving: 'Зберігаємо…',
       uploadPhoto: 'Завантажити фото',
-      getPremium: 'Придбати Premium — від {{price}}/міс',
+      getPremium: 'Придбати Premium',
     },
   },
   achievements: {

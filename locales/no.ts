@@ -1809,7 +1809,7 @@ const no = {
     avatarSection: 'Avatar',
     detailsSection: 'Profildetaljer',
     premiumTab: {
-      leadFree: 'Lås opp eksklusive funksjoner fra {{price}}/måned, omregnet til din valuta i kassen.',
+      leadFree: 'Lås opp eksklusive funksjoner med et måneds- eller årsabonnement, omregnet til din valuta i kassen.',
       leadPremium: 'Administrer abonnementet og tilpass profilen din.',
       active: 'Premium er aktivt',
       cancelsOn: 'Avsluttes {{date}}',
@@ -1820,7 +1820,7 @@ const no = {
       included: 'Dette er inkludert',
       freeForever: 'Alltid gratis',
       premiumExclusive: 'Kun med Premium',
-      getPremium: 'Få Premium — fra {{price}}/mnd',
+      getPremium: 'Få Premium',
       cancelAnytime: 'Avslutt når som helst · endelig beløp vises i kassen',
       free: {
         gamesLabel: 'Spill alle spill',
@@ -2329,10 +2329,10 @@ const no = {
       avatarAlt: 'Avatar {{id}}',
       customPhoto: 'Eget bilde',
       unlocked: 'LÅST OPP',
-      fromPrice: 'fra {{price}}',
+      premiumOnly: 'Kun Premium',
       saving: 'Lagrer…',
       uploadPhoto: 'Last opp bilde',
-      getPremium: 'Få Premium — fra {{price}}/mnd',
+      getPremium: 'Få Premium',
     },
   },
   achievements: {
