@@ -8,6 +8,7 @@ import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { getGameSeo } from '@/lib/game-catalog'
+import { getGuidesForGame } from '@/lib/guides-catalog'
 import PlayVsBotButton from './PlayVsBotButton'
 import GameScreenshot, { hasScreenshot } from './GameScreenshot'
 
@@ -45,7 +46,6 @@ type GameDetailPageProps = {
   originNote?: string
   /** Prominent callout for games that need a real group (no bots), e.g. Alias (#780) */
   groupNotice?: string
-  guideHref?: string
   playVsBotGameType?: string
 }
 
@@ -68,12 +68,14 @@ export default function GameDetailPage({
   benefits,
   originNote,
   groupNotice,
-  guideHref,
   playVsBotGameType,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
   const { status } = useSession()
   const { isGuest } = useGuest()
+  // Every guide the catalog files under this game – a page used to name one
+  // guide by hand and the strategy guides were linked from no game page.
+  const guides = getGuidesForGame(gameId)
   // Resolved here rather than defaulted in the signature: a default parameter
   // value is not JSX, so `primaryCtaLabel = 'Play now'` shipped an English
   // button to every non-English viewer of the pages that omit the prop - the
@@ -223,14 +225,18 @@ export default function GameDetailPage({
           )}
         </section>
 
-        {guideHref && (
-          <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-bd-line bg-bd-bg2 px-6 py-4">
+        {guides.length > 0 && (
+          <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-bd-line bg-bd-bg2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-semibold text-bd-ink-soft">
               {t('games.guideCallout', { gameName })}
             </p>
-            <Link href={guideHref} className="bd-btn bd-btn-soft shrink-0 text-sm">
-              {t('games.readGuide')}
-            </Link>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {guides.map((guide) => (
+                <Link key={guide.slug} href={`/guides/${guide.slug}`} className="bd-btn bd-btn-soft text-sm">
+                  {guide.category === 'strategy' ? t('games.readStrategyGuide') : t('games.readGuide')}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 

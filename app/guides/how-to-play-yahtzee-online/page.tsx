@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideTable, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
@@ -124,7 +125,7 @@ export default function HowToPlayYahtzeeGuide() {
             Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed, and that includes Yahtzee itself: five of a kind scores 50 once, and a second one has to go somewhere else. The game ends when all 15 categories are filled by every player, or all 9 of them in short mode.
           </p>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score totals 63 or more.
+            The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score totals 63 or more. Short mode, the turn timer and bot opponents are chosen when you create a game from the <Link href="/games/yahtzee" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee game page</Link>.
           </p>
         </GuideSection>
 
@@ -160,6 +161,9 @@ export default function HowToPlayYahtzeeGuide() {
             { tip: 'Fill low-value categories early', detail: "If you roll a bad set, put zeros in Aces or Twos early — they're worth little anyway." },
             { tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
           ]} />
+                  <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            These five cover the basics. The <Link href="/guides/yahtzee-strategy-guide" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee strategy guide</Link> goes through the bonus maths, which categories to fill first and what to keep on every roll.
+          </p>
         </GuideSection>
 
         <GuideSection title="Yahtzee Questions">

@@ -4,7 +4,9 @@ import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import type { IconName } from '@/components/icons/names'
-import { getGuideBySlug, type GuideIcon } from '@/lib/guides-catalog'
+import { getCatalogEntryById } from '@/lib/game-catalog'
+import { englishText } from '@/lib/game-seo'
+import { getGuideBySlug, getGuideGamePath, type GuideIcon } from '@/lib/guides-catalog'
 import { GUIDES_AD_SLOT } from '@/lib/ad-slots'
 
 interface RelatedGuide {
@@ -279,7 +281,14 @@ export default function GuideLayout({
   related,
   children,
 }: GuideLayoutProps) {
+  const guide = getGuideBySlug(slug)
   const updated = getGuideBySlug(slug).updated
+  // The game this guide teaches, linked from the hero and again under the CTA.
+  // Until this, seven of twelve guides sent every link to `/lobbies`, which is
+  // noindex and canonicals to the game page, so the page that ranks got none of
+  // the guide's link equity.
+  const gamePath = getGuideGamePath(guide)
+  const gameName = guide.game ? englishText(getCatalogEntryById(guide.game)!.nameKey) : null
 
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
@@ -320,6 +329,14 @@ export default function GuideLayout({
               {title}
             </h1>
             <p className="text-sm" style={{ color: 'var(--bd-ink-muted)' }}>{subtitle}</p>
+            {gamePath && gameName && (
+              <p className="mt-3 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
+                Rules, modes and player counts:{' '}
+                <Link href={gamePath} className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>
+                  {gameName} game page
+                </Link>
+              </p>
+            )}
             <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
               Last updated <time dateTime={updated}>{UPDATED_FORMAT.format(new Date(`${updated}T00:00:00Z`))}</time>
             </p>
@@ -354,6 +371,15 @@ export default function GuideLayout({
           <Link href={cta.href} className="bd-btn bd-btn-coral bd-btn-lg inline-flex">
             {cta.label} →
           </Link>
+          {gamePath && gameName && (
+            <p className="mt-4 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+              Or read about{' '}
+              <Link href={gamePath} className="underline transition-colors hover:text-bd-coral">
+                {gameName} on Boardly
+              </Link>{' '}
+              first.
+            </p>
+          )}
         </div>
 
         {/* Related guides */}

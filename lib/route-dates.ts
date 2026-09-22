@@ -1,3 +1,5 @@
+import { ALL_GUIDES } from '@/lib/guides-catalog'
+
 /**
  * Last content change (YYYY-MM-DD) of every indexable route that is not a
  * guide – the guides carry their own `updated` in `lib/guides-catalog.ts`.
@@ -10,8 +12,11 @@
  * (`git log -1 --format=%cs -- app/<route>/*.tsx`). `/leaderboard` is dated by
  * this change because #922 changed what its HTML contains. No seed is older
  * than the date the sitemap advertised before #922, so no lastmod regresses.
- * `/games` and `/guides` list from `lib/game-catalog.ts` and
- * `lib/guides-catalog.ts`; a catalog change bumps them here by hand.
+ * `/games` and `/guides` are index pages: their date here is only the last
+ * change to the index itself, and `getRouteUpdated` lifts it to the newest
+ * page they list, so releasing a game or editing a guide moves the index's
+ * lastmod without a second bump here. `/games` read 2026-09-07 for two weeks
+ * after two games shipped on 2026-09-21 before this was derived.
  */
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
@@ -38,6 +43,18 @@ export const ROUTE_UPDATED = {
 
 export type DatedRoute = keyof typeof ROUTE_UPDATED
 
+const latest = (dates: readonly string[]): string =>
+  // ISO days sort as strings.
+  dates.reduce((newest, date) => (date > newest ? date : newest))
+
 export function getRouteUpdated(path: DatedRoute): string {
-  return ROUTE_UPDATED[path]
+  const own = ROUTE_UPDATED[path]
+  if (path === '/games') {
+    const children = Object.entries(ROUTE_UPDATED)
+      .filter(([route]) => route.startsWith('/games/'))
+      .map(([, date]) => date)
+    return latest([own, ...children])
+  }
+  if (path === '/guides') return latest([own, ...ALL_GUIDES.map((guide) => guide.updated)])
+  return own
 }

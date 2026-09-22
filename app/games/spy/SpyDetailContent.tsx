@@ -40,7 +40,6 @@ export default function SpyDetailContent() {
         t('games.spy.detail.benefit3'),
         t('games.spy.detail.benefit4'),
       ]}
-      guideHref="/guides/how-to-play-spy-game-online"
     />
   )
 }

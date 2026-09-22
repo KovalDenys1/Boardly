@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 
@@ -112,6 +113,9 @@ export default function HowToPlaySpyGuide() {
             { icon: 'globe', text: 'One secret location per round (e.g. Beach, Hospital, Space Station)' },
             { icon: 'mask', text: 'One spy — randomly assigned, hidden from other players' },
           ]} />
+                  <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            Player range, the round timer and the location list for the online version are on the <Link href="/games/spy" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Guess the Spy game page</Link>.
+          </p>
         </GuideSection>
 
         <GuideSection title="How a Round Works">

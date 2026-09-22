@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
 import { getGuideBySlug } from '@/lib/guides-catalog'
 import { Icon } from '@/components/icons'
@@ -186,6 +187,9 @@ export default function HowToPlayConnectFourGuide() {
               detail: 'Once a column is full, it is gone. If filling a column gives your opponent a winning space on top, avoid it until the time is right.',
             },
           ]} />
+                  <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            The <Link href="/guides/connect-four-strategy-guide" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four strategy guide</Link> goes deeper: centre control, the double threat and the mistakes that lose games.
+          </p>
         </GuideSection>
 
         <GuideSection title="Playing on Boardly">
@@ -193,6 +197,7 @@ export default function HowToPlayConnectFourGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs AI:</strong> Play solo at any time. Great for practicing before challenging a friend.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs Friend:</strong> Share a lobby link — your friend joins in seconds, no account needed.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Every turn is on a countdown, and running out forfeits the round. Choose 30, 60, 90, or 120 seconds when you create the lobby.</p>
+            <p>All of these are chosen when you create a game from the <Link href="/games/connect-four" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four game page</Link>.</p>
           </div>
         </GuideSection>
 
