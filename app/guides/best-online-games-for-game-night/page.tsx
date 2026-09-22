@@ -1,56 +1,14 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 import GameIcon from '@/components/GameIcon'
 
-export const metadata: Metadata = {
-  title: 'Best Online Games for Game Night — Free, No Download',
-  description:
-    'The best games to play online with friends on game night, from three players to a full party. No app, no setup – share a link and start playing. Free browser games for groups of 2–10.',
-  keywords: [
-    'best online games for game night',
-    'game night games online',
-    'online game night ideas',
-    'virtual game night games free',
-    'online games to play with friends at home',
-    'best multiplayer games for game night',
-    'best party games online',
-    'online party games free',
-    'best 3 player games online',
-    'online games for 3 players',
-  ],
-  openGraph: {
-    title: 'Best Online Games for Game Night | Boardly',
-    description: 'Top free browser games for your next online game night — no download, no account needed.',
-    url: 'https://boardly.online/guides/best-online-games-for-game-night',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/best-online-games-for-game-night' },
-}
+export const metadata: Metadata = buildGuideMetadata('best-online-games-for-game-night')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Best Online Games for Game Night — Free, No Download',
-  description: 'Top free browser games for online game nights with friends.',
-  url: 'https://boardly.online/guides/best-online-games-for-game-night',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('best-online-games-for-game-night').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('best-online-games-for-game-night')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Best Online Games for Game Night', item: 'https://boardly.online/guides/best-online-games-for-game-night' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('best-online-games-for-game-night')
 
 const games = [
   {
@@ -151,7 +109,6 @@ export default function BestOnlineGamesForGameNightGuide() {
         subtitle="6 min read · All games free on Boardly · No download required"
         question="What are the best online games for game night?"
         answer="Guess the Spy for a group of five or more, Alias once you have enough people for two teams, and Yahtzee, Memory or Connect Four for a smaller or quieter night – all five run in the browser, need no account, and start from a link you paste into the group chat."
-        breadcrumbLabel="Best Online Games for Game Night"
         accentColor="var(--bd-lav)"
         cta={{ href: '/games', label: 'Browse All Games', detail: 'Pick your first game and share the link.' }}
         related={[

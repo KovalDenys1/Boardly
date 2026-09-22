@@ -4,6 +4,7 @@ import sitemap from '@/app/sitemap'
 import { getCatalogGames } from '@/lib/game-catalog'
 import { getGameCanonical } from '@/lib/game-seo'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
+import { buildGuideArticleJsonLd, getGuideCanonical } from '@/lib/guide-seo'
 import { ROUTE_UPDATED, getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
 
 const BASE = 'https://boardly.online'
@@ -78,16 +79,33 @@ describe('sitemap (#922)', () => {
         expect(getGameCanonical(gameId)).toBe(entry.url)
         continue
       }
+      // #1069: a guide's canonical, like a game's, is derived from its slug by
+      // lib/guide-seo.ts rather than typed into the page three times.
+      const guideSlug = guidePaths.has(route) ? route.slice('/guides/'.length) : null
+      if (guideSlug) {
+        expect(source).toContain(`buildGuideMetadata('${guideSlug}')`)
+        expect(getGuideCanonical(guideSlug)).toBe(entry.url)
+        continue
+      }
       const expected = route === '/' ? "canonical: '/'" : `canonical: '${BASE}${route}'`
       expect(source).toContain(expected)
     }
   })
 
-  it('derives every guide Article.dateModified from the catalog', () => {
+  it('derives every guide Article node from the catalog, dates included', () => {
     for (const guide of ALL_GUIDES) {
       const source = read(`app/guides/${guide.slug}/page.tsx`)
-      expect(source).toContain(`dateModified: getGuideBySlug('${guide.slug}').updated`)
-      expect(source).not.toMatch(/dateModified:\s*['"]/)
+      expect(source).toContain(`buildGuideArticleJsonLd('${guide.slug}')`)
+      expect(source).toContain(`buildGuideBreadcrumbJsonLd('${guide.slug}')`)
+      // no hand-typed date of either kind survives in a guide page
+      expect(source).not.toMatch(/date(Modified|Published):\s*['"]/)
+
+      const article = buildGuideArticleJsonLd(guide.slug)
+      expect(article.dateModified).toBe(guide.updated)
+      expect(article.datePublished).toBe(guide.published)
+      // and no guide claims a publication date from before the site existed
+      expect(guide.published >= '2026-01-01').toBe(true)
+      expect(guide.published <= guide.updated).toBe(true)
     }
   })
 })

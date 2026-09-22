@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES, type GuideIcon } from '@/lib/guides-catalog'
+import { ORGANIZATION_ID } from '@/lib/organization-json-ld'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 
@@ -27,6 +28,11 @@ export const metadata: Metadata = {
     url: 'https://boardly.online/guides',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Board Game Guides & Tips | Boardly',
+    description: 'Step-by-step guides for playing board games online with friends.',
+  },
   alternates: { canonical: 'https://boardly.online/guides' },
 }
 
@@ -45,7 +51,7 @@ const collectionJsonLd = {
   name: 'Board Game Guides & Tips',
   description: 'Step-by-step guides for playing board games online with friends.',
   url: 'https://boardly.online/guides',
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
+  publisher: { '@id': ORGANIZATION_ID },
   hasPart: [...howToPlayGuides, ...strategyGuides, ...bestOfGuides].map(({ slug, title }) => ({
     '@type': 'Article',
     name: title,

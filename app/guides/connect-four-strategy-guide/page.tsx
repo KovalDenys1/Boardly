@@ -1,51 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'Connect Four Strategy Guide — How to Win Every Time',
-  description:
-    'Proven Connect Four strategies to beat any opponent. Learn center control, how to set up unstoppable threats, and the key traps that catch most players off guard.',
-  keywords: [
-    'connect four strategy',
-    'how to win connect four',
-    'connect four tips',
-    'connect four winning strategy',
-    'connect four tricks',
-    'best connect four moves',
-  ],
-  openGraph: {
-    title: 'Connect Four Strategy Guide | Boardly',
-    description: 'Proven Connect Four strategies — center control, double threats, and the traps that win games.',
-    url: 'https://boardly.online/guides/connect-four-strategy-guide',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/connect-four-strategy-guide' },
-}
+export const metadata: Metadata = buildGuideMetadata('connect-four-strategy-guide')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'Connect Four Strategy Guide — How to Win Every Time',
-  description: 'Center control, double threats, and key traps in Connect Four.',
-  url: 'https://boardly.online/guides/connect-four-strategy-guide',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2026-05-26',
-  dateModified: getGuideBySlug('connect-four-strategy-guide').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('connect-four-strategy-guide')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Connect Four Strategy Guide', item: 'https://boardly.online/guides/connect-four-strategy-guide' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('connect-four-strategy-guide')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -95,7 +57,6 @@ export default function ConnectFourStrategyGuide() {
         subtitle="6 min read · Strategy tips for all skill levels · Free on Boardly"
         question="How do you win at Connect Four every time?"
         answer="Take the middle column early, because more winning lines run through it than any other, then work towards a position where you threaten two squares at once – your opponent can only block one of them."
-        breadcrumbLabel="Connect Four Strategy Guide"
         accentColor="var(--bd-sun)"
         cta={{ href: '/games/connect-four/lobbies', label: 'Play Connect Four Now', detail: 'Put these strategies to the test.' }}
         related={[

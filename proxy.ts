@@ -306,16 +306,30 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-// Configure which routes the proxy should run on
+/**
+ * Paths the proxy has no business touching: files served to crawlers and to the
+ * browser's own machinery, never to a logged-in person. Running the proxy on
+ * them costs a `getToken()` per request and puts a session cookie on a response
+ * that should be plain and cacheable.
+ *
+ * Honest scope: this does not change indexing. Search Console already fetches
+ * `sitemap.xml` through the proxy without trouble, and a `Set-Cookie` on a file
+ * a crawler reads is ignored for ranking. It is latency and tidiness.
+ *
+ * The pattern stays one inline literal because Next.js reads `config.matcher`
+ * by static analysis at build time - an imported constant or a `join()` here
+ * silently produces a middleware that matches nothing.
+ * `__tests__/app/proxy-matcher.test.ts` compiles this exact string out of the
+ * source and asks it about real paths, because a typo in it fails open or
+ * closed with nothing else noticing.
+ *
+ * Excluded, in order: Next's own static and image routes, the favicon, the
+ * public folder, `robots.txt`, `sitemap.xml`, `ads.txt`, `manifest.json`,
+ * `sw.js`, `offline.html`, the IndexNow key file (32 hex characters at the site
+ * root, fetched by Bing to verify a submission) and `.well-known`.
+ */
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|public/|robots\\.txt|sitemap\\.xml|ads\\.txt|manifest\\.json|sw\\.js|offline\\.html|[0-9a-f]{32}\\.txt|\\.well-known/).*)',
   ],
 }

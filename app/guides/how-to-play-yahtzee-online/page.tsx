@@ -1,52 +1,13 @@
 import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
 import Link from 'next/link'
 import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideTable, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
-import { getGuideBySlug } from '@/lib/guides-catalog'
 
-export const metadata: Metadata = {
-  title: 'How to Play Yahtzee Online with Friends - Complete Guide',
-  description:
-    'Learn how to play Yahtzee online step by step. Scoring categories explained, strategy tips for beginners and veterans, and how to start a multiplayer game instantly.',
-  keywords: [
-    'how to play yahtzee online',
-    'yahtzee rules',
-    'yahtzee scoring categories',
-    'yahtzee strategy',
-    'play yahtzee with friends online',
-    'yahtzee multiplayer guide',
-    'yahtzee for beginners',
-  ],
-  openGraph: {
-    title: 'How to Play Yahtzee Online with Friends | Boardly',
-    description: 'Complete Yahtzee guide — rules, scoring categories, strategy tips. Free multiplayer in your browser.',
-    url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
-    type: 'article',
-  },
-  alternates: { canonical: 'https://boardly.online/guides/how-to-play-yahtzee-online' },
-}
+export const metadata: Metadata = buildGuideMetadata('how-to-play-yahtzee-online')
 
-const articleJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'How to Play Yahtzee Online with Friends — Complete Guide',
-  description: 'Step-by-step guide to playing Yahtzee online — rules, scoring, and strategy tips.',
-  url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
-  image: 'https://boardly.online/opengraph-image',
-  datePublished: '2025-01-01',
-  dateModified: getGuideBySlug('how-to-play-yahtzee-online').updated,
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-}
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-yahtzee-online')
 
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Yahtzee Online', item: 'https://boardly.online/guides/how-to-play-yahtzee-online' },
-  ],
-}
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-yahtzee-online')
 
 /**
  * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
@@ -101,7 +62,6 @@ export default function HowToPlayYahtzeeGuide() {
         subtitle="6 min read · Free to play on Boardly · 1–4 players"
         question="How do you play Yahtzee online with friends?"
         answer="On your turn you roll five dice up to three times, holding whichever you want to keep between rolls, then commit the result to one of the categories on your scorecard – and when every category is filled, the highest total wins."
-        breadcrumbLabel="How to Play Yahtzee Online"
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Ready to put this into practice?' }}
         related={[
