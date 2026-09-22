@@ -558,3 +558,54 @@ that has one.
 If the AdSense console says ads.txt is "Not found", check
 `https://boardly.online/ads.txt` before believing it — it serves 200, and the console has
 been showing a 2 September snapshot for weeks.
+
+## Release gate: push and release without waiting for Denys
+
+On Boardly and the Control Panel — nowhere else — the release gate is handed over: push to
+`develop` and cut releases to `main` without waiting for him to test. The repo's own gates
+still stand and are the reason this is safe: `pnpm test` at zero failures, `npm run ci:quick`,
+green Actions. Do not ask "shall I release?" — release, then say what shipped. Product and
+brand decisions (which game goes public, a security header on the live site) are judgement,
+not verification: ask them **in chat, in the same message as the report**, never in a ticket.
+Anything sent to other people still waits for his approval.
+
+## Boardly is the repo plus its satellites
+
+The Discord server and anything else attached to the product go stale silently. A release
+that flips a game to available, renames something or changes what the site offers is not
+finished while the server still describes the old product: at the end of a release ask what
+outside the repo now describes it wrongly — channel topics, pinned messages, the invite, the
+site's copy about the community. Guild `1446554932298649796`; `#webhook` and `#feedback` are
+where `OPS_ALERT_WEBHOOK_URL` and `FEEDBACK_DISCORD_WEBHOOK_URL` point, **never delete them**.
+Server-as-code and the bot live in `KovalDenys1/boardly-discord`, ids only in
+`server/snapshot.json`; the vault note is `03 Projects/Boardly/Discord Server.md`; one phase
+per session.
+
+## Growth work runs as a loop, not as ideas
+
+Sunday funnel routine → Tuesday planner (cloud, Sonnet, Supabase only) → Wednesday builder
+(cloud, Opus, one `growth/<issue>` PR to `develop`). Read the vault's
+`03 Projects/Boardly/Growth/Growth Log.md` before any marketing or SEO work; file growth work
+as tickets in the queue's shape (labels `growth`, `agent-ok` / `needs-denys`), never outside
+it. Decisions taken 2026-09-14, not to re-open: $2.99 subscription + yearly plan, no
+one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames/Product Hunt/TikTok, no
+ads near a game, localized URLs for game pages only. The cloud sandbox has no `gh`: builder
+PRs come from `growth-pr.yml`, and `ci.yml` must list `growth/**` under push branches.
+A routine created without `mcp_connections` gets every account connector — pass the list.
+
+## Reading the database: three things the schema does not tell you
+
+- **Bots are ordinary `Users` rows** (`isGuest = false`, matching `Bots` row). Every user
+  metric needs the `Bots` anti-join or it counts 24 bots as users.
+- **Guests are hard-deleted after three idle days and `Players` cascades**, so most games
+  have no `Players` rows; the surviving roster is `Games.state->'players'`.
+- **`status = 'cancelled'` means nobody ever joined** (`startedAt IS NULL`). Dropping it from
+  a completion rate hides the product's largest leak.
+
+Data before 2026-09-09 is contaminated by local dev writing to production. The Control Panel
+(`~/Projects/boardly-control-panel`) never runs migrations — this repo owns the schema — and
+its Vercel secrets do not come back from `vercel env pull`, so its cron routes run by hand:
+`CRON_SECRET=<anything> pnpm exec next dev -p 3100` there, then curl `localhost:3100/api/cron/…`
+with that bearer. Vercel Analytics headline cards can exceed a longer range's totals — read
+the daily series and the Pages table, and check the database before agreeing that anything
+"shows zero".
