@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { SessionProvider } from 'next-auth/react'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
+import { SignupAttribution } from '@/components/SignupAttribution'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
@@ -64,6 +65,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider basePath="/api/auth">
       <GuestProvider>
+        <SignupAttribution />
         <OnboardingProvider>
           <TourProvider>
             <ToastProvider>

@@ -21,6 +21,7 @@ import {
 import { getLastAccount, saveLastAccount, type LastAccount } from '@/lib/last-account'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import { withSignupSourceParam } from '@/lib/signup-source-client'
 
 // The hero chip used to say "6 games ready to play" in all four locales, which
 // went stale the moment a game was released (#878).
@@ -161,7 +162,7 @@ export default function LoginForm() {
         userId: undefined,
       })
       
-      await signIn(provider, { callbackUrl: returnUrl })
+      await signIn(provider, { callbackUrl: withSignupSourceParam(returnUrl) })
     } catch (err: unknown) {
       setError((err as Error).message)
       showToast.errorFrom(err, 'auth.login.oauthError')

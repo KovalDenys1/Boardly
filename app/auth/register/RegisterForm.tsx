@@ -15,6 +15,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { signupSourceHeaders, withSignupSourceParam } from '@/lib/signup-source-client'
 import {
   buildAuthUrl,
   resolveReturnUrlFromSearchParams,
@@ -120,7 +121,7 @@ export default function RegisterForm() {
 
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...signupSourceHeaders() },
         body: JSON.stringify(sanitizedInput),
       })
       const data = await res.json()
@@ -172,7 +173,7 @@ export default function RegisterForm() {
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
     try {
-      await signIn(provider, { callbackUrl: returnUrl })
+      await signIn(provider, { callbackUrl: withSignupSourceParam(returnUrl) })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'OAuth sign in failed'
       setError(errorMessage)

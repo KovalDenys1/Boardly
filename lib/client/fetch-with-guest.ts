@@ -1,4 +1,5 @@
 import { readLocal } from '@/lib/safe-storage'
+import { signupSourceHeaders } from '@/lib/signup-source-client'
 /**
  * Fetch utility that automatically adds guest headers when user is in guest mode
  * Use this instead of native fetch for all API calls
@@ -36,6 +37,12 @@ export async function fetchWithGuest(
 
     const headers = new Headers(init?.headers)
     Object.entries(guestHeaders).forEach(([key, value]) => {
+        headers.set(key, value)
+    })
+    // Attribution rides on every call rather than on a hand-picked few: several routes
+    // (/api/lobby, /api/quick-play, join-guest) mint a user as a side effect, and the
+    // header is ignored wherever no account is created (#1067).
+    Object.entries(signupSourceHeaders()).forEach(([key, value]) => {
         headers.set(key, value)
     })
 
