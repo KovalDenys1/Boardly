@@ -132,6 +132,10 @@ Adds match timing metadata and removes old `chess`/`uno` enum values:
 
 `20260422000000_add_github_issue_number_to_alert_states` adds `githubIssueNumber` to `OperationalAlertStates` so reliability alerts can open/close linked GitHub issues.
 
+### `20260923...` RLS drift and invoker helpers
+
+`20260923093000_rls_stripe_webhook_events_user_achievements` puts `StripeWebhookEvents` and `UserAchievements` under RLS with a service_role-only policy (production had RLS on by hand, dev had none) and switches `get_current_user_id`, `is_authenticated` and `is_service_role` to `SECURITY INVOKER`.
+
 ## Row Level Security
 
 RLS is part of the database safety model:

@@ -8,8 +8,6 @@ DECLARE
     'Users',
     'Bots',
     'Accounts',
-    'Sessions',
-    'VerificationTokens',
     'PasswordResetTokens',
     'EmailVerificationTokens',
     'AccountPreferences',
@@ -26,15 +24,15 @@ DECLARE
     'Notifications',
     'Feedback',
     'GameStateSnapshots',
-    'AdminAuditLogs'
+    'AdminAuditLogs',
+    'StripeWebhookEvents',
+    'UserAchievements'
   ];
   tables_requiring_policy TEXT[] := ARRAY[
     '_prisma_migrations',
     'Users',
     'Bots',
     'Accounts',
-    'Sessions',
-    'VerificationTokens',
     'PasswordResetTokens',
     'EmailVerificationTokens',
     'Lobbies',
@@ -49,7 +47,9 @@ DECLARE
     'NotificationPreferences',
     'Notifications',
     'GameStateSnapshots',
-    'AdminAuditLogs'
+    'AdminAuditLogs',
+    'StripeWebhookEvents',
+    'UserAchievements'
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
@@ -148,7 +148,9 @@ BEGIN
       ('GameStateSnapshots', 'Players can view snapshots in their games'),
       ('GameStateSnapshots', 'Service role can manage game state snapshots'),
       ('AdminAuditLogs', 'Admins can view audit logs'),
-      ('AdminAuditLogs', 'Service role can manage admin audit logs')
+      ('AdminAuditLogs', 'Service role can manage admin audit logs'),
+      ('StripeWebhookEvents', 'Service role can manage stripe webhook events'),
+      ('UserAchievements', 'Service role can manage user achievements')
   )
   SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
   INTO missing_policies
