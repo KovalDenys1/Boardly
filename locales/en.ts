@@ -751,7 +751,7 @@ const en = {
           },
           needAccount: {
             q: 'Do I need an account?',
-            a: 'No. A guest name lets you create or join a lobby and play bots. Guest profiles are deleted after three days without play, so sign up to keep one.',
+            a: 'No. A guest name lets you create or join a lobby and play bots. A guest who has played is kept for 90 days of inactivity; sign up to keep your profile for good.',
           },
           worksOnPhone: {
             q: 'Does it work on a phone?',

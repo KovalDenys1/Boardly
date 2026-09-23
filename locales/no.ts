@@ -751,7 +751,7 @@ const no = {
           },
           needAccount: {
             q: 'Trenger jeg en konto?',
-            a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot roboter. Gjesteprofiler slettes etter tre dager uten spill, så registrer deg for å beholde en.',
+            a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot roboter. En gjest som har spilt, beholdes i 90 dager uten aktivitet; registrer deg for å beholde profilen for alltid.',
           },
           worksOnPhone: {
             q: 'Fungerer det på mobil?',
