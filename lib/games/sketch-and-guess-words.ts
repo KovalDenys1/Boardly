@@ -18,17 +18,10 @@
  * `findSketchWordByEnglish` is how such a round is given its other languages.
  */
 
-export type SketchWordLocale = 'en' | 'no' | 'ru' | 'uk'
+import { SKETCH_WORD_LOCALES, type SketchWord, type SketchWordLocale } from './sketch-and-guess-word-display'
 
-export const SKETCH_WORD_LOCALES: readonly SketchWordLocale[] = ['en', 'no', 'ru', 'uk']
-
-export interface SketchWord {
-  id: string
-  en: string[]
-  no: string[]
-  ru: string[]
-  uk: string[]
-}
+export { SKETCH_WORD_LOCALES, sketchWordDisplay, resolveSketchWordLocale } from './sketch-and-guess-word-display'
+export type { SketchWord, SketchWordLocale }
 
 export const SKETCH_WORDS: readonly SketchWord[] = [
   // ── The original prompt pool ────────────────────────────────────────────
@@ -243,20 +236,6 @@ export function findSketchWordByEnglish(prompt: string): SketchWord | null {
   const key = normalizeSketchGuess(prompt)
   if (!key) return null
   return SKETCH_WORDS.find((word) => word.en.some((form) => normalizeSketchGuess(form) === key)) ?? null
-}
-
-/** The form a viewer whose UI is in `locale` should be shown, English when that language has none. */
-export function sketchWordDisplay(word: Pick<SketchWord, SketchWordLocale> | null | undefined, locale: string): string {
-  if (!word) return ''
-  const lang = resolveSketchWordLocale(locale)
-  return word[lang]?.[0] || word.en?.[0] || ''
-}
-
-export function resolveSketchWordLocale(locale: string | null | undefined): SketchWordLocale {
-  const normalized = (locale || '').toLowerCase()
-  // `nb` and `nn` are how a browser names Norwegian; the site calls it `no`.
-  if (normalized.startsWith('nb') || normalized.startsWith('nn')) return 'no'
-  return SKETCH_WORD_LOCALES.find((lang) => normalized === lang || normalized.startsWith(`${lang}-`)) ?? 'en'
 }
 
 /**

@@ -217,7 +217,7 @@ export class SketchAndGuessGame extends GameEngine {
    *   so a player who guessed wrong in the old one-shot phase may try again.
    */
   protected normalizeRestoredData(): void {
-    const data = this.state.data as (SketchAndGuessGameData & { phase: SketchAndGuessPersistedPhase }) | undefined
+    const data = this.state.data as (Omit<SketchAndGuessGameData, 'phase'> & { phase: SketchAndGuessPersistedPhase }) | undefined
     if (!data || typeof data !== 'object' || !Array.isArray(data.rounds)) return
 
     const lastMoveAt =

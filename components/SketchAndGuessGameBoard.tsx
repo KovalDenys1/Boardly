@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
-import type { SketchAndGuessGameData, SketchAndGuessRound } from '@/lib/games/sketch-and-guess-game'
+import type { SketchAndGuessGameData, SketchAndGuessGuess, SketchAndGuessRound } from '@/lib/games/sketch-and-guess-game'
+import { sketchWordDisplay, type SketchWord } from '@/lib/games/sketch-and-guess-word-display'
 import LoadingButton from '@/components/LoadingButton'
 
 type TFn = (key: TranslationKeys, options?: string | Record<string, unknown>) => string
@@ -20,11 +21,18 @@ interface SketchAndGuessGameBoardProps {
   gameStatus: SketchAndGuessLifecycleStatus
   playerId: string
   players: SketchAndGuessPlayer[]
-  onSubmitDrawing: (content: string) => Promise<void>
-  onSubmitGuess: (guess: string) => Promise<void>
+  onSubmitDrawing?: (content: string) => Promise<void>
+  /** Resolves with the private result of the guess, when the server gave one. */
+  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | void>
   onAdvanceRound: () => Promise<void>
+  /** Drawer, `choosing` phase: the word they picked from the three (#1082). */
+  onChooseWord?: (wordId: string) => Promise<void>
+  /** Host only: mark another player's wrong guess correct (#1082). */
+  onAcceptGuess?: (guessId: string) => Promise<void>
   isSubmitting: boolean
   isSpectator?: boolean
+  /** Whether the viewer created the lobby, which is who may accept a guess. */
+  isHost?: boolean
   // #1034: the page lays the game out three times (desktop, phone landscape,
   // phone portrait) and mounts this board in each tree, so anything the player
   // has started and not submitted has to be owned above them – see `draft`.
@@ -34,6 +42,12 @@ interface SketchAndGuessGameBoardProps {
   onLiveStroke?: (stroke: Stroke | null) => void
   /** Everyone else: the drawing as it is being drawn, for the current round. */
   liveView?: SketchLiveView | null
+}
+
+/** What the server tells the author of a guess and nobody else. */
+export interface SketchGuessResult {
+  correct: boolean
+  close: boolean
 }
 
 // ─── Drawing content format ────────────────────────────────────────────────
@@ -145,7 +159,10 @@ function SketchCanvas({
   interactive,
   activeColor,
   activeWidth,
+  overlay,
 }: {
+  /** Laid over the canvas inside its frame – the word choices, or who is choosing. */
+  overlay?: ReactNode
   strokes: Stroke[]
   onStrokesChange?: (strokes: Stroke[]) => void
   /** The stroke being drawn right now, on every point; null when it ends. */
@@ -297,55 +314,180 @@ function SketchCanvas({
           onPointerCancel={finishStroke}
           onPointerLeave={finishStroke}
         />
+        {overlay && <div className="sketch-canvas-overlay">{overlay}</div>}
       </div>
     </div>
   )
 }
 
-// ─── Drawer view (phase: drawing, current drawer) ──────────────────────────
+// ─── The word, as each viewer reads it ─────────────────────────────────────
+// A round persisted before #1082 has only its English `prompt`; everything
+// newer carries the whole word. Either way the viewer sees their own language.
 
-function DrawerCanvasView({
-  prompt,
-  draft,
-  onDraftChange,
-  onSubmit,
-  onLiveStroke,
+function roundWord(round: SketchAndGuessRound): Pick<SketchWord, 'en' | 'no' | 'ru' | 'uk'> | null {
+  if (round.word) return round.word
+  return round.prompt ? { en: [round.prompt], no: [], ru: [], uk: [] } : null
+}
+
+// ─── Guess feed (phase: drawing and reveal, every viewer) ──────────────────
+// Every guess of the round, oldest first and scrolled to the newest. A wrong
+// one shows its text – the table watching the misses is half the fun, and the
+// host has to read them to accept one. A correct one reads "<name> guessed it!";
+// its text reaches only its author and the drawer until the reveal, and the
+// server has already blanked it for everyone else.
+
+function GuessFeed({
+  guesses,
+  nameOf,
+  currentUserId,
+  canAccept,
+  onAcceptGuess,
   isSubmitting,
   t,
 }: {
-  prompt: string
-  draft: SketchAndGuessDraft
-  onDraftChange: (patch: Partial<SketchAndGuessDraft>) => void
-  onLiveStroke?: (stroke: Stroke | null) => void
-  onSubmit: (content: string) => Promise<void>
+  guesses: SketchAndGuessGuess[]
+  nameOf: (id: string) => string
+  currentUserId: string
+  canAccept: (guess: SketchAndGuessGuess) => boolean
+  onAcceptGuess?: (guessId: string) => Promise<void>
   isSubmitting: boolean
   t: TFn
 }) {
-  const [validationError, setValidationError] = useState<string | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const ordered = useMemo(
+    () => guesses.filter((g) => !g.autoSubmitted).slice().sort((a, b) => a.submittedAt - b.submittedAt),
+    [guesses]
+  )
 
+  // Newest at the bottom, in view: a scroll position, not an animation.
+  useEffect(() => {
+    const list = listRef.current
+    if (list) list.scrollTop = list.scrollHeight
+  }, [ordered.length])
+
+  return (
+    <section className="sketch-feed" aria-label={t('games.guess_my_drawing.game.guessesTitle')}>
+      <ul ref={listRef} className="sketch-feed__list">
+        {ordered.length === 0 && <li className="sketch-feed__empty">{t('games.guess_my_drawing.game.guessFeedEmpty')}</li>}
+        {ordered.map((g) => {
+          const name = `${nameOf(g.playerId)}${g.playerId === currentUserId ? ` ${t('game.ui.you')}` : ''}`
+          return (
+            <li key={g.id || `${g.playerId}-${g.submittedAt}`} className={`sketch-feed__item${g.isCorrect ? ' sketch-feed__item--correct' : ''}`}>
+              {g.isCorrect ? (
+                <>
+                  <Icon name="check" size={13} />
+                  <span className="sketch-feed__text">
+                    <strong>{t('games.guess_my_drawing.game.guessedIt', { name })}</strong>
+                    {g.guess ? <span className="sketch-feed__guess"> “{g.guess}”</span> : null}
+                    {g.acceptedByHost ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.acceptedByHost')}</span> : null}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="sketch-feed__text">
+                    <strong>{name}</strong>
+                    <span className="sketch-feed__guess"> {g.guess}</span>
+                  </span>
+                  {onAcceptGuess && canAccept(g) && (
+                    <button
+                      type="button"
+                      className="sketch-feed__accept"
+                      disabled={isSubmitting}
+                      onClick={() => void onAcceptGuess(g.id)}
+                    >
+                      {t('games.guess_my_drawing.game.acceptGuess')}
+                    </button>
+                  )}
+                </>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+// ─── Choosing view (phase: choosing) ───────────────────────────────────────
+// The blank canvas is already the frame the drawing will appear in, so the
+// three words sit on it rather than on a card of their own.
+
+function ChoosingView({
+  round,
+  isDrawer,
+  drawerName,
+  locale,
+  onChooseWord,
+  isSubmitting,
+  t,
+}: {
+  round: SketchAndGuessRound
+  isDrawer: boolean
+  drawerName: string
+  locale: string
+  onChooseWord?: (wordId: string) => Promise<void>
+  isSubmitting: boolean
+  t: TFn
+}) {
+  const choices = isDrawer ? round.wordChoices ?? [] : []
+  const overlay = isDrawer && choices.length > 0 ? (
+    <div className="sketch-choices">
+      <p className="sketch-choices__title">{t('games.guess_my_drawing.game.chooseWordTitle')}</p>
+      {choices.map((word) => (
+        <button
+          key={word.id}
+          type="button"
+          className="sketch-choice-btn bd-btn bd-btn-primary"
+          disabled={isSubmitting || !onChooseWord}
+          onClick={() => void onChooseWord?.(word.id)}
+        >
+          {sketchWordDisplay(word, locale)}
+        </button>
+      ))}
+    </div>
+  ) : (
+    <p className="sketch-choices__wait">
+      <Icon name="pencil" size={16} tone="muted" /> {t('games.guess_my_drawing.game.choosingWait', { name: drawerName })}
+    </p>
+  )
+
+  return (
+    <div className="sketch-phase">
+      <SketchCanvas strokes={[]} interactive={false} overlay={overlay} />
+    </div>
+  )
+}
+
+// ─── Drawer view (phase: drawing, current drawer) ──────────────────────────
+// No submit button since #1082: the round ends when the clock does or when the
+// last guesser has it, and the page sends the canvas as the reveal opens.
+
+function DrawerCanvasView({
+  word,
+  draft,
+  onDraftChange,
+  onLiveStroke,
+  feed,
+  t,
+}: {
+  word: string
+  draft: SketchAndGuessDraft
+  onDraftChange: (patch: Partial<SketchAndGuessDraft>) => void
+  onLiveStroke?: (stroke: Stroke | null) => void
+  feed: ReactNode
+  t: TFn
+}) {
   const { strokes, color, isThick, isEraser } = draft
   const setStrokes = useCallback((next: Stroke[]) => onDraftChange({ strokes: next }), [onDraftChange])
 
   const activeWidth = isThick ? BRUSH_WIDTH_THICK : BRUSH_WIDTH_THIN
   const activeColor = isEraser ? ERASER_COLOR : color
 
-  const handleSubmit = useCallback(async () => {
-    if (strokes.length === 0) {
-      setValidationError(t('games.guess_my_drawing.game.drawingTooEmpty'))
-      return
-    }
-    setValidationError(null)
-    const content: DrawingContent = { type: 'drawing', version: 1, width: CANVAS_SIZE, height: CANVAS_SIZE, strokes }
-    await onSubmit(JSON.stringify(content))
-  }, [strokes, onSubmit, t])
-
   return (
     <div className="sketch-phase">
-      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-3 py-2 text-center">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-bd-ink-muted">
-          {t('games.guess_my_drawing.game.yourPrompt')}
-        </p>
-        <p className="text-xl font-extrabold leading-tight text-bd-ink">{prompt}</p>
+      <div className="sketch-word-chip">
+        <span className="sketch-word-chip__label">{t('games.guess_my_drawing.game.yourPrompt')}</span>
+        <span className="sketch-word-chip__word">{word}</span>
       </div>
 
       <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} onLiveStroke={onLiveStroke} interactive activeColor={activeColor} activeWidth={activeWidth} />
@@ -402,64 +544,37 @@ function DrawerCanvasView({
         </button>
       </div>
 
-      {validationError && <p className="text-center text-sm font-semibold text-rose-600">{validationError}</p>}
-
-      <LoadingButton
-        onClick={handleSubmit}
-        loading={isSubmitting}
-        className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
-      >
-        {t('games.guess_my_drawing.game.submitDrawing')}
-      </LoadingButton>
+      {feed}
     </div>
   )
 }
 
-// ─── Waiting-for-the-drawer view (phase: drawing, everyone else) ───────────
-// A blank square rather than a bare icon on a tall empty card: the drawing is
-// about to appear exactly there, so the space is the frame for it, not a hole.
+// ─── Guesser view (phase: drawing, everyone else) ──────────────────────────
+// The live canvas, the round's guesses, and the box to type the next one in.
 
-function AwaitingDrawingView({ drawerName, liveView, t }: { drawerName: string; liveView: SketchLiveView | null; t: TFn }) {
-  return (
-    <div className="sketch-phase">
-      <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} />
-      <p className="flex items-center justify-center gap-2 text-center text-sm font-semibold text-bd-ink-muted">
-        <Icon name="pencil" size={16} tone="muted" />
-        {t('games.guess_my_drawing.game.waitingForDrawer', { name: drawerName })}
-      </p>
-    </div>
-  )
-}
-
-// ─── Guesser view (phase: guessing) ────────────────────────────────────────
-
-function GuesserCanvasView({
-  round,
+function GuesserDrawingView({
+  liveView,
   canGuess,
-  isDrawer,
-  hasGuessed,
+  hasGuessedCorrectly,
   guess,
   onGuessChange,
   onSubmitGuess,
   isSubmitting,
-  submittedCount,
-  totalGuessers,
+  feed,
   t,
 }: {
-  round: SketchAndGuessRound
+  liveView: SketchLiveView | null
   canGuess: boolean
-  isDrawer: boolean
-  hasGuessed: boolean
+  hasGuessedCorrectly: boolean
   guess: string
   onGuessChange: (next: string) => void
-  onSubmitGuess: (guess: string) => Promise<void>
+  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | void>
   isSubmitting: boolean
-  submittedCount: number
-  totalGuessers: number
+  feed: ReactNode
   t: TFn
 }) {
   const [validationError, setValidationError] = useState<string | null>(null)
-  const parsedContent = useMemo(() => parseDrawingContent(round.drawingContent), [round.drawingContent])
+  const [closeHint, setCloseHint] = useState(false)
 
   const handleSubmit = useCallback(async () => {
     // The box is only cleared after the round trip, so the guess is still on
@@ -472,48 +587,59 @@ function GuesserCanvasView({
       return
     }
     setValidationError(null)
-    await onSubmitGuess(trimmed)
+    const result = await onSubmitGuess(trimmed)
+    setCloseHint(!!result && result.close)
     onGuessChange('')
   }, [guess, isSubmitting, onGuessChange, onSubmitGuess, t])
 
   return (
     <div className="sketch-phase">
-      <SketchCanvas strokes={parsedContent?.strokes || []} interactive={false} />
+      <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} />
 
-      <p className="text-center text-xs font-semibold text-bd-ink-muted">
-        {t('games.guess_my_drawing.game.guessersWaiting', { count: submittedCount, total: totalGuessers })}
-      </p>
+      {feed}
 
-      {isDrawer ? (
-        <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.youAreDrawingWait')}</p>
-      ) : !canGuess ? (
+      {!canGuess ? (
         <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.spectatorNotice')}</p>
-      ) : hasGuessed ? (
-        <p className="text-center text-sm font-semibold text-emerald-600">
-          {t('games.guess_my_drawing.game.alreadyGuessed')}
-        </p>
+      ) : hasGuessedCorrectly ? (
+        <p className="text-center text-sm font-semibold text-emerald-600">{t('games.guess_my_drawing.game.alreadyGuessed')}</p>
       ) : (
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={guess}
-            onChange={(e) => onGuessChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleSubmit()
-            }}
-            disabled={isSubmitting}
-            placeholder={t('games.guess_my_drawing.game.guessPlaceholder')}
-            maxLength={80}
-            className="w-full rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-2.5 text-center text-base font-semibold text-bd-ink"
-          />
-          {validationError && <p className="text-center text-sm font-semibold text-rose-600">{validationError}</p>}
-          <LoadingButton
-            onClick={handleSubmit}
-            loading={isSubmitting}
-            className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
-          >
-            {t('games.guess_my_drawing.game.submitGuess')}
-          </LoadingButton>
+        <div className="sketch-guess-form">
+          <div className="sketch-guess-row">
+            {/* readOnly rather than disabled while a guess is out: a disabled
+                input drops focus, and on a phone that folds the keyboard away
+                between every guess of a round that is all guesses (#1082). */}
+            <input
+              type="text"
+              value={guess}
+              onChange={(e) => {
+                if (isSubmitting) return
+                onGuessChange(e.target.value)
+                if (closeHint) setCloseHint(false)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleSubmit()
+              }}
+              readOnly={isSubmitting}
+              aria-busy={isSubmitting}
+              placeholder={t('games.guess_my_drawing.game.guessPlaceholder')}
+              maxLength={80}
+              enterKeyHint="send"
+              autoComplete="off"
+              className="min-w-0 flex-1 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-2 text-base font-semibold text-bd-ink"
+            />
+            <LoadingButton
+              onClick={handleSubmit}
+              loading={isSubmitting}
+              className="bd-btn bd-btn-primary shrink-0 rounded-xl px-4 py-2 font-semibold"
+            >
+              {t('games.guess_my_drawing.game.submitGuess')}
+            </LoadingButton>
+          </div>
+          {validationError ? (
+            <p className="text-center text-xs font-semibold text-rose-600">{validationError}</p>
+          ) : closeHint ? (
+            <p className="text-center text-xs font-semibold text-amber-600">{t('games.guess_my_drawing.game.closeGuess')}</p>
+          ) : null}
         </div>
       )}
     </div>
@@ -522,88 +648,81 @@ function GuesserCanvasView({
 
 // ─── Reveal view (phase: reveal, and the finished board under the overlay) ──
 // Deliberately does NOT recompute point totals client-side — the engine's
-// scoring (first-correct bonus, drawer bonus, auto-submission penalties)
-// stays server-authoritative. This view only shows correct/incorrect per
-// guess; the scores panel reflects `data.scores` as of the last recompute
-// (advanceAfterReveal), which is one round behind while the current round's
-// reveal hasn't been advanced past yet.
+// scoring stays server-authoritative; the scores panel reads `data.scores`,
+// which since #1082 already includes this round.
 
 function RevealView({
   round,
-  players,
-  currentUserId,
+  word,
+  nameOf,
+  liveView,
   canAdvance,
   isSpectator,
   onAdvanceRound,
   isSubmitting,
   isLastRound,
+  feed,
   t,
 }: {
   round: SketchAndGuessRound
-  players: SketchAndGuessPlayer[]
-  currentUserId: string
+  word: string
+  nameOf: (id: string) => string
+  liveView: SketchLiveView | null
   canAdvance: boolean
   isSpectator: boolean
   onAdvanceRound: () => Promise<void>
   isSubmitting: boolean
   isLastRound: boolean
+  feed: ReactNode
   t: TFn
 }) {
   const parsedContent = useMemo(() => parseDrawingContent(round.drawingContent), [round.drawingContent])
-  const playerNameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players])
-  const sortedGuesses = useMemo(
-    () => round.guesses.slice().sort((a, b) => a.submittedAt - b.submittedAt),
-    [round.guesses]
-  )
-  const drawerName = playerNameById.get(round.drawerId) || t('games.guess_my_drawing.game.unknownPlayer')
+  // Until the drawer's page has sent the canvas, show what everyone watched being drawn.
+  const strokes = parsedContent?.strokes ?? liveView?.strokes ?? []
+  const drawingIn = round.drawingContent !== null && round.drawingContent !== undefined
+  const guessedBy = useMemo(() => {
+    const seen = new Set<string>()
+    return round.guesses
+      .filter((g) => g.isCorrect)
+      .sort((a, b) => a.submittedAt - b.submittedAt)
+      .filter((g) => (seen.has(g.playerId) ? false : (seen.add(g.playerId), true)))
+      .map((g) => `${nameOf(g.playerId)}${g.acceptedByHost ? ` (${t('games.guess_my_drawing.game.acceptedByHost')})` : ''}`)
+  }, [round.guesses, nameOf, t])
 
   return (
     <div className="sketch-phase">
-      <SketchCanvas strokes={parsedContent?.strokes || []} interactive={false} />
+      <SketchCanvas strokes={strokes} interactive={false} />
 
       <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-3 py-2 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-bd-ink-muted">
           {t('games.guess_my_drawing.game.revealPrompt')}
         </p>
-        <p className="text-xl font-extrabold leading-tight text-bd-ink">{round.prompt}</p>
+        <p className="text-xl font-extrabold leading-tight text-bd-ink">{word}</p>
         <p className="text-xs text-bd-ink-muted">
-          {t('games.guess_my_drawing.game.drawnBy', { name: drawerName })}
+          {t('games.guess_my_drawing.game.drawnBy', { name: nameOf(round.drawerId) })}
           {round.drawingAutoSubmitted ? ` ${t('games.guess_my_drawing.game.autoSubmittedTag')}` : ''}
+        </p>
+        <p className="text-xs font-semibold text-bd-ink">
+          {guessedBy.length > 0
+            ? t('games.guess_my_drawing.game.guessedBy', { names: guessedBy.join(', ') })
+            : t('games.guess_my_drawing.game.nobodyGuessed')}
         </p>
       </div>
 
-      <ul className="space-y-1.5">
-        {sortedGuesses.length === 0 && (
-          <li className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.noGuesses')}</li>
-        )}
-        {sortedGuesses.map((g) => (
-          <li
-            key={g.playerId}
-            className={`flex items-center justify-between rounded-lg border px-3 py-1.5 text-sm ${
-              g.isCorrect
-                ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20'
-                : 'border-[var(--bd-line)] bg-[var(--bd-bg)]'
-            }`}
-          >
-            <span className="font-medium text-bd-ink">
-              {playerNameById.get(g.playerId) || t('games.guess_my_drawing.game.unknownPlayer')}
-              {g.playerId === currentUserId ? ` ${t('game.ui.you')}` : ''}
-            </span>
-            <span className={g.isCorrect ? 'font-semibold text-emerald-700' : 'text-bd-ink-muted'}>
-              {g.autoSubmitted ? t('games.guess_my_drawing.game.autoSubmittedTag') : `"${g.guess}"`}{' '}
-              <Icon name={g.isCorrect ? 'check' : 'close'} size={14} />
-            </span>
-          </li>
-        ))}
-      </ul>
+      {feed}
 
       {canAdvance && (
         <LoadingButton
           onClick={onAdvanceRound}
           loading={isSubmitting}
+          disabled={!drawingIn}
           className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
         >
-          {isLastRound ? t('games.guess_my_drawing.game.seeResults') : t('games.guess_my_drawing.game.nextRound')}
+          {!drawingIn
+            ? t('games.guess_my_drawing.game.waitingForDrawing')
+            : isLastRound
+              ? t('games.guess_my_drawing.game.seeResults')
+              : t('games.guess_my_drawing.game.nextRound')}
         </LoadingButton>
       )}
       {isSpectator && (
@@ -671,17 +790,20 @@ export default function SketchAndGuessGameBoard({
   gameStatus,
   playerId,
   players,
-  onSubmitDrawing,
   onSubmitGuess,
   onAdvanceRound,
+  onChooseWord,
+  onAcceptGuess,
   isSubmitting,
   isSpectator = false,
+  isHost = false,
   draft,
   onDraftChange,
   onLiveStroke,
   liveView = null,
 }: SketchAndGuessGameBoardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n?.language || 'en'
 
   // A board rendered on its own – a test, or any future single-tree page – keeps
   // its own draft. A page that mounts the board more than once must pass one in,
@@ -704,16 +826,55 @@ export default function SketchAndGuessGameBoard({
     [gameData.rounds, gameData.currentRound]
   )
   const playerNameById = useMemo(() => new Map(players.map((p) => [p.id, p.name])), [players])
+  const nameOf = useCallback(
+    (id: string) => playerNameById.get(id) || t('games.guess_my_drawing.game.unknownPlayer'),
+    [playerNameById, t]
+  )
 
   const isFinished = gameStatus === 'finished'
   const isDrawer = !isSpectator && playerId === gameData.currentDrawerId
-  const totalGuessers = Math.max(0, players.length - 1)
-  const hasGuessed = !isSpectator && (currentRound?.guesses.some((g) => g.playerId === playerId) ?? false)
-  const drawerName = playerNameById.get(gameData.currentDrawerId) || t('games.guess_my_drawing.game.unknownPlayer')
+  const correctIds = useMemo(() => {
+    const ids = new Set(gameData.submittedPlayerIds)
+    for (const g of currentRound?.guesses ?? []) if (g.isCorrect) ids.add(g.playerId)
+    return ids
+  }, [gameData.submittedPlayerIds, currentRound])
+  const hasGuessedCorrectly = !isSpectator && correctIds.has(playerId)
+  const drawerName = nameOf(gameData.currentDrawerId)
+  const liveForRound = liveView && liveView.round === gameData.currentRound ? liveView : null
+
+  // The host may overrule the matcher on someone else's miss, while the round
+  // is still open – drawing, or the reveal before it moves on (#1082). The
+  // server enforces the same, this only decides where the button shows.
+  const canAccept = useCallback(
+    (g: SketchAndGuessGuess) =>
+      isHost &&
+      !isSpectator &&
+      !isFinished &&
+      (gameData.phase === 'drawing' || gameData.phase === 'reveal') &&
+      !g.isCorrect &&
+      !g.autoSubmitted &&
+      !!g.id &&
+      g.playerId !== playerId &&
+      g.playerId !== currentRound?.drawerId &&
+      !correctIds.has(g.playerId),
+    [isHost, isSpectator, isFinished, gameData.phase, playerId, currentRound?.drawerId, correctIds]
+  )
 
   if (!currentRound) {
     return <div className="sketch-phase items-center justify-center text-sm text-bd-ink-muted">{t('common.loading')}</div>
   }
+
+  const feed = (
+    <GuessFeed
+      guesses={currentRound.guesses ?? []}
+      nameOf={nameOf}
+      currentUserId={playerId}
+      canAccept={canAccept}
+      onAcceptGuess={onAcceptGuess}
+      isSubmitting={isSubmitting}
+      t={t}
+    />
+  )
 
   // A finished game keeps the last round on the board: the result overlay sits
   // over it and "View Board" dismisses the overlay to show exactly this.
@@ -721,51 +882,60 @@ export default function SketchAndGuessGameBoard({
     return (
       <RevealView
         round={currentRound}
-        players={players}
-        currentUserId={playerId}
+        word={sketchWordDisplay(roundWord(currentRound), locale)}
+        nameOf={nameOf}
+        liveView={liveForRound}
         canAdvance={!isSpectator && !isFinished}
         isSpectator={isSpectator}
         onAdvanceRound={onAdvanceRound}
         isSubmitting={isSubmitting}
         isLastRound={gameData.currentRound >= gameData.totalRounds}
+        feed={feed}
         t={t}
       />
     )
   }
 
-  if (gameData.phase === 'drawing') {
-    return isDrawer ? (
-      <DrawerCanvasView
-        prompt={currentRound.prompt}
-        draft={activeDraft}
-        onDraftChange={patchDraft}
-        onSubmit={onSubmitDrawing}
-        onLiveStroke={onLiveStroke}
+  if (gameData.phase === 'choosing') {
+    return (
+      <ChoosingView
+        round={currentRound}
+        isDrawer={isDrawer}
+        drawerName={drawerName}
+        locale={locale}
+        onChooseWord={onChooseWord}
         isSubmitting={isSubmitting}
         t={t}
       />
-    ) : (
-      <AwaitingDrawingView
-        drawerName={drawerName}
-        liveView={liveView && liveView.round === gameData.currentRound ? liveView : null}
-        t={t}
-      />
     )
   }
 
-  return (
-    <GuesserCanvasView
-      round={currentRound}
-      canGuess={!isSpectator && !isDrawer}
-      isDrawer={isDrawer}
-      hasGuessed={hasGuessed}
+  return isDrawer ? (
+    <DrawerCanvasView
+      word={sketchWordDisplay(roundWord(currentRound), locale)}
+      draft={activeDraft}
+      onDraftChange={patchDraft}
+      onLiveStroke={onLiveStroke}
+      feed={feed}
+      t={t}
+    />
+  ) : (
+    <GuesserDrawingView
+      liveView={liveForRound}
+      canGuess={!isSpectator}
+      hasGuessedCorrectly={hasGuessedCorrectly}
       guess={activeDraft.guess}
       onGuessChange={setGuess}
       onSubmitGuess={onSubmitGuess}
       isSubmitting={isSubmitting}
-      submittedCount={gameData.submittedPlayerIds.length}
-      totalGuessers={totalGuessers}
+      feed={feed}
       t={t}
     />
   )
+}
+
+/** The canvas as it stands, in the shape `submit-drawing` stores – the page sends it as the reveal opens. */
+export function serializeSketchDrawing(strokes: Stroke[]): string {
+  const content: DrawingContent = { type: 'drawing', version: 1, width: CANVAS_SIZE, height: CANVAS_SIZE, strokes }
+  return JSON.stringify(content)
 }
