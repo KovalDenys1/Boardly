@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { socialShortLinkDisallow } from '@/lib/social-short-links'
 
 /** Private or per-user pages no crawler has any business in. */
 const PRIVATE_PATHS = [
@@ -36,6 +37,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           ...PRIVATE_PATHS,
           '/lobby/',      // live game rooms — dynamic, not useful for search
+          ...socialShortLinkDisallow(), // social short links (#1096) — redirects only
         ],
       },
       {
