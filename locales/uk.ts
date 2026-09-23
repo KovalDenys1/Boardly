@@ -1884,6 +1884,12 @@ const uk: TranslationWithPlurals = {
     sendHelp: 'Enter — надіслати • Shift+Enter — новий рядок',
   },
   auth: {
+    inAppBrowser: {
+      title: 'Ви у вбудованому браузері {{app}}',
+      body: 'Google не дозволяє входити звідси. Відкрийте сторінку в Safari або Chrome (натисніть ⋯ і виберіть «Відкрити в браузері») або увійдіть через Discord, GitHub чи e-mail.',
+      copyLink: 'Скопіювати посилання',
+      copied: 'Посилання скопійовано – вставте його в браузер',
+    },
     login: {
       heroQuote: '«Найкращий\nвечір\nпʼятниці»',
       heroQuoteBy: '— наші гравці про boardly',

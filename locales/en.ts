@@ -1793,6 +1793,12 @@ const en = {
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
   },
   auth: {
+    inAppBrowser: {
+      title: "You're in {{app}}'s built-in browser",
+      body: 'Google does not allow sign-in here. Open this page in Safari or Chrome (tap ⋯ and choose Open in browser), or sign in with Discord, GitHub or email.',
+      copyLink: 'Copy link',
+      copied: 'Link copied – paste it into your browser',
+    },
     login: {
       heroQuote: '“Best\nFriday\nnight ever”',
       heroQuoteBy: '— our players about boardly',

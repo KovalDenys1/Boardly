@@ -21,11 +21,24 @@
  *
  * Value shapes: `utm:<source>[/<medium>[/<campaign>]]`, `ref:<hostname>`, `direct`.
  *
+ * Precedence (#1091): UTM, then an external referrer, then the social app whose in-app
+ * browser this is, then a platform click id, then `direct`. Social hosts are folded to one
+ * per platform by `canonicalReferrerHost` (`l.instagram.com` → `instagram.com`, `t.co` →
+ * `x.com`), and the two fallbacks produce the same `ref:<platform host>` value, so the
+ * Control Panel's parser reads them without change.
+ *
  * The campaign is kept because without it two posts on the same platform are the same row,
  * and the Revenue Plan's way of testing a channel is to run it for three weeks and compare.
  */
 
 /** Carries the in-memory value on the request that creates the account. */
+import {
+  canonicalReferrerHost,
+  detectInAppBrowser,
+  hostFromClickIds,
+  inAppBrowserHost,
+} from './social-referrers'
+
 export const SIGNUP_SOURCE_HEADER = 'X-Signup-Source'
 /** Carries it across an OAuth redirect, where no page survives to send a header. */
 export const SIGNUP_SOURCE_PARAM = 'bd_src'
@@ -48,6 +61,10 @@ export function deriveSignupSource(input: {
   utmCampaign?: string | null
   referrer?: string | null
   currentHostname?: string | null
+  /** `navigator.userAgent`, to recognise an Instagram/Facebook/TikTok in-app browser. */
+  userAgent?: string | null
+  /** `location.search`, for the platforms' click ids (`fbclid`, `ttclid`, `igshid`). */
+  search?: string | null
 }): string {
   const utmSource = sanitizeSignupSource(input.utmSource)
   if (utmSource) {
@@ -65,15 +82,22 @@ export function deriveSignupSource(input: {
 
   if (input.referrer) {
     try {
-      const host = new URL(input.referrer).hostname.replace(/^www\./, '')
-      const own = (input.currentHostname ?? '').replace(/^www\./, '')
+      const host = canonicalReferrerHost(new URL(input.referrer).hostname)
+      const own = canonicalReferrerHost(input.currentHostname)
       if (host && host !== own) {
         return sanitizeSignupSource(`ref:${host}`) ?? 'direct'
       }
     } catch {
-      // malformed referrer — treat as direct
+      // malformed referrer — fall through to the in-app and click-id signals
     }
   }
+
+  // In-app browsers usually send no referrer; their user agent still says whose app it is.
+  const inApp = detectInAppBrowser(input.userAgent)
+  if (inApp) return `ref:${inAppBrowserHost(inApp)}`
+
+  const clickHost = hostFromClickIds(input.search)
+  if (clickHost) return `ref:${clickHost}`
 
   return 'direct'
 }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
 
 export default function Footer() {
   const { t } = useTranslation()
@@ -177,6 +178,22 @@ export default function Footer() {
                   GitHub
                 </a>
               </li>
+              {/* Renders nothing until lib/social-profiles.ts lists an account (#1091). */}
+              {SOCIAL_PROFILES.map((profile) => (
+                <li key={profile.url}>
+                  <a
+                    href={profile.url}
+                    target="_blank"
+                    rel="me noopener noreferrer"
+                    className="text-sm transition-colors"
+                    style={{ color: 'var(--bd-ink-soft)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                  >
+                    {SOCIAL_PLATFORM_LABELS[profile.platform]}
+                  </a>
+                </li>
+              ))}
               <li>
                 <a
                   href="/discord"

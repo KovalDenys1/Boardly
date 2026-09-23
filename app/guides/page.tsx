@@ -5,6 +5,7 @@ import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES, type GuideIcon } f
 import { ORGANIZATION_ID } from '@/lib/organization-json-ld'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
+import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
 const howToPlayGuides = HOW_TO_PLAY_GUIDES
 const strategyGuides = STRATEGY_GUIDES
@@ -23,6 +24,8 @@ export const metadata: Metadata = {
     'boardly guides',
   ],
   openGraph: {
+    ...OG_SITE_DEFAULTS,
+    images: socialImages('guides'),
     title: 'Board Game Guides & Tips | Boardly',
     description: 'Step-by-step guides for playing board games online with friends.',
     url: 'https://boardly.online/guides',
@@ -30,6 +33,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    images: socialImages('guides'),
     title: 'Board Game Guides & Tips | Boardly',
     description: 'Step-by-step guides for playing board games online with friends.',
   },

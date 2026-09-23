@@ -15,6 +15,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import InAppBrowserNotice from '@/components/InAppBrowserNotice'
 import { signupSourceHeaders, withSignupSourceParam } from '@/lib/signup-source-client'
 import {
   buildAuthUrl,
@@ -275,6 +276,7 @@ export default function RegisterForm() {
           )}
 
           <div className="bd-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <InAppBrowserNotice />
             {renderProviderButtons()}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-muted)', fontSize: 13 }}>

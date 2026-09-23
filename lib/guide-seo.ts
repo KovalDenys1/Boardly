@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { BOARDLY_URL, ORGANIZATION_ID } from './organization-json-ld'
 import { getGuideBySlug, type GuideEntry } from './guides-catalog'
+import { OG_SITE_DEFAULTS, guideSocialCardKey, socialImages } from './social-preview'
 
 /**
  * One builder for every `/guides/<slug>` page's head, the way
@@ -31,11 +32,15 @@ export function buildGuideMetadata(slug: string): Metadata {
   const { seo } = guide
   const ogTitle = `${seo.ogTitle}${TITLE_SUFFIX}`
 
+  const images = socialImages(guideSocialCardKey(guide.slug))
+
   return {
     title: seo.title,
     description: seo.description,
     keywords: seo.keywords,
     openGraph: {
+      ...OG_SITE_DEFAULTS,
+      images,
       title: ogTitle,
       description: seo.ogDescription,
       url,
@@ -45,6 +50,7 @@ export function buildGuideMetadata(slug: string): Metadata {
     },
     twitter: {
       card: 'summary_large_image',
+      images,
       title: ogTitle,
       description: seo.ogDescription,
     },

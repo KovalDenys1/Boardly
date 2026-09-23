@@ -53,6 +53,18 @@ describe('invite attribution (#920)', () => {
     ).toEqual({ via: 'external_referrer', referrerHost: 't.me' })
   })
 
+  it('reports one host per social platform (#1091)', () => {
+    expect(
+      parseInviteAttribution({
+        code: CODE,
+        search: '',
+        referrer: 'https://l.instagram.com/?u=x',
+        currentHostname: HOST,
+        navigation: loadedAtLobby,
+      })
+    ).toEqual({ via: 'external_referrer', referrerHost: 'instagram.com' })
+  })
+
   it('ignores the referrer after a soft navigation from another page', () => {
     // landed on / from Google, then Quick Play did router.push('/lobby/AB12') – same document
     expect(

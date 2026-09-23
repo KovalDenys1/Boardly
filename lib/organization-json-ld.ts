@@ -7,6 +7,8 @@
 // can be unit-tested without rendering the layout, the way #925 made /about's
 // nodes testable.
 
+import { SOCIAL_PROFILES } from './social-profiles'
+
 export const BOARDLY_URL = 'https://boardly.online'
 export const ORGANIZATION_ID = `${BOARDLY_URL}/#organization`
 export const WEBSITE_ID = `${BOARDLY_URL}/#website`
@@ -28,8 +30,8 @@ const ENTITY_DESCRIPTION =
   'Boardly is a free online board games website where friends play together in the browser in real time, with no download and no account required.'
 
 /**
- * `sameAs` has one entry because GitHub is the only third-party profile Boardly
- * owns. The Discord invite rotates (`app/discord/route.ts` is a 302 for exactly
+ * `sameAs` is GitHub plus whatever `SOCIAL_PROFILES` lists (#1091), which is
+ * empty until the TikTok/Instagram/Facebook/YouTube accounts exist. The Discord invite rotates (`app/discord/route.ts` is a 302 for exactly
  * that reason) so it is not a stable identity URL, and there is no X account –
  * a `sameAs` pointing at a handle we do not control would claim the wrong
  * entity rather than confirm ours.
@@ -47,7 +49,7 @@ export const organizationNode = {
     width: LOGO_WIDTH,
     height: LOGO_HEIGHT,
   },
-  sameAs: [GITHUB_REPO_URL],
+  sameAs: [GITHUB_REPO_URL, ...SOCIAL_PROFILES.map((profile) => profile.url)],
   contactPoint: {
     '@type': 'ContactPoint',
     email: SUPPORT_EMAIL,

@@ -60,6 +60,57 @@ describe('deriveSignupSource', () => {
   })
 })
 
+describe('deriveSignupSource – social traffic (#1091)', () => {
+  const IG_IOS =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 334.0.4.32.98 (iPhone15,2; iOS 17_5; en_US; en; scale=3.00; 1179x2556; 612123321)'
+  const TIKTOK_ANDROID =
+    'Mozilla/5.0 (Linux; Android 13; SM-S911B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36 trill_330603 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/33.6.3 ByteLocale/en BytedanceWebview/d8a21c6'
+  const FB_IOS =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.37.109;FBBV/612345678;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/17.5;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5]'
+  const SAFARI =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+
+  it.each([
+    ['https://l.instagram.com/?u=https%3A%2F%2Fboardly.online', 'ref:instagram.com'],
+    ['https://www.instagram.com/', 'ref:instagram.com'],
+    ['https://lm.facebook.com/l.php?u=x', 'ref:facebook.com'],
+    ['https://m.facebook.com/', 'ref:facebook.com'],
+    ['https://l.facebook.com/', 'ref:facebook.com'],
+    ['https://www.tiktok.com/@boardly', 'ref:tiktok.com'],
+    ['https://m.youtube.com/watch?v=1', 'ref:youtube.com'],
+    ['https://youtu.be/abc', 'ref:youtube.com'],
+    ['https://t.co/abc', 'ref:x.com'],
+    ['https://twitter.com/', 'ref:x.com'],
+    ['android-app://com.zhiliaoapp.musically/', 'ref:tiktok.com'],
+    ['android-app://com.instagram.android/', 'ref:instagram.com'],
+    ['https://news.ycombinator.com/', 'ref:news.ycombinator.com'],
+  ])('folds %s into %s', (referrer, expected) => {
+    expect(deriveSignupSource({ referrer, currentHostname: 'boardly.online' })).toBe(expected)
+  })
+
+  it('reads the in-app browser when the app sent no referrer', () => {
+    expect(deriveSignupSource({ userAgent: IG_IOS })).toBe('ref:instagram.com')
+    expect(deriveSignupSource({ userAgent: TIKTOK_ANDROID })).toBe('ref:tiktok.com')
+    expect(deriveSignupSource({ userAgent: FB_IOS })).toBe('ref:facebook.com')
+    expect(deriveSignupSource({ userAgent: SAFARI })).toBe('direct')
+  })
+
+  it('falls back to the platform click id last', () => {
+    expect(deriveSignupSource({ search: '?fbclid=IwAR0abc' })).toBe('ref:facebook.com')
+    expect(deriveSignupSource({ search: '?ttclid=E.C.P.abc' })).toBe('ref:tiktok.com')
+    expect(deriveSignupSource({ search: '?igshid=abc&fbclid=x' })).toBe('ref:instagram.com')
+  })
+
+  it('keeps UTM first and a real referrer second', () => {
+    expect(
+      deriveSignupSource({ utmSource: 'tiktok', utmMedium: 'social', utmCampaign: 'bio', userAgent: TIKTOK_ANDROID })
+    ).toBe('utm:tiktok/social/bio')
+    expect(
+      deriveSignupSource({ referrer: 'https://www.reddit.com/', userAgent: IG_IOS, currentHostname: 'boardly.online' })
+    ).toBe('ref:reddit.com')
+  })
+})
+
 describe('getSignupSourceFromRequest', () => {
   const request = (value?: string) => ({
     headers: { get: (name: string) => (name === SIGNUP_SOURCE_HEADER && value ? value : null) },

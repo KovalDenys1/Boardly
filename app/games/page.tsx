@@ -6,6 +6,7 @@ import {
 } from '@/lib/feature-flags'
 import { getCatalogGames } from '@/lib/game-catalog'
 import GamesClient from './GamesClient'
+import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
 export const metadata: Metadata = {
   title: 'All Free Online Board Games - Multiplayer',
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
     'board games in browser',
   ],
   openGraph: {
+    ...OG_SITE_DEFAULTS,
+    images: socialImages('games'),
     title: 'All Free Online Board Games - Multiplayer | Boardly',
     description: 'Browse all free online board games on Boardly. Play with friends in real time. No download needed.',
     url: 'https://boardly.online/games',
@@ -29,6 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    images: socialImages('games'),
     title: 'All Free Online Board Games | Boardly',
     description: 'Free multiplayer board games in your browser. No download, no account required.',
   },
