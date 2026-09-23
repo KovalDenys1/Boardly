@@ -569,7 +569,7 @@ const no = {
           yahtzeeOnce: 'Yatzy gir 50 poeng én gang. Fem like en gang til gir ingen bonus og må føres i en annen rad.',
           upperBonus: 'I klassisk modus gir 63 eller mer fra Enere til Seksere 35 ekstra poeng. Kort modus har ingen bonus.',
           gameEnd: 'Spillet er over når alle poenglister er fulle, og høyest sum, bonus medregnet, vinner.',
-          timerExpiry: 'Går tiden ut, kaster spillet én gang hvis du ikke hadde kastet, og fyller så den ledige ruten som gir mest, eller setter null i den minst verdifulle.',
+          timerExpiry: 'Går turtiden ut, spiller spillet ferdig turen din og fører poengene for deg.',
         },
         scoring: {
           upperNote: 'Bare i klassisk modus: 63 eller mer over disse radene gir 35 bonuspoeng. Tre av hver verdi gir nøyaktig 63.',
@@ -726,7 +726,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Yatzy passer for familier, blandede aldre og venner som sjelden spiller brettspill: reglene tar et minutt, men planlegging rundt bonusen lønner seg likevel for de faste. Kort modus passer til en kaffepause, klassisk til en lengre kveld.',
+          whoItSuits: 'Yatzy passer for familier, blandede aldre og venner som sjelden spiller brettspill: reglene tar et minutt, men planlegging rundt bonusen lønner seg likevel for de faste.',
         },
         history: {
           americanAndNordic: 'Yahtzee ble lansert i USA i 1956 av leketøysprodusenten Edwin S. Lowe og er i dag et varemerke som tilhører Hasbro. Parradene på Boardly kommer fra Yatzy, den nordiske slektningen.',
@@ -759,7 +759,7 @@ const no = {
           },
           howManyPlayers: {
             q: 'Hvor mange kan spille?',
-            a: 'Én til fire per spill, med venner, roboter eller begge deler på plassene. Flere spillere gir et lengre spill, siden alle spiller etter tur.',
+            a: 'Én til fire per spill, med venner, roboter eller begge deler på plassene. Flere spillere gir et lengre spill.',
           },
         },
       },

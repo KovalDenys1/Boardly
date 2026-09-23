@@ -569,7 +569,7 @@ const en = {
           yahtzeeOnce: 'Yahtzee pays 50 once. A second five of a kind earns no bonus and has to go in another row.',
           upperBonus: 'In classic mode, 63 or more in Ones to Sixes adds 35 points. Short mode has no bonus.',
           gameEnd: 'The game ends when every scorecard is full, and the highest total, bonus included, wins.',
-          timerExpiry: 'When the timer runs out, the game rolls once if you had not, then fills the best-paying open box, or puts a zero in the least valuable one.',
+          timerExpiry: 'If the turn timer runs out, the game plays out your turn and scores it for you.',
         },
         scoring: {
           upperNote: 'Classic mode only: 63 or more across these rows adds a 35-point bonus. Three of each face is exactly 63.',
@@ -726,7 +726,7 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Yahtzee suits families, mixed ages and friends who rarely play board games: the rules take a minute, yet planning for the bonus still rewards regulars. Short mode fits a coffee break, classic a longer evening.',
+          whoItSuits: 'Yahtzee suits families, mixed ages and friends who rarely play board games: the rules take a minute, yet planning for the bonus still rewards regulars.',
         },
         history: {
           americanAndNordic: 'Yahtzee was launched in the United States in 1956 by the toy maker Edwin S. Lowe and is now a Hasbro trademark. Boardly\'s pair rows come from Yatzy, its Nordic cousin.',
@@ -759,7 +759,7 @@ const en = {
           },
           howManyPlayers: {
             q: 'How many people can play?',
-            a: 'One to four per game, with friends, bots or both filling the seats. More players means a longer game, since turns go in order.',
+            a: 'One to four per game, with friends, bots or both filling the seats. More players means a longer game.',
           },
         },
       },
