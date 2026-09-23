@@ -592,7 +592,8 @@ export function trackUserRetention(data: {
 export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): void {
   track('signup_prompt', { action })
   // Also to OperationalEvents, because `track` goes to Vercel Analytics and the Hobby plan
-  // drops every custom event: the funnel the Revenue Plan defines had never stored a row.
+  // dropped every custom event until Pro (2026-09-18): the funnel the Revenue Plan defines
+  // had never stored a row, and OperationalEvents stays the queryable copy.
   // Note for whoever reads it: `shown` fires per mount and the nudge suppresses itself after
   // a dismissal, so clicked-over-shown is a per-session ratio, not a per-person one.
   emitOperationalEvent(`signup_prompt_${action}`, { is_guest: true })
