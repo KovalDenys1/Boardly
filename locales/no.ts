@@ -1188,7 +1188,7 @@ const no = {
       ribbon: {
         desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
         tag: 'Strategi',
-        time: '15 min',
+        time: '15 minutter',
       },
       detail: {
         title: 'Spill dam på nett',
@@ -1232,7 +1232,7 @@ const no = {
         host: 'Vert',
         waiting: 'Venter',
         playing: 'Spiller',
-        full: 'Full',
+        full: 'Fullt',
         newGame: 'NYTT SPILL',
       },
       game: {
