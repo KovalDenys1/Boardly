@@ -383,11 +383,15 @@ function GuessFeed({
                     {g.acceptedByHost ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.acceptedByHost')}</span> : null}
                   </span>
                 </>
+              ) : g.nearMiss && !g.guess ? (
+                // Nearly the word: the server kept its text back from this viewer.
+                <span className="sketch-feed__text sketch-feed__text--close">{t('games.guess_my_drawing.game.isClose', { name })}</span>
               ) : (
                 <>
                   <span className="sketch-feed__text">
                     <strong>{name}</strong>
                     <span className="sketch-feed__guess"> {g.guess}</span>
+                    {g.nearMiss ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.closeGuess')}</span> : null}
                   </span>
                   {onAcceptGuess && canAccept(g) && (
                     <button
@@ -710,43 +714,41 @@ function RevealView({
   // the banner only has to say so when nobody did.
   const nobodyGuessed = !round.guesses.some((g) => g.isCorrect)
 
+  // The word and the button that moves on share one row above the canvas, so
+  // "Next round" is on screen at 320x640 and 844x390 without scrolling the
+  // board – below the feed it sat under the fold on both.
   return (
     <div className="sketch-phase">
-      <SketchCanvas strokes={strokes} interactive={false} />
-
-      <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-3 py-2 text-center">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-bd-ink-muted">
-          {t('games.guess_my_drawing.game.revealPrompt')}
-        </p>
-        <p className="text-xl font-extrabold leading-tight text-bd-ink">{word}</p>
-        <p className="text-xs text-bd-ink-muted">
-          {t('games.guess_my_drawing.game.drawnBy', { name: nameOf(round.drawerId) })}
-          {round.drawingAutoSubmitted ? ` ${t('games.guess_my_drawing.game.autoSubmittedTag')}` : ''}
-        </p>
-        {nobodyGuessed && (
-          <p className="text-xs font-semibold text-bd-ink">{t('games.guess_my_drawing.game.nobodyGuessed')}</p>
+      <div className="sketch-reveal-head">
+        <div className="sketch-reveal-head__text">
+          <p className="sketch-word-chip__label">{t('games.guess_my_drawing.game.revealPrompt')}</p>
+          <p className="sketch-reveal-head__word">{word}</p>
+          <p className="sketch-reveal-head__meta">
+            {t('games.guess_my_drawing.game.drawnBy', { name: nameOf(round.drawerId) })}
+            {round.drawingAutoSubmitted ? ` ${t('games.guess_my_drawing.game.autoSubmittedTag')}` : ''}
+            {nobodyGuessed ? ` · ${t('games.guess_my_drawing.game.nobodyGuessed')}` : ''}
+          </p>
+          {isSpectator && <p className="sketch-reveal-head__meta">{t('games.guess_my_drawing.game.spectatorNotice')}</p>}
+        </div>
+        {canAdvance && (
+          <LoadingButton
+            onClick={onAdvanceRound}
+            loading={isSubmitting}
+            disabled={!drawingIn}
+            className="bd-btn bd-btn-primary sketch-reveal-head__next rounded-xl px-3 py-2 text-sm font-semibold"
+          >
+            {!drawingIn
+              ? t('games.guess_my_drawing.game.waitingForDrawing')
+              : isLastRound
+                ? t('games.guess_my_drawing.game.seeResults')
+                : t('games.guess_my_drawing.game.nextRound')}
+          </LoadingButton>
         )}
       </div>
 
-      {feed}
+      <SketchCanvas strokes={strokes} interactive={false} />
 
-      {canAdvance && (
-        <LoadingButton
-          onClick={onAdvanceRound}
-          loading={isSubmitting}
-          disabled={!drawingIn}
-          className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-2.5 font-semibold"
-        >
-          {!drawingIn
-            ? t('games.guess_my_drawing.game.waitingForDrawing')
-            : isLastRound
-              ? t('games.guess_my_drawing.game.seeResults')
-              : t('games.guess_my_drawing.game.nextRound')}
-        </LoadingButton>
-      )}
-      {isSpectator && (
-        <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.spectatorNotice')}</p>
-      )}
+      {feed}
     </div>
   )
 }

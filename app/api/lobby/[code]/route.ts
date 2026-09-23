@@ -561,6 +561,7 @@ export async function GET(
             // its word hint in (#1082); any other game ignores it.
             const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null, {
               viewerLocale: searchParams.get('locale'),
+              hostUserId: lobby.creatorId ?? null,
             })
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
           })(),

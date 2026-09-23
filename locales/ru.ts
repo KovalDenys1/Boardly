@@ -1702,6 +1702,7 @@ const ru = {
         chooseWordTitle: 'Выберите слово для рисунка',
         choosingWait: '{{name}} выбирает слово...',
         guessedIt: '{{name}} – в точку!',
+        isClose: '{{name}}: почти угадано!',
         closeGuess: 'Почти!',
         acceptGuess: 'Засчитать',
         acceptedByHost: 'засчитано ведущим',
@@ -1712,6 +1713,7 @@ const ru = {
         guessTooFast: 'Не так быстро – подождите секунду',
         waitingForDrawing: 'Ждём рисунок...',
         hintLabel: 'Букв в слове: {{count}}',
+        wordInChat: 'Так вы выдадите слово – оставьте его для догадки',
       },
     },
     liars_party: {

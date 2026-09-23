@@ -1640,6 +1640,7 @@ const en = {
         chooseWordTitle: 'Pick a word to draw',
         choosingWait: '{{name}} is choosing a word...',
         guessedIt: '{{name}} guessed it!',
+        isClose: '{{name}} is close!',
         closeGuess: 'So close!',
         acceptGuess: 'Accept',
         acceptedByHost: 'accepted by host',
@@ -1650,6 +1651,7 @@ const en = {
         guessTooFast: 'Not so fast – wait a moment',
         waitingForDrawing: 'Waiting for the drawing...',
         hintLabel: 'Letters in the word: {{count}}',
+        wordInChat: 'That gives the word away – keep it for your guess',
       },
     },
     liars_party: {

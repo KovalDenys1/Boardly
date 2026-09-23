@@ -428,6 +428,29 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     }
   })
 
+  // #1082: a guesser who has the word knows it as well as the drawer does.
+  it('closes the composer for a guesser who has already got the word', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+      response.activeGame.state.data.submittedPlayerIds = ['user-1']
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('true')
+    }
+  })
+
+  it('opens it for them again at the reveal', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.submittedPlayerIds = ['user-1']
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('false')
+    }
+  })
+
   it('opens the composer to the drawer again at the reveal', async () => {
     await renderPage((response) => {
       response.activeGame.state.data.currentDrawerId = 'user-1'

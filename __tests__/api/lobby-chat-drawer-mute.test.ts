@@ -148,4 +148,58 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
     // The extra query is the cost of this rule, and only this game pays it.
     expect(prisma.games.findUnique).not.toHaveBeenCalled()
   })
+
+  // #1082: a guesser who already has the word knows it as well as the drawer does.
+  function solvedDrawingState() {
+    const game = new SketchAndGuessGame('game-123', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: GUESSER, name: 'Bea' })
+    game.addPlayer({ id: THIRD, name: 'Cyd' })
+    game.startGame()
+    const choices = (game.getState().data as { rounds: Array<{ wordChoices: Array<{ id: string; en: string[] }> }> }).rounds[0].wordChoices
+    game.makeMove({ playerId: DRAWER, type: 'choose-word', data: { wordId: choices[0].id }, timestamp: new Date() })
+    game.makeMove({ playerId: GUESSER, type: 'submit-guess', data: { guess: choices[0].en[0] }, timestamp: new Date() })
+    return { state: game.getState(), word: choices[0].en[0] }
+  }
+
+  it('mutes a guesser who has already got the word until the reveal (#1082)', async () => {
+    seedLobby(solvedDrawingState().state)
+    asUser(GUESSER)
+
+    const response = await post()
+    const body = (await response.json()) as { code?: string }
+
+    expect(response.status).toBe(403)
+    expect(body.code).toBe('SOLVER_CHAT_MUTED')
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('refuses a message that spells the word, from anyone, while it is drawn (#1082)', async () => {
+    const { state, word } = solvedDrawingState()
+    seedLobby(state)
+    asUser(THIRD)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/lobby/ABCD12/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `is it a ${word.toUpperCase()}?` }),
+      }),
+      { params: Promise.resolve({ code: 'ABCD12' }) }
+    )
+    const body = (await response.json()) as { code?: string }
+
+    expect(response.status).toBe(403)
+    expect(body.code).toBe('WORD_IN_CHAT')
+    expect(mockPersistChatMessage).not.toHaveBeenCalled()
+  })
+
+  it('still lets a guesser without the word chat normally (#1082)', async () => {
+    seedLobby(solvedDrawingState().state)
+    asUser(THIRD)
+
+    const response = await post()
+
+    expect(response.status).toBe(200)
+  })
 })

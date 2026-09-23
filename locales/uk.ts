@@ -1704,6 +1704,7 @@ const uk: TranslationWithPlurals = {
         chooseWordTitle: 'Оберіть слово для малюнка',
         choosingWait: '{{name}} обирає слово...',
         guessedIt: '{{name}} – у яблучко!',
+        isClose: '{{name}}: майже вгадано!',
         closeGuess: 'Майже!',
         acceptGuess: 'Зарахувати',
         acceptedByHost: 'зараховано ведучим',
@@ -1714,6 +1715,7 @@ const uk: TranslationWithPlurals = {
         guessTooFast: 'Не так швидко – зачекайте секунду',
         waitingForDrawing: 'Чекаємо на малюнок...',
         hintLabel: 'Літер у слові: {{count}}',
+        wordInChat: 'Так ви видасте слово – залиште його для здогадки',
       },
     },
     liars_party: {

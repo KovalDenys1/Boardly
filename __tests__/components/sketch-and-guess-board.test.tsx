@@ -196,6 +196,16 @@ describe('SketchAndGuessGameBoard guess feed (#1082)', () => {
     expect(screen.queryAllByRole('button', { name: 'games.guess_my_drawing.game.acceptGuess' })).toHaveLength(0)
   })
 
+  it('shows a near miss the server masked as "<name> is close!", and the text where it was not (#1082)', () => {
+    const masked = [
+      { id: 'r1-g1', playerId: 'user-3', guess: '', submittedAt: 1, isCorrect: false, nearMiss: true },
+      { id: 'r1-g2', playerId: 'user-1', guess: 'castel', submittedAt: 2, isCorrect: false, nearMiss: true },
+    ]
+    render(<SketchAndGuessGameBoard {...buildProps({ gameData: buildGameData({}, { guesses: masked }) })} />)
+    expect(screen.getByText('games.guess_my_drawing.game.isClose:Cara')).not.toBeNull()
+    expect(screen.getByText('castel')).not.toBeNull()
+  })
+
   it('calls onAcceptGuess with the guess id', () => {
     const gameData = buildGameData({}, { guesses: [guesses[0]] })
     const props = buildProps({ gameData, isHost: true })
@@ -245,7 +255,17 @@ describe('SketchAndGuessGameBoard reveal (#1082)', () => {
   it('says nobody guessed it when nobody did', () => {
     const gameData = buildGameData({ phase: 'reveal' }, { word: CASTLE, prompt: 'castle', drawingContent: '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}' })
     render(<SketchAndGuessGameBoard {...buildProps({ gameData })} />)
-    expect(screen.getByText('games.guess_my_drawing.game.nobodyGuessed')).not.toBeNull()
+    expect(screen.getByText(/games\.guess_my_drawing\.game\.nobodyGuessed/)).not.toBeNull()
+  })
+
+  it('puts "Next round" in the header row above the canvas, never under the fold', () => {
+    const gameData = buildGameData({ phase: 'reveal' }, { word: CASTLE, prompt: 'castle', drawingContent: '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}' })
+    const { container } = render(<SketchAndGuessGameBoard {...buildProps({ gameData })} />)
+    const head = container.querySelector('.sketch-reveal-head')
+    expect(head?.textContent).toContain('games.guess_my_drawing.game.nextRound')
+    // The header comes before the canvas in the phase column.
+    const phase = container.querySelector('.sketch-phase')!
+    expect(phase.firstElementChild).toBe(head)
   })
 
   it('holds "Next round" until the drawer’s drawing is in', () => {

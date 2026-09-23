@@ -1123,9 +1123,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // The drawer is the one player who already knows the word, and the scoring
     // pays them 40 points for every correct guess – so the chat they can type
     // into is a channel they are paid to leak the answer down. They read it,
-    // they do not write it, until the reveal (#1034). Everybody else talks
-    // throughout: this is a party game and the talking is the point.
-    const chatMutedForDrawer = isDrawer && !isFinished && phase !== 'reveal'
+    // they do not write it, until the reveal (#1034). Since #1082 the same goes
+    // for a guesser who has already got it: they know the word too, and one
+    // message from them would end the round for everyone still guessing. The
+    // server refuses both (POST /api/lobby/[code]/chat); this greys the box.
+    // Everybody else talks throughout: this is a party game and the talking is the point.
+    const chatMutedForDrawer =
+        !isFinished && ((isDrawer && phase !== 'reveal') || (!isSpectator && phase === 'drawing' && hasGuessed))
     const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
     for (const p of players) chatPlayerProfiles.set(p.id, { avatarUrl: p.avatarUrl, isPremium: p.isPremium })
 

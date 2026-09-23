@@ -11,9 +11,12 @@ import {
 } from './sketch-and-guess-phases'
 import {
   SKETCH_WORDS,
+  boundedEditDistance,
   findSketchWordByEnglish,
   matchSketchGuess,
+  normalizeSketchGuess,
   resolveSketchWordLocale,
+  sketchWordKeys,
   type SketchWord,
   type SketchWordLocale,
 } from './sketch-and-guess-words'
@@ -31,6 +34,11 @@ export interface SketchAndGuessGuess {
   autoSubmitted?: boolean
   /** The host marked this wrong guess correct (#1082). */
   acceptedByHost?: boolean
+  /**
+   * Never stored: set by the sanitizer on a wrong guess that nearly spells the
+   * word, whose text only its author, the drawer and the host are handed.
+   */
+  nearMiss?: boolean
 }
 
 export interface SketchAndGuessRound {
@@ -870,9 +878,17 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
     word: viewerIsDrawer ? currentRound.word ?? null : null,
     wordChoices: viewerIsDrawer && Array.isArray(currentRound.wordChoices) ? currentRound.wordChoices : [],
     guesses: Array.isArray(currentRound.guesses)
-      ? currentRound.guesses.map((guess) =>
-          guess.isCorrect && !viewerIsDrawer && guess.playerId !== viewerUserId ? { ...guess, guess: '' } : guess
-        )
+      ? currentRound.guesses.map((guess) => {
+          const mayReadIt = viewerIsDrawer || guess.playerId === viewerUserId
+          if (guess.isCorrect) return mayReadIt ? guess : { ...guess, guess: '' }
+          // A near miss spells the word all but a letter, so it is a secret too –
+          // except from the host, who has to read it to decide whether to accept it.
+          if (hintWord && isSketchNearMiss(guess.guess, hintWord)) {
+            const hostMayRead = options.hostUserId != null && viewerUserId === options.hostUserId
+            return mayReadIt || hostMayRead ? { ...guess, nearMiss: true } : { ...guess, guess: '', nearMiss: true }
+          }
+          return guess
+        })
       : [],
   }
   if (wordHint) sanitizedRound.wordHint = wordHint
@@ -887,8 +903,71 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
 export interface SketchSanitizeOptions {
   /** The viewer's UI language, which the word hint is built in. No language, no hint. */
   viewerLocale?: string | null
+  /** The lobby's creator, who may read near misses because they decide whether to accept one. */
+  hostUserId?: string | null
   /** For tests: the moment the hint is built for. */
   now?: number
+}
+
+/**
+ * A wrong guess that gives the word away if read: one edit from any form in any
+ * language, or containing a whole form ("big castle", "castles!!"). Checked at
+ * every length – unlike the author's private "close!" hint, which is about
+ * helping, this is about hiding, and hiding too much only costs a line of text.
+ */
+export function isSketchNearMiss(guess: string, word: Pick<SketchWord, SketchWordLocale>): boolean {
+  const key = normalizeSketchGuess(guess)
+  if (!key) return false
+  return sketchWordKeys(word).some(
+    (form) =>
+      boundedEditDistance(key, form, 1) <= 1 ||
+      (form.length >= 3 && (key.includes(form) || key.replace(/ /g, '').includes(form.replace(/ /g, ''))))
+  )
+}
+
+/** The current round's word as the server holds it, for the chat checks below; null outside a live round. */
+function liveSketchWord(state: unknown): Pick<SketchWord, SketchWordLocale> | null {
+  const data = (state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
+  if (!data || typeof data !== 'object' || !Array.isArray(data.rounds)) return null
+  const phase = data.phase as string
+  if (phase !== 'drawing' && phase !== 'guessing') return null
+  const round = data.rounds.find((r) => r.round === data.currentRound)
+  if (!round) return null
+  return round.word ?? (round.prompt ? legacyWord(round.prompt) : null)
+}
+
+/**
+ * Whether a lobby chat message would hand the round's word to the table: it
+ * contains a form of it, in any language, while the round is being drawn.
+ * Whoever sends it – a guesser who has just got it is the likely one – the
+ * message would end the round for everyone else (#1082).
+ */
+export function sketchAndGuessChatRevealsWord(params: { gameStatus: string; state: unknown; message: string }): boolean {
+  if (params.gameStatus !== 'playing') return false
+  const word = liveSketchWord(params.state)
+  if (!word) return false
+  const key = normalizeSketchGuess(params.message)
+  if (!key) return false
+  const padded = ` ${key} `
+  return sketchWordKeys(word).some((form) => (form.length >= 3 ? key.includes(form) : padded.includes(` ${form} `)))
+}
+
+/**
+ * A guesser who has the word must not be able to type it into the chat for
+ * the others while the round is drawn – the same mute as the drawer's, and
+ * lifted at the reveal the same way (#1082).
+ */
+export function isSketchAndGuessSolverMuted(params: { gameStatus: string; state: unknown; userId: string }): boolean {
+  if (params.gameStatus !== 'playing') return false
+  const data = (params.state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
+  if (!data || typeof data !== 'object') return false
+  const phase = data.phase as string
+  if (phase !== 'drawing' && phase !== 'guessing') return false
+  if (Array.isArray(data.submittedPlayerIds) && phase === 'drawing' && data.submittedPlayerIds.includes(params.userId)) {
+    return true
+  }
+  const round = Array.isArray(data.rounds) ? data.rounds.find((r) => r.round === data.currentRound) : undefined
+  return !!round?.guesses?.some((g) => g.playerId === params.userId && g.isCorrect)
 }
 
 /** Uncover one letter at each of these shares of the drawing clock (#1082). */

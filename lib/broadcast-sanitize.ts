@@ -31,6 +31,8 @@ type Sanitizer = <T extends { data?: unknown; status?: string }>(
  */
 export interface SanitizeOptions {
   viewerLocale?: string | null
+  /** The lobby's creator. Sketch & Guess shows them near-miss guesses so they can accept one. */
+  hostUserId?: string | null
 }
 
 /**
@@ -47,7 +49,10 @@ const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   guess_the_spy: (state) => sanitizeSpyStateForBroadcast(state),
   rock_paper_scissors: (state, viewerUserId) => sanitizeRpsStateForBroadcast(state, viewerUserId),
   sketch_and_guess: (state, viewerUserId, options) =>
-    sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId, { viewerLocale: options?.viewerLocale ?? null }),
+    sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId, {
+      viewerLocale: options?.viewerLocale ?? null,
+      hostUserId: options?.hostUserId ?? null,
+    }),
   memory: (state) => sanitizeMemoryStateForBroadcast(state),
   alias: (state, viewerUserId) => sanitizeAliasStateForBroadcast(state, viewerUserId),
   fake_artist: (state, viewerUserId) => sanitizeFakeArtistStateForBroadcast(state, viewerUserId),

@@ -1640,6 +1640,7 @@ const no = {
         chooseWordTitle: 'Velg et ord å tegne',
         choosingWait: '{{name}} velger et ord...',
         guessedIt: '{{name}} gjettet det!',
+        isClose: '{{name}} er nær!',
         closeGuess: 'Nesten!',
         acceptGuess: 'Godta',
         acceptedByHost: 'godkjent av verten',
@@ -1650,6 +1651,7 @@ const no = {
         guessTooFast: 'Ikke så fort – vent litt',
         waitingForDrawing: 'Venter på tegningen...',
         hintLabel: 'Bokstaver i ordet: {{count}}',
+        wordInChat: 'Det avslører ordet – spar det til gjetningen',
       },
     },
     liars_party: {

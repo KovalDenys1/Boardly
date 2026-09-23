@@ -294,7 +294,7 @@ export async function POST(
       if (!timeoutFallbackApplied && sketchGame.isGuessAcceptedByHost(body.data.guessId)) {
         return NextResponse.json({
           success: true,
-          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId, { viewerLocale }),
+          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
           timeoutFallbackApplied: false,
         })
       }
@@ -340,7 +340,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId, { viewerLocale }),
+            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
           },
           { status: 409 }
         )
@@ -381,7 +381,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId, { viewerLocale }),
+      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
       timeoutFallbackApplied,
       ...(guessOutcome ? { guessResult: { correct: guessOutcome.correct, close: guessOutcome.close } } : {}),
       timeoutFallback: timeoutFallbackApplied

@@ -4,7 +4,11 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getChatHistory, persistChatMessage } from '@/lib/chat-history'
 import { broadcastToLobby } from '@/lib/supabase-server'
-import { isSketchAndGuessDrawerMuted } from '@/lib/games/sketch-and-guess-game'
+import {
+  isSketchAndGuessDrawerMuted,
+  isSketchAndGuessSolverMuted,
+  sketchAndGuessChatRevealsWord,
+} from '@/lib/games/sketch-and-guess-game'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
@@ -132,6 +136,17 @@ export async function POST(
         { error: 'The drawer cannot chat until the reveal', code: 'DRAWER_CHAT_MUTED' },
         { status: 403 }
       )
+    }
+    // #1082: a guesser who has the word is muted the same way until the reveal,
+    // and nobody may post the word itself while it is being drawn.
+    if (isSketchAndGuessSolverMuted({ gameStatus: activeGame.status, state: parsedState, userId: user.id })) {
+      return NextResponse.json(
+        { error: 'You have guessed the word – chat opens again at the reveal', code: 'SOLVER_CHAT_MUTED' },
+        { status: 403 }
+      )
+    }
+    if (sketchAndGuessChatRevealsWord({ gameStatus: activeGame.status, state: parsedState, message })) {
+      return NextResponse.json({ error: 'That message gives the word away', code: 'WORD_IN_CHAT' }, { status: 403 })
     }
   }
 

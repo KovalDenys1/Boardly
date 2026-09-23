@@ -65,8 +65,12 @@ function buildDrawingRound(extraMoves: Array<{ playerId: string; type: string; d
   game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
   game.startGame()
 
-  const data = game.getState().data as { rounds: Array<{ wordChoices: SketchWord[] }> }
-  const word = data.rounds[0].wordChoices[0]
+  // A fixed word, so a test's "plainly wrong" guess can never be a near miss of
+  // whatever the bank happened to draw (#1082 hides near misses from the table).
+  const word: SketchWord = { id: 'castle', en: ['castle', 'castles'], no: ['slott', 'borg'], ru: ['замок'], uk: ['замок'] }
+  const restored = game.getState() as { data: { rounds: Array<{ wordChoices: SketchWord[] }> } }
+  restored.data.rounds[0].wordChoices = [word]
+  game.restoreState(restored as never)
   game.makeMove({ playerId: DRAWER, type: 'choose-word', data: { wordId: word.id }, timestamp: new Date() })
   // Spaced out in the past, so the route's own guess clears the 800 ms rate limit.
   extraMoves.forEach((move, index) =>
@@ -107,7 +111,7 @@ function leakedForms(published: unknown, word: SketchWord): string[] {
   return [...word.en, ...word.no, ...word.ru, ...word.uk].filter((form) => json.includes(JSON.stringify(form)))
 }
 
-function seedGame(state: unknown) {
+function seedGame(state: unknown, creatorId: string = DRAWER) {
   ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
     id: 'game-123',
     state: JSON.stringify(state),
@@ -118,7 +122,7 @@ function seedGame(state: unknown) {
     startedAt: new Date('2026-09-20T11:55:00.000Z'),
     players: [dbPlayer('db-1', DRAWER), dbPlayer('db-2', FIRST_GUESSER), dbPlayer('db-3', SECOND_GUESSER)],
     // The drawer of round 1 created the lobby, so the host is DRAWER.
-    lobby: { code: 'ABCD12', gameType: 'sketch_and_guess', turnTimer: 0, creatorId: DRAWER },
+    lobby: { code: 'ABCD12', gameType: 'sketch_and_guess', turnTimer: 0, creatorId },
   } as never)
 }
 
@@ -206,6 +210,31 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#10
 
     const payload = actionBroadcasts()[0][2] as { state: { data: { rounds: Array<{ wordHint?: unknown }> } } }
     expect(payload.state.data.rounds[0].wordHint).toBeUndefined()
+  })
+
+  it('keeps a near miss out of a third player’s response and off the topic, but gives it to the host (#1082)', async () => {
+    const near = `${prompt}x`
+    await post({ action: 'submit-guess', data: { guess: near } })
+    // FIRST_GUESSER typed it; the broadcast has no viewer.
+    expect(JSON.stringify(mockBroadcastToLobby.mock.calls)).not.toContain(JSON.stringify(near))
+
+    const freshNear = near
+    const withMiss = buildDrawingRound([{ playerId: FIRST_GUESSER, type: 'submit-guess', data: { guess: freshNear } }])
+    seedGame(withMiss.state)
+    jest.clearAllMocks()
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    asUser(SECOND_GUESSER)
+    const third = await (await post({ action: 'submit-guess', data: { guess: 'unrelated' } })).json()
+    expect(JSON.stringify(third)).not.toContain(JSON.stringify(freshNear))
+    expect(third.state.data.rounds[0].guesses[0]).toMatchObject({ playerId: FIRST_GUESSER, guess: '', nearMiss: true })
+
+    // The host reads it, to decide on Accept. DRAWER created this lobby; make the
+    // other guesser the creator to see it from a host who is not drawing.
+    seedGame(withMiss.state, SECOND_GUESSER)
+    asUser(SECOND_GUESSER)
+    const host = await (await post({ action: 'submit-guess', data: { guess: 'another miss' } })).json()
+    expect(host.state.data.rounds[0].guesses[0]).toMatchObject({ guess: freshNear, nearMiss: true })
   })
 
   it('tells only the author a guess was close, and never the topic', async () => {

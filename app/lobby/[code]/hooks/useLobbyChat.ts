@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { showToast } from '@/lib/i18n-toast'
 import type { ChatMessagePayload, PlayerTypingPayload } from '@/types/game'
 
 /**
@@ -129,20 +130,33 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
 
   const sendChatMessage = useCallback((message: string) => {
     const currentUserId = currentUserIdRef.current
+    const tempId = `temp-${Date.now()}`
     if (currentUserId) {
       setChatMessages(prev => [...prev, {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         userId: currentUserId,
         username: currentUserNameRef.current ?? '',
         message,
         timestamp: Date.now(),
       }])
     }
-    void fetchWithGuest(`/api/lobby/${code}/chat`, {
+    void Promise.resolve(fetchWithGuest(`/api/lobby/${code}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
-    })
+    }))
+      .then(async (res) => {
+        if (!res || res.ok) return
+        // The server refused it, so nobody else will ever see it: take the
+        // optimistic copy back rather than leave the sender believing it went.
+        setChatMessages(prev => prev.filter(m => m.id !== tempId))
+        const payload = await res.json().catch(() => null)
+        // Sketch & Guess (#1082): the message spelled the word being drawn.
+        if (payload?.code === 'WORD_IN_CHAT') {
+          showToast.info('games.guess_my_drawing.game.wordInChat', undefined, undefined, { id: 'sketch-word-in-chat' })
+        }
+      })
+      .catch(() => {})
   }, [code])
 
   const mergeHistoryMessages = useCallback((history: ChatMessagePayload[]) => {

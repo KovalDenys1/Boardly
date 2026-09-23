@@ -3,7 +3,9 @@ import {
   SketchAndGuessGame,
   SketchAndGuessGameData,
   buildSketchWordHint,
+  isSketchAndGuessSolverMuted,
   sanitizeSketchAndGuessActionEventForBroadcast,
+  sketchAndGuessChatRevealsWord,
   sanitizeSketchAndGuessStateForBroadcast,
 } from '@/lib/games/sketch-and-guess-game'
 import {
@@ -770,5 +772,95 @@ describe('Sketch & Guess word hint (#1082)', () => {
       data: SketchAndGuessGameData
     }
     expect(published.data.rounds[0].wordHint).toBeUndefined()
+  })
+})
+
+
+/**
+ * #1082 review: a wrong guess one letter off the word is the word for anyone
+ * who reads it. Only its author, the drawer and the host (who decides whether
+ * to accept it) are handed the text; everyone else sees that someone is close.
+ */
+describe('near-miss redaction (#1082)', () => {
+  const HOST = 'player1' // lobby creator; draws round 1
+  function roundWithNearMisses() {
+    const game = newGame(2, 'sketch-near-miss')
+    withWord(game, 'elephant')
+    game.makeMove(createMove('player1', 'choose-word', { wordId: 'elephant' }))
+    const t0 = Date.now()
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'elephan' }, t0 + 1000)) // one edit
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'a big elephant!!' }, t0 + 2000)) // contains a whole form, so wrong but a giveaway
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'слоны' }, t0 + 3000)) // one edit from слон
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'giraffe' }, t0 + 4000)) // plainly wrong
+    return game
+  }
+  const texts = ['elephan', 'a big elephant!!', 'слоны']
+
+  it('keeps near misses out of a third player’s state entirely', () => {
+    const game = roundWithNearMisses()
+    const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player3', { hostUserId: HOST })
+    const json = JSON.stringify(published)
+    for (const text of texts) expect(json).not.toContain(JSON.stringify(text))
+    const guesses = (published.data as SketchAndGuessGameData).rounds[0].guesses
+    expect(guesses.filter((g) => g.nearMiss && g.guess === '')).toHaveLength(3)
+    expect(guesses.find((g) => g.guess === 'giraffe')?.nearMiss).toBeUndefined()
+  })
+
+  it('and out of the shared broadcast and a spectator’s', () => {
+    const game = roundWithNearMisses()
+    const json = JSON.stringify(sanitizeSketchAndGuessStateForBroadcast(game.getState(), null, { hostUserId: HOST }))
+    for (const text of texts) expect(json).not.toContain(JSON.stringify(text))
+  })
+
+  it('hands the text to its author, the drawer and the host', () => {
+    const game = roundWithNearMisses()
+    for (const viewer of ['player2', 'player1']) {
+      const guesses = (sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer, { hostUserId: HOST }).data as SketchAndGuessGameData).rounds[0].guesses
+      expect(guesses.filter((g) => g.nearMiss).map((g) => g.guess)).toEqual(texts)
+    }
+    // A host who is guessing this round, not drawing it.
+    const asHostGuesser = (sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player3', { hostUserId: 'player3' }).data as SketchAndGuessGameData).rounds[0].guesses
+    expect(asHostGuesser.filter((g) => g.nearMiss).map((g) => g.guess)).toEqual(texts)
+  })
+
+  it('shows everything once the round is revealed', () => {
+    const game = roundWithNearMisses()
+    game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
+    const json = JSON.stringify(sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player3'))
+    for (const text of texts) expect(json).toContain(JSON.stringify(text))
+  })
+})
+
+describe('Sketch & Guess chat rules (#1082)', () => {
+  it('mutes a guesser who has the word while the round is drawn, and nobody else', () => {
+    const { game, word } = drawingGame(2, 'sketch-chat-solver')
+    game.makeMove(createMove('player2', 'submit-guess', { guess: word.en[0] }))
+    const params = (userId: string) => ({ gameStatus: 'playing', state: game.getState(), userId })
+    expect(isSketchAndGuessSolverMuted(params('player2'))).toBe(true)
+    expect(isSketchAndGuessSolverMuted(params('player3'))).toBe(false)
+
+    game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
+    expect(getData(game).phase).toBe('reveal')
+    expect(isSketchAndGuessSolverMuted(params('player2'))).toBe(false)
+  })
+
+  it('refuses a message that contains the word in any language while it is drawn', () => {
+    const game = newGame(1, 'sketch-chat-word')
+    withWord(game, 'castle')
+    game.makeMove(createMove('player1', 'choose-word', { wordId: 'castle' }))
+    const leaks = (message: string) => sketchAndGuessChatRevealsWord({ gameStatus: 'playing', state: game.getState(), message })
+    expect(leaks('it is a CASTLE')).toBe(true)
+    expect(leaks('замок!')).toBe(true)
+    expect(leaks('Slott?')).toBe(true)
+    expect(leaks('nice drawing')).toBe(false)
+    expect(sketchAndGuessChatRevealsWord({ gameStatus: 'finished', state: game.getState(), message: 'castle' })).toBe(false)
+  })
+
+  it('lets the word be said once the round is revealed', () => {
+    const game = newGame(1, 'sketch-chat-reveal')
+    withWord(game, 'castle')
+    game.makeMove(createMove('player1', 'choose-word', { wordId: 'castle' }))
+    game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
+    expect(sketchAndGuessChatRevealsWord({ gameStatus: 'playing', state: game.getState(), message: 'castle' })).toBe(false)
   })
 })
