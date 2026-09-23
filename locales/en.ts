@@ -1650,6 +1650,7 @@ const en = {
         guessLimitReached: 'No guesses left this round',
         guessTooFast: 'Not so fast – wait a moment',
         waitingForDrawing: 'Waiting for the drawing...',
+        hintLabel: 'Letters in the word: {{count}}',
       },
     },
     liars_party: {

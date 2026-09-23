@@ -348,7 +348,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     const loadLobbyData = useCallback(async () => {
         try {
-            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
+            // `locale` is what the server builds the word hint in for a guesser (#1082).
+            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true&locale=${encodeURIComponent(locale)}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             })
@@ -377,7 +378,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         } finally {
             setLoading(false)
         }
-    }, [code, normalizeLobbyResponse])
+    }, [code, normalizeLobbyResponse, locale])
 
     useEffect(() => {
         const redirectReason = resolveLifecycleRedirectReason({ gameStatus: lobby?.status, lobbyIsActive: lobby?.isActive })
@@ -482,7 +483,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 const sendAction = () => fetchWithGuest(`/api/game/${lobby.game!.id}/sketch-and-guess-action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, data }),
+                    body: JSON.stringify({ action, data, locale }),
                 })
 
                 let res = await sendAction()
@@ -598,7 +599,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 setIsSubmitting(false)
             }
         },
-        [lobby, isGuest, t, loadLobbyData]
+        [lobby, isGuest, t, loadLobbyData, locale]
     )
 
     const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | void> => {
@@ -790,6 +791,20 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         drawingSentForRoundRef.current = roundNumber
         void submitAction('submit-drawing', { content: serializeSketchDrawing(strokesForReveal) }, { silent: true })
     }, [needsDrawingSent, roundNumber, strokesForReveal, submitAction])
+
+    // The word hint uncovers a letter at half and at three quarters of the drawing
+    // clock, and the server only builds it when asked, so a guesser's page asks
+    // at those two moments rather than waiting for somebody else to move (#1082).
+    const hintClockStart = phase === 'drawing' && !isDrawer && !isFinished ? currentRound?.drawingStartedAt ?? phaseStartedAt ?? null : null
+    useEffect(() => {
+        if (typeof hintClockStart !== 'number') return
+        const drawingMs = sketchPhaseSeconds('drawing') * 1000
+        const timers = [0.5, 0.75]
+            .map((share) => hintClockStart + share * drawingMs + 300 - Date.now())
+            .filter((delay) => delay > 0)
+            .map((delay) => window.setTimeout(() => { void loadLobbyData() }, delay))
+        return () => timers.forEach((timer) => window.clearTimeout(timer))
+    }, [hintClockStart, loadLobbyData])
 
     const timerState = useMemo(() => {
         if (!game) return null

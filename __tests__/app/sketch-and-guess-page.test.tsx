@@ -599,6 +599,12 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
   }
 
+  it('asks for the lobby in the viewer language, which the word hint is built in', async () => {
+    await renderWith(() => {})
+    const lobbyCalls = mockFetchWithGuest.mock.calls.map((call) => String(call[0])).filter((url) => url.startsWith('/api/lobby/ABCD?'))
+    expect(lobbyCalls[0]).toBe('/api/lobby/ABCD?includeFinished=true&locale=en')
+  })
+
   it('tells the board the lobby creator is the host, and nobody else', async () => {
     await renderWith(() => {})
     for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('true')
@@ -622,8 +628,9 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     })
 
     expect(actionBodies()).toEqual([
-      { action: 'choose-word', data: { wordId: 'castle' } },
-      { action: 'accept-guess', data: { guessId: 'r1-g1' } },
+      // `locale` rides along so the state handed back carries the viewer's word hint.
+      { action: 'choose-word', data: { wordId: 'castle' }, locale: 'en' },
+      { action: 'accept-guess', data: { guessId: 'r1-g1' }, locale: 'en' },
     ])
   })
 
@@ -632,7 +639,7 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     await act(async () => {
       fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
     })
-    expect(actionBodies()).toEqual([{ action: 'submit-guess', data: { guess: 'apple' } }])
+    expect(actionBodies()).toEqual([{ action: 'submit-guess', data: { guess: 'apple' }, locale: 'en' }])
     expect((showToast as jest.Mocked<typeof showToast>).success).not.toHaveBeenCalled()
   })
 

@@ -54,6 +54,11 @@ export async function POST(
     }
 
     const rawBody = await request.json()
+    // The mover's UI language, for the word hint in the state handed back (#1082).
+    const viewerLocale =
+      rawBody && typeof rawBody === 'object' && typeof (rawBody as { locale?: unknown }).locale === 'string'
+        ? ((rawBody as { locale: string }).locale.slice(0, 16))
+        : null
     const parsedBody = sketchAndGuessActionRequestSchema.safeParse(rawBody)
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -289,7 +294,7 @@ export async function POST(
       if (!timeoutFallbackApplied && sketchGame.isGuessAcceptedByHost(body.data.guessId)) {
         return NextResponse.json({
           success: true,
-          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId),
+          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId, { viewerLocale }),
           timeoutFallbackApplied: false,
         })
       }
@@ -335,7 +340,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId),
+            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId, { viewerLocale }),
           },
           { status: 409 }
         )
@@ -376,7 +381,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId),
+      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId, { viewerLocale }),
       timeoutFallbackApplied,
       ...(guessOutcome ? { guessResult: { correct: guessOutcome.correct, close: guessOutcome.close } } : {}),
       timeoutFallback: timeoutFallbackApplied

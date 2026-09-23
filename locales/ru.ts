@@ -1712,6 +1712,7 @@ const ru = {
         guessLimitReached: 'Попытки в этом раунде закончились',
         guessTooFast: 'Не так быстро – подождите секунду',
         waitingForDrawing: 'Ждём рисунок...',
+        hintLabel: 'Букв в слове: {{count}}',
       },
     },
     liars_party: {

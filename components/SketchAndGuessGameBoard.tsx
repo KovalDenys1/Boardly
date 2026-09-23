@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
-import type { SketchAndGuessGameData, SketchAndGuessGuess, SketchAndGuessRound } from '@/lib/games/sketch-and-guess-game'
+import type {
+  SketchAndGuessGameData,
+  SketchAndGuessGuess,
+  SketchAndGuessRound,
+  SketchWordHint,
+} from '@/lib/games/sketch-and-guess-game'
 import { sketchWordDisplay, type SketchWord } from '@/lib/games/sketch-and-guess-word-display'
 import LoadingButton from '@/components/LoadingButton'
 
@@ -549,10 +554,31 @@ function DrawerCanvasView({
   )
 }
 
+// ─── Word hint (phase: drawing, everyone but the drawer) ───────────────────
+// The word in the viewer's language as blanks, with the letters the server has
+// uncovered so far. Only the server knows the word; this only draws the cells.
+
+function WordHint({ hint, t }: { hint: SketchWordHint; t: TFn }) {
+  const letters = hint.cells.filter((cell) => cell === null || /[\p{L}\p{N}]/u.test(cell)).length
+  return (
+    <div className="sketch-word-chip" aria-label={t('games.guess_my_drawing.game.hintLabel', { count: letters })}>
+      <span className="sketch-word-hint" aria-hidden>
+        {hint.cells.map((cell, index) => (
+          <span key={index} className={cell === ' ' ? 'sketch-word-hint__gap' : 'sketch-word-hint__cell'}>
+            {cell === null ? '_' : cell === ' ' ? '' : cell}
+          </span>
+        ))}
+      </span>
+      <span className="sketch-word-chip__label">{letters}</span>
+    </div>
+  )
+}
+
 // ─── Guesser view (phase: drawing, everyone else) ──────────────────────────
 // The live canvas, the round's guesses, and the box to type the next one in.
 
 function GuesserDrawingView({
+  hint,
   liveView,
   canGuess,
   hasGuessedCorrectly,
@@ -563,6 +589,7 @@ function GuesserDrawingView({
   feed,
   t,
 }: {
+  hint: SketchWordHint | null
   liveView: SketchLiveView | null
   canGuess: boolean
   hasGuessedCorrectly: boolean
@@ -594,6 +621,7 @@ function GuesserDrawingView({
 
   return (
     <div className="sketch-phase">
+      {hint && <WordHint hint={hint} t={t} />}
       <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} />
 
       {feed}
@@ -921,6 +949,7 @@ export default function SketchAndGuessGameBoard({
     />
   ) : (
     <GuesserDrawingView
+      hint={currentRound.wordHint ?? null}
       liveView={liveForRound}
       canGuess={!isSpectator}
       hasGuessedCorrectly={hasGuessedCorrectly}

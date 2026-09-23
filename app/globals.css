@@ -3549,6 +3549,10 @@ html.dark .memory-tile-face {
 }
 .sketch-word-chip__label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bd-ink-muted); white-space: nowrap; }
 .sketch-word-chip__word { font-size: 18px; font-weight: 800; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The guesser's hint: one cell per character, a blank until the server uncovers it. */
+.sketch-word-hint { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-family: ui-monospace, monospace; font-size: 18px; font-weight: 800; color: var(--bd-ink); }
+.sketch-word-hint__cell { min-width: 0.8em; text-align: center; }
+.sketch-word-hint__gap { width: 0.6em; }
 
 /* The round's guesses. A scrolling list capped at a share of the board card's
    height (the card is the size container), so the canvas stays the one

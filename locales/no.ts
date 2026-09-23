@@ -1650,6 +1650,7 @@ const no = {
         guessLimitReached: 'Ingen gjetninger igjen denne runden',
         guessTooFast: 'Ikke så fort – vent litt',
         waitingForDrawing: 'Venter på tegningen...',
+        hintLabel: 'Bokstaver i ordet: {{count}}',
       },
     },
     liars_party: {

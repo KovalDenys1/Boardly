@@ -13,7 +13,9 @@ import {
   SKETCH_WORDS,
   findSketchWordByEnglish,
   matchSketchGuess,
+  resolveSketchWordLocale,
   type SketchWord,
+  type SketchWordLocale,
 } from './sketch-and-guess-words'
 
 export type { SketchAndGuessPhase, SketchWord }
@@ -55,6 +57,18 @@ export interface SketchAndGuessRound {
   revealAt: number | null
   isScored: boolean
   scoredAt: number | null
+  /**
+   * Never stored: added by the sanitizer for a guesser who asked in a language.
+   * The word in that language as blanks, with a letter uncovered at half and at
+   * three quarters of the drawing clock (see `buildSketchWordHint`).
+   */
+  wordHint?: SketchWordHint
+}
+
+/** One cell per character of the viewer-language form: the character if shown, null if still a blank. */
+export interface SketchWordHint {
+  lang: SketchWordLocale
+  cells: Array<string | null>
 }
 
 export interface SketchAndGuessScoreBreakdown {
@@ -821,7 +835,8 @@ export class SketchAndGuessGame extends GameEngine {
  */
 export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unknown; status?: string }>(
   state: T,
-  viewerUserId: string | null = null
+  viewerUserId: string | null = null,
+  options: SketchSanitizeOptions = {}
 ): T {
   const data = state.data as SketchAndGuessGameData | undefined
   if (!data || !Array.isArray(data.rounds)) return state
@@ -835,8 +850,21 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
   const currentRound = data.rounds[currentRoundIndex]
   const viewerIsDrawer = viewerUserId !== null && viewerUserId === currentRound.drawerId
 
-  const sanitizedRounds = data.rounds.slice()
-  sanitizedRounds[currentRoundIndex] = {
+  // The hint is the one thing about the word a guesser is given: blanks in their
+  // own language, a few letters uncovered as the clock runs. Only with a
+  // language to build it in – the shared broadcast has none and gets none.
+  const hintWord = currentRound.word ?? (currentRound.prompt ? legacyWord(currentRound.prompt) : null)
+  const drawingStartedAt =
+    currentRound.drawingStartedAt ??
+    data.phaseStartedAt ??
+    ((state as { lastMoveAt?: unknown }).lastMoveAt as number | undefined) ??
+    null
+  const wordHint =
+    !viewerIsDrawer && options.viewerLocale && hintWord && (data.phase as string) !== 'choosing'
+      ? buildSketchWordHint(hintWord, options.viewerLocale, drawingStartedAt, options.now ?? Date.now(), currentRound.round)
+      : undefined
+
+  const sanitizedRound: SketchAndGuessRound = {
     ...currentRound,
     prompt: viewerIsDrawer ? currentRound.prompt : '',
     word: viewerIsDrawer ? currentRound.word ?? null : null,
@@ -847,8 +875,73 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
         )
       : [],
   }
+  if (wordHint) sanitizedRound.wordHint = wordHint
+  else delete sanitizedRound.wordHint
+
+  const sanitizedRounds = data.rounds.slice()
+  sanitizedRounds[currentRoundIndex] = sanitizedRound
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
+}
+
+export interface SketchSanitizeOptions {
+  /** The viewer's UI language, which the word hint is built in. No language, no hint. */
+  viewerLocale?: string | null
+  /** For tests: the moment the hint is built for. */
+  now?: number
+}
+
+/** Uncover one letter at each of these shares of the drawing clock (#1082). */
+const HINT_REVEAL_AT = [0.5, 0.75]
+
+function isHintLetter(ch: string): boolean {
+  return /[\p{L}\p{N}]/u.test(ch)
+}
+
+/** FNV-1a, so the letters a hint uncovers are the same on every request. */
+function hashString(value: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash
+}
+
+/**
+ * The word as a guesser in `locale` may see it while it is being drawn: every
+ * letter a blank at first, one uncovered at half the drawing clock and another
+ * at three quarters, but never more than a third of the letters – so a
+ * three-letter word gets one and a two-letter word none. Spaces, hyphens and
+ * apostrophes are shown as they are, because they are the shape of the answer,
+ * not the answer. Which letters is fixed per word and round, so a refetch
+ * never shows a different one.
+ */
+export function buildSketchWordHint(
+  word: Pick<SketchWord, 'id' | SketchWordLocale>,
+  locale: string,
+  drawingStartedAt: number | null,
+  now: number,
+  round: number
+): SketchWordHint {
+  const lang = resolveSketchWordLocale(locale)
+  const form = word[lang]?.[0] || word.en?.[0] || ''
+  const chars = Array.from(form)
+  const letterIndexes = chars.map((ch, index) => (isHintLetter(ch) ? index : -1)).filter((index) => index >= 0)
+
+  const drawingMs = SKETCH_PHASE_SECONDS.drawing * 1000
+  const elapsedShare = typeof drawingStartedAt === 'number' ? (now - drawingStartedAt) / drawingMs : 0
+  const stage = HINT_REVEAL_AT.filter((share) => elapsedShare >= share).length
+  const count = Math.min(stage, Math.floor(letterIndexes.length / 3))
+
+  const seed = hashString(`${word.id}:${lang}:${round}`)
+  const order = letterIndexes
+    .map((index) => ({ index, key: hashString(`${seed}:${index}`) }))
+    .sort((left, right) => left.key - right.key)
+    .map((entry) => entry.index)
+  const shown = new Set(order.slice(0, count))
+
+  return { lang, cells: chars.map((ch, index) => (!isHintLetter(ch) || shown.has(index) ? ch : null)) }
 }
 
 /**

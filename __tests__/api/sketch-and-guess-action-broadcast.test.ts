@@ -197,6 +197,17 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#10
     expect(body.state.data.rounds[0].guesses[0].guess).toBe(prompt)
   })
 
+  it('hands the mover a word hint in their own language, and the shared topic none', async () => {
+    asUser(SECOND_GUESSER)
+    const response = await post({ action: 'submit-guess', data: { guess: 'not it at all' }, locale: 'uk' })
+    const body = (await response.json()) as { state: { data: { rounds: Array<{ wordHint?: { lang: string; cells: unknown[] } }> } } }
+    expect(body.state.data.rounds[0].wordHint?.lang).toBe('uk')
+    expect(body.state.data.rounds[0].wordHint?.cells).toHaveLength(Array.from(word.uk[0]).length)
+
+    const payload = actionBroadcasts()[0][2] as { state: { data: { rounds: Array<{ wordHint?: unknown }> } } }
+    expect(payload.state.data.rounds[0].wordHint).toBeUndefined()
+  })
+
   it('tells only the author a guess was close, and never the topic', async () => {
     const elephant = { id: 'elephant', en: ['elephant'], no: ['elefant'], ru: ['слон'], uk: ['слон'] }
     const round = buildDrawingRound()

@@ -557,7 +557,11 @@ export async function GET(
           ...activeGame,
           state: (() => {
             const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
-            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null)
+            // `locale` is the viewer's UI language, which Sketch & Guess builds
+            // its word hint in (#1082); any other game ignores it.
+            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null, {
+              viewerLocale: searchParams.get('locale'),
+            })
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
           })(),
           players: Array.isArray(activeGame.players)

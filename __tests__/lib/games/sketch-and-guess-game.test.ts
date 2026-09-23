@@ -2,6 +2,7 @@ import { Move } from '@/lib/game-engine'
 import {
   SketchAndGuessGame,
   SketchAndGuessGameData,
+  buildSketchWordHint,
   sanitizeSketchAndGuessActionEventForBroadcast,
   sanitizeSketchAndGuessStateForBroadcast,
 } from '@/lib/games/sketch-and-guess-game'
@@ -267,8 +268,10 @@ describe('SketchAndGuessGame – every language counts (#1082)', () => {
     expect(guessAgainst('elephant', 'giraffe')).toMatchObject({ correct: false, close: false })
   })
 
-  it('does not hand out "close" on a very short word, where one letter is the answer', () => {
+  it('does not hand out "close" on a word of three letters or fewer, where one letter is the answer', () => {
     expect(guessAgainst('cow', 'kuu')).toMatchObject({ correct: false, close: false })
+    expect(guessAgainst('cat', 'cot')).toMatchObject({ correct: false, close: false })
+    expect(guessAgainst('cat', 'kot')).toMatchObject({ correct: false, close: false })
   })
 })
 
@@ -688,5 +691,84 @@ describe('sanitizeSketchAndGuessActionEventForBroadcast', () => {
       autoPickedWords: 1,
       timeoutWindowsConsumed: 1,
     })
+  })
+})
+
+
+describe('Sketch & Guess word hint (#1082)', () => {
+  const DRAW_MS = SKETCH_PHASE_SECONDS.drawing * 1000
+  const start = 1_000_000
+  const castle = getSketchWord('castle')!
+  const shown = (cells: Array<string | null>) => cells.filter((cell) => cell !== null).length
+
+  it('starts as blanks, one per letter, in the viewer language', () => {
+    const hint = buildSketchWordHint(castle, 'ru', start, start + 1000, 1)
+    expect(hint.lang).toBe('ru')
+    expect(hint.cells).toEqual([null, null, null, null, null]) // замок
+  })
+
+  it('uncovers one letter at half the drawing clock and another at three quarters', () => {
+    expect(shown(buildSketchWordHint(castle, 'en', start, start + DRAW_MS * 0.49, 1).cells)).toBe(0)
+    expect(shown(buildSketchWordHint(castle, 'en', start, start + DRAW_MS * 0.5, 1).cells)).toBe(1)
+    const late = buildSketchWordHint(castle, 'en', start, start + DRAW_MS * 0.8, 1).cells
+    expect(shown(late)).toBe(2)
+    // Whatever is uncovered is the real letter in its real place.
+    late.forEach((cell, index) => { if (cell !== null) expect(cell).toBe('castle'[index]) })
+  })
+
+  it('never uncovers more than a third of the letters', () => {
+    const cat = getSketchWord('cat')!
+    expect(shown(buildSketchWordHint(cat, 'en', start, start + DRAW_MS, 1).cells)).toBe(1) // 3 letters -> 1
+    const cow = getSketchWord('cow')!
+    expect(shown(buildSketchWordHint(cow, 'no', start, start + DRAW_MS, 1).cells)).toBe(0) // "ku" -> 0
+  })
+
+  it('shows spaces and apostrophes as they are – they are the shape, not the answer', () => {
+    const football = getSketchWord('football')!
+    const hint = buildSketchWordHint(football, 'uk', start, start, 1)
+    expect(hint.cells).toEqual([null, "'", null, null]) // м'яч
+    const sub = buildSketchWordHint(getSketchWord('submarine')!, 'ru', start, start, 1)
+    expect(sub.cells.filter((cell) => cell === ' ')).toHaveLength(1)
+  })
+
+  it('uncovers the same letters on every request', () => {
+    const a = buildSketchWordHint(castle, 'en', start, start + DRAW_MS * 0.8, 1)
+    const b = buildSketchWordHint(castle, 'en', start, start + DRAW_MS * 0.8, 1)
+    expect(a).toEqual(b)
+  })
+
+  it('is given to a guesser who names a language, never to the drawer, never without one', () => {
+    const { game } = drawingGame(1, 'sketch-hint')
+    const state = game.getState()
+    const round = (published: unknown) => (published as { data: SketchAndGuessGameData }).data.rounds[0]
+
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player2', { viewerLocale: 'no' })).wordHint?.lang).toBe('no')
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, null, { viewerLocale: 'en' })).wordHint).toBeDefined()
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player2')).wordHint).toBeUndefined()
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player1', { viewerLocale: 'en' })).wordHint).toBeUndefined()
+  })
+
+  it('never spells the word out, even at the end of the clock', () => {
+    const { game, word } = drawingGame(1, 'sketch-hint-late')
+    const startedAt = getData(game).rounds[0].drawingStartedAt as number
+    for (const lang of ['en', 'no', 'ru', 'uk'] as const) {
+      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2', {
+        viewerLocale: lang,
+        now: startedAt + DRAW_MS - 1,
+      }) as { data: SketchAndGuessGameData }
+      const hint = published.data.rounds[0].wordHint!
+      expect(hint.cells.join('')).not.toBe(word[lang][0])
+      for (const form of [...word.en, ...word.no, ...word.ru, ...word.uk]) {
+        expect(JSON.stringify(published)).not.toContain(JSON.stringify(form))
+      }
+    }
+  })
+
+  it('is not given while the word is still being chosen', () => {
+    const game = newGame(1, 'sketch-hint-choosing')
+    const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2', { viewerLocale: 'en' }) as {
+      data: SketchAndGuessGameData
+    }
+    expect(published.data.rounds[0].wordHint).toBeUndefined()
   })
 })

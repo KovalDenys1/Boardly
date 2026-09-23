@@ -1714,6 +1714,7 @@ const uk: TranslationWithPlurals = {
         guessLimitReached: 'Спроби в цьому раунді скінчилися',
         guessTooFast: 'Не так швидко – зачекайте секунду',
         waitingForDrawing: 'Чекаємо на малюнок...',
+        hintLabel: 'Літер у слові: {{count}}',
       },
     },
     liars_party: {

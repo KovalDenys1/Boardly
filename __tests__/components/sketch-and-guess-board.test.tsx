@@ -130,6 +130,14 @@ describe('SketchAndGuessGameBoard guess input (#1006, #1082)', () => {
     expect(screen.queryByText('games.guess_my_drawing.game.closeGuess')).toBeNull()
   })
 
+  it('shows the server’s word hint as blanks and uncovered letters, and never to the drawer', () => {
+    const gameData = buildGameData({}, { wordHint: { lang: 'en', cells: ['c', null, null, ' ', null] } })
+    const { container } = render(<SketchAndGuessGameBoard {...buildProps({ gameData })} />)
+    const cells = Array.from(container.querySelectorAll('.sketch-word-hint__cell')).map((node) => node.textContent)
+    expect(cells).toEqual(['c', '_', '_', '_'])
+    expect(container.querySelectorAll('.sketch-word-hint__gap')).toHaveLength(1)
+  })
+
   it('takes the box away once the viewer has it', () => {
     const gameData = buildGameData({ submittedPlayerIds: ['user-1'] })
     render(<SketchAndGuessGameBoard {...buildProps({ gameData })} />)
