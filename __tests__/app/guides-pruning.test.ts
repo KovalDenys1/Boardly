@@ -17,6 +17,8 @@ const MERGED_GUIDES: Record<string, string> = {
   '/guides/best-free-multiplayer-browser-games': '/games',
   '/guides/best-3-player-games-online': '/guides/best-online-games-for-game-night',
   '/guides/best-party-games-online': '/guides/best-online-games-for-game-night',
+  // #1077: "Crawled – currently not indexed"; its strategy moved to /games/yahtzee#strategy.
+  '/guides/yahtzee-strategy-guide': '/games/yahtzee',
 }
 
 /** Minimum body copy for a guide to earn its own URL (#923 acceptance). */

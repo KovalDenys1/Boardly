@@ -11,7 +11,7 @@ export default function YahtzeeDetailContent() {
       gameName={t('games.yahtzee.name')}
       title={t('games.yahtzee.detail.title')}
       description={t('games.yahtzee.detail.heroDesc')}
-      iconLabel="Yahtzee"
+      iconLabel={t('games.yahtzee.name')}
       gameId="yahtzee"
       accentColor="var(--bd-sky)"
       accent="var(--bd-lav)"
@@ -40,7 +40,80 @@ export default function YahtzeeDetailContent() {
         t('games.yahtzee.detail.benefit3'),
         t('games.yahtzee.detail.benefit4'),
       ]}
-      originNote={t('games.yahtzee.detail.originNote')}
+      rules={[
+        t('games.yahtzee.detail.rules.rollThreeTimes'),
+        t('games.yahtzee.detail.rules.rollBeforeScoring'),
+        t('games.yahtzee.detail.rules.mustScore'),
+        t('games.yahtzee.detail.rules.oneUsePerRow'),
+        t('games.yahtzee.detail.rules.yahtzeeOnce'),
+        t('games.yahtzee.detail.rules.upperBonus'),
+        t('games.yahtzee.detail.rules.gameEnd'),
+        t('games.yahtzee.detail.rules.timerExpiry'),
+      ]}
+      scoring={[
+        {
+          title: t('yahtzee.categories.upperSection'),
+          note: t('games.yahtzee.detail.scoring.upperNote'),
+          rows: [
+            { name: t('yahtzee.categories.ones'), value: t('games.yahtzee.detail.scoring.rows.ones.value'), rule: t('games.yahtzee.detail.scoring.rows.ones.rule') },
+            { name: t('yahtzee.categories.twos'), value: t('games.yahtzee.detail.scoring.rows.twos.value'), rule: t('games.yahtzee.detail.scoring.rows.twos.rule') },
+            { name: t('yahtzee.categories.threes'), value: t('games.yahtzee.detail.scoring.rows.threes.value'), rule: t('games.yahtzee.detail.scoring.rows.threes.rule') },
+            { name: t('yahtzee.categories.fours'), value: t('games.yahtzee.detail.scoring.rows.fours.value'), rule: t('games.yahtzee.detail.scoring.rows.fours.rule') },
+            { name: t('yahtzee.categories.fives'), value: t('games.yahtzee.detail.scoring.rows.fives.value'), rule: t('games.yahtzee.detail.scoring.rows.fives.rule') },
+            { name: t('yahtzee.categories.sixes'), value: t('games.yahtzee.detail.scoring.rows.sixes.value'), rule: t('games.yahtzee.detail.scoring.rows.sixes.rule') },
+          ],
+        },
+        {
+          title: t('yahtzee.categories.lowerSection'),
+          note: t('games.yahtzee.detail.scoring.lowerNote'),
+          rows: [
+            { name: t('yahtzee.categories.onePair'), value: t('games.yahtzee.detail.scoring.rows.onePair.value'), rule: t('games.yahtzee.detail.scoring.rows.onePair.rule') },
+            { name: t('yahtzee.categories.twoPairs'), value: t('games.yahtzee.detail.scoring.rows.twoPairs.value'), rule: t('games.yahtzee.detail.scoring.rows.twoPairs.rule') },
+            { name: t('yahtzee.categories.threeOfKind'), value: t('games.yahtzee.detail.scoring.rows.threeOfKind.value'), rule: t('games.yahtzee.detail.scoring.rows.threeOfKind.rule') },
+            { name: t('yahtzee.categories.fourOfKind'), value: t('games.yahtzee.detail.scoring.rows.fourOfKind.value'), rule: t('games.yahtzee.detail.scoring.rows.fourOfKind.rule') },
+            { name: t('yahtzee.categories.fullHouse'), value: t('games.yahtzee.detail.scoring.rows.fullHouse.value'), rule: t('games.yahtzee.detail.scoring.rows.fullHouse.rule') },
+            { name: t('yahtzee.categories.smallStraight'), value: t('games.yahtzee.detail.scoring.rows.smallStraight.value'), rule: t('games.yahtzee.detail.scoring.rows.smallStraight.rule') },
+            { name: t('yahtzee.categories.largeStraight'), value: t('games.yahtzee.detail.scoring.rows.largeStraight.value'), rule: t('games.yahtzee.detail.scoring.rows.largeStraight.rule') },
+            { name: t('yahtzee.categories.yahtzee'), value: t('games.yahtzee.detail.scoring.rows.yahtzee.value'), rule: t('games.yahtzee.detail.scoring.rows.yahtzee.rule') },
+            { name: t('yahtzee.categories.chance'), value: t('games.yahtzee.detail.scoring.rows.chance.value'), rule: t('games.yahtzee.detail.scoring.rows.chance.rule') },
+          ],
+        },
+      ]}
+      modes={[
+        { title: t('games.yahtzee.detail.modes.short.title'), desc: t('games.yahtzee.detail.modes.short.desc') },
+        { title: t('games.yahtzee.detail.modes.classic.title'), desc: t('games.yahtzee.detail.modes.classic.desc') },
+        { title: t('games.yahtzee.detail.modes.timer.title'), desc: t('games.yahtzee.detail.modes.timer.desc') },
+        { title: t('games.yahtzee.detail.modes.bots.title'), desc: t('games.yahtzee.detail.modes.bots.desc') },
+      ]}
+      strategy={[
+        { title: t('games.yahtzee.detail.strategy.protectBonus.title'), desc: t('games.yahtzee.detail.strategy.protectBonus.desc') },
+        { title: t('games.yahtzee.detail.strategy.onePlanPerTurn.title'), desc: t('games.yahtzee.detail.strategy.onePlanPerTurn.desc') },
+        { title: t('games.yahtzee.detail.strategy.chaseYahtzeeEarly.title'), desc: t('games.yahtzee.detail.strategy.chaseYahtzeeEarly.desc') },
+        { title: t('games.yahtzee.detail.strategy.afterYahtzee.title'), desc: t('games.yahtzee.detail.strategy.afterYahtzee.desc') },
+        { title: t('games.yahtzee.detail.strategy.largeBeforeSmall.title'), desc: t('games.yahtzee.detail.strategy.largeBeforeSmall.desc') },
+        { title: t('games.yahtzee.detail.strategy.fullHouseMidGame.title'), desc: t('games.yahtzee.detail.strategy.fullHouseMidGame.desc') },
+        { title: t('games.yahtzee.detail.strategy.lockFourOfKind.title'), desc: t('games.yahtzee.detail.strategy.lockFourOfKind.desc') },
+        { title: t('games.yahtzee.detail.strategy.keepChance.title'), desc: t('games.yahtzee.detail.strategy.keepChance.desc') },
+      ]}
+      mistakes={[
+        { title: t('games.yahtzee.detail.mistakes.lastRollGamble.title'), desc: t('games.yahtzee.detail.mistakes.lastRollGamble.desc') },
+        { title: t('games.yahtzee.detail.mistakes.zeroInBigBox.title'), desc: t('games.yahtzee.detail.mistakes.zeroInBigBox.desc') },
+        { title: t('games.yahtzee.detail.mistakes.losingBonusPace.title'), desc: t('games.yahtzee.detail.mistakes.losingBonusPace.desc') },
+        { title: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.title'), desc: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.desc') },
+      ]}
+      multiplayer={[
+        { title: t('games.yahtzee.detail.multiplayer.withFriends.title'), desc: t('games.yahtzee.detail.multiplayer.withFriends.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.botsAndSolo.title'), desc: t('games.yahtzee.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.turnTimer.title'), desc: t('games.yahtzee.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.guestNoDownload.title'), desc: t('games.yahtzee.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.yahtzee.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.yahtzee.detail.history.americanAndNordic'),
+        t('games.yahtzee.detail.history.firstOnBoardly'),
+      ]}
       playVsBotGameType="yahtzee"
     />
   )

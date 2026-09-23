@@ -73,7 +73,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     accent: 'var(--bd-sky)',
     category: 'how-to-play',
     game: 'yahtzee',
-    updated: '2026-09-22',
+    updated: '2026-09-23',
     published: '2026-03-25',
     seo: {
       title: 'How to Play Yahtzee Online with Friends - Complete Guide',
@@ -83,7 +83,6 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
         'how to play yahtzee online',
         'yahtzee rules',
         'yahtzee scoring categories',
-        'yahtzee strategy',
         'play yahtzee with friends online',
         'yahtzee multiplayer guide',
         'yahtzee for beginners',
@@ -274,36 +273,6 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
 ]
 
 export const STRATEGY_GUIDES: GuideEntry[] = [
-  {
-    slug: 'yahtzee-strategy-guide',
-    title: 'Yahtzee Strategy Guide — How to Win More Often',
-    description: 'When to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-    icon: { glyph: 'trophy' },
-    readTime: '6 min',
-    accent: 'var(--bd-sky)',
-    category: 'strategy',
-    game: 'yahtzee',
-    updated: '2026-09-22',
-    published: '2026-05-26',
-    seo: {
-      title: 'Yahtzee Strategy Guide — How to Win More Often',
-      description:
-        'Proven Yahtzee strategies to boost your score every game. Learn when to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-      keywords: [
-        'yahtzee strategy',
-        'how to win at yahtzee',
-        'yahtzee tips',
-        'yahtzee scoring strategy',
-        'best yahtzee strategy',
-        'yahtzee category order',
-      ],
-      ogTitle: 'Yahtzee Strategy Guide',
-      ogDescription: 'Proven Yahtzee strategies — when to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-      headline: 'Yahtzee Strategy Guide — How to Win More Often',
-      articleDescription: 'Proven Yahtzee strategies: upper section bonus, category order, when to go for Yahtzee.',
-      breadcrumbLabel: 'Yahtzee Strategy Guide',
-    },
-  },
   {
     slug: 'connect-four-strategy-guide',
     title: 'Connect Four Strategy Guide — How to Win Every Time',
