@@ -514,7 +514,9 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       // the shipped catalog has a subject for the promote side again. A new entry lands
       // on one side or the other of this split, and this line names which.
       expect(shouldWithhold.length).toBeGreaterThan(0)
-      expect(shouldPromote).toEqual(['checkers'])
+      // `toContain`, not an exact list: another game shipped the same way (Ludo is
+      // on its way) belongs on this side too without this line naming it.
+      expect(shouldPromote).toContain('checkers')
       expect(shouldWithhold.length + shouldPromote.length).toBe(gated.length)
 
       const withoutFlag = getAvailableGameTypes()

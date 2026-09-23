@@ -15,6 +15,7 @@ import {
     isDarkSquare,
     isKing,
     pieceSide,
+    sameSquare,
 } from '@/lib/games/checkers-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -85,10 +86,6 @@ function squareName([r, c]: Square): string {
 function describeMove(record: CheckersMoveRecord): string {
     const joiner = record.captured.length > 0 ? '×' : '–'
     return record.path.map(squareName).join(joiner)
-}
-
-function sameSquare(a: Square | null | undefined, r: number, c: number): boolean {
-    return !!a && a[0] === r && a[1] === c
 }
 
 function CrownMark({ color }: { color: string }) {
