@@ -7,6 +7,7 @@ import {
   deriveSignupSource,
   getSignupSourceFromRequest,
   sanitizeSignupSource,
+  withInAppHandoffSource,
 } from '@/lib/signup-source'
 
 describe('sanitizeSignupSource', () => {
@@ -108,6 +109,44 @@ describe('deriveSignupSource – social traffic (#1091)', () => {
     expect(
       deriveSignupSource({ referrer: 'https://www.reddit.com/', userAgent: IG_IOS, currentHostname: 'boardly.online' })
     ).toBe('ref:reddit.com')
+  })
+})
+
+describe('in-app browser handoff (#1091)', () => {
+  it('round-trips ref:<host> through the copied link to the same value in Safari', () => {
+    for (const source of ['ref:instagram.com', 'ref:tiktok.com', 'ref:facebook.com']) {
+      const copied = withInAppHandoffSource('https://boardly.online/auth/login?callbackUrl=%2Flobby%2F1234', source)
+      const params = new URL(copied).searchParams
+      expect(params.get('callbackUrl')).toBe('/lobby/1234')
+      // Safari: no in-app UA, no referrer – only the link speaks.
+      expect(
+        deriveSignupSource({
+          utmSource: params.get('utm_source'),
+          utmMedium: params.get('utm_medium'),
+          utmCampaign: params.get('utm_campaign'),
+          referrer: '',
+          currentHostname: 'boardly.online',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1',
+          search: new URL(copied).search,
+        })
+      ).toBe(source)
+    }
+  })
+
+  it('folds a handed-off alias host onto the platform, like a referrer', () => {
+    expect(deriveSignupSource({ utmSource: 'l.instagram.com', utmMedium: 'inapp' })).toBe('ref:instagram.com')
+  })
+
+  it('leaves links that already carry UTM, and direct or missing sources, unchanged', () => {
+    const withUtm = 'https://boardly.online/?utm_source=tiktok&utm_medium=social'
+    expect(withInAppHandoffSource(withUtm, 'utm:tiktok/social')).toBe(withUtm)
+    expect(withInAppHandoffSource(withUtm, 'ref:tiktok.com')).toBe(withUtm)
+    expect(withInAppHandoffSource('https://boardly.online/', 'direct')).toBe('https://boardly.online/')
+    expect(withInAppHandoffSource('https://boardly.online/', null)).toBe('https://boardly.online/')
+  })
+
+  it('treats utm_medium=inapp with a non-host source as an ordinary UTM', () => {
+    expect(deriveSignupSource({ utmSource: 'tiktok', utmMedium: 'inapp' })).toBe('utm:tiktok/inapp')
   })
 })
 

@@ -6,6 +6,12 @@ interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
   maxRequests: number // Maximum number of requests per window
   message?: string // Custom error message
+  /**
+   * Buckets every path under one key instead of one per pathname. Needed where the
+   * path itself is the variable being walked (`/og/lobby/<code>`): per-path keys would
+   * give each code its own fresh allowance and limit nothing.
+   */
+  keyScope?: string
 }
 
 interface InMemoryRateLimitStore {
@@ -181,7 +187,8 @@ export function rateLimit(config: RateLimitConfig) {
   const {
     windowMs,
     maxRequests,
-    message = 'Too many requests, please try again later.'
+    message = 'Too many requests, please try again later.',
+    keyScope,
   } = config
 
   return async (request: NextRequest): Promise<NextResponse | null> => {
@@ -194,8 +201,8 @@ export function rateLimit(config: RateLimitConfig) {
       'unknown'
     
     // Create unique key for this IP and endpoint
-    const pathname = new URL(request.url).pathname
-    const key = `${ip}:${pathname}`
+    const scope = keyScope ?? new URL(request.url).pathname
+    const key = `${ip}:${scope}`
 
     const now = Date.now()
     const sharedRecord = await consumeSharedRateLimit(key, windowMs, now)
@@ -271,6 +278,16 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 30,
     message: 'Too many lobbies created. Please try again later.'
+  },
+
+  // Uncached invite-card renders (#1091). One bucket per IP across every lobby
+  // code, so walking the 4-digit code space costs the caller, not us. Cache hits
+  // never reach the function, so crawlers re-fetching a shared link do not count.
+  ogLobbyImage: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 30,
+    keyScope: 'og-lobby',
+    message: 'Too many requests. Please slow down.'
   },
 
   // Strict limit for friend requests (abuse prevention)

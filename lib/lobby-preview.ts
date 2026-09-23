@@ -4,7 +4,9 @@ import { getGameMetadata } from './game-catalog'
 /**
  * What a shared invite link (`/lobby/<code>`) shows in WhatsApp, Discord, Messenger
  * or iMessage (#1091). One lookup feeds both the page's `<head>` and its preview
- * image, so the two cannot disagree.
+ * image, so they agree on what they say. They can still disagree on *when*: the head
+ * is rendered per request while the image is CDN-cached (`s-maxage=60`, up to five
+ * minutes stale), so the card's seat count can trail the title's by a few minutes.
  *
  * It names the game and the seat count and nothing about the people in it. The
  * card used to read "Join <username>'s Yahtzee lobby", and for a Google sign-up the

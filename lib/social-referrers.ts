@@ -93,8 +93,11 @@ export function inAppBrowserHost(app: InAppBrowser): string {
 
 /**
  * Click ids the platforms append to outbound links, in priority order. `igshid`
- * before `fbclid` because Instagram links carry both and Instagram is the
- * narrower answer.
+ * is Instagram's *share* id, which rides on instagram.com URLs a user shares, not
+ * on outbound links to us – Instagram's link shim adds `fbclid`. So the igshid
+ * branch rarely fires and Instagram traffic that reaches this fallback usually
+ * reads as facebook.com; the in-app user agent check before it is what catches
+ * Instagram. Kept, and ahead of `fbclid`, for the odd link that does carry it.
  */
 const CLICK_ID_HOSTS: ReadonlyArray<readonly [param: string, host: string]> = [
   ['ttclid', 'tiktok.com'],

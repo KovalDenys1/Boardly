@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 
 import { useTranslation } from '@/lib/i18n-helpers'
+import { withInAppHandoffSource } from '@/lib/signup-source'
+import { captureSignupSource } from '@/lib/signup-source-client'
 import { detectInAppBrowser, type InAppBrowser } from '@/lib/social-referrers'
 
 /** Brand names, spelled the same in every locale. */
@@ -37,7 +39,10 @@ export default function InAppBrowserNotice() {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      // The attribution is in memory and dies with this webview; the link carries it over.
+      await navigator.clipboard.writeText(
+        withInAppHandoffSource(window.location.href, captureSignupSource())
+      )
       setCopied(true)
     } catch {
       // Clipboard blocked in this webview: the instructions above still apply.
