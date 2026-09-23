@@ -21,7 +21,24 @@ export const sketchAndGuessSubmitGuessRequestSchema = z.object({
     .max(SKETCH_AND_GUESS_MAX_GUESS_LENGTH),
 })
 
+export const sketchAndGuessChooseWordRequestSchema = z.object({
+  wordId: z.string().trim().min(1).max(64),
+})
+
+/** #1082: the host marks another player's wrong guess correct. */
+export const sketchAndGuessAcceptGuessRequestSchema = z.object({
+  guessId: z.string().trim().min(1).max(64),
+})
+
 export const sketchAndGuessActionRequestSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('choose-word'),
+    data: sketchAndGuessChooseWordRequestSchema,
+  }),
+  z.object({
+    action: z.literal('accept-guess'),
+    data: sketchAndGuessAcceptGuessRequestSchema,
+  }),
   z.object({
     action: z.literal('submit-drawing'),
     data: sketchAndGuessSubmitDrawingRequestSchema,

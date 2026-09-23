@@ -84,6 +84,7 @@ export async function POST(
             code: true,
             gameType: true,
             turnTimer: true,
+            creatorId: true,
           },
         },
       },
@@ -258,6 +259,7 @@ export async function POST(
         userId,
         turnTimerSeconds,
         timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+        autoPickedWords: timeoutResolution.autoPickedWords,
         phaseTransitions: timeoutResolution.phaseTransitions,
         revealAdvances: timeoutResolution.revealAdvances,
         autoSubmittedDrawings: timeoutResolution.autoSubmittedDrawings,
@@ -266,32 +268,39 @@ export async function POST(
       })
     }
 
+    const body = parsedBody.data
+    const now = new Date()
     let move: Move
-    if (parsedBody.data.action === 'advance-round') {
-      move = {
-        playerId: userId,
-        type: 'advance-round',
-        data: {},
-        timestamp: new Date(),
+    if (body.action === 'advance-round') {
+      move = { playerId: userId, type: 'advance-round', data: {}, timestamp: now }
+    } else if (body.action === 'submit-drawing') {
+      move = { playerId: userId, type: 'submit-drawing', data: { content: body.data.content.trim() }, timestamp: now }
+    } else if (body.action === 'choose-word') {
+      move = { playerId: userId, type: 'choose-word', data: { wordId: body.data.wordId }, timestamp: now }
+    } else if (body.action === 'accept-guess') {
+      // #1082: only the lobby's creator may overrule the matcher. The host is a
+      // lobby fact, not a game one, so it is checked here and the engine is told.
+      if (!game.lobby?.creatorId || game.lobby.creatorId !== userId) {
+        return NextResponse.json({ error: 'Only the host can accept a guess', code: 'NOT_HOST' }, { status: 403 })
       }
-    } else if (parsedBody.data.action === 'submit-drawing') {
+      // Accepting a guess that is already accepted changes nothing, so it
+      // writes nothing – a double tap or a retry after a lost response is a
+      // success, not an error and not a second row in the replay.
+      if (!timeoutFallbackApplied && sketchGame.isGuessAcceptedByHost(body.data.guessId)) {
+        return NextResponse.json({
+          success: true,
+          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId),
+          timeoutFallbackApplied: false,
+        })
+      }
       move = {
         playerId: userId,
-        type: 'submit-drawing',
-        data: {
-          content: parsedBody.data.data.content.trim(),
-        },
-        timestamp: new Date(),
+        type: 'accept-guess',
+        data: { guessId: body.data.guessId, authorizedAsHost: true },
+        timestamp: now,
       }
     } else {
-      move = {
-        playerId: userId,
-        type: 'submit-guess',
-        data: {
-          guess: parsedBody.data.data.guess.trim(),
-        },
-        timestamp: new Date(),
-      }
+      move = { playerId: userId, type: 'submit-guess', data: { guess: body.data.guess.trim() }, timestamp: now }
     }
 
     const moveAccepted = sketchGame.makeMove(move)
@@ -303,6 +312,7 @@ export async function POST(
           'sketch_and_guess:timeout-fallback',
           {
             timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+            autoPickedWords: timeoutResolution.autoPickedWords,
             autoSubmittedDrawings: timeoutResolution.autoSubmittedDrawings,
             autoSubmittedGuesses: timeoutResolution.autoSubmittedGuesses,
             autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
@@ -313,6 +323,7 @@ export async function POST(
             playerId: null,
             data: {
               timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+              autoPickedWords: timeoutResolution.autoPickedWords,
               autoSubmittedDrawings: timeoutResolution.autoSubmittedDrawings,
               autoSubmittedGuesses: timeoutResolution.autoSubmittedGuesses,
               autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
@@ -330,17 +341,34 @@ export async function POST(
         )
       }
 
+      if (move.type === 'submit-guess') {
+        const rejection = sketchGame.getGuessRejection(move)
+        if (rejection) {
+          return NextResponse.json(
+            {
+              error: rejection === 'too-fast' ? 'Guessing too fast' : 'No guesses left this round',
+              code: rejection === 'too-fast' ? 'GUESS_TOO_FAST' : 'GUESS_LIMIT_REACHED',
+            },
+            { status: 429 }
+          )
+        }
+      }
+
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
+
+    // Close, correct or neither – told to the one who typed it and nobody else.
+    // The shared broadcast below never carries it.
+    const guessOutcome = move.type === 'submit-guess' ? sketchGame.getLastGuessOutcome() : null
 
     const updatedState = sketchGame.getState()
     await persistSketchState(
       updatedState,
-      `sketch_and_guess:${parsedBody.data.action}`,
+      `sketch_and_guess:${body.action}`,
       move.data,
       userId,
       {
-        action: parsedBody.data.action,
+        action: body.action,
         playerId: userId,
         data: move.data,
       }
@@ -350,9 +378,11 @@ export async function POST(
       success: true,
       state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId),
       timeoutFallbackApplied,
+      ...(guessOutcome ? { guessResult: { correct: guessOutcome.correct, close: guessOutcome.close } } : {}),
       timeoutFallback: timeoutFallbackApplied
         ? {
             timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+            autoPickedWords: timeoutResolution.autoPickedWords,
             autoSubmittedDrawings: timeoutResolution.autoSubmittedDrawings,
             autoSubmittedGuesses: timeoutResolution.autoSubmittedGuesses,
             autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,

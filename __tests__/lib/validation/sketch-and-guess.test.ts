@@ -42,4 +42,14 @@ describe('sketch-and-guess validation', () => {
 
     expect(result.success).toBe(true)
   })
+
+  it('accepts choose-word and accept-guess with their ids (#1082)', () => {
+    expect(sketchAndGuessActionRequestSchema.safeParse({ action: 'choose-word', data: { wordId: 'castle' } }).success).toBe(true)
+    expect(sketchAndGuessActionRequestSchema.safeParse({ action: 'accept-guess', data: { guessId: 'r1-g3' } }).success).toBe(true)
+  })
+
+  it('rejects choose-word and accept-guess without an id (#1082)', () => {
+    expect(sketchAndGuessActionRequestSchema.safeParse({ action: 'choose-word', data: {} }).success).toBe(false)
+    expect(sketchAndGuessActionRequestSchema.safeParse({ action: 'accept-guess', data: { guessId: '' } }).success).toBe(false)
+  })
 })

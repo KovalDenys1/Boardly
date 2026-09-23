@@ -523,6 +523,7 @@ export async function GET(
               actionType: 'sketch_and_guess:timeout-fallback',
               actionPayload: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoPickedWords: r.autoPickedWords,
                 autoSubmittedDrawings: r.autoSubmittedDrawings,
                 autoSubmittedGuesses: r.autoSubmittedGuesses,
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
@@ -532,6 +533,7 @@ export async function GET(
               gameSocketEvent: 'sketch-and-guess-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoPickedWords: r.autoPickedWords,
                 autoSubmittedDrawings: r.autoSubmittedDrawings,
                 autoSubmittedGuesses: r.autoSubmittedGuesses,
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
