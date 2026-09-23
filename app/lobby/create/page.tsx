@@ -26,7 +26,9 @@ import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type L
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
-type YahtzeeGameMode = 'classic' | 'short'
+// Yahtzee offers short/classic, Ludo quick/classic (#1084). One form field
+// carries whichever the selected game offers.
+type YahtzeeGameMode = 'classic' | 'short' | 'quick'
 
 type GameSettings = {
   hasTurnTimer?: boolean
@@ -238,6 +240,7 @@ function CreateLobbyPage() {
         } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
         ...(formData.gameType === 'yahtzee' ? { yahtzeeMode: formData.yahtzeeMode } : {}),
+        ...(formData.gameType === 'ludo' ? { ludoMode: formData.yahtzeeMode } : {}),
       }
 
       const res = await fetchWithGuest('/api/lobby', {
@@ -823,11 +826,13 @@ function CreateLobbyPage() {
                     <div className="flex gap-2">
                       {(gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map((m) => (
                         <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
-                          {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
+                          {formData.gameType === 'ludo'
+                            ? (m === 'quick' ? t('games.ludo.modes.quick') : t('games.ludo.modes.classic'))
+                            : m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-bd-ink-muted">{t('lobby.create.gameModeShortHelper')}</p>
+                    <p className="text-xs text-bd-ink-muted">{formData.gameType === 'ludo' ? t('games.ludo.modes.helper') : t('lobby.create.gameModeShortHelper')}</p>
                   </div>
                 )}
 

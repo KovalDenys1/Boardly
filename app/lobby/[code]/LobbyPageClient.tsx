@@ -173,6 +173,10 @@ const CheckersLobbyPage = dynamic(
   () => import('./checkers-page'),
   { loading: () => <CenteredLoadingFallback /> }
 )
+const LudoLobbyPage = dynamic(
+  () => import('./ludo-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
@@ -2738,6 +2742,10 @@ export default function LobbyPage() {
 
   if (dedicatedGameType === 'checkers') {
     return <CheckersLobbyPage code={code} onGameReset={handleGameReset} />
+  }
+
+  if (dedicatedGameType === 'ludo') {
+    return <LudoLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   // For all other cases, including all waiting rooms, use the shared lobby shell.
