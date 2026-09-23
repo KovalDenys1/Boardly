@@ -20,7 +20,7 @@ is built and reachable behind a feature flag or a direct lobby code; it still ap
 behind them.
 
 **Available (9):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Memory, Connect Four, Alias, Rock Paper Scissors, Liar's Party, Sketch & Guess
-**In development:** Fake Artist, Telephone Doodle
+**In development:** Checkers, Fake Artist, Telephone Doodle
 **Planned:** Words-Mines, Anagrams, Crocodile, Alibi Night
 
 `npm run audit:docs` fails if these three lines and the catalog ever disagree.
