@@ -18,6 +18,7 @@ import SketchAndGuessGameBoard, {
     SketchScoreRows,
     emptySketchAndGuessDraft,
     type SketchAndGuessDraft,
+    type SketchLiveView,
 } from '@/components/SketchAndGuessGameBoard'
 import { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
 import { clientLogger } from '@/lib/client-logger'
@@ -40,6 +41,13 @@ import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[c
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { SKETCH_PHASE_SECONDS } from '@/lib/games/sketch-and-guess-phases'
+import {
+    SKETCH_LIVE_EVENT,
+    SKETCH_LIVE_RESYNC_MS,
+    SKETCH_LIVE_THROTTLE_MS,
+    parseSketchLiveMessage,
+    type Stroke as LiveStroke,
+} from '@/lib/sketch-live'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -415,7 +423,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         else router.push(`/lobby/${code}`)
     }, [code, onGameReset, router])
 
-    const { isConnected: socketConnected, isReconnecting } = useRealtimeConnection({
+    // The live-drawing handler depends on the round and the drawer, which are
+    // derived further down; the hook is called before them, so it reaches the
+    // current handler through a ref.
+    const sketchLiveHandlerRef = useRef<(payload: unknown) => void>(() => {})
+    const handleSketchLive = useCallback((payload: unknown) => sketchLiveHandlerRef.current(payload), [])
+
+    const { isConnected: socketConnected, isReconnecting, emitWhenConnected } = useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
         // landed while the socket was down is gone. Without this the board
         // stayed frozen on pre-gap state and neither player could move.
@@ -429,6 +443,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         onGameReset: handleGameReset,
         onChatMessage,
         onPlayerTyping,
+        onSketchLive: handleSketchLive,
     })
 
     useLobbyChatHistory({ code, isConnected: socketConnected, isReconnecting, mergeHistoryMessages })
@@ -637,6 +652,70 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         (next: SketchAndGuessDraft) => setDraftForRound({ round: roundNumber, draft: next }),
         [roundNumber]
     )
+
+    // Live drawing. The drawing phase used to show everyone but the drawer a
+    // blank square until the drawing was submitted; now the drawer's canvas is
+    // streamed over the lobby channel as it is drawn (lib/sketch-live.ts).
+    const drawerIdForLive = gameData.currentDrawerId
+    const isStreamingDrawer = isDrawer && phase === 'drawing' && !isFinished
+    const [liveView, setLiveView] = useState<SketchLiveView | null>(null)
+
+    sketchLiveHandlerRef.current = (payload: unknown) => {
+        if (isDrawer || phase !== 'drawing') return
+        const message = parseSketchLiveMessage(payload, { round: roundNumber, drawerId: drawerIdForLive })
+        if (!message) return
+        setLiveView((prev) => {
+            const base = prev && prev.round === message.round ? prev : { round: message.round, strokes: [], live: null }
+            return message.kind === 'strokes'
+                ? { round: message.round, strokes: message.strokes, live: null }
+                : { ...base, live: message.live }
+        })
+    }
+
+    const committedStrokes = activeDraft.strokes
+    useEffect(() => {
+        if (!isStreamingDrawer) return
+        const send = () =>
+            emitWhenConnected(SKETCH_LIVE_EVENT, { kind: 'strokes', round: roundNumber, drawerId: drawerIdForLive, strokes: committedStrokes })
+        send()
+        // Re-sent on a timer so a player who joins or reconnects mid-round
+        // catches up; the channel keeps no history to replay.
+        const timer = window.setInterval(send, SKETCH_LIVE_RESYNC_MS)
+        return () => window.clearInterval(timer)
+    }, [isStreamingDrawer, committedStrokes, roundNumber, drawerIdForLive, emitWhenConnected])
+
+    const pendingLiveRef = useRef<LiveStroke | null>(null)
+    const liveTimerRef = useRef<number | null>(null)
+    const flushLiveStroke = useCallback(() => {
+        liveTimerRef.current = null
+        const stroke = pendingLiveRef.current
+        emitWhenConnected(SKETCH_LIVE_EVENT, {
+            kind: 'live',
+            round: roundNumber,
+            drawerId: drawerIdForLive,
+            // The canvas keeps pushing into the same points array; send a copy.
+            live: stroke ? { ...stroke, points: stroke.points.slice() } : null,
+        })
+    }, [emitWhenConnected, roundNumber, drawerIdForLive])
+    const handleLiveStroke = useCallback(
+        (stroke: LiveStroke | null) => {
+            if (!isStreamingDrawer) return
+            pendingLiveRef.current = stroke
+            // The end of a stroke goes out with the finished strokes; nothing to throttle.
+            if (stroke === null) {
+                if (liveTimerRef.current !== null) window.clearTimeout(liveTimerRef.current)
+                liveTimerRef.current = null
+                return
+            }
+            if (liveTimerRef.current === null) {
+                liveTimerRef.current = window.setTimeout(flushLiveStroke, SKETCH_LIVE_THROTTLE_MS)
+            }
+        },
+        [isStreamingDrawer, flushLiveStroke]
+    )
+    useEffect(() => () => {
+        if (liveTimerRef.current !== null) window.clearTimeout(liveTimerRef.current)
+    }, [])
 
     const timerState = useMemo(() => {
         if (!game) return null
@@ -855,6 +934,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 isSpectator={isSpectator}
                 draft={activeDraft}
                 onDraftChange={handleDraftChange}
+                onLiveStroke={handleLiveStroke}
+                liveView={liveView}
             />
             {isFinished && !isSpectator && !overlayInspecting && (
                 <GameResultOverlay

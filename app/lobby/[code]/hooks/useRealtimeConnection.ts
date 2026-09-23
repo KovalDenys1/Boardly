@@ -34,6 +34,8 @@ interface UseRealtimeConnectionProps {
   onSpectatorCountChange?: (count: number) => void
   onStateSync?: () => Promise<void>
   onGameReset?: (data: GameResetPayload) => void
+  /** Sketch & Guess: the drawer's canvas as it is drawn, client to client. */
+  onSketchLive?: (payload: unknown) => void
 }
 
 export function useRealtimeConnection({
@@ -51,6 +53,7 @@ export function useRealtimeConnection({
   onSpectatorCountChange,
   onStateSync,
   onGameReset,
+  onSketchLive,
 }: UseRealtimeConnectionProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [hasConnectedOnce, setHasConnectedOnce] = useState(false)
@@ -74,6 +77,7 @@ export function useRealtimeConnection({
   const onSpectatorCountChangeRef = useRef(onSpectatorCountChange)
   const onStateSyncRef = useRef(onStateSync)
   const onGameResetRef = useRef(onGameReset)
+  const onSketchLiveRef = useRef(onSketchLive)
 
   useEffect(() => {
     onGameUpdateRef.current = onGameUpdate
@@ -88,7 +92,8 @@ export function useRealtimeConnection({
     onSpectatorCountChangeRef.current = onSpectatorCountChange
     onStateSyncRef.current = onStateSync
     onGameResetRef.current = onGameReset
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onSpectatorCountChange, onStateSync, onGameReset])
+    onSketchLiveRef.current = onSketchLive
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onSpectatorCountChange, onStateSync, onGameReset, onSketchLive])
 
   useEffect(() => {
     if (!code || !shouldJoinLobbyRoom) {
@@ -152,6 +157,9 @@ export function useRealtimeConnection({
         'game-reset': (payload) => {
           clientLogger.log('📡 game-reset via Supabase Broadcast')
           onGameResetRef.current?.(payload as GameResetPayload)
+        },
+        'sketch-live': (payload) => {
+          onSketchLiveRef.current?.(payload)
         },
         'spectator-count-update': (payload) => {
           const count = typeof (payload as Record<string, unknown>)?.count === 'number'
