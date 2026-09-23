@@ -40,7 +40,6 @@ export default function YahtzeeDetailContent() {
         t('games.yahtzee.detail.benefit3'),
         t('games.yahtzee.detail.benefit4'),
       ]}
-      originNote={t('games.yahtzee.detail.originNote')}
       rules={[
         t('games.yahtzee.detail.rules.rollThreeTimes'),
         t('games.yahtzee.detail.rules.rollBeforeScoring'),
@@ -107,6 +106,13 @@ export default function YahtzeeDetailContent() {
         { title: t('games.yahtzee.detail.multiplayer.botsAndSolo.title'), desc: t('games.yahtzee.detail.multiplayer.botsAndSolo.desc') },
         { title: t('games.yahtzee.detail.multiplayer.turnTimer.title'), desc: t('games.yahtzee.detail.multiplayer.turnTimer.desc') },
         { title: t('games.yahtzee.detail.multiplayer.guestNoDownload.title'), desc: t('games.yahtzee.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.yahtzee.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.yahtzee.detail.history.americanAndNordic'),
+        t('games.yahtzee.detail.history.firstOnBoardly'),
       ]}
       playVsBotGameType="yahtzee"
     />

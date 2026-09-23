@@ -561,7 +561,6 @@ const no = {
         benefit2: 'Roboter tilgjengelig når venner er offline.',
         benefit3: 'Fungerer på mobil, nettbrett og datamaskin.',
         benefit4: 'Gratis å spille som gjest.',
-        originNote: 'Yahtzee var det første spillet på Boardly. Det startet som en skoleoppgave fra læreren min Tarald, og ble startskuddet for endelig å bygge siden jeg lenge hadde planlagt.',
         rules: {
           rollThreeTimes: 'Hver tur gir opptil tre kast, og mellom kastene velger du hvilke terninger du beholder.',
           rollBeforeScoring: 'Du må kaste minst én gang før du fører poeng, men kan stoppe etter første eller andre kast.',
@@ -725,6 +724,13 @@ const no = {
             title: 'Ingen konto, ingen installasjon',
             desc: 'Et gjestenavn holder, i hvilken som helst nettleser på mobil, nettbrett eller datamaskin.',
           },
+        },
+        audience: {
+          whoItSuits: 'Yatzy passer for familier, blandede aldre og venner som sjelden spiller brettspill: reglene tar et minutt, men planlegging rundt bonusen lønner seg likevel for de faste. Kort modus passer til en kaffepause, klassisk til en lengre kveld.',
+        },
+        history: {
+          americanAndNordic: 'Yahtzee ble lansert i USA i 1956 av leketøysprodusenten Edwin S. Lowe og er i dag et varemerke som tilhører Hasbro. Parradene på Boardly kommer fra Yatzy, den nordiske slektningen.',
+          firstOnBoardly: 'Det var også det første spillet på Boardly, startet som en skoleoppgave fra læreren min Tarald, og det ble dyttet som fikk meg til endelig å bygge en side jeg hadde planlagt i årevis.',
         },
       },
       lobbies: {

@@ -561,7 +561,6 @@ const en = {
         benefit2: 'Bots are available when friends are offline.',
         benefit3: 'Works on phone, tablet, and desktop.',
         benefit4: 'Free to play as a guest.',
-        originNote: 'Yahtzee was the first game on Boardly. It started as a school assignment from my teacher Tarald, and became the push to finally build the site I had been planning for a long time.',
         rules: {
           rollThreeTimes: 'Each turn allows up to three rolls, and between rolls you choose which dice to hold.',
           rollBeforeScoring: 'At least one roll is required before scoring, but you may stop after the first or the second.',
@@ -725,6 +724,13 @@ const en = {
             title: 'No account, no install',
             desc: 'A guest name is enough, in any browser on a phone, tablet or computer.',
           },
+        },
+        audience: {
+          whoItSuits: 'Yahtzee suits families, mixed ages and friends who rarely play board games: the rules take a minute, yet planning for the bonus still rewards regulars. Short mode fits a coffee break, classic a longer evening.',
+        },
+        history: {
+          americanAndNordic: 'Yahtzee was launched in the United States in 1956 by the toy maker Edwin S. Lowe and is now a Hasbro trademark. Boardly\'s pair rows come from Yatzy, its Nordic cousin.',
+          firstOnBoardly: 'It was also the first game on Boardly, begun as a school assignment from my teacher Tarald – the push to finally build a site I had planned for years.',
         },
       },
       lobbies: {
