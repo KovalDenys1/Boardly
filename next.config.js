@@ -62,6 +62,18 @@ const nextConfig = {
         destination: '/guides/best-online-games-for-game-night',
         permanent: true,
       },
+      // Folded into the game page by #1077 (SEO Track A). Search Console
+      // listed it under "Crawled – currently not indexed" (Page indexing,
+      // read 2026-09-21): Google fetched it and declined it on content, and it
+      // earned no impressions. Its strategy now lives at /games/yahtzee#strategy,
+      // on the page that carries the Yahtzee impressions. A redirect cannot
+      // carry the fragment reliably, and the guides-pruning test reads the
+      // destination as a page path, so it lands on the page itself.
+      {
+        source: '/guides/yahtzee-strategy-guide',
+        destination: '/games/yahtzee',
+        permanent: true,
+      },
     ]
   },
   // Allow local host variants in development to prevent HMR/CORS failures

@@ -168,21 +168,25 @@ export default function GuidesPage() {
             </div>
           </section>
 
-          {/* Strategy */}
-          <section className="mb-10">
-            <div className="mb-4 flex items-center gap-3">
-              <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--bd-ink-muted)' }}>
-                Strategy
-              </h2>
-              <div className="h-px flex-1" style={{ background: 'var(--bd-line)' }} />
-              <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{strategyGuides.length} guides</span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {strategyGuides.map((guide) => (
-                <GuideCard key={guide.slug} {...guide} />
-              ))}
-            </div>
-          </section>
+          {/* Strategy – the strategy guides are folding into their game pages
+              one by one (#1077 folded Yahtzee's), so the section renders only
+              while one is left and never says "1 guides". */}
+          {strategyGuides.length > 0 && (
+            <section className="mb-10">
+              <div className="mb-4 flex items-center gap-3">
+                <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--bd-ink-muted)' }}>
+                  Strategy
+                </h2>
+                <div className="h-px flex-1" style={{ background: 'var(--bd-line)' }} />
+                <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{strategyGuides.length} {strategyGuides.length === 1 ? 'guide' : 'guides'}</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {strategyGuides.map((guide) => (
+                  <GuideCard key={guide.slug} {...guide} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Best of */}
           <section>

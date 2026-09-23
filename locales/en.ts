@@ -516,6 +516,17 @@ const en = {
         casual: 'Casual',
         threeLevels: '3 levels',
       },
+      sections: {
+        rules: '{{gameName}} rules',
+        scoring: '{{gameName}} scoring',
+        modes: 'Modes and settings',
+        strategy: '{{gameName}} strategy',
+        mistakes: 'Common mistakes',
+        multiplayer: 'Playing together online',
+        audience: 'Who it suits',
+        history: 'Where {{gameName}} comes from',
+        faq: 'Questions about {{gameName}} on Boardly',
+      },
     },
     yahtzee: {
       name: 'Yahtzee',
@@ -535,22 +546,222 @@ const en = {
         title: 'Play Yahtzee Online',
         heroDesc: 'Roll five dice, choose your best scoring categories, and play a full game with friends or bots right in the browser.',
         introTitle: 'What is Yahtzee?',
-        intro0: 'Yahtzee is a classic dice game where players roll five dice and try to score in 15 different categories, from three-of-a-kind and full house to the big five-of-a-kind Yahtzee.',
-        intro1: 'On Boardly, you can play online with friends, add bots when you need extra players, or practice solo. Everything runs in the browser, so a shared link is enough to start.',
+        intro0: 'Yahtzee is a dice game for one to four players: roll five dice, keep the ones that help and write the result into one box of your scorecard. A new lobby opens in short mode with nine categories, classic mode plays all fifteen, and the highest total wins.',
+        intro1: 'The card is Yatzy-style, with the Scandinavian One Pair and Two Pairs rows, while Full House, both straights and Yahtzee pay a fixed 25, 30, 40 and 50 points.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Start a room from the lobby page or enter a code your friend shared.',
+        step1Desc: 'Start a room from the lobbies page or enter a friend\'s four-digit code. The host sets the mode, the seats and the turn timer.',
         step2Title: 'Roll the dice',
-        step2Desc: 'Roll up to three times on your turn. Keep the dice you like and re-roll the rest.',
+        step2Desc: 'You get up to three rolls a turn. Tap the dice you want to hold and throw the rest again.',
         step3Title: 'Pick a score',
-        step3Desc: 'Choose one open scoring category after your roll. Each category can be used once.',
+        step3Desc: 'After at least one roll, pick an empty box. Once filled, it stays closed for the rest of the game.',
         step4Title: 'Finish the scorecard',
-        step4Desc: 'When every category is filled, the player with the highest total wins.',
+        step4Desc: 'Play goes around until every box is filled. Then the highest total takes the game.',
         benefitsTitle: 'Why play Yahtzee on Boardly?',
         benefit1: 'Live multiplayer with turns updating for everyone.',
         benefit2: 'Bots are available when friends are offline.',
         benefit3: 'Works on phone, tablet, and desktop.',
         benefit4: 'Free to play as a guest.',
-        originNote: 'Yahtzee was the first game on Boardly. It started as a school assignment from my teacher Tarald, and became the push to finally build the site I had been planning for a long time.',
+        rules: {
+          rollThreeTimes: 'Each turn allows up to three rolls, and between rolls you choose which dice to hold.',
+          rollBeforeScoring: 'At least one roll is required before scoring, but you may stop after the first or the second.',
+          mustScore: 'Every turn ends with a score. If nothing fits, a zero in an open box is legal.',
+          oneUsePerRow: 'Each box takes one result per game, zero included, and cannot be changed afterwards.',
+          yahtzeeOnce: 'Yahtzee pays 50 once. A second five of a kind earns no bonus and has to go in another row.',
+          upperBonus: 'In classic mode, 63 or more in Ones to Sixes adds 35 points. Short mode has no bonus.',
+          gameEnd: 'The game ends when every scorecard is full, and the highest total, bonus included, wins.',
+          timerExpiry: 'If the turn timer runs out, the game plays out your turn and scores it for you.',
+        },
+        scoring: {
+          upperNote: 'Classic mode only: 63 or more across these rows adds a 35-point bonus. Three of each face is exactly 63.',
+          lowerNote: 'Short mode plays only these nine rows.',
+          rows: {
+            ones: {
+              value: 'Target 3',
+              rule: 'All ones, added up.',
+            },
+            twos: {
+              value: 'Target 6',
+              rule: 'All twos, added up.',
+            },
+            threes: {
+              value: 'Target 9',
+              rule: 'All threes, added up.',
+            },
+            fours: {
+              value: 'Target 12',
+              rule: 'All fours, added up.',
+            },
+            fives: {
+              value: 'Target 15',
+              rule: 'All fives, added up.',
+            },
+            sixes: {
+              value: 'Target 18',
+              rule: 'All sixes, added up.',
+            },
+            onePair: {
+              value: 'Up to 12',
+              rule: 'Your highest pair, both dice added.',
+            },
+            twoPairs: {
+              value: 'Up to 22',
+              rule: 'Two different pairs added; four alike does not count.',
+            },
+            threeOfKind: {
+              value: 'Sum of all dice',
+              rule: 'Three or more alike, all five dice counted.',
+            },
+            fourOfKind: {
+              value: 'Sum of all dice',
+              rule: 'Four or more alike, all five dice counted.',
+            },
+            fullHouse: {
+              value: '25 points',
+              rule: 'Exactly three of one value and two of another; five alike is not a full house.',
+            },
+            smallStraight: {
+              value: '30 points',
+              rule: 'Four in a row: 1-2-3-4, 2-3-4-5 or 3-4-5-6.',
+            },
+            largeStraight: {
+              value: '40 points',
+              rule: 'Five in a row: 1-2-3-4-5 or 2-3-4-5-6.',
+            },
+            yahtzee: {
+              value: '50 points',
+              rule: 'Five of a kind, scored once.',
+            },
+            chance: {
+              value: 'Sum of all dice',
+              rule: 'Any five dice, no condition.',
+            },
+          },
+        },
+        modes: {
+          short: {
+            title: 'Short mode, the default',
+            desc: 'Nine turns each, lower section only – about 40 percent shorter than a full card.',
+          },
+          classic: {
+            title: 'Classic mode',
+            desc: 'All fifteen rows, with the number rows and the 35-point bonus in play.',
+          },
+          timer: {
+            title: 'Turn timer',
+            desc: '30, 60, 90 or 120 seconds a turn; 60 unless the host changes it.',
+          },
+          bots: {
+            title: 'Bots',
+            desc: 'Dice Rookie, Dice Strategist and Dice Oracle take empty seats or play you one on one.',
+          },
+        },
+        strategy: {
+          protectBonus: {
+            title: 'Play for the bonus in classic',
+            desc: 'Three of each face reaches 63, and a fourth five or six covers a weak row elsewhere.',
+          },
+          onePlanPerTurn: {
+            title: 'Keep dice for one plan',
+            desc: 'After the first roll, pick one target and re-roll every die that does not serve it.',
+          },
+          chaseYahtzeeEarly: {
+            title: 'Chase fifty with rolls to spare',
+            desc: 'Four alike after the first roll, or three with two rolls left, is worth the push.',
+          },
+          afterYahtzee: {
+            title: 'Once the Yahtzee box is full',
+            desc: 'Put a further five of a kind in Four of a Kind or Chance for the full sum.',
+          },
+          largeBeforeSmall: {
+            title: 'Large straight first',
+            desc: 'Four in a row gives two shots at 40, and the same dice still fit the 30-point small one.',
+          },
+          fullHouseMidGame: {
+            title: 'Full House is steady',
+            desc: 'Hold two pairs and re-roll the odd die: three-and-two turns up often.',
+          },
+          lockFourOfKind: {
+            title: 'Bank Four of a Kind',
+            desc: 'Four high dice already make a strong sum, so roll on only while Yahtzee is open.',
+          },
+          keepChance: {
+            title: 'Save Chance',
+            desc: 'It accepts any roll, which makes it the safety net for a turn that fits nowhere.',
+          },
+        },
+        mistakes: {
+          lastRollGamble: {
+            title: 'Gambling on the last roll',
+            desc: 'Three alike with one roll left seldom becomes five; take the points on the table.',
+          },
+          zeroInBigBox: {
+            title: 'Zeroing a big box',
+            desc: 'A zero costs little in Ones or One Pair, and forty or fifty in Large Straight or Yahtzee.',
+          },
+          losingBonusPace: {
+            title: 'Losing the bonus pace',
+            desc: 'A few rows one die short can miss 63 by a point and cost all 35.',
+          },
+          scoringTheRollNotTheCard: {
+            title: 'Scoring the roll, not the card',
+            desc: 'The biggest number this turn may burn a row you will need later.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'With friends',
+            desc: 'Share the code or the link, and every roll and score shows on each screen live.',
+          },
+          botsAndSolo: {
+            title: 'Bots and solo',
+            desc: 'Give an empty seat to a bot, or use Play vs Bot above for a one-on-one game.',
+          },
+          turnTimer: {
+            title: 'The turn timer',
+            desc: 'An idle turn is scored when time runs out, and a player who leaves drops out of the rotation.',
+          },
+          guestNoDownload: {
+            title: 'No account, no install',
+            desc: 'A guest name is enough, in any browser on a phone, tablet or computer.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Yahtzee suits families, mixed ages and friends who rarely play board games: the rules take a minute, yet planning for the bonus still rewards regulars.',
+        },
+        history: {
+          americanAndNordic: 'Yahtzee was launched in the United States in 1956 by the toy maker Edwin S. Lowe and is now a Hasbro trademark. Boardly\'s pair rows come from Yatzy, its Nordic cousin.',
+          firstOnBoardly: 'It was also the first game on Boardly, begun as a school assignment from my teacher Tarald – the push to finally build a site I had planned for years.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Yahtzee on Boardly free?',
+            a: 'Yes. Both modes, the bots and private lobbies cost nothing; Premium only adds cosmetic extras such as a custom avatar photo and never changes the game.',
+          },
+          isThereABot: {
+            q: 'Is there a Yahtzee bot?',
+            a: 'Yes, at three levels: Dice Rookie, Dice Strategist and Dice Oracle. Start a solo game with Play vs Bot, or add bots to your own lobby.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the turn timer runs out?',
+            a: 'Your turn is finished for you: one roll if you had not rolled yet, then the open category that pays most, or a zero in the cheapest box.',
+          },
+          yatzyOrYahtzee: {
+            q: 'Is this Yatzy or Yahtzee?',
+            a: 'Both. The pair rows come from Scandinavian Yatzy, while the straights, Full House and five of a kind pay the fixed American amounts.',
+          },
+          needAccount: {
+            q: 'Do I need an account?',
+            a: 'No. A guest name lets you create or join a lobby and play bots. A guest who has played is kept for 90 days of inactivity; sign up to keep your profile for good.',
+          },
+          worksOnPhone: {
+            q: 'Does it work on a phone?',
+            a: 'Yes. Tap a die to hold it and a category to score; on small screens the dice and the scorecard sit on separate tabs.',
+          },
+          howManyPlayers: {
+            q: 'How many people can play?',
+            a: 'One to four per game, with friends, bots or both filling the seats. More players means a longer game.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

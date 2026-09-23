@@ -104,10 +104,11 @@ export function buildGameMetadata(id: string, options?: { index?: boolean }): Me
 }
 
 /**
- * VideoGame, BreadcrumbList and the page's one FAQ entry. The FAQ carries the
- * same question and answer the page renders above the fold and nothing else:
+ * VideoGame, BreadcrumbList and the page's FAQ. The FAQ carries the question
+ * and answer the page renders above the fold, then every entry of the
+ * catalog's `faq` – which the page renders under `#faq` – and nothing else:
  * structured data whose answer a visitor cannot find on the page is a
- * violation, and a game page is not the place for a question list (#923).
+ * violation (#923).
  */
 export function buildGameJsonLd(id: string): Record<string, unknown>[] {
   const { seo, path, name, minPlayers, maxPlayers, supportsBots } = resolveGame(id)
@@ -145,13 +146,15 @@ export function buildGameJsonLd(id: string): Record<string, unknown>[] {
     {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: [
-        {
+      // The direct answer first, then the page's own FAQ section – the same
+      // entries in the same order the visitor reads them.
+      mainEntity: [{ questionKey: seo.questionKey, answerKey: seo.answerKey }, ...(seo.faq ?? [])].map(
+        ({ questionKey, answerKey }) => ({
           '@type': 'Question',
-          name: englishText(seo.questionKey),
-          acceptedAnswer: { '@type': 'Answer', text: englishText(seo.answerKey) },
-        },
-      ],
+          name: englishText(questionKey),
+          acceptedAnswer: { '@type': 'Answer', text: englishText(answerKey) },
+        })
+      ),
     },
   ]
 }

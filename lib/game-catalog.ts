@@ -74,6 +74,19 @@ export type GameSeo = {
    * shipped until #923.
    */
   answerKey: TranslationKeys
+  /**
+   * The product questions the page answers under its own `<section id="faq">`
+   * – is it free, is there a bot, what the timer does – and the rest of the
+   * FAQPage JSON-LD after the direct answer. One array drives both, so #923's
+   * rule (no schema answer a visitor cannot see) holds by construction. The
+   * how-to guide keeps the rules questions; these two sets stay disjoint.
+   */
+  faq?: GameFaqEntry[]
+}
+
+export type GameFaqEntry = {
+  questionKey: TranslationKeys
+  answerKey: TranslationKeys
 }
 
 type GameCatalogEntryBase = {
@@ -343,6 +356,13 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
         'yatzy online',
         'free yahtzee game',
         'dice game online',
+        // From the Yahtzee strategy guide, folded into this page by #1077.
+        'yahtzee strategy',
+        'how to win at yahtzee',
+        'yahtzee tips',
+        'yahtzee scoring strategy',
+        'best yahtzee strategy',
+        'yahtzee category order',
       ],
       genre: [
         'Dice Game',
@@ -352,6 +372,16 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Dice game for one to four players. Roll five dice up to three times a turn, then commit the result to a scoring category: short mode fills nine categories, classic fifteen.',
       questionKey: 'games.yahtzee.seo.question',
       answerKey: 'games.yahtzee.seo.answer',
+      // Product questions only; the how-to guide keeps the rules questions (#1077).
+      faq: [
+        { questionKey: 'games.yahtzee.detail.faq.isItFree.q', answerKey: 'games.yahtzee.detail.faq.isItFree.a' },
+        { questionKey: 'games.yahtzee.detail.faq.isThereABot.q', answerKey: 'games.yahtzee.detail.faq.isThereABot.a' },
+        { questionKey: 'games.yahtzee.detail.faq.timerRunsOut.q', answerKey: 'games.yahtzee.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.q', answerKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.a' },
+        { questionKey: 'games.yahtzee.detail.faq.needAccount.q', answerKey: 'games.yahtzee.detail.faq.needAccount.a' },
+        { questionKey: 'games.yahtzee.detail.faq.worksOnPhone.q', answerKey: 'games.yahtzee.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.yahtzee.detail.faq.howManyPlayers.q', answerKey: 'games.yahtzee.detail.faq.howManyPlayers.a' },
+      ],
     },
     availability: 'available',
     route: '/games/yahtzee/lobbies',

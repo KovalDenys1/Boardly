@@ -61,7 +61,7 @@ export default function ConnectFourStrategyGuide() {
         cta={{ href: '/games/connect-four/lobbies', label: 'Play Connect Four Now', detail: 'Put these strategies to the test.' }}
         related={[
           { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online — Full Rules' },
-          { href: '/guides/yahtzee-strategy-guide', label: 'Yahtzee Strategy Guide — How to Win More Often' },
+          { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
         ]}

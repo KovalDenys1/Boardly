@@ -24,7 +24,8 @@ export const ROUTE_UPDATED = {
   '/leaderboard': '2026-09-15',
   '/about': '2026-09-15',
   '/premium': '2026-09-15',
-  '/games/yahtzee': '2026-09-15',
+  // #1077 expanded the page and folded the strategy guide into it.
+  '/games/yahtzee': '2026-09-23',
   '/games/spy': '2026-09-15',
   '/games/tic-tac-toe': '2026-09-15',
   '/games/memory': '2026-09-15',

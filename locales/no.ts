@@ -516,6 +516,17 @@ const no = {
         casual: 'Uformelt',
         threeLevels: '3 nivåer',
       },
+      sections: {
+        rules: 'Regler for {{gameName}}',
+        scoring: 'Poeng i {{gameName}}',
+        modes: 'Moduser og innstillinger',
+        strategy: 'Strategi i {{gameName}}',
+        mistakes: 'Vanlige feil',
+        multiplayer: 'Spill sammen på nett',
+        audience: 'Hvem det passer for',
+        history: 'Hvor {{gameName}} kommer fra',
+        faq: 'Spørsmål om {{gameName}} på Boardly',
+      },
     },
     yahtzee: {
       name: 'Yatzy',
@@ -535,22 +546,222 @@ const no = {
         title: 'Spill Yatzy online',
         heroDesc: 'Rull fem terninger, velg de beste kategoriene og spill en full runde med venner eller roboter rett i nettleseren.',
         introTitle: 'Hva er Yatzy?',
-        intro0: 'Yatzy er et klassisk terningspill der spillerne ruller fem terninger og prøver å score i 15 ulike kategorier, fra tre like og fullt hus til den store fem-av-ett — Yatzy.',
-        intro1: 'På Boardly kan du spille online med venner, legge til roboter når du mangler spillere, eller øve alene. Alt kjører i nettleseren, så en delt lenke er nok for å starte.',
+        intro0: 'Yatzy er et terningspill for én til fire spillere: kast fem terninger, behold dem som hjelper, og før resultatet inn i én rute på poenglisten. En ny lobby starter i kort modus med ni kategorier, klassisk modus bruker alle femten, og høyest sum vinner.',
+        intro1: 'Poenglisten har de skandinaviske radene Ett par og To par, mens Hus, begge straightene og Yatzy gir faste 25, 30, 40 og 50 poeng.',
         step1Title: 'Opprett eller bli med i et lobby',
-        step1Desc: 'Åpne et rom fra lobbysiden eller skriv inn koden fra en venn.',
+        step1Desc: 'Åpne et rom fra lobbysiden eller skriv inn den firesifrede koden fra en venn. Verten velger modus, antall plasser og turtid.',
         step2Title: 'Rull terningene',
-        step2Desc: 'Opptil tre kast per tur. Behold terningene du liker og rull resten på nytt.',
+        step2Desc: 'Du har opptil tre kast per tur. Trykk på terningene du vil beholde, og kast resten på nytt.',
         step3Title: 'Velg en kategori',
-        step3Desc: 'Velg én ledig kategori etter kastet. Hver kategori kan bare brukes én gang.',
+        step3Desc: 'Etter minst ett kast velger du en tom rute. Når den er fylt, er den stengt resten av spillet.',
         step4Title: 'Fyll ut poenglisten',
-        step4Desc: 'Når alle kategorier er fylt, vinner spilleren med høyest totalscore.',
+        step4Desc: 'Turen går rundt til alle ruter er fylt. Da vinner den høyeste summen.',
         benefitsTitle: 'Hvorfor spille Yatzy på Boardly?',
         benefit1: 'Live-flerspiller der turer oppdateres for alle.',
         benefit2: 'Roboter tilgjengelig når venner er offline.',
         benefit3: 'Fungerer på mobil, nettbrett og datamaskin.',
         benefit4: 'Gratis å spille som gjest.',
-        originNote: 'Yahtzee var det første spillet på Boardly. Det startet som en skoleoppgave fra læreren min Tarald, og ble startskuddet for endelig å bygge siden jeg lenge hadde planlagt.',
+        rules: {
+          rollThreeTimes: 'Hver tur gir opptil tre kast, og mellom kastene velger du hvilke terninger du beholder.',
+          rollBeforeScoring: 'Du må kaste minst én gang før du fører poeng, men kan stoppe etter første eller andre kast.',
+          mustScore: 'Hver tur ender med en føring. Passer ingenting, er det lov å skrive null i en ledig rute.',
+          oneUsePerRow: 'Hver rute tar ett resultat per spill, null medregnet, og kan ikke endres etterpå.',
+          yahtzeeOnce: 'Yatzy gir 50 poeng én gang. Fem like en gang til gir ingen bonus og må føres i en annen rad.',
+          upperBonus: 'I klassisk modus gir 63 eller mer fra Enere til Seksere 35 ekstra poeng. Kort modus har ingen bonus.',
+          gameEnd: 'Spillet er over når alle poenglister er fulle, og høyest sum, bonus medregnet, vinner.',
+          timerExpiry: 'Går turtiden ut, spiller spillet ferdig turen din og fører poengene for deg.',
+        },
+        scoring: {
+          upperNote: 'Bare i klassisk modus: 63 eller mer over disse radene gir 35 bonuspoeng. Tre av hver verdi gir nøyaktig 63.',
+          lowerNote: 'Kort modus bruker bare disse ni radene.',
+          rows: {
+            ones: {
+              value: 'Mål 3',
+              rule: 'Alle enere, lagt sammen.',
+            },
+            twos: {
+              value: 'Mål 6',
+              rule: 'Alle toere, lagt sammen.',
+            },
+            threes: {
+              value: 'Mål 9',
+              rule: 'Alle treere, lagt sammen.',
+            },
+            fours: {
+              value: 'Mål 12',
+              rule: 'Alle firere, lagt sammen.',
+            },
+            fives: {
+              value: 'Mål 15',
+              rule: 'Alle femmere, lagt sammen.',
+            },
+            sixes: {
+              value: 'Mål 18',
+              rule: 'Alle seksere, lagt sammen.',
+            },
+            onePair: {
+              value: 'Opptil 12',
+              rule: 'Ditt høyeste par, begge terningene lagt sammen.',
+            },
+            twoPairs: {
+              value: 'Opptil 22',
+              rule: 'To ulike par lagt sammen; fire like teller ikke.',
+            },
+            threeOfKind: {
+              value: 'Sum av alle terninger',
+              rule: 'Tre eller flere like, alle fem terningene telles.',
+            },
+            fourOfKind: {
+              value: 'Sum av alle terninger',
+              rule: 'Fire eller flere like, alle fem terningene telles.',
+            },
+            fullHouse: {
+              value: '25 poeng',
+              rule: 'Nøyaktig tre av én verdi og to av en annen; fem like er ikke hus.',
+            },
+            smallStraight: {
+              value: '30 poeng',
+              rule: 'Fire på rad: 1-2-3-4, 2-3-4-5 eller 3-4-5-6.',
+            },
+            largeStraight: {
+              value: '40 poeng',
+              rule: 'Fem på rad: 1-2-3-4-5 eller 2-3-4-5-6.',
+            },
+            yahtzee: {
+              value: '50 poeng',
+              rule: 'Fem like, føres én gang.',
+            },
+            chance: {
+              value: 'Sum av alle terninger',
+              rule: 'Hvilke som helst fem terninger, uten krav.',
+            },
+          },
+        },
+        modes: {
+          short: {
+            title: 'Kort modus, standard',
+            desc: 'Ni turer hver, bare nedre del – omtrent 40 prosent kortere enn en full poengliste.',
+          },
+          classic: {
+            title: 'Klassisk modus',
+            desc: 'Alle femten radene, med tallradene og bonusen på 35 poeng.',
+          },
+          timer: {
+            title: 'Turtid',
+            desc: '30, 60, 90 eller 120 sekunder per tur; 60 med mindre verten endrer det.',
+          },
+          bots: {
+            title: 'Roboter',
+            desc: 'Dice Rookie, Dice Strategist og Dice Oracle tar ledige plasser eller spiller én mot én med deg.',
+          },
+        },
+        strategy: {
+          protectBonus: {
+            title: 'Spill for bonusen i klassisk',
+            desc: 'Tre av hver verdi gir 63, og en fjerde femmer eller sekser dekker en svak rad et annet sted.',
+          },
+          onePlanPerTurn: {
+            title: 'Behold terninger for én plan',
+            desc: 'Etter første kast velger du ett mål og kaster om alle terninger som ikke hjelper det.',
+          },
+          chaseYahtzeeEarly: {
+            title: 'Jakt på femti med kast til gode',
+            desc: 'Fire like etter første kast, eller tre like med to kast igjen, er verdt forsøket.',
+          },
+          afterYahtzee: {
+            title: 'Når Yatzy-ruten er fylt',
+            desc: 'Før nye fem like i Fire like eller Sjanse for å få hele summen.',
+          },
+          largeBeforeSmall: {
+            title: 'Stor straight først',
+            desc: 'Fire på rad gir to forsøk på 40, og de samme terningene passer fortsatt i liten straight til 30.',
+          },
+          fullHouseMidGame: {
+            title: 'Hus gir jevne poeng',
+            desc: 'Behold to par og kast den siste terningen: tre og to dukker ofte opp.',
+          },
+          lockFourOfKind: {
+            title: 'Ta Fire like',
+            desc: 'Fire høye terninger er allerede en god sum, så kast videre bare mens Yatzy er ledig.',
+          },
+          keepChance: {
+            title: 'Spar Sjanse',
+            desc: 'Den tar ethvert kast og er derfor sikkerhetsnettet for en tur der ingenting passer.',
+          },
+        },
+        mistakes: {
+          lastRollGamble: {
+            title: 'Å satse på siste kast',
+            desc: 'Tre like med ett kast igjen blir sjelden fem; ta poengene som ligger på bordet.',
+          },
+          zeroInBigBox: {
+            title: 'Null i en stor rute',
+            desc: 'En null koster lite i Enere eller Ett par, og førti eller femti i Stor straight eller Yatzy.',
+          },
+          losingBonusPace: {
+            title: 'Å miste bonustempoet',
+            desc: 'Noen rader med én terning for lite kan bomme på 63 med ett poeng og koste alle 35.',
+          },
+          scoringTheRollNotTheCard: {
+            title: 'Å føre kastet, ikke listen',
+            desc: 'Den største summen denne turen kan bruke opp en rad du trenger senere.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Med venner',
+            desc: 'Del koden eller lenken, så vises hvert kast og hver føring live på alles skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Roboter og alene',
+            desc: 'Gi en ledig plass til en robot, eller bruk Spill mot bot over for et spill én mot én.',
+          },
+          turnTimer: {
+            title: 'Turtiden',
+            desc: 'En tur uten handling føres når tiden går ut, og en spiller som forlater spillet, tas ut av rekkefølgen.',
+          },
+          guestNoDownload: {
+            title: 'Ingen konto, ingen installasjon',
+            desc: 'Et gjestenavn holder, i hvilken som helst nettleser på mobil, nettbrett eller datamaskin.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Yatzy passer for familier, blandede aldre og venner som sjelden spiller brettspill: reglene tar et minutt, men planlegging rundt bonusen lønner seg likevel for de faste.',
+        },
+        history: {
+          americanAndNordic: 'Yahtzee ble lansert i USA i 1956 av leketøysprodusenten Edwin S. Lowe og er i dag et varemerke som tilhører Hasbro. Parradene på Boardly kommer fra Yatzy, den nordiske slektningen.',
+          firstOnBoardly: 'Det var også det første spillet på Boardly, startet som en skoleoppgave fra læreren min Tarald, og det ble dyttet som fikk meg til endelig å bygge en side jeg hadde planlagt i årevis.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Yatzy på Boardly gratis?',
+            a: 'Ja. Begge modusene, robotene og private lobbyer koster ingenting; Premium gir bare kosmetiske ekstra som eget profilbilde og endrer aldri selve spillet.',
+          },
+          isThereABot: {
+            q: 'Finnes det en Yatzy-robot?',
+            a: 'Ja, på tre nivåer: Dice Rookie, Dice Strategist og Dice Oracle. Start et spill alene med Spill mot bot, eller legg roboter til i din egen lobby.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når turtiden går ut?',
+            a: 'Turen fullføres for deg: ett kast hvis du ikke hadde kastet ennå, deretter den ledige kategorien som gir mest, eller null i den billigste ruten.',
+          },
+          yatzyOrYahtzee: {
+            q: 'Er dette Yatzy eller Yahtzee?',
+            a: 'Begge deler. Parradene kommer fra skandinavisk Yatzy, mens straightene, Hus og fem like gir de faste poengene fra amerikansk Yahtzee.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto?',
+            a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot roboter. En gjest som har spilt, beholdes i 90 dager uten aktivitet; registrer deg for å beholde profilen for alltid.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer det på mobil?',
+            a: 'Ja. Trykk på en terning for å holde den og på en kategori for å føre poeng; på små skjermer ligger terningene og poenglisten i hver sin fane.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange kan spille?',
+            a: 'Én til fire per spill, med venner, roboter eller begge deler på plassene. Flere spillere gir et lengre spill.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',
