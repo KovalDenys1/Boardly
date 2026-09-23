@@ -30,6 +30,10 @@ interface SketchAndGuessGameBoardProps {
   // has started and not submitted has to be owned above them – see `draft`.
   draft?: SketchAndGuessDraft
   onDraftChange?: (next: SketchAndGuessDraft) => void
+  /** Drawer only: every change to the stroke in progress, to stream it live. */
+  onLiveStroke?: (stroke: Stroke | null) => void
+  /** Everyone else: the drawing as it is being drawn, for the current round. */
+  liveView?: SketchLiveView | null
 }
 
 // ─── Drawing content format ────────────────────────────────────────────────
@@ -46,6 +50,18 @@ export interface Stroke {
   color: string
   width: number
   points: StrokePoint[]
+}
+
+/**
+ * What the other players see while the drawer is still drawing: the finished
+ * strokes plus the one under the drawer's finger. It travels over the lobby's
+ * realtime channel, never through the server, and the drawing that counts is
+ * still the one `submit-drawing` stores.
+ */
+export interface SketchLiveView {
+  round: number
+  strokes: Stroke[]
+  live: Stroke | null
 }
 
 interface DrawingContent {
@@ -124,12 +140,18 @@ function parseDrawingContent(content: string | null): DrawingContent | null {
 function SketchCanvas({
   strokes,
   onStrokesChange,
+  onLiveStroke,
+  liveStroke = null,
   interactive,
   activeColor,
   activeWidth,
 }: {
   strokes: Stroke[]
   onStrokesChange?: (strokes: Stroke[]) => void
+  /** The stroke being drawn right now, on every point; null when it ends. */
+  onLiveStroke?: (stroke: Stroke | null) => void
+  /** Someone else's stroke in progress, painted on top in read-only mode. */
+  liveStroke?: Stroke | null
   interactive: boolean
   activeColor?: string
   activeWidth?: number
@@ -192,8 +214,8 @@ function SketchCanvas({
   }, [])
 
   useEffect(() => {
-    redraw()
-  }, [redraw])
+    redraw(liveStroke)
+  }, [redraw, liveStroke])
 
   const getLogicalPoint = useCallback((e: React.PointerEvent<HTMLCanvasElement>): StrokePoint => {
     const canvas = canvasRef.current
@@ -222,8 +244,9 @@ function SketchCanvas({
       drawingRef.current = true
       totalPointsRef.current += 1
       redraw(stroke)
+      onLiveStroke?.(stroke)
     },
-    [interactive, onStrokesChange, activeColor, activeWidth, getLogicalPoint, redraw]
+    [interactive, onStrokesChange, onLiveStroke, activeColor, activeWidth, getLogicalPoint, redraw]
   )
 
   const handlePointerMove = useCallback(
@@ -242,8 +265,9 @@ function SketchCanvas({
       lastPointRef.current = point
       totalPointsRef.current += 1
       redraw(currentStrokeRef.current)
+      onLiveStroke?.(currentStrokeRef.current)
     },
-    [getLogicalPoint, redraw]
+    [getLogicalPoint, redraw, onLiveStroke]
   )
 
   const finishStroke = useCallback(() => {
@@ -257,8 +281,9 @@ function SketchCanvas({
     const finished = currentStrokeRef.current
     currentStrokeRef.current = null
     lastPointRef.current = null
+    onLiveStroke?.(null)
     onStrokesChange([...strokes, finished])
-  }, [onStrokesChange, strokes])
+  }, [onStrokesChange, onLiveStroke, strokes])
 
   return (
     <div className="sketch-canvas-wrap">
@@ -284,12 +309,14 @@ function DrawerCanvasView({
   draft,
   onDraftChange,
   onSubmit,
+  onLiveStroke,
   isSubmitting,
   t,
 }: {
   prompt: string
   draft: SketchAndGuessDraft
   onDraftChange: (patch: Partial<SketchAndGuessDraft>) => void
+  onLiveStroke?: (stroke: Stroke | null) => void
   onSubmit: (content: string) => Promise<void>
   isSubmitting: boolean
   t: TFn
@@ -321,7 +348,7 @@ function DrawerCanvasView({
         <p className="text-xl font-extrabold leading-tight text-bd-ink">{prompt}</p>
       </div>
 
-      <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} interactive activeColor={activeColor} activeWidth={activeWidth} />
+      <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} onLiveStroke={onLiveStroke} interactive activeColor={activeColor} activeWidth={activeWidth} />
 
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {BRUSH_COLORS.map((swatch) => (
@@ -392,10 +419,10 @@ function DrawerCanvasView({
 // A blank square rather than a bare icon on a tall empty card: the drawing is
 // about to appear exactly there, so the space is the frame for it, not a hole.
 
-function AwaitingDrawingView({ drawerName, t }: { drawerName: string; t: TFn }) {
+function AwaitingDrawingView({ drawerName, liveView, t }: { drawerName: string; liveView: SketchLiveView | null; t: TFn }) {
   return (
     <div className="sketch-phase">
-      <SketchCanvas strokes={[]} interactive={false} />
+      <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} />
       <p className="flex items-center justify-center gap-2 text-center text-sm font-semibold text-bd-ink-muted">
         <Icon name="pencil" size={16} tone="muted" />
         {t('games.guess_my_drawing.game.waitingForDrawer', { name: drawerName })}
@@ -651,6 +678,8 @@ export default function SketchAndGuessGameBoard({
   isSpectator = false,
   draft,
   onDraftChange,
+  onLiveStroke,
+  liveView = null,
 }: SketchAndGuessGameBoardProps) {
   const { t } = useTranslation()
 
@@ -711,11 +740,16 @@ export default function SketchAndGuessGameBoard({
         draft={activeDraft}
         onDraftChange={patchDraft}
         onSubmit={onSubmitDrawing}
+        onLiveStroke={onLiveStroke}
         isSubmitting={isSubmitting}
         t={t}
       />
     ) : (
-      <AwaitingDrawingView drawerName={drawerName} t={t} />
+      <AwaitingDrawingView
+        drawerName={drawerName}
+        liveView={liveView && liveView.round === gameData.currentRound ? liveView : null}
+        t={t}
+      />
     )
   }
 

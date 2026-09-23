@@ -17,6 +17,7 @@ const mockChannel: any = {
     return mockChannel
   }),
   subscribe: jest.fn(() => mockChannel),
+  send: jest.fn(),
 }
 
 jest.mock('next/navigation', () => ({
@@ -89,9 +90,22 @@ jest.mock('@/lib/analytics', () => ({
 // it undefined and every render threw "Element type is invalid".
 jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   __esModule: true,
-  default: ({ onSubmitGuess }: { onSubmitGuess: (guess: string) => void }) => (
-    <div data-testid="sketch-board">
+  default: ({
+    onSubmitGuess,
+    onLiveStroke,
+    liveView,
+  }: {
+    onSubmitGuess: (guess: string) => void
+    onLiveStroke?: (stroke: unknown) => void
+    liveView?: { strokes: unknown[]; live: unknown } | null
+  }) => (
+    <div
+      data-testid="sketch-board"
+      data-live-strokes={liveView ? String(liveView.strokes.length) : 'none'}
+      data-live-stroke={liveView?.live ? 'yes' : 'no'}
+    >
       <button onClick={() => onSubmitGuess('apple')}>guess</button>
+      <button onClick={() => onLiveStroke?.({ color: '#1F1B16', width: 3, points: [{ x: 1, y: 2 }] })}>draw</button>
     </div>
   ),
   SketchScoreRows: ({ players }: { players: Array<{ id: string; name: string }> }) => (
@@ -464,6 +478,76 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     expect(JSON.parse(String(rematchCalls[0][1]?.body))).toMatchObject({
       gameType: 'sketch_and_guess',
       lobbyId: 'lobby-1',
+    })
+  })
+  // The drawing phase used to show every guesser a blank square until the
+  // drawer submitted: nothing was streamed, so "watching someone draw" – the
+  // whole point of the phase – did not exist. Reported by Denys, 2026-09-24.
+  describe('live drawing', () => {
+    const stroke = { color: '#1F1B16', width: 3, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] }
+    const liveSends = () =>
+      mockChannel.send.mock.calls.map(([msg]) => msg).filter((msg) => msg.event === 'sketch-live')
+
+    it('paints what the drawer streams for this round onto the guesser board', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.phase = 'drawing'
+      })
+
+      await act(async () => {
+        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 1, drawerId: 'user-2', strokes: [stroke, stroke] } })
+        broadcastHandlers['sketch-live']({ payload: { kind: 'live', round: 1, drawerId: 'user-2', live: stroke } })
+      })
+
+      for (const board of screen.getAllByTestId('sketch-board')) {
+        expect(board.getAttribute('data-live-strokes')).toBe('2')
+        expect(board.getAttribute('data-live-stroke')).toBe('yes')
+      }
+    })
+
+    it('ignores a stream from anyone but the current drawer, or from another round', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.phase = 'drawing'
+      })
+
+      await act(async () => {
+        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 1, drawerId: 'user-3', strokes: [stroke] } })
+        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 2, drawerId: 'user-2', strokes: [stroke] } })
+      })
+
+      for (const board of screen.getAllByTestId('sketch-board')) {
+        expect(board.getAttribute('data-live-strokes')).toBe('none')
+      }
+    })
+
+    it('streams the drawer canvas: finished strokes at once, the stroke in progress throttled', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.currentDrawerId = 'user-1'
+        response.activeGame.state.data.phase = 'drawing'
+      })
+
+      expect(liveSends()[0]?.payload).toEqual({ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [] })
+
+      jest.useFakeTimers()
+      try {
+        fireEvent.click(screen.getAllByText('draw')[0])
+        fireEvent.click(screen.getAllByText('draw')[0])
+        expect(liveSends().filter((msg) => msg.payload.kind === 'live')).toHaveLength(0)
+        act(() => { jest.advanceTimersByTime(150) })
+        const live = liveSends().filter((msg) => msg.payload.kind === 'live')
+        expect(live).toHaveLength(1)
+        expect(live[0].payload).toMatchObject({ round: 1, drawerId: 'user-1', live: { points: [{ x: 1, y: 2 }] } })
+      } finally {
+        jest.useRealTimers()
+      }
+    })
+
+    it('sends nothing from a guesser', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.phase = 'drawing'
+      })
+      fireEvent.click(screen.getAllByText('draw')[0])
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(liveSends()).toHaveLength(0)
     })
   })
 })

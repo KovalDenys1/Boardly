@@ -45,7 +45,7 @@ jest.mock('@/lib/lobby-realtime-topic-client', () => ({
 jest.mock('@/lib/supabase-client', () => ({
   getSupabaseClient: jest.fn(() => ({
     channel: jest.fn(() => {
-      const channel: any = { on: jest.fn(() => channel), subscribe: jest.fn(() => channel) }
+      const channel: any = { on: jest.fn(() => channel), subscribe: jest.fn(() => channel), send: jest.fn() }
       return channel
     }),
     removeChannel: jest.fn().mockResolvedValue({}),
