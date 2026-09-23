@@ -448,6 +448,57 @@ describe('useBotTurn watchdog', () => {
     )
   })
 
+  it('waits for the previous bot request instead of dropping the next bot (#1084)', async () => {
+    // The previous bot's last commit is broadcast before its request answers, so
+    // the next bot shows up while that request is still open. Firing then used to
+    // be dropped as "already in progress" with the signature still armed, and the
+    // next bot sat until the turn timer's fallback.
+    let resolveFirst: (value: unknown) => void = () => {}
+    mockFetchWithGuest
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }) as any)
+      .mockResolvedValue({ ok: true, json: async () => ({}) } as any)
+    const threeSeatGame = {
+      id: 'game-123',
+      players: [
+        { userId: 'player-1', user: { bot: null } },
+        { userId: 'bot-1', user: { bot: { id: 'bot-1' } } },
+        { userId: 'bot-2', user: { bot: { id: 'bot-2' } } },
+      ],
+    }
+
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const { rerender } = renderHook(
+      ({ engine }) =>
+        useBotTurn({
+          game: threeSeatGame,
+          gameEngine: engine,
+          code: 'ABCD12',
+          isGameStarted: true,
+          gameType: 'tic_tac_toe',
+          reconcileWithServerSnapshot,
+        }),
+      { initialProps: { engine: makeBotEngine('bot-1', 1, 1000) as any } }
+    )
+
+    await advanceAndFlush(TTT_WRITE_MS)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+
+    // bot-2's turn arrives while bot-1's request is still open.
+    rerender({ engine: makeBotEngine('bot-2', 2, 2000) as any })
+    await advanceAndFlush(10)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveFirst({ ok: true, json: async () => ({}) })
+      await Promise.resolve()
+    })
+    await advanceAndFlush(300)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(2)
+    expect(mockFetchWithGuest.mock.calls[1][1]).toEqual(
+      expect.objectContaining({ body: JSON.stringify({ botUserId: 'bot-2', lobbyCode: 'ABCD12' }) })
+    )
+  })
+
   it('does not POST again after a 409 - it reconciles and lets the state decide (#1049)', async () => {
     // The 409 handler used to clear the refs and POST again two seconds later. By
     // then the bot had moved and the turn was back with the human, so the retry came

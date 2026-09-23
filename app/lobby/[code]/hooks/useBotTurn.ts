@@ -12,6 +12,8 @@ import {
 const MAX_BOT_RETRIES = 2
 const WATCHDOG_MS = 14_000
 const RETRY_DELAY_MS = 2_000
+/** How often an armed trigger re-checks while another bot's request is still open. */
+const BOT_BUSY_RECHECK_MS = 250
 
 interface GamePlayer {
   userId: string
@@ -364,6 +366,16 @@ export function useBotTurn({
 
     const fire = () => {
       armedTimerRef.current = null
+
+      // The previous bot's request is still open – its response and the
+      // broadcast of its last commit race, and the broadcast usually wins. Firing
+      // now would be dropped as "already in progress" while this signature stays
+      // armed, so the next bot sat until the turn timer's fallback: 30 s per hop
+      // in a Ludo game with three bots (#1084). Wait for the open request instead.
+      if (botTurnInProgress.current) {
+        armedTimerRef.current = setTimeout(fire, BOT_BUSY_RECHECK_MS)
+        return
+      }
 
       // Measured on localhost on 2026-09-20 in a Yahtzee game against an Easy
       // bot: the bot took the turn at t=13.5s, its `bot-action` events arrived
