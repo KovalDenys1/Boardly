@@ -638,6 +638,24 @@ const en = {
             },
           },
         },
+        modes: {
+          short: {
+            title: 'Short mode, the default',
+            desc: 'Nine turns each, lower section only – about 40 percent shorter than a full card.',
+          },
+          classic: {
+            title: 'Classic mode',
+            desc: 'All fifteen rows, with the number rows and the 35-point bonus in play.',
+          },
+          timer: {
+            title: 'Turn timer',
+            desc: '30, 60, 90 or 120 seconds a turn; 60 unless the host changes it.',
+          },
+          bots: {
+            title: 'Bots',
+            desc: 'Dice Rookie, Dice Strategist and Dice Oracle take empty seats or play you one on one.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

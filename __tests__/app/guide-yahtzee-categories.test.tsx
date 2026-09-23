@@ -11,6 +11,7 @@ import {
   normalizeYahtzeeMode,
   type YahtzeeCategory,
 } from '@/lib/yahtzee'
+import { getBotDisplayName, BOT_DIFFICULTIES } from '@/lib/bot-profiles'
 import en from '@/locales/en'
 
 // The guide layout ends with an ad slot and the site footer, which want a
@@ -182,5 +183,27 @@ describe('the Yahtzee scoring section against the engine (#1077)', () => {
   it('calls the lower section the short mode, and short mode nine rows', () => {
     expect([...SHORT_MODE_CATEGORIES].sort()).toEqual(ALL_CATEGORIES.slice(6).sort())
     expect(lowerNote).toMatch(new RegExp(`\\b${NUMBER_WORDS[SHORT_MODE_CATEGORIES.length]}\\b`))
+  })
+})
+
+// The modes cards describe the lobby create form, so they are read against it.
+describe('the Yahtzee modes section against the create form (#1077)', () => {
+  const config = getCatalogGames().find((game) => game.gameType === 'yahtzee')!.lobbyCreateConfig!
+  const { modes } = en.games.yahtzee.detail
+
+  it('offers every timer option the form does, and names its default', () => {
+    for (const seconds of config.turnTimer!.options) expect(modes.timer.desc).toMatch(new RegExp(`\\b${seconds}\\b`))
+    expect(modes.timer.desc).toMatch(new RegExp(`\\b${config.turnTimer!.default}\\b unless`))
+  })
+
+  it('calls short mode the default because the form does', () => {
+    expect(config.gameModes!.default).toBe('short')
+    expect(modes.short.title).toMatch(/default/i)
+  })
+
+  it('names the three bots by the names the lobby gives them', () => {
+    for (const difficulty of BOT_DIFFICULTIES) {
+      expect(modes.bots.desc).toContain(getBotDisplayName('yahtzee', difficulty))
+    }
   })
 })

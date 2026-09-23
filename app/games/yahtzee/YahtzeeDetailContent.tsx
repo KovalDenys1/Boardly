@@ -80,6 +80,12 @@ export default function YahtzeeDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.yahtzee.detail.modes.short.title'), desc: t('games.yahtzee.detail.modes.short.desc') },
+        { title: t('games.yahtzee.detail.modes.classic.title'), desc: t('games.yahtzee.detail.modes.classic.desc') },
+        { title: t('games.yahtzee.detail.modes.timer.title'), desc: t('games.yahtzee.detail.modes.timer.desc') },
+        { title: t('games.yahtzee.detail.modes.bots.title'), desc: t('games.yahtzee.detail.modes.bots.desc') },
+      ]}
       playVsBotGameType="yahtzee"
     />
   )

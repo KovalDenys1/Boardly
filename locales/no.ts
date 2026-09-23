@@ -638,6 +638,24 @@ const no = {
             },
           },
         },
+        modes: {
+          short: {
+            title: 'Kort modus, standard',
+            desc: 'Ni turer hver, bare nedre del – omtrent 40 prosent kortere enn en full poengliste.',
+          },
+          classic: {
+            title: 'Klassisk modus',
+            desc: 'Alle femten radene, med tallradene og bonusen på 35 poeng.',
+          },
+          timer: {
+            title: 'Turtid',
+            desc: '30, 60, 90 eller 120 sekunder per tur; 60 med mindre verten endrer det.',
+          },
+          bots: {
+            title: 'Roboter',
+            desc: 'Dice Rookie, Dice Strategist og Dice Oracle tar ledige plasser eller spiller én mot én med deg.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',
