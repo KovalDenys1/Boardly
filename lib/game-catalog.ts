@@ -526,6 +526,13 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
         'connect 4 with friends',
         'connect four 2 player',
         'connect four multiplayer',
+        // From the Connect Four strategy guide, folded into this page by #1090.
+        'connect four strategy',
+        'how to win connect four',
+        'connect four tips',
+        'connect four winning strategy',
+        'connect four tricks',
+        'best connect four moves',
       ],
       genre: [
         'Strategy',
@@ -535,6 +542,14 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Two-player strategy game on a 6-row, 7-column grid. Drop coloured discs into columns and be the first to connect four in a row, horizontally, vertically or diagonally.',
       questionKey: 'games.connect_four.seo.question',
       answerKey: 'games.connect_four.seo.answer',
+      faq: [
+        { questionKey: 'games.connect_four.detail.faq.isItFree.q', answerKey: 'games.connect_four.detail.faq.isItFree.a' },
+        { questionKey: 'games.connect_four.detail.faq.needAccount.q', answerKey: 'games.connect_four.detail.faq.needAccount.a' },
+        { questionKey: 'games.connect_four.detail.faq.worksOnPhone.q', answerKey: 'games.connect_four.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.connect_four.detail.faq.howManyPlayers.q', answerKey: 'games.connect_four.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.connect_four.detail.faq.canIUndo.q', answerKey: 'games.connect_four.detail.faq.canIUndo.a' },
+        { questionKey: 'games.connect_four.detail.faq.sameAsConnect4.q', answerKey: 'games.connect_four.detail.faq.sameAsConnect4.a' },
+      ],
     },
     availability: 'available',
     route: '/games/connect-four/lobbies',

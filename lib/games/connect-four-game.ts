@@ -174,8 +174,8 @@ export class ConnectFourGame extends GameEngine {
       gameData.pendingRequest = null
       gameData.winner = winnerDisc
       gameData.winningLine = null
+      this.recordRoundWin(winnerDisc)
       this.state.status = 'finished'
-      this.state.winner = this.state.players[winnerDisc === 1 ? 0 : 1]?.id
       return
     }
 
@@ -204,13 +204,8 @@ export class ConnectFourGame extends GameEngine {
     if (winningLine) {
       gameData.winner = gameData.currentDisc
       gameData.winningLine = winningLine
+      this.recordRoundWin(gameData.currentDisc)
       this.state.status = 'finished'
-      this.state.winner = this.state.players[gameData.currentDisc === 1 ? 0 : 1]?.id
-
-      const winnerPlayer = this.state.players[gameData.currentDisc === 1 ? 0 : 1]
-      const loserPlayer = this.state.players[gameData.currentDisc === 1 ? 1 : 0]
-      if (winnerPlayer) winnerPlayer.score = (winnerPlayer.score ?? 0) + 1
-      if (loserPlayer) loserPlayer.score = loserPlayer.score ?? 0
       return
     }
 
@@ -224,6 +219,19 @@ export class ConnectFourGame extends GameEngine {
     }
 
     gameData.currentDisc = gameData.currentDisc === 1 ? 2 : 1
+  }
+
+  /**
+   * Award a won round to the player holding `winnerDisc`. Every way a round
+   * can be won (four in a row, the opponent's clock running out) goes through
+   * here, so the scoreboard's `players[i].score` never misses one (#1093).
+   */
+  private recordRoundWin(winnerDisc: PlayerDisc) {
+    const winnerPlayer = this.state.players[winnerDisc === 1 ? 0 : 1]
+    const loserPlayer = this.state.players[winnerDisc === 1 ? 1 : 0]
+    this.state.winner = winnerPlayer?.id
+    if (winnerPlayer) winnerPlayer.score = (winnerPlayer.score ?? 0) + 1
+    if (loserPlayer) loserPlayer.score = loserPlayer.score ?? 0
   }
 
   checkWinCondition(): Player | null {

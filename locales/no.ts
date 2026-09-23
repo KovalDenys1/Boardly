@@ -493,10 +493,9 @@ const no = {
     startPlaying: 'Begynn å spille',
     noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
     stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
-    guideCallout: 'Ny i {{gameName}}? Les de fullstendige reglene og tipsene.',
+    guideCallout: 'Ny i {{gameName}}? Les reglene og hvordan du spiller.',
     screenshotAlt: 'En runde {{gameName}} i gang på Boardly',
     readGuide: 'Les guiden →',
-    readStrategyGuide: 'Les strategiguiden →',
     detail: {
       labels: {
         players: 'Spillere',
@@ -1095,21 +1094,151 @@ const no = {
         title: 'Spill Fire på rad online',
         heroDesc: 'En nettbasert versjon av det klassiske spillet. Inviter en venn, legg til en bot og slipp brikker i sanntid.',
         introTitle: 'Hva er Fire på rad?',
-        intro0: 'Fire på rad er et spill for to spillere på et 6×7 brett. Spillerne slipper fargebrikker i kolonner, og brikkene faller til den laveste ledige raden.',
-        intro1: 'Den første som kobler fire brikker på rad — vannrett, loddrett eller diagonalt — vinner.',
+        intro0: 'Fire på rad er et strategispill for to på et brett som er sju kolonner bredt og seks rader høyt. På din tur velger du en kolonne, ikke en rute, og brikken glir ned til den laveste ledige cellen.',
+        intro1: 'Den første som får fire brikker i sin egen farge på linje – vannrett, loddrett eller langs en av diagonalene – vinner runden. Fylles alle 42 cellene uten en linje, blir runden uavgjort.',
         step1Title: 'Opprett eller bli med i et lobby',
-        step1Desc: 'Åpne et rom og del koden med motstanderen din.',
+        step1Desc: 'Start et rom fra lobbysiden, eller skriv inn en venns firesifrede kode for å bli med. Verten velger turtiden når rommet opprettes.',
         step2Title: 'Velg venn eller bot',
-        step2Desc: 'Inviter en spiller eller legg til en bot.',
+        step2Desc: 'Send koden til én annen person, eller gi det andre setet til en bot. Botene finnes på lett, middels og vanskelig.',
         step3Title: 'Slipp brikken',
-        step3Desc: 'Klikk på en kolonne — brikken faller til den laveste ledige raden.',
+        step3Desc: 'Klikk eller trykk på en kolonne når det er din tur, og brikken faller så langt den kan. Cellen du vil ha, kan være utenfor rekkevidde til kolonnen under den er fylt.',
         step4Title: 'Koble fire for å vinne',
-        step4Desc: 'Få fire brikker på rad i en hvilken som helst retning før motstanderen.',
+        step4Desc: 'Fire på rad i en hvilken som helst retning vinner runden. Spill igjen tømmer brettet og beholder poengstillingen.',
         benefitsTitle: 'Hvorfor spille Fire på rad på Boardly?',
         benefit1: 'Sanntids flerspiller i nettleseren.',
         benefit2: 'Botstøtte for solopill.',
         benefit3: 'Spill igjen med ett klikk.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          alternateTurns: 'Spillerne bytter på, én brikke per tur, og verten begynner.',
+          gravity: 'En brikke faller alltid til den laveste ledige cellen i kolonnen du velger, og en full kolonne kan ikke velges.',
+          fourToWin: 'Fire av dine brikker på én sammenhengende rett linje vinner: vannrett, loddrett eller diagonalt i begge retninger.',
+          fullBoardDraw: 'Når alle 42 cellene er tatt og ingen har en linje, er runden uavgjort og ingen får poeng.',
+          seriesOpening: 'I en serie har verten første trekk i hver runde, og hver seier gir ett poeng på resultattavlen.',
+          timerForfeit: 'Går turklokken ut, hoppes ikke trekket over – runden går til motstanderen.',
+          undoConsent: 'Begge spillerne kan be om å angre siste trekk, og det angres bare hvis den andre siden sier ja.',
+        },
+        modes: {
+          turnClock: {
+            title: 'En klokke på hvert trekk',
+            desc: '30, 60, 90 eller 120 sekunder per trekk, med 60 som standard. Det finnes ikke noe valg uten tid, så selv et tregt parti holder farten.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Drop Rookie velger en tilfeldig ledig kolonne, Column Tactician tar et vinnertrekk eller blokkerer ditt, og Gravity Grandmaster regner seks trekk fremover.',
+          },
+          series: {
+            title: 'Runder og løpende poengsum',
+            desc: 'Spill igjen nullstiller brettet i samme lobby og beholder stillingen, så én kveld blir en kamp til så mange seire dere vil.',
+          },
+        },
+        strategy: {
+          openInTheMiddle: {
+            title: 'Åpne i midten',
+            desc: 'Den fjerde kolonnen inngår i flere mulige linjer enn noen annen. Begynner du, slipp brikken der; er du nummer to, svar rett ved siden av.',
+          },
+          edgesLate: {
+            title: 'Spar kantkolonnene',
+            desc: 'En ytterkolonne er med i bare noen få mulige firere. Bruk de første trekkene der linjene krysser, og hold kantene til avslutningen.',
+          },
+          twoThreats: {
+            title: 'Jobb mot to trusler',
+            desc: 'En stilling med to celler som hver ville fullført en firer, kan ikke stoppes med én brikke. Hver plan bør lede dit.',
+          },
+          threatsInDifferentColumns: {
+            title: 'Hold truslene fra hverandre',
+            desc: 'To trusler som trenger samme kolonne, kan møtes med én blokkering. Spre dem, så forsvaret trenger to trekk det ikke har.',
+          },
+          blockThatBuilds: {
+            title: 'Blokker med en brikke som bygger',
+            desc: 'Når du må stoppe en linje, velg blokkeringscellen som også forlenger en av dine egne. Rent forsvar gjør at du ligger ett trekk bak.',
+          },
+          steerTheirDisc: {
+            title: 'La blokkeringen deres jobbe for deg',
+            desc: 'En trussel de må svare på, bestemmer hvor neste brikke deres lander. Legg det opp slik at den brikken åpner cellen du trenger over.',
+          },
+          oddAndEvenRows: {
+            title: 'Tell radene under en trussel',
+            desc: 'En trussel blir først spillbar når cellene under den er fylt. Talt nedenfra favoriserer trusler på oddetallsrader som regel den som begynner, og partallsrader den andre.',
+          },
+          bothDiagonals: {
+            title: 'Sjekk begge diagonalene',
+            desc: 'Rader og kolonner er lette å se; en diagonal vokser over fire ulike kolonner. Se i begge retninger før hvert trekk.',
+          },
+          beatTheHardBot: {
+            title: 'Mot Gravity Grandmaster',
+            desc: 'Den vanskelige boten ser seks trekk fremover, så en felle som bare virker neste tur, biter ikke. Bygg trusler som lønner seg lenger frem.',
+          },
+        },
+        mistakes: {
+          openingTheCellAbove: {
+            title: 'Å åpne cellen over',
+            desc: 'Å slippe en brikke i en kolonne der neste brikke vinner for motstanderen, er det vanligste tapstrekket.',
+          },
+          onlyBlocking: {
+            title: 'Bare å blokkere',
+            desc: 'Den som aldri bygger, kan ikke vinne. Etter to rene blokkeringer på rad bør du se etter en egen trussel.',
+          },
+          towerInOneColumn: {
+            title: 'Å bygge et tårn',
+            desc: 'Å stable én kolonne tidlig fyller den fort og overlater cellene ved siden av til motstanderen.',
+          },
+          forgettingTheClock: {
+            title: 'Å glemme klokken',
+            desc: 'Et trekk som går ut på tid, taper hele runden. På 30 sekunder bør du bestemme kolonnen før de siste sekundene.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn på nett',
+            desc: 'Send den firesifrede koden eller lenken til lobbyen. Hver brikke dukker opp på begge skjermene idet den lander, uansett hvilken enhet dere bruker.',
+          },
+          botsAndSolo: {
+            title: 'Spill alene mot en bot',
+            desc: 'Bruk Spill mot bot over for et parti med én gang, eller legg en bot i det andre setet i din egen lobby.',
+          },
+          turnTimer: {
+            title: 'En klokke begge ser',
+            desc: 'Nedtellingen vises på begge skjermene, så ingen blir sittende og vente på en motstander som har gått fra.',
+          },
+          guestNoDownload: {
+            title: 'Ingenting å installere',
+            desc: 'Det kjører i hvilken som helst nettleser på mobil, nettbrett eller datamaskin, og et gjestenavn er alt du trenger for å sette deg ned.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Fire på rad passer for to som vil ha et raskt parti med en ekte avgjørelse i hvert trekk. Reglene får plass i én setning, en runde er over innen 21 brikker hver, og et barn kan slå en voksen som slutter å følge med.',
+        },
+        history: {
+          origin: 'Fire på rad ble utgitt av Milton Bradley i 1974 under navnet Connect Four og har siden blitt solgt under mange navn. Boardly bruker standardbrettet på sju ganger seks.',
+          solved: 'I 1988 viste James D. Allen og Victor Allis uavhengig av hverandre at den som begynner, kan tvinge frem seier med perfekt spill, med start i midtkolonnen. Ingen spiller 42 celler perfekt, og derfor avgjør strategien over fortsatt partiene.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Fire på rad på Boardly gratis?',
+            a: 'Ja. Partier mot venner, alle tre botnivåene og private lobbyer koster ingenting; Premium gir bare kosmetiske ekstra som eget profilbilde og endrer aldri spillet.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto for å spille?',
+            a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot botene. En gjest som har spilt, beholdes i 90 dager uten aktivitet; registrer deg for å beholde profilen for godt.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille Fire på rad på mobilen?',
+            a: 'Ja. Trykk på en kolonne for å slippe en brikke; brettet tilpasses skjermen, og spillet kjører i nettleseren uten app.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange spiller samtidig?',
+            a: 'Nøyaktig to per parti: du og en venn, eller du og en bot. Er dere tre eller fire, tar Yatzy og Hukommelse på Boardly større grupper.',
+          },
+          canIUndo: {
+            q: 'Kan jeg angre et trekk?',
+            a: 'Du kan be om det. Forespørselen går til motstanderen, og brikken tas bare ut igjen hvis de sier ja; en bot sier alltid ja.',
+          },
+          sameAsConnect4: {
+            q: 'Er dette det samme spillet som Connect 4?',
+            a: 'Ja. Fire på rad, Connect 4 og Connect Four er navn på ett og samme spill på det samme brettet på sju ganger seks, og reglene her er standardreglene.',
+          },
+        },
       },
       lobbies: {
         title: 'Fire på rad-lobbyer',

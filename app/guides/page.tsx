@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
-import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES, type GuideIcon } from '@/lib/guides-catalog'
+import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, type GuideIcon } from '@/lib/guides-catalog'
 import { ORGANIZATION_ID } from '@/lib/organization-json-ld'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
 const howToPlayGuides = HOW_TO_PLAY_GUIDES
-const strategyGuides = STRATEGY_GUIDES
 const bestOfGuides = BEST_OF_GUIDES
 
 export const metadata: Metadata = {
@@ -56,7 +55,7 @@ const collectionJsonLd = {
   description: 'Step-by-step guides for playing board games online with friends.',
   url: 'https://boardly.online/guides',
   publisher: { '@id': ORGANIZATION_ID },
-  hasPart: [...howToPlayGuides, ...strategyGuides, ...bestOfGuides].map(({ slug, title }) => ({
+  hasPart: [...howToPlayGuides, ...bestOfGuides].map(({ slug, title }) => ({
     '@type': 'Article',
     name: title,
     url: `https://boardly.online/guides/${slug}`,
@@ -171,26 +170,6 @@ export default function GuidesPage() {
               ))}
             </div>
           </section>
-
-          {/* Strategy – the strategy guides are folding into their game pages
-              one by one (#1077 folded Yahtzee's), so the section renders only
-              while one is left and never says "1 guides". */}
-          {strategyGuides.length > 0 && (
-            <section className="mb-10">
-              <div className="mb-4 flex items-center gap-3">
-                <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--bd-ink-muted)' }}>
-                  Strategy
-                </h2>
-                <div className="h-px flex-1" style={{ background: 'var(--bd-line)' }} />
-                <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{strategyGuides.length} {strategyGuides.length === 1 ? 'guide' : 'guides'}</span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {strategyGuides.map((guide) => (
-                  <GuideCard key={guide.slug} {...guide} />
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* Best of */}
           <section>
