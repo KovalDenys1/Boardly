@@ -597,8 +597,12 @@ Sunday funnel routine → Tuesday planner (cloud, Sonnet, Supabase only) → Wed
 `03 Projects/Boardly/Growth/Growth Log.md` before any marketing or SEO work; file growth work
 as tickets in the queue's shape (labels `growth`, `agent-ok` / `needs-denys`), never outside
 it. Decisions taken 2026-09-14, not to re-open: $2.99 subscription + yearly plan, no
-one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames/Product Hunt/TikTok, no
-ads near a game, localized URLs for game pages only. The cloud sandbox has no `gh`: builder
+one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames/Product Hunt, no
+ads near a game, localized URLs for game pages only. **2026-09-24: social accounts are on**
+(TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; handle `@playboardly`; plan in
+the vault's `Growth/Social Launch Kit 2026-09.md`), and the brand is **faceless**: never
+Denys's name, face or voice in marketing — screen recordings, on-screen text, synthetic voice,
+company voice. Agents prepare; Denys creates accounts and posts. The cloud sandbox has no `gh`: builder
 PRs come from `growth-pr.yml`, and `ci.yml` must list `growth/**` under push branches.
 A routine created without `mcp_connections` gets every account connector — pass the list.
 
