@@ -708,6 +708,24 @@ const en = {
             desc: 'The biggest number this turn may burn a row you will need later.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'With friends',
+            desc: 'Share the code or the link, and every roll and score shows on each screen live.',
+          },
+          botsAndSolo: {
+            title: 'Bots and solo',
+            desc: 'Give an empty seat to a bot, or use Play vs Bot above for a one-on-one game.',
+          },
+          turnTimer: {
+            title: 'The turn timer',
+            desc: 'An idle turn is scored when time runs out, and a player who leaves drops out of the rotation.',
+          },
+          guestNoDownload: {
+            title: 'No account, no install',
+            desc: 'A guest name is enough, in any browser on a phone, tablet or computer.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

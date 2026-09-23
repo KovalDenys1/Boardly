@@ -708,6 +708,24 @@ const no = {
             desc: 'Den største summen denne turen kan bruke opp en rad du trenger senere.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Med venner',
+            desc: 'Del koden eller lenken, så vises hvert kast og hver føring live på alles skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Roboter og alene',
+            desc: 'Gi en ledig plass til en robot, eller bruk Spill mot bot over for et spill én mot én.',
+          },
+          turnTimer: {
+            title: 'Turtiden',
+            desc: 'En tur uten handling føres når tiden går ut, og en spiller som forlater spillet, tas ut av rekkefølgen.',
+          },
+          guestNoDownload: {
+            title: 'Ingen konto, ingen installasjon',
+            desc: 'Et gjestenavn holder, i hvilken som helst nettleser på mobil, nettbrett eller datamaskin.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',

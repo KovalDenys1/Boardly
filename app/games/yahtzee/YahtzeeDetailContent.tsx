@@ -102,6 +102,12 @@ export default function YahtzeeDetailContent() {
         { title: t('games.yahtzee.detail.mistakes.losingBonusPace.title'), desc: t('games.yahtzee.detail.mistakes.losingBonusPace.desc') },
         { title: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.title'), desc: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.yahtzee.detail.multiplayer.withFriends.title'), desc: t('games.yahtzee.detail.multiplayer.withFriends.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.botsAndSolo.title'), desc: t('games.yahtzee.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.turnTimer.title'), desc: t('games.yahtzee.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.yahtzee.detail.multiplayer.guestNoDownload.title'), desc: t('games.yahtzee.detail.multiplayer.guestNoDownload.desc') },
+      ]}
       playVsBotGameType="yahtzee"
     />
   )
