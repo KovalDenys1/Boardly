@@ -14,9 +14,12 @@ interface AuthGateModalProps {
   /** When provided, guest play calls this instead of navigating to `dest` — for flows that create
    * their own destination after guest mode is set (e.g. Play vs Bot creating a lobby on demand). */
   onGuestReady?: () => void
+  /** Called only when the visitor dismisses the gate without choosing – onClose also
+   * runs on the way to guest play, login and sign-up, so it cannot tell the two apart. */
+  onDismiss?: () => void
 }
 
-export function AuthGateModal({ dest, onClose, onGuestReady }: AuthGateModalProps) {
+export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGateModalProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const { setGuestMode } = useGuest()
@@ -48,7 +51,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady }: AuthGateModalProp
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{ background: 'rgba(31,27,22,0.55)', backdropFilter: 'blur(4px)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => { if (e.target === e.currentTarget) { onClose(); onDismiss?.() } }}
     >
       <div
         className="w-full max-w-sm"

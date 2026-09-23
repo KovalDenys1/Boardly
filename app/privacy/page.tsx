@@ -99,12 +99,19 @@ export default function PrivacyPolicy() {
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>7. Cookies and Tracking</h2>
-              <p className="mb-3">We use cookies and similar technologies to:</p>
+              <p className="mb-3">
+                We keep this to the minimum. The only information we store on your device is what the site
+                needs in order to work:
+              </p>
               <ul className="list-disc space-y-1.5 pl-5">
-                <li>Keep you logged in</li>
-                <li>Remember your language preference</li>
-                <li>Analyze usage patterns to improve our service</li>
+                <li>Keeping you logged in, and keeping a guest player attached to their games</li>
+                <li>Remembering your language, theme and similar preferences</li>
               </ul>
+              <p className="mt-3">
+                We do not store advertising or analytics identifiers of our own on your device. We do record
+                which site or campaign a new account arrived from, but that value travels with the request
+                that creates the account and is never written to your browser.
+              </p>
               <p className="mt-3">
                 You can control cookies through your browser settings, but some features may not work properly if disabled.
               </p>

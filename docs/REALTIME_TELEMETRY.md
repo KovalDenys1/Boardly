@@ -15,7 +15,7 @@ This document defines the production reliability telemetry path, alert rules, KP
 - Alert executor:
   - Script: `npm run ops:alerts:check`
   - Cron endpoint: `GET /api/cron/reliability-alerts`
-  - Scheduler (Hobby-safe): `.github/workflows/reliability-alerts-cron.yml` (`*/10 * * * *`)
+  - Scheduler: Vercel cron in `vercel.json` (`*/10 * * * *`); `.github/workflows/reliability-alerts-cron.yml` fires it by hand (`workflow_dispatch`)
 
 ## Event Catalog (Operational)
 
@@ -45,9 +45,9 @@ Webhook payloads are sent as Discord embeds. If GitHub alert env vars are config
 
 Scheduler note:
 
-- Vercel Hobby only supports cron jobs that run once per day.
-- Use the GitHub Actions scheduler (`.github/workflows/reliability-alerts-cron.yml`) for 10-minute reliability alert checks on Hobby.
-- Vercel cron for `/api/cron/reliability-alerts` is only suitable on plans that support sub-daily cron intervals.
+- Vercel owns the schedule since 2026-09-18 (#897): the project is on Pro, which allows sub-daily crons. The GitHub Actions schedule it replaced was throttled to about 2.4% of its declared runs on a free account.
+- The GitHub workflow keeps only `workflow_dispatch`, so it is still the way to fire one cycle by hand. It reads the endpoint URL and the cron secret from the repository's Actions secrets.
+- Do not add a `schedule:` back to the workflow: two schedulers would double every alert cycle.
 
 ## Active Alert Rules
 

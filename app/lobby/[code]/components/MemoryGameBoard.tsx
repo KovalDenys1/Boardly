@@ -9,6 +9,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
+import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
@@ -248,6 +249,22 @@ export default function MemoryGameBoard({
       if (isSubmitting && move.type !== 'flip') return false
 
       setIsSubmitting(true)
+      // This board posts its own moves rather than going through useGameActions,
+      // so it has to report them itself – without this Memory, the game that
+      // brings the most first-time players, had no move telemetry at all (#1063).
+      const submitStartedAt = Date.now()
+      const report = (success: boolean, statusCode?: number) =>
+        trackMoveSubmitApplied({
+          gameType: 'memory',
+          moveType: move.type,
+          durationMs: Date.now() - submitStartedAt,
+          isGuest: !!isGuest,
+          success,
+          applied: success,
+          statusCode,
+          isAutoAction: !!options?.autoActionContext,
+          source: 'memory_board',
+        })
       try {
         const res = await fetchWithGuest(`/api/game/${gameId}/state`, {
           method: 'POST',
@@ -259,6 +276,7 @@ export default function MemoryGameBoard({
         })
 
         const payload = await res.json().catch(() => null)
+        report(res.ok, res.status)
 
         if (!res.ok) {
           const isExpectedRaceError =
@@ -281,13 +299,14 @@ export default function MemoryGameBoard({
 
         return true
       } catch (error) {
+        report(false)
         showToast.errorFrom(error, 'games.memory.game.moveFailed')
         return false
       } finally {
         setIsSubmitting(false)
       }
     },
-    [gameId, isSubmitting]
+    [gameId, isGuest, isSubmitting]
   )
 
   useEffect(() => {

@@ -7,9 +7,9 @@ import { useTranslation } from '@/lib/i18n-helpers'
 // One AdSense display slot, shown to free readers only.
 //
 // Three gates, all of which must open before an <ins> reaches the DOM:
-//   1. NEXT_PUBLIC_ADS_ENABLED — the master switch. Vercel's Hobby plan forbids
-//      commercial use and AdSense has not approved boardly.online yet, so this
-//      stays unset until both are settled. Nothing ships to production until it is.
+//   1. NEXT_PUBLIC_ADS_ENABLED — the master switch. AdSense has not approved
+//      boardly.online yet, so this stays unset until it does (Vercel Pro, which
+//      allows commercial use, is in place). Nothing ships to production until it is.
 //   2. Client mount — the guides are static pages and must stay static, so the
 //      slot renders nothing during SSR and decides on the client instead.
 //   3. Premium — a paying account never sees an ad. Signed-out visitors and

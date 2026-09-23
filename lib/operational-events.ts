@@ -10,9 +10,9 @@ export const OPERATIONAL_EVENT_NAMES = [
   'socket_reconnect_failed_final',
   'start_alone_auto_bot_result',
   // The funnel the Revenue Plan defines. These were Vercel Analytics custom events, and the
-  // Hobby plan drops every one, so not a single row of the funnel had ever been stored.
-  // OperationalEvents already takes unsampled client beacons, so the funnel can exist here
-  // without waiting for Pro.
+  // Hobby plan dropped every one until Pro (2026-09-18), so not a single row of the funnel
+  // had been stored. OperationalEvents already takes unsampled client beacons, so the funnel
+  // lives here, in the database, whatever the Vercel plan.
   'signup_prompt_shown',
   'signup_prompt_clicked',
   'signup_prompt_dismissed',

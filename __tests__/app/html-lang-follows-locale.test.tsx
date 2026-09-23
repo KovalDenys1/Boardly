@@ -12,7 +12,11 @@ import { render } from '@testing-library/react'
 import i18n from '@/i18n'
 import Providers from '@/app/providers'
 
-jest.mock('next-auth/react', () => ({ SessionProvider: ({ children }) => <>{children}</> }))
+jest.mock('next-auth/react', () => ({
+  SessionProvider: ({ children }) => <>{children}</>,
+  // SignupAttribution sits in the providers tree and reads the session (#1067).
+  useSession: () => ({ status: 'unauthenticated', data: null }),
+}))
 jest.mock('@/contexts/ToastContext', () => ({ ToastProvider: ({ children }) => <>{children}</> }))
 jest.mock('@/contexts/GuestContext', () => ({ GuestProvider: ({ children }) => <>{children}</> }))
 jest.mock('@/contexts/OnboardingContext', () => ({ OnboardingProvider: ({ children }) => <>{children}</> }))
