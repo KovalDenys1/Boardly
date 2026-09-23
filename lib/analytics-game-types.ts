@@ -22,6 +22,7 @@ export const ANALYTICS_GAME_TYPES = [
   'connect_four',
   'sketch_and_guess',
   'checkers',
+  'ludo',
 ] as const
 
 export type AnalyticsGameType = (typeof ANALYTICS_GAME_TYPES)[number]

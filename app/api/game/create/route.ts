@@ -88,6 +88,25 @@ function extractYahtzeeMode(rawState: unknown): 'classic' | 'short' | undefined 
   return undefined
 }
 
+/** Ludo keeps its mode in state.data.mode, the same place Yahtzee does. */
+function extractLudoMode(rawState: unknown): 'quick' | 'classic' | undefined {
+  let parsedState = rawState
+
+  if (typeof rawState === 'string') {
+    try {
+      parsedState = JSON.parse(rawState)
+    } catch {
+      return undefined
+    }
+  }
+
+  const stateData = parsedState && typeof parsedState === 'object'
+    ? (parsedState as { data?: unknown }).data
+    : undefined
+  const mode = stateData && typeof stateData === 'object' ? (stateData as { mode?: unknown }).mode : undefined
+  return mode === 'quick' || mode === 'classic' ? mode : undefined
+}
+
 function extractMemoryDifficulty(rawState: unknown): 'easy' | 'medium' | 'hard' | undefined {
   let parsedState = rawState
 
@@ -218,6 +237,8 @@ export async function POST(request: NextRequest) {
           gameType === 'memory' ? extractMemoryDifficulty(finishedGame.state) : undefined
         const finishedGameYahtzeeMode =
           gameType === 'yahtzee' ? extractYahtzeeMode(finishedGame.state) : undefined
+        const finishedGameLudoMode =
+          gameType === 'ludo' ? extractLudoMode(finishedGame.state) : undefined
         const initialWaitingState = createGameEngine(
           gameType,
           `waiting_${Date.now()}`,
@@ -239,7 +260,13 @@ export async function POST(request: NextRequest) {
                       mode: finishedGameYahtzeeMode,
                     },
                   }
-                : undefined
+                : gameType === 'ludo' && finishedGameLudoMode !== undefined
+                  ? {
+                      rules: {
+                        mode: finishedGameLudoMode,
+                      },
+                    }
+                  : undefined
         ).getState()
 
         // Create new waiting game with same players
@@ -387,6 +414,20 @@ export async function POST(request: NextRequest) {
         startConfig.rules = {
           ...existingRules,
           mode: waitingYahtzeeMode,
+        }
+      }
+    }
+
+    if (gameType === 'ludo') {
+      const waitingLudoMode = extractLudoMode(waitingGame.state)
+      if (waitingLudoMode !== undefined) {
+        const existingRules =
+          startConfig.rules && typeof startConfig.rules === 'object' && !Array.isArray(startConfig.rules)
+            ? (startConfig.rules as Record<string, unknown>)
+            : {}
+        startConfig.rules = {
+          ...existingRules,
+          mode: waitingLudoMode,
         }
       }
     }

@@ -55,6 +55,8 @@ const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   connect_four: null,
   checkers: null,
   yahtzee: null,
+  // Tokens, dice and roll history are all on the table.
+  ludo: null,
   // Every claim and challenge is made in the open; the bluff is social, not informational.
   liars_party: null,
   // Each step is revealed to the next player in the chain by design, and the

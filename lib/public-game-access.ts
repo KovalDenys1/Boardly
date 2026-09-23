@@ -22,6 +22,7 @@ const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
   liars_party: '/games/liars-party/lobbies',
   sketch_and_guess: '/games/sketch-and-guess/lobbies',
   checkers: '/games/checkers/lobbies',
+  ludo: '/games/ludo/lobbies',
 }
 
 /**

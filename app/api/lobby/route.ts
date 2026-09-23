@@ -34,6 +34,7 @@ const createLobbySchema = z.object({
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
   yahtzeeMode: z.enum(['classic', 'short']).optional(),
+  ludoMode: z.enum(['quick', 'classic']).optional(),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
       ticTacToeRounds,
       memoryDifficulty,
       yahtzeeMode,
+      ludoMode,
       theme,
     } = createLobbySchema.parse(body)
 
@@ -123,6 +125,8 @@ export async function POST(request: NextRequest) {
     // sitting (#812). normalizeYahtzeeMode still defaults to classic — it also
     // resolves the mode of games already in flight, which must not change.
     const normalizedYahtzeeMode = gameType === 'yahtzee' ? (yahtzeeMode ?? 'short') : undefined
+    // Quick (two tokens each) is the default for the same reason: a game that fits a sitting (#1084).
+    const normalizedLudoMode = gameType === 'ludo' ? (ludoMode ?? 'quick') : undefined
 
     log.info('Creating lobby', {
       gameType,
@@ -133,6 +137,7 @@ export async function POST(request: NextRequest) {
       ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
       ...(gameType === 'memory' ? { difficulty: normalizedMemoryDifficulty } : {}),
       ...(gameType === 'yahtzee' ? { mode: normalizedYahtzeeMode } : {}),
+      ...(gameType === 'ludo' ? { mode: normalizedLudoMode } : {}),
     })
 
     const limit = await checkOpenLobbyLimit(requestUser.id)
@@ -168,7 +173,13 @@ export async function POST(request: NextRequest) {
                   mode: normalizedYahtzeeMode,
                 },
               }
-            : undefined
+            : gameType === 'ludo'
+              ? {
+                  rules: {
+                    mode: normalizedLudoMode,
+                  },
+                }
+              : undefined
 
     const tempEngine = createGameEngine(
       gameType,
