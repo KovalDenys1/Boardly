@@ -65,7 +65,7 @@ export default function HowToPlayYahtzeeGuide() {
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Ready to put this into practice?' }}
         related={[
-          { href: '/guides/yahtzee-strategy-guide', label: 'Yahtzee Strategy Guide — How to Win More Often' },
+          { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
           { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
@@ -122,7 +122,7 @@ export default function HowToPlayYahtzeeGuide() {
             { tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
           ]} />
                   <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            These five cover the basics. The <Link href="/guides/yahtzee-strategy-guide" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee strategy guide</Link> goes through the bonus maths, which categories to fill first and what to keep on every roll.
+            These five cover the basics. For the deeper plan – when fifty is worth chasing, where a second five of a kind goes and the mistakes that cost the bonus – read the <Link href="/games/yahtzee#strategy" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>strategy section of the Yahtzee game page</Link>.
           </p>
         </GuideSection>
 

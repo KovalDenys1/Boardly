@@ -356,6 +356,13 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
         'yatzy online',
         'free yahtzee game',
         'dice game online',
+        // From the Yahtzee strategy guide, folded into this page by #1077.
+        'yahtzee strategy',
+        'how to win at yahtzee',
+        'yahtzee tips',
+        'yahtzee scoring strategy',
+        'best yahtzee strategy',
+        'yahtzee category order',
       ],
       genre: [
         'Dice Game',

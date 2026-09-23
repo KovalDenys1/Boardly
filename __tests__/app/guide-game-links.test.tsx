@@ -29,7 +29,9 @@ describe('guide → game-page links', () => {
   it('files every how-to and strategy guide under a catalog game, and no best-of list', () => {
     for (const guide of withGame) expect(['how-to-play', 'strategy']).toContain(guide.category)
     for (const guide of withoutGame) expect(guide.category).toBe('best-of')
-    expect(withGame.length).toBeGreaterThanOrEqual(9)
+    // Seven how-to guides and the one strategy guide still standing – the
+    // Yahtzee strategy guide folded into /games/yahtzee in #1077.
+    expect(withGame.length).toBeGreaterThanOrEqual(8)
   })
 
   it('resolves every game to a detail path that is in the available catalog', () => {
@@ -51,7 +53,6 @@ describe('guide → game-page links', () => {
   })
 
   it.each([
-    ['how-to-play-yahtzee-online', 'yahtzee-strategy-guide'],
     ['how-to-play-connect-four-online', 'connect-four-strategy-guide'],
   ])('%s and %s link each other in prose, not only under "More guides"', (howTo, strategy) => {
     // `related` renders one link per guide; a second one has to come from the body.
@@ -62,9 +63,16 @@ describe('guide → game-page links', () => {
 
 describe('game page → guide links', () => {
   it('lists every guide about a game, how-to before strategy', () => {
+    // Yahtzee's strategy guide is now the #strategy section of the game page (#1077).
     const yahtzee = getGuidesForGame('yahtzee').map((guide) => guide.slug)
-    expect(yahtzee).toEqual(['how-to-play-yahtzee-online', 'yahtzee-strategy-guide'])
+    expect(yahtzee).toEqual(['how-to-play-yahtzee-online'])
     expect(getGuidesForGame('connect-four').map((guide) => guide.category)).toEqual(['how-to-play', 'strategy'])
     expect(getGuidesForGame('liars-party')).toEqual([])
+  })
+})
+
+describe('the folded Yahtzee strategy guide (#1077)', () => {
+  it('sends the how-to guide\'s strategy pointer to the game page section', () => {
+    expect(renderedHrefs('how-to-play-yahtzee-online')).toContain('/games/yahtzee#strategy')
   })
 })
