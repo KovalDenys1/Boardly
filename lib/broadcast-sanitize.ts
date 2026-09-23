@@ -45,6 +45,7 @@ const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   // No hidden state: the whole board is public by design.
   tic_tac_toe: null,
   connect_four: null,
+  checkers: null,
   yahtzee: null,
   // Every claim and challenge is made in the open; the bluff is social, not informational.
   liars_party: null,

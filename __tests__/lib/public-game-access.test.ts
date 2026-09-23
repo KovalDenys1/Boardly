@@ -101,7 +101,10 @@ describe('public game access helpers', () => {
         })
       }
 
-      expect(held).toBe(1)
+      // The synthetic entry, plus Checkers: #1083 shipped it in-development with its
+      // pages, so the real catalog has a routed, unreleased game of its own again. The
+      // day it is released this goes back to 1.
+      expect(held).toBe(2)
       // A route is where the game would live, not permission to go there: the entry is in
       // the route map throughout, and it is the catalog that keeps it shut.
       expect(getGameLobbiesRoute(HELD_BACK_GAME_TYPE)).toBe(HELD_BACK_LOBBIES_ROUTE)

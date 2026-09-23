@@ -505,18 +505,31 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
         .filter((game) => !isFlagPromotableEntry(game))
         .map((game) => game.gameType)
         .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
+      const shouldPromote = gated
+        .filter(isFlagPromotableEntry)
+        .map((game) => game.gameType)
 
-      // Every one of them, today: #873 released the last two in-development entries that
-      // had a route, and fake-artist and telephone-doodle have none. The day one of them
-      // gets its pages this line goes red, and the entry it names moves to the test below.
-      expect(gated.length).toBeGreaterThan(0)
-      expect(shouldWithhold.length).toBe(gated.length)
+      // fake-artist and telephone-doodle have no route, so they stay withheld. Checkers
+      // (#1083) is the first entry since #873 to ship in-development with its pages, so
+      // the shipped catalog has a subject for the promote side again. A new entry lands
+      // on one side or the other of this split, and this line names which.
+      expect(shouldWithhold.length).toBeGreaterThan(0)
+      expect(shouldPromote).toEqual(['checkers'])
+      expect(shouldWithhold.length + shouldPromote.length).toBe(gated.length)
+
+      const withoutFlag = getAvailableGameTypes()
+      for (const gameType of shouldPromote) {
+        expect(withoutFlag).not.toContain(gameType)
+      }
 
       applyEnv({ ...FLAG_ON, NODE_ENV: 'development' })
       const promoted = getAvailableGameTypes()
 
       for (const gameType of shouldWithhold) {
         expect(promoted).not.toContain(gameType)
+      }
+      for (const gameType of shouldPromote) {
+        expect(promoted).toContain(gameType)
       }
     })
 

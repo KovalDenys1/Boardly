@@ -269,6 +269,12 @@ function getIllustration(gameId: string, accentColor: string) {
           <GameIcon gameId="connect-four" accentColor="var(--bd-coral)" size={72} />
         </div>
       )
+    case 'checkers':
+      return (
+        <div className="bd-float" style={{ animationDelay: '1s' }}>
+          <GameIcon gameId="checkers" accentColor="var(--bd-coral)" size={72} />
+        </div>
+      )
     default:
       return (
         <div className="bd-float" style={{ animationDelay: '0.2s' }}>
@@ -360,6 +366,14 @@ export default function GameRibbon() {
       time: t('games.guess_my_drawing.ribbon.time'),
       diff: t('games.guess_my_drawing.difficulty'),
       desc: t('games.guess_my_drawing.ribbon.desc'),
+    },
+    checkers: {
+      name: t('games.checkers.name'),
+      tag: t('games.checkers.ribbon.tag'),
+      players: '1-2',
+      time: t('games.checkers.ribbon.time'),
+      diff: t('games.checkers.difficulty'),
+      desc: t('games.checkers.ribbon.desc'),
     },
   }
 
