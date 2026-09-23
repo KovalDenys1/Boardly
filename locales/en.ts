@@ -732,6 +732,36 @@ const en = {
           americanAndNordic: 'Yahtzee was launched in the United States in 1956 by the toy maker Edwin S. Lowe and is now a Hasbro trademark. Boardly\'s pair rows come from Yatzy, its Nordic cousin.',
           firstOnBoardly: 'It was also the first game on Boardly, begun as a school assignment from my teacher Tarald – the push to finally build a site I had planned for years.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Yahtzee on Boardly free?',
+            a: 'Yes. Both modes, the bots and private lobbies cost nothing; Premium only adds cosmetic extras such as a custom avatar photo and never changes the game.',
+          },
+          isThereABot: {
+            q: 'Is there a Yahtzee bot?',
+            a: 'Yes, at three levels: Dice Rookie, Dice Strategist and Dice Oracle. Start a solo game with Play vs Bot, or add bots to your own lobby.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the turn timer runs out?',
+            a: 'Your turn is finished for you: one roll if you had not rolled yet, then the open category that pays most, or a zero in the cheapest box.',
+          },
+          yatzyOrYahtzee: {
+            q: 'Is this Yatzy or Yahtzee?',
+            a: 'Both. The pair rows come from Scandinavian Yatzy, while the straights, Full House and five of a kind pay the fixed American amounts.',
+          },
+          needAccount: {
+            q: 'Do I need an account?',
+            a: 'No. A guest name lets you create or join a lobby and play bots. Guest profiles are deleted after three days without play, so sign up to keep one.',
+          },
+          worksOnPhone: {
+            q: 'Does it work on a phone?',
+            a: 'Yes. Tap a die to hold it and a category to score; on small screens the dice and the scorecard sit on separate tabs.',
+          },
+          howManyPlayers: {
+            q: 'How many people can play?',
+            a: 'One to four per game, with friends, bots or both filling the seats. More players means a longer game, since turns go in order.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

@@ -365,6 +365,16 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Dice game for one to four players. Roll five dice up to three times a turn, then commit the result to a scoring category: short mode fills nine categories, classic fifteen.',
       questionKey: 'games.yahtzee.seo.question',
       answerKey: 'games.yahtzee.seo.answer',
+      // Product questions only; the how-to guide keeps the rules questions (#1077).
+      faq: [
+        { questionKey: 'games.yahtzee.detail.faq.isItFree.q', answerKey: 'games.yahtzee.detail.faq.isItFree.a' },
+        { questionKey: 'games.yahtzee.detail.faq.isThereABot.q', answerKey: 'games.yahtzee.detail.faq.isThereABot.a' },
+        { questionKey: 'games.yahtzee.detail.faq.timerRunsOut.q', answerKey: 'games.yahtzee.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.q', answerKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.a' },
+        { questionKey: 'games.yahtzee.detail.faq.needAccount.q', answerKey: 'games.yahtzee.detail.faq.needAccount.a' },
+        { questionKey: 'games.yahtzee.detail.faq.worksOnPhone.q', answerKey: 'games.yahtzee.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.yahtzee.detail.faq.howManyPlayers.q', answerKey: 'games.yahtzee.detail.faq.howManyPlayers.a' },
+      ],
     },
     availability: 'available',
     route: '/games/yahtzee/lobbies',

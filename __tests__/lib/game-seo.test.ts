@@ -114,6 +114,10 @@ describe('game SEO catalog (#929)', () => {
 describe('game FAQ sections (#1077)', () => {
   const WITH_FAQ = SEO_GAMES.filter((game) => game.seo!.faq)
 
+  it('gives the pilot its seven product questions', () => {
+    expect(getGameSeo('yahtzee')!.faq?.length).toBe(7)
+  })
+
   it('ships at least three entries when it ships any, with no key repeated', () => {
     for (const game of WITH_FAQ) {
       const faq = game.seo!.faq!

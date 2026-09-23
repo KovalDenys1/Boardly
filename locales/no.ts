@@ -732,6 +732,36 @@ const no = {
           americanAndNordic: 'Yahtzee ble lansert i USA i 1956 av leketøysprodusenten Edwin S. Lowe og er i dag et varemerke som tilhører Hasbro. Parradene på Boardly kommer fra Yatzy, den nordiske slektningen.',
           firstOnBoardly: 'Det var også det første spillet på Boardly, startet som en skoleoppgave fra læreren min Tarald, og det ble dyttet som fikk meg til endelig å bygge en side jeg hadde planlagt i årevis.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Yatzy på Boardly gratis?',
+            a: 'Ja. Begge modusene, robotene og private lobbyer koster ingenting; Premium gir bare kosmetiske ekstra som eget profilbilde og endrer aldri selve spillet.',
+          },
+          isThereABot: {
+            q: 'Finnes det en Yatzy-robot?',
+            a: 'Ja, på tre nivåer: Dice Rookie, Dice Strategist og Dice Oracle. Start et spill alene med Spill mot bot, eller legg roboter til i din egen lobby.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når turtiden går ut?',
+            a: 'Turen fullføres for deg: ett kast hvis du ikke hadde kastet ennå, deretter den ledige kategorien som gir mest, eller null i den billigste ruten.',
+          },
+          yatzyOrYahtzee: {
+            q: 'Er dette Yatzy eller Yahtzee?',
+            a: 'Begge deler. Parradene kommer fra skandinavisk Yatzy, mens straightene, Hus og fem like gir de faste poengene fra amerikansk Yahtzee.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto?',
+            a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot roboter. Gjesteprofiler slettes etter tre dager uten spill, så registrer deg for å beholde en.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer det på mobil?',
+            a: 'Ja. Trykk på en terning for å holde den og på en kategori for å føre poeng; på små skjermer ligger terningene og poenglisten i hver sin fane.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange kan spille?',
+            a: 'Én til fire per spill, med venner, roboter eller begge deler på plassene. Flere spillere gir et lengre spill, siden alle spiller etter tur.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',
