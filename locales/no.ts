@@ -656,6 +656,40 @@ const no = {
             desc: 'Dice Rookie, Dice Strategist og Dice Oracle tar ledige plasser eller spiller én mot én med deg.',
           },
         },
+        strategy: {
+          protectBonus: {
+            title: 'Spill for bonusen i klassisk',
+            desc: 'Tre av hver verdi gir 63, og en fjerde femmer eller sekser dekker en svak rad et annet sted.',
+          },
+          onePlanPerTurn: {
+            title: 'Behold terninger for én plan',
+            desc: 'Etter første kast velger du ett mål og kaster om alle terninger som ikke hjelper det.',
+          },
+          chaseYahtzeeEarly: {
+            title: 'Jakt på femti med kast til gode',
+            desc: 'Fire like etter første kast, eller tre like med to kast igjen, er verdt forsøket.',
+          },
+          afterYahtzee: {
+            title: 'Når Yatzy-ruten er fylt',
+            desc: 'Før nye fem like i Fire like eller Sjanse for å få hele summen.',
+          },
+          largeBeforeSmall: {
+            title: 'Stor straight først',
+            desc: 'Fire på rad gir to forsøk på 40, og de samme terningene passer fortsatt i liten straight til 30.',
+          },
+          fullHouseMidGame: {
+            title: 'Hus gir jevne poeng',
+            desc: 'Behold to par og kast den siste terningen: tre og to dukker ofte opp.',
+          },
+          lockFourOfKind: {
+            title: 'Ta Fire like',
+            desc: 'Fire høye terninger er allerede en god sum, så kast videre bare mens Yatzy er ledig.',
+          },
+          keepChance: {
+            title: 'Spar Sjanse',
+            desc: 'Den tar ethvert kast og er derfor sikkerhetsnettet for en tur der ingenting passer.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',

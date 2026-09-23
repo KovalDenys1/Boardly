@@ -656,6 +656,40 @@ const en = {
             desc: 'Dice Rookie, Dice Strategist and Dice Oracle take empty seats or play you one on one.',
           },
         },
+        strategy: {
+          protectBonus: {
+            title: 'Play for the bonus in classic',
+            desc: 'Three of each face reaches 63, and a fourth five or six covers a weak row elsewhere.',
+          },
+          onePlanPerTurn: {
+            title: 'Keep dice for one plan',
+            desc: 'After the first roll, pick one target and re-roll every die that does not serve it.',
+          },
+          chaseYahtzeeEarly: {
+            title: 'Chase fifty with rolls to spare',
+            desc: 'Four alike after the first roll, or three with two rolls left, is worth the push.',
+          },
+          afterYahtzee: {
+            title: 'Once the Yahtzee box is full',
+            desc: 'Put a further five of a kind in Four of a Kind or Chance for the full sum.',
+          },
+          largeBeforeSmall: {
+            title: 'Large straight first',
+            desc: 'Four in a row gives two shots at 40, and the same dice still fit the 30-point small one.',
+          },
+          fullHouseMidGame: {
+            title: 'Full House is steady',
+            desc: 'Hold two pairs and re-roll the odd die: three-and-two turns up often.',
+          },
+          lockFourOfKind: {
+            title: 'Bank Four of a Kind',
+            desc: 'Four high dice already make a strong sum, so roll on only while Yahtzee is open.',
+          },
+          keepChance: {
+            title: 'Save Chance',
+            desc: 'It accepts any roll, which makes it the safety net for a turn that fits nowhere.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

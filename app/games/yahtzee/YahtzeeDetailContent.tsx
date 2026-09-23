@@ -86,6 +86,16 @@ export default function YahtzeeDetailContent() {
         { title: t('games.yahtzee.detail.modes.timer.title'), desc: t('games.yahtzee.detail.modes.timer.desc') },
         { title: t('games.yahtzee.detail.modes.bots.title'), desc: t('games.yahtzee.detail.modes.bots.desc') },
       ]}
+      strategy={[
+        { title: t('games.yahtzee.detail.strategy.protectBonus.title'), desc: t('games.yahtzee.detail.strategy.protectBonus.desc') },
+        { title: t('games.yahtzee.detail.strategy.onePlanPerTurn.title'), desc: t('games.yahtzee.detail.strategy.onePlanPerTurn.desc') },
+        { title: t('games.yahtzee.detail.strategy.chaseYahtzeeEarly.title'), desc: t('games.yahtzee.detail.strategy.chaseYahtzeeEarly.desc') },
+        { title: t('games.yahtzee.detail.strategy.afterYahtzee.title'), desc: t('games.yahtzee.detail.strategy.afterYahtzee.desc') },
+        { title: t('games.yahtzee.detail.strategy.largeBeforeSmall.title'), desc: t('games.yahtzee.detail.strategy.largeBeforeSmall.desc') },
+        { title: t('games.yahtzee.detail.strategy.fullHouseMidGame.title'), desc: t('games.yahtzee.detail.strategy.fullHouseMidGame.desc') },
+        { title: t('games.yahtzee.detail.strategy.lockFourOfKind.title'), desc: t('games.yahtzee.detail.strategy.lockFourOfKind.desc') },
+        { title: t('games.yahtzee.detail.strategy.keepChance.title'), desc: t('games.yahtzee.detail.strategy.keepChance.desc') },
+      ]}
       playVsBotGameType="yahtzee"
     />
   )
