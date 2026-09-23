@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 
 import { getCatalogGames } from '@/lib/game-catalog'
 import { getActiveCategories, normalizeYahtzeeMode } from '@/lib/yahtzee'
+import en from '@/locales/en'
 
 // The guide layout ends with an ad slot and the site footer, which want a
 // session and a translation context they have no part in here.
@@ -76,5 +77,50 @@ describe('roundup guides against the Yahtzee engine (#973)', () => {
         })
       }
     }
+  })
+})
+
+/** Every English string under a locale node, flattened. */
+function strings(node: unknown): string[] {
+  if (typeof node === 'string') return [node]
+  if (!node || typeof node !== 'object') return []
+  return Object.values(node as Record<string, unknown>).flatMap(strings)
+}
+
+// #1077: the game page broke the same rule editorially – its intro promised
+// "15 different categories" to a visitor whose first lobby would have nine.
+// The page is the one Google ranks, so it is held to the roundups' bar, over
+// every string it can render: the detail copy, the direct answer and the FAQ.
+describe('the Yahtzee game page against the engine (#973, #1077)', () => {
+  const yahtzee = getCatalogGames().find((game) => game.gameType === 'yahtzee')
+  const defaultCount = getActiveCategories(
+    normalizeYahtzeeMode(yahtzee?.lobbyCreateConfig?.gameModes?.default)
+  ).length
+  const classicCount = getActiveCategories('classic').length
+  const copy = [...strings(en.games.yahtzee.detail), ...strings(en.games.yahtzee.seo)]
+
+  const sentences = copy
+    .flatMap((text) => text.split(/(?<=[.;])\s+/))
+    .filter((sentence) => /categor/i.test(sentence) && /\d|nine|fifteen/i.test(sentence))
+
+  const names = (sentence: string, count: number) =>
+    new RegExp(`\\b(${count}|${NUMBER_WORDS[count]})\\b`, 'i').test(sentence)
+
+  it('quotes a category count somewhere, so the rule below is not vacuous', () => {
+    expect(sentences.length).toBeGreaterThan(0)
+  })
+
+  it('names the default count whenever it names one, and the classic count only beside "classic"', () => {
+    for (const sentence of sentences) {
+      expect({ sentence, namesDefault: names(sentence, defaultCount) }).toEqual({ sentence, namesDefault: true })
+      if (names(sentence, classicCount)) {
+        expect({ sentence, namesClassic: /classic/i.test(sentence) }).toEqual({ sentence, namesClassic: true })
+      }
+    }
+  })
+
+  it('never promises a bonus for a second Yahtzee', () => {
+    // lib/yahtzee.ts scores the box once, at 50, and has no joker rule (#964).
+    for (const text of copy) expect(text).not.toMatch(/\b100\b|yahtzee bonus|joker/i)
   })
 })
