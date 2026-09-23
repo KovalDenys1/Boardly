@@ -21,6 +21,7 @@ import {
 import { getLastAccount, saveLastAccount, type LastAccount } from '@/lib/last-account'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import InAppBrowserNotice from '@/components/InAppBrowserNotice'
 import { withSignupSourceParam } from '@/lib/signup-source-client'
 
 // The hero chip used to say "6 games ready to play" in all four locales, which
@@ -358,6 +359,7 @@ export default function LoginForm() {
 
             {oauthProviderIds.length > 0 && (
               <>
+                {oauthProviderIds.includes('google') && <InAppBrowserNotice />}
                 {renderProviderButtons()}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-muted)', fontSize: 13 }}>
                   <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />

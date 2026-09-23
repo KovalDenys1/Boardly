@@ -493,10 +493,9 @@ const en = {
     startPlaying: 'Start playing',
     noDownloadNeeded: 'You can play as a guest. No app download needed.',
     stillBeingPolished: 'This game is still being polished.',
-    guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
+    guideCallout: 'New to {{gameName}}? Read the rules and how to play.',
     screenshotAlt: 'A round of {{gameName}} in progress on Boardly',
     readGuide: 'Read the guide →',
-    readStrategyGuide: 'Read the strategy guide →',
     detail: {
       labels: {
         players: 'Players',
@@ -1095,21 +1094,151 @@ const en = {
         title: 'Play Connect Four Online',
         heroDesc: 'A clean online version of the classic Connect Four. Invite a friend, add a bot, and drop discs in real time.',
         introTitle: 'What is Connect Four?',
-        intro0: 'Connect Four is a two-player strategy game on a 6×7 grid. Players take turns dropping coloured discs into columns, and the discs fall to the lowest available row.',
-        intro1: 'The first player to connect four discs in a row — horizontally, vertically, or diagonally — wins.',
+        intro0: 'Connect Four is a strategy game for two on a board seven columns wide and six rows tall. On your turn you choose a column, not a square, and your disc slides down to the lowest empty cell in it.',
+        intro1: 'The first player to line up four discs of their own colour – across, up and down or along either diagonal – takes the round. If all 42 cells fill without a line, the round is drawn.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Start a room from the lobbies page, or type a friend\'s four-digit code to join theirs. The host picks the turn timer when creating it.',
         step2Title: 'Choose friend or bot',
-        step2Desc: 'Invite another player or add a bot to play right away.',
+        step2Desc: 'Send the code to one other person, or give the second seat to a bot. Bots come in easy, medium and hard.',
         step3Title: 'Drop your disc',
-        step3Desc: 'Click a column to drop your disc. It falls to the lowest empty row.',
+        step3Desc: 'Click or tap a column on your turn and the disc falls as far as it can. The cell you want may stay out of reach until the column beneath it fills.',
         step4Title: 'Connect four to win',
-        step4Desc: 'Get four in a row in any direction before your opponent does.',
+        step4Desc: 'Four in a row in any direction wins the round. Play Again clears the board and keeps the running score.',
         benefitsTitle: 'Why play Connect Four on Boardly?',
         benefit1: 'Real-time multiplayer in the browser.',
         benefit2: 'Bot support for solo play.',
         benefit3: 'Play again with one click after the game ends.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          alternateTurns: 'Players alternate, one disc per turn, and the host moves first.',
+          gravity: 'A disc always drops to the lowest free cell of the column you pick, and a full column cannot be chosen.',
+          fourToWin: 'Four of your discs in one unbroken straight line win: horizontal, vertical or diagonal in either direction.',
+          fullBoardDraw: 'When all 42 cells are taken and nobody has a line, the round is a draw and neither player scores.',
+          seriesOpening: 'In a series the host keeps the opening move every round, and each win adds a point to the scoreboard.',
+          timerForfeit: 'Letting the turn clock run out does not skip your move – it hands the round to your opponent.',
+          undoConsent: 'Either player can ask to take back the last move, and it is only undone if the other side accepts.',
+        },
+        modes: {
+          turnClock: {
+            title: 'A clock on every move',
+            desc: '30, 60, 90 or 120 seconds per move, with 60 as the default. There is no untimed option, so even a slow game keeps moving.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Drop Rookie picks any open column, Column Tactician takes a winning move or blocks yours, and Gravity Grandmaster searches six moves ahead.',
+          },
+          series: {
+            title: 'Rounds and a running score',
+            desc: 'Play Again resets the board inside the same lobby and keeps the tally, so one sitting becomes a match to as many wins as you like.',
+          },
+        },
+        strategy: {
+          openInTheMiddle: {
+            title: 'Open in the middle',
+            desc: 'The fourth column belongs to more possible lines than any other. Going first, drop your disc there; going second, answer right beside it.',
+          },
+          edgesLate: {
+            title: 'Leave the edge columns for later',
+            desc: 'An outside column is part of only a few possible fours. Spend the early turns where lines cross, and keep the edges for finishing moves.',
+          },
+          twoThreats: {
+            title: 'Build towards two threats',
+            desc: 'A position with two cells that would each complete a four cannot be stopped with one disc. Every plan should head there.',
+          },
+          threatsInDifferentColumns: {
+            title: 'Keep those threats apart',
+            desc: 'Two threats that both need the same column can be answered with a single block. Spread them so the defence needs two turns it does not have.',
+          },
+          blockThatBuilds: {
+            title: 'Block with a disc that builds',
+            desc: 'When you have to stop a line, pick the blocking cell that also extends one of your own. Pure defence leaves you a move behind.',
+          },
+          steerTheirDisc: {
+            title: 'Make their block work for you',
+            desc: 'A threat they must answer decides where their next disc lands. Arrange it so that disc opens the cell you need above it.',
+          },
+          oddAndEvenRows: {
+            title: 'Count the rows under a threat',
+            desc: 'A threat only becomes playable once the cells below it are filled. Counted from the bottom, odd-row threats tend to favour the first player and even-row threats the second.',
+          },
+          bothDiagonals: {
+            title: 'Check both diagonals',
+            desc: 'Rows and columns are easy to see; a diagonal grows across four different columns. Scan both directions before every drop.',
+          },
+          beatTheHardBot: {
+            title: 'Against Gravity Grandmaster',
+            desc: 'The hard bot looks six moves ahead, so a trap that only works next turn will not land. Build threats that pay off further out.',
+          },
+        },
+        mistakes: {
+          openingTheCellAbove: {
+            title: 'Opening the cell above',
+            desc: 'Dropping into a column where the next disc wins for your opponent is the most frequent losing move.',
+          },
+          onlyBlocking: {
+            title: 'Only ever blocking',
+            desc: 'A player who never builds cannot win. After two pure blocks in a row, look for a threat of your own.',
+          },
+          towerInOneColumn: {
+            title: 'Building a tower',
+            desc: 'Stacking one column early fills it fast and leaves the cells beside it to your opponent.',
+          },
+          forgettingTheClock: {
+            title: 'Forgetting the clock',
+            desc: 'A timed-out move loses the whole round. On 30 seconds, settle on a column before the last few ticks.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend online',
+            desc: 'Send the four-digit code or the lobby link. Each disc appears on both screens the moment it lands, whatever device either of you uses.',
+          },
+          botsAndSolo: {
+            title: 'Play alone against a bot',
+            desc: 'Use Play vs Bot above for an instant game, or add a bot to the second seat of your own lobby.',
+          },
+          turnTimer: {
+            title: 'A clock both players see',
+            desc: 'The countdown shows on both screens, so nobody is left waiting on an opponent who wandered off.',
+          },
+          guestNoDownload: {
+            title: 'Nothing to install',
+            desc: 'It runs in any browser on a phone, tablet or computer, and a guest name is all you need to sit down.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Connect Four suits two people who want a quick game with a real decision in every move. The rules fit in one sentence, a round is over within 21 discs each, and a child can beat an adult who stops paying attention.',
+        },
+        history: {
+          origin: 'Connect Four was published by Milton Bradley in 1974 and has been sold under many names since, four in a row among them. Boardly uses the standard seven by six board.',
+          solved: 'In 1988 James D. Allen and Victor Allis showed independently that the first player can force a win with perfect play, starting in the middle column. Nobody plays 42 cells perfectly, which is why the strategy above still decides games.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Connect Four on Boardly free?',
+            a: 'Yes. Games with friends, all three bot levels and private lobbies cost nothing; Premium only adds cosmetic extras such as a custom avatar photo and never changes play.',
+          },
+          needAccount: {
+            q: 'Do I need an account to play?',
+            a: 'No. A guest name lets you create or join a lobby and play the bots. A guest who has played is kept for 90 days of inactivity; register to keep your profile for good.',
+          },
+          worksOnPhone: {
+            q: 'Can I play Connect Four on my phone?',
+            a: 'Yes. Tap a column to drop a disc; the board is sized to the screen, and the game runs in the browser with no app.',
+          },
+          howManyPlayers: {
+            q: 'How many people play at once?',
+            a: 'Exactly two per game: you and a friend, or you and a bot. For three or four people, Yahtzee and Memory on Boardly take bigger groups.',
+          },
+          canIUndo: {
+            q: 'Can I take back a move?',
+            a: 'You can ask. The request goes to your opponent and the disc only comes back out if they accept; a bot always accepts.',
+          },
+          sameAsConnect4: {
+            q: 'Is this the same game as Connect 4?',
+            a: 'Yes. Connect 4, Connect Four and four in a row are names for one game on the same seven by six board, and the rules here are the standard ones.',
+          },
+        },
       },
       lobbies: {
         title: 'Connect Four Lobbies',
@@ -1793,6 +1922,12 @@ const en = {
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
   },
   auth: {
+    inAppBrowser: {
+      title: "You're in {{app}}'s built-in browser",
+      body: 'Google does not allow sign-in here. Open this page in Safari or Chrome (tap ⋯ and choose Open in browser), or sign in with Discord, GitHub or email.',
+      copyLink: 'Copy link',
+      copied: 'Link copied – paste it into your browser',
+    },
     login: {
       heroQuote: '“Best\nFriday\nnight ever”',
       heroQuoteBy: '— our players about boardly',

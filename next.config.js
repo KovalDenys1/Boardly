@@ -1,5 +1,6 @@
 const { withSentryConfig } = require("@sentry/nextjs")
 const path = require("path")
+const { socialShortLinkRedirects } = require("./lib/social-short-links")
 
 const envDevOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -74,6 +75,20 @@ const nextConfig = {
         destination: '/games/yahtzee',
         permanent: true,
       },
+      // Folded into the game page by #1090 (SEO Track A, game two), on the
+      // same evidence as the Yahtzee guide above: Search Console listed it
+      // under "Crawled – currently not indexed" (read 2026-09-24) and it
+      // earned no impressions. Its strategy now lives at
+      // /games/connect-four#strategy; the redirect lands on the page itself
+      // for the same reason as above.
+      {
+        source: '/guides/connect-four-strategy-guide',
+        destination: '/games/connect-four',
+        permanent: true,
+      },
+      // Typeable links for social posts (#1096): /tt, /ig, /yt, /fb, /th,
+      // /pin, /x -> the home page with UTM. 307, so they can be retargeted.
+      ...socialShortLinkRedirects(),
     ]
   },
   // Allow local host variants in development to prevent HMR/CORS failures

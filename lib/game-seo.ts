@@ -7,6 +7,7 @@ import {
   hasBotSupport,
   type GameSeo,
 } from './game-catalog'
+import { OG_SITE_DEFAULTS, gameSocialCardKey, socialImages } from './social-preview'
 
 /**
  * One builder for every `/games/<game>` page's metadata and structured data
@@ -83,11 +84,15 @@ export function buildGameMetadata(id: string, options?: { index?: boolean }): Me
   const url = `${BASE}${path}`
   const title = renderedTitle(seo)
 
+  const images = socialImages(gameSocialCardKey(id))
+
   return {
     title: seo.title,
     description: seo.description,
     keywords: seo.synonyms,
     openGraph: {
+      ...OG_SITE_DEFAULTS,
+      images,
       title,
       description: seo.description,
       url,
@@ -95,6 +100,7 @@ export function buildGameMetadata(id: string, options?: { index?: boolean }): Me
     },
     twitter: {
       card: 'summary_large_image',
+      images,
       title,
       description: seo.description,
     },

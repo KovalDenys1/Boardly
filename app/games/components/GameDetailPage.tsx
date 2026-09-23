@@ -361,7 +361,7 @@ export default function GameDetailPage({
             <div className="flex shrink-0 flex-wrap gap-2">
               {guides.map((guide) => (
                 <Link key={guide.slug} href={`/guides/${guide.slug}`} className="bd-btn bd-btn-soft text-sm">
-                  {guide.category === 'strategy' ? t('games.readStrategyGuide') : t('games.readGuide')}
+                  {t('games.readGuide')}
                 </Link>
               ))}
             </div>

@@ -29,7 +29,8 @@ export const ROUTE_UPDATED = {
   '/games/spy': '2026-09-15',
   '/games/tic-tac-toe': '2026-09-15',
   '/games/memory': '2026-09-15',
-  '/games/connect-four': '2026-09-15',
+  // #1090 expanded the page and folded the strategy guide into it.
+  '/games/connect-four': '2026-09-24',
   '/games/alias': '2026-09-15',
   // #1043 added the guide link to the detail page, and the new guide to the
   // catalog the /guides index lists from.

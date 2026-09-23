@@ -51,7 +51,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${BASE}/guides/${guide.slug}`,
       lastModified: new Date(guide.updated),
       changeFrequency: 'monthly' as const,
-      priority: guide.category === 'strategy' ? 0.75 : 0.8,
+      priority: 0.8,
     })),
 
     // Legal

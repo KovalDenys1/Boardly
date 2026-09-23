@@ -1,66 +1,49 @@
 import type { Metadata } from 'next'
-import { prisma } from '@/lib/db'
-import { getGameMetadata } from '@/lib/game-catalog'
+import { BOARDLY_URL } from '@/lib/organization-json-ld'
+import { getLobbyPreview, lobbyPreviewText } from '@/lib/lobby-preview'
+import { OG_SITE_DEFAULTS, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from '@/lib/social-preview'
 
+/**
+ * The invite preview (#1091): game and seat count, never a username – see
+ * lib/lobby-preview.ts. Absolute title so the root template does not append a
+ * second "| Boardly" to a title that already ends in "on Boardly".
+ */
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ code: string }>
 }): Promise<Metadata> {
   const { code } = await params
-
-  let title = 'Join a Game — Boardly'
-  let description = 'Play board games online with friends on Boardly.'
-
-  try {
-    const lobby = await prisma.lobbies.findUnique({
-      where: { code },
-      select: {
-        gameType: true,
-        isActive: true,
-        creator: { select: { username: true } },
-        games: {
-          where: { status: 'waiting' },
-          select: { _count: { select: { players: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-        maxPlayers: true,
-      },
-    })
-
-    if (lobby && lobby.isActive) {
-      const meta = getGameMetadata(lobby.gameType)
-      const gameName = meta?.name ?? lobby.gameType
-      const host = lobby.creator?.username ?? 'Someone'
-      const players = lobby.games[0]?._count?.players ?? 0
-      title = `Join ${host}'s ${gameName} lobby — Boardly`
-      description = `${players}/${lobby.maxPlayers} players. Click to join and play ${gameName} right now!`
-    }
-  } catch {
-    // fallback
+  const { title, description } = lobbyPreviewText(await getLobbyPreview(code))
+  const safeCode = encodeURIComponent(code)
+  const image = {
+    url: `/og/lobby/${safeCode}`,
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: title,
+    type: 'image/png',
   }
 
-  const ogImageUrl = `/api/og/lobby/${code}`
-
   return {
-    title,
+    title: { absolute: title },
     description,
     robots: {
       index: false,
       follow: false,
     },
     openGraph: {
+      ...OG_SITE_DEFAULTS,
       title,
       description,
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+      url: `${BOARDLY_URL}/lobby/${safeCode}`,
+      images: [image],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [ogImageUrl],
+      images: [image],
     },
   }
 }
