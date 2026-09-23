@@ -1922,6 +1922,12 @@ const no = {
     sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje'
   },
   auth: {
+    inAppBrowser: {
+      title: 'Du er i nettleseren inne i {{app}}',
+      body: 'Google tillater ikke innlogging her. Åpne siden i Safari eller Chrome (trykk ⋯ og velg Åpne i nettleser), eller logg inn med Discord, GitHub eller e-post.',
+      copyLink: 'Kopier lenke',
+      copied: 'Lenken er kopiert – lim den inn i nettleseren',
+    },
     login: {
       heroQuote: '«Beste\nfredagskvelden\nnoensinne»',
       heroQuoteBy: '— spillerne våre om boardly',

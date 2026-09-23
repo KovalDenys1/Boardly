@@ -2,12 +2,15 @@ import type { Metadata } from 'next'
 import PremiumContent from './PremiumContent'
 import { getPremiumPricing } from '@/lib/server/premium-pricing'
 import { PREMIUM_DESCRIPTION, PREMIUM_TITLE, PREMIUM_URL, premiumProductJsonLd } from './premium-json-ld'
+import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
 export const metadata: Metadata = {
   // absolute: the layout template would append "| Boardly" a second time.
   title: { absolute: PREMIUM_TITLE },
   description: PREMIUM_DESCRIPTION,
   openGraph: {
+    ...OG_SITE_DEFAULTS,
+    images: socialImages('premium'),
     title: 'Boardly Premium',
     description: PREMIUM_DESCRIPTION,
     url: PREMIUM_URL,
@@ -15,6 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    images: socialImages('premium'),
     title: 'Boardly Premium',
     description: PREMIUM_DESCRIPTION,
   },

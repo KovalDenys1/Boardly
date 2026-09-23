@@ -38,6 +38,8 @@ export function captureSignupSource(): string | null {
       utmCampaign: params.get('utm_campaign'),
       referrer: document.referrer,
       currentHostname: window.location.hostname,
+      userAgent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+      search: window.location.search,
     })
   } catch {
     // Nothing here can realistically throw, but attribution is never worth a broken page.

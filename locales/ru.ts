@@ -2011,6 +2011,12 @@ const ru = {
     sendHelp: 'Нажмите Enter для отправки • Shift+Enter для новой строки'
   },
   auth: {
+    inAppBrowser: {
+      title: 'Вы во встроенном браузере {{app}}',
+      body: 'Google не разрешает входить отсюда. Откройте страницу в Safari или Chrome (нажмите ⋯ и выберите «Открыть в браузере») или войдите через Discord, GitHub или e-mail.',
+      copyLink: 'Скопировать ссылку',
+      copied: 'Ссылка скопирована – вставьте её в браузер',
+    },
     login: {
       heroQuote: '«Лучший\nвечер\nпятницы»',
       heroQuoteBy: '— наши игроки о boardly',
