@@ -65,7 +65,7 @@ export default function HowToPlayConnectFourGuide() {
           { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
           { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
           { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
-          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
+          { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
         ]}
       >
         <GuideSection title="What You Need">
@@ -150,7 +150,7 @@ export default function HowToPlayConnectFourGuide() {
             },
           ]} />
                   <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            The <Link href="/guides/connect-four-strategy-guide" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four strategy guide</Link> goes deeper: centre control, the double threat and the mistakes that lose games.
+            These five cover the basics. For the deeper plan – keeping two threats in separate columns, why odd and even rows matter and how to play the hard bot – read the <Link href="/games/connect-four#strategy" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>strategy section of the Connect Four game page</Link>.
           </p>
         </GuideSection>
 
