@@ -304,6 +304,19 @@ describe('ConnectFourGame', () => {
       expect(g.getState().status).toBe('finished')
       expect(g.getState().winner).toBe('p2')
     })
+
+    it('adds a point to the winner, as a four-in-a-row win does (#1093)', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'timeout-forfeit', {}))
+      const score = (id: string) => g.getState().players.find((p) => p.id === id)?.score
+      expect(score('p2')).toBe(1)
+      expect(score('p1') ?? 0).toBe(0)
+
+      g.makeMove(createMove('p1', 'next-round', {}))
+      const forfeiting = getData(g).currentDisc === 1 ? 'p1' : 'p2'
+      g.makeMove(createMove(forfeiting, 'timeout-forfeit', {}))
+      expect((score('p1') ?? 0) + (score('p2') ?? 0)).toBe(2)
+    })
   })
 
   describe('next-round', () => {
