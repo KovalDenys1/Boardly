@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { socialShortLinkDisallow } from '@/lib/social-short-links'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -13,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '/lobby/',      // live game rooms — dynamic, not useful for search
           '/profile/',    // user profiles — private content
           '/friends',     // friends list — private content
+          ...socialShortLinkDisallow(), // social short links (#1096) — redirects only
         ],
       },
     ],

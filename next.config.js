@@ -1,5 +1,6 @@
 const { withSentryConfig } = require("@sentry/nextjs")
 const path = require("path")
+const { socialShortLinkRedirects } = require("./lib/social-short-links")
 
 const envDevOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -85,6 +86,9 @@ const nextConfig = {
         destination: '/games/connect-four',
         permanent: true,
       },
+      // Typeable links for social posts (#1096): /tt, /ig, /yt, /fb, /th,
+      // /pin, /x -> the home page with UTM. 307, so they can be retargeted.
+      ...socialShortLinkRedirects(),
     ]
   },
   // Allow local host variants in development to prevent HMR/CORS failures
