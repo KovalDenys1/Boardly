@@ -21,7 +21,7 @@ import {
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { resolveRequestedMaxPlayers } from '@/lib/lobby-create-query'
-import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import { AuthGateModal } from '@/components/AuthGateModal'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 
 type GameType = SupportedCatalogGameType
@@ -100,7 +100,7 @@ function CreateLobbyPage() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { isGuest } = useGuest()
 
   const requestedGameType = searchParams.get('gameType')
@@ -166,11 +166,11 @@ function CreateLobbyPage() {
     }
   }, [selectedGameType, gameInfo, deepLinkMaxPlayers])
 
-  useEffect(() => {
-    if (status === 'unauthenticated' && !isGuest) {
-      router.push('/')
-    }
-  }, [status, isGuest, router])
+  // A logged-out visitor used to be bounced to `/` with no explanation, which
+  // is where every shared /lobby/create?gameType=… link landed them. Show the
+  // form behind the same gate Play vs Bot uses (#908): guest name, log in or
+  // sign up, and back to the page they asked for. Only dismissing it leaves.
+  const needsIdentity = status !== 'authenticated' && !isGuest
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -218,10 +218,9 @@ function CreateLobbyPage() {
     let createMetricTracked = false
 
     try {
-      if (!session && !isGuest) {
-        router.push(buildCurrentAuthUrl('login'))
-        return
-      }
+      // The gate covers the form whenever this is true; this only stops a submit
+      // that slips past it from reaching the API with no identity.
+      if (needsIdentity) return
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
@@ -350,10 +349,6 @@ function CreateLobbyPage() {
         <div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>{t('common.loading')}</div>
       </div>
     )
-  }
-
-  if (status === 'unauthenticated' && !isGuest) {
-    return null
   }
 
   const sliderPct = gameInfo.allowedPlayers.length > 1
@@ -1037,6 +1032,17 @@ function CreateLobbyPage() {
           </button>
         </div>
       </div>
+
+      {needsIdentity && (
+        <AuthGateModal
+          dest={`/lobby/create${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
+          // Visibility is derived from the session, so there is nothing to reset:
+          // guest play flips isGuest and the gate goes away with the form intact.
+          onClose={() => {}}
+          onGuestReady={() => {}}
+          onDismiss={() => router.push('/')}
+        />
+      )}
 
       {!isGuest && (
         <FriendsListModal
