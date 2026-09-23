@@ -562,6 +562,17 @@ const uk: TranslationWithPlurals = {
         casual: 'Казуальна',
         threeLevels: '3 рівні',
       },
+      sections: {
+        rules: 'Правила гри «{{gameName}}»',
+        scoring: 'Підрахунок очок у грі «{{gameName}}»',
+        modes: 'Режими та налаштування',
+        strategy: 'Стратегія гри «{{gameName}}»',
+        mistakes: 'Поширені помилки',
+        multiplayer: 'Гра разом онлайн',
+        audience: 'Кому підійде',
+        history: 'Історія гри «{{gameName}}»',
+        faq: 'Запитання про гру «{{gameName}}» на Boardly',
+      },
     },
     yahtzee: {
       name: 'Ятці',

@@ -111,6 +111,45 @@ describe('game SEO catalog (#929)', () => {
   })
 })
 
+describe('game FAQ sections (#1077)', () => {
+  const WITH_FAQ = SEO_GAMES.filter((game) => game.seo!.faq)
+
+  it('ships at least three entries when it ships any, with no key repeated', () => {
+    for (const game of WITH_FAQ) {
+      const faq = game.seo!.faq!
+      expect(faq.length).toBeGreaterThanOrEqual(3)
+      const keys = faq.flatMap(({ questionKey, answerKey }) => [questionKey, answerKey])
+      expect(new Set([...keys, game.seo!.questionKey, game.seo!.answerKey]).size).toBe(keys.length + 2)
+    }
+  })
+
+  it('asks one question per entry and answers it in one paragraph, in all four locales', () => {
+    for (const game of WITH_FAQ) {
+      for (const { questionKey, answerKey } of game.seo!.faq!) {
+        for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+          const question = localeValue(locale, questionKey)
+          const answer = localeValue(locale, answerKey)
+          expect({ name, questionKey, type: typeof question }).toEqual({ name, questionKey, type: 'string' })
+          expect({ name, answerKey, type: typeof answer }).toEqual({ name, answerKey, type: 'string' })
+          expect((question as string).match(/\?/g)).toHaveLength(1)
+          expect(question as string).toMatch(/\?$/)
+          expect(answer as string).not.toContain('\n')
+          expect(answer as string).not.toContain('—')
+          expect(question as string).not.toContain('—')
+          expect((answer as string).length).toBeGreaterThan(80)
+          expect((answer as string).length).toBeLessThanOrEqual(320)
+        }
+      }
+    }
+  })
+
+  it('renders the FAQ section from the catalog on the game page', () => {
+    const source = readFileSync(path.join(root, 'app/games/components/GameDetailPage.tsx'), 'utf8')
+    expect(source).toContain('seo?.faq')
+    expect(source).toContain('id="faq"')
+  })
+})
+
 describe('game direct answers (#929)', () => {
   it('asks one question and answers it in one paragraph, in all four locales', () => {
     for (const game of SEO_GAMES) {
@@ -194,15 +233,22 @@ describe('game metadata and JSON-LD (#929)', () => {
     expect(buildGameJsonLd('alias')[0].playMode).toBe('MultiPlayer')
   })
 
-  it('carries one FAQ entry, and it is the text the page renders', () => {
+  it('carries the direct answer first, then every catalog FAQ entry, and nothing else', () => {
     for (const game of SEO_GAMES) {
       const faq = buildGameJsonLd(game.id).find((schema) => schema['@type'] === 'FAQPage')!
       const entries = faq.mainEntity as { name: string; acceptedAnswer: { text: string } }[]
-      // Not a question list: structured data a visitor cannot see on the page
-      // is a violation, and this page's answer is the one above the fold.
-      expect(entries).toHaveLength(1)
-      expect(entries[0].name).toBe(englishText(game.seo!.questionKey))
-      expect(entries[0].acceptedAnswer.text).toBe(englishText(game.seo!.answerKey))
+      // Structured data a visitor cannot see on the page is a violation: the
+      // direct answer is above the fold and the rest is the page's #faq
+      // section, both read from this same catalog entry.
+      const expected = [
+        { questionKey: game.seo!.questionKey, answerKey: game.seo!.answerKey },
+        ...(game.seo!.faq ?? []),
+      ]
+      expect(entries).toHaveLength(expected.length)
+      expected.forEach(({ questionKey, answerKey }, index) => {
+        expect(entries[index].name).toBe(englishText(questionKey))
+        expect(entries[index].acceptedAnswer.text).toBe(englishText(answerKey))
+      })
     }
   })
 

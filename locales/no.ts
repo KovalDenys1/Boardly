@@ -516,6 +516,17 @@ const no = {
         casual: 'Uformelt',
         threeLevels: '3 nivåer',
       },
+      sections: {
+        rules: 'Regler for {{gameName}}',
+        scoring: 'Poeng i {{gameName}}',
+        modes: 'Moduser og innstillinger',
+        strategy: 'Strategi i {{gameName}}',
+        mistakes: 'Vanlige feil',
+        multiplayer: 'Spill sammen på nett',
+        audience: 'Hvem det passer for',
+        history: 'Hvor {{gameName}} kommer fra',
+        faq: 'Spørsmål om {{gameName}} på Boardly',
+      },
     },
     yahtzee: {
       name: 'Yatzy',

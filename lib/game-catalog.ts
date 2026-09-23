@@ -74,6 +74,19 @@ export type GameSeo = {
    * shipped until #923.
    */
   answerKey: TranslationKeys
+  /**
+   * The product questions the page answers under its own `<section id="faq">`
+   * – is it free, is there a bot, what the timer does – and the rest of the
+   * FAQPage JSON-LD after the direct answer. One array drives both, so #923's
+   * rule (no schema answer a visitor cannot see) holds by construction. The
+   * how-to guide keeps the rules questions; these two sets stay disjoint.
+   */
+  faq?: GameFaqEntry[]
+}
+
+export type GameFaqEntry = {
+  questionKey: TranslationKeys
+  answerKey: TranslationKeys
 }
 
 type GameCatalogEntryBase = {

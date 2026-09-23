@@ -560,6 +560,17 @@ const ru = {
         casual: 'Казуальная',
         threeLevels: '3 уровня',
       },
+      sections: {
+        rules: 'Правила игры «{{gameName}}»',
+        scoring: 'Подсчёт очков в игре «{{gameName}}»',
+        modes: 'Режимы и настройки',
+        strategy: 'Стратегия игры «{{gameName}}»',
+        mistakes: 'Частые ошибки',
+        multiplayer: 'Игра вместе онлайн',
+        audience: 'Кому подойдёт',
+        history: 'История игры «{{gameName}}»',
+        faq: 'Вопросы об игре «{{gameName}}» на Boardly',
+      },
     },
     yahtzee: {
       name: 'Ятзи',

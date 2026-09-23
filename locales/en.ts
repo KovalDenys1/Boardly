@@ -516,6 +516,17 @@ const en = {
         casual: 'Casual',
         threeLevels: '3 levels',
       },
+      sections: {
+        rules: '{{gameName}} rules',
+        scoring: '{{gameName}} scoring',
+        modes: 'Modes and settings',
+        strategy: '{{gameName}} strategy',
+        mistakes: 'Common mistakes',
+        multiplayer: 'Playing together online',
+        audience: 'Who it suits',
+        history: 'Where {{gameName}} comes from',
+        faq: 'Questions about {{gameName}} on Boardly',
+      },
     },
     yahtzee: {
       name: 'Yahtzee',
