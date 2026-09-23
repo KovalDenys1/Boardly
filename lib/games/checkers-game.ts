@@ -258,7 +258,8 @@ export function applyTurn(board: readonly (readonly number[])[], turn: CheckersT
   return next
 }
 
-function sameSquare(a: unknown, r: number, c: number): boolean {
+/** Whether `a` is the square (r, c). Shared with the page, so the two can never disagree. */
+export function sameSquare(a: unknown, r: number, c: number): boolean {
   return Array.isArray(a) && a[0] === r && a[1] === c
 }
 
@@ -305,20 +306,65 @@ export class CheckersGame extends GameEngine {
     data.lastMove = data.lastMove ?? null
     data.endReason = data.endReason ?? null
     data.quietPlies = typeof data.quietPlies === 'number' ? data.quietPlies : 0
+    this.syncSideToSeat()
   }
 
   private get data(): CheckersGameData {
     return this.state.data as CheckersGameData
   }
 
+  /**
+   * The side to move is the seat on the clock – seat 0 plays side 1 – and
+   * nothing else (PR #1097 review). The state route skips a disconnected seat by
+   * moving `currentPlayerIndex` alone (`advanceTurnPastDisconnectedPlayers`), so a
+   * stored `currentSide` that is trusted on its own drifts from the seat, and the
+   * seat that inherits the turn could then move the other side's pieces.
+   * `data.currentSide` stays in the state for the page and old snapshots, but it
+   * is rewritten from the seat before anything reads it.
+   */
+  private seatSide(): Side {
+    return ((this.state.currentPlayerIndex ?? 0) % 2 === 0 ? 1 : 2) as Side
+  }
+
+  private syncSideToSeat(): void {
+    const data = this.data
+    if (!data || !Array.isArray(data.board)) return
+    const side = this.seatSide()
+    data.currentSide = side
+    if (data.winner !== null) return
+
+    // A capture chain left open by a seat that was skipped belongs to nobody on
+    // the clock now. English draughts lifts jumped pieces when the move ends, so
+    // the abandoned move ends here: its captures come off and the chain closes.
+    const chain = data.chainFrom
+    if (chain && pieceSide(data.board[chain[0]]?.[chain[1]] ?? 0) !== side) {
+      for (const [r, c] of data.pendingCaptures) data.board[r][c] = 0
+      data.pendingCaptures = []
+      data.chainFrom = null
+      data.moveCount += 1
+      data.quietPlies = 0
+      if (this.state.status === 'playing' && getLegalSteps(data.board, side).length === 0) {
+        this.finish(otherSide(side), 'no-moves')
+      }
+    }
+  }
+
+  /** Every turn hand-over goes through here, so the side follows the seat. */
+  protected advanceTurnIndex(): void {
+    super.advanceTurnIndex()
+    this.syncSideToSeat()
+  }
+
   /** Legal single hops for the side to move, honouring an unfinished chain. */
   getLegalSteps(): CheckersStep[] {
+    this.syncSideToSeat()
     const data = this.data
     if (this.state.status !== 'playing' || data.winner !== null) return []
     return getLegalSteps(data.board, data.currentSide, data.chainFrom, data.pendingCaptures)
   }
 
   validateMove(move: Move): boolean {
+    this.syncSideToSeat()
     const data = this.data
 
     if (move.type === 'next-round') {
@@ -336,7 +382,8 @@ export class CheckersGame extends GameEngine {
     const from = readSquare((move.data as { from?: unknown }).from)
     const to = readSquare((move.data as { to?: unknown }).to)
     if (!from || !to) return false
-    if (pieceSide(data.board[from[0]][from[1]]) !== data.currentSide) return false
+    // The seat's own side, never a stored field that could have drifted from it.
+    if (pieceSide(data.board[from[0]][from[1]]) !== playerIndex + 1) return false
 
     return this.getLegalSteps().some(
       (step) => sameSquare(step.from, from[0], from[1]) && sameSquare(step.to, to[0], to[1])
@@ -352,13 +399,18 @@ export class CheckersGame extends GameEngine {
       this.state.status = 'playing'
       this.state.winner = undefined
       this.state.lastMoveAt = Date.now()
+      this.syncSideToSeat()
       return
     }
 
     if (move.type === 'timeout-forfeit') {
-      this.finish(otherSide(data.currentSide), 'timeout')
+      // The opponent of the seat whose clock ran out.
+      const seat = this.state.players.findIndex((p) => p.id === move.playerId)
+      this.finish(otherSide((seat + 1) as Side), 'timeout')
       return
     }
+
+    this.syncSideToSeat()
 
     const from = readSquare((move.data as { from?: unknown }).from) as Square
     const to = readSquare((move.data as { to?: unknown }).to) as Square
@@ -420,7 +472,8 @@ export class CheckersGame extends GameEngine {
       this.state.winner = undefined
       return
     }
-    data.currentSide = next
+    // The side to move follows the seat: makeMove's advanceTurnIndex hands the
+    // turn over and syncSideToSeat sets currentSide from it.
   }
 
   private finish(winnerSide: Side, reason: CheckersEndReason): void {

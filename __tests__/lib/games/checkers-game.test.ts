@@ -11,7 +11,9 @@ import {
   generateTurns,
   getForcedCapturePieces,
   isDarkSquare,
+  pieceSide,
 } from '@/lib/games/checkers-game'
+import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 
 const step = (playerId: string, from: Square, to: Square): Move => ({
   playerId,
@@ -305,6 +307,73 @@ describe('CheckersGame', () => {
       expect(data.moveHistory).toEqual([])
       expect(g.getLegalSteps()).toHaveLength(7)
       expect(g.getState().players[0].score).toBe(1)
+    })
+  })
+
+  describe('seat and side stay one thing (PR #1097 review)', () => {
+    /**
+     * What the state route does after every accepted move: the seat on the clock
+     * is skipped when its player has gone, by moving currentPlayerIndex alone.
+     * The result is persisted and the next request restores it.
+     */
+    const skipDisconnectedSeat = (g: CheckersGame, disconnectedId: string): CheckersGame => {
+      const state = JSON.parse(JSON.stringify(g.getState()))
+      state.players = state.players.map((p: { id: string }) =>
+        p.id === disconnectedId ? { ...p, isActive: false } : p
+      )
+      const result = advanceTurnPastDisconnectedPlayers(state as TurnState, new Set())
+      expect(result.changed).toBe(true)
+      const restored = new CheckersGame('ck-test')
+      restored.restoreState(state)
+      return restored
+    }
+
+    it('does not let the seat that inherits the turn move the other side\'s pieces', () => {
+      const g = skipDisconnectedSeat(makeReadyGame(), 'p1')
+      expect(g.getState().currentPlayerIndex).toBe(1)
+      // p2 now holds the turn: it may move only side 2's men.
+      expect(g.makeMove(step('p2', [5, 0], [4, 1]))).toBe(false)
+      expect(getData(g).currentSide).toBe(2)
+      expect(g.makeMove(step('p2', [2, 1], [3, 0]))).toBe(true)
+      expect(getData(g).board[3][0]).toBe(2)
+      expect(getData(g).board[5][0]).toBe(1)
+    })
+
+    it('does not let the inheriting seat finish the other side\'s capture chain', () => {
+      const g0 = makeReadyGame()
+      setPosition(g0, [[7, 0, 1], [6, 1, 2], [4, 3, 2], [0, 7, 2], [7, 6, 1]], 1)
+      expect(g0.makeMove(step('p1', [7, 0], [5, 2]))).toBe(true)
+      expect(getData(g0).chainFrom).toEqual([5, 2])
+
+      const g = skipDisconnectedSeat(g0, 'p1')
+      expect(g.makeMove(step('p2', [5, 2], [3, 4]))).toBe(false)
+      const data = getData(g)
+      // The abandoned chain is closed: the piece it took is off the board and
+      // nothing is left mid-chain for anyone.
+      expect(data.chainFrom).toBeNull()
+      expect(data.pendingCaptures).toEqual([])
+      expect(data.board[6][1]).toBe(0)
+      expect(data.currentSide).toBe(2)
+      expect(g.getLegalSteps().every((s) => pieceSide(data.board[s.from[0]][s.from[1]]) === 2)).toBe(true)
+    })
+
+    it('awards a timeout to the opponent of the seat that timed out', () => {
+      const g = skipDisconnectedSeat(makeReadyGame(), 'p1')
+      expect(g.makeMove({ playerId: 'p2', type: 'timeout-forfeit', data: {}, timestamp: new Date() })).toBe(true)
+      expect(g.getState().winner).toBe('p1')
+      expect(getData(g).winner).toBe(1)
+    })
+
+    it('starts the rematch after a skip with seat 0 on side 1', () => {
+      const g = skipDisconnectedSeat(makeReadyGame(), 'p1')
+      g.makeMove({ playerId: 'p2', type: 'timeout-forfeit', data: {}, timestamp: new Date() })
+      expect(g.makeMove({ playerId: 'p1', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
+      expect(g.getState().currentPlayerIndex).toBe(0)
+      expect(getData(g).currentSide).toBe(1)
+      expect(g.makeMove(step('p2', [5, 0], [4, 1]))).toBe(false)
+      expect(g.makeMove(step('p1', [5, 0], [4, 1]))).toBe(true)
+      expect(g.getState().currentPlayerIndex).toBe(1)
+      expect(getData(g).currentSide).toBe(2)
     })
   })
 
