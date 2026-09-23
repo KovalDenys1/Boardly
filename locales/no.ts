@@ -493,7 +493,7 @@ const no = {
     startPlaying: 'Begynn å spille',
     noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
     stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
-    guideCallout: 'Ny i {{gameName}}? Les de fullstendige reglene og tipsene.',
+    guideCallout: 'Ny i {{gameName}}? Les reglene og hvordan du spiller.',
     screenshotAlt: 'En runde {{gameName}} i gang på Boardly',
     readGuide: 'Les guiden →',
     detail: {
@@ -1232,7 +1232,7 @@ const no = {
           },
           canIUndo: {
             q: 'Kan jeg angre et trekk?',
-            a: 'Du kan be om det. Forespørselen går til motstanderen, og brikken tas bare ut igjen hvis de sier ja; en bot bestemmer selv.',
+            a: 'Du kan be om det. Forespørselen går til motstanderen, og brikken tas bare ut igjen hvis de sier ja; en bot sier alltid ja.',
           },
           sameAsConnect4: {
             q: 'Er dette det samme spillet som Connect 4?',

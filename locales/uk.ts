@@ -539,7 +539,7 @@ const uk: TranslationWithPlurals = {
     startPlaying: 'Почати грати',
     noDownloadNeeded: 'Грай як гість. Завантажувати нічого не потрібно.',
     stillBeingPolished: 'Ця гра ще розробляється.',
-    guideCallout: 'Вперше в {{gameName}}? Читай повні правила та поради.',
+    guideCallout: 'Вперше в {{gameName}}? Читай правила та як грати.',
     screenshotAlt: 'Партія в {{gameName}} на Boardly',
     readGuide: 'Читати гайд →',
     detail: {
@@ -1284,7 +1284,7 @@ const uk: TranslationWithPlurals = {
           },
           canIUndo: {
             q: 'Чи можна скасувати хід?',
-            a: 'Можна попросити. Запит іде суперникові, і фішку повертають, лише якщо він погодиться; бот вирішує сам.',
+            a: 'Можна попросити. Запит іде суперникові, і фішку повертають, лише якщо він погодиться; бот завжди погоджується.',
           },
           sameAsConnect4: {
             q: 'Це та сама гра, що Connect 4?',

@@ -493,7 +493,7 @@ const en = {
     startPlaying: 'Start playing',
     noDownloadNeeded: 'You can play as a guest. No app download needed.',
     stillBeingPolished: 'This game is still being polished.',
-    guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
+    guideCallout: 'New to {{gameName}}? Read the rules and how to play.',
     screenshotAlt: 'A round of {{gameName}} in progress on Boardly',
     readGuide: 'Read the guide →',
     detail: {
@@ -1232,7 +1232,7 @@ const en = {
           },
           canIUndo: {
             q: 'Can I take back a move?',
-            a: 'You can ask. The request goes to your opponent and the disc only comes back out if they accept; a bot decides on its own.',
+            a: 'You can ask. The request goes to your opponent and the disc only comes back out if they accept; a bot always accepts.',
           },
           sameAsConnect4: {
             q: 'Is this the same game as Connect 4?',
