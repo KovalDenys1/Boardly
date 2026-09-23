@@ -105,7 +105,6 @@ const STATIC_CARDS: Record<string, SocialCard> = {
 
 const GUIDE_EYEBROW: Record<GuideCategory, string> = {
   'how-to-play': 'How to play',
-  strategy: 'Strategy guide',
   'best-of': 'Game night picks',
 }
 
