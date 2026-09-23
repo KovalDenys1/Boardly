@@ -6,7 +6,7 @@ import {
   Side,
   generateTurns,
 } from '@/lib/games/checkers-game'
-import { CheckersBot, evaluateCheckersBoard } from '@/lib/bots/checkers/checkers-bot'
+import { CHECKERS_HARD_TIME_BUDGET_MS, CheckersBot, evaluateCheckersBoard } from '@/lib/bots/checkers/checkers-bot'
 import { CheckersBotExecutor } from '@/lib/bots/checkers/checkers-bot-executor'
 import type { BotDifficulty } from '@/lib/bots/core/bot-types'
 
@@ -45,13 +45,28 @@ const playBotTurn = async (g: CheckersGame, difficulty: BotDifficulty, botId = B
   })
 }
 
+/**
+ * The bot itself with a short search budget, hop by hop through makeMove. The
+ * executor always gives hard its full budget, which is right for a real turn
+ * and far too slow for a test that plays hundreds of them.
+ */
+const playFastTurn = async (g: CheckersGame, difficulty: BotDifficulty, actor: string, timeBudgetMs = 15) => {
+  const bot = new CheckersBot(g, difficulty, actor, { timeBudgetMs })
+  const decision = await bot.makeDecision()
+  decision.steps.forEach((_, index) => {
+    const move = bot.decisionToMove(decision, index)
+    if (!g.makeMove(move)) throw new Error(`Bot move rejected: ${JSON.stringify(move.data)}`)
+  })
+}
+
 describe('CheckersBot', () => {
-  it.each<[BotDifficulty, number]>([['easy', 150], ['medium', 150], ['hard', 10]])('%s plays only legal turns against itself', async (difficulty, plies) => {
+  it.each<[BotDifficulty, number]>([['easy', 150], ['medium', 150], ['hard', 60]])('%s plays only legal turns against itself', async (difficulty, plies) => {
     const g = makeGame()
     for (let ply = 0; ply < plies && g.getState().status === 'playing'; ply++) {
       const actor = g.getCurrentPlayer()?.id as string
       const sideBefore = getData(g).currentSide
-      await playBotTurn(g, difficulty, actor)
+      if (difficulty === 'hard') await playFastTurn(g, difficulty, actor)
+      else await playBotTurn(g, difficulty, actor)
       if (g.getState().status === 'playing') {
         // The turn always ends with the chain finished and the other side to move.
         expect(getData(g).chainFrom).toBeNull()
@@ -94,21 +109,72 @@ describe('CheckersBot', () => {
       const g = makeGame()
       for (let ply = 0; ply < 300 && g.getState().status === 'playing'; ply++) {
         const actor = g.getCurrentPlayer()?.id as string
-        await playBotTurn(g, actor === BOT ? 'hard' : 'easy', actor)
+        await playFastTurn(g, actor === BOT ? 'hard' : 'easy', actor)
       }
       if (g.getState().winner === BOT) hardWins++
     }
     expect(hardWins).toBeGreaterThanOrEqual(3)
   }, 60_000)
 
-  it('hard answers within its time budget from the opening', async () => {
+  it('hard deepens until its budget is spent, and never past about a second', async () => {
     const g = makeGame()
     g.makeMove({ playerId: HUMAN, type: 'step', data: { from: [5, 2], to: [4, 3] }, timestamp: new Date() })
     const started = Date.now()
     const decision = await new CheckersBot(g, 'hard', BOT).makeDecision()
-    expect(Date.now() - started).toBeLessThan(2500)
+    const elapsed = Date.now() - started
+    expect(CHECKERS_HARD_TIME_BUDGET_MS).toBeLessThanOrEqual(900)
+    expect(elapsed).toBeLessThan(1100)
     const legal = generateTurns(getData(g).board, 2).map((t) => JSON.stringify(t.steps))
     expect(legal).toContain(JSON.stringify(decision.steps))
+  })
+
+  it('cannot be given a budget above the cap', async () => {
+    const g = makeGame()
+    const started = Date.now()
+    await new CheckersBot(g, 'hard', HUMAN, { timeBudgetMs: 60_000 }).makeDecision()
+    expect(Date.now() - started).toBeLessThan(1100)
+  })
+
+  it('plays a legal move when the clock runs out inside the first real depth', async () => {
+    const g = makeGame()
+    const decision = await new CheckersBot(g, 'hard', HUMAN, { timeBudgetMs: 1 }).makeDecision()
+    const legal = generateTurns(getData(g).board, 1).map((t) => JSON.stringify(t.steps))
+    expect(legal).toContain(JSON.stringify(decision.steps))
+  })
+
+  it('hard draws among equally good moves instead of always playing the first', async () => {
+    const g = makeGame()
+    // A lone man on the back row with two equal first steps, and nothing near it.
+    setPosition(g, [[0, 3, 2], [7, 0, 1]], 2)
+    const pick = async (random: number) => {
+      const spy = jest.spyOn(Math, 'random').mockReturnValue(random)
+      try {
+        return (await new CheckersBot(g, 'hard', BOT, { timeBudgetMs: 60 }).makeDecision()).steps[0].to
+      } finally {
+        spy.mockRestore()
+      }
+    }
+    const low = await pick(0)
+    const high = await pick(0.9999)
+    expect([low, high]).toEqual(expect.arrayContaining([[1, 2], [1, 4]]))
+  })
+
+  it.each<BotDifficulty>(['medium', 'hard'])('%s finishes a chain along the branch that takes the most', async (difficulty) => {
+    const g = makeGame()
+    // Mid-chain at (2,3): over (3,2) to (4,1) goes on over (5,2) to (6,3); over
+    // (3,4) to (4,5) stops there. Random used to take either.
+    const state = g.getState()
+    const board: CheckersCell[][] = Array.from({ length: 8 }, () => Array<CheckersCell>(8).fill(0))
+    for (const [r, c, v] of [[2, 3, 2], [3, 2, 1], [5, 2, 1], [3, 4, 1], [7, 6, 1]] as const) board[r][c] = v
+    g.restoreState({
+      ...state,
+      currentPlayerIndex: 1,
+      data: { ...(state.data as CheckersGameData), board, currentSide: 2, chainFrom: [2, 3], pendingCaptures: [] },
+    })
+    for (let i = 0; i < 8; i++) {
+      const decision = await new CheckersBot(g, difficulty, BOT, { timeBudgetMs: 30 }).makeDecision()
+      expect(decision.steps.map((s) => s.to)).toEqual([[4, 1], [6, 3]])
+    }
   })
 
   it('finishes a chain it finds itself in the middle of', async () => {

@@ -32,6 +32,7 @@ import { TicTacToeBotExecutor } from '@/lib/bots/tic-tac-toe/tic-tac-toe-bot-exe
 import { ConnectFourBotExecutor } from '@/lib/bots/connect-four/connect-four-bot-executor'
 import { RockPaperScissorsBotExecutor } from '@/lib/bots/rock-paper-scissors/rock-paper-scissors-bot-executor'
 import { CheckersBotExecutor } from '@/lib/bots/checkers/checkers-bot-executor'
+import { CHECKERS_HARD_TIME_BUDGET_MS } from '@/lib/bots/checkers/checkers-bot'
 import { MemoryGame, type MemoryGameData } from '@/lib/games/memory-game'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
@@ -41,6 +42,7 @@ import { CheckersGame, type CheckersCell, type CheckersGameData } from '@/lib/ga
 import {
   BOT_COMMIT_DELIVERY_ALLOWANCE_MS,
   BOT_LONGEST_IN_TURN_PAUSE_BASES,
+  BOT_SEARCH_BUDGET_MS,
   resolveBotInTurnPauseMs,
   resolveBotTurnGraceMs,
   type BotPacedGameType,
@@ -225,6 +227,14 @@ describe('checkers commits a capture chain one hop at a time (#1083)', () => {
 
     expect(runs).toEqual([[150], [250], []])
     expect(longestRun(runs, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES.checkers])
+  })
+
+  it('counts the hard search, which is silence no botDelay records', () => {
+    // The hard bot deepens for its whole budget before the first hop commits.
+    expect(BOT_SEARCH_BUDGET_MS.checkers).toBe(CHECKERS_HARD_TIME_BUDGET_MS)
+    expect(resolveBotTurnGraceMs('checkers')).toBeGreaterThan(
+      CHECKERS_HARD_TIME_BUDGET_MS + resolveBotUxDelayMs('hard', 150) + BOT_COMMIT_DELIVERY_ALLOWANCE_MS - 1
+    )
   })
 })
 

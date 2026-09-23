@@ -5,10 +5,10 @@ import {
   CheckersGame,
   CheckersGameData,
   CheckersStep,
-  CheckersTurn,
   Side,
   applyTurn,
   generateTurns,
+  hasLegalMove,
   isKing,
   otherSide,
   pieceSide,
@@ -25,12 +25,35 @@ export interface CheckersBotDecision {
   steps: CheckersStep[]
 }
 
-const HARD_DEPTH = 5
-/** Wall-clock cap for the hard search; the best move found so far is played when it runs out. */
-const HARD_TIME_BUDGET_MS = 900
+/**
+ * Wall-clock budget for the hard search. Iterative deepening runs until it is
+ * spent and plays the best move of the last depth it finished, so the bot-turn
+ * route's serverless invocation never spends more than about a second thinking.
+ */
+export const CHECKERS_HARD_TIME_BUDGET_MS = 900
+/** Deepest iteration; far past what the budget reaches from the opening. */
+const MAX_DEPTH = 20
 const WIN_SCORE = 100_000
+/** How often, in visited nodes, the search looks at the clock. */
+const CLOCK_CHECK_INTERVAL = 128
 
 type Board = readonly (readonly number[])[]
+
+/** One choice at the root: the hops to submit and the board they leave, captures lifted. */
+interface Candidate {
+  steps: CheckersStep[]
+  board: CheckersCell[][]
+  captures: number
+  promotes: boolean
+}
+
+export interface CheckersBotOptions {
+  /** Overrides CHECKERS_HARD_TIME_BUDGET_MS; tests use a small one. Never above it. */
+  timeBudgetMs?: number
+}
+
+/** Thrown inside the search when the budget runs out; the unfinished depth is discarded. */
+class SearchTimeout extends Error {}
 
 /** Material, kings and advancement from `side`'s point of view. */
 export function evaluateCheckersBoard(board: Board, side: Side): number {
@@ -60,31 +83,30 @@ export function evaluateCheckersBoard(board: Board, side: Side): number {
 
 export class CheckersBot extends BaseBot<CheckersGame, CheckersBotDecision> {
   private botUserId: string | null
+  private readonly timeBudgetMs: number
   private deadline = 0
+  private nodes = 0
 
-  constructor(gameEngine: CheckersGame, difficulty: BotDifficulty = 'medium', botUserId?: string) {
+  constructor(gameEngine: CheckersGame, difficulty: BotDifficulty = 'medium', botUserId?: string, options: CheckersBotOptions = {}) {
     super(gameEngine, difficulty)
     this.botUserId = botUserId ?? null
+    this.timeBudgetMs = Math.min(options.timeBudgetMs ?? CHECKERS_HARD_TIME_BUDGET_MS, CHECKERS_HARD_TIME_BUDGET_MS)
   }
 
   async makeDecision(): Promise<CheckersBotDecision> {
     const data = this.gameEngine.getState().data as CheckersGameData
     const side = data.currentSide
 
-    // Mid-chain the only choices are the rest of that chain.
-    if (data.chainFrom) {
-      return { type: 'turn', steps: this.finishChain(data) }
-    }
+    // Mid-chain the only choices are the ways to finish that chain.
+    const candidates = data.chainFrom ? this.chainCandidates() : this.turnCandidates(data.board, side)
+    if (candidates.length === 0) throw new Error('No legal moves for checkers bot')
 
-    const turns = generateTurns(data.board, side)
-    if (turns.length === 0) throw new Error('No legal moves for checkers bot')
+    let chosen: Candidate
+    if (this.config.difficulty === 'easy') chosen = this.pickRandom(candidates)
+    else if (this.config.difficulty === 'hard') chosen = this.pickHard(side, candidates)
+    else chosen = this.pickMedium(side, candidates)
 
-    let turn: CheckersTurn
-    if (this.config.difficulty === 'easy') turn = this.pickRandom(turns)
-    else if (this.config.difficulty === 'hard') turn = this.pickHard(data.board, side, turns)
-    else turn = this.pickMedium(data.board, side, turns)
-
-    return { type: 'turn', steps: turn.steps }
+    return { type: 'turn', steps: chosen.steps }
   }
 
   /** The move for one hop of the decision. */
@@ -105,79 +127,138 @@ export class CheckersBot extends BaseBot<CheckersGame, CheckersBotDecision> {
     return items[Math.floor(Math.random() * items.length)]
   }
 
-  private finishChain(data: CheckersGameData): CheckersStep[] {
-    const steps: CheckersStep[] = []
-    // Walk the chain on a scratch engine so the same hop rules apply.
-    const scratch = new CheckersGame('bot-scratch')
-    scratch.restoreState(JSON.parse(JSON.stringify(this.gameEngine.getState())))
-    const actor = scratch.getCurrentPlayer()?.id
-    while (actor) {
-      const current = scratch.getState().data as CheckersGameData
-      if (!current.chainFrom || current.currentSide !== data.currentSide) break
-      const options = scratch.getLegalSteps()
-      if (options.length === 0) break
-      const next = this.pickRandom(options)
-      steps.push(next)
-      scratch.makeMove({ playerId: actor, type: 'step', data: { from: next.from, to: next.to }, timestamp: new Date() })
+  private turnCandidates(board: Board, side: Side): Candidate[] {
+    return generateTurns(board, side).map((turn) => ({
+      steps: turn.steps,
+      board: applyTurn(board, turn),
+      captures: turn.captures,
+      promotes: turn.promotes,
+    }))
+  }
+
+  /**
+   * Every way to finish the chain the engine is in the middle of, walked on
+   * scratch engines so the same hop rules apply, each with the board it leaves.
+   */
+  private chainCandidates(): Candidate[] {
+    const out: Candidate[] = []
+    const walk = (engine: CheckersGame, steps: CheckersStep[]) => {
+      const data = engine.getState().data as CheckersGameData
+      const actor = engine.getCurrentPlayer()?.id
+      if (steps.length > 0 && (!data.chainFrom || !actor)) {
+        out.push({
+          steps,
+          board: data.board.map((row) => [...row]) as CheckersCell[][],
+          captures: steps.length,
+          promotes: data.lastMove?.promoted === true,
+        })
+        return
+      }
+      if (!actor) return
+      for (const step of engine.getLegalSteps()) {
+        const branch = new CheckersGame('bot-scratch')
+        branch.restoreState(JSON.parse(JSON.stringify(engine.getState())))
+        branch.makeMove({ playerId: actor, type: 'step', data: { from: step.from, to: step.to }, timestamp: new Date() })
+        walk(branch, [...steps, step])
+      }
     }
-    return steps
+    const root = new CheckersGame('bot-scratch')
+    root.restoreState(JSON.parse(JSON.stringify(this.gameEngine.getState())))
+    walk(root, [])
+    return out
   }
 
   /**
    * Medium: take the most pieces, never hand over a win in one, and otherwise
    * prefer the move that leaves the opponent the least to capture back.
    */
-  private pickMedium(board: Board, side: Side, turns: CheckersTurn[]): CheckersTurn {
+  private pickMedium(side: Side, candidates: Candidate[]): Candidate {
     const opponent = otherSide(side)
-    let best: CheckersTurn[] = []
+    let best: Candidate[] = []
     let bestScore = Number.NEGATIVE_INFINITY
-    for (const turn of turns) {
-      const after = applyTurn(board, turn)
-      const replies = generateTurns(after, opponent)
-      let score = turn.captures * 100 + (turn.promotes ? 60 : 0)
+    for (const candidate of candidates) {
+      let score = candidate.captures * 100 + (candidate.promotes ? 60 : 0)
+      // generateTurns is only expensive when captures chain; a quiet reply set is
+      // just the single steps, and "can we still move" is the cheap check.
+      const replies = generateTurns(candidate.board, opponent)
       if (replies.length === 0) {
         score += WIN_SCORE
       } else {
-        const worstReply = Math.max(...replies.map((reply) => reply.captures * 100 + (reply.promotes ? 60 : 0)))
+        let worstReply = 0
+        let lossInOne = false
+        for (const reply of replies) {
+          worstReply = Math.max(worstReply, reply.captures * 100 + (reply.promotes ? 60 : 0))
+          if (!lossInOne && !hasLegalMove(applyTurn(candidate.board, reply), side)) lossInOne = true
+        }
         score -= worstReply
-        // A reply after which we cannot move is a loss in one.
-        if (replies.some((reply) => generateTurns(applyTurn(after, reply), side).length === 0)) score -= WIN_SCORE / 2
+        if (lossInOne) score -= WIN_SCORE / 2
       }
       if (score > bestScore) {
         bestScore = score
-        best = [turn]
+        best = [candidate]
       } else if (score === bestScore) {
-        best.push(turn)
+        best.push(candidate)
       }
     }
     return this.pickRandom(best)
   }
 
-  /** Hard: alpha-beta over whole turns, depth 5, capped by wall clock. */
-  private pickHard(board: Board, side: Side, turns: CheckersTurn[]): CheckersTurn {
-    if (turns.length === 1) return turns[0]
-    this.deadline = Date.now() + HARD_TIME_BUDGET_MS
-    // Captures first so the cut-offs come early.
-    const ordered = [...turns].sort((a, b) => b.captures - a.captures)
-    // Strictly better only: under alpha-beta a later move that merely ties the
-    // bound is an upper bound, not an equal, so it cannot join a tie.
-    let bestTurn = ordered[0]
-    let alpha = Number.NEGATIVE_INFINITY
-    for (const turn of ordered) {
-      const score = -this.negamax(applyTurn(board, turn), otherSide(side), HARD_DEPTH - 1, Number.NEGATIVE_INFINITY, -alpha)
-      if (score > alpha) {
-        alpha = score
-        bestTurn = turn
+  /**
+   * Hard: iterative-deepening alpha-beta over whole turns, capped by wall clock.
+   * The move played is from the last depth that finished; a depth the clock
+   * interrupted is thrown away whole, so a root move searched halfway can never
+   * win on a score that is really a bound. Equal best moves are drawn at random.
+   */
+  private pickHard(side: Side, candidates: Candidate[]): Candidate {
+    if (candidates.length === 1) return candidates[0]
+    this.deadline = Date.now() + this.timeBudgetMs
+    this.nodes = 0
+
+    // Captures first until a finished depth gives a better order.
+    let ordered = [...candidates].sort((a, b) => b.captures - a.captures)
+    let bestSet: Candidate[] = [ordered[0]]
+
+    for (let depth = 1; depth <= MAX_DEPTH; depth++) {
+      try {
+        const scored = this.searchRoot(side, ordered, depth)
+        const top = Math.max(...scored.map((s) => s.score))
+        bestSet = scored.filter((s) => s.score === top).map((s) => s.candidate)
+        ordered = scored.sort((a, b) => b.score - a.score).map((s) => s.candidate)
+        // A forced win or loss is settled; searching deeper cannot change it.
+        if (Math.abs(top) >= WIN_SCORE) break
+      } catch (error) {
+        if (error instanceof SearchTimeout) break
+        throw error
       }
-      if (Date.now() > this.deadline) break
+      if (Date.now() >= this.deadline) break
     }
-    return bestTurn
+    return this.pickRandom(bestSet)
+  }
+
+  /**
+   * Exact scores for every root move that ties the best, bounds for the rest.
+   * Each move is searched with alpha one below the best so far, so a move that
+   * only matches the best comes back with its exact value instead of being cut.
+   */
+  private searchRoot(side: Side, ordered: Candidate[], depth: number): { candidate: Candidate; score: number }[] {
+    const scored: { candidate: Candidate; score: number }[] = []
+    let best = Number.NEGATIVE_INFINITY
+    for (const candidate of ordered) {
+      const alpha = best === Number.NEGATIVE_INFINITY ? best : best - 1
+      const score = -this.negamax(candidate.board, otherSide(side), depth - 1, Number.NEGATIVE_INFINITY, -alpha)
+      scored.push({ candidate, score })
+      if (score > best) best = score
+    }
+    return scored
   }
 
   private negamax(board: CheckersCell[][], side: Side, depth: number, alpha: number, beta: number): number {
+    if (++this.nodes % CLOCK_CHECK_INTERVAL === 0 && Date.now() >= this.deadline) throw new SearchTimeout()
+    if (depth === 0) {
+      return hasLegalMove(board, side) ? evaluateCheckersBoard(board, side) : -(WIN_SCORE + depth)
+    }
     const turns = generateTurns(board, side)
     if (turns.length === 0) return -(WIN_SCORE + depth)
-    if (depth === 0 || Date.now() > this.deadline) return evaluateCheckersBoard(board, side)
     turns.sort((a, b) => b.captures - a.captures)
     let best = Number.NEGATIVE_INFINITY
     for (const turn of turns) {

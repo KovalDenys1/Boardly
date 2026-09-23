@@ -171,6 +171,29 @@ export function getLegalSteps(
   return jumps.length > 0 ? jumps : moves
 }
 
+/**
+ * Whether `side` has any legal move at all. Stops at the first one found, so it
+ * costs a fraction of `getLegalSteps` – the bot asks it at every leaf.
+ */
+export function hasLegalMove(board: readonly (readonly number[])[], side: Side): boolean {
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const cell = board[r][c]
+      if (pieceSide(cell) !== side) continue
+      for (const [dr, dc] of directionsFor(cell)) {
+        const tr = r + dr
+        const tc = c + dc
+        if (!inBounds(tr, tc)) continue
+        if (board[tr][tc] === 0) return true
+        const lr = r + 2 * dr
+        const lc = c + 2 * dc
+        if (inBounds(lr, lc) && pieceSide(board[tr][tc]) === otherSide(side) && board[lr][lc] === 0) return true
+      }
+    }
+  }
+  return false
+}
+
 /** Squares of the pieces that are able to capture right now – the ones the player must choose from. */
 export function getForcedCapturePieces(board: readonly (readonly number[])[], side: Side): Square[] {
   const pieces: Square[] = []

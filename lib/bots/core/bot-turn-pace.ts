@@ -64,15 +64,20 @@ export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly 
  */
 export const BOT_COMMIT_DELIVERY_ALLOWANCE_MS = 1_000
 
-function pauseBasesFor(gameType: BotPacedGameType | null | undefined): readonly number[] {
-  if (gameType && gameType in BOT_LONGEST_IN_TURN_PAUSE_BASES) {
-    return BOT_LONGEST_IN_TURN_PAUSE_BASES[gameType]
-  }
-  // An unknown game type has to be treated as the slowest known one: guessing
-  // low is the failure this whole module exists to stop.
-  return Object.values(BOT_LONGEST_IN_TURN_PAUSE_BASES).reduce((slowest, bases) =>
-    sumUpperBounds(bases) > sumUpperBounds(slowest) ? bases : slowest
-  )
+/**
+ * Silence that is not a `botDelay`: a bot that searches before its first commit.
+ * Checkers' hard bot deepens until `CHECKERS_HARD_TIME_BUDGET_MS` is spent
+ * (lib/bots/checkers/checkers-bot.ts, pinned equal by the pace test), right
+ * after the executor's 150 pause, so the longest checkers silence is bounded by
+ * the pause table plus this. Kept here as a number rather than imported, so this
+ * module stays free of any one game's bot.
+ */
+export const BOT_SEARCH_BUDGET_MS: Partial<Record<BotPacedGameType, number>> = {
+  checkers: 900,
+}
+
+function upperBoundFor(gameType: BotPacedGameType): number {
+  return sumUpperBounds(BOT_LONGEST_IN_TURN_PAUSE_BASES[gameType]) + (BOT_SEARCH_BUDGET_MS[gameType] ?? 0)
 }
 
 function sumUpperBounds(bases: readonly number[]): number {
@@ -88,9 +93,10 @@ export function resolveBotInTurnPauseMs(
   gameType: BotPacedGameType,
   difficulty: BotDifficulty,
 ): number {
+  const search = difficulty === 'hard' ? (BOT_SEARCH_BUDGET_MS[gameType] ?? 0) : 0
   return BOT_LONGEST_IN_TURN_PAUSE_BASES[gameType].reduce(
     (total, base) => total + resolveBotUxDelayMs(difficulty, base),
-    0,
+    search,
   )
 }
 
@@ -101,7 +107,10 @@ export function resolveBotInTurnPauseMs(
  * them - and `resolveBotUxDelayMs` guarantees it by bounding its own output.
  */
 export function botInTurnPauseUpperBoundMs(gameType: BotPacedGameType | null | undefined): number {
-  return sumUpperBounds(pauseBasesFor(gameType))
+  if (gameType && gameType in BOT_LONGEST_IN_TURN_PAUSE_BASES) return upperBoundFor(gameType)
+  // An unknown game type has to be treated as the slowest known one: guessing
+  // low is the failure this whole module exists to stop.
+  return Math.max(...(Object.keys(BOT_LONGEST_IN_TURN_PAUSE_BASES) as BotPacedGameType[]).map(upperBoundFor))
 }
 
 /**
