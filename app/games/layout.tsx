@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
 export const metadata: Metadata = {
   title: 'Free Online Board Games - Play with Friends',
@@ -14,11 +15,22 @@ export const metadata: Metadata = {
     'boardly games',
   ],
   openGraph: {
+    ...OG_SITE_DEFAULTS,
+    images: socialImages('games'),
     title: 'Free Online Board Games - Play with Friends | Boardly',
     description:
       'Yahtzee, Tic Tac Toe, Memory, Spy and more. Free real-time multiplayer games in your browser.',
-    url: 'https://boardly.online/games',
+    // No `url`: every page under /games that sets no openGraph of its own
+    // (the /games/<slug>/lobbies lists) inherits this block, and a fixed
+    // `url` told them all they were /games (#1091).
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: socialImages('games'),
+    title: 'Free Online Board Games - Play with Friends | Boardly',
+    description:
+      'Yahtzee, Tic Tac Toe, Memory, Spy and more. Free real-time multiplayer games in your browser.',
   },
 }
 

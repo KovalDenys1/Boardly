@@ -133,4 +133,25 @@ describe('rateLimit store backends', () => {
     expect(incr).toHaveBeenCalled()
     expect(expire).not.toHaveBeenCalled()
   })
+
+  it('keyScope buckets every path together, so varying the path buys no fresh allowance', async () => {
+    delete process.env.UPSTASH_REDIS_REST_URL
+    delete process.env.UPSTASH_REDIS_REST_TOKEN
+
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule()
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const req = (code: string) =>
+      new NextRequest(`http://localhost:3000/og/lobby/${code}`, { headers: { 'x-real-ip': '203.0.113.20' } })
+
+    const scoped = rateLimit({ windowMs: 60_000, maxRequests: 2, keyScope: 'og-lobby' })
+    expect(await scoped(req('1111'))).toBeNull()
+    expect(await scoped(req('2222'))).toBeNull()
+    expect((await scoped(req('3333')))?.status).toBe(429)
+
+    const perPath = rateLimit({ windowMs: 60_000, maxRequests: 1 })
+    expect(await perPath(req('4444'))).toBeNull()
+    expect(await perPath(req('5555'))).toBeNull()
+  })
 })

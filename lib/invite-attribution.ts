@@ -14,6 +14,8 @@
  * created at and whether it was a navigation, a reload or a history traversal.
  */
 
+import { canonicalReferrerHost } from './social-referrers'
+
 export const INVITE_SHARE_PARAM = 'via'
 export const INVITE_SHARE_VALUE = 'invite'
 
@@ -35,8 +37,9 @@ export function buildInviteLink(code: string, origin: string): string {
   return `${base}/lobby/${encodeURIComponent(code)}?${INVITE_SHARE_PARAM}=${INVITE_SHARE_VALUE}`
 }
 
+/** One host per social platform (`l.instagram.com` → `instagram.com`), #1091. */
 function normalizeHost(host: string | null | undefined): string {
-  return (host ?? '').trim().toLowerCase().replace(/^www\./, '')
+  return canonicalReferrerHost(host)
 }
 
 function normalizePath(path: string): string {
