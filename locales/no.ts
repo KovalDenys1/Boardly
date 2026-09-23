@@ -690,6 +690,24 @@ const no = {
             desc: 'Den tar ethvert kast og er derfor sikkerhetsnettet for en tur der ingenting passer.',
           },
         },
+        mistakes: {
+          lastRollGamble: {
+            title: 'Å satse på siste kast',
+            desc: 'Tre like med ett kast igjen blir sjelden fem; ta poengene som ligger på bordet.',
+          },
+          zeroInBigBox: {
+            title: 'Null i en stor rute',
+            desc: 'En null koster lite i Enere eller Ett par, og førti eller femti i Stor straight eller Yatzy.',
+          },
+          losingBonusPace: {
+            title: 'Å miste bonustempoet',
+            desc: 'Noen rader med én terning for lite kan bomme på 63 med ett poeng og koste alle 35.',
+          },
+          scoringTheRollNotTheCard: {
+            title: 'Å føre kastet, ikke listen',
+            desc: 'Den største summen denne turen kan bruke opp en rad du trenger senere.',
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',

@@ -690,6 +690,24 @@ const en = {
             desc: 'It accepts any roll, which makes it the safety net for a turn that fits nowhere.',
           },
         },
+        mistakes: {
+          lastRollGamble: {
+            title: 'Gambling on the last roll',
+            desc: 'Three alike with one roll left seldom becomes five; take the points on the table.',
+          },
+          zeroInBigBox: {
+            title: 'Zeroing a big box',
+            desc: 'A zero costs little in Ones or One Pair, and forty or fifty in Large Straight or Yahtzee.',
+          },
+          losingBonusPace: {
+            title: 'Losing the bonus pace',
+            desc: 'A few rows one die short can miss 63 by a point and cost all 35.',
+          },
+          scoringTheRollNotTheCard: {
+            title: 'Scoring the roll, not the card',
+            desc: 'The biggest number this turn may burn a row you will need later.',
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

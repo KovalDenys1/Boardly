@@ -96,6 +96,12 @@ export default function YahtzeeDetailContent() {
         { title: t('games.yahtzee.detail.strategy.lockFourOfKind.title'), desc: t('games.yahtzee.detail.strategy.lockFourOfKind.desc') },
         { title: t('games.yahtzee.detail.strategy.keepChance.title'), desc: t('games.yahtzee.detail.strategy.keepChance.desc') },
       ]}
+      mistakes={[
+        { title: t('games.yahtzee.detail.mistakes.lastRollGamble.title'), desc: t('games.yahtzee.detail.mistakes.lastRollGamble.desc') },
+        { title: t('games.yahtzee.detail.mistakes.zeroInBigBox.title'), desc: t('games.yahtzee.detail.mistakes.zeroInBigBox.desc') },
+        { title: t('games.yahtzee.detail.mistakes.losingBonusPace.title'), desc: t('games.yahtzee.detail.mistakes.losingBonusPace.desc') },
+        { title: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.title'), desc: t('games.yahtzee.detail.mistakes.scoringTheRollNotTheCard.desc') },
+      ]}
       playVsBotGameType="yahtzee"
     />
   )
