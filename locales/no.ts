@@ -562,6 +562,82 @@ const no = {
         benefit3: 'Fungerer på mobil, nettbrett og datamaskin.',
         benefit4: 'Gratis å spille som gjest.',
         originNote: 'Yahtzee var det første spillet på Boardly. Det startet som en skoleoppgave fra læreren min Tarald, og ble startskuddet for endelig å bygge siden jeg lenge hadde planlagt.',
+        rules: {
+          rollThreeTimes: 'Hver tur gir opptil tre kast, og mellom kastene velger du hvilke terninger du beholder.',
+          rollBeforeScoring: 'Du må kaste minst én gang før du fører poeng, men kan stoppe etter første eller andre kast.',
+          mustScore: 'Hver tur ender med en føring. Passer ingenting, er det lov å skrive null i en ledig rute.',
+          oneUsePerRow: 'Hver rute tar ett resultat per spill, null medregnet, og kan ikke endres etterpå.',
+          yahtzeeOnce: 'Yatzy gir 50 poeng én gang. Fem like en gang til gir ingen bonus og må føres i en annen rad.',
+          upperBonus: 'I klassisk modus gir 63 eller mer fra Enere til Seksere 35 ekstra poeng. Kort modus har ingen bonus.',
+          gameEnd: 'Spillet er over når alle poenglister er fulle, og høyest sum, bonus medregnet, vinner.',
+          timerExpiry: 'Går tiden ut, kaster spillet én gang hvis du ikke hadde kastet, og fyller så den ledige ruten som gir mest, eller setter null i den minst verdifulle.',
+        },
+        scoring: {
+          upperNote: 'Bare i klassisk modus: 63 eller mer over disse radene gir 35 bonuspoeng. Tre av hver verdi gir nøyaktig 63.',
+          lowerNote: 'Kort modus bruker bare disse ni radene.',
+          rows: {
+            ones: {
+              value: 'Mål 3',
+              rule: 'Alle enere, lagt sammen.',
+            },
+            twos: {
+              value: 'Mål 6',
+              rule: 'Alle toere, lagt sammen.',
+            },
+            threes: {
+              value: 'Mål 9',
+              rule: 'Alle treere, lagt sammen.',
+            },
+            fours: {
+              value: 'Mål 12',
+              rule: 'Alle firere, lagt sammen.',
+            },
+            fives: {
+              value: 'Mål 15',
+              rule: 'Alle femmere, lagt sammen.',
+            },
+            sixes: {
+              value: 'Mål 18',
+              rule: 'Alle seksere, lagt sammen.',
+            },
+            onePair: {
+              value: 'Opptil 12',
+              rule: 'Ditt høyeste par, begge terningene lagt sammen.',
+            },
+            twoPairs: {
+              value: 'Opptil 22',
+              rule: 'To ulike par lagt sammen; fire like teller ikke.',
+            },
+            threeOfKind: {
+              value: 'Sum av alle terninger',
+              rule: 'Tre eller flere like, alle fem terningene telles.',
+            },
+            fourOfKind: {
+              value: 'Sum av alle terninger',
+              rule: 'Fire eller flere like, alle fem terningene telles.',
+            },
+            fullHouse: {
+              value: '25 poeng',
+              rule: 'Nøyaktig tre av én verdi og to av en annen; fem like er ikke hus.',
+            },
+            smallStraight: {
+              value: '30 poeng',
+              rule: 'Fire på rad: 1-2-3-4, 2-3-4-5 eller 3-4-5-6.',
+            },
+            largeStraight: {
+              value: '40 poeng',
+              rule: 'Fem på rad: 1-2-3-4-5 eller 2-3-4-5-6.',
+            },
+            yahtzee: {
+              value: '50 poeng',
+              rule: 'Fem like, føres én gang.',
+            },
+            chance: {
+              value: 'Sum av alle terninger',
+              rule: 'Hvilke som helst fem terninger, uten krav.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Yatzy-lobbyer',

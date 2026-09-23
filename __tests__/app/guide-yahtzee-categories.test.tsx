@@ -2,7 +2,15 @@ import type { ComponentType } from 'react'
 import { render } from '@testing-library/react'
 
 import { getCatalogGames } from '@/lib/game-catalog'
-import { getActiveCategories, normalizeYahtzeeMode } from '@/lib/yahtzee'
+import {
+  ALL_CATEGORIES,
+  SHORT_MODE_CATEGORIES,
+  calculateScore,
+  calculateTotalScore,
+  getActiveCategories,
+  normalizeYahtzeeMode,
+  type YahtzeeCategory,
+} from '@/lib/yahtzee'
 import en from '@/locales/en'
 
 // The guide layout ends with an ad slot and the site footer, which want a
@@ -122,5 +130,57 @@ describe('the Yahtzee game page against the engine (#973, #1077)', () => {
   it('never promises a bonus for a second Yahtzee', () => {
     // lib/yahtzee.ts scores the box once, at 50, and has no joker rule (#964).
     for (const text of copy) expect(text).not.toMatch(/\b100\b|yahtzee bonus|joker/i)
+  })
+})
+
+// The scoring cards state numbers, and every one of them is recomputed here
+// from lib/yahtzee.ts, so a rule change in the engine fails this file instead
+// of leaving the page describing a game that no longer exists.
+describe('the Yahtzee scoring section against the engine (#1077)', () => {
+  const rows = en.games.yahtzee.detail.scoring.rows as Record<YahtzeeCategory, { value: string; rule: string }>
+  const { upperNote, lowerNote } = en.games.yahtzee.detail.scoring
+  const has = (text: string, value: number) => new RegExp(`\\b${value}\\b`).test(text)
+
+  it('has one card for every engine category and nothing else', () => {
+    expect(Object.keys(rows).sort()).toEqual([...ALL_CATEGORIES].sort())
+  })
+
+  it('gives each number row its share of the 63 that earns the bonus', () => {
+    const upper = ALL_CATEGORIES.slice(0, 6)
+    upper.forEach((category, index) => {
+      const face = index + 1
+      expect({ category, ok: has(rows[category].value, face * 3) }).toEqual({ category, ok: true })
+    })
+    const threeOfEach = Object.fromEntries(upper.map((category, index) => [category, (index + 1) * 3]))
+    const oneShort = { ...threeOfEach, ones: 2 }
+    // 63 earns 35, 62 earns nothing: the note's two numbers.
+    expect(calculateTotalScore(threeOfEach) - 63).toBe(35)
+    expect(calculateTotalScore(oneShort)).toBe(62)
+    expect(has(upperNote, 63) && has(upperNote, 35)).toBe(true)
+  })
+
+  it('quotes the fixed values the engine pays', () => {
+    expect(has(rows.fullHouse.value, calculateScore([2, 2, 3, 3, 3], 'fullHouse'))).toBe(true)
+    expect(has(rows.smallStraight.value, calculateScore([1, 2, 3, 4, 6], 'smallStraight'))).toBe(true)
+    expect(has(rows.largeStraight.value, calculateScore([2, 3, 4, 5, 6], 'largeStraight'))).toBe(true)
+    expect(has(rows.yahtzee.value, calculateScore([4, 4, 4, 4, 4], 'yahtzee'))).toBe(true)
+    expect(has(rows.onePair.value, calculateScore([6, 6, 1, 2, 3], 'onePair'))).toBe(true)
+    expect(has(rows.twoPairs.value, calculateScore([6, 6, 5, 5, 1], 'twoPairs'))).toBe(true)
+  })
+
+  it('states the exclusions the engine enforces', () => {
+    // Five of a kind is not a full house, and four alike is not two pairs.
+    expect(calculateScore([5, 5, 5, 5, 5], 'fullHouse')).toBe(0)
+    expect(rows.fullHouse.rule).toMatch(/five alike is not a full house/i)
+    expect(calculateScore([4, 4, 4, 4, 2], 'twoPairs')).toBe(0)
+    expect(rows.twoPairs.rule).toMatch(/four alike does not count/i)
+    // Three and Four of a Kind pay the whole roll, not the matching dice.
+    expect(calculateScore([3, 3, 3, 5, 6], 'threeOfKind')).toBe(20)
+    expect(calculateScore([4, 4, 4, 4, 2], 'fourOfKind')).toBe(18)
+  })
+
+  it('calls the lower section the short mode, and short mode nine rows', () => {
+    expect([...SHORT_MODE_CATEGORIES].sort()).toEqual(ALL_CATEGORIES.slice(6).sort())
+    expect(lowerNote).toMatch(new RegExp(`\\b${NUMBER_WORDS[SHORT_MODE_CATEGORIES.length]}\\b`))
   })
 })

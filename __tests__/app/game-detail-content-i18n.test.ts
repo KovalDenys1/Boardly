@@ -28,6 +28,9 @@ const CONTENT_FILES = {
     root,
     'app/games/rock-paper-scissors/RockPaperScissorsDetailContent.tsx'
   ),
+  // #1077: the first page with the long-form sections, which are plain object
+  // properties too – every row of its scorecard has to be a t() call.
+  yahtzee: path.join(root, 'app/games/yahtzee/YahtzeeDetailContent.tsx'),
 } as const
 
 const PAGE_FILES = {
@@ -54,7 +57,7 @@ function localeValue(locale: object, key: string): unknown {
     .reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], locale)
 }
 
-describe.each(Object.entries(CONTENT_FILES))('%s detail content (#1061)', (slug, file) => {
+describe.each(Object.entries(CONTENT_FILES))('%s detail content (#1061, #1077)', (slug, file) => {
   const source = readFileSync(file, 'utf8')
 
   it('uses only translation keys that exist in all four locales', () => {
@@ -93,7 +96,8 @@ describe.each(Object.entries(CONTENT_FILES))('%s detail content (#1061)', (slug,
       .map((match) => match[1])
       .filter((value) => /\p{L}{2}/u.test(value))
       // a translation key is the point, and a route is not copy
-      .filter((value) => !value.startsWith('games.') && !value.startsWith('/'))
+      // (`yahtzee.categories.*` included: the scorecard reuses the in-game row names)
+      .filter((value) => !/^(games|yahtzee)\./.test(value) && !value.startsWith('/'))
 
     expect(literals).toEqual([])
   })

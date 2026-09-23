@@ -562,6 +562,82 @@ const en = {
         benefit3: 'Works on phone, tablet, and desktop.',
         benefit4: 'Free to play as a guest.',
         originNote: 'Yahtzee was the first game on Boardly. It started as a school assignment from my teacher Tarald, and became the push to finally build the site I had been planning for a long time.',
+        rules: {
+          rollThreeTimes: 'Each turn allows up to three rolls, and between rolls you choose which dice to hold.',
+          rollBeforeScoring: 'At least one roll is required before scoring, but you may stop after the first or the second.',
+          mustScore: 'Every turn ends with a score. If nothing fits, a zero in an open box is legal.',
+          oneUsePerRow: 'Each box takes one result per game, zero included, and cannot be changed afterwards.',
+          yahtzeeOnce: 'Yahtzee pays 50 once. A second five of a kind earns no bonus and has to go in another row.',
+          upperBonus: 'In classic mode, 63 or more in Ones to Sixes adds 35 points. Short mode has no bonus.',
+          gameEnd: 'The game ends when every scorecard is full, and the highest total, bonus included, wins.',
+          timerExpiry: 'When the timer runs out, the game rolls once if you had not, then fills the best-paying open box, or puts a zero in the least valuable one.',
+        },
+        scoring: {
+          upperNote: 'Classic mode only: 63 or more across these rows adds a 35-point bonus. Three of each face is exactly 63.',
+          lowerNote: 'Short mode plays only these nine rows.',
+          rows: {
+            ones: {
+              value: 'Target 3',
+              rule: 'All ones, added up.',
+            },
+            twos: {
+              value: 'Target 6',
+              rule: 'All twos, added up.',
+            },
+            threes: {
+              value: 'Target 9',
+              rule: 'All threes, added up.',
+            },
+            fours: {
+              value: 'Target 12',
+              rule: 'All fours, added up.',
+            },
+            fives: {
+              value: 'Target 15',
+              rule: 'All fives, added up.',
+            },
+            sixes: {
+              value: 'Target 18',
+              rule: 'All sixes, added up.',
+            },
+            onePair: {
+              value: 'Up to 12',
+              rule: 'Your highest pair, both dice added.',
+            },
+            twoPairs: {
+              value: 'Up to 22',
+              rule: 'Two different pairs added; four alike does not count.',
+            },
+            threeOfKind: {
+              value: 'Sum of all dice',
+              rule: 'Three or more alike, all five dice counted.',
+            },
+            fourOfKind: {
+              value: 'Sum of all dice',
+              rule: 'Four or more alike, all five dice counted.',
+            },
+            fullHouse: {
+              value: '25 points',
+              rule: 'Exactly three of one value and two of another; five alike is not a full house.',
+            },
+            smallStraight: {
+              value: '30 points',
+              rule: 'Four in a row: 1-2-3-4, 2-3-4-5 or 3-4-5-6.',
+            },
+            largeStraight: {
+              value: '40 points',
+              rule: 'Five in a row: 1-2-3-4-5 or 2-3-4-5-6.',
+            },
+            yahtzee: {
+              value: '50 points',
+              rule: 'Five of a kind, scored once.',
+            },
+            chance: {
+              value: 'Sum of all dice',
+              rule: 'Any five dice, no condition.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Yahtzee Lobbies',
