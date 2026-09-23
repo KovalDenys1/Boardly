@@ -335,7 +335,7 @@ function roundWord(round: SketchAndGuessRound): Pick<SketchWord, 'en' | 'no' | '
 }
 
 // ─── Guess feed (phase: drawing and reveal, every viewer) ──────────────────
-// Every guess of the round, oldest first and scrolled to the newest. A wrong
+// Every guess of the round, the newest at the bottom and in view. A wrong
 // one shows its text – the table watching the misses is half the fun, and the
 // host has to read them to accept one. A correct one reads "<name> guessed it!";
 // its text reaches only its author and the drawer until the reveal, and the
@@ -358,21 +358,17 @@ function GuessFeed({
   isSubmitting: boolean
   t: TFn
 }) {
-  const listRef = useRef<HTMLUListElement>(null)
+  // Newest first in the DOM, laid out bottom-up (`column-reverse`), so the list
+  // rests on its newest line without a scroll effect – and stays there when the
+  // viewport changes size, which a scrollTop set once on arrival does not.
   const ordered = useMemo(
-    () => guesses.filter((g) => !g.autoSubmitted).slice().sort((a, b) => a.submittedAt - b.submittedAt),
+    () => guesses.filter((g) => !g.autoSubmitted).slice().sort((a, b) => b.submittedAt - a.submittedAt),
     [guesses]
   )
 
-  // Newest at the bottom, in view: a scroll position, not an animation.
-  useEffect(() => {
-    const list = listRef.current
-    if (list) list.scrollTop = list.scrollHeight
-  }, [ordered.length])
-
   return (
     <section className="sketch-feed" aria-label={t('games.guess_my_drawing.game.guessesTitle')}>
-      <ul ref={listRef} className="sketch-feed__list">
+      <ul className="sketch-feed__list">
         {ordered.length === 0 && <li className="sketch-feed__empty">{t('games.guess_my_drawing.game.guessFeedEmpty')}</li>}
         {ordered.map((g) => {
           const name = `${nameOf(g.playerId)}${g.playerId === currentUserId ? ` ${t('game.ui.you')}` : ''}`
@@ -655,12 +651,14 @@ function GuesserDrawingView({
               autoComplete="off"
               className="min-w-0 flex-1 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-2 text-base font-semibold text-bd-ink"
             />
+            {/* An arrow rather than a word: the row has to leave the box most of
+                a 320px screen, and "Отправить ответ" alone would take half. */}
             <LoadingButton
               onClick={handleSubmit}
               loading={isSubmitting}
-              className="bd-btn bd-btn-primary shrink-0 rounded-xl px-4 py-2 font-semibold"
+              className="bd-btn bd-btn-primary shrink-0 rounded-xl px-3 py-2"
             >
-              {t('games.guess_my_drawing.game.submitGuess')}
+              <Icon name="arrow-right" size={20} label={t('games.guess_my_drawing.game.submitGuess')} />
             </LoadingButton>
           </div>
           {validationError ? (
@@ -708,14 +706,9 @@ function RevealView({
   // Until the drawer's page has sent the canvas, show what everyone watched being drawn.
   const strokes = parsedContent?.strokes ?? liveView?.strokes ?? []
   const drawingIn = round.drawingContent !== null && round.drawingContent !== undefined
-  const guessedBy = useMemo(() => {
-    const seen = new Set<string>()
-    return round.guesses
-      .filter((g) => g.isCorrect)
-      .sort((a, b) => a.submittedAt - b.submittedAt)
-      .filter((g) => (seen.has(g.playerId) ? false : (seen.add(g.playerId), true)))
-      .map((g) => `${nameOf(g.playerId)}${g.acceptedByHost ? ` (${t('games.guess_my_drawing.game.acceptedByHost')})` : ''}`)
-  }, [round.guesses, nameOf, t])
+  // Who got it is in the feed right under this, host-accepted ones marked, so
+  // the banner only has to say so when nobody did.
+  const nobodyGuessed = !round.guesses.some((g) => g.isCorrect)
 
   return (
     <div className="sketch-phase">
@@ -730,11 +723,9 @@ function RevealView({
           {t('games.guess_my_drawing.game.drawnBy', { name: nameOf(round.drawerId) })}
           {round.drawingAutoSubmitted ? ` ${t('games.guess_my_drawing.game.autoSubmittedTag')}` : ''}
         </p>
-        <p className="text-xs font-semibold text-bd-ink">
-          {guessedBy.length > 0
-            ? t('games.guess_my_drawing.game.guessedBy', { names: guessedBy.join(', ') })
-            : t('games.guess_my_drawing.game.nobodyGuessed')}
-        </p>
+        {nobodyGuessed && (
+          <p className="text-xs font-semibold text-bd-ink">{t('games.guess_my_drawing.game.nobodyGuessed')}</p>
+        )}
       </div>
 
       {feed}

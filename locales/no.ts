@@ -1646,7 +1646,6 @@ const no = {
         guessesTitle: 'Gjetninger',
         guessFeedEmpty: 'Gjetningene dukker opp her',
         nobodyGuessed: 'Ingen gjettet det',
-        guessedBy: 'Gjettet av {{names}}',
         guessLimitReached: 'Ingen gjetninger igjen denne runden',
         guessTooFast: 'Ikke så fort – vent litt',
         waitingForDrawing: 'Venter på tegningen...',

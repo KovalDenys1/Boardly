@@ -1646,7 +1646,6 @@ const en = {
         guessesTitle: 'Guesses',
         guessFeedEmpty: 'Guesses will show up here',
         nobodyGuessed: 'Nobody guessed it',
-        guessedBy: 'Guessed by {{names}}',
         guessLimitReached: 'No guesses left this round',
         guessTooFast: 'Not so fast – wait a moment',
         waitingForDrawing: 'Waiting for the drawing...',

@@ -1710,7 +1710,6 @@ const uk: TranslationWithPlurals = {
         guessesTitle: 'Здогадки',
         guessFeedEmpty: 'Тут зʼявляться здогадки',
         nobodyGuessed: 'Ніхто не вгадав',
-        guessedBy: 'Вгадали: {{names}}',
         guessLimitReached: 'Спроби в цьому раунді скінчилися',
         guessTooFast: 'Не так швидко – зачекайте секунду',
         waitingForDrawing: 'Чекаємо на малюнок...',

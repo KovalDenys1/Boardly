@@ -782,15 +782,47 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // and "Next round" waits for this to land. A blank canvas is sent too: the
     // engine scores it as the empty drawing it is, and nobody waits the full
     // reveal clock for a drawing that is never coming.
+    //
+    // It has its own sender rather than submitAction, for two reasons found by
+    // playing it. submitAction drops a call while another is in flight, and the
+    // move that opens the reveal is often the drawer's own (the host accepting
+    // the last guess). And a single 429 or lost write-lock race lost the drawing
+    // outright, so the drawer paid the blank-drawing penalty for a picture
+    // everyone had watched being drawn. So: retried, briefly, on anything that
+    // might succeed a moment later.
     const drawingSentForRoundRef = useRef<number | null>(null)
     const needsDrawingSent =
         isDrawer && !isFinished && phase === 'reveal' && !!currentRound && currentRound.drawingContent === null
     const strokesForReveal = activeDraft.strokes
+    const gameIdForDrawing = game?.id
+    const sendRevealDrawing = useCallback(async (content: string) => {
+        if (!gameIdForDrawing) return
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** (attempt - 1)))
+            try {
+                const res = await fetchWithGuest(`/api/game/${gameIdForDrawing}/sketch-and-guess-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'submit-drawing', data: { content }, locale }),
+                })
+                if (res.ok) {
+                    void loadLobbyData()
+                    return
+                }
+                const payload = await res.json().catch(() => null)
+                const retryable = res.status === 429 || res.status >= 500 || payload?.code === 'STATE_CONFLICT'
+                if (!retryable) return
+            } catch {
+                // A network blip: try again.
+            }
+        }
+        clientLogger.warn('Sketch & Guess drawing was not stored for the reveal', { gameId: gameIdForDrawing })
+    }, [gameIdForDrawing, locale, loadLobbyData])
     useEffect(() => {
         if (!needsDrawingSent || drawingSentForRoundRef.current === roundNumber) return
         drawingSentForRoundRef.current = roundNumber
-        void submitAction('submit-drawing', { content: serializeSketchDrawing(strokesForReveal) }, { silent: true })
-    }, [needsDrawingSent, roundNumber, strokesForReveal, submitAction])
+        void sendRevealDrawing(serializeSketchDrawing(strokesForReveal))
+    }, [needsDrawingSent, roundNumber, strokesForReveal, sendRevealDrawing])
 
     // The word hint uncovers a letter at half and at three quarters of the drawing
     // clock, and the server only builds it when asked, so a guesser's page asks

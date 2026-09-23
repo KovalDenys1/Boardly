@@ -696,6 +696,31 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     expect((showToast as jest.Mocked<typeof showToast>).success).not.toHaveBeenCalled()
   })
 
+  // Found by playing it: one 429 from a busy rate limiter lost the drawing
+  // outright, and the drawer paid the blank-drawing penalty for it.
+  it('tries the drawing again when the first attempt is turned away', async () => {
+    const response = buildLobbyResponse()
+    response.activeGame.state.data.phase = 'reveal'
+    response.activeGame.state.data.currentDrawerId = 'user-1'
+    response.activeGame.state.data.rounds = [
+      { round: 1, drawerId: 'user-1', prompt: 'castle', drawingContent: null, guesses: [], isScored: false },
+    ]
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).includes('/sketch-and-guess-action')) {
+        const attempts = actionBodies().length
+        return attempts <= 1
+          ? ({ ok: false, status: 429, json: async () => ({ error: 'Too many' }) } as Response)
+          : okResponse({ success: true })
+      }
+      return okResponse(response)
+    })
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+
+    await waitFor(() => expect(actionBodies().map((body) => body.action)).toEqual(['submit-drawing', 'submit-drawing']), {
+      timeout: 3000,
+    })
+  })
+
   it('sends nothing from a guesser at the reveal', async () => {
     await renderWith((response) => {
       response.activeGame.state.data.phase = 'reveal'

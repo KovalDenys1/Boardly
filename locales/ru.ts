@@ -1708,7 +1708,6 @@ const ru = {
         guessesTitle: 'Догадки',
         guessFeedEmpty: 'Здесь появятся догадки',
         nobodyGuessed: 'Никто не угадал',
-        guessedBy: 'Угадали: {{names}}',
         guessLimitReached: 'Попытки в этом раунде закончились',
         guessTooFast: 'Не так быстро – подождите секунду',
         waitingForDrawing: 'Ждём рисунок...',

@@ -234,9 +234,12 @@ describe('SketchAndGuessGameBoard reveal (#1082)', () => {
     render(<SketchAndGuessGameBoard {...buildProps({ gameData })} />)
 
     expect(screen.getByText('замок')).not.toBeNull()
-    expect(
-      screen.getByText('games.guess_my_drawing.game.guessedBy:Alice, Cara (games.guess_my_drawing.game.acceptedByHost)')
-    ).not.toBeNull()
+    // Who got it: the feed, with the host-accepted one marked, and its text now public.
+    expect(screen.getByText(/guessedIt:Alice/)).not.toBeNull()
+    expect(screen.getByText(/guessedIt:Cara/)).not.toBeNull()
+    expect(screen.getAllByText(/acceptedByHost/)).toHaveLength(1)
+    expect(screen.getByText(/castel/)).not.toBeNull()
+    expect(screen.queryByText('games.guess_my_drawing.game.nobodyGuessed')).toBeNull()
   })
 
   it('says nobody guessed it when nobody did', () => {
