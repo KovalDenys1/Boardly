@@ -114,7 +114,6 @@ export default function Best2PlayerGamesGuide() {
           { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
           { href: '/guides/best-online-games-for-game-night', label: 'Best Online Games for Game Night' },
           { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
-          { href: '/guides/connect-four-strategy-guide', label: 'Connect Four Strategy Guide — How to Win Every Time' },
         ]}
       >
         <GuideSection title="Quick Comparison">

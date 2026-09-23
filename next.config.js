@@ -74,6 +74,17 @@ const nextConfig = {
         destination: '/games/yahtzee',
         permanent: true,
       },
+      // Folded into the game page by #1090 (SEO Track A, game two), on the
+      // same evidence as the Yahtzee guide above: Search Console listed it
+      // under "Crawled – currently not indexed" (read 2026-09-24) and it
+      // earned no impressions. Its strategy now lives at
+      // /games/connect-four#strategy; the redirect lands on the page itself
+      // for the same reason as above.
+      {
+        source: '/guides/connect-four-strategy-guide',
+        destination: '/games/connect-four',
+        permanent: true,
+      },
     ]
   },
   // Allow local host variants in development to prevent HMR/CORS failures

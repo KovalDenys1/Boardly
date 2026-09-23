@@ -9,7 +9,7 @@
 import type { IconName } from '@/components/icons/names'
 import { getCatalogEntryById } from '@/lib/game-catalog'
 
-export type GuideCategory = 'how-to-play' | 'strategy' | 'best-of'
+export type GuideCategory = 'how-to-play' | 'best-of'
 
 /** A game glyph (catalog id) or a chrome icon, drawn in the guide's accent. */
 export type GuideIcon = { game: string } | { glyph: IconName }
@@ -191,7 +191,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     accent: 'var(--bd-sun)',
     category: 'how-to-play',
     game: 'connect-four',
-    updated: '2026-09-22',
+    updated: '2026-09-24',
     published: '2026-05-26',
     seo: {
       title: 'How to Play Connect Four Online - Complete Guide',
@@ -200,7 +200,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
       keywords: [
         'how to play connect four online',
         'connect four rules',
-        'connect four strategy',
+        'connect 4 rules',
         'play connect four with friends',
         'connect four online free',
       ],
@@ -268,39 +268,6 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
       headline: 'How to Play Alias Online — Complete Guide',
       articleDescription: 'Rules, tips for describing words, and how to win at Alias.',
       breadcrumbLabel: 'How to Play Alias Online',
-    },
-  },
-]
-
-export const STRATEGY_GUIDES: GuideEntry[] = [
-  {
-    slug: 'connect-four-strategy-guide',
-    title: 'Connect Four Strategy Guide — How to Win Every Time',
-    description: 'Center control, double threats, and the key traps that catch most players off guard.',
-    icon: { game: 'connect-four' },
-    readTime: '5 min',
-    accent: 'var(--bd-sun)',
-    category: 'strategy',
-    game: 'connect-four',
-    updated: '2026-09-22',
-    published: '2026-05-26',
-    seo: {
-      title: 'Connect Four Strategy Guide — How to Win Every Time',
-      description:
-        'Proven Connect Four strategies to beat any opponent. Learn center control, how to set up unstoppable threats, and the key traps that catch most players off guard.',
-      keywords: [
-        'connect four strategy',
-        'how to win connect four',
-        'connect four tips',
-        'connect four winning strategy',
-        'connect four tricks',
-        'best connect four moves',
-      ],
-      ogTitle: 'Connect Four Strategy Guide',
-      ogDescription: 'Proven Connect Four strategies — center control, double threats, and the traps that win games.',
-      headline: 'Connect Four Strategy Guide — How to Win Every Time',
-      articleDescription: 'Center control, double threats, and key traps in Connect Four.',
-      breadcrumbLabel: 'Connect Four Strategy Guide',
     },
   },
 ]
@@ -402,7 +369,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
   },
 ]
 
-export const ALL_GUIDES: GuideEntry[] = [...HOW_TO_PLAY_GUIDES, ...STRATEGY_GUIDES, ...BEST_OF_GUIDES]
+export const ALL_GUIDES: GuideEntry[] = [...HOW_TO_PLAY_GUIDES, ...BEST_OF_GUIDES]
 /** The catalog entry for a guide page – its Article.dateModified must be `updated` from here, not hand-typed. */
 export function getGuideBySlug(slug: string): GuideEntry {
   const guide = ALL_GUIDES.find((entry) => entry.slug === slug)
