@@ -25,6 +25,7 @@ export type BotPacedGameType =
   | 'tic_tac_toe'
   | 'connect_four'
   | 'rock_paper_scissors'
+  | 'checkers'
 
 /**
  * The longest run of `botDelay` base values an executor puts between two
@@ -35,6 +36,8 @@ export type BotPacedGameType =
  * - yahtzee: `yahtzee-bot-executor.ts` 164 + 177 (end of a roll) then 199 + 213
  *   (the score that ends the turn)
  * - tic_tac_toe / connect_four / rock_paper_scissors: one pause, one commit
+ * - checkers: `checkers-bot-executor.ts` 150 before the first hop, then 250
+ *   before each further hop of a capture chain, one commit per hop
  */
 export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly number[]> = {
   memory: [1200, 180],
@@ -42,6 +45,7 @@ export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly 
   tic_tac_toe: [120],
   connect_four: [150],
   rock_paper_scissors: [200],
+  checkers: [250],
 }
 
 /**
