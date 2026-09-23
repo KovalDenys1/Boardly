@@ -91,6 +91,15 @@ Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based 
 
 ---
 
+## Plans, costs and accounts: read the vault before answering
+
+Any question about hosting, a paid plan, a subscription, credits, what something costs or
+whether to move to another provider: read `03 Projects/Boardly/Boardly.md` and
+`02 Areas/Finance.md` in the vault **before** answering. This file is not the record of
+account state – it goes stale (on 2026-09-23 it still said "Hobby" five days after Vercel Pro
+was paid for, and a hosting recommendation was built on that). When this file and the vault
+disagree, the vault's newer dated entry wins; fix this file in the same session.
+
 ## Stack
 - Next.js 16, React 19, TypeScript, Tailwind CSS
 - PostgreSQL via Supabase, Prisma 7
@@ -535,9 +544,9 @@ do not "fix" it by adding one.
 Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
 open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.
 
-- **The env switch is unset on purpose.** Vercel is on the **Hobby** plan, which is
-  non-commercial only, and ads make a site commercial; AdSense also still has
-  boardly.online as "Getting ready". Production only, once both are settled — never
+- **The env switch is unset on purpose.** The one gate left is AdSense, which still has
+  boardly.online as "Getting ready". (Vercel Pro, $25/month since 2026-09-18, removed the
+  other: Hobby is non-commercial only.) Production only, once AdSense approves — never
   Preview, which would serve ads on a non-production host.
 - **Client mount is not decoration.** The guide routes are statically prerendered and
   must stay that way. A server-side premium check turns all 15 dynamic. Verify with a
