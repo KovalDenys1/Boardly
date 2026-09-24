@@ -42,26 +42,23 @@ const mockPersistChatMessage = persistChatMessage as jest.MockedFunction<typeof 
 const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 
 /** A real round played to `phase`, with the real engine. */
-function playTo(phase: 'drawing' | 'guessing' | 'reveal') {
+function playTo(phase: 'choosing' | 'drawing' | 'reveal') {
   const game = new SketchAndGuessGame('game-123', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
   game.addPlayer({ id: DRAWER, name: 'Host' })
   game.addPlayer({ id: GUESSER, name: 'Bea' })
   game.addPlayer({ id: THIRD, name: 'Cyd' })
   game.startGame()
 
-  const prompt = (game.getState().data as { rounds: Array<{ prompt: string }> }).rounds[0].prompt
+  const choices = (game.getState().data as { rounds: Array<{ wordChoices: Array<{ id: string; en: string[] }> }> })
+    .rounds[0].wordChoices
 
-  if (phase !== 'drawing') {
-    game.makeMove({
-      playerId: DRAWER,
-      type: 'submit-drawing',
-      data: { content: '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}' },
-      timestamp: new Date(),
-    })
+  if (phase !== 'choosing') {
+    game.makeMove({ playerId: DRAWER, type: 'choose-word', data: { wordId: choices[0].id }, timestamp: new Date() })
   }
   if (phase === 'reveal') {
-    game.makeMove({ playerId: GUESSER, type: 'submit-guess', data: { guess: prompt }, timestamp: new Date() })
-    game.makeMove({ playerId: THIRD, type: 'submit-guess', data: { guess: prompt }, timestamp: new Date() })
+    // Every guesser has it, which ends the round early (#1082).
+    game.makeMove({ playerId: GUESSER, type: 'submit-guess', data: { guess: choices[0].en[0] }, timestamp: new Date() })
+    game.makeMove({ playerId: THIRD, type: 'submit-guess', data: { guess: choices[0].en[0] }, timestamp: new Date() })
   }
 
   const state = game.getState()
@@ -111,8 +108,8 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
     expect(mockBroadcastToLobby).not.toHaveBeenCalled()
   })
 
-  it('refuses the drawer while the others are guessing, which is when it matters', async () => {
-    seedLobby(playTo('guessing'))
+  it('refuses the drawer while they are choosing the word too', async () => {
+    seedLobby(playTo('choosing'))
     asUser(DRAWER)
 
     const response = await post()
@@ -132,7 +129,7 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
   })
 
   it('never gets in a guesser way – this is a party game and the talking is the point', async () => {
-    seedLobby(playTo('guessing'))
+    seedLobby(playTo('drawing'))
     asUser(GUESSER)
 
     const response = await post()
@@ -142,7 +139,7 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
   })
 
   it('reads no game state at all for any other game type', async () => {
-    seedLobby(playTo('guessing'), 'tic_tac_toe')
+    seedLobby(playTo('drawing'), 'tic_tac_toe')
     asUser(DRAWER)
 
     const response = await post()
@@ -150,5 +147,59 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
     expect(response.status).toBe(200)
     // The extra query is the cost of this rule, and only this game pays it.
     expect(prisma.games.findUnique).not.toHaveBeenCalled()
+  })
+
+  // #1082: a guesser who already has the word knows it as well as the drawer does.
+  function solvedDrawingState() {
+    const game = new SketchAndGuessGame('game-123', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: GUESSER, name: 'Bea' })
+    game.addPlayer({ id: THIRD, name: 'Cyd' })
+    game.startGame()
+    const choices = (game.getState().data as { rounds: Array<{ wordChoices: Array<{ id: string; en: string[] }> }> }).rounds[0].wordChoices
+    game.makeMove({ playerId: DRAWER, type: 'choose-word', data: { wordId: choices[0].id }, timestamp: new Date() })
+    game.makeMove({ playerId: GUESSER, type: 'submit-guess', data: { guess: choices[0].en[0] }, timestamp: new Date() })
+    return { state: game.getState(), word: choices[0].en[0] }
+  }
+
+  it('mutes a guesser who has already got the word until the reveal (#1082)', async () => {
+    seedLobby(solvedDrawingState().state)
+    asUser(GUESSER)
+
+    const response = await post()
+    const body = (await response.json()) as { code?: string }
+
+    expect(response.status).toBe(403)
+    expect(body.code).toBe('SOLVER_CHAT_MUTED')
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  // PR #1100 review: refusing messages that contain the word was a yes/no
+  // oracle for the word, misfired on substrings, and was beaten by a zero-width
+  // character. Only the mutes remain.
+  it('does not refuse a guesser’s message for its content', async () => {
+    const { state, word } = solvedDrawingState()
+    seedLobby(state)
+    asUser(THIRD)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/lobby/ABCD12/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `is it a ${word.toUpperCase()}?` }),
+      }),
+      { params: Promise.resolve({ code: 'ABCD12' }) }
+    )
+
+    expect(response.status).toBe(200)
+  })
+
+  it('still lets a guesser without the word chat normally (#1082)', async () => {
+    seedLobby(solvedDrawingState().state)
+    asUser(THIRD)
+
+    const response = await post()
+
+    expect(response.status).toBe(200)
   })
 })

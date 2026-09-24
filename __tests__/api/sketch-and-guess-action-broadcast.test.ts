@@ -18,6 +18,7 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/[gameId]/sketch-and-guess-action/route'
 import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
+import type { SketchWord } from '@/lib/games/sketch-and-guess-words'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -53,26 +54,30 @@ const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broa
 
 /**
  * A real round, played with the real engine up to the point where the first
- * guesser is about to answer: three seats, the drawing submitted, phase
- * `guessing`. The prompt is whatever the engine drew from its pool.
+ * guesser is about to answer: three seats, the word chosen, phase `drawing`
+ * (which since #1082 is when everyone guesses). `prompt` is the word's English
+ * form; `word` is every form it has.
  */
-function buildGuessingRound() {
+function buildDrawingRound(extraMoves: Array<{ playerId: string; type: string; data: Record<string, unknown> }> = []) {
   const game = new SketchAndGuessGame('game-123', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
   game.addPlayer({ id: DRAWER, name: 'Host' })
   game.addPlayer({ id: FIRST_GUESSER, name: 'Bea' })
   game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
   game.startGame()
 
-  const data = game.getState().data as { rounds: Array<{ prompt: string }>; phase: string }
-  const prompt = data.rounds[0].prompt
-  game.makeMove({
-    playerId: DRAWER,
-    type: 'submit-drawing',
-    data: { content: '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}' },
-    timestamp: new Date(),
-  })
+  // A fixed word, so a test's "plainly wrong" guess can never be a near miss of
+  // whatever the bank happened to draw (#1082 hides near misses from the table).
+  const word: SketchWord = { id: 'castle', en: ['castle', 'castles'], no: ['slott', 'borg'], ru: ['замок'], uk: ['замок'] }
+  const restored = game.getState() as { data: { rounds: Array<{ wordChoices: SketchWord[] }> } }
+  restored.data.rounds[0].wordChoices = [word]
+  game.restoreState(restored as never)
+  game.makeMove({ playerId: DRAWER, type: 'choose-word', data: { wordId: word.id }, timestamp: new Date() })
+  // Spaced out in the past, so the route's own guess clears the 800 ms rate limit.
+  extraMoves.forEach((move, index) =>
+    game.makeMove({ ...move, timestamp: new Date(Date.now() - 10_000 + index * 1000) })
+  )
 
-  return { state: game.getState(), prompt }
+  return { state: game.getState(), prompt: word.en[0], word }
 }
 
 function buildRequest(body: unknown) {
@@ -100,41 +105,52 @@ function actionBroadcasts() {
   return mockBroadcastToLobby.mock.calls.filter((call) => call[1] === 'sketch-and-guess-action')
 }
 
-describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#1032)', () => {
+/** Every form of the word, in every language, found anywhere in `published` as a whole JSON string. */
+function leakedForms(published: unknown, word: SketchWord): string[] {
+  const json = JSON.stringify(published)
+  return [...word.en, ...word.no, ...word.ru, ...word.uk].filter((form) => json.includes(JSON.stringify(form)))
+}
+
+function seedGame(state: unknown, creatorId: string = DRAWER) {
+  ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
+    id: 'game-123',
+    state: JSON.stringify(state),
+    status: 'playing',
+    gameType: 'sketch_and_guess',
+    currentTurn: 3,
+    updatedAt: GAME_UPDATED_AT,
+    startedAt: new Date('2026-09-20T11:55:00.000Z'),
+    players: [dbPlayer('db-1', DRAWER), dbPlayer('db-2', FIRST_GUESSER), dbPlayer('db-3', SECOND_GUESSER)],
+    // The drawer of round 1 created the lobby, so the host is DRAWER.
+    lobby: { code: 'ABCD12', gameType: 'sketch_and_guess', turnTimer: 0, creatorId },
+  } as never)
+}
+
+function asUser(id: string) {
+  mockGetRequestAuthUser.mockResolvedValue({ id, username: id, suspended: false, isGuest: true } as never)
+}
+
+const post = (body: unknown) => POST(buildRequest(body), { params: Promise.resolve({ gameId: 'game-123' }) })
+
+describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#1032, #1082)', () => {
   let prompt: string
+  let word: SketchWord
 
   beforeEach(() => {
     jest.clearAllMocks()
     mockBroadcastToLobby.mockResolvedValue(true as never)
     ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
-    mockGetRequestAuthUser.mockResolvedValue({
-      id: FIRST_GUESSER,
-      username: 'Bea',
-      suspended: false,
-      isGuest: true,
-    } as never)
+    asUser(FIRST_GUESSER)
 
-    const round = buildGuessingRound()
+    const round = buildDrawingRound()
     prompt = round.prompt
-
-    ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
-      id: 'game-123',
-      state: JSON.stringify(round.state),
-      status: 'playing',
-      gameType: 'sketch_and_guess',
-      currentTurn: 3,
-      updatedAt: GAME_UPDATED_AT,
-      startedAt: new Date('2026-09-20T11:55:00.000Z'),
-      players: [dbPlayer('db-1', DRAWER), dbPlayer('db-2', FIRST_GUESSER), dbPlayer('db-3', SECOND_GUESSER)],
-      lobby: { code: 'ABCD12', gameType: 'sketch_and_guess', turnTimer: 0 },
-    } as never)
+    word = round.word
+    seedGame(round.state)
   })
 
-  it('never puts a guess on the lobby topic, not even the correct one', async () => {
-    // The worst case: the guess IS the prompt, and it is right.
-    const response = await POST(buildRequest({ action: 'submit-guess', data: { guess: prompt } }), {
-      params: Promise.resolve({ gameId: 'game-123' }),
-    })
+  it('never puts a correct guess, or any form of the word, on the lobby topic', async () => {
+    // The worst case: the guess IS the word, and it is right.
+    const response = await post({ action: 'submit-guess', data: { guess: prompt } })
     expect(response.status).toBe(200)
 
     const broadcasts = actionBroadcasts()
@@ -145,43 +161,241 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#10
     expect(payload.data).toEqual({})
 
     // Every argument of every broadcast this request made, state included.
-    expect(JSON.stringify(mockBroadcastToLobby.mock.calls)).not.toContain(prompt)
+    expect(leakedForms(mockBroadcastToLobby.mock.calls, word)).toEqual([])
   })
 
-  it('still tells the lobby that somebody answered, which is all the round needs', async () => {
-    await POST(buildRequest({ action: 'submit-guess', data: { guess: prompt } }), {
-      params: Promise.resolve({ gameId: 'game-123' }),
-    })
+  it('still tells the lobby who has it, which is all the round needs', async () => {
+    await post({ action: 'submit-guess', data: { guess: prompt } })
 
     const payload = actionBroadcasts()[0][2] as {
       playerId: string
-      state: { data: { submittedPlayerIds: string[] } }
+      state: { data: { submittedPlayerIds: string[]; rounds: Array<{ guesses: Array<{ isCorrect: boolean; guess: string }> }> } }
     }
     expect(payload.playerId).toBe(FIRST_GUESSER)
     expect(payload.state.data.submittedPlayerIds).toEqual([FIRST_GUESSER])
+    expect(payload.state.data.rounds[0].guesses[0]).toMatchObject({ isCorrect: true, guess: '' })
   })
 
-  it('keeps the wrong guesses off the topic too – a wrong guess names the guesser', async () => {
-    const response = await POST(buildRequest({ action: 'submit-guess', data: { guess: 'definitely-not-it' } }), {
-      params: Promise.resolve({ gameId: 'game-123' }),
-    })
+  it('shows a wrong guess in the feed through the state, never through the move payload', async () => {
+    const response = await post({ action: 'submit-guess', data: { guess: 'definitely-not-it' } })
     expect(response.status).toBe(200)
 
-    expect(JSON.stringify(mockBroadcastToLobby.mock.calls)).not.toContain('definitely-not-it')
+    const payload = actionBroadcasts()[0][2] as {
+      data: Record<string, unknown>
+      state: { data: { rounds: Array<{ guesses: Array<{ guess: string }> }> } }
+    }
+    expect(payload.data).toEqual({})
+    expect(payload.state.data.rounds[0].guesses[0].guess).toBe('definitely-not-it')
   })
 
-  it('leaves the answering player their own guess in the response they get back', async () => {
-    const response = await POST(buildRequest({ action: 'submit-guess', data: { guess: prompt } }), {
-      params: Promise.resolve({ gameId: 'game-123' }),
-    })
+  it('leaves the answering player their own guess and the private result in the response', async () => {
+    const response = await post({ action: 'submit-guess', data: { guess: prompt } })
     const body = (await response.json()) as {
+      guessResult: { correct: boolean; close: boolean }
       state: { data: { rounds: Array<{ guesses: Array<{ playerId: string; guess: string }> }> } }
     }
 
-    // Their own answer comes back to them – that is how "you have answered" is
-    // read – and this is a private response, not the shared topic.
+    expect(body.guessResult).toEqual({ correct: true, close: false })
     expect(body.state.data.rounds[0].guesses).toHaveLength(1)
     expect(body.state.data.rounds[0].guesses[0].playerId).toBe(FIRST_GUESSER)
     expect(body.state.data.rounds[0].guesses[0].guess).toBe(prompt)
+  })
+
+  it('hands the mover a word hint in their own language, and the shared topic none', async () => {
+    asUser(SECOND_GUESSER)
+    const response = await post({ action: 'submit-guess', data: { guess: 'not it at all' }, locale: 'uk' })
+    const body = (await response.json()) as { state: { data: { rounds: Array<{ wordHint?: { lang: string; cells: unknown[] } }> } } }
+    expect(body.state.data.rounds[0].wordHint?.lang).toBe('uk')
+    expect(body.state.data.rounds[0].wordHint?.cells).toHaveLength(Array.from(word.uk[0]).length)
+
+    const payload = actionBroadcasts()[0][2] as { state: { data: { rounds: Array<{ wordHint?: unknown }> } } }
+    expect(payload.state.data.rounds[0].wordHint).toBeUndefined()
+  })
+
+  it('keeps a near miss out of a third player’s response and off the topic, but gives it to the host (#1082)', async () => {
+    const near = `${prompt}x`
+    await post({ action: 'submit-guess', data: { guess: near } })
+    // FIRST_GUESSER typed it; the broadcast has no viewer.
+    expect(JSON.stringify(mockBroadcastToLobby.mock.calls)).not.toContain(JSON.stringify(near))
+
+    const freshNear = near
+    const withMiss = buildDrawingRound([{ playerId: FIRST_GUESSER, type: 'submit-guess', data: { guess: freshNear } }])
+    seedGame(withMiss.state)
+    jest.clearAllMocks()
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    asUser(SECOND_GUESSER)
+    const third = await (await post({ action: 'submit-guess', data: { guess: 'unrelated' } })).json()
+    expect(JSON.stringify(third)).not.toContain(JSON.stringify(freshNear))
+    expect(third.state.data.rounds[0].guesses[0]).toMatchObject({ playerId: FIRST_GUESSER, guess: '', nearMiss: true })
+
+    // The host reads it, to decide on Accept. DRAWER created this lobby; make the
+    // other guesser the creator to see it from a host who is not drawing.
+    seedGame(withMiss.state, SECOND_GUESSER)
+    // A host who is guessing reads near misses once they have the word themselves (PR #1100 review).
+    asUser(SECOND_GUESSER)
+    const host = await (await post({ action: 'submit-guess', data: { guess: prompt } })).json()
+    expect(host.guessResult).toEqual({ correct: true, close: false })
+    expect(host.state.data.rounds[0].guesses[0]).toMatchObject({ guess: freshNear, nearMiss: true })
+  })
+
+  it('locks the hint language on first sight: a later request in another language still gets the first', async () => {
+    asUser(SECOND_GUESSER)
+    await post({ action: 'submit-guess', data: { guess: 'first try' }, locale: 'ru' })
+    const written = (prisma.games.updateMany as jest.Mock).mock.calls[0][0].data.state
+    const reread = typeof written === 'string' ? JSON.parse(written) : written
+    // Back-date that guess past the 800 ms guess limit, so the second is accepted.
+    for (const guess of reread.data.rounds[0].guesses) guess.submittedAt -= 5000
+    seedGame(reread)
+
+    const later = await (await post({ action: 'submit-guess', data: { guess: 'second try' }, locale: 'en' })).json()
+    expect(later.state.data.rounds[0].wordHint?.lang).toBe('ru')
+    expect(JSON.stringify(later)).not.toContain('"lang":"en"')
+  })
+
+  it('saves the drawer\u2019s canvas mid-round quietly: no replay row, no broadcast, phase unchanged', async () => {
+    const replay = jest.requireMock('@/lib/game-replay').appendGameReplaySnapshot as jest.Mock
+    asUser(DRAWER)
+    const content = '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[{"color":"#000","width":3,"points":[{"x":1,"y":1}]}]}'
+    const response = await post({ action: 'save-drawing', data: { content } })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.state.data.phase).toBe('drawing')
+    expect(body.state.data.rounds[0].drawingContent).toBe(content)
+    expect(replay).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('refuses save-drawing from anyone but the drawer', async () => {
+    asUser(FIRST_GUESSER)
+    const response = await post({ action: 'save-drawing', data: { content: '{"type":"drawing","strokes":[]}' } })
+    expect(response.status).toBe(400)
+  })
+
+  it('tells only the author a guess was close, and never the topic', async () => {
+    const elephant = { id: 'elephant', en: ['elephant'], no: ['elefant'], ru: ['слон'], uk: ['слон'] }
+    const round = buildDrawingRound()
+    const data = round.state.data as { rounds: Array<{ word: SketchWord; prompt: string }> }
+    data.rounds[0].word = elephant
+    data.rounds[0].prompt = 'elephant'
+    seedGame(round.state)
+
+    const response = await post({ action: 'submit-guess', data: { guess: 'elephan' } })
+    const body = (await response.json()) as { guessResult: { correct: boolean; close: boolean } }
+    expect(body.guessResult).toEqual({ correct: false, close: true })
+    expect(JSON.stringify(mockBroadcastToLobby.mock.calls)).not.toContain('close')
+  })
+
+  it('answers 429 to a guess sent too soon after the last one', async () => {
+    const round = buildDrawingRound()
+    const data = round.state.data as { rounds: Array<{ guesses: unknown[] }> }
+    data.rounds[0].guesses.push({ id: 'r1-g1', playerId: FIRST_GUESSER, guess: 'just now', submittedAt: Date.now(), isCorrect: false })
+    seedGame(round.state)
+
+    const response = await post({ action: 'submit-guess', data: { guess: 'again' } })
+    const body = (await response.json()) as { code: string }
+    expect(response.status).toBe(429)
+    expect(body.code).toBe('GUESS_TOO_FAST')
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('does not broadcast the word the drawer chose', async () => {
+    const game = new SketchAndGuessGame('game-123', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    game.addPlayer({ id: DRAWER, name: 'Host' })
+    game.addPlayer({ id: FIRST_GUESSER, name: 'Bea' })
+    game.addPlayer({ id: SECOND_GUESSER, name: 'Cyd' })
+    game.startGame()
+    const choices = (game.getState().data as { rounds: Array<{ wordChoices: SketchWord[] }> }).rounds[0].wordChoices
+    seedGame(game.getState())
+    asUser(DRAWER)
+
+    const response = await post({ action: 'choose-word', data: { wordId: choices[1].id } })
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { state: { data: { rounds: Array<{ word: SketchWord }> } } }
+    expect(body.state.data.rounds[0].word.id).toBe(choices[1].id)
+
+    expect(actionBroadcasts()[0][2]).toMatchObject({ action: 'choose-word', data: {} })
+    for (const choice of choices) expect(leakedForms(mockBroadcastToLobby.mock.calls, choice)).toEqual([])
+  })
+})
+
+describe('POST /api/game/[gameId]/sketch-and-guess-action accept-guess (#1082)', () => {
+  let wrongGuessId: string
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockBroadcastToLobby.mockResolvedValue(true as never)
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const round = buildDrawingRound([
+      { playerId: FIRST_GUESSER, type: 'submit-guess', data: { guess: 'a near miss' } },
+      { playerId: SECOND_GUESSER, type: 'submit-guess', data: { guess: 'something else' } },
+    ])
+    wrongGuessId = (round.state.data as { rounds: Array<{ guesses: Array<{ id: string }> }> }).rounds[0].guesses[0].id
+    seedGame(round.state)
+  })
+
+  it('refuses anyone but the host, before the engine is asked', async () => {
+    asUser(SECOND_GUESSER)
+    const response = await post({ action: 'accept-guess', data: { guessId: wrongGuessId } })
+    const body = (await response.json()) as { code: string }
+
+    expect(response.status).toBe(403)
+    expect(body.code).toBe('NOT_HOST')
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('refuses the author of the guess even as a seated player', async () => {
+    asUser(FIRST_GUESSER)
+    const response = await post({ action: 'accept-guess', data: { guessId: wrongGuessId } })
+    expect(response.status).toBe(403)
+  })
+
+  it('lets the host accept it: the guess turns correct and scores', async () => {
+    asUser(DRAWER)
+    const response = await post({ action: 'accept-guess', data: { guessId: wrongGuessId } })
+    const body = (await response.json()) as {
+      state: { data: { scores: Record<string, number>; rounds: Array<{ guesses: Array<{ id: string; isCorrect: boolean; acceptedByHost?: boolean }> }> } }
+    }
+
+    expect(response.status).toBe(200)
+    expect(body.state.data.rounds[0].guesses[0]).toMatchObject({ id: wrongGuessId, isCorrect: true, acceptedByHost: true })
+    expect(body.state.data.scores[FIRST_GUESSER]).toBeGreaterThan(0)
+    expect(prisma.games.updateMany).toHaveBeenCalledTimes(1)
+    expect(actionBroadcasts()[0][2]).toMatchObject({ action: 'accept-guess', data: {} })
+  })
+
+  it('is idempotent: accepting an accepted guess succeeds and writes nothing', async () => {
+    const round = buildDrawingRound([
+      { playerId: FIRST_GUESSER, type: 'submit-guess', data: { guess: 'a near miss' } },
+    ])
+    const guessId = (round.state.data as { rounds: Array<{ guesses: Array<{ id: string }> }> }).rounds[0].guesses[0].id
+    const accepted = new SketchAndGuessGame('game-123')
+    accepted.restoreState(round.state as never)
+    accepted.authorizeHost(DRAWER)
+    accepted.makeMove({ playerId: DRAWER, type: 'accept-guess', data: { guessId }, timestamp: new Date() })
+    seedGame(accepted.getState())
+    asUser(DRAWER)
+
+    const response = await post({ action: 'accept-guess', data: { guessId } })
+
+    expect(response.status).toBe(200)
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('drops a client-supplied authorizedAsHost: a non-host who sends it is still refused', async () => {
+    asUser(SECOND_GUESSER)
+    const response = await post({ action: 'accept-guess', data: { guessId: wrongGuessId, authorizedAsHost: true } })
+    expect(response.status).toBe(403)
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('does not let the host skip the matcher with a guess id that does not exist', async () => {
+    asUser(DRAWER)
+    const response = await post({ action: 'accept-guess', data: { guessId: 'r1-g99' } })
+    expect(response.status).toBe(400)
   })
 })

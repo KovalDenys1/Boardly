@@ -93,19 +93,33 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   default: ({
     onSubmitGuess,
     onLiveStroke,
+    onChooseWord,
+    onAcceptGuess,
     liveView,
+    isHost,
+    draft,
+    onDraftChange,
   }: {
     onSubmitGuess: (guess: string) => void
     onLiveStroke?: (stroke: unknown) => void
+    onChooseWord?: (wordId: string) => void
+    onAcceptGuess?: (guessId: string) => void
     liveView?: { strokes: unknown[]; live: unknown } | null
+    isHost?: boolean
+    draft?: { strokes: unknown[] }
+    onDraftChange?: (next: unknown) => void
   }) => (
     <div
       data-testid="sketch-board"
       data-live-strokes={liveView ? String(liveView.strokes.length) : 'none'}
       data-live-stroke={liveView?.live ? 'yes' : 'no'}
+      data-host={isHost ? 'true' : 'false'}
     >
       <button onClick={() => onSubmitGuess('apple')}>guess</button>
       <button onClick={() => onLiveStroke?.({ color: '#1F1B16', width: 3, points: [{ x: 1, y: 2 }] })}>draw</button>
+      <button onClick={() => onChooseWord?.('castle')}>choose</button>
+      <button onClick={() => onAcceptGuess?.('r1-g1')}>accept</button>
+      <button onClick={() => onDraftChange?.({ ...draft, strokes: [...(draft?.strokes ?? []), { color: '#000', width: 3, points: [{ x: 1, y: 1 }] }] })}>stroke</button>
     </div>
   ),
   SketchScoreRows: ({ players }: { players: Array<{ id: string; name: string }> }) => (
@@ -114,6 +128,7 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
   // The page holds the unsubmitted strokes and guess itself, above its three
   // layout trees, and starts them from this factory at module scope (#1034).
   emptySketchAndGuessDraft: () => ({ strokes: [], color: '#1F1B16', isThick: false, isEraser: false, guess: '' }),
+  serializeSketchDrawing: (strokes: unknown[]) => JSON.stringify({ type: 'drawing', version: 1, width: 480, height: 480, strokes }),
 }))
 
 jest.mock('@/components/Chat', () => ({
@@ -159,7 +174,7 @@ function buildLobbyResponse() {
       status: 'playing',
       state: {
         data: {
-          phase: 'guessing',
+          phase: 'drawing',
           currentRound: 1,
           totalRounds: 3,
           drawerOrder: ['user-1', 'user-2', 'user-3'],
@@ -418,6 +433,29 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     }
   })
 
+  // #1082: a guesser who has the word knows it as well as the drawer does.
+  it('closes the composer for a guesser who has already got the word', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+      response.activeGame.state.data.submittedPlayerIds = ['user-1']
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('true')
+    }
+  })
+
+  it('opens it for them again at the reveal', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.submittedPlayerIds = ['user-1']
+    })
+
+    for (const chat of screen.getAllByTestId('sketch-chat')) {
+      expect(chat.getAttribute('data-readonly')).toBe('false')
+    }
+  })
+
   it('opens the composer to the drawer again at the reveal', async () => {
     await renderPage((response) => {
       response.activeGame.state.data.currentDrawerId = 'user-1'
@@ -429,24 +467,41 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     }
   })
 
-  // The phase clock the engine enforces was invisible before #1034: 90s to draw
-  // and 60s to guess ran down with nothing on screen. The numbers are written
-  // out here rather than imported, so a change to SKETCH_PHASE_SECONDS has to
-  // come back and change this line too.
-  it('shows the drawing phase clock counting from 90 seconds', async () => {
+  // The phase clock the engine enforces was invisible before #1034. The numbers
+  // are written out here rather than imported, so a change to
+  // SKETCH_PHASE_SECONDS has to come back and change this line too. Since #1082
+  // drawing is also the guessing window, 80 s, after 15 s of choosing a word.
+  it('shows the drawing phase clock counting from 80 seconds', async () => {
     await renderPage((response) => {
       response.activeGame.state.data.phase = 'drawing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':90').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
   })
 
-  it('shows the guessing phase clock counting from 60 seconds', async () => {
+  it('shows the choosing phase clock counting from 15 seconds', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.data.phase = 'choosing'
+    })
+
+    await waitFor(() => expect(screen.getAllByText(':15').length).toBeGreaterThan(0))
+  })
+
+  it('reads a game saved before #1082 in `guessing` on the drawing clock', async () => {
     await renderPage((response) => {
       response.activeGame.state.data.phase = 'guessing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':60').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
+  })
+
+  it('measures the phase from phaseStartedAt, not lastMoveAt, which every guess moves', async () => {
+    await renderPage((response) => {
+      response.activeGame.state.lastMoveAt = Date.now()
+      response.activeGame.state.data.phaseStartedAt = Date.now() - 30_000
+    })
+
+    await waitFor(() => expect(screen.getAllByText(':50').length).toBeGreaterThan(0))
   })
 
   it('ends the game through the shared result overlay, with a rematch for the host', async () => {
@@ -549,5 +604,195 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       await new Promise((resolve) => setTimeout(resolve, 150))
       expect(liveSends()).toHaveLength(0)
     })
+  })
+})
+
+describe('SketchAndGuessLobbyPage #1082 moves', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const actionBodies = () =>
+    mockFetchWithGuest.mock.calls
+      .filter((call) => String(call[0]).includes('/sketch-and-guess-action'))
+      .map((call) => JSON.parse(String(call[1]?.body)))
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  async function renderWith(mutate: (response: ReturnType<typeof buildLobbyResponse>) => void) {
+    const response = buildLobbyResponse()
+    mutate(response)
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+  }
+
+  it('asks for the lobby in the viewer language, which the word hint is built in', async () => {
+    await renderWith(() => {})
+    const lobbyCalls = mockFetchWithGuest.mock.calls.map((call) => String(call[0])).filter((url) => url.startsWith('/api/lobby/ABCD?'))
+    expect(lobbyCalls[0]).toBe('/api/lobby/ABCD?includeFinished=true&locale=en')
+  })
+
+  it('tells the board the lobby creator is the host, and nobody else', async () => {
+    await renderWith(() => {})
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('true')
+  })
+
+  it('does not make a player who did not create the lobby the host', async () => {
+    await renderWith((response) => {
+      response.lobby.creatorId = 'user-3'
+    })
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('false')
+  })
+
+  it('sends choose-word and accept-guess as their own actions', async () => {
+    await renderWith(() => {})
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'choose' })[0])
+    })
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'accept' })[0])
+    })
+
+    expect(actionBodies()).toEqual([
+      // `locale` rides along so the state handed back carries the viewer's word hint.
+      { action: 'choose-word', data: { wordId: 'castle' }, locale: 'en' },
+      { action: 'accept-guess', data: { guessId: 'r1-g1' }, locale: 'en' },
+    ])
+  })
+
+  it('does not toast every guess', async () => {
+    await renderWith(() => {})
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
+    })
+    expect(actionBodies()).toEqual([{ action: 'submit-guess', data: { guess: 'apple' }, locale: 'en' }])
+    expect((showToast as jest.Mocked<typeof showToast>).success).not.toHaveBeenCalled()
+  })
+
+  it('says "slow down" in words when the server rate-limits a guess', async () => {
+    await renderWith(() => {})
+    mockFetchWithGuest.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'Guessing too fast', code: 'GUESS_TOO_FAST' }),
+    } as Response)
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
+    })
+
+    expect((showToast as jest.Mocked<typeof showToast>).info).toHaveBeenCalledWith(
+      'games.guess_my_drawing.game.guessTooFast',
+      undefined,
+      undefined,
+      { id: 'sketch-guess-too-fast' }
+    )
+    expect((showToast as jest.Mocked<typeof showToast>).error).not.toHaveBeenCalled()
+  })
+
+  // No submit button since #1082: the drawer's page sends the canvas itself as
+  // the reveal opens, once, without a toast.
+  it('sends the drawer canvas once when the reveal opens with no drawing stored', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+      response.activeGame.state.data.rounds = [
+        {
+          round: 1,
+          drawerId: 'user-1',
+          prompt: 'castle',
+          word: { id: 'castle', en: ['castle'], no: ['slott'], ru: ['замок'], uk: ['замок'] },
+          wordChoices: [],
+          wordAutoPicked: false,
+          drawingStartedAt: 1,
+          drawingContent: null,
+          drawingSubmittedAt: null,
+          drawingAutoSubmitted: false,
+          guesses: [],
+          revealAt: 2,
+          isScored: false,
+          scoredAt: null,
+        },
+      ]
+    })
+
+    await waitFor(() => expect(actionBodies()).toHaveLength(1))
+    expect(actionBodies()[0].action).toBe('submit-drawing')
+    expect(JSON.parse(actionBodies()[0].data.content)).toMatchObject({ type: 'drawing', strokes: [] })
+    expect((showToast as jest.Mocked<typeof showToast>).success).not.toHaveBeenCalled()
+  })
+
+  // Found by playing it: one 429 from a busy rate limiter lost the drawing
+  // outright, and the drawer paid the blank-drawing penalty for it.
+  it('tries the drawing again when the first attempt is turned away', async () => {
+    const response = buildLobbyResponse()
+    response.activeGame.state.data.phase = 'reveal'
+    response.activeGame.state.data.currentDrawerId = 'user-1'
+    response.activeGame.state.data.rounds = [
+      { round: 1, drawerId: 'user-1', prompt: 'castle', drawingContent: null, guesses: [], isScored: false },
+    ]
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).includes('/sketch-and-guess-action')) {
+        const attempts = actionBodies().length
+        return attempts <= 1
+          ? ({ ok: false, status: 429, json: async () => ({ error: 'Too many' }) } as Response)
+          : okResponse({ success: true })
+      }
+      return okResponse(response)
+    })
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+
+    await waitFor(() => expect(actionBodies().map((body) => body.action)).toEqual(['submit-drawing', 'submit-drawing']), {
+      timeout: 3000,
+    })
+  })
+
+  // PR #1100 review: a drawer whose final send never lands used to lose the
+  // drawing outright. The page now saves it a few seconds after each stroke.
+  it('saves the drawer\u2019s canvas five seconds after the last stroke, and not before', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+    })
+    jest.useFakeTimers()
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(3000) })
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(4000) })
+      expect(actionBodies()).toHaveLength(0)
+      act(() => { jest.advanceTimersByTime(1500) })
+      expect(actionBodies().map((body) => body.action)).toEqual(['save-drawing'])
+      expect(JSON.parse(actionBodies()[0].data.content).strokes).toHaveLength(2)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('never saves a canvas for a guesser', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+    })
+    jest.useFakeTimers()
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(6000) })
+      expect(actionBodies()).toHaveLength(0)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('sends nothing from a guesser at the reveal', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'reveal'
+      response.activeGame.state.data.rounds = [
+        { round: 1, drawerId: 'user-2', prompt: 'castle', drawingContent: null, guesses: [], isScored: false },
+      ]
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(actionBodies()).toHaveLength(0)
   })
 })

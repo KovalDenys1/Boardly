@@ -169,6 +169,10 @@ const SketchAndGuessLobbyPage = dynamic(
   () => import('./sketch-and-guess-page'),
   { loading: () => <CenteredLoadingFallback /> }
 )
+const CheckersLobbyPage = dynamic(
+  () => import('./checkers-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
@@ -2730,6 +2734,10 @@ export default function LobbyPage() {
 
   if (dedicatedGameType === 'sketch_and_guess') {
     return <SketchAndGuessLobbyPage code={code} onGameReset={handleGameReset} />
+  }
+
+  if (dedicatedGameType === 'checkers') {
+    return <CheckersLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   // For all other cases, including all waiting rooms, use the shared lobby shell.

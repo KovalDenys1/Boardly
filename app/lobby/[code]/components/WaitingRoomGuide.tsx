@@ -28,6 +28,7 @@ const RULE_KEY_BY_GAME_TYPE: Record<string, TranslationKeys> = {
   rock_paper_scissors: 'game.ui.howToPlayRuleRps',
   memory: 'game.ui.howToPlayRuleMemory',
   connect_four: 'game.ui.howToPlayRuleConnectFour',
+  checkers: 'game.ui.howToPlayRuleCheckers',
   alias: 'game.ui.howToPlayRuleAlias',
 }
 

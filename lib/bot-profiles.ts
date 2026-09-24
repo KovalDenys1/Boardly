@@ -38,6 +38,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Column Tactician',
     hard: 'Gravity Grandmaster',
   },
+  checkers: {
+    easy: 'Checkers Rookie',
+    medium: 'Diagonal Tactician',
+    hard: 'Kingmaker',
+  },
   alias: {
     easy: 'Word Rookie',
     medium: 'Word Tactician',

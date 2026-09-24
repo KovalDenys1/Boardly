@@ -5,6 +5,7 @@ export type DedicatedLobbyPageGameType =
   | 'liars_party'
   | 'connect_four'
   | 'sketch_and_guess'
+  | 'checkers'
 
 const DEDICATED_LOBBY_PAGE_GAME_TYPES = new Set<string>([
   'tic_tac_toe',
@@ -13,6 +14,7 @@ const DEDICATED_LOBBY_PAGE_GAME_TYPES = new Set<string>([
   'liars_party',
   'connect_four',
   'sketch_and_guess',
+  'checkers',
 ])
 
 const DEDICATED_LOBBY_PAGE_STATUSES = new Set<string>(['playing', 'finished'])

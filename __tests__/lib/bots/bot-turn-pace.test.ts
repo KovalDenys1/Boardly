@@ -31,14 +31,18 @@ import { YahtzeeBotExecutor } from '@/lib/bots/yahtzee/yahtzee-bot-executor'
 import { TicTacToeBotExecutor } from '@/lib/bots/tic-tac-toe/tic-tac-toe-bot-executor'
 import { ConnectFourBotExecutor } from '@/lib/bots/connect-four/connect-four-bot-executor'
 import { RockPaperScissorsBotExecutor } from '@/lib/bots/rock-paper-scissors/rock-paper-scissors-bot-executor'
+import { CheckersBotExecutor } from '@/lib/bots/checkers/checkers-bot-executor'
+import { CHECKERS_HARD_TIME_BUDGET_MS } from '@/lib/bots/checkers/checkers-bot'
 import { MemoryGame, type MemoryGameData } from '@/lib/games/memory-game'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { CheckersGame, type CheckersCell, type CheckersGameData } from '@/lib/games/checkers-game'
 import {
   BOT_COMMIT_DELIVERY_ALLOWANCE_MS,
   BOT_LONGEST_IN_TURN_PAUSE_BASES,
+  BOT_SEARCH_BUDGET_MS,
   resolveBotInTurnPauseMs,
   resolveBotTurnGraceMs,
   type BotPacedGameType,
@@ -190,6 +194,47 @@ describe('bot in-turn pause table matches the executors (#1049)', () => {
       )
     )
     expect(longestRun(runs, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES[gameType]])
+  })
+})
+
+describe('checkers commits a capture chain one hop at a time (#1083)', () => {
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('pauses before every hop, and the hop pause is the longest silence', async () => {
+    seedRandom(1083)
+    const game = new CheckersGame('checkers-pace-test')
+    game.addPlayer({ ...HUMAN })
+    game.addPlayer({ ...BOT })
+    game.startGame()
+    // The bot (side 2, moving down) has a double jump: (0,1) over (1,2) and (3,4).
+    const board: CheckersCell[][] = Array.from({ length: 8 }, () => Array<CheckersCell>(8).fill(0))
+    board[0][1] = 2
+    board[1][2] = 1
+    board[3][4] = 1
+    board[7][0] = 1
+    const state = game.getState()
+    game.restoreState({
+      ...state,
+      currentPlayerIndex: 1,
+      data: { ...(state.data as CheckersGameData), board, currentSide: 2 },
+    } as never)
+
+    const runs = await pauseRunsOfOneTurn(game, (onMove) =>
+      CheckersBotExecutor.executeBotTurn(game, BOT.id, 'easy', onMove)
+    )
+
+    expect(runs).toEqual([[150], [250], []])
+    expect(longestRun(runs, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES.checkers])
+  })
+
+  it('counts the hard search, which is silence no botDelay records', () => {
+    // The hard bot deepens for its whole budget before the first hop commits.
+    expect(BOT_SEARCH_BUDGET_MS.checkers).toBe(CHECKERS_HARD_TIME_BUDGET_MS)
+    expect(resolveBotTurnGraceMs('checkers')).toBeGreaterThan(
+      CHECKERS_HARD_TIME_BUDGET_MS + resolveBotUxDelayMs('hard', 150) + BOT_COMMIT_DELIVERY_ALLOWANCE_MS - 1
+    )
   })
 })
 

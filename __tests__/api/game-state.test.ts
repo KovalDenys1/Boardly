@@ -214,6 +214,28 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(await response.json()).toEqual({ error: 'Not a player in this game' })
   })
 
+  // PR #1100 review: this generic route used to hand a Sketch & Guess move's
+  // client-written data straight to the engine – including a forged host flag –
+  // and skipped the game's phase clock. Every Sketch & Guess move goes through
+  // /api/game/[gameId]/sketch-and-guess-action.
+  it('refuses every Sketch & Guess move, before an engine is restored', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce({
+      ...dbGame,
+      lobby: { ...dbGame.lobby, gameType: 'sketch_and_guess' },
+    } as any)
+
+    const response = await POST(
+      buildRequest({ move: { type: 'accept-guess', data: { guessId: 'r1-g1', authorizedAsHost: true } } }),
+      { params: Promise.resolve({ gameId: 'game-123' }) }
+    )
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).code).toBe('USE_SKETCH_ACTION_ROUTE')
+    expect(mockRestoreGameEngine).not.toHaveBeenCalled()
+    expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+  })
+
   it('returns 500 on corrupted persisted game state', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
     mockPrisma.games.findUnique.mockResolvedValueOnce({

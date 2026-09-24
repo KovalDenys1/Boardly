@@ -117,6 +117,18 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
     </>
     </g>
   ),
+  checkers: (
+    <>
+      <g opacity={0.6}>
+        <circle cx={18} cy={18} r={12} style={O} />
+        <circle cx={18} cy={18} r={7.5} strokeWidth={2.4} style={DS} />
+      </g>
+      <circle cx={29} cy={29} r={14} style={O} />
+      <rect x={20} y={18.5} width={7} height={2.6} rx={1.3} transform="rotate(-35 23.5 19.8)" style={SH} />
+      <circle cx={29} cy={29} r={9.5} strokeWidth={2.4} style={DS} />
+      <path d="M22.8 33h12.4l1.3-7.6-4.3 3.1L29 23.4l-3.2 5.1-4.3-3.1z" strokeLinejoin="round" style={D} />
+    </>
+  ),
   'guess-my-drawing': (
     <g transform="translate(-0.9 0.9) rotate(45 24 24)">
       <rect x={19.5} y={2} width={9} height={6} rx={2.2} style={O} />

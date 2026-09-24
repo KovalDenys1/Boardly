@@ -21,6 +21,9 @@ import { MemoryBotExecutor } from '../memory/memory-bot-executor'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { ConnectFourBot } from '../connect-four/connect-four-bot'
 import { ConnectFourBotExecutor } from '../connect-four/connect-four-bot-executor'
+import { CheckersGame } from '@/lib/games/checkers-game'
+import { CheckersBot } from '../checkers/checkers-bot'
+import { CheckersBotExecutor } from '../checkers/checkers-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
 
 export function createBot(gameType: 'yahtzee', gameEngine: YahtzeeGame, difficulty?: BotDifficulty): YahtzeeBot
@@ -28,6 +31,7 @@ export function createBot(gameType: 'tic_tac_toe', gameEngine: TicTacToeGame, di
 export function createBot(gameType: 'rock_paper_scissors', gameEngine: RockPaperScissorsGame, difficulty?: BotDifficulty): RockPaperScissorsBot
 export function createBot(gameType: 'memory', gameEngine: MemoryGame, difficulty?: BotDifficulty): MemoryBot
 export function createBot(gameType: 'connect_four', gameEngine: ConnectFourGame, difficulty?: BotDifficulty): ConnectFourBot
+export function createBot(gameType: 'checkers', gameEngine: CheckersGame, difficulty?: BotDifficulty): CheckersBot
 export function createBot(gameType: RegisteredGameType, gameEngine: GameEngine, difficulty?: BotDifficulty): BaseBot<GameEngine, unknown>
 export function createBot(
     gameType: RegisteredGameType,
@@ -54,6 +58,10 @@ export function createBot(
         case 'connect_four':
             if (!(gameEngine instanceof ConnectFourGame)) throw new Error('Expected ConnectFourGame for connect_four bot')
             return new ConnectFourBot(gameEngine, difficulty)
+
+        case 'checkers':
+            if (!(gameEngine instanceof CheckersGame)) throw new Error('Expected CheckersGame for checkers bot')
+            return new CheckersBot(gameEngine, difficulty)
 
         default:
             throw new Error(`Bot not implemented for game type: ${gameType}`)
@@ -134,6 +142,20 @@ export async function executeBotTurn(
                 throw new Error('Expected ConnectFourGame engine for connect_four bot turn')
             }
             await ConnectFourBotExecutor.executeBotTurn(
+                gameEngine,
+                botUserId,
+                difficulty,
+                onMove,
+                onBotAction,
+            )
+            return
+        }
+
+        case 'checkers': {
+            if (!(gameEngine instanceof CheckersGame)) {
+                throw new Error('Expected CheckersGame engine for checkers bot turn')
+            }
+            await CheckersBotExecutor.executeBotTurn(
                 gameEngine,
                 botUserId,
                 difficulty,

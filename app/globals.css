@@ -1703,6 +1703,74 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: #FFF8EC;
   box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
 }
+/* Checkers (#1083). Same rule as --c4-cell: the square is the min() of a
+   width-derived and a height-derived size, read off .ttt-board-card's container
+   units, so the 8×8 board can never come out taller than its card. 40 = the
+   board's own chrome only: the surface's padding and border (2×12 + 2×1.5) and
+   the frame's padding (2×6), rounded up. */
+.ck-board {
+  --ck-cell: clamp(26px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+  display: grid;
+  grid-template-columns: repeat(8, var(--ck-cell));
+  grid-template-rows: repeat(8, var(--ck-cell));
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(31,27,22,0.24);
+  user-select: none;
+}
+.ck-square {
+  position: relative;
+  width: var(--ck-cell);
+  height: var(--ck-cell);
+  border: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ck-square:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--bd-sky) !important;
+}
+.ck-piece {
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.ck-square[aria-pressed="true"] .ck-piece {
+  transform: translateY(-2px) scale(1.06);
+}
+.ck-dot {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  z-index: 2;
+  opacity: 0.9;
+  pointer-events: none;
+}
+.ck-last {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* One line, fixed height, so the board above never resizes when it changes. */
+.ck-hint {
+  flex-shrink: 0;
+  height: 22px;
+  line-height: 22px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .ttt-board-overlay {
   position: absolute;
   inset: 0;
@@ -3426,6 +3494,137 @@ html.dark .memory-tile-face {
   width: 100%;
   aspect-ratio: 1 / 1;
 }
+
+/* #1082: laid over the blank canvas while the word is being chosen – the three
+   choices for the drawer, who is choosing for everyone else. The canvas is the
+   frame the drawing is about to appear in, so it is the place for this rather
+   than a card of its own. */
+.sketch-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  touch-action: auto;
+  user-select: auto;
+}
+.sketch-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 280px);
+}
+.sketch-choices__title {
+  margin: 0 0 2px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1F1B16;
+}
+.sketch-choice-btn { width: 100%; justify-content: center; font-size: 16px; font-weight: 700; }
+.sketch-choices__wait {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b6358;
+  text-align: center;
+}
+
+/* The drawer's word, one line: it has to be read at a glance, not take the
+   height the canvas needs. */
+.sketch-word-chip {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 3px 12px;
+  line-height: 1.2;
+  border-radius: 999px;
+  border: 1px solid var(--bd-line);
+  background: var(--bd-bg2);
+  min-width: 0;
+}
+.sketch-word-chip__label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bd-ink-muted); white-space: nowrap; }
+.sketch-word-chip__word { font-size: 18px; font-weight: 800; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The guesser's hint: one cell per character, a blank until the server uncovers it. */
+.sketch-word-hint { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-family: ui-monospace, monospace; font-size: 17px; font-weight: 800; color: var(--bd-ink); }
+.sketch-word-hint__cell { min-width: 0.8em; text-align: center; }
+.sketch-word-hint__gap { width: 0.6em; }
+
+/* The round's guesses. A scrolling list capped at a share of the board card's
+   height (the card is the size container), so the canvas stays the one
+   flexible region and a busy round scrolls instead of pushing it down. */
+.sketch-feed {
+  border: 1px solid var(--bd-line);
+  border-radius: 12px;
+  background: var(--bd-bg);
+  min-height: 0;
+}
+.sketch-feed__list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 6px;
+  max-height: clamp(52px, 18cqh, 150px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+.sketch-feed__empty { font-size: 12px; color: var(--bd-ink-muted); text-align: center; padding: 6px 0; }
+.sketch-feed__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: var(--bd-ink);
+  min-width: 0;
+}
+.sketch-feed__item--correct { background: rgba(93, 211, 158, 0.18); color: var(--bd-mint-deep); }
+.sketch-feed__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.sketch-feed__guess { color: var(--bd-ink-soft); }
+.sketch-feed__text--close { color: var(--bd-ink-muted); font-style: italic; }
+.sketch-feed__tag { font-size: 11px; color: var(--bd-ink-muted); }
+.sketch-feed__accept {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bd-ink);
+  background: transparent;
+  color: var(--bd-ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sketch-feed__accept:disabled { opacity: 0.4; cursor: default; }
+
+.sketch-guess-form { display: flex; flex-direction: column; gap: 4px; }
+
+/* The reveal's one header row: the word on the left, the button that moves on
+   on the right. Above the canvas, so it is never below the fold (#1082). */
+.sketch-reveal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bd-line);
+  background: var(--bd-bg2);
+  min-width: 0;
+}
+.sketch-reveal-head__text { flex: 1 1 auto; min-width: 0; }
+.sketch-reveal-head__text > .sketch-word-chip__label { margin: 0; display: block; }
+.sketch-reveal-head__word { margin: 0; line-height: 1.2; font-size: 18px; font-weight: 800; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sketch-reveal-head__meta { margin: 0; font-size: 11px; color: var(--bd-ink-muted); line-height: 1.3; }
+.sketch-reveal-head__next { flex: 0 1 auto; max-width: 48%; white-space: normal; line-height: 1.15; }
+.sketch-guess-row { display: flex; gap: 8px; min-width: 0; }
 
 /* The scores panel: round, phase and every seat with its score. On desktop it
    is the top of the right column, on mobile the Scores tab. */
