@@ -43,6 +43,44 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in `tailwind.
 
 ---
 
+## Contrast
+
+Target (WCAG 2.0 AA / forskrift om universell utforming av IKT § 4, which binds this
+private site today — see #1171): **4.5:1 for normal text, 3:1 for large text (≥18px, or
+≥14px bold) and for UI component boundaries** (input borders, focus indicators).
+
+Ratios below are computed straight from the hex values in the Color tokens table above
+(WCAG relative-luminance formula), not eyeballed:
+
+| Pair | Ratio | Meets |
+|---|---|---|
+| `bd-ink` text on `bd-bg` (body copy) | 15.9:1 | AA text + large |
+| `bd-ink-soft` text on `bd-bg` (secondary copy) | 9.5:1 | AA text + large |
+| `bd-ink-muted` text on `bd-bg` (placeholders, captions) | 3.9:1 | AA large only — **do not use for normal-size body text** |
+| `bd-ink-muted` text on `bd-bg2` (chip/hover captions) | 3.4:1 | AA large only |
+| `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
+| `bd-ink` text on `bd-sun` (badges) | 10.8:1 | AA text + large |
+| `bd-ink` text on `bd-mint` | 8.3:1 | AA text + large |
+| white text on `bd-coral-deep` | 4.0:1 | AA large only |
+| white text on `bd-lav-deep` | 4.3:1 | AA large only |
+| white text on `bd-mint-deep` | 3.0:1 | AA large only |
+| white text on `bd-coral` (Coral CTA example above) | 2.8:1 | **fails AA at any size** |
+| white text on `bd-lav` (Lav button example above) | 2.8:1 | **fails AA at any size** |
+| `bd-line` border on `bd-bg` (default input/card border) | 1.3:1 | **fails the 3:1 UI-boundary target** |
+
+The last three rows are real gaps, not measured before #1171: the Coral and Lav button
+patterns in this file only clear AA when their label is large+bold text (≥18px / ≥14px
+bold); `.bd-input`'s resting border is `bd-line` on `bd-bg` (1.3:1, below the 3:1
+boundary target) and only reaches a high-contrast `bd-ink` border (`:focus`,
+`app/globals.css`) once the field is focused, so an unfocused input's edge is the one that
+fails today. Changing `bd-coral`, `bd-lav` or the resting input border is a brand-color
+decision, not an a11y bugfix — flag it rather than re-tuning the palette unilaterally.
+
+Recompute with the WCAG relative-luminance formula (not perceived brightness) whenever a
+new token or a new text-on-fill pairing is added, and add it to this table.
+
+---
+
 ## Icons
 
 **No Unicode emoji in the UI.** Emoji render in the OS emoji font, ignore every token
