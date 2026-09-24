@@ -45,9 +45,9 @@ describe('Checkers wiring (#1083)', () => {
     expect(getGameLobbiesRoute('checkers')).toBe('/games/checkers/lobbies')
   })
 
-  it('is in-development in the catalog, with everything the flag needs to promote it', () => {
+  it('is available in the catalog, with the shape a released game needs', () => {
     const entry = getCatalogEntryById('checkers')
-    expect(entry?.availability).toBe('in-development')
+    expect(entry?.availability).toBe('available')
     expect(entry && isFlagPromotableEntry(entry)).toBe(true)
     expect(entry?.route).toBe('/games/checkers/lobbies')
     expect(entry?.lobbyCreateConfig?.allowedPlayers).toEqual([2])

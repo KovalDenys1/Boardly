@@ -38,6 +38,8 @@ export const ROUTE_UPDATED = {
   // Released by #873 on 2026-09-21, the day they became indexable.
   '/games/liars-party': '2026-09-21',
   '/games/sketch-and-guess': '2026-09-21',
+  '/games/checkers': '2026-09-24',
+  '/games/ludo': '2026-09-24',
   '/guides': '2026-09-20',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',

@@ -781,7 +781,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     },
     // In development (#1083). Playable behind ENABLE_IN_DEVELOPMENT_GAMES;
     // featuring it publicly is a separate decision for Denys, like #873's.
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/checkers/lobbies',
     color: 'from-red-500 to-stone-700',
     lobbyCreateConfig: {
@@ -825,7 +825,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     // In development (#1084): playable behind ENABLE_IN_DEVELOPMENT_GAMES.
     // Featuring it publicly is Denys's call, not the natural last step of the
     // ticket, so the flip belongs to a ticket of its own.
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/ludo/lobbies',
     color: 'from-yellow-400 to-red-500',
     lobbyCreateConfig: {

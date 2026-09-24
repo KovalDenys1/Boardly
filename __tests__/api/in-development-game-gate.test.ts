@@ -511,15 +511,13 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
         .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
 
       // fake-artist and telephone-doodle have no route (#975) and stay withheld. Checkers
-      // (#1083) and Ludo (#1084) shipped in-development with their pages, route and create
-      // config, so the shipped catalog has subjects for the promote side again. A new
-      // entry lands on one side or the other of this split, and these lines name which.
+      // (#1083) and Ludo (#1084) were this split's promote side until they went public on
+      // 2026-09-24; the promote side is exercised on the held-back fixture elsewhere in
+      // this file, and a new in-development game with pages lands here on its own.
       expect(gated.length).toBeGreaterThan(0)
       expect(shouldWithhold.length).toBeGreaterThan(0)
-      // `toContain`, not an exact list: another game shipped the same way belongs on
-      // this side too without this line naming it.
-      expect(shouldPromote).toContain('checkers')
-      expect(shouldPromote).toContain('ludo')
+      expect(shouldPromote).not.toContain('checkers')
+      expect(shouldPromote).not.toContain('ludo')
       expect(shouldWithhold.length + shouldPromote.length).toBe(gated.length)
 
       const withoutFlag = getAvailableGameTypes()
