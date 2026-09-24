@@ -1724,6 +1724,15 @@ input[type="range"].slider-thumb::-moz-range-track {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Turn/status cue (GameStatusBanner, #1111): the title is keyed on its text,
+   so each change mounts a fresh node and this plays once. */
+.game-status-cue {
+  animation: status-cue-in var(--bd-dur) var(--bd-ease-out) both;
+}
+@keyframes status-cue-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
 /* Shared result overlay (components/game-chrome/GameResultOverlay, #1111).
    The component holds data-state="pending" for its reveal delay, then flips to
    "shown": the scrim fades, the panel rises and settles. */
