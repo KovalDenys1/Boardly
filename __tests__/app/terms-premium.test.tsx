@@ -95,6 +95,19 @@ describe('/terms, section 3: Premium sold through Link (#1179)', () => {
     }
   })
 
+  it('promises access to the end of the paid period only for a cancellation made on Boardly', () => {
+    // Link's pages leave access after a Link-side cancellation to Link's terms,
+    // so neither /terms nor /withdrawal may extend our promise to it.
+    for (const text of [en.terms.premium.renewal, en.withdrawal.later]) {
+      expect(text).not.toMatch(/or in your Link account at link\.com[;.] (access|A monthly plan)/)
+      expect(text).toContain("Link's terms")
+    }
+    expect(en.terms.premium.renewal).toContain(
+      'You can cancel at any time from your profile; access then continues to the end of the period you have paid for.'
+    )
+    expect(en.terms.premium.renewal).toContain('deleting your Link account cancels the subscription')
+  })
+
   it('keeps the 14-day right and uses no em dash', () => {
     for (const locale of [en, no, ru, uk]) {
       expect(locale.terms.premium.withdrawal).toContain('14')

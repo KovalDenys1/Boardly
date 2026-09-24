@@ -198,17 +198,30 @@ describe('sendPremiumConfirmationEmail', () => {
     expect(mail.text).toContain('https://support.link.com/topics/sold-through-link')
   })
 
-  it('explains cancellation: one click in the profile or in Link, end of the paid period, yearly refunds whole months', async () => {
+  it('explains cancellation: one click in the profile, end of the paid period, yearly refunds whole months', async () => {
     const mail = await send()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
-      'You can cancel at any time with one click from your profile at https://boardly.test/profile, or in your Link account at link.com. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.'
+      'You can cancel at any time with one click from your profile at https://boardly.test/profile. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.'
     )
     expect(text).toContain(
       'Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.'
     )
     expect(mail.html).toContain('<a href="https://boardly.test/profile"')
+  })
+
+  it('promises the end of the paid period only for the profile, and leaves a Link cancellation to Link (#1179)', async () => {
+    const mail = await send()
+    const text = visibleText(mail.html)
+
+    expect(text).not.toContain('or in your Link account at link.com. The cancellation takes effect')
+    expect(text).toContain(
+      "You can also cancel the subscription, or delete your Link account, at link.com; that follows Link's terms, and deleting your Link account cancels the subscription."
+    )
+    expect(text).toContain(
+      'Du kan også si opp abonnementet eller slette Link-kontoen din på link.com; da gjelder Links vilkår, og sletter du Link-kontoen, sies abonnementet opp.'
+    )
   })
 
   it('repeats the right of withdrawal: 14 days, full refund within 14 days of notice, email or the form', async () => {

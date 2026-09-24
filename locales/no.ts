@@ -3475,7 +3475,7 @@ const no = {
     },
     q1: {
       question: 'Er Boardly gratis å spille?',
-      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar; betaler du i din egen valuta, legger Stripes vekslingskurs til et vekslingsgebyr på 2 til 4 %, som du unngår ved å betale i dollar – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
+      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement fra {{price}} i måneden – prisen er oppgitt i amerikanske dollar; betaler du i din egen valuta, legger Links vekslingskurs til et vekslingsgebyr på 2 til 4 %, som du unngår ved å betale i dollar – for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
     },
     q2: {
       question: 'Trenger jeg en konto for å spille?',
@@ -3607,9 +3607,9 @@ const no = {
       },
       premium: {
         title: 'Premium-abonnement',
-        data: 'Stripe håndterer betalingen; vi ser aldri kortopplysningene dine. Vi lagrer kunde- og abonnements-id-ene dine hos Stripe, Premium-status og datoer, og en oversikt over hva du godtok i kassen: planen, versjonene av vilkårene og angrerettsinformasjonen du ble vist, og når du godtok.',
+        data: 'Premium selges gjennom Link: Sold through Link, LLC (USA), et selskap i Stripe-konsernet, er «merchant of record» og tar imot betalingen. For å beregne merverdiavgift eller salgsskatt samler Link inn navnet ditt, fakturaadressen og eventuelt avgiftsnummer i kassen, og deler ordreopplysningene med oss: kontaktopplysninger, fakturaadresse, betalingsopplysninger, avgiftsnummer og opplysninger om ordren. Link oppdaterer også navn og fakturaadresse på kundeoppføringen din i Stripe-kontoen vår. Vi får aldri hele kortnummeret ditt. Vi lagrer kunde- og abonnements-id-ene dine hos Stripe, Premium-status og datoer, og en oversikt over hva du godtok i kassen: planen, versjonene av vilkårene og angrerettsinformasjonen du ble vist, og når du godtok.',
         basis: 'Avtale. Oversikten fra kassen: også vår berettigede interesse i å kunne vise hva du godtok.',
-        retention: 'Til du sletter kontoen. Da avslutter vi et eventuelt abonnement og sletter kundeoppføringen din hos Stripe. Stripe beholder egne betalingsopplysninger slik personvernerklæringen deres beskriver.',
+        retention: 'Til du sletter kontoen. Da avslutter vi et eventuelt abonnement og sletter kundeoppføringen din hos Stripe. Stripe og Link beholder egne betalings- og ordreopplysninger slik personvernerklæringene deres beskriver. Sletter du Link-kontoen din, sies et abonnement kjøpt gjennom Link opp, og opplysningene du ga for den ordren, slettes.',
       },
       feedback: {
         title: 'Tilbakemeldinger og kundestøtte',
@@ -3653,8 +3653,8 @@ const no = {
         where: 'USA. Resend bruker EUs standard personvernbestemmelser og er sertifisert under EU–US Data Privacy Framework.',
       },
       stripe: {
-        purpose: 'Betaling for Premium',
-        where: 'Stripe Payments Europe i Irland, med overføring til Stripe i USA under EU–US Data Privacy Framework og EUs standard personvernbestemmelser.',
+        purpose: 'Betaling for Premium. Stripe oppbevarer kunde- og abonnementsopplysningene våre for oss. Selskapet Sold through Link, LLC i Stripe-konsernet er «merchant of record» for Premium og handler for egen regning, som selvstendig behandlingsansvarlig etter Links vilkår og personvernerklæring.',
+        where: 'Stripe: Stripe Payments Europe i Irland, med overføring til Stripe i USA under EU–US Data Privacy Framework og EUs standard personvernbestemmelser. Sold through Link, LLC: i USA, så ordreopplysningene dine overføres dit; Links personvernerklæring oppgir EU–US Data Privacy Framework, som Stripe følger, og EUs standard personvernbestemmelser som grunnlag.',
       },
       sentry: {
         purpose: 'Feilrapporter',
@@ -3742,7 +3742,7 @@ const no = {
     billedMonthly: 'Belastes hver måned.',
     billedYearly: 'Belastes én gang i året, {{perMonth}} per måned.',
     save: 'Spar {{percent}} %',
-    currencyNote: 'Oppgitt i valutaen planen er priset i. Stripe konverterer til din egen valuta i kassen, så beløpet på betalingssiden er det du betaler.',
+    currencyNote: 'Oppgitt i valutaen planen er priset i. Link konverterer til din egen valuta i kassen, så beløpet på betalingssiden er det du betaler.',
     monthlyOnlyNote: 'Årsplanen er ikke tilgjengelig akkurat nå. Månedlig fornyes hver måned og kan sies opp når som helst.',
     cta: 'Få Premium',
     ctaSignedOut: 'Logg inn for å få Premium',
@@ -3756,7 +3756,7 @@ const no = {
     withdrawalStartNow: 'Premium starter så snart betalingen er bekreftet, fordi du ber oss om det. Angreretten gjelder likevel i 14 dager og gir full tilbakebetaling.',
     consentLabel: 'Jeg ber Boardly om å starte Premium nå. Jeg har lest informasjonen om angrerett og vilkårene, og jeg vet at jeg kan angre innen 14 dager og få full tilbakebetaling.',
     priceNoteTax: 'Premium selges gjennom Link, et selskap i Stripe-konsernet. I kassen legger Link til eventuell merverdiavgift eller salgsskatt for landet ditt på prisen over, og betalingssiden viser avgiften og totalbeløpet før du betaler.',
-    priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Stripes vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
+    priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Links vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
     yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
     ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
     consentRequired: 'Kryss av i boksen for å bekrefte at du ber oss om å starte Premium nå. Kassen kan ikke åpnes uten.',
@@ -3822,15 +3822,15 @@ const no = {
       },
       q3: {
         question: 'Hvilken valuta blir jeg belastet i?',
-        answer: 'Planen har én listepris, og Stripe konverterer den til din lokale valuta i kassen. Betalingssiden viser nøyaktig beløp før du bekrefter.',
+        answer: 'Planen har én listepris, og Link konverterer den til din lokale valuta i kassen. Betalingssiden viser nøyaktig beløp før du bekrefter.',
       },
       q4: {
         question: 'Kan jeg bytte mellom månedlig og årlig?',
-        answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Stripe håndterer differansen for tiden du allerede har betalt.',
+        answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Link håndterer differansen for tiden du allerede har betalt.',
       },
       q5: {
         question: 'Tar dere imot rabattkoder?',
-        answer: 'Ja. Det er et felt for rabattkode på Stripes betalingsside, så en kode kan brukes rett før du betaler.',
+        answer: 'Ja. Det er et felt for rabattkode på betalingssiden, så en kode kan brukes rett før du betaler.',
       },
     },
     closingTitle: 'Klar når du er',
@@ -3844,7 +3844,7 @@ const no = {
     startNow: 'Premium starter så snart betalingen er bekreftet, fordi du ber oss om det i kassen. Det påvirker ikke angreretten: du kan fortsatt angre innen 14 dager og få hele beløpet tilbake.',
     soldThroughLink: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link tar imot betalingen og sender kvittering, faktura og eventuelt varsel om refusjon på e-post. Du angrer hos oss slik det står nedenfor, og vi betaler tilbake gjennom Link.',
     laterTitle: 'Etter de 14 dagene',
-    later: 'Du kan si opp når som helst i faktureringsportalen på profilsiden din eller i Link-kontoen din på link.com. En månedsplan løper ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
+    later: 'Du kan si opp når som helst i faktureringsportalen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
     howTitle: 'Slik angrer du',
     howIntro: 'Gi oss en tydelig beskjed om at du vil gå fra avtalen, før fristen på 14 dager er ute. Du kan bruke skjemaet nedenfor, men du må ikke.',
     howEmailLabel: 'På e-post til',
@@ -3880,7 +3880,7 @@ const no = {
       price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar. Eventuell merverdiavgift eller salgsskatt for landet ditt legges til i kassen, og betalingssiden viser avgiften og totalbeløpet før du betaler. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
       seller: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link belaster betalingsmåten din, og på kort- eller kontoutskriften står belastningen som «LINK.COM*» etterfulgt av navnet vårt. Link krever inn og betaler eventuell merverdiavgift eller salgsskatt og sender kvitteringer og fakturaer på e-post. Vi har fortsatt ansvaret for selve Premium-tjenesten, og vi ser eller lagrer aldri kortopplysningene dine. Kjøpet er også underlagt Links vilkår:',
       linkTermsLabel: 'Sold Through Link-vilkårene',
-      renewal: 'Abonnementet fornyes automatisk ved slutten av hver betalte periode, til samme pris i amerikanske dollar, til du sier det opp. Betaler du i din egen valuta, regnes hver fornyelse om etter kursen den dagen beløpet trekkes, så beløpet i din valuta kan variere. Du kan si opp når som helst fra profilen din eller i Link-kontoen din på link.com; tilgangen varer ut perioden du har betalt for. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.',
+      renewal: 'Abonnementet fornyes automatisk ved slutten av hver betalte periode, til samme pris i amerikanske dollar, til du sier det opp. Betaler du i din egen valuta, regnes hver fornyelse om etter kursen den dagen beløpet trekkes, så beløpet i din valuta kan variere. Du kan si opp når som helst fra profilen din; tilgangen varer da ut perioden du har betalt for. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene. Du kan også si opp abonnementet eller slette Link-kontoen din på link.com; da gjelder Links vilkår, og sletter du Link-kontoen, sies abonnementet opp.',
       withdrawal: 'I kassen ber du oss om å starte Premium med en gang. Du har likevel rett til å gå fra kjøpet innen 14 dager uten å oppgi noen grunn. Vi betaler tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr. Refusjonen går gjennom Link, som sender deg varselet om den på e-post.',
       withdrawalHow: 'Du angrer ved å sende oss en e-post eller bruke skjemaet på angrerettsiden vår:',
       linkChannel: 'Du kan også be Links kundestøtte om refusjonen. Links vilkår gir forbrukere i EU og Storbritannia 14 dagers angrefrist, som du bruker ved å kontakte Links kundestøtte og oppgi «cooling off period» som grunn for refusjonen. Link hjelper også med betalingsproblemer, for eksempel en belastning du ikke kjenner igjen. Kan ikke Link hjelpe deg, skriver du til oss, og full refusjon innen 14 dager hos oss gjelder fortsatt.',
