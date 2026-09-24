@@ -45,3 +45,7 @@ export { ConnectFourBotExecutor, type ConnectFourBotActionEvent } from './connec
 // Checkers exports
 export { CheckersBot, type CheckersBotDecision } from './checkers/checkers-bot'
 export { CheckersBotExecutor, type CheckersBotActionEvent } from './checkers/checkers-bot-executor'
+
+// Ludo exports
+export { LudoBot, type LudoBotDecision } from './ludo/ludo-bot'
+export { LudoBotExecutor, type LudoBotActionEvent } from './ludo/ludo-bot-executor'

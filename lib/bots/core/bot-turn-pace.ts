@@ -26,6 +26,7 @@ export type BotPacedGameType =
   | 'connect_four'
   | 'rock_paper_scissors'
   | 'checkers'
+  | 'ludo'
 
 /**
  * The longest run of `botDelay` base values an executor puts between two
@@ -38,6 +39,8 @@ export type BotPacedGameType =
  * - tic_tac_toe / connect_four / rock_paper_scissors: one pause, one commit
  * - checkers: `checkers-bot-executor.ts` 150 before the first hop, then 250
  *   before each further hop of a capture chain, one commit per hop
+ * - ludo: `ludo-bot-executor.ts` pauses once before every commit – 300 before a
+ *   roll, 400 before a token move – so the longest silence is one move pause
  */
 export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly number[]> = {
   memory: [1200, 180],
@@ -46,6 +49,7 @@ export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly 
   connect_four: [150],
   rock_paper_scissors: [200],
   checkers: [250],
+  ludo: [400],
 }
 
 /**

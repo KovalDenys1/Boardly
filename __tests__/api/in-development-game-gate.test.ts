@@ -506,17 +506,20 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
         .map((game) => game.gameType)
         .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
       const shouldPromote = gated
-        .filter(isFlagPromotableEntry)
+        .filter((game) => isFlagPromotableEntry(game))
         .map((game) => game.gameType)
+        .filter((gameType): gameType is NonNullable<typeof gameType> => gameType !== undefined)
 
-      // fake-artist and telephone-doodle have no route, so they stay withheld. Checkers
-      // (#1083) is the first entry since #873 to ship in-development with its pages, so
-      // the shipped catalog has a subject for the promote side again. A new entry lands
-      // on one side or the other of this split, and this line names which.
+      // fake-artist and telephone-doodle have no route (#975) and stay withheld. Checkers
+      // (#1083) and Ludo (#1084) shipped in-development with their pages, route and create
+      // config, so the shipped catalog has subjects for the promote side again. A new
+      // entry lands on one side or the other of this split, and these lines name which.
+      expect(gated.length).toBeGreaterThan(0)
       expect(shouldWithhold.length).toBeGreaterThan(0)
-      // `toContain`, not an exact list: another game shipped the same way (Ludo is
-      // on its way) belongs on this side too without this line naming it.
+      // `toContain`, not an exact list: another game shipped the same way belongs on
+      // this side too without this line naming it.
       expect(shouldPromote).toContain('checkers')
+      expect(shouldPromote).toContain('ludo')
       expect(shouldWithhold.length + shouldPromote.length).toBe(gated.length)
 
       const withoutFlag = getAvailableGameTypes()

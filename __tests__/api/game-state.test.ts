@@ -442,6 +442,52 @@ describe('POST /api/game/[gameId]/state', () => {
   // stamp a new turnStartedAt, which is the value the guard above measures the
   // deadline from, so the score that followed it milliseconds later came back
   // 409 and the abandoned turn ran for two full timers.
+  describe('timer-only moves (#1102)', () => {
+    const timerOnlyEngine = () => ({
+      isTimerOnlyMove: jest.fn((move) => move.type === 'timeout'),
+      makeMove: jest.fn(() => true),
+      getState: jest.fn(() => ({ ...persistedState, turnStartedAt: Date.now(), lastMoveAt: Date.now() })),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [{ id: 'player-1', score: 0 }, { id: 'player-2', score: 0 }]),
+    })
+
+    it('rejects a timer-only move that did not come through the turn timer', async () => {
+      const engine = timerOnlyEngine()
+      mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+      mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+      mockRestoreGameEngine.mockReturnValue(engine as any)
+
+      const response = await POST(buildRequest({ move: { type: 'timeout', data: {} } }), {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      })
+
+      expect(response.status).toBe(400)
+      expect((await response.json()).code).toBe('TIMER_ONLY_MOVE')
+      expect(engine.makeMove).not.toHaveBeenCalled()
+      expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+    })
+
+    it('rejects a timer-only move in a lobby with no turn timer to have expired', async () => {
+      const engine = timerOnlyEngine()
+      const now = Date.now()
+      mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+      mockPrisma.games.findUnique.mockResolvedValueOnce({ ...dbGame, lobby: { ...dbGame.lobby, turnTimer: 0 } } as any)
+      mockRestoreGameEngine.mockReturnValue(engine as any)
+
+      const response = await POST(buildRequest({
+        move: { type: 'timeout', data: {} },
+        autoActionContext: {
+          source: 'turn-timeout',
+          debounceKey: `no-timer-${now}`,
+          turnSnapshot: { currentPlayerId: 'player-1', currentPlayerIndex: 0, lastMoveAt: null, rollsLeft: 0, updatedAt: null },
+        },
+      }), { params: Promise.resolve({ gameId: 'game-123' }) })
+
+      expect(response.status).toBe(400)
+      expect(engine.makeMove).not.toHaveBeenCalled()
+    })
+  })
+
   it('keeps the turn clock where it was when a timeout auto-action does not end the turn', async () => {
     const turnStartedAt = Date.now() - 120_000
     const engineState = {

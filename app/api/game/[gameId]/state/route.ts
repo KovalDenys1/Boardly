@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest, resolveTurnStartedAt, type TurnClockSnapshot } from '@/lib/game-engine'
+import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest, isTimerOnlyMove, resolveTurnStartedAt, type TurnClockSnapshot } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
@@ -382,6 +382,20 @@ export async function POST(
       gameEngine = restoreGameEngine(game.lobby.gameType, game.id, gameState)
     } catch {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    }
+
+    // A move only the turn timer may send (#1102) must come through the timer
+    // path below, and only where there is a timer whose deadline it can have
+    // passed. Otherwise a client could post it at any moment of its turn and the
+    // TURN_TIMER_ACTIVE guard - which only runs for auto-actions - never sees it.
+    if (
+      isTimerOnlyMove(gameEngine, { playerId: userId, type: move.type, data: move.data || {}, timestamp: new Date() }) &&
+      (!isAutoAction || resolveTurnTimerMs(game.lobby?.turnTimer) <= 0)
+    ) {
+      return NextResponse.json(
+        { error: 'This move is only made by the turn timer', code: 'TIMER_ONLY_MOVE' },
+        { status: 400 }
+      )
     }
 
     if (isAutoAction) {

@@ -12,6 +12,8 @@ import {
 const MAX_BOT_RETRIES = 2
 const WATCHDOG_MS = 14_000
 const RETRY_DELAY_MS = 2_000
+/** How often an armed trigger re-checks while another bot's request is still open. */
+const BOT_BUSY_RECHECK_MS = 250
 
 interface GamePlayer {
   userId: string
@@ -62,6 +64,9 @@ export function useBotTurn({
   // every commit must re-arm the timer rather than let it fire into a turn that
   // is visibly running.
   const armedSignatureRef = useRef<string | null>(null)
+  // The bot turn on screen right now, or null when it is not a bot's turn.
+  // An armed trigger that had to wait reads it to see whether its turn survived.
+  const currentTurnSignatureRef = useRef<string | null>(null)
   const armedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // The armed turn this hook has already asked the server about. The grace
   // expiring only means nothing has reached this tab; it does not mean the bot
@@ -78,6 +83,7 @@ export function useBotTurn({
     }
     armedSignatureRef.current = null
     reconciledSignatureRef.current = null
+    currentTurnSignatureRef.current = null
   }, [])
 
   useEffect(() => {
@@ -309,6 +315,7 @@ export function useBotTurn({
     }
 
     const signature = `${game.id}:${currentPlayer.id}:${currentPlayerIndex}:${gameState.lastMoveAt ?? 'none'}`
+    currentTurnSignatureRef.current = signature
     if (armedSignatureRef.current === signature) {
       // Already waiting on this exact state – a re-render is not a new turn.
       return
@@ -362,8 +369,39 @@ export function useBotTurn({
     if (armedTimerRef.current !== null) clearTimeout(armedTimerRef.current)
     armedSignatureRef.current = signature
 
+    // Set once this trigger has had to wait for another request to finish.
+    let waitedOnOpenRequest = false
+    let askedAfterOpenRequest = false
+
     const fire = () => {
       armedTimerRef.current = null
+
+      // A request is still open – usually the previous bot's, whose last commit
+      // is broadcast before its response arrives. Firing now would be dropped as
+      // "already in progress" while this signature stays armed, so the next bot
+      // sat until the turn timer's fallback: 30 s per hop in a Ludo game with
+      // three bots (#1084). Wait for the open request instead.
+      if (botTurnInProgress.current) {
+        waitedOnOpenRequest = true
+        armedTimerRef.current = setTimeout(fire, BOT_BUSY_RECHECK_MS)
+        return
+      }
+
+      // That request may well have been this very bot's, and then the turn it
+      // was waiting for is over and the broadcast is merely late. Ask the server
+      // before writing, whatever this trigger already knew, and only fire if the
+      // turn still belongs to this bot after the answer has had time to render
+      // (#1102: the re-check used to fire straight into a "Not bot's turn" 400).
+      if (waitedOnOpenRequest && !askedAfterOpenRequest) {
+        askedAfterOpenRequest = true
+        void reconcileAfterBotTurn('bot-turn-open-request-finished')
+        armedTimerRef.current = setTimeout(fire, BOT_COMMIT_DELIVERY_ALLOWANCE_MS)
+        return
+      }
+      if (waitedOnOpenRequest && currentTurnSignatureRef.current !== signature) {
+        armedSignatureRef.current = null
+        return
+      }
 
       // Measured on localhost on 2026-09-20 in a Yahtzee game against an Easy
       // bot: the bot took the turn at t=13.5s, its `bot-action` events arrived

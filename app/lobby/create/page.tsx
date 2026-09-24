@@ -27,12 +27,17 @@ import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type L
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
 type YahtzeeGameMode = 'classic' | 'short'
+type LudoGameMode = 'quick' | 'classic'
+// The catalog lists a game's modes as plain strings; each game's form field keeps
+// its own union, so a Ludo mode can never be sent as a Yahtzee one (#1102).
+const asYahtzeeMode = (value: string | undefined): YahtzeeGameMode => (value === 'short' ? 'short' : 'classic')
+const asLudoMode = (value: string | undefined): LudoGameMode => (value === 'classic' ? 'classic' : 'quick')
 
 type GameSettings = {
   hasTurnTimer?: boolean
   hasGameModes?: boolean
-  gameModeOptions?: YahtzeeGameMode[]
-  defaultGameMode?: YahtzeeGameMode
+  gameModeOptions?: string[]
+  defaultGameMode?: string
   hasRoundSelection?: boolean
   hasDifficultySelection?: boolean
   turnTimerOptions?: number[]
@@ -71,8 +76,8 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
             turnTimerOptions: g.lobbyCreateConfig.turnTimer?.options,
             defaultTurnTimer: g.lobbyCreateConfig.turnTimer?.default,
             hasGameModes: !!g.lobbyCreateConfig.gameModes,
-            gameModeOptions: g.lobbyCreateConfig.gameModes?.options as YahtzeeGameMode[] | undefined,
-            defaultGameMode: (g.lobbyCreateConfig.gameModes?.default as YahtzeeGameMode | undefined) ?? 'classic',
+            gameModeOptions: g.lobbyCreateConfig.gameModes?.options,
+            defaultGameMode: g.lobbyCreateConfig.gameModes?.default,
             hasRoundSelection: !!g.lobbyCreateConfig.rounds,
             roundOptions: g.lobbyCreateConfig.rounds?.options,
             defaultRounds: g.lobbyCreateConfig.rounds?.default ?? null,
@@ -130,7 +135,8 @@ function CreateLobbyPage() {
     maxPlayers: deepLinkMaxPlayers ?? GAME_INFO[selectedGameType].defaultMaxPlayers,
     allowSpectators: false,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
-    yahtzeeMode: GAME_INFO[selectedGameType].settings.defaultGameMode ?? 'classic',
+    yahtzeeMode: asYahtzeeMode(GAME_INFO[selectedGameType].settings.defaultGameMode),
+    ludoMode: asLudoMode(GAME_INFO[selectedGameType].settings.defaultGameMode),
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
     gameType: selectedGameType as GameType,
@@ -156,7 +162,8 @@ function CreateLobbyPage() {
         ...prev,
         maxPlayers: nextMaxPlayers,
         turnTimer: gameInfo.settings.defaultTurnTimer || 60,
-        yahtzeeMode: gameInfo.settings.defaultGameMode ?? 'classic',
+        yahtzeeMode: asYahtzeeMode(gameInfo.settings.defaultGameMode),
+        ludoMode: asLudoMode(gameInfo.settings.defaultGameMode),
         ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
         memoryDifficulty: gameInfo.settings.defaultDifficulty ?? 'easy',
         gameType: selectedGameType,
@@ -238,6 +245,7 @@ function CreateLobbyPage() {
         } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
         ...(formData.gameType === 'yahtzee' ? { yahtzeeMode: formData.yahtzeeMode } : {}),
+        ...(formData.gameType === 'ludo' ? { ludoMode: formData.ludoMode } : {}),
       }
 
       const res = await fetchWithGuest('/api/lobby', {
@@ -821,13 +829,19 @@ function CreateLobbyPage() {
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-bd-ink"><Icon name="dice" size={14} /> {t('lobby.create.gameMode')}</label>
                     <div className="flex gap-2">
-                      {(gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map((m) => (
-                        <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
-                          {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
-                        </button>
-                      ))}
+                      {formData.gameType === 'ludo'
+                        ? (gameInfo.settings.gameModeOptions ?? ['quick', 'classic']).map(asLudoMode).map((m) => (
+                          <button key={m} type="button" onClick={() => setFormData({ ...formData, ludoMode: m })} className={chipOpt(formData.ludoMode === m)}>
+                            {m === 'quick' ? t('games.ludo.modes.quick') : t('games.ludo.modes.classic')}
+                          </button>
+                        ))
+                        : (gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map(asYahtzeeMode).map((m) => (
+                          <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
+                            {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
+                          </button>
+                        ))}
                     </div>
-                    <p className="text-xs text-bd-ink-muted">{t('lobby.create.gameModeShortHelper')}</p>
+                    <p className="text-xs text-bd-ink-muted">{formData.gameType === 'ludo' ? t('games.ludo.modes.helper') : t('lobby.create.gameModeShortHelper')}</p>
                   </div>
                 )}
 

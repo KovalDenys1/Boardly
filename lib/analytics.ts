@@ -81,7 +81,7 @@ interface MoveSubmitAppliedEvent {
   applied: boolean
   statusCode?: number
   isAutoAction?: boolean
-  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board' | 'alias_page' | 'liars_party_page' | 'connect_four_page' | 'sketch_and_guess_page' | 'checkers_page'
+  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board' | 'alias_page' | 'liars_party_page' | 'connect_four_page' | 'sketch_and_guess_page' | 'checkers_page' | 'ludo_page'
 }
 
 interface LobbyCreateLatencyEvent {
@@ -108,7 +108,7 @@ interface StartAloneAutoBotResultEvent {
 interface LobbyLeaveRedirectEvent {
   durationMs: number
   isGuest: boolean
-  source: 'lobby_page' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'connect_four_page' | 'sketch_and_guess_page' | 'checkers_page'
+  source: 'lobby_page' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'connect_four_page' | 'sketch_and_guess_page' | 'checkers_page' | 'ludo_page'
   navigation: 'router_replace' | 'window_assign_fallback'
   apiOutcome: 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
   statusCode?: number

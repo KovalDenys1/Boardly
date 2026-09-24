@@ -39,6 +39,8 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { CheckersGame, type CheckersCell, type CheckersGameData } from '@/lib/games/checkers-game'
+import { LudoBotExecutor, LUDO_BOT_ROLL_PAUSE_BASE } from '@/lib/bots/ludo/ludo-bot-executor'
+import { LudoGame, type LudoGameData } from '@/lib/games/ludo-game'
 import {
   BOT_COMMIT_DELIVERY_ALLOWANCE_MS,
   BOT_LONGEST_IN_TURN_PAUSE_BASES,
@@ -194,6 +196,28 @@ describe('bot in-turn pause table matches the executors (#1049)', () => {
       )
     )
     expect(longestRun(runs, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES[gameType]])
+  })
+
+  it('ludo: one pause before every commit, the move pause being the longest', async () => {
+    // Two tokens out on the track, so every roll leaves a choice and the move
+    // phase – the longer pause – is always reached, whatever the die says.
+    const allRuns: number[][] = []
+    for (let turn = 0; turn < 4; turn++) {
+      const game = startedOnBotTurn(new LudoGame('ludo-pace-test'))
+      const state = game.getState()
+      const data = state.data as LudoGameData
+      data.tokens[BOT.id] = [5, 12]
+      data.turnPlayerId = BOT.id
+      game.restoreState(state)
+      allRuns.push(
+        ...(await pauseRunsOfOneTurn(game, (onMove) =>
+          LudoBotExecutor.executeBotTurn(game, BOT.id, 'easy', onMove)
+        ))
+      )
+    }
+
+    expect(allRuns).toContainEqual([LUDO_BOT_ROLL_PAUSE_BASE])
+    expect(longestRun(allRuns, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES.ludo])
   })
 })
 

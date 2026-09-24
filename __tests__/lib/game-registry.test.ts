@@ -13,6 +13,7 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { MemoryGame } from '@/lib/games/memory-game'
 import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
+import { LudoGame } from '@/lib/games/ludo-game'
 
 describe('Game Registry', () => {
   describe('createGameEngine', () => {
@@ -349,6 +350,23 @@ describe('Game Registry', () => {
       // coverage test iterates this list.
       const occurrences = getSupportedGameTypes().filter((type) => type === 'sketch_and_guess')
       expect(occurrences).toHaveLength(1)
+    })
+  })
+
+  describe('Ludo (#1084)', () => {
+    it('builds an engine with bots and the 2-4 seat range the create form offers', () => {
+      const engine = createGameEngine('ludo', 'ludo-1084')
+      expect(engine).toBeInstanceOf(LudoGame)
+      const meta = getGameMetadata('ludo')
+      expect(meta.minPlayers).toBe(2)
+      expect(meta.maxPlayers).toBe(4)
+      expect(meta.translationKey).toBe('ludo')
+      expect(hasBotSupport('ludo')).toBe(true)
+    })
+
+    it('takes its mode from the lobby rules, quick by default', () => {
+      expect((createGameEngine('ludo', 'ludo-quick') as LudoGame).getMode()).toBe('quick')
+      expect((createGameEngine('ludo', 'ludo-classic', { rules: { mode: 'classic' } }) as LudoGame).getMode()).toBe('classic')
     })
   })
 })

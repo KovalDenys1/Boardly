@@ -139,6 +139,21 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
       <path d="M22.3 39.6h3.4L24 43.5z" style={D} />
     </g>
   ),
+  // Ludo (#1084): the board seen from above – four yards, the home square in
+  // the middle, and a token waiting in two of the yards.
+  ludo: (
+    <>
+      <rect x={5} y={5} width={38} height={38} rx={8} style={O} />
+      <rect x={9} y={8} width={8} height={2.6} rx={1.3} style={SH} />
+      <circle cx={15} cy={15.5} r={5} style={D} />
+      <circle cx={33} cy={15.5} r={5} style={D} />
+      <circle cx={15} cy={33} r={5} style={D} />
+      <circle cx={33} cy={33} r={5} style={D} />
+      <path d="M24 17.5l6.5 6.5-6.5 6.5-6.5-6.5z" style={D} />
+      <circle cx={15} cy={15.5} r={2.1} />
+      <circle cx={33} cy={33} r={2.1} />
+    </>
+  ),
   'fake-artist': (
     <>
       <path d="M24 8c11 0 20 7.2 20 16 0 3.6-2.7 6.4-6.2 6.4h-2.6c-1.9 0-3.1 1.7-2.5 3.5.8 2.3-.6 4.6-3 5.1-1.8.4-3.7.6-5.7.6C13 39.6 4 32.8 4 24S13 8 24 8z" style={O} />

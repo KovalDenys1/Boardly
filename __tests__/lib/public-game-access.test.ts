@@ -71,8 +71,8 @@ describe('public game access helpers', () => {
 
     // The rule those rows are examples of, derived so it cannot go stale: a game
     // with a lobbies route is held back exactly while the catalog says it is not
-    // available. #873 released the last two routed entries that were not, so every
-    // entry this loop reaches in the shipped catalog is on the `false` side of it.
+    // available. #873 released the last two routed entries that were not; Checkers (#1083)
+    // and Ludo (#1084) are routed and in-development, so they are the `true` side today.
     for (const game of getCatalogGames()) {
       if (!game.gameType || getGameLobbiesRoute(game.gameType) === null) continue
       expect({ id: game.id, held: isTemporarilyUnavailableGameType(game.gameType) }).toEqual({
@@ -101,10 +101,16 @@ describe('public game access helpers', () => {
         })
       }
 
-      // The synthetic entry, plus Checkers: #1083 shipped it in-development with its
-      // pages, so the real catalog has a routed, unreleased game of its own again. The
-      // day it is released this goes back to 1.
-      expect(held).toBe(2)
+      // One more than the shipped catalog already holds back: Checkers (#1083) and Ludo
+      // (#1084) are routed in-development entries of their own, so the count is derived
+      // rather than pinned and goes back down by itself the day either is released.
+      const heldInShippedCatalog = getCatalogGames().filter(
+        (game) =>
+          !!game.gameType &&
+          getGameLobbiesRoute(game.gameType) !== null &&
+          game.availability !== 'available'
+      ).length
+      expect(held).toBe(heldInShippedCatalog + 1)
       // A route is where the game would live, not permission to go there: the entry is in
       // the route map throughout, and it is the catalog that keeps it shut.
       expect(getGameLobbiesRoute(HELD_BACK_GAME_TYPE)).toBe(HELD_BACK_LOBBIES_ROUTE)
