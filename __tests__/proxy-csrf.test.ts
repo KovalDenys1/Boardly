@@ -96,4 +96,28 @@ describe('proxy CSRF enforcement', () => {
 
     expect(response.status).not.toBe(403)
   })
+
+  // #1145: the browser's own CSP reporting delivers this POST, not a fetch() this app
+  // makes, so it carries no origin the CSRF check could recognise and no way to attach one.
+  it('allows a CSP violation report through with no origin header at all', async () => {
+    const request = new NextRequest('http://localhost:3000/api/security/csp-report', {
+      method: 'POST',
+      body: JSON.stringify({ 'csp-report': {} }),
+    })
+
+    const response = await proxy(request)
+
+    expect(response.status).not.toBe(403)
+  })
+
+  it('still rejects a cross-origin POST to an ordinary API route with the same, unexempted path shape', async () => {
+    const request = new NextRequest('http://localhost:3000/api/security/not-the-report-endpoint', {
+      method: 'POST',
+      headers: { origin: 'https://evil.example' },
+    })
+
+    const response = await proxy(request)
+
+    expect(response.status).toBe(403)
+  })
 })

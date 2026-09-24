@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { getSecurityHeaders, isSignatureAuthenticatedWebhook, verifyCsrfToken } from '@/lib/csrf'
+import {
+  getSecurityHeaders,
+  isSignatureAuthenticatedWebhook,
+  isUnauthenticatedReportingEndpoint,
+  verifyCsrfToken,
+} from '@/lib/csrf'
 import {
   authorizeDiscordInternalRequest,
   hasValidDiscordInternalSecret,
@@ -165,6 +170,55 @@ function buildCspHeaderValue() {
   `.replace(/\s{2,}/g, ' ').trim()
 }
 
+/** Path of the CSP violation reporting endpoint (`app/api/security/csp-report/route.ts`). */
+const CSP_REPORT_PATH = '/api/security/csp-report'
+const CSP_REPORT_GROUP = 'csp-endpoint'
+
+/**
+ * #1145 (S4-05): production `script-src` still carries `'unsafe-inline'` with no nonce and
+ * no reporting, so an HTML-injection bug would execute silently. Enforcing a nonce today
+ * would force every page onto per-request dynamic rendering to inject a matching nonce into
+ * its script tags, which breaks the rule that the 15 guide pages stay statically prerendered
+ * (see "Ads" in this repo's CLAUDE.md) and would need AdSense re-verified under
+ * `strict-dynamic` first. So this ships as `Content-Security-Policy-Report-Only` instead: a
+ * per-request nonce that is never written into any script tag, so *nothing* on the site
+ * carries it. Every inline bootstrap script and every third-party tag (AdSense included)
+ * therefore reports a violation without blocking anything - that count is the real, measured
+ * cost of the switch the ticket asks a follow-up to decide, not a guess. The enforced
+ * `Content-Security-Policy` header above is untouched; this is additive visibility only.
+ */
+function buildCspReportOnlyHeaderValue(reportUrl: string): string {
+  // A fresh nonce per request is correct even though it never appears in the HTML: it is
+  // what a real nonce policy would look like, so every inline script - having no nonce at
+  // all - is reported exactly as it would be blocked once this becomes enforced.
+  const nonce = crypto.randomUUID().replace(/-/g, '')
+
+  return [
+    `script-src 'self' https: 'nonce-${nonce}' 'strict-dynamic'`,
+    "object-src 'none'",
+    "base-uri 'self'",
+    `report-to ${CSP_REPORT_GROUP}`,
+    `report-uri ${reportUrl}`,
+  ].join('; ') + ';'
+}
+
+/**
+ * The Reporting API's current header (Chrome 96+) and its predecessor, sent together so a
+ * browser that only understands one of them still delivers reports. Safari supports neither
+ * as of this writing and falls back to the CSP-level `report-uri` directive above instead.
+ */
+function buildReportingEndpointsHeaderValue(reportUrl: string): string {
+  return `${CSP_REPORT_GROUP}="${reportUrl}"`
+}
+
+function buildLegacyReportToHeaderValue(reportUrl: string): string {
+  return JSON.stringify({
+    group: CSP_REPORT_GROUP,
+    max_age: 10886400,
+    endpoints: [{ url: reportUrl }],
+  })
+}
+
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
   const { pathname } = request.nextUrl
@@ -212,6 +266,12 @@ export async function proxy(request: NextRequest) {
 
   response.headers.set('Content-Security-Policy', buildCspHeaderValue())
 
+  // #1145: visibility only, nothing enforced. See buildCspReportOnlyHeaderValue for why.
+  const cspReportUrl = new URL(CSP_REPORT_PATH, request.nextUrl.origin).toString()
+  response.headers.set('Content-Security-Policy-Report-Only', buildCspReportOnlyHeaderValue(cspReportUrl))
+  response.headers.set('Reporting-Endpoints', buildReportingEndpointsHeaderValue(cspReportUrl))
+  response.headers.set('Report-To', buildLegacyReportToHeaderValue(cspReportUrl))
+
   // Add CORS headers for API routes.
   // When no Origin header is present (same-origin requests), Safari still performs
   // access-control checks in certain conditions. Fall back to the server's own origin
@@ -248,6 +308,7 @@ export async function proxy(request: NextRequest) {
       isUnsafeMethod &&
       !isSignatureAuthenticatedWebhook(pathname) &&
       !isTrustedServerRequest(request) &&
+      !isUnauthenticatedReportingEndpoint(pathname) &&
       !verifyCsrfToken(request)
     ) {
       return NextResponse.json(
