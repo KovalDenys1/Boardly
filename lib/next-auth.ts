@@ -8,7 +8,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
-import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
+import { decode as defaultJwtDecode, encode as defaultJwtEncode, type JWT } from 'next-auth/jwt'
 import {
   getCredentialsSessionMaxAgeSeconds,
   REMEMBER_ME_MAX_AGE_SECONDS,
@@ -27,6 +27,79 @@ function getOAuthProfileEmail(profile: unknown): string {
 
   const email = (profile as { email?: unknown }).email
   return typeof email === 'string' && email.length > 0 ? email : 'unknown'
+}
+
+/**
+ * True when a token signed in before the account's session cutoff. A null
+ * cutoff never revokes anything, which is every row until a password reset or
+ * an email change sets one. A token without `authenticatedAt` predates the
+ * claim and counts as signed in at 0.
+ */
+export function isBeforeSessionCutoff(
+  authenticatedAt: unknown,
+  sessionsValidFrom: Date | null | undefined
+): boolean {
+  if (!sessionsValidFrom) {
+    return false
+  }
+  const signedInAt =
+    typeof authenticatedAt === 'number' && Number.isFinite(authenticatedAt) ? authenticatedAt : 0
+  return signedInAt < sessionsValidFrom.getTime()
+}
+
+// The session cutoff (#1136) lives in jwt.decode, not in callbacks.jwt,
+// because decode is the one step every use of an existing session cookie
+// passes. /api/auth/session and getServerSession decode the cookie before
+// callbacks.jwt runs, but the OAuth callback decodes it to choose the account a
+// new provider identity is linked to and never runs callbacks.jwt for that
+// cookie (next-auth 4.24 core/lib/callback-handler.js). With the check only in
+// callbacks.jwt, a cookie stolen before a password reset could link the thief's
+// own Google, GitHub or Discord account to the victim's and come back with a
+// fresh session. Returning null from decode makes the session route clear the
+// cookie and answer `{}`, getServerSession return null, and the OAuth callback
+// treat the request as signed out, so nothing is linked.
+//
+// Read on every request, not inside the 30-minute refresh: a stolen session
+// stops working on its very next request (the fix #805 specified). One
+// primary-key read of one column.
+async function isSessionRevoked(payload: JWT): Promise<boolean> {
+  const userId =
+    typeof payload.id === 'string' && payload.id.length > 0
+      ? payload.id
+      : typeof payload.sub === 'string' && payload.sub.length > 0
+        ? payload.sub
+        : null
+  if (!userId) {
+    return false
+  }
+
+  let row: { sessionsValidFrom: Date | null } | null
+  try {
+    row = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { sessionsValidFrom: true },
+    })
+  } catch (error) {
+    // A database blip must not sign every user out. The check runs again on
+    // the next request.
+    apiLogger('NextAuth jwt').warn('Session cutoff check skipped: database read failed', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
+  }
+
+  // The account was deleted (delete-account removes the row), so the session
+  // has nothing left to stand for.
+  if (!row) {
+    apiLogger('NextAuth jwt').info('Session ended: the account no longer exists', { userId })
+    return true
+  }
+  if (isBeforeSessionCutoff(payload.authenticatedAt, row.sessionsValidFrom)) {
+    apiLogger('NextAuth jwt').info('Session ended: signed in before the account\'s session cutoff', { userId })
+    return true
+  }
+  return false
 }
 
 export const authOptions: NextAuthOptions = {
@@ -145,7 +218,11 @@ export const authOptions: NextAuthOptions = {
       })
     },
     async decode(params) {
-      return defaultJwtDecode(params)
+      const payload = await defaultJwtDecode(params)
+      if (payload && (await isSessionRevoked(payload))) {
+        return null
+      }
+      return payload
     },
   },
   pages: {
@@ -441,6 +518,11 @@ export const authOptions: NextAuthOptions = {
         session.user.suspended = Boolean(token.suspended)
         session.user.banReason = (token.banReason as string | null | undefined) ?? null
         session.user.banExpiresAt = (token.banExpiresAt as string | null | undefined) ?? null
+        // When this session signed in (ms). PATCH /api/user/profile asks for a
+        // recent sign-in before an account without a password changes its
+        // email (#1136).
+        session.user.authenticatedAt =
+          typeof token.authenticatedAt === 'number' ? token.authenticatedAt : null
       }
       return session
     },

@@ -84,6 +84,7 @@ describe('POST /api/auth/verify-email', () => {
     expect(response.status).toBe(200)
     expect(payload).toEqual({
       message: 'New email verified successfully',
+      signedOut: true,
     })
     expect(mockPrisma.$transaction).toHaveBeenCalled()
     expect(mockTransactionClient.users.update).toHaveBeenCalledWith(
@@ -93,6 +94,8 @@ describe('POST /api/auth/verify-email', () => {
           email: 'new@example.com',
           pendingEmail: null,
           emailVerified: expect.any(Date),
+          // A completed email change ends every earlier session (#1136).
+          sessionsValidFrom: expect.any(Date),
         }),
       })
     )

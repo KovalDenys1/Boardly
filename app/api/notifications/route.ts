@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -36,10 +35,11 @@ export async function GET(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const { searchParams } = new URL(request.url)
   const limit = parseLimit(searchParams.get('limit'))
@@ -107,10 +107,11 @@ export async function DELETE(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const body = await request.json().catch(() => ({})) as { ids?: unknown; all?: unknown }
   const deleteAll = body.all === true

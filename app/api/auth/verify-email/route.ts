@@ -58,11 +58,15 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to ensure atomicity and prevent race conditions
     await prisma.$transaction(async (tx) => {
+      // A completed email change ends every session signed in before it
+      // (#1136), the one confirming it included: the sign-in address has just
+      // changed, so each device signs in again with the new one.
       const updateData = hasPendingEmailChange
         ? {
             email: pendingEmail,
             pendingEmail: null,
             emailVerified: new Date(),
+            sessionsValidFrom: new Date(),
           }
         : {
             emailVerified: new Date(),
@@ -99,6 +103,7 @@ export async function POST(request: NextRequest) {
       message: hasPendingEmailChange
         ? 'New email verified successfully'
         : 'Email verified successfully',
+      signedOut: hasPendingEmailChange,
     })
   } catch (error) {
     const log = apiLogger('POST /api/auth/verify-email')

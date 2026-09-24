@@ -12,6 +12,7 @@ declare module 'next-auth' {
       suspended?: boolean
       banReason?: string | null
       banExpiresAt?: string | null
+      authenticatedAt?: number | null
     }
   }
 

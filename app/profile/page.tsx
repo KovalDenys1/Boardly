@@ -139,6 +139,7 @@ type ProfileSummary = {
   username: string | null
   email: string | null
   pendingEmail: string | null
+  hasPassword?: boolean
   image: string | null
   avatarUrl: string | null
   emailVerified: string | null
@@ -155,6 +156,20 @@ type ProfileSummary = {
 }
 
 type InlineEditorField = 'username' | 'email'
+
+// PATCH /api/user/profile refuses an email change without proof of ownership
+// (#1136): the current password, or a recent sign-in for an account without
+// one. These are the codes it answers with, and what each one tells the user.
+const EMAIL_CHANGE_REFUSAL_KEYS: Record<string, TranslationKeys> = {
+  CURRENT_PASSWORD_REQUIRED: 'profile.inline.currentPasswordRequired',
+  CURRENT_PASSWORD_INCORRECT: 'profile.inline.currentPasswordIncorrect',
+  RECENT_SIGN_IN_REQUIRED: 'profile.inline.recentSignInRequired',
+}
+
+function getEmailChangeRefusalKey(data: unknown): TranslationKeys | null {
+  const code = data && typeof data === 'object' ? (data as { code?: unknown }).code : undefined
+  return typeof code === 'string' ? EMAIL_CHANGE_REFUSAL_KEYS[code] ?? null : null
+}
 type InlineEditorStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
 type PublicProfilePreviewTransitionPhase = 'idle' | 'hero-exit' | 'preview-enter' | 'preview-exit' | 'hero-enter'
 
@@ -228,6 +243,7 @@ export default function ProfilePage() {
   const [usernameAvailable, setUsernameAvailable] = useState(true)
   const [emailStatus, setEmailStatus] = useState<InlineEditorStatus>('idle')
   const [emailMessage, setEmailMessage] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -863,6 +879,7 @@ export default function ProfilePage() {
       setEmail(editableEmail)
       setEmailStatus('idle')
       setEmailMessage(t('profile.inline.changeEmailHint'))
+      setCurrentPassword('')
     }
 
     setEditingField(null)
@@ -892,7 +909,7 @@ export default function ProfilePage() {
       const payload =
         editingField === 'username'
           ? { username: trimmedValue }
-          : { email: trimmedValue.toLowerCase() }
+          : { email: trimmedValue.toLowerCase(), ...(currentPassword ? { currentPassword } : {}) }
 
       const res = await fetch('/api/user/profile', {
         method: 'PATCH',
@@ -903,6 +920,14 @@ export default function ProfilePage() {
       })
 
       const data = await res.json()
+
+      const refusalKey = res.ok ? null : getEmailChangeRefusalKey(data)
+      if (refusalKey) {
+        // The address itself is fine, so the editor stays open and submittable.
+        setEditingMessage(t(refusalKey))
+        showToast.error(refusalKey)
+        return
+      }
 
       if (!res.ok) {
         throw new Error(data.error || t('profile.errors.updateFailed'))
@@ -1000,7 +1025,7 @@ export default function ProfilePage() {
     setLoading(true)
 
     try {
-      const payload: { username?: string; email?: string } = {}
+      const payload: { username?: string; email?: string; currentPassword?: string } = {}
 
       if (usernameChanged) {
         payload.username = trimmedUsername
@@ -1008,6 +1033,9 @@ export default function ProfilePage() {
 
       if (emailChanged) {
         payload.email = normalizedEmail
+        if (currentPassword) {
+          payload.currentPassword = currentPassword
+        }
       }
 
       const res = await fetch('/api/user/profile', {
@@ -1020,6 +1048,13 @@ export default function ProfilePage() {
 
       const data = await res.json()
 
+      const refusalKey = res.ok ? null : getEmailChangeRefusalKey(data)
+      if (refusalKey) {
+        setEmailMessage(t(refusalKey))
+        showToast.error(refusalKey)
+        return
+      }
+
       if (!res.ok) {
         throw new Error(data.error || t('profile.errors.updateFailed'))
       }
@@ -1027,6 +1062,7 @@ export default function ProfilePage() {
       if (data.user) {
         setProfileSummary(data.user)
       }
+      setCurrentPassword('')
 
       const updatedUsername = data.user?.username || trimmedUsername
       setUsername(updatedUsername)
@@ -1519,10 +1555,13 @@ export default function ProfilePage() {
       : editingValue.trim().toLowerCase() !== (pendingEmail || currentEmail).toLowerCase()
     : false
 
+  const emailChangeNeedsPassword = Boolean(profileSummary?.hasPassword)
+
   const inlineEditorCanSubmit =
     inlineEditorHasChanges &&
     editingStatus === 'available' &&
-    !submittingInlineEdit
+    !submittingInlineEdit &&
+    (editingField !== 'email' || !emailChangeNeedsPassword || currentPassword.length > 0)
 
   const trimmedProfileUsernameDraft = username.trim()
   const normalizedProfileEmailDraft = email.trim().toLowerCase()
@@ -1533,7 +1572,8 @@ export default function ProfilePage() {
     profileFormHasChanges &&
     !loading &&
     (!profileUsernameChanged || usernameAvailable) &&
-    (!profileEmailChanged || emailStatus === 'available')
+    (!profileEmailChanged || emailStatus === 'available') &&
+    (!profileEmailChanged || !emailChangeNeedsPassword || currentPassword.length > 0)
 
   const renderHeroEditableField = ({
     field,
@@ -1630,6 +1670,26 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {isEditing && field === 'email' && emailChangeNeedsPassword && inlineEditorHasChanges && (
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                cancelInlineEdit()
+              }
+              if (event.key === 'Enter' && inlineEditorCanSubmit) {
+                void handleInlineEditSubmit()
+              }
+            }}
+            placeholder={t('profile.inline.currentPassword')}
+            aria-label={t('profile.inline.currentPassword')}
+            autoComplete="current-password"
+            className="mt-2 w-full border-0 border-b-2 border-blue-400/70 bg-transparent px-0 pb-1 text-sm text-bd-ink-soft shadow-none outline-none placeholder:text-bd-ink-muted focus:ring-0 dark:border-blue-400/60 dark:text-slate-300 dark:placeholder:text-slate-500"
+          />
+        )}
+
         <div
           className={`overflow-hidden transition-all duration-200 ease-out ${
             isEditing ? 'mt-1 max-h-10 opacity-100' : 'max-h-0 opacity-0'
@@ -1646,6 +1706,7 @@ export default function ProfilePage() {
   const handleResetProfileDrafts = () => {
     setUsername(currentUsername)
     setEmail(editableEmail)
+    setCurrentPassword('')
     setEmailStatus('idle')
     setEmailMessage(t('profile.inline.changeEmailHint'))
     setEditingField(null)
@@ -2037,6 +2098,25 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </div>
+
+                    {profileEmailChanged && emailChangeNeedsPassword && (
+                      <div>
+                        <label htmlFor="profile-current-password-input" className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                          {t('profile.inline.currentPassword')}
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(event) => setCurrentPassword(event.target.value)}
+                          id="profile-current-password-input"
+                          className={`${fieldInputClassName} border-bd-line focus:border-[#7867E8] focus:ring-[#9B8CFF]/20 dark:border-slate-700`}
+                          autoComplete="current-password"
+                        />
+                        <p className="mt-1.5 text-xs text-bd-ink-muted dark:text-slate-400">
+                          {t('profile.inline.currentPasswordHint')}
+                        </p>
+                      </div>
+                    )}
 
                     <div>
                       <UsernameInput

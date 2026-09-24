@@ -84,11 +84,17 @@ jest.mock('@/lib/public-profile.server', () => ({
 
 jest.mock('@/lib/email', () => ({
   sendVerificationEmail: jest.fn(async () => ({ success: true })),
+  sendEmailChangeNoticeEmail: jest.fn(async () => ({ success: true })),
 }))
 
 jest.mock('nanoid', () => ({ nanoid: jest.fn(() => 'token') }))
 
 jest.mock('@/lib/error-handler', () => {
+  class AppError extends Error {
+    constructor(message: string, public statusCode = 500, public code?: string) {
+      super(message)
+    }
+  }
   class AuthenticationError extends Error {
     statusCode = 401
   }
@@ -100,6 +106,7 @@ jest.mock('@/lib/error-handler', () => {
   }
 
   return {
+    AppError,
     AuthenticationError,
     ConflictError,
     ValidationError,
@@ -336,7 +343,8 @@ describe('PATCH /api/user/profile', () => {
   beforeEach(() => {
     resetDatabase()
 
-    mockGetServerSession.mockResolvedValue({ user: { id: CALLER_ID } } as any)
+    // A fresh sign-in: the email change below needs one (#1136).
+    mockGetServerSession.mockResolvedValue({ user: { id: CALLER_ID, authenticatedAt: Date.now() } } as any)
     mockPrisma.users.findUnique.mockResolvedValue({
       id: CALLER_ID,
       username: 'caller',

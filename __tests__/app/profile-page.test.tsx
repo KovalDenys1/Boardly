@@ -348,6 +348,86 @@ describe('ProfilePage', () => {
     expect(mockShowToast.success).toHaveBeenCalledWith('toast.verificationSent')
   })
 
+  // #1136: a password account proves ownership before its email changes.
+  it('asks a password account for its current password and sends it with the new email', async () => {
+    const defaultFetch = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : String(input)
+      if (url.includes('/api/user/profile') && (init?.method || 'GET') === 'GET') {
+        return mockJsonResponse({ user: { ...baseProfileUser, hasPassword: true } })
+      }
+      return defaultFetch(input, init)
+    })
+
+    render(<ProfilePage />)
+
+    const emailInput = await screen.findByLabelText(/profile\.email/)
+    fireEvent.change(emailInput, { target: { value: 'new@example.com' } })
+
+    const passwordInput = await screen.findByLabelText('profile.inline.currentPassword')
+    await waitFor(() => {
+      expect(
+        (screen.getByRole('button', { name: 'profile.edit.save' }) as HTMLButtonElement).disabled
+      ).toBe(true)
+    })
+
+    fireEvent.change(passwordInput, { target: { value: 'Right1234' } })
+    await waitFor(() => {
+      expect(
+        (screen.getByRole('button', { name: 'profile.edit.save' }) as HTMLButtonElement).disabled
+      ).toBe(false)
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'profile.edit.save' }))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/user/profile',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ email: 'new@example.com', currentPassword: 'Right1234' }),
+        })
+      )
+    })
+  })
+
+  it('shows the translated refusal when the current password is wrong', async () => {
+    const defaultFetch = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : String(input)
+      const method = init?.method || 'GET'
+      if (url.includes('/api/user/profile') && method === 'GET') {
+        return mockJsonResponse({ user: { ...baseProfileUser, hasPassword: true } })
+      }
+      if (url.includes('/api/user/profile') && method === 'PATCH') {
+        return mockJsonResponse(
+          { error: 'Current password is incorrect', code: 'CURRENT_PASSWORD_INCORRECT' },
+          403
+        )
+      }
+      return defaultFetch(input, init)
+    })
+
+    render(<ProfilePage />)
+
+    fireEvent.change(await screen.findByLabelText(/profile\.email/), {
+      target: { value: 'new@example.com' },
+    })
+    fireEvent.change(await screen.findByLabelText('profile.inline.currentPassword'), {
+      target: { value: 'guess' },
+    })
+    await waitFor(() => {
+      expect(
+        (screen.getByRole('button', { name: 'profile.edit.save' }) as HTMLButtonElement).disabled
+      ).toBe(false)
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'profile.edit.save' }))
+
+    await waitFor(() => {
+      expect(mockShowToast.error).toHaveBeenCalledWith('profile.inline.currentPasswordIncorrect')
+    })
+    expect(mockShowToast.success).not.toHaveBeenCalledWith('toast.verificationSent')
+  })
+
   it('keeps email draft in sync between the header editor and the profile form', async () => {
     render(<ProfilePage />)
 

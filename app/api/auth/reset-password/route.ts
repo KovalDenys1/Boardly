@@ -52,11 +52,34 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const passwordHash = await bcrypt.hash(password, 10)
 
-    // Update user password
+    const user = await prisma.users.findUnique({
+      where: { id: resetToken.userId },
+      select: { pendingEmail: true },
+    })
+
+    // Update the password and end every session that signed in before now
+    // (#1136). Sessions are stateless JWTs, so without the cutoff a session
+    // stolen before the reset kept working for the rest of its 30 days;
+    // lib/next-auth.ts rejects any token whose authenticatedAt is earlier.
+    //
+    // A pending email change is cancelled too. It may be the attacker's: with
+    // only a stolen session they could put their own address in pendingEmail,
+    // and its verification link, which needs no session, would still promote it
+    // after the owner had taken the account back. The owner can ask again.
     await prisma.users.update({
       where: { id: resetToken.userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        sessionsValidFrom: new Date(),
+        ...(user?.pendingEmail ? { pendingEmail: null } : {}),
+      },
     })
+
+    if (user?.pendingEmail) {
+      await prisma.emailVerificationTokens.deleteMany({
+        where: { userId: resetToken.userId },
+      })
+    }
 
     // Delete used token
     await prisma.passwordResetTokens.delete({

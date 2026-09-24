@@ -6,10 +6,25 @@
 
 - Registered users are validated via NextAuth session/JWT.
 - Canonical signing secret: `NEXTAUTH_SECRET`.
+- Sessions are stateless JWTs, so revocation is a per-user cutoff: `Users.sessionsValidFrom`.
+  The custom `jwt.decode` in `lib/next-auth.ts` reads it on every request and treats any session
+  whose `authenticatedAt` is earlier, or whose account no longer exists, as an invalid cookie
+  (#1136). It sits in decode, not the jwt callback, because NextAuth's OAuth callback decodes the
+  existing cookie to choose the account a new provider identity is linked to and never runs the
+  jwt callback on it. A password reset and a completed email change set it to now; NULL, the
+  default, revokes nothing. `proxy.ts` uses `getToken`'s default decode and does not check it.
+- An email change needs the current password, or a sign-in within the last ten minutes for an
+  account without one, and the address being replaced is told (#1136).
 
 ### API authorization layer
 
 - API routes validate actor identity and permissions before state mutation.
+- Routes read the signed-in user through `lib/session-user.ts`, never `getServerSession`
+  directly (`__tests__/api/session-user-routes.test.ts` enforces it). It refuses a suspended
+  claim on every method and re-reads `suspended` from the database on writes, so a suspension
+  applies on the next write rather than after the 30-minute token refresh (#1137). The two
+  account-deletion routes pass `allowSuspended`: erasure stays open to a suspended account.
+  Game and lobby routes get the same from `lib/request-auth.ts`.
 - Rate limiting is applied on sensitive routes.
 
 ### CSRF layer

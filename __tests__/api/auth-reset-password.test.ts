@@ -15,7 +15,11 @@ jest.mock('@/lib/db', () => ({
       delete: jest.fn(),
     },
     users: {
+      findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    emailVerificationTokens: {
+      deleteMany: jest.fn(),
     },
   },
 }))
@@ -33,11 +37,13 @@ jest.mock('@/lib/logger', () => ({
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockHash = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>
 
-function buildRequest(body: unknown) {
+function buildRequest(body: unknown, ip?: string) {
   return new NextRequest('http://localhost:3000/api/auth/reset-password', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      // The route's own auth limiter allows five a window per address.
+      ...(ip ? { 'x-real-ip': ip } : {}),
     },
     body: JSON.stringify(body),
   })
@@ -47,6 +53,7 @@ describe('POST /api/auth/reset-password', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockHash.mockResolvedValue('new-hash' as never)
+    mockPrisma.users.findUnique.mockResolvedValue({ pendingEmail: null } as any)
   })
 
   it('returns validation issues for invalid password payload', async () => {
@@ -120,10 +127,52 @@ describe('POST /api/auth/reset-password', () => {
     expect(mockHash).toHaveBeenCalledWith('ValidPass123!', 10)
     expect(mockPrisma.users.update).toHaveBeenCalledWith({
       where: { id: 'user-2' },
-      data: { passwordHash: 'new-hash' },
+      data: { passwordHash: 'new-hash', sessionsValidFrom: expect.any(Date) },
     })
     expect(mockPrisma.passwordResetTokens.delete).toHaveBeenCalledWith({
       where: { id: 'token-2' },
+    })
+    expect(mockPrisma.emailVerificationTokens.deleteMany).not.toHaveBeenCalled()
+  })
+
+  // #1136: every session signed in before the reset stops working. The cutoff
+  // is compared against the token's authenticatedAt in lib/next-auth.ts.
+  it('sets the session cutoff to the moment of the reset', async () => {
+    mockPrisma.passwordResetTokens.findUnique.mockResolvedValue({
+      id: 'token-3',
+      userId: 'user-3',
+      expires: new Date(Date.now() + 60_000),
+    } as any)
+    const before = Date.now()
+
+    await POST(buildRequest({ token: 'valid-token', password: 'ValidPass123!' }, '198.51.100.3'))
+
+    const cutoff = mockPrisma.users.update.mock.calls[0][0].data.sessionsValidFrom as Date
+    expect(cutoff.getTime()).toBeGreaterThanOrEqual(before)
+    expect(cutoff.getTime()).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('cancels a pending email change and its verification link', async () => {
+    mockPrisma.passwordResetTokens.findUnique.mockResolvedValue({
+      id: 'token-4',
+      userId: 'user-4',
+      expires: new Date(Date.now() + 60_000),
+    } as any)
+    mockPrisma.users.findUnique.mockResolvedValue({ pendingEmail: 'attacker@example.com' } as any)
+
+    const response = await POST(buildRequest({ token: 'valid-token', password: 'ValidPass123!' }, '198.51.100.4'))
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.users.update).toHaveBeenCalledWith({
+      where: { id: 'user-4' },
+      data: {
+        passwordHash: 'new-hash',
+        sessionsValidFrom: expect.any(Date),
+        pendingEmail: null,
+      },
+    })
+    expect(mockPrisma.emailVerificationTokens.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'user-4' },
     })
   })
 })

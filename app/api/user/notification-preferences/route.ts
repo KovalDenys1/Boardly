@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import {
   getNotificationPreferences,
   upsertNotificationPreferences,
 } from '@/lib/notification-preferences'
+import { requireSessionUser } from '@/lib/session-user'
 
 const updateSchema = z.object({
   inAppNotifications: z.boolean().optional(),
@@ -18,20 +17,22 @@ const updateSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser()
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const preferences = await getNotificationPreferences(session.user.id)
   return NextResponse.json({ preferences })
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const body = await request.json().catch(() => null)
   const parsed = updateSchema.safeParse(body)

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
+import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -24,7 +23,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to get session first (for logged-in users)
-    const session = await getServerSession(authOptions)
+    const auth = await optionalSessionUser(request)
+    if ('response' in auth) {
+      return auth.response
+    }
+    const { session } = auth
     
     let user: {
       id: string
