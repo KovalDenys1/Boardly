@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
 }
 
 export default function TermsOfService() {
+  // The operator (#1163). Absent until NEXT_PUBLIC_SELLER_LEGAL_NAME and
+  // NEXT_PUBLIC_SELLER_ADDRESS are set, and then the section below is not drawn.
+  const seller = getSellerIdentity()
+
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -28,6 +33,20 @@ export default function TermsOfService() {
           </h1>
 
           <div className="space-y-8 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            {seller && (
+              <section>
+                <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>Who we are</h2>
+                <p>
+                  Boardly is operated by {seller.legalName}, {formatSellerAddress(seller)}, Norway. Email:{' '}
+                  <a href={`mailto:${seller.email}`} className="underline">{seller.email}</a>.
+                </p>
+                <p className="mt-3">
+                  {seller.legalName} is the seller of Boardly Premium and the party responsible for the service
+                  described in these Terms.
+                </p>
+              </section>
+            )}
+
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>1. Introduction</h2>
               <p>

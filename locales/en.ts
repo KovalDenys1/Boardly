@@ -3507,6 +3507,7 @@ const en = {
     legal: 'Legal',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
+    operatedBy: 'Operated by {{name}}',
     community: 'Community',
     discord: 'Discord',
     sendFeedback: 'Send Feedback',

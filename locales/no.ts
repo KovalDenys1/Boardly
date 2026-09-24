@@ -3495,6 +3495,7 @@ const no = {
     legal: 'Juridisk',
     privacy: 'Personvernregler',
     terms: 'Tjenestevilkår',
+    operatedBy: 'Drives av {{name}}',
     community: 'Fellesskap',
     discord: 'Discord',
     sendFeedback: 'Send tilbakemelding',

@@ -3640,6 +3640,7 @@ const uk: TranslationWithPlurals = {
     legal: 'Правове',
     privacy: 'Політика конфіденційності',
     terms: 'Умови використання',
+    operatedBy: 'Оператор: {{name}}',
     community: 'Спільнота',
     discord: 'Discord',
     sendFeedback: 'Залишити відгук',

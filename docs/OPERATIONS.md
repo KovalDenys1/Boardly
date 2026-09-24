@@ -95,6 +95,17 @@ Recommended:
 - repo variable `PROJECT_HYGIENE_PROJECT_NUMBER` (target GitHub Project v2 number, for example `1`)
 - optional repo variable `PROJECT_HYGIENE_OWNER` (user/org login; defaults to repository owner)
 
+Operator imprint (#1163): `NEXT_PUBLIC_SELLER_LEGAL_NAME` and `NEXT_PUBLIC_SELLER_ADDRESS` hold the
+name and geographic address of whoever operates Boardly, which ehandelsloven section 8,
+angrerettloven section 8 d and GDPR Art. 13(1)(a) require on the site. They are public values
+by law (hence the prefix, so the client-side footer can read them) but personal ones, so they are
+set in Vercel's Production environment only and never committed; address lines are separated by
+`|`. With both set, the footer shows "Operated by <name>", the address and the support email on
+every page, the Terms of Service page opens with a "Who we are" section naming the seller of
+Boardly Premium, the Privacy Policy page opens with "Who is responsible for your data", and every
+email ends with the same name, address and email. With either unset, all four render nothing,
+and `npm run check:env` warns when that is the case in production.
+
 ## Secret migration notes
 
 Canonical secrets only:
