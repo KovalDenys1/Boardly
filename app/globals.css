@@ -2020,6 +2020,31 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: rgba(255,196,77,0.95) !important;
   box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
 }
+/* Last move (#1114): a ring on the newest mark that stays until the next move.
+   The ring is a pseudo-element faded and scaled in, so only opacity and
+   transform animate. The pop host wraps just the newly placed mark so its
+   animationend can settle it; display: contents keeps the mark's % sizing. */
+.ttt-mark-pop-host { display: contents; }
+.ttt-cell--last::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px rgba(31,27,22,0.28);
+  pointer-events: none;
+  animation: ttt-last-ring-in var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+@keyframes ttt-last-ring-in {
+  from { opacity: 0; transform: scale(1.12); }
+  to { opacity: 1; transform: none; }
+}
+.ttt-history-row-in {
+  animation: ttt-history-row-in var(--bd-dur) var(--bd-ease-out) both;
+}
+@keyframes ttt-history-row-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* ============ YAHTZEE SCORECARD ============ */
 
