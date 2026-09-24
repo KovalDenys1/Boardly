@@ -2,6 +2,7 @@ import { GameStatus } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { RETENTION_DAYS } from '@/lib/retention-periods'
+import { deleteFeedbackDiscordCopies } from '@/lib/feedback-discord'
 
 /**
  * Retention periods for the tables nothing else ever deleted (#1130, GDPR Art. 5(1)(e)).
@@ -172,7 +173,13 @@ function ruleOperations(key: RetentionRuleKey, cutoff: Date): RuleOperations {
       const where = { createdAt: { lt: cutoff } }
       return {
         count: () => prisma.feedback.count({ where }),
-        remove: async () => (await prisma.feedback.deleteMany({ where })).count,
+        remove: async () => {
+          // The Discord copy goes with the row. A row whose copy Discord refused to
+          // delete is kept, with its message id, for the next run to try again.
+          const { failed } = await deleteFeedbackDiscordCopies(where)
+          const removable = failed.length > 0 ? { ...where, id: { notIn: failed } } : where
+          return (await prisma.feedback.deleteMany({ where: removable })).count
+        },
       }
     }
     case 'notifications': {

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { reopenGoogleConsentMessage } from '@/lib/consent'
+import { isProductionDeployment } from '@/lib/feature-flags'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS, retentionMonths } from '@/lib/retention-periods'
 import { PRIVACY_UPDATED } from '@/lib/terms-version'
@@ -209,6 +211,16 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
               </a>
               .
             </p>
+            {/* The same control as the footer's (#1153), because the footer is not on
+                this page and consent must be as easy to withdraw as to give (GDPR
+                Art. 7(3)). Same gate: the consent message only loads in production. */}
+            {isProductionDeployment() && (
+              <p className="mt-3">
+                <button type="button" onClick={reopenGoogleConsentMessage} className="underline cursor-pointer">
+                  {t('footer.privacySettings')}
+                </button>
+              </p>
+            )}
           </Section>
 
           <Section title={t('privacyPolicy.storage.title')}>

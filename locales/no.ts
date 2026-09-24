@@ -3615,7 +3615,7 @@ const no = {
         title: 'Tilbakemeldinger og kundestøtte',
         data: 'Det du skriver i tilbakemeldingsskjemaet, typen, siden du sendte det fra, en e-postadresse hvis du oppgir en, og kontoen din hvis du er innlogget. Hver melding legges også ut i teamets tilbakemeldingskanal på Discord-serveren vår med brukernavnet og id-en din, eller e-postadressen din. E-post til kundestøtteadressen når oss gjennom Resend.',
         basis: 'Vår berettigede interesse i å svare deg og forbedre Boardly.',
-        retention: 'Tilbakemeldinger: {{feedbackMonths}} måneder. E-post til kundestøtte: så lenge vi trenger den for å behandle henvendelsen.',
+        retention: 'Tilbakemeldinger, også kopien i Discord-kanalen vår for tilbakemeldinger: {{feedbackMonths}} måneder. E-post til kundestøtte: så lenge vi trenger den for å behandle henvendelsen.',
       },
       security: {
         title: 'Å holde Boardly sikkert og i drift',
@@ -3642,7 +3642,7 @@ const no = {
       },
       vercel: {
         purpose: 'Drift, serverkode, forespørselslogger, brannmur og analyse',
-        where: 'USA: serverkoden vår kjører i Washington, D.C.-regionen. Vercel bruker EUs standard personvernbestemmelser.',
+        where: 'Serverkoden vår kjører i Frankfurt i Tyskland; forespørsler når den gjennom Vercels globale edge-nettverk. Vercel er et amerikansk selskap og bruker EUs standard personvernbestemmelser.',
       },
       upstash: {
         purpose: 'Lobbychat, hastighetsbegrensning og e-postbegrensning',
@@ -3658,7 +3658,7 @@ const no = {
       },
       sentry: {
         purpose: 'Feilrapporter',
-        where: 'USA. Sentry bruker EU–US Data Privacy Framework, med EUs standard personvernbestemmelser som reserve.',
+        where: 'Lagres i Sentrys EU-dataregion i Frankfurt i Tyskland. Sentry er et amerikansk selskap og bruker EU–US Data Privacy Framework, med EUs standard personvernbestemmelser som reserve.',
       },
       discord: {
         purpose: 'Innlogging, Linked Roles og den offentlige lobbystrømmen (på egne vegne), våre kanaler for tilbakemeldinger og varsler',
@@ -3689,7 +3689,7 @@ const no = {
       title: '5. Annonser',
       current: 'Vi viser ingen annonser i dag. Hver side på boardly.online laster Googles AdSense-skript, som lar Google bekrefte at nettstedet er vårt, og som viser Googles samtykkemelding til besøkende fra EØS og Storbritannia. Skriptet setter en informasjonskapsel på enheten din (FCCDCF) for å holde styr på meldingen og svaret ditt. Google behandler disse opplysningene som selvstendig behandlingsansvarlig etter sin egen personvernerklæring.',
       future: 'Hvis vi begynner å vise annonser, kommer de bare på innholdssider som veiledningene, aldri i et spill, og ikke til Premium-abonnenter. Tilpassede annonser vises bare til besøkende som samtykker i Googles melding; andre får ikke-tilpassede annonser.',
-      choices: 'Du kan endre eller trekke tilbake svaret ditt når som helst med «Innstillinger for personvern og informasjonskapsler» nederst på hver side, og styre tilpassede annonser i',
+      choices: 'Du kan endre eller trekke tilbake svaret ditt når som helst med knappen «Innstillinger for personvern og informasjonskapsler» nedenfor, eller den samme lenken nederst på forsiden, spillsidene og guidesidene, og styre tilpassede annonser i',
       adsSettingsLink: 'Googles annonseinnstillinger',
     },
     storage: {
@@ -3708,7 +3708,7 @@ const no = {
       lead: 'Du har rett til innsyn i opplysningene dine, til å få dem rettet eller slettet, til å begrense behandlingen, til å få dem i et maskinlesbart format, og til å protestere mot behandling som bygger på vår berettigede interesse. Der vi bygger på samtykke, kan du trekke det tilbake når som helst; det påvirker ikke det vi gjorde før.',
       export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, invitasjoner, varsler, tilbakemeldinger, prestasjoner og pushabonnementer.',
       correct: 'Rett opplysningene dine: rediger profilen, også e-postadressen, på profilsiden.',
-      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes, men uten e-postadressen og kontoen din, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes.',
+      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes.',
       forget: 'Gjester: «Glem meg» i gjestemenyen sletter gjesteoppføringen og plassene dine i spill, erstatter navnet ditt med «Deleted player» i andre spilleres historikk, og fjerner gjestedataene på denne enheten. Hvis du sitter i et pågående spill, må du fullføre eller forlate det først.',
       email: 'Alt annet, også opplysninger nedlastingen ikke inneholder, sender du til {{email}}. Vi svarer innen én måned og kan be deg bekrefte at kontoen er din.',
       required: 'Du trenger en e-postadresse og et passord, eller en innloggingstjeneste, for å opprette en konto; som gjest kan du spille uten noen av delene. Vi tar ingen avgjørelser om deg som bare bygger på automatisert behandling.',

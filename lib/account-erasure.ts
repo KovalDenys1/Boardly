@@ -1,6 +1,7 @@
 import { GameStatus, Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { decodeReplayState, encodeReplayState } from '@/lib/game-replay'
+import { deleteFeedbackDiscordCopies } from '@/lib/feedback-discord'
 
 /**
  * What an erased player is called in every game record that outlives them.
@@ -245,12 +246,18 @@ export async function scrubPlayersFromGameRecords(
  * product signal), but the reply address and the link to the person do not.
  * Matches by user id and, for an account with a real address, by that address,
  * so feedback sent while signed out is covered too.
+ *
+ * The copy posted to the Discord feedback channel names the sender (username and id,
+ * or email), so it is deleted first, while the rows can still be matched to them. A
+ * copy Discord refused to delete keeps its message id and goes with the retention rule.
  */
 export async function detachFeedbackFrom(userIds: string[], email?: string | null): Promise<number> {
   const conditions: Prisma.FeedbackWhereInput[] = []
   if (userIds.length > 0) conditions.push({ userId: { in: userIds } })
   if (email) conditions.push({ email: { in: Array.from(new Set([email, email.toLowerCase()])) } })
   if (conditions.length === 0) return 0
+
+  await deleteFeedbackDiscordCopies({ OR: conditions })
 
   const result = await prisma.feedback.updateMany({
     where: { OR: conditions },

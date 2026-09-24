@@ -3627,7 +3627,7 @@ const en = {
         title: 'Feedback and support',
         data: 'What you write in the feedback form, its type, the page you sent it from, an email address if you give one, and your account if you are signed in. Each message is also posted to our team\'s feedback channel on our Discord server with your username and id, or your email address. Emails to the support address reach us through Resend.',
         basis: 'Our legitimate interest in answering you and improving Boardly.',
-        retention: 'Feedback: {{feedbackMonths}} months. Support emails: as long as we need them to handle your request.',
+        retention: 'Feedback, including its copy in our Discord feedback channel: {{feedbackMonths}} months. Support emails: as long as we need them to handle your request.',
       },
       security: {
         title: 'Keeping Boardly secure and running',
@@ -3654,7 +3654,7 @@ const en = {
       },
       vercel: {
         purpose: 'Hosting, server code, request logs, firewall and analytics',
-        where: 'USA: our server code runs in the Washington, D.C. region. Vercel uses Standard Contractual Clauses.',
+        where: 'Our server code runs in Frankfurt, Germany; requests reach it through Vercel\'s global edge network. Vercel is a US company and uses Standard Contractual Clauses.',
       },
       upstash: {
         purpose: 'Lobby chat, rate limits and email limits',
@@ -3670,7 +3670,7 @@ const en = {
       },
       sentry: {
         purpose: 'Error reports',
-        where: 'USA. Sentry relies on the EU-US Data Privacy Framework, with Standard Contractual Clauses as the fallback.',
+        where: 'Stored in Sentry\'s EU data region in Frankfurt, Germany. Sentry is a US company and relies on the EU-US Data Privacy Framework, with Standard Contractual Clauses as the fallback.',
       },
       discord: {
         purpose: 'Sign-in, Linked Roles and the public lobby feed (on its own account), our feedback and alert channels',
@@ -3701,7 +3701,7 @@ const en = {
       title: '5. Advertising',
       current: 'We show no ads today. Every page on boardly.online loads Google\'s AdSense script, which lets Google confirm that the site is ours and shows Google\'s consent message to visitors from the EEA and the UK. The script sets a cookie on your device (FCCDCF) to keep track of the message and your answer. Google processes this data as an independent controller under its own privacy policy.',
       future: 'If we start to show ads, they will appear only on content pages such as the guides, never in a game, and not to Premium subscribers. Personalised ads will be shown only to visitors who consent in Google\'s message; others will get non-personalised ads.',
-      choices: 'You can change or withdraw your answer at any time with "Privacy and cookie settings" at the bottom of every page, and control personalised advertising in',
+      choices: 'You can change or withdraw your answer at any time with the "Privacy and cookie settings" button below, or the same link in the footer of the home, games and guide pages, and control personalised advertising in',
       adsSettingsLink: 'Google Ads Settings',
     },
     storage: {
@@ -3720,7 +3720,7 @@ const en = {
       lead: 'You have the right to access your data, to have it corrected or erased, to restrict its processing, to receive it in a machine-readable format, and to object to processing based on our legitimate interest. Where we rely on consent, you can withdraw it at any time; that does not affect what we did before.',
       export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, invites, notifications, feedback, achievements and push subscriptions.',
       correct: 'Correct your data: edit your profile, including your email address, on your profile page.',
-      delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it, and cancels any subscription and deletes your customer record at Stripe.',
+      delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe.',
       forget: 'Guests: "Forget me" in the guest menu deletes your guest record and your seats in games, replaces your name with "Deleted player" in other players\' records, and clears the guest data on this device. If you are seated in a running game, finish or leave it first.',
       email: 'Anything else, including data the download does not contain, goes to {{email}}. We answer within one month and may ask you to confirm that the account is yours.',
       required: 'You need an email address and a password, or a sign-in provider, to create an account; you can play as a guest without either. We make no decisions about you based solely on automated processing.',

@@ -26,6 +26,41 @@ jest.mock('@/lib/i18n-helpers', () => {
 
 jest.mock('@/lib/db', () => ({ prisma: {} }))
 
+jest.mock('@/lib/consent', () => ({ reopenGoogleConsentMessage: jest.fn() }))
+
+jest.mock('@/lib/feature-flags', () => ({
+  ...jest.requireActual('@/lib/feature-flags'),
+  isProductionDeployment: jest.fn(() => false),
+}))
+
+describe('privacy notice: consent withdrawal and processor locations', () => {
+  const { isProductionDeployment } = jest.requireMock('@/lib/feature-flags')
+  const { reopenGoogleConsentMessage } = jest.requireMock('@/lib/consent')
+
+  it('offers the consent control on the page itself in production (GDPR Art. 7(3))', () => {
+    isProductionDeployment.mockReturnValue(true)
+    render(<PrivacyNotice controller={null} />)
+
+    screen.getByRole('button', { name: 'Privacy and cookie settings' }).click()
+    expect(reopenGoogleConsentMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides it where the consent message does not load', () => {
+    isProductionDeployment.mockReturnValue(false)
+    render(<PrivacyNotice controller={null} />)
+
+    expect(screen.queryByRole('button', { name: 'Privacy and cookie settings' })).toBeNull()
+  })
+
+  it('places Vercel functions and Sentry reports in Frankfurt, not the USA', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).not.toContain('Washington')
+    expect(text).toContain('Our server code runs in Frankfurt, Germany')
+    expect(text).toContain('Stored in Sentry\'s EU data region in Frankfurt, Germany')
+  })
+})
+
 describe('privacy notice (#1126)', () => {
   it('names the controller, the contact address and the complaint authority', () => {
     const { container } = render(<PrivacyNotice controller={{ name: 'Test Person', address: 'Street 1, 8500 Narvik' }} />)

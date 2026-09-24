@@ -37,6 +37,10 @@ jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
 }))
 
+jest.mock('@/lib/feedback-discord', () => ({
+  deleteFeedbackDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
+}))
+
 const NOW = new Date('2026-09-24T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
 
@@ -119,6 +123,22 @@ describe('enforceRetention', () => {
       expect(prisma[name].deleteMany).not.toHaveBeenCalled()
     }
     expect(result.notifications).toMatchObject({ enforced: false, matched: 4, deleted: 0 })
+  })
+
+  it('deletes the Discord copy with the feedback row, and keeps a row whose copy Discord refused', async () => {
+    const { deleteFeedbackDiscordCopies } = jest.requireMock('@/lib/feedback-discord')
+    deleteFeedbackDiscordCopies.mockResolvedValueOnce({ cleared: ['f1'], failed: ['f2'] })
+
+    await enforceRetention({ now: NOW, override: 'enforce' })
+
+    const cutoff = new Date(NOW.getTime() - 365 * DAY)
+    expect(deleteFeedbackDiscordCopies).toHaveBeenCalledWith({ createdAt: { lt: cutoff } })
+    expect(prisma.feedback.deleteMany).toHaveBeenCalledWith({
+      where: { createdAt: { lt: cutoff }, id: { notIn: ['f2'] } },
+    })
+    expect(deleteFeedbackDiscordCopies.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.feedback.deleteMany.mock.invocationCallOrder[0]
+    )
   })
 
   it('keeps going when one rule fails', async () => {

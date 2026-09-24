@@ -17,6 +17,10 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
+jest.mock('@/lib/feedback-discord', () => ({
+  deleteFeedbackDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
+}))
+
 jest.mock('@/lib/logger', () => ({
   apiLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }))
@@ -241,6 +245,19 @@ describe('detachFeedbackFrom (#1128)', () => {
       where: { OR: [{ userId: { in: ['u1'] } }, { email: { in: ['Ann@Example.com', 'ann@example.com'] } }] },
       data: { email: null, userId: null },
     })
+  })
+
+  it('deletes the Discord copies first, while the rows still point at the person', async () => {
+    const { deleteFeedbackDiscordCopies } = jest.requireMock('@/lib/feedback-discord')
+
+    await detachFeedbackFrom(['u1'], 'ann@example.com')
+
+    expect(deleteFeedbackDiscordCopies).toHaveBeenCalledWith({
+      OR: [{ userId: { in: ['u1'] } }, { email: { in: ['ann@example.com'] } }],
+    })
+    expect(deleteFeedbackDiscordCopies.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      (prisma.feedback.updateMany as jest.Mock).mock.invocationCallOrder.at(-1) as number
+    )
   })
 
   it('matches guests by id only', async () => {
