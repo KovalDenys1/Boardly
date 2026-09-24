@@ -3767,7 +3767,7 @@ const en = {
     withdrawalFormLink: 'Withdrawal form',
     withdrawalStartNow: 'Premium starts as soon as the payment is confirmed, because you ask us to. Your right of withdrawal still applies for 14 days and gives a full refund.',
     consentLabel: 'I ask Boardly to start Premium now. I have read the withdrawal information and the terms, and I know that I can withdraw within 14 days for a full refund.',
-    priceNoteTax: 'Premium is sold through Link, a Stripe company. At checkout Link adds any VAT or sales tax due in your country to the price above, and the payment page shows the tax and the total before you pay.',
+    priceNoteTax: 'Premium is sold through Link, a Stripe company. The price above is the full price: any VAT or sales tax due in your country is included, and Link collects it at checkout.',
     priceNoteConversion: 'If you pay in your own currency, Link\'s exchange rate includes a conversion fee of 2 to 4%. You can choose to pay in US dollars on the payment page without it.',
     yearlyRefundNote: 'If you cancel a yearly plan early, we refund the unused whole months.',
     ctaError: 'Could not open checkout. Please try again in a few minutes.',
@@ -3889,7 +3889,7 @@ const en = {
   terms: {
     premium: {
       title: '3. Boardly Premium: subscription and right of withdrawal',
-      price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars. Any VAT or sales tax due in your country is added at checkout, and the payment page shows the tax and the total before you pay. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',
+      price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars and is the full price: any VAT or sales tax due in your country is included in it, and Link collects it at checkout. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',
       seller: 'Premium is sold through Link: Stripe\'s affiliate Sold through Link, LLC is the merchant of record for the purchase. Link charges your payment method, and your card or bank statement shows the charge as "LINK.COM*" followed by our name. Link collects and pays any VAT or sales tax and emails your receipts and invoices. We remain responsible for Premium itself, and we never see or store your card details. The purchase is also governed by Link\'s terms:',
       linkTermsLabel: 'Sold Through Link Terms',
       renewal: 'The subscription renews automatically at the end of each paid period, at the same US dollar price, until you cancel. If you pay in your own currency, each renewal is converted at the rate of the day it is charged, so the amount in your currency can vary. You can cancel at any time from your profile; access then continues to the end of the period you have paid for. If you cancel a yearly plan early, we refund the unused whole months. You can also cancel the subscription, or delete your Link account, at link.com; that follows Link\'s terms, and deleting your Link account cancels the subscription.',

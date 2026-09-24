@@ -3755,7 +3755,7 @@ const no = {
     withdrawalFormLink: 'Angreskjema',
     withdrawalStartNow: 'Premium starter så snart betalingen er bekreftet, fordi du ber oss om det. Angreretten gjelder likevel i 14 dager og gir full tilbakebetaling.',
     consentLabel: 'Jeg ber Boardly om å starte Premium nå. Jeg har lest informasjonen om angrerett og vilkårene, og jeg vet at jeg kan angre innen 14 dager og få full tilbakebetaling.',
-    priceNoteTax: 'Premium selges gjennom Link, et selskap i Stripe-konsernet. I kassen legger Link til eventuell merverdiavgift eller salgsskatt for landet ditt på prisen over, og betalingssiden viser avgiften og totalbeløpet før du betaler.',
+    priceNoteTax: 'Premium selges gjennom Link, et selskap i Stripe-konsernet. Prisen over er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen.',
     priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Links vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
     yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
     ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
@@ -3877,7 +3877,7 @@ const no = {
   terms: {
     premium: {
       title: '3. Boardly Premium: abonnement og angrerett',
-      price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar. Eventuell merverdiavgift eller salgsskatt for landet ditt legges til i kassen, og betalingssiden viser avgiften og totalbeløpet før du betaler. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
+      price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar og er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
       seller: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link belaster betalingsmåten din, og på kort- eller kontoutskriften står belastningen som «LINK.COM*» etterfulgt av navnet vårt. Link krever inn og betaler eventuell merverdiavgift eller salgsskatt og sender kvitteringer og fakturaer på e-post. Vi har fortsatt ansvaret for selve Premium-tjenesten, og vi ser eller lagrer aldri kortopplysningene dine. Kjøpet er også underlagt Links vilkår:',
       linkTermsLabel: 'Sold Through Link-vilkårene',
       renewal: 'Abonnementet fornyes automatisk ved slutten av hver betalte periode, til samme pris i amerikanske dollar, til du sier det opp. Betaler du i din egen valuta, regnes hver fornyelse om etter kursen den dagen beløpet trekkes, så beløpet i din valuta kan variere. Du kan si opp når som helst fra profilen din; tilgangen varer da ut perioden du har betalt for. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene. Du kan også si opp abonnementet eller slette Link-kontoen din på link.com; da gjelder Links vilkår, og sletter du Link-kontoen, sies abonnementet opp.',

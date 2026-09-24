@@ -54,7 +54,10 @@ function withdrawalText() {
 
 // Versions before 2026-09-25 predate this test; their text is in git history.
 const TERMS_DIGESTS: Record<string, string> = {
-  '2026-09-25': '4440445ca75004c5',
+  // Tax-inclusive price copy (needs the Stripe "Include tax in prices:
+  // Inclusive" setting). Without that commit this version's digest was
+  // 4440445ca75004c5, the tax-added-at-checkout wording.
+  '2026-09-25': '680e4906ad82f7c3',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {
