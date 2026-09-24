@@ -273,6 +273,17 @@ describe('useLobbyActions', () => {
       expect(merged.players).toHaveLength(1)
     })
 
+    it('a snapshot rejected as stale still carries the game forward from waiting to playing (#1183)', async () => {
+      // The start broadcast already moved the watermark to this stamp; the
+      // snapshot with the same stamp is the only thing carrying status 'playing'.
+      const { setGame } = await runLoad(1_000)
+
+      const merge = setGame.mock.calls[0][0] as (prev: unknown) => any
+      const merged = merge({ id: 'game-123', status: 'waiting', state: 'already on screen', players: [] })
+      expect(merged.status).toBe('playing')
+      expect(merged.state).toBe('already on screen')
+    })
+
     it('a reconcile applies even when the watermark is ahead, so the board can unstick', async () => {
       const { setGame, setGameEngine } = await runLoad(5_000, { fresh: true })
 
