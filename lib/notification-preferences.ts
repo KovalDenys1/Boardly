@@ -9,6 +9,12 @@ export type NotificationPreferenceSnapshot = {
   friendAccepted: boolean
   pushNotifications: boolean
   unsubscribedAll: boolean
+  // #1154: opt-in, unticked by default (see the migration for why). Kept apart from
+  // unsubscribedAll: that field silences service-adjacent notifications a user asked
+  // for, this one is the marketing-email lawful basis and must default to false, not
+  // follow whatever unsubscribedAll happens to be.
+  marketingConsent: boolean
+  marketingConsentAt: Date | null
 }
 
 type NotificationPreferenceKey =
@@ -16,6 +22,7 @@ type NotificationPreferenceKey =
   | 'turnReminders'
   | 'friendRequests'
   | 'friendAccepted'
+  | 'marketingConsent'
 
 export async function getNotificationPreferences(userId: string): Promise<NotificationPreferenceSnapshot> {
   const prefs = await prisma.notificationPreferences.findUnique({
@@ -28,6 +35,8 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
       friendAccepted: true,
       pushNotifications: true,
       unsubscribedAll: true,
+      marketingConsent: true,
+      marketingConsentAt: true,
     },
   })
 
@@ -40,6 +49,8 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
       friendAccepted: true,
       pushNotifications: false,
       unsubscribedAll: false,
+      marketingConsent: false,
+      marketingConsentAt: null,
     }
   )
 }
@@ -48,13 +59,20 @@ export async function upsertNotificationPreferences(
   userId: string,
   data: Partial<NotificationPreferenceSnapshot>
 ): Promise<NotificationPreferenceSnapshot> {
+  // marketingConsentAt is the evidence a consent question needs, so it is stamped here,
+  // once, whenever the consent value itself changes — never left to the table's own
+  // updatedAt, which any other preference in the same object also bumps, and never left
+  // to a caller to remember (registration and the profile toggle both go through this).
+  const writeData: Partial<NotificationPreferenceSnapshot> =
+    'marketingConsent' in data ? { ...data, marketingConsentAt: new Date() } : data
+
   const prefs = await prisma.notificationPreferences.upsert({
     where: { userId },
     create: {
       userId,
-      ...data,
+      ...writeData,
     },
-    update: data,
+    update: writeData,
     select: {
       inAppNotifications: true,
       gameInvites: true,
@@ -63,6 +81,8 @@ export async function upsertNotificationPreferences(
       friendAccepted: true,
       pushNotifications: true,
       unsubscribedAll: true,
+      marketingConsent: true,
+      marketingConsentAt: true,
     },
   })
 
@@ -102,6 +122,31 @@ export function verifyNotificationUnsubscribeToken(token: string): UnsubscribeTo
     return decoded
   } catch {
     return null
+  }
+}
+
+/**
+ * `List-Unsubscribe` (RFC 2369) plus the one-click variant, RFC 8058: mail clients that see
+ * both headers show their own "Unsubscribe" action and, for List-Unsubscribe-Post, POST
+ * `List-Unsubscribe=One-Click` straight to the URL with no page load and no further click —
+ * `POST /api/notifications/unsubscribe` performs the same preference change as the existing
+ * GET link for exactly that reason.
+ *
+ * No marketing template calls this yet (#1154 ships the consent capture and the unsubscribe
+ * path with nothing sending marketing mail); every future one must, so the header is never
+ * missing on the first send.
+ */
+export function buildMarketingUnsubscribeHeaders(userId: string): {
+  'List-Unsubscribe': string
+  'List-Unsubscribe-Post': string
+} {
+  const token = createNotificationUnsubscribeToken({ userId, type: 'marketingConsent' })
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://boardly.online'
+  const unsubscribeUrl = `${baseUrl}/api/notifications/unsubscribe?token=${token}`
+
+  return {
+    'List-Unsubscribe': `<${unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
   }
 }
 

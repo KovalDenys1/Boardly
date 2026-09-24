@@ -4,7 +4,8 @@ import { prisma } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { sendDiscordEmbed } from '@/lib/discord-webhook'
+import { postDiscordWebhookMessage } from '@/lib/discord-webhook'
+import { runAfterResponse } from '@/lib/after-response'
 
 const log = apiLogger('/api/feedback')
 
@@ -30,6 +31,7 @@ const TYPE_EMOJI: Record<string, string> = {
 }
 
 function notifyDiscord(
+  feedbackId: string,
   type: string,
   message: string,
   userLabel: string,
@@ -58,9 +60,18 @@ function notifyDiscord(
     }],
   }
 
-  // Fire and forget: feedback is saved before this runs, and a dead webhook must not
-  // turn a successful submission into a 500.
-  sendDiscordEmbed(webhookUrl, payload).catch((err) => log.error('Discord webhook failed', { error: err }))
+  // After the response: feedback is saved before this runs, and a dead webhook must not
+  // turn a successful submission into a 500. The message id is stored on the row so the
+  // retention rule and account deletion can delete this copy too (lib/feedback-discord.ts).
+  runAfterResponse(
+    postDiscordWebhookMessage(webhookUrl, payload)
+      .then((messageId) =>
+        messageId
+          ? prisma.feedback.update({ where: { id: feedbackId }, data: { discordMessageId: messageId } })
+          : undefined
+      )
+      .catch((err) => log.error('Discord webhook failed', { error: err }))
+  )
 }
 
 // 5 submissions per hour per IP
@@ -68,6 +79,8 @@ const submitLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   maxRequests: 5,
   message: 'Too many feedback submissions. Please try again later.',
+  // Fail closed on a shared-store outage (#1156): each submission is a row and a Discord post.
+  failClosed: true,
 })
 
 export async function POST(request: NextRequest) {
@@ -85,7 +98,8 @@ export async function POST(request: NextRequest) {
 
     const { type, message, email, pageUrl } = parsed.data
 
-    await prisma.feedback.create({
+    const feedback = await prisma.feedback.create({
+      select: { id: true },
       data: {
         type,
         message,
@@ -96,7 +110,7 @@ export async function POST(request: NextRequest) {
     })
 
     const userLabel = (requestUser ? `${requestUser.username} (id: ${requestUser.id})` : null) ?? email ?? 'anonymous'
-    notifyDiscord(type, message, userLabel, pageUrl)
+    notifyDiscord(feedback.id, type, message, userLabel, pageUrl)
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {

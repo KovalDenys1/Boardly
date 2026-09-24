@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Die from '@/components/ui/Die'
@@ -31,6 +31,11 @@ export default function RegisterForm() {
     username: '',
     password: '',
     confirmPassword: '',
+    // #1154: unticked by default, never assumed. Kept in formData (not a bare useState
+    // like agreedToTerms) so it flows through registerSchema into sanitizedInput and
+    // reaches POST /api/auth/register with everything else, instead of needing its own
+    // wiring into the request body.
+    marketingConsent: false,
   })
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({})
@@ -38,6 +43,7 @@ export default function RegisterForm() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const emailInputId = useId()
   const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
   const isLobbyInviteFlow =
     returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
@@ -288,8 +294,9 @@ export default function RegisterForm() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
+                  <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
                   <input
+                    id={emailInputId}
                     type="email"
                     required
                     disabled={loading}
@@ -354,6 +361,15 @@ export default function RegisterForm() {
                 <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
                   <Checkbox checked={rememberMe} onCheckedChange={setRememberMe} disabled={loading} />
                   {t('auth.login.rememberMe')}
+                </Label>
+                <Label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox
+                    checked={formData.marketingConsent}
+                    onCheckedChange={(checked) => setFormData({ ...formData, marketingConsent: Boolean(checked) })}
+                    disabled={loading}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <span>{t('auth.register.marketingConsent')}</span>
                 </Label>
               </div>
 

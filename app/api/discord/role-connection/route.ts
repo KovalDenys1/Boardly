@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { AuthenticationError, withErrorHandler } from '@/lib/error-handler'
+import { withErrorHandler } from '@/lib/error-handler'
 import {
   clearRoleConnection,
   hasRoleConnectionScope,
@@ -16,12 +15,9 @@ import {
 // POST back to back and a retry must not hit a five-per-15-minutes wall.
 const limiter = rateLimit(rateLimitPresets.api)
 
-async function requireUserId(): Promise<string> {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Unauthorized')
-  }
-  return session.user.id
+async function requireUserId(req: NextRequest): Promise<string> {
+  const { user } = await getSessionUserOrThrow(req)
+  return user.id
 }
 
 /** Where /discord/link stands for this user: nothing linked, legacy scope, revoked, or ready. */
@@ -29,7 +25,7 @@ async function statusHandler(req: NextRequest) {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const userId = await requireUserId()
+  const userId = await requireUserId(req)
   const account = await prisma.accounts.findFirst({
     where: { userId, provider: 'discord' },
     select: { scope: true, access_token: true, refresh_token: true },
@@ -46,7 +42,7 @@ async function pushHandler(req: NextRequest) {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const userId = await requireUserId()
+  const userId = await requireUserId(req)
   const result = await pushRoleConnection(userId)
   return NextResponse.json(result, { status: result.status === 'failed' ? 502 : 200 })
 }
@@ -55,7 +51,7 @@ async function clearHandler(req: NextRequest) {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const userId = await requireUserId()
+  const userId = await requireUserId(req)
   const result = await clearRoleConnection(userId)
   return NextResponse.json(result, { status: result.status === 'failed' ? 502 : 200 })
 }

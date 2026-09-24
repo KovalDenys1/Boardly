@@ -64,7 +64,25 @@ export function guestNameSuffix(guestId: string): string {
  * Get or create a guest user based on guest ID
  * Guest users are temporary and marked with isGuest = true
  */
-export async function getOrCreateGuestUser(guestId: string, guestName: string, signupSource: string | null = null) {
+type GuestUserRow = NonNullable<Awaited<ReturnType<typeof prisma.users.findFirst>>>
+
+export interface GetOrCreateGuestOptions {
+    /**
+     * false: answer null instead of re-creating a row that is gone. A guest who
+     * used "Forget me" (#1129), or was purged, must not come back under the same
+     * id just because a still-valid token for it turns up in another tab.
+     */
+    createIfMissing?: boolean
+}
+
+export async function getOrCreateGuestUser(guestId: string, guestName: string, signupSource?: string | null): Promise<GuestUserRow>
+export async function getOrCreateGuestUser(guestId: string, guestName: string, signupSource: string | null, options: GetOrCreateGuestOptions): Promise<GuestUserRow | null>
+export async function getOrCreateGuestUser(
+    guestId: string,
+    guestName: string,
+    signupSource: string | null = null,
+    options: GetOrCreateGuestOptions = {}
+): Promise<GuestUserRow | null> {
     try {
         // Try to find existing guest user by ID
         const existingGuest = await prisma.users.findFirst({
@@ -145,6 +163,10 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string, s
                 log.error('Failed to update guest activity, continuing with existing record', updateError as Error, { guestId })
                 return { ...existingGuest, ...updateData }
             }
+        }
+
+        if (options.createIfMissing === false) {
+            return null
         }
 
         // For new guest users, ensure username is unique

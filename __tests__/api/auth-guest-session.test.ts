@@ -110,4 +110,30 @@ describe('POST /api/auth/guest-session', () => {
     expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-id-1', 'Guest_Name-2', null)
     expect(mockCreateGuestToken).toHaveBeenCalledWith('guest-user-1', 'Guest_Name-2')
   })
+
+  it('answers 404 instead of re-creating a guest whose row is gone (#1155)', async () => {
+    // The identity token outlived the row (purged, or "Forget me"). Re-creating
+    // it under the same id would hand the device back a deleted identity.
+    mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-gone', guestName: 'Gone' })
+    mockGetOrCreateGuestUser.mockResolvedValue(null as never)
+
+    const response = await POST(buildRequest({ guestName: 'Gone', guestToken: 'session-token' }))
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toMatchObject({ code: 'GUEST_NOT_FOUND' })
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-gone', 'Gone', null, { createIfMissing: false })
+    expect(mockCreateGuestId).not.toHaveBeenCalled()
+    expect(mockCreateGuestToken).not.toHaveBeenCalled()
+  })
+
+  it('still resolves a returning guest whose row exists', async () => {
+    mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-back', guestName: 'Back' })
+    mockCreateGuestToken.mockReturnValue('guest-token-2')
+    mockGetOrCreateGuestUser.mockResolvedValue({ id: 'guest-back', username: 'Back' } as never)
+
+    const response = await POST(buildRequest({ guestName: 'Back', guestToken: 'session-token' }))
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({ guestId: 'guest-back' })
+  })
 })

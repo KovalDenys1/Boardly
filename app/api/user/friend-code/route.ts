@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import { apiLogger } from '@/lib/logger'
 import {
-  AuthenticationError,
   AuthorizationError,
   withErrorHandler,
 } from '@/lib/error-handler'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 
 export const runtime = 'nodejs'
 // Force dynamic rendering (uses headers)
@@ -19,12 +17,8 @@ const log = apiLogger('/api/user/friend-code')
  * GET /api/user/friend-code
  * Get or generate user's friend code
  */
-async function getFriendCodeHandler(_req: NextRequest) {
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Unauthorized')
-  }
+async function getFriendCodeHandler(req: NextRequest) {
+  const { session } = await getSessionUserOrThrow(req)
 
   // Check if email is verified
   if (!session.user.emailVerified) {

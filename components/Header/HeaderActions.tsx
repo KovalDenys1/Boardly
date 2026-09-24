@@ -10,6 +10,7 @@ import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import { ThemeToggle } from './ThemeToggle'
+import { ForgetGuestButton } from './ForgetGuestButton'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -69,6 +70,10 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         >
           {t('guest.exit', 'Exit Guest')}
         </button>
+        <ForgetGuestButton
+          className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2 disabled:opacity-60"
+          style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
+        />
       </div>
     )
   }

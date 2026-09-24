@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { validateAvatarFile, uploadAvatar } from '@/lib/supabase-storage'
+import { requireSessionUser } from '@/lib/session-user'
 
 const log = apiLogger('/api/user/avatar')
 const limiter = rateLimit(rateLimitPresets.api)
@@ -33,10 +32,11 @@ export async function POST(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const contentType = request.headers.get('content-type') ?? ''
 
@@ -94,10 +94,11 @@ export async function POST(request: NextRequest) {
 
 // DELETE — remove avatar (revert to initials)
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   await prisma.users.update({
     where: { id: session.user.id },

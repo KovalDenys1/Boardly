@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getAllRegisteredGameTypes } from '@/lib/game-catalog'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/user/customize')
@@ -22,10 +21,11 @@ export async function GET(request: NextRequest) {
   const rl = await limiter(request)
   if (rl) return rl
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const user = await prisma.users.findUnique({
     where: { id: session.user.id },
@@ -51,10 +51,11 @@ export async function PATCH(request: NextRequest) {
   const rl = await limiter(request)
   if (rl) return rl
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const body = (await request.json()) as {
     bio?: unknown

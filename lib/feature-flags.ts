@@ -67,6 +67,20 @@ function isNonProductionDeployment(): boolean {
 }
 
 /**
+ * Is this actually the production deployment — not merely a production *build*?
+ *
+ * `next build` sets `NODE_ENV=production` for a Vercel Preview deployment too, so
+ * `process.env.NODE_ENV === 'production'` alone cannot tell Preview from Production and
+ * must not be used for anything that should stay off Preview (#1152: the AdSense/consent
+ * loader). This is the exported affirmative of `isNonProductionDeployment` above — same
+ * VERCEL_ENV-first, NODE_ENV-fallback logic, so it agrees with every other flag in this
+ * file about what counts as "real production".
+ */
+export function isProductionDeployment(): boolean {
+  return !isNonProductionDeployment()
+}
+
+/**
  * Play an `in-development` catalog game locally or on a preview deployment (#1054).
  *
  * `availability` is a product decision, and until it is taken the game cannot be reached

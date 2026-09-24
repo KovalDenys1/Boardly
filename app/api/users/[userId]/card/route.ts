@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
-import { authOptions } from '@/lib/next-auth'
+import { optionalSessionUser } from '@/lib/session-user'
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
   const { userId } = await params
@@ -46,7 +45,11 @@ export async function GET(
   const favouriteGame =
     Object.entries(gameTypeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 
-  const session = await getServerSession(authOptions)
+  const auth = await optionalSessionUser(req)
+  if ('response' in auth) {
+    return auth.response
+  }
+  const { session } = auth
   type Relation = 'self' | 'friends' | 'request_sent' | 'request_received' | 'can_send' | 'login_required'
   let relation: Relation = 'login_required'
 

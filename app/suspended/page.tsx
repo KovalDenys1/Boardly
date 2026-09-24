@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -17,6 +17,8 @@ export default function SuspendedPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const emailInputId = useId()
+  const messageInputId = useId()
 
   const authBg: React.CSSProperties = {
     background:
@@ -145,10 +147,11 @@ export default function SuspendedPage() {
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-bd-ink-soft">
+                  <label htmlFor={emailInputId} className="mb-1 block text-xs font-semibold text-bd-ink-soft">
                     {t('suspended.appeal.emailLabel')}
                   </label>
                   <input
+                    id={emailInputId}
                     type="email"
                     required
                     value={email}
@@ -159,10 +162,11 @@ export default function SuspendedPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-bd-ink-soft">
+                  <label htmlFor={messageInputId} className="mb-1 block text-xs font-semibold text-bd-ink-soft">
                     {t('suspended.appeal.messageLabel')}
                   </label>
                   <textarea
+                    id={messageInputId}
                     required
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

@@ -23,9 +23,10 @@ export const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID ?? ''
  * and not what a given visitor is billed — render it behind a "from", or the
  * locale's equivalent, never as a bare amount (#919).
  *
- * The only copy of the figure in the codebase: the profile page, the avatar
- * picker and the home-page FAQ all read it here, and the README points at this
- * constant instead of restating the number.
+ * The only written-down copy of the figure, and only a fallback: /premium and
+ * the home-page FAQ quote the price Stripe answers with (lib/server/
+ * premium-pricing.ts) and use this when Stripe cannot be asked. The README
+ * points at this constant instead of restating the number.
  */
 export const PREMIUM_BASE_PRICE = '$2.99'
 export const PREMIUM_PRICE_LABEL = 'Boardly Premium'

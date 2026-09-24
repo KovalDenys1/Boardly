@@ -57,16 +57,9 @@ Sentry.init({
   // Adjust sample rates based on environment
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-  // Session Replay
-  replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
-  replaysOnErrorSampleRate: 1.0,
-
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: process.env.NODE_ENV === 'production',
-      blockAllMedia: process.env.NODE_ENV === 'production',
-    }),
-  ],
+  // Session Replay is intentionally not enabled (#1151): it wrote
+  // `sentryReplaySession` to sessionStorage for every visitor before any
+  // consent existed (ekomloven § 3-15). Error capture above is unaffected.
 
   // Don't send PII in production for privacy
   sendDefaultPii: process.env.NODE_ENV !== 'production',

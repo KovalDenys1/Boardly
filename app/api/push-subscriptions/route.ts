@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { prisma } from '@/lib/db'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -21,10 +20,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const signedIn = await requireSessionUser(req)
+  if ('response' in signedIn) {
+    return signedIn.response
   }
+  const { session } = signedIn
 
   const body = await req.json().catch(() => null)
   const parsed = subscribeSchema.safeParse(body)
@@ -77,10 +77,11 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const signedIn = await requireSessionUser(req)
+  if ('response' in signedIn) {
+    return signedIn.response
   }
+  const { session } = signedIn
 
   const body = await req.json().catch(() => null)
   const parsed = unsubscribeSchema.safeParse(body)

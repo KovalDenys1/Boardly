@@ -4,10 +4,11 @@ import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { insensitiveEquals } from '@/lib/username-match'
+import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email('Invalid email address').transform((value) => value.toLowerCase()),
@@ -50,6 +51,20 @@ export async function POST(request: NextRequest) {
     if (!user) {
       const log = apiLogger('POST /api/auth/forgot-password')
       log.info('Password reset requested for non-existent email', { email })
+      return NextResponse.json({
+        message: 'If an account exists with that email, you will receive password reset instructions.',
+      })
+    }
+
+    // Per-address cooldown, daily cap and global budget (#1158), checked before the old
+    // token is deleted, so a flood of requests cannot invalidate the link already sent. A
+    // refusal answers exactly like a send: the throttle must not reveal the account.
+    const mailDecision = await reserveTransactionalMailSend('password_reset', user.email ?? email)
+    if (!mailDecision.allowed) {
+      apiLogger('POST /api/auth/forgot-password').info('Password reset mail throttled', {
+        userId: user.id,
+        reason: mailDecision.reason,
+      })
       return NextResponse.json({
         message: 'If an account exists with that email, you will receive password reset instructions.',
       })

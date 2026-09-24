@@ -691,6 +691,15 @@ html.dark {
   color: #c53030;
 }
 
+/* WCAG 2.4.7 (Focus Visible): outline: none above removes the browser's
+   default ring with nothing in its place. Matches .memory-tile's replacement. */
+.btn-social:focus-visible,
+.btn-social-unlink:focus-visible {
+  outline: 3px solid var(--bd-sky);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
 :root {
   --primary-500: 59, 130, 246;
   --primary-600: 37, 99, 235;

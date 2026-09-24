@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
+import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
+import { upsertNotificationPreferences } from '@/lib/notification-preferences'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
@@ -15,7 +17,7 @@ import {
 import { insensitiveEquals, sameName } from '@/lib/username-match'
 import { z } from 'zod'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting
@@ -26,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { email, username, password } = registerSchema.parse(body)
+    const { email, username, password, marketingConsent } = registerSchema.parse(body)
 
     // Check if user already exists. `findMany`, not `findFirst`: a guest row and a
     // real account can hold the email and the username separately, and the two
@@ -120,6 +122,22 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
+    // #1154: the unticked-by-default checkbox reaching this point true is the consent
+    // itself; upsertNotificationPreferences stamps the timestamp that proves it. Only
+    // written when checked - unchecked (the default) needs no row, since
+    // getNotificationPreferences already answers marketingConsent: false with no row at
+    // all. A failure here must never fail a signup that already created the account.
+    if (marketingConsent) {
+      try {
+        await upsertNotificationPreferences(user.id, { marketingConsent: true })
+      } catch (err) {
+        const log = apiLogger('POST /api/auth/register')
+        log.error('Failed to record marketing consent at signup', err instanceof Error ? err : new Error(String(err)), {
+          userId: user.id,
+        })
+      }
+    }
+
     // Generate verification token
     const verificationToken = nanoid(32)
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
@@ -132,13 +150,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send verification email
-    const emailResult = await sendVerificationEmail(email, verificationToken)
-    
-    if (!emailResult.success) {
-      const log = apiLogger('POST /api/auth/register')
-      log.error('Failed to send verification email', undefined, { error: emailResult.error })
-      // Continue anyway - user can request resend
+    // Send verification email, unless the address or the day's budget is spent (#1158).
+    // The account stands either way; the user can ask for the mail again later.
+    const mailDecision = await reserveTransactionalMailSend('verification', email)
+    if (!mailDecision.allowed) {
+      apiLogger('POST /api/auth/register').warn('Verification mail throttled at registration', {
+        userId: user.id,
+        reason: mailDecision.reason,
+      })
+    } else {
+      const emailResult = await sendVerificationEmail(email, verificationToken)
+
+      if (!emailResult.success) {
+        const log = apiLogger('POST /api/auth/register')
+        log.error('Failed to send verification email', undefined, { error: emailResult.error })
+        // Continue anyway - user can request resend
+      }
     }
 
     return NextResponse.json({

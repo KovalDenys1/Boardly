@@ -3,6 +3,7 @@ import {
   createGuestId,
   createGuestToken,
   createGuestIdentityToken,
+  GUEST_IDENTITY_TTL_DAYS,
   getGuestClaimsFromRequest,
   getGuestTokenFromRequest,
   verifyGuestToken,
@@ -153,5 +154,16 @@ describe('guest identity token (#818)', () => {
 
   it('rejects a forged token', () => {
     expect(verifyGuestIdentityToken('not-a-token')).toBeNull()
+  })
+
+  it('lives no longer than a played guest is retained (#1155)', () => {
+    // 90 = PLAYED_GUEST_CLEANUP_DAYS in scripts/cleanup-old-guests.ts, pinned as
+    // a literal so moving either number alone fails here. At 180 days the
+    // device held a credential for a row the purge had already deleted.
+    delete process.env.GUEST_IDENTITY_EXPIRES_IN
+    const decoded = jwt.decode(createGuestIdentityToken('guest-1')) as jwt.JwtPayload
+
+    expect(GUEST_IDENTITY_TTL_DAYS).toBe(90)
+    expect(((decoded.exp as number) - (decoded.iat as number)) / 86_400).toBe(90)
   })
 })

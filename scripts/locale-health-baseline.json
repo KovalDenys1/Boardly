@@ -51,7 +51,6 @@
     "no premium.breadcrumb = \"Premium\"",
     "no premium.free.bio.label = \"Bio\"",
     "no premium.title = \"Boardly Premium\"",
-    "no privacyPolicy.discord.title = \"4a. Discord\"",
     "no profile.avatarPicker.avatarAlt = \"Avatar {{id}}\"",
     "no profile.avatarSection = \"Avatar\"",
     "no profile.customization.cardStyles.glassName = \"Glass\"",
@@ -72,7 +71,6 @@
     "ru footer.discord = \"Discord\"",
     "ru premium.breadcrumb = \"Premium\"",
     "ru premium.title = \"Boardly Premium\"",
-    "ru privacyPolicy.discord.title = \"4a. Discord\"",
     "ru profile.premiumCard.holoBadge = \"Holo · Premium\"",
     "uk common.premium = \"Premium\"",
     "uk deleteAccount.confirmPlaceholder = \"DELETE\"",
@@ -82,7 +80,6 @@
     "uk footer.discord = \"Discord\"",
     "uk premium.breadcrumb = \"Premium\"",
     "uk premium.title = \"Boardly Premium\"",
-    "uk privacyPolicy.discord.title = \"4a. Discord\"",
     "uk profile.premiumCard.holoBadge = \"Holo · Premium\""
   ]
 }

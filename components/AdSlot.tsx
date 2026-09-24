@@ -16,7 +16,8 @@ import { useTranslation } from '@/lib/i18n-helpers'
 //      guests are free by definition and skip the lookup entirely.
 //
 // The AdSense loader itself lives in app/layout.tsx and is site verification,
-// not an ad; it can stay on regardless of this switch.
+// not an ad; it can stay on regardless of this switch. It only loads in
+// production (#1152) — preview and development never carry it.
 
 const AD_CLIENT = 'ca-pub-9471518400402044'
 

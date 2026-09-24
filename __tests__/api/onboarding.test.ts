@@ -13,6 +13,8 @@ jest.mock('@/lib/next-auth', () => ({ authOptions: {} }))
 jest.mock('@/lib/db', () => ({
   prisma: {
     accountPreferences: { upsert: jest.fn() },
+    // lib/session-user re-reads `suspended` on a write (#1137).
+    users: { findUnique: jest.fn(async () => ({ suspended: false })) },
   },
 }))
 

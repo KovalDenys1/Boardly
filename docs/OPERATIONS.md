@@ -355,6 +355,137 @@ When it fires:
 
 The alert resolves itself on the first human event; the GitHub issue closes with it.
 
+### Runbook: guests_minted_per_hour
+
+Counts `Users` rows with `isGuest = true` created in the last hour against the previous 48 hours
+(`lib/operational-metrics.ts`, #1150). It breaches at 60 an hour or ten times the baseline hourly
+rate, whichever is higher; a normal September 2026 day made 5-17 guests in total. A guest row is
+minted by `POST /api/auth/guest-session` and by a `POST /api/lobby/<code>/join-guest` without a
+valid guest token.
+
+When it fires:
+
+1. Is it real traffic? Vercel Analytics visitors for the same hour, and `OperationalEvents` for
+   human events (`lobby_create_ready`, `move_submit_applied`). A post that went viral brings both.
+2. Is it scripted? Many guests and no human events. Vercel Firewall -> Traffic, grouped by IP or
+   JA4 digest on `/api/auth/guest-session` and `/api/lobby/*/join-guest`. Block the source with an
+   IP rule (`vercel firewall ip-blocks`), or lower the `RL guest-session` / `RL lobby join-guest`
+   rate-limit rules (see Firewall below). Attack Mode is the last resort: it challenges every page.
+3. The rows clean themselves up: never-played guests are purged after three idle days
+   (`scripts/cleanup-old-guests.ts`). Do not delete them by name - `boardly-dev` and production are
+   shared with other agents and real guests.
+
+### Runbook: rate_limiter_degraded
+
+Any `rate_limiter_degraded` event in the window (#1156). `lib/rate-limit.ts` writes one, at most
+once a minute per instance, whenever the shared Upstash store fails. While it fails, register,
+guest-session, forgot-password, resend-verification, join-guest, lobby create and feedback answer
+**503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
+history reads come back empty.
+
+When it fires:
+
+1. `reason` on the event is the Upstash error. `fetch failed` on credentials that look right
+   usually means the store was archived after inactivity or the monthly command quota (500K on
+   Free) is spent: open the Upstash console for `boardly-cache` (Vercel -> Storage).
+2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter no
+   longer spends a command on a key it has already refused, and the WAF rules below answer most
+   floods before they reach a function, so a spent quota means a very large or distributed flood.
+3. Credentials changed: check `KV_REST_API_URL` / `KV_REST_API_TOKEN` in Vercel production env.
+
+The alert resolves on the first window without a degraded event.
+
+### Runbook: email_send_failed
+
+Three or more `email_send_failed` events in the window, or any `email_send_budget_reached`
+(critical) (#1150, #1158). `lib/email.ts` writes a failure at most once a minute per mail kind per
+instance; `lib/email-send-guard.ts` writes the budget event when verification and reset mail hit
+`EMAIL_DAILY_SEND_BUDGET` (default 80 a day, under Resend Free's 100).
+
+When it fires:
+
+1. Failures: `reason` is Resend's error. A 401/403 means the API key was revoked or the domain lost
+   verification; a 429 means Resend's own quota. Check the Resend dashboard.
+2. Budget reached: verification and reset mail is refused until 00:00 UTC; each request still gets
+   the generic answer. Real sign-up spike -> raise `EMAIL_DAILY_SEND_BUDGET` in Vercel (and check
+   the Resend plan's daily cap first). Scripted -> the per-address cooldown (1 per 10 minutes) and
+   daily cap (3 per address) already hold; look at the register and forgot-password traffic in the
+   Firewall view and tighten `RL register` / `RL forgot-password`.
+
+### Firewall (Vercel WAF)
+
+Configured 2026-09-24 (#1144) on project `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2`, active config
+version 2 (`waf_65fIhzZH2NFe`). Requests the WAF refuses are not billed as function invocations
+(https://vercel.com/docs/vercel-firewall/ddos-mitigation); WAF rate limiting is billed per allowed
+request that a rate-limit rule evaluates, at $0.50-0.80 per million
+(https://vercel.com/docs/pricing/regional-pricing), which at this traffic is nothing.
+
+Rate-limit rules, all `POST`, fixed 60 s window, keyed by IP, default 429. Each is at least five
+times the app's own limit, so they only ever catch traffic the app would refuse anyway, and do it
+before a function runs:
+
+| Rule | Path | Limit / 60 s | App limit |
+| --- | --- | --- | --- |
+| RL register | `/api/auth/register` | 25 | 5 / 15 min |
+| RL forgot-password | `/api/auth/forgot-password` | 25 | 5 / 15 min |
+| RL guest-session | `/api/auth/guest-session` | 25 | 5 / 15 min |
+| RL sign-in credentials | `/api/auth/callback/credentials` | 50 | 10 / 15 min |
+| RL sign-in login | `/api/auth/login` | 25 | 5 / 15 min |
+| RL lobby join-guest | `^/api/lobby/[^/]+/join-guest$` | 600 | 120 / min across codes |
+
+The managed `bot_protection` and `ai_bots` rulesets are active in **log** mode only (staged by
+Denys on 2026-01-27, published with the rules above). Nothing challenges or denies a page.
+
+Commands (from a directory linked to the project, `vercel link`):
+
+- Inspect: `vercel firewall overview`, `vercel firewall rules list`, `vercel firewall diff`.
+- Roll back one rule: `vercel firewall rules disable "<name>"`, then `vercel firewall publish --yes`.
+  The dashboard (Firewall -> Configure -> version history) can restore an earlier version whole.
+- Under attack: `vercel firewall attack-mode` challenges every request to the site; use it only
+  when the rules above and IP blocks are not enough, and switch it off afterwards.
+
+Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
+the managed bot rulesets from log to challenge.
+
+### Ads-day checklist: flipping `NEXT_PUBLIC_ADS_ENABLED` on
+
+CLAUDE.md's "no in-tree CMP" rule for ads is conditional (#1153): it holds only as long as
+Google's own consent message actually renders and produces a TC string in the EEA/UK. Before
+setting `NEXT_PUBLIC_ADS_ENABLED=true` on the **Production** environment in Vercel, run every
+step below in order and do not flip the switch if any of steps 1–3 fails.
+
+1. **AdSense shows the site approved.** The AdSense console must say boardly.online is
+   approved and serving, not "Getting ready".
+2. **The message renders and produces a TC string.** On a fresh EEA-geolocated Chrome
+   profile (`--use-mock-keychain`, see the CLAUDE.md browser-automation note), load the home
+   page and one guide page. Google's consent message must render on first load of each, and
+   `window.__tcfapi('getTCData', 2, cb)` must return a non-empty `tcString` with `cmpId: 300`
+   (Google's own CMP). #1067 measured `displayStatus: hidden` and an empty TC string while
+   ads were off — that must have changed before this step passes.
+3. **No ad request before the visitor chooses.** With the network panel open, confirm no
+   request to `googleads.g.doubleclick.net` or an ad-serving `pagead2.googlesyndication.com`
+   path fires before the visitor accepts or dismisses the message. Google's stated TCF
+   behaviour is described at
+   [support.google.com/admanager/answer/9805023](https://support.google.com/admanager/answer/9805023);
+   there is no AdSense-specific page for this, so verify it empirically rather than citing one.
+4. **Declining yields no ad, or a non-personalised one, and no advertising cookie.** Decline
+   the message and re-check cookies/storage for `googleads.g.doubleclick.net` and
+   `pagead2.googlesyndication.com` — none should exist afterward.
+5. **The withdrawal link works.** The footer's "Privacy and cookie settings" control
+   (`lib/consent.ts`, `reopenGoogleConsentMessage`) must reopen the same message.
+6. **The variable is set for Production only, never Preview.** A Preview deployment serving
+   ads would put a non-production host in front of real ad requests.
+7. **The label reads "Advertisements"** (`common.advertisement` in all four locale files,
+   per Google's placement policy at
+   [support.google.com/adsense/answer/1346295](https://support.google.com/adsense/answer/1346295)),
+   and the unit stays the last element before the footer on guide pages — none on any game
+   route (CLAUDE.md's ads rules).
+8. **If step 2 or 3 fails:** leave `NEXT_PUBLIC_ADS_ENABLED` unset and open a ticket. A
+   home-made banner is not a certified TCF CMP, and shipping ads without one is the thing
+   this checklist exists to prevent.
+9. **After go-live, watch AdSense's Transactions page** for invalid-activity deductions in
+   the days that follow.
+
 ### CSP hardening verification (preview/production)
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):

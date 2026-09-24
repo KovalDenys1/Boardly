@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getProviders, signIn } from 'next-auth/react'
 import Die from '@/components/ui/Die'
@@ -44,6 +44,7 @@ export default function LoginForm() {
   const [showChip, setShowChip] = useState(false)
   const [oauthProviderIds, setOauthProviderIds] = useState<string[]>([])
   const passwordRef = useRef<HTMLInputElement>(null)
+  const emailInputId = useId()
 
   useEffect(() => {
     const saved = getLastAccount()
@@ -371,8 +372,9 @@ export default function LoginForm() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.login.email')}</label>
+                <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.login.email')}</label>
                 <input
+                  id={emailInputId}
                   type="email"
                   required
                   disabled={loading}

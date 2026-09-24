@@ -15,6 +15,9 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    users: {
+      count: jest.fn(async () => 0),
+    },
   },
 }))
 
@@ -112,6 +115,9 @@ describe('evaluateReliabilityAlerts – discord_bot_stale', () => {
       'move_apply_timeout',
       'discord_bot_stale',
       'site_silent',
+      'guests_minted_per_hour',
+      'rate_limiter_degraded',
+      'email_send_failed',
     ])
   })
 })
@@ -232,3 +238,112 @@ describe('evaluateReliabilityAlerts – site_silent', () => {
         expect(rule.breached).toBe(false)
     })
 })
+
+describe('evaluateReliabilityAlerts – abuse rules (#1150)', () => {
+  async function rule(alertKey) {
+    const evaluation = await evaluateReliabilityAlerts()
+    const found = evaluation.rules.find((candidate) => candidate.alertKey === alertKey)
+    expect(found).toBeDefined()
+    return found
+  }
+
+  function serverEvent(eventName, minutes) {
+    return {
+      eventName,
+      gameType: null,
+      latencyMs: null,
+      success: false,
+      applied: null,
+      occurredAt: minutesAgo(minutes),
+    }
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([])
+    mockPrisma.operationalEvents.findFirst.mockResolvedValue(null)
+    mockPrisma.users.count.mockResolvedValue(0)
+  })
+
+  it('guests_minted_per_hour breaches on a seeded burst of 500 guest creations', async () => {
+    // First call: the last hour. Second: the 48 hours before it.
+    mockPrisma.users.count.mockResolvedValueOnce(500).mockResolvedValueOnce(30)
+
+    const found = await rule('guests_minted_per_hour')
+
+    expect(found.breached).toBe(true)
+    expect(found.currentValue).toBe(500)
+    expect(found.thresholdValue).toBe(60)
+    expect(found.runbookPath).toBe('docs/OPERATIONS.md#runbook-guests_minted_per_hour')
+    expect(mockPrisma.users.count).toHaveBeenCalledWith({
+      where: { isGuest: true, createdAt: expect.objectContaining({ gte: expect.any(Date) }) },
+    })
+  })
+
+  it('guests_minted_per_hour stays quiet on an ordinary hour', async () => {
+    mockPrisma.users.count.mockResolvedValueOnce(4).mockResolvedValueOnce(30)
+
+    expect((await rule('guests_minted_per_hour')).breached).toBe(false)
+  })
+
+  it('guests_minted_per_hour scales its threshold with a busy baseline', async () => {
+    // 48 h at 20 an hour: the threshold is 200, not the floor of 60.
+    mockPrisma.users.count.mockResolvedValueOnce(150).mockResolvedValueOnce(960)
+
+    const found = await rule('guests_minted_per_hour')
+
+    expect(found.breached).toBe(false)
+    expect(found.thresholdValue).toBe(200)
+  })
+
+  it('rate_limiter_degraded fires on the first degraded event in the window', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('rate_limiter_degraded', 3)])
+
+    const found = await rule('rate_limiter_degraded')
+
+    expect(found.breached).toBe(true)
+    expect(found.severity).toBe('critical')
+    expect(found.runbookPath).toBe('docs/OPERATIONS.md#runbook-rate_limiter_degraded')
+  })
+
+  it('rate_limiter_degraded ignores an outage that ended before the window', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('rate_limiter_degraded', 90)])
+
+    expect((await rule('rate_limiter_degraded')).breached).toBe(false)
+  })
+
+  it('email_send_failed fires on three failures in the window, not on one', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('email_send_failed', 2)])
+    expect((await rule('email_send_failed')).breached).toBe(false)
+
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([
+      serverEvent('email_send_failed', 2),
+      serverEvent('email_send_failed', 4),
+      serverEvent('email_send_failed', 6),
+    ])
+    const found = await rule('email_send_failed')
+    expect(found.breached).toBe(true)
+    expect(found.severity).toBe('warning')
+    expect(found.runbookPath).toBe('docs/OPERATIONS.md#runbook-email_send_failed')
+  })
+
+  it('email_send_failed goes critical when the daily mail budget is reached', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('email_send_budget_reached', 1)])
+
+    const found = await rule('email_send_failed')
+
+    expect(found.breached).toBe(true)
+    expect(found.severity).toBe('critical')
+    expect(found.summary).toContain('daily transactional mail budget')
+  })
+
+  it('asks the database for the server-only events', async () => {
+    await evaluateReliabilityAlerts()
+
+    const names = mockPrisma.operationalEvents.findMany.mock.calls[0][0].where.eventName.in
+    expect(names).toEqual(
+      expect.arrayContaining(['rate_limiter_degraded', 'email_send_failed', 'email_send_budget_reached'])
+    )
+  })
+})
+

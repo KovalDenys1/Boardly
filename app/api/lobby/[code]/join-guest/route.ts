@@ -24,7 +24,11 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import type { LobbyJoinRefusalCode } from '@/lib/lobby-join-errors'
 
-const limiter = rateLimit(rateLimitPresets.game)
+// One bucket per IP across every lobby code (#1157): the code is in the path, so the
+// old per-path key gave each of the 10,000 codes a fresh allowance.
+const limiter = rateLimit(rateLimitPresets.lobbyJoinGuest)
+// A join without a valid token mints a Users row, so it gets guest-session's budget.
+const newGuestLimiter = rateLimit(rateLimitPresets.lobbyJoinNewGuest)
 const joinGuestSchema = z.object({
   guestName: z.string().trim().min(2).max(20),
   guestToken: z.string().optional(),
@@ -51,11 +55,20 @@ export async function POST(
     const providedToken = parsedBody.data.guestToken || getGuestTokenFromRequest(req)
     const existingGuestClaims = providedToken ? verifyGuestToken(providedToken) : null
     const requestedGuestName = parsedBody.data.guestName
+
+    if (!existingGuestClaims) {
+      const newGuestRateLimitResult = await newGuestLimiter(req)
+      if (newGuestRateLimitResult) return newGuestRateLimitResult
+    }
+
+    // The id the guest row has or will have (getOrCreateGuestUser creates it under exactly
+    // this id), so every refusal below can be decided before any row is written (#1157).
     const guestId = existingGuestClaims?.guestId || createGuestId()
 
-    // Find the lobby
+    // Find the lobby. Active ones only: lobby rows are deactivated by the sweeps, never
+    // deleted, so without the filter every lobby ever created was a live join target.
     const lobby = await prisma.lobbies.findUnique({
-      where: { code },
+      where: { code, isActive: true },
       // kickedUserIds is omitted globally (lib/db.ts); this route is one of the two that
       // has to honour it, so it asks for it back by name.
       omit: { kickedUserIds: false },
@@ -106,14 +119,18 @@ export async function POST(
     }
 
     const signupSource = getSignupSourceFromRequest(req)
-    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
-    const guestName = guestUser.username || requestedGuestName
-    const guestToken = createGuestToken(guestUser.id, guestName)
+    // Every check that can refuse the join runs before this is called, so a kicked guest, a
+    // running game or a full lobby no longer mints a Users row per request (#1157).
+    const resolveGuestUser = async () => {
+      const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
+      const guestName = guestUser.username || requestedGuestName
+      return { guestUser, guestName, guestToken: createGuestToken(guestUser.id, guestName) }
+    }
 
     // The guest id is carried in the token and survives the redirect, so a kicked guest comes
     // back as the same user — and the lobby refuses them, exactly as it refuses a kicked
     // account (#1013). Checked before the already-in-lobby lookup: their Players row is gone.
-    if (lobby.kickedUserIds.includes(guestUser.id)) {
+    if (lobby.kickedUserIds.includes(guestId)) {
       return NextResponse.json(
         { error: 'The host removed you from this lobby', code: 'KICKED_FROM_LOBBY' },
         { status: 403 }
@@ -125,9 +142,10 @@ export async function POST(
     // Check if guest is already in the lobby
     if (activeGame) {
       const existingPlayer = activeGame.players.find(
-        (p) => p.userId === guestUser.id
+        (p) => p.userId === guestId
       )
       if (existingPlayer) {
+        const { guestUser, guestName, guestToken } = await resolveGuestUser()
         return NextResponse.json(
           {
             message: 'Already in lobby',
@@ -166,6 +184,7 @@ export async function POST(
 
     // Create or get the active game
     let game
+    let joined: Awaited<ReturnType<typeof resolveGuestUser>>
     if (!activeGame) {
       const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
       if (!isSupportedGameType(requestedGameType)) {
@@ -183,9 +202,9 @@ export async function POST(
         lobby.id,
         lobby.kickedUserIds
       )
-      const rosterUserIds = carriedUserIds.includes(guestUser.id)
+      const rosterUserIds = carriedUserIds.includes(guestId)
         ? carriedUserIds
-        : [...carriedUserIds, guestUser.id]
+        : [...carriedUserIds, guestId]
 
       if (rosterUserIds.length > lobby.maxPlayers) {
         return NextResponse.json(
@@ -193,6 +212,9 @@ export async function POST(
         { status: 400 }
       )
       }
+
+      // Minted only now that the join is going to happen: the Players rows below need it.
+      joined = await resolveGuestUser()
 
       game = await prisma.games.create({
         data: {
@@ -221,17 +243,18 @@ export async function POST(
         lobbyId: lobby.id,
         lobbyCode: lobby.code,
         gameType: toPersistedGameType(runtimeGameType),
-        userId: guestUser.id,
+        userId: joined.guestUser.id,
         isGuest: true,
         signupSource,
       })
     } else {
       // Add guest player to existing game
+      joined = await resolveGuestUser()
       const nextPosition = activeGame.players.length
       await prisma.players.create({
         data: {
           gameId: activeGame.id,
-          userId: guestUser.id,
+          userId: joined.guestUser.id,
           position: nextPosition,
         },
       })
@@ -240,7 +263,7 @@ export async function POST(
         lobbyId: lobby.id,
         lobbyCode: lobby.code,
         gameType: activeGame.gameType,
-        userId: guestUser.id,
+        userId: joined.guestUser.id,
         isGuest: true,
         signupSource,
       })
@@ -271,9 +294,9 @@ export async function POST(
       {
         message: 'Guest joined successfully',
         game,
-        guestId: guestUser.id,
-        guestName,
-        guestToken,
+        guestId: joined.guestUser.id,
+        guestName: joined.guestName,
+        guestToken: joined.guestToken,
       },
       { status: 200 }
     )

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { Prisma } from '@/prisma/client'
-import { authOptions } from '@/lib/next-auth'
 import { findUserByFriendCode } from '@/lib/friend-code'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
+import { requireSessionUser } from '@/lib/session-user'
 
 export const runtime = 'nodejs'
 
@@ -26,14 +25,11 @@ export async function POST(req: NextRequest) {
 
   try {
 
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const auth = await requireSessionUser(req)
+    if ('response' in auth) {
+      return auth.response
     }
+    const { session } = auth
 
     // Check if email is verified
     if (!session.user.emailVerified) {

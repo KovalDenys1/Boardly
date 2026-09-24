@@ -36,6 +36,7 @@ model Users {
   suspended             Boolean   @default(false)
   banReason             String?
   banExpiresAt          DateTime? @db.Timestamptz(3)
+  sessionsValidFrom     DateTime? @db.Timestamptz(3) // Session cutoff (#1136): a NextAuth JWT whose authenticatedAt is earlier is rejected. NULL = no cutoff. Set by a password reset and a completed email change
   lastActiveAt          DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
@@ -452,6 +453,13 @@ model NotificationPreferences {
   pushNotifications  Boolean @default(false)
   unsubscribedAll    Boolean @default(false)
 
+  // #1154 (L2-05, markedsføringsloven § 15): opt-in only, unticked by default. The
+  // timestamp is the evidence a consent question needs — it is stamped whenever
+  // marketingConsent changes (granted or withdrawn), never inferred from updatedAt,
+  // which any other preference edit also touches.
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime? @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -561,15 +569,18 @@ model PurchaseConsents {
 }
 
 model Feedback {
-  id        String   @id @default(cuid())
-  type      String // 'bug' | 'feature' | 'other'
-  status    String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
-  message   String
-  email     String?
-  pageUrl   String?
-  userId    String?
-  user      Users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  id               String   @id @default(cuid())
+  type             String // 'bug' | 'feature' | 'other'
+  status           String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
+  message          String
+  email            String?
+  pageUrl          String?
+  userId           String?
+  user             Users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  /// Id of the copy posted to the Discord feedback channel, so retention and account
+  /// deletion can delete that copy too (lib/feedback-discord.ts). Null when none was posted.
+  discordMessageId String?
 
   @@index([type, createdAt])
   @@index([userId])

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '@/lib/account-erasure'
 import {
   buildGuestCleanupWhere,
   cleanupOldGuests,
@@ -109,6 +110,11 @@ jest.mock('@/lib/db', () => ({
     },
     $disconnect: jest.fn(),
   },
+}))
+
+jest.mock('@/lib/account-erasure', () => ({
+  scrubPlayersFromGameRecords: jest.fn(async () => ({ games: 0, snapshots: 0 })),
+  detachFeedbackFrom: jest.fn(async () => 0),
 }))
 
 // The retention constants are the whole point of #1047, so they are pinned to
@@ -380,6 +386,38 @@ describe('cleanupOldGuests script', () => {
     await cleanupOldGuests({ disconnect: false })
 
     const deleteArgs = (prisma.users.deleteMany as jest.Mock).mock.calls[0][0]
-    expect(deleteArgs.where).toEqual(cleanupFilter())
+    expect(deleteArgs.where).toEqual({
+      AND: [cleanupFilter(), { id: { in: [EMPTY_GUEST_ID] } }],
+    })
+  })
+
+  it('scrubs the listed guests out of game records and feedback before deleting them (#1128)', async () => {
+    ;(prisma.users.findMany as jest.Mock).mockResolvedValue([
+      { id: PLAYED_GUEST_ID, username: 'Played Guest', lastActiveAt: daysAgo(91), createdAt: daysAgo(120) },
+    ])
+    ;(prisma.users.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
+    ;(prisma.users.count as jest.Mock).mockResolvedValueOnce(3).mockResolvedValueOnce(10)
+    const logSpy = jest.spyOn(console, 'log')
+
+    await cleanupOldGuests({ disconnect: false })
+
+    expect(scrubPlayersFromGameRecords).toHaveBeenCalledWith([{ id: PLAYED_GUEST_ID, username: 'Played Guest' }])
+    expect(detachFeedbackFrom).toHaveBeenCalledWith([PLAYED_GUEST_ID])
+    expect((scrubPlayersFromGameRecords as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (prisma.users.deleteMany as jest.Mock).mock.invocationCallOrder[0]
+    )
+    // The job that erases these people must not write their names to its logs.
+    expect(logSpy.mock.calls.flat().join('\n')).not.toContain('Played Guest')
+  })
+
+  it('scrubs nothing on a dry run', async () => {
+    ;(prisma.users.findMany as jest.Mock).mockResolvedValue([
+      { id: PLAYED_GUEST_ID, username: 'Played Guest', lastActiveAt: daysAgo(91), createdAt: daysAgo(120) },
+    ])
+
+    await cleanupOldGuests({ dryRun: true, disconnect: false })
+
+    expect(scrubPlayersFromGameRecords).not.toHaveBeenCalled()
+    expect(detachFeedbackFrom).not.toHaveBeenCalled()
   })
 })
