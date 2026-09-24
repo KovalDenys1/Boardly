@@ -3626,6 +3626,7 @@ const ru = {
     legal: 'Правовое',
     privacy: 'Политика конфиденциальности',
     terms: 'Условия использования',
+    operatedBy: 'Оператор: {{name}}',
     community: 'Сообщество',
     discord: 'Discord',
     sendFeedback: 'Оставить отзыв',

@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { logger } from './logger'
+import { formatSellerAddress, getSellerIdentity } from './seller-identity'
 
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -13,6 +14,20 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
+}
+
+// The operator's name, address and email under every email (#1163): the
+// same imprint the footer and the Terms carry, because a purchase
+// confirmation has to name the seller too. An empty string until both
+// NEXT_PUBLIC_SELLER_* variables are set, so no template ever ends in a
+// line with the name missing. Sits below each template's own closing note.
+function emailFooterHtml(): string {
+  const seller = getSellerIdentity()
+  if (!seller) {
+    return ''
+  }
+  const email = escapeHtml(seller.email)
+  return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">${escapeHtml(seller.legalName)}, ${escapeHtml(formatSellerAddress(seller))}, Norway. Email: <a href="mailto:${email}" style="color: #999;">${email}</a></p>`
 }
 
 export async function sendVerificationEmail(email: string, token: string, username?: string) {
@@ -54,6 +69,7 @@ export async function sendVerificationEmail(email: string, token: string, userna
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -118,6 +134,7 @@ export async function sendUnverifiedAccountWarningEmail(
               </div>
               <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
               <p style="color: #dc2626; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -172,6 +189,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -236,6 +254,7 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
                 Questions? Just reply to this email.<br>
                 The Boardly team
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -292,6 +311,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
               <p style="color: #999; font-size: 12px; margin: 0;">
                 Need help? Check out our <a href="${process.env.NEXTAUTH_URL}" style="color: #FF6B5B;">website</a> or reply to this email.
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -356,6 +376,7 @@ export async function sendGameInviteEmail(
               <p style="color: #999; font-size: 12px; margin: 0;">
                 You received this email because ${safeSender} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -427,6 +448,7 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 1 hour. If you didn't request account deletion, please ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.
               </p>
+              ${emailFooterHtml()}
             </div>
           </body>
         </html>
