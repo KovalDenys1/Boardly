@@ -344,6 +344,7 @@ describe('POST /api/stripe/webhook - checkout.session.completed records the cons
     const [to, details] = sendPremiumConfirmationEmail.mock.calls[0]
     expect(to).toBe('buyer@example.com')
     expect(details).toEqual({
+      idempotencyKey: 'purchase-confirmation:cs_1',
       username: 'Ola',
       plan: 'monthly',
       amountTotal: 299,
@@ -426,15 +427,15 @@ describe('POST /api/stripe/webhook - checkout.session.completed records the cons
     expect(claimAt).toBeLessThan(sendAt)
   })
 
-  it('releases the claim and does not throw when the send fails', async () => {
+  it('releases the claim and throws on a fresh event so Stripe redelivers when the send fails', async () => {
     sendPremiumConfirmationEmail.mockResolvedValue({ success: false, error: 'Resend is down' })
 
     const res = await POST(request())
 
-    // 200: the entitlement and the record are in place, and a 500 would make
-    // Stripe redeliver an event whose claim on the ledger nothing here needs.
-    expect(res.status).toBe(200)
-    expect(prisma.stripeWebhookEvents.delete).not.toHaveBeenCalled()
+    // 500 with the ledger claim released: Stripe redelivers, the entitlement
+    // and the record are idempotent, the released claim lets the retry send once.
+    expect(res.status).toBe(500)
+    expect(prisma.stripeWebhookEvents.delete).toHaveBeenCalled()
     expect(consentWrites()).toHaveLength(2)
     expect(consentWrites()[1]).toEqual({
       where: { checkoutSessionId: 'cs_1' },
@@ -452,11 +453,34 @@ describe('POST /api/stripe/webhook - checkout.session.completed records the cons
 
     const res = await POST(request())
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(500)
     expect(consentWrites()[1]).toEqual({
       where: { checkoutSessionId: 'cs_1' },
       data: { confirmationSentAt: null },
     })
+  })
+
+  it('only logs a failed send once the event is too old for Stripe to retry', async () => {
+    sendPremiumConfirmationEmail.mockResolvedValue({ success: false, error: 'Resend is down' })
+    event.created = Math.floor(Date.now() / 1000) - 60 * 60
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(prisma.stripeWebhookEvents.delete).not.toHaveBeenCalled()
+    expect(consentWrites()[1]).toEqual({
+      where: { checkoutSessionId: 'cs_1' },
+      data: { confirmationSentAt: null },
+    })
+  })
+
+  it('passes a per-session idempotency key to the email', async () => {
+    await POST(request())
+
+    expect(sendPremiumConfirmationEmail).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ idempotencyKey: 'purchase-confirmation:cs_1' })
+    )
   })
 
   it('does not release the claim after a successful send, whatever else fails later', async () => {

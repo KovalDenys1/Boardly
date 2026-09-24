@@ -478,6 +478,8 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
 }
 
 export type PremiumConfirmationDetails = {
+  /** Resend idempotency key; one per checkout session so a retried send cannot double-deliver. */
+  idempotencyKey?: string
   username?: string | null
   plan: PremiumPlan
   /** Stripe's `amount_total` for the Checkout Session: minor units of `currency`. */
@@ -743,7 +745,7 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
           </body>
         </html>
       `,
-    })
+    }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
     }

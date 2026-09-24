@@ -233,14 +233,18 @@ async function resolvePurchaser(customerId: string, fallbackUserId: string | nul
 //   3. on a failed send, put confirmationSentAt back to null and log at error
 //      level, so the row is visibly unconfirmed and a later run can send.
 //
-// Nothing in here throws. A throw would reach POST, release the event claim
-// and make Stripe redeliver, and a redelivery after step 2 succeeded would be
-// stopped only by the claim, which is exactly the state a thrown error could
-// have left half-written. So the failure modes are logged, never raised.
+// Exactly one email per session, and a failed send is retried by Stripe rather
+// than lost: the claim is taken before the send, so a redelivery after a
+// successful send finds it and stops; after a failed send the claim is released
+// and, while the event is young enough for Stripe to retry, the failure is
+// thrown so POST releases the event claim and Stripe redelivers. Once the event
+// is too old to be retried the failure is only logged and the row keeps
+// confirmationSentAt null, which is visible. Nothing else in here throws.
 async function sendPurchaseConfirmationOnce(
   checkoutSessionId: string,
   purchaser: Purchaser,
-  details: Parameters<typeof sendPremiumConfirmationEmail>[1]
+  details: Parameters<typeof sendPremiumConfirmationEmail>[1],
+  event: Stripe.Event
 ): Promise<void> {
   if (!purchaser.email) {
     // The row stands with confirmationSentAt null, so the missing send is visible.
@@ -279,13 +283,20 @@ async function sendPurchaseConfirmationOnce(
     userId: purchaser.id,
     error: result.error,
   })
+  let released = false
   try {
     await prisma.purchaseConsents.updateMany({
       where: { checkoutSessionId },
       data: { confirmationSentAt: null },
     })
+    released = true
   } catch (error) {
     log.error('failed to release purchase confirmation claim', error, { checkoutSessionId })
+  }
+  // Only a released claim may be retried: with the claim still set a redelivery
+  // would find it and send nothing, so throwing would be a 500 for no gain.
+  if (released && isWorthRetrying(event)) {
+    throw new Error(`Purchase confirmation send failed for ${checkoutSessionId}; claim released for Stripe to redeliver`)
   }
 }
 
@@ -341,7 +352,11 @@ async function recordPurchaseConsent(
   }
 
   const conversion = session.currency_conversion
-  await sendPurchaseConfirmationOnce(checkoutSessionId, purchaser, {
+  await sendPurchaseConfirmationOnce(
+    checkoutSessionId,
+    purchaser,
+    {
+    idempotencyKey: `purchase-confirmation:${checkoutSessionId}`,
     username: purchaser.username,
     plan,
     // What was actually charged, which Adaptive Pricing may have converted;
@@ -354,7 +369,9 @@ async function recordPurchaseConsent(
     renewsAt: resolveSubscriptionEnd(subscription),
     consentAt: consent.consentAt,
     termsVersion: consent.termsVersion,
-  })
+    },
+    event
+  )
 }
 
 async function handleEvent(event: Stripe.Event): Promise<void> {
