@@ -10,6 +10,12 @@ import { Icon } from '@/components/icons'
  * timer danger threshold 5s vs 10s, win badge text vs emoji, spectator
  * variant present in only two of three. Unified: danger at ≤10s, text
  * badges via game.ui keys, spectator variant available to every adopter.
+ *
+ * Motion (#1111): the title line is keyed on its text, so a turn change
+ * remounts it and `.game-status-cue` slides it in from 6px while it fades — the
+ * eye catches the swap instead of reading the same box with new words. The
+ * timer bar scales on the compositor (scaleX from the left) instead of
+ * animating width, which relaid the banner every second.
  */
 export interface GameStatusBannerProps {
   isFinished: boolean
@@ -90,7 +96,7 @@ export default function GameStatusBanner({
         : { background: 'var(--bd-sun)', color: 'var(--bd-ink)' }),
     }
     return (
-      <div style={{
+      <div key={finishedMessage ?? 'finished'} className="game-status-cue" data-testid="game-status-title" style={{
         padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
         display: 'flex', alignItems: 'center', gap: 12,
         boxShadow: `0 4px 0 ${isDraw ? 'var(--bd-lav)' : barColor}`,
@@ -110,7 +116,7 @@ export default function GameStatusBanner({
       }}>
         <Icon name="eye" size={16} tone="muted" />
         {leadingIcon}
-        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</span>
+        <span key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</span>
         {meta !== undefined && <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>{meta}</span>}
         <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
       </div>
@@ -132,7 +138,7 @@ export default function GameStatusBanner({
     }}>
       {leadingIcon}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {activeTitle}
           {meta !== undefined && (
             <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{meta}</span>
@@ -140,10 +146,12 @@ export default function GameStatusBanner({
         </div>
         {showTimer && (
           <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: pct + '%',
+            <div data-testid="game-status-timer-bar" style={{
+              height: '100%', width: '100%',
+              transform: `scaleX(${Math.max(0, Math.min(1, pct / 100))})`,
+              transformOrigin: 'left center',
               background: danger ? 'var(--bd-coral)' : barColor,
-              transition: 'width 1s linear, background 0.2s',
+              transition: 'transform 1s linear, background 0.2s',
             }} />
           </div>
         )}

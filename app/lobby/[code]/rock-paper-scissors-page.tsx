@@ -37,6 +37,7 @@ import type { GamePlayer, GameUpdatePayload } from '@/types/game'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -516,6 +517,17 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const mySubmitted = !!currentUserId && rpsData.playersReady.includes(currentUserId)
     const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted
 
+    // Round and opponent cues (#1111): a new round asks for the viewer's throw,
+    // and the opponent locking theirs in is their move. Counting only the
+    // opponent's lock keeps the viewer's own submit silent.
+    const opponentsReady = rpsData.playersReady.filter((id) => id !== currentUserId).length
+    useTurnSounds({
+        isMyTurn: iAmChoosing,
+        lastMoveSignature: game ? `${rpsData.rounds.length}:${opponentsReady}` : null,
+        opponentMoved: opponentsReady > 0,
+        enabled: !isSpectator && !!game && !isFinished,
+    })
+
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
             ? Math.floor(lobby.turnTimer)
@@ -827,6 +839,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="rock_paper_scissors"
+                    resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

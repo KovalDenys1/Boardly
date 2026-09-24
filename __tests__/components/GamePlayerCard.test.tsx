@@ -76,3 +76,31 @@ describe('GamePlayerCard (#736 phase 3)', () => {
     expect(avatar.style.height).toBe('')
   })
 })
+
+describe('GamePlayerCard active motion (#1111)', () => {
+  const base = {
+    name: 'Alice',
+    isActive: false,
+    isMe: true,
+    isWinner: false,
+    side: 'left' as const,
+    accentColor: 'var(--bd-coral)',
+  }
+
+  it('marks the active turn with a class for the CSS plate, not inline colours', () => {
+    const { container, rerender } = render(<GamePlayerCard {...base} />)
+    const card = container.querySelector('.game-player-card') as HTMLElement
+    expect(card.classList.contains('game-player-card--active')).toBe(false)
+    expect(card.style.background).toBe('')
+    expect(card.style.border).toBe('')
+    expect(card.style.boxShadow).toBe('')
+
+    rerender(<GamePlayerCard {...base} isActive />)
+    const active = container.querySelector('.game-player-card') as HTMLElement
+    // Same node: the plate transitions in, the card is not remounted.
+    expect(active).toBe(card)
+    expect(active.classList.contains('game-player-card--active')).toBe(true)
+    expect(active.style.background).toBe('')
+    expect(container.querySelector('.game-player-turn')?.className).toContain('game-status-cue')
+  })
+})

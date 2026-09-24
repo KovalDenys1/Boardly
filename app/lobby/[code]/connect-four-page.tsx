@@ -37,6 +37,8 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -822,6 +824,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         [earlyMoveHistory]
     )
 
+    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
+    // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
+    const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
+    const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
+    useTurnSounds({
+        isMyTurn: isMyTurn(),
+        lastMoveSignature: Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null,
+        opponentMoved: !!lastC4Move && soundSeat >= 0 && lastC4Move.disc !== soundSeat + 1,
+        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+    })
+
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
@@ -939,18 +952,18 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                             <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
                         </div>
-                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        <ScorePop value={`${p1Wins}:${p2Wins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
-                        </div>
+                        </ScorePop>
                         <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                             {t('games.connect_four.game.winsLabel')}
                         </div>
                     </>
                 }
                 centerCompact={
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                    <ScorePop value={`${p1Wins}:${p2Wins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{p2Wins}
-                    </div>
+                    </ScorePop>
                 }
                 rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
             />
@@ -1094,6 +1107,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             inviteCode={code}
                             gameType="connect_four"
+                            resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                             isRegistered={status === 'authenticated' && !isGuest}
                         />
                     )}
