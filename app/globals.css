@@ -1818,13 +1818,37 @@ input[type="range"].slider-thumb::-moz-range-track {
 .game-scoreboard-right-card { flex: 1 1 auto; min-width: 0; }
 
 .game-player-card {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
+  border: 2px solid transparent;
   border-radius: 14px;
   min-width: 0;
-  transition: all 0.2s;
+}
+/* The active-turn plate (#1111). Its own layer under the content, so a turn
+   change is an opacity + transform transition on the compositor. inset -2px
+   covers the card's transparent border, which keeps the box the same size in
+   both states. */
+.game-player-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--bd-input-bg);
+  border: 2px solid var(--bd-ink);
+  box-shadow: 0 4px 0 var(--bd-ink);
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity var(--bd-dur) var(--bd-ease-out), transform var(--bd-dur) var(--bd-ease-spring);
+  pointer-events: none;
+}
+.game-player-card--active::before {
+  opacity: 1;
+  transform: none;
 }
 .game-player-card--left { flex-direction: row; }
 .game-player-card--right { flex-direction: row-reverse; }

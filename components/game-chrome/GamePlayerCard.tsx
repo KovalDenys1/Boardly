@@ -49,16 +49,13 @@ export default function GamePlayerCard({
 
   // Sizing lives in app/globals.css (.game-player-card): an inline style
   // outranks every stylesheet rule, so the phone-landscape breakpoint could not
-  // shrink this card while the numbers were here (#901). Only the
-  // state-dependent colours stay inline.
+  // shrink this card while the numbers were here (#901). The active plate is
+  // there too (#1111): a ::before layer that fades and settles from 96 % scale,
+  // instead of `transition: all` repainting background, border and shadow.
   return (
     <div
-      className={`game-player-card game-player-card--${side}`}
-      style={{
-        background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-        border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-        boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-      }}
+      className={`game-player-card game-player-card--${side}${isActive ? ' game-player-card--active' : ''}`}
+      data-active={isActive ? 'true' : 'false'}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
         {avatarSrc ? (
@@ -96,7 +93,7 @@ export default function GamePlayerCard({
           }}>{subline}</div>
         )}
         {isActive && (
-          <div className="game-player-turn" style={{ justifyContent: justify }}>
+          <div className="game-player-turn game-status-cue" style={{ justifyContent: justify }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: turnDotColor ?? accentColor, display: 'inline-block', flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {isMe ? t('game.ui.yourTurn') : t('game.ui.theirTurn')}
