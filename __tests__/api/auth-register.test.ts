@@ -29,6 +29,13 @@ jest.mock('@/lib/auth', () => ({
   hashPassword: jest.fn(),
 }))
 
+const mockReserveMail = jest.fn(
+  async (..._args: unknown[]): Promise<{ allowed: boolean; reason?: string }> => ({ allowed: true })
+)
+jest.mock('@/lib/email-send-guard', () => ({
+  reserveTransactionalMailSend: (...args: unknown[]) => mockReserveMail(...args),
+}))
+
 jest.mock('@/lib/email', () => ({
   sendVerificationEmail: jest.fn(),
 }))

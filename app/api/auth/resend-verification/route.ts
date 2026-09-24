@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { normalizeProfileEmail } from '@/lib/profile-email'
 import { insensitiveEquals } from '@/lib/username-match'
+import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 const log = apiLogger('/api/auth/resend-verification')
 const GENERIC_RESEND_RESPONSE = {
   success: true,
@@ -85,6 +86,14 @@ export async function POST(request: NextRequest) {
       const verificationTarget = user.pendingEmail || user.email
 
       if (!verificationTarget) {
+        return NextResponse.json(GENERIC_RESEND_RESPONSE)
+      }
+
+      // Checked before the old token is deleted (#1158), so a refused resend leaves the
+      // link already sent valid, and answered generically like every other branch here.
+      const mailDecision = await reserveTransactionalMailSend('verification', verificationTarget)
+      if (!mailDecision.allowed) {
+        log.info('Verification resend throttled', { userId: user.id, reason: mailDecision.reason })
         return NextResponse.json(GENERIC_RESEND_RESPONSE)
       }
 

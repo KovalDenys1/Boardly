@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server'
 import { POST as JOIN_GUEST } from '@/app/api/lobby/[code]/join-guest/route'
 import { prisma } from '@/lib/db'
+import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -196,6 +197,103 @@ describe('POST /api/lobby/[code]/join-guest — joining after the game finished 
           players: { create: [{ userId: 'guest-new', position: 0 }] },
         }),
       })
+    )
+  })
+})
+
+describe('POST /api/lobby/[code]/join-guest — no Users row before the join is decided (#1157)', () => {
+  const baseLobby = {
+    id: 'lobby-1',
+    code: 'ABC123',
+    password: null,
+    maxPlayers: 2,
+    gameType: 'yahtzee',
+    allowSpectators: true,
+    kickedUserIds: [],
+    games: [],
+  }
+  const mockGetOrCreateGuestUser = getOrCreateGuestUser as jest.Mock
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPrisma.games.findFirst.mockResolvedValue(null)
+    mockPrisma.games.create.mockResolvedValue({ id: 'game-new', players: [] } as any)
+  })
+
+  it('looks up active lobbies only', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(null)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(404)
+    expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { code: 'ABC123', isActive: true } })
+    )
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints no guest for a full lobby', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...baseLobby,
+      games: [{ id: 'g1', status: 'waiting', players: [{ userId: 'a' }, { userId: 'b' }] }],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).code).toBe('LOBBY_FULL')
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints no guest when the carried roster already fills the lobby', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+    mockPrisma.games.findFirst.mockResolvedValue({
+      players: [
+        { userId: 'a', user: { bot: null } },
+        { userId: 'b', user: { bot: null } },
+      ],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(400)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints no guest for a game in progress', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...baseLobby,
+      maxPlayers: 4,
+      games: [{ id: 'g1', status: 'playing', players: [{ userId: 'a' }] }],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(409)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints no guest for a kicked guest', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...baseLobby,
+      kickedUserIds: ['guest-new'],
+    } as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(403)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints the guest once the join is going ahead', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledTimes(1)
+    expect(mockGetOrCreateGuestUser.mock.invocationCallOrder[0]).toBeLessThan(
+      mockPrisma.games.create.mock.invocationCallOrder[0]
     )
   })
 })

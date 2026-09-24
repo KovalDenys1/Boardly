@@ -32,6 +32,10 @@ const ALERT_EVENT_NAMES = [
   'move_apply_timeout',
   'socket_reconnect_recovered',
   'socket_reconnect_failed_final',
+  // Written by the server only (lib/server-operational-events.ts), never by the beacon.
+  'rate_limiter_degraded',
+  'email_send_failed',
+  'email_send_budget_reached',
   ...HUMAN_ACTIVITY_EVENT_NAMES,
 ] as const
 
@@ -80,6 +84,26 @@ export const SITE_SILENT_BASELINE_PERCENTILE = 75
  * 5 minutes, which lands as a `cron_run` row with this `source`. Warning at four missed
  * beats, critical at twelve: one missed beat is a Pi reboot, an hour is a dead service.
  */
+/**
+ * Abuse posture (#1150). Every rule above counts something going wrong inside a game; none
+ * saw a surge of guest rows, the rate limiter falling back to per-instance memory, or mail
+ * failing, so an abuse run would have been noticed on the invoice. These three do.
+ *
+ * `guests_minted_per_hour` reads `Users` directly rather than an event: a guest row is the
+ * thing being abused, and counting it needs no new write on the hot path. Its baseline is
+ * the previous 48 hours, well inside the three-day guest purge, so purged rows do not drag
+ * it down. Real traffic was 5-17 guests a day in September 2026, so the floor of 60 an hour
+ * is far above a normal day while a scripted run of any size crosses it within the hour.
+ */
+export const GUESTS_MINTED_WINDOW_MINUTES = 60
+export const GUESTS_MINTED_BASELINE_HOURS = 48
+export const GUESTS_MINTED_PER_HOUR_FLOOR = 60
+export const GUESTS_MINTED_BASELINE_MULTIPLE = 10
+/** Any degraded write in the window is a breach: the limiter is not limiting. */
+export const RATE_LIMITER_DEGRADED_ALERT_THRESHOLD = 1
+/** Failures are throttled to one per minute per mail kind per instance before they are written. */
+export const EMAIL_SEND_FAILED_ALERT_THRESHOLD = 3
+
 export const DISCORD_BOT_HEARTBEAT_SOURCE = 'discord-bot'
 export const DISCORD_BOT_STALE_WARNING_MINUTES = 20
 export const DISCORD_BOT_STALE_CRITICAL_MINUTES = 60
@@ -147,6 +171,9 @@ export type ReliabilityAlertKey =
   | 'move_apply_timeout'
   | 'discord_bot_stale'
   | 'site_silent'
+  | 'guests_minted_per_hour'
+  | 'rate_limiter_degraded'
+  | 'email_send_failed'
 
 export interface ReliabilityAlertRuleStatus {
   alertKey: ReliabilityAlertKey
@@ -581,7 +608,21 @@ export async function evaluateReliabilityAlerts(
   // in what `splitCurrentAndBaseline` calls the baseline.
   const siteSilent = evaluateSiteSilent(events, now, baselineDays)
 
+  const guestsMinted = await evaluateGuestsMinted(now)
+
   const { current, baseline } = splitCurrentAndBaseline(events, currentStart)
+
+  const currentLimiterDegraded = current.filter(
+    (event) => event.eventName === 'rate_limiter_degraded'
+  ).length
+  const limiterDegradedBreached = currentLimiterDegraded >= RATE_LIMITER_DEGRADED_ALERT_THRESHOLD
+
+  const currentEmailFailed = current.filter((event) => event.eventName === 'email_send_failed').length
+  const currentEmailBudgetReached = current.filter(
+    (event) => event.eventName === 'email_send_budget_reached'
+  ).length
+  const emailFailedBreached =
+    currentEmailFailed >= EMAIL_SEND_FAILED_ALERT_THRESHOLD || currentEmailBudgetReached > 0
 
   const currentRejoinTimeout = current.filter((event) => event.eventName === 'rejoin_timeout').length
   const baselineRejoinTimeout = baseline.filter((event) => event.eventName === 'rejoin_timeout').length
@@ -707,7 +748,90 @@ export async function evaluateReliabilityAlerts(
         windowMinutes: SITE_SILENT_WINDOW_MINUTES,
         runbookPath: 'docs/OPERATIONS.md#runbook-site_silent',
       },
+      {
+        alertKey: 'guests_minted_per_hour',
+        breached: guestsMinted.breached,
+        severity: 'warning',
+        currentValue: guestsMinted.currentValue,
+        thresholdValue: guestsMinted.thresholdValue,
+        baselineValue: guestsMinted.baselineValue,
+        unit: 'count',
+        summary: guestsMinted.summary,
+        windowMinutes: GUESTS_MINTED_WINDOW_MINUTES,
+        runbookPath: 'docs/OPERATIONS.md#runbook-guests_minted_per_hour',
+      },
+      {
+        alertKey: 'rate_limiter_degraded',
+        breached: limiterDegradedBreached,
+        severity: 'critical',
+        currentValue: currentLimiterDegraded,
+        thresholdValue: RATE_LIMITER_DEGRADED_ALERT_THRESHOLD,
+        baselineValue: null,
+        unit: 'count',
+        summary: limiterDegradedBreached
+          ? `rate_limiter_degraded count=${currentLimiterDegraded} in the last ${windowMinutes}m: the shared limiter store is failing; account, guest, lobby and mail routes answer 503`
+          : `rate_limiter_degraded count=0 in the last ${windowMinutes}m`,
+        windowMinutes,
+        runbookPath: 'docs/OPERATIONS.md#runbook-rate_limiter_degraded',
+      },
+      {
+        alertKey: 'email_send_failed',
+        breached: emailFailedBreached,
+        severity: currentEmailBudgetReached > 0 ? 'critical' : 'warning',
+        currentValue: currentEmailFailed,
+        thresholdValue: EMAIL_SEND_FAILED_ALERT_THRESHOLD,
+        baselineValue: null,
+        unit: 'count',
+        summary:
+          currentEmailBudgetReached > 0
+            ? `the daily transactional mail budget was reached in the last ${windowMinutes}m: verification and reset mail is refused until 00:00 UTC (email_send_failed count=${currentEmailFailed})`
+            : `email_send_failed count=${currentEmailFailed}, threshold=${EMAIL_SEND_FAILED_ALERT_THRESHOLD} per ${windowMinutes}m window`,
+        windowMinutes,
+        runbookPath: 'docs/OPERATIONS.md#runbook-email_send_failed',
+      },
     ],
+  }
+}
+
+interface GuestsMintedStatus {
+  breached: boolean
+  currentValue: number | null
+  thresholdValue: number
+  baselineValue: number | null
+  summary: string
+}
+
+async function evaluateGuestsMinted(now: Date): Promise<GuestsMintedStatus> {
+  const windowStart = new Date(now.getTime() - GUESTS_MINTED_WINDOW_MINUTES * 60 * 1000)
+  const baselineStart = new Date(windowStart.getTime() - GUESTS_MINTED_BASELINE_HOURS * 60 * 60 * 1000)
+
+  let current: number
+  let baselineTotal: number
+  try {
+    ;[current, baselineTotal] = await Promise.all([
+      prisma.users.count({ where: { isGuest: true, createdAt: { gte: windowStart, lte: now } } }),
+      prisma.users.count({ where: { isGuest: true, createdAt: { gte: baselineStart, lt: windowStart } } }),
+    ])
+  } catch (error) {
+    return {
+      breached: false,
+      currentValue: null,
+      thresholdValue: GUESTS_MINTED_PER_HOUR_FLOOR,
+      baselineValue: null,
+      summary: `guests_minted_per_hour could not be read: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+
+  const baselinePerHour = baselineTotal / GUESTS_MINTED_BASELINE_HOURS
+  const threshold = Math.max(GUESTS_MINTED_PER_HOUR_FLOOR, baselinePerHour * GUESTS_MINTED_BASELINE_MULTIPLE)
+  const breached = current >= threshold
+
+  return {
+    breached,
+    currentValue: current,
+    thresholdValue: Number(threshold.toFixed(2)),
+    baselineValue: Number(baselinePerHour.toFixed(2)),
+    summary: `${current} guest users created in the last ${GUESTS_MINTED_WINDOW_MINUTES}m (threshold ${threshold.toFixed(0)}, baseline ${baselinePerHour.toFixed(2)}/h over ${GUESTS_MINTED_BASELINE_HOURS}h)`,
   }
 }
 

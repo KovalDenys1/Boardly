@@ -39,6 +39,8 @@ const createLobbySchema = z.object({
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const createLimiterPremium = rateLimit(rateLimitPresets.lobbyCreationPremium)
+// The public lobby list ran a stale-lobby sweep and a query per call with no limiter (#1157).
+const listLimiter = rateLimit(rateLimitPresets.api)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
 const NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK = 10
 const MAX_LOBBY_CODE_ATTEMPTS = 20
@@ -322,6 +324,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const listRateLimitResult = await listLimiter(request)
+  if (listRateLimitResult) return listRateLimitResult
+
   try {
     const { searchParams } = new URL(request.url)
 

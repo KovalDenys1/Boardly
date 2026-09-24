@@ -56,7 +56,7 @@ export async function GET(
   return NextResponse.json({ messages })
 }
 
-const postLimiter = rateLimit({ windowMs: 60 * 1000, maxRequests: 30 })
+const postLimiter = rateLimit(rateLimitPresets.lobbyChatPost)
 
 export async function POST(
   req: NextRequest,

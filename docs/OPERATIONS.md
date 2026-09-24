@@ -355,6 +355,98 @@ When it fires:
 
 The alert resolves itself on the first human event; the GitHub issue closes with it.
 
+### Runbook: guests_minted_per_hour
+
+Counts `Users` rows with `isGuest = true` created in the last hour against the previous 48 hours
+(`lib/operational-metrics.ts`, #1150). It breaches at 60 an hour or ten times the baseline hourly
+rate, whichever is higher; a normal September 2026 day made 5-17 guests in total. A guest row is
+minted by `POST /api/auth/guest-session` and by a `POST /api/lobby/<code>/join-guest` without a
+valid guest token.
+
+When it fires:
+
+1. Is it real traffic? Vercel Analytics visitors for the same hour, and `OperationalEvents` for
+   human events (`lobby_create_ready`, `move_submit_applied`). A post that went viral brings both.
+2. Is it scripted? Many guests and no human events. Vercel Firewall -> Traffic, grouped by IP or
+   JA4 digest on `/api/auth/guest-session` and `/api/lobby/*/join-guest`. Block the source with an
+   IP rule (`vercel firewall ip-blocks`), or lower the `RL guest-session` / `RL lobby join-guest`
+   rate-limit rules (see Firewall below). Attack Mode is the last resort: it challenges every page.
+3. The rows clean themselves up: never-played guests are purged after three idle days
+   (`scripts/cleanup-old-guests.ts`). Do not delete them by name - `boardly-dev` and production are
+   shared with other agents and real guests.
+
+### Runbook: rate_limiter_degraded
+
+Any `rate_limiter_degraded` event in the window (#1156). `lib/rate-limit.ts` writes one, at most
+once a minute per instance, whenever the shared Upstash store fails. While it fails, register,
+guest-session, forgot-password, resend-verification, join-guest, lobby create and feedback answer
+**503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
+history reads come back empty.
+
+When it fires:
+
+1. `reason` on the event is the Upstash error. `fetch failed` on credentials that look right
+   usually means the store was archived after inactivity or the monthly command quota (500K on
+   Free) is spent: open the Upstash console for `boardly-cache` (Vercel -> Storage).
+2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter no
+   longer spends a command on a key it has already refused, and the WAF rules below answer most
+   floods before they reach a function, so a spent quota means a very large or distributed flood.
+3. Credentials changed: check `KV_REST_API_URL` / `KV_REST_API_TOKEN` in Vercel production env.
+
+The alert resolves on the first window without a degraded event.
+
+### Runbook: email_send_failed
+
+Three or more `email_send_failed` events in the window, or any `email_send_budget_reached`
+(critical) (#1150, #1158). `lib/email.ts` writes a failure at most once a minute per mail kind per
+instance; `lib/email-send-guard.ts` writes the budget event when verification and reset mail hit
+`EMAIL_DAILY_SEND_BUDGET` (default 80 a day, under Resend Free's 100).
+
+When it fires:
+
+1. Failures: `reason` is Resend's error. A 401/403 means the API key was revoked or the domain lost
+   verification; a 429 means Resend's own quota. Check the Resend dashboard.
+2. Budget reached: verification and reset mail is refused until 00:00 UTC; each request still gets
+   the generic answer. Real sign-up spike -> raise `EMAIL_DAILY_SEND_BUDGET` in Vercel (and check
+   the Resend plan's daily cap first). Scripted -> the per-address cooldown (1 per 10 minutes) and
+   daily cap (3 per address) already hold; look at the register and forgot-password traffic in the
+   Firewall view and tighten `RL register` / `RL forgot-password`.
+
+### Firewall (Vercel WAF)
+
+Configured 2026-09-24 (#1144) on project `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2`, active config
+version 2 (`waf_65fIhzZH2NFe`). Requests the WAF refuses are not billed as function invocations
+(https://vercel.com/docs/vercel-firewall/ddos-mitigation); WAF rate limiting is billed per allowed
+request that a rate-limit rule evaluates, at $0.50-0.80 per million
+(https://vercel.com/docs/pricing/regional-pricing), which at this traffic is nothing.
+
+Rate-limit rules, all `POST`, fixed 60 s window, keyed by IP, default 429. Each is at least five
+times the app's own limit, so they only ever catch traffic the app would refuse anyway, and do it
+before a function runs:
+
+| Rule | Path | Limit / 60 s | App limit |
+| --- | --- | --- | --- |
+| RL register | `/api/auth/register` | 25 | 5 / 15 min |
+| RL forgot-password | `/api/auth/forgot-password` | 25 | 5 / 15 min |
+| RL guest-session | `/api/auth/guest-session` | 25 | 5 / 15 min |
+| RL sign-in credentials | `/api/auth/callback/credentials` | 50 | 10 / 15 min |
+| RL sign-in login | `/api/auth/login` | 25 | 5 / 15 min |
+| RL lobby join-guest | `^/api/lobby/[^/]+/join-guest$` | 600 | 120 / min across codes |
+
+The managed `bot_protection` and `ai_bots` rulesets are active in **log** mode only (staged by
+Denys on 2026-01-27, published with the rules above). Nothing challenges or denies a page.
+
+Commands (from a directory linked to the project, `vercel link`):
+
+- Inspect: `vercel firewall overview`, `vercel firewall rules list`, `vercel firewall diff`.
+- Roll back one rule: `vercel firewall rules disable "<name>"`, then `vercel firewall publish --yes`.
+  The dashboard (Firewall -> Configure -> version history) can restore an earlier version whole.
+- Under attack: `vercel firewall attack-mode` challenges every request to the site; use it only
+  when the rules above and IP blocks are not enough, and switch it off afterwards.
+
+Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
+the managed bot rulesets from log to challenge.
+
 ### CSP hardening verification (preview/production)
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):

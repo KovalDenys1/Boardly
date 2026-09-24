@@ -20,6 +20,20 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
+// Six requests from one address would trip the real 5-per-15-minutes limiter; the
+// limiter has its own tests.
+jest.mock('@/lib/rate-limit', () => ({
+  rateLimit: jest.fn(() => jest.fn(async () => null)),
+  failClosedAuthPreset: {},
+}))
+
+const mockReserveMail = jest.fn(
+  async (..._args: unknown[]): Promise<{ allowed: boolean; reason?: string }> => ({ allowed: true })
+)
+jest.mock('@/lib/email-send-guard', () => ({
+  reserveTransactionalMailSend: (...args: unknown[]) => mockReserveMail(...args),
+}))
+
 jest.mock('@/lib/email', () => ({
   sendPasswordResetEmail: jest.fn(),
 }))
@@ -123,5 +137,24 @@ describe('POST /api/auth/forgot-password', () => {
 
     expect(response.status).toBe(200)
     expect(payload.message).toBe(genericSuccessMessage)
+  })
+
+  it('answers generically and rotates nothing when the mail guard refuses (#1158)', async () => {
+    mockPrisma.users.findFirst.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+    } as any)
+    mockReserveMail.mockResolvedValueOnce({ allowed: false, reason: 'address_daily_cap' })
+
+    const response = await POST(buildRequest({ email: 'user@example.com' }))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.message).toBe(genericSuccessMessage)
+    expect(mockReserveMail).toHaveBeenCalledWith('password_reset', 'user@example.com')
+    // The link already in the inbox stays valid.
+    expect(mockPrisma.passwordResetTokens.deleteMany).not.toHaveBeenCalled()
+    expect(mockPrisma.passwordResetTokens.create).not.toHaveBeenCalled()
+    expect(mockSendPasswordResetEmail).not.toHaveBeenCalled()
   })
 })
