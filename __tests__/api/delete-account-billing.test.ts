@@ -19,6 +19,17 @@ jest.mock('@/lib/db', () => ({
 }))
 
 jest.mock('@/lib/stripe', () => ({ getStripe: jest.fn() }))
+jest.mock('@/lib/supabase-storage', () => ({
+  deleteAvatar: jest.fn(),
+  isAvatarStorageConfigured: jest.fn(() => false),
+}))
+jest.mock('@/lib/account-erasure', () => ({
+  scrubPlayersFromGameRecords: jest.fn(async () => ({ games: 0, snapshots: 0 })),
+  detachFeedbackFrom: jest.fn(async () => 0),
+}))
+jest.mock('@/lib/discord/role-connection', () => ({
+  clearRoleConnection: jest.fn(async () => ({ status: 'skipped' })),
+}))
 jest.mock('next-auth', () => ({ getServerSession: jest.fn(() => null) }))
 jest.mock('@/lib/next-auth', () => ({ authOptions: {} }))
 jest.mock('@/lib/csrf', () => ({ verifyCsrfToken: () => true }))
@@ -42,7 +53,7 @@ describe('account deletion cancels billing first (#827)', () => {
 
   beforeEach(() => {
     cancel = jest.fn().mockResolvedValue({})
-    getStripe.mockReturnValue({ subscriptions: { cancel } })
+    getStripe.mockReturnValue({ subscriptions: { cancel }, customers: { del: jest.fn().mockResolvedValue({}) } })
     prisma.passwordResetTokens.findUnique.mockResolvedValue({
       userId: 'u1',
       expires: new Date(Date.now() + 60_000),

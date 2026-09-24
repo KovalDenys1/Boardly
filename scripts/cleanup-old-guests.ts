@@ -12,6 +12,7 @@
 
 import { prisma } from '../lib/db'
 import type { Prisma } from '../prisma/client'
+import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '../lib/account-erasure'
 
 interface CleanupOptions {
   days?: number
@@ -26,8 +27,8 @@ interface CleanupOptions {
  * the clock again.
  *
  * A guest's identity lives in localStorage (contexts/GuestContext.tsx,
- * boardly_guest_identity) and the token proving it is signed for 180 days
- * (lib/guest-auth.ts). The row that identity points at used to be deleted after
+ * boardly_guest_identity) and the token proving it is signed for 90 days
+ * (lib/guest-auth.ts, #1155), re-issued on every visit. The row that identity points at used to be deleted after
  * three days of inactivity, and Players.userId cascades on delete
  * (prisma/schema.prisma), so a guest who came back on day four found every game
  * they had played gone and counted as a new person (#1047).
@@ -39,9 +40,9 @@ interface CleanupOptions {
  *   unchanged, still overridable with CLEANUP_GUEST_DAYS.
  * - Played at least once: a real player. Ninety days, which is what this
  *   repo already keeps replays for (lib/cleanup-replays.ts) and how long the
- *   acquisition-source cookie lives, and is comfortably inside the 180-day
- *   identity token - so a row is never kept past the point where the returning
- *   guest could still prove it is theirs.
+ *   acquisition-source cookie lives, and what the identity token lives - so a
+ *   row is never kept past the point where the returning guest could still
+ *   prove it is theirs, and the token never outlives a played guest's row.
  */
 const DEFAULT_GUEST_CLEANUP_DAYS = 3
 const PLAYED_GUEST_CLEANUP_DAYS = 90
@@ -161,7 +162,8 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     oldGuests.forEach((guest) => {
       const last = guest.lastActiveAt ?? guest.createdAt
       const daysSinceActive = Math.floor((Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24))
-      console.log(`  - ${guest.username} (${guest.id}) - Last active ${daysSinceActive} days ago`)
+      // The id only: this list is written to the logs of a job that erases these people.
+      console.log(`  - ${guest.id} - Last active ${daysSinceActive} days ago`)
     })
 
     if (dryRun) {
@@ -169,8 +171,21 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
       return { deleted: 0 }
     }
 
-    // Delete old guests in a safe manner
-    const result = await prisma.users.deleteMany({ where })
+    // Their names outlive the row in other players' Games.state and replays,
+    // and a feedback reply address outlives it in Feedback (#1128). Scrubbed
+    // for exactly the listed guests, before the rows go.
+    const identities = oldGuests.map((guest) => ({ id: guest.id, username: guest.username }))
+    const scrubbed = await scrubPlayersFromGameRecords(identities)
+    const feedbackDetached = await detachFeedbackFrom(identities.map((identity) => identity.id))
+    console.log(`Scrubbed ${scrubbed.games} game(s), ${scrubbed.snapshots} snapshot(s), ${feedbackDetached} feedback row(s)`)
+
+    // Delete exactly the listed, scrubbed set: the where clause again, so a guest
+    // who came back in the meantime is kept, narrowed to the listed ids, so a
+    // guest who crossed the cutoff since the listing waits for tomorrow's run
+    // instead of going unscrubbed.
+    const result = await prisma.users.deleteMany({
+      where: { AND: [where, { id: { in: identities.map((identity) => identity.id) } }] },
+    })
 
     console.log(`✅ Successfully deleted ${result.count} old guest user(s)`)
 

@@ -130,4 +130,21 @@ describe('getRequestAuthUser', () => {
     })
     expect(prisma.users.findUnique).not.toHaveBeenCalled()
   })
+
+  it('never re-creates an erased guest from a still-valid token (#1129)', async () => {
+    // The guest used "Forget me" in one tab; another tab still holds a 12h
+    // session token. Re-creating the row under that id would undo the erasure.
+    mockGetServerSession.mockResolvedValue(null as never)
+    mockGetGuestClaimsFromRequest.mockReturnValue({
+      guestId: 'guest-gone',
+      guestName: 'Gone',
+      expiresAt: Date.now() + 10_000,
+    })
+    mockGetOrCreateGuestUser.mockResolvedValue(null as never)
+
+    const result = await getRequestAuthUser(new Request('http://localhost/test'))
+
+    expect(result).toBeNull()
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-gone', 'Gone', null, { createIfMissing: false })
+  })
 })

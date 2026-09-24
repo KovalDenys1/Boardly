@@ -300,3 +300,134 @@ describe('a failed session refresh on page load (#856)', () => {
     expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
   })
 })
+
+describe('a guest the server no longer has (#1155, #1129)', () => {
+  const GUEST_IDENTITY_KEY = 'boardly_guest_identity'
+  const originalFetch = global.fetch
+  const mockFetch = jest.fn()
+
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <GuestProvider>{children}</GuestProvider>
+  )
+
+  const seedGuest = () => {
+    window.localStorage.setItem(GUEST_ID_KEY, 'guest-stored')
+    window.localStorage.setItem(GUEST_NAME_KEY, 'Stored Guest')
+    window.localStorage.setItem(GUEST_TOKEN_KEY, 'stored.jwt.token')
+    window.localStorage.setItem(GUEST_IDENTITY_KEY, 'stored.identity.token')
+  }
+
+  const expectDeviceCleared = () => {
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
+    expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull()
+    expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
+    expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBeNull()
+  }
+
+  const serveSessionAnd = (forgetResponse: object) => {
+    mockFetch.mockImplementation(async (url: string) =>
+      url === '/api/user/forget-guest'
+        ? forgetResponse
+        : {
+            ok: true,
+            json: async () => ({ guestId: 'guest-stored', guestName: 'Stored Guest', guestToken: 'stored.jwt.token' }),
+          }
+    )
+  }
+
+  beforeAll(() => {
+    ;(global as any).fetch = mockFetch
+  })
+
+  afterAll(() => {
+    ;(global as any).fetch = originalFetch
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    window.localStorage.clear()
+    mockUseSession.mockReturnValue({ data: null, status: 'unauthenticated', update: jest.fn() } as any)
+  })
+
+  it('clears every guest key, the identity token included, when the refresh answers 404', async () => {
+    seedGuest()
+    mockFetch.mockResolvedValue({ ok: false, status: 404, json: async () => ({ code: 'GUEST_NOT_FOUND' }) })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBeNull())
+    expectDeviceCleared()
+    expect(result.current.isGuest).toBe(false)
+  })
+
+  it('starts a new guest when the stored identity is gone and the person asks to play', async () => {
+    window.localStorage.setItem(GUEST_IDENTITY_KEY, 'stored.identity.token')
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ code: 'GUEST_NOT_FOUND' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ guestId: 'guest-new', guestName: 'Ann', guestToken: 'new.jwt', guestIdentityToken: 'new.identity' }),
+      })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await act(async () => {
+      await result.current.setGuestMode('Ann')
+    })
+
+    const retryBody = JSON.parse(mockFetch.mock.calls[1][1].body)
+    expect(retryBody.guestIdentityToken).toBeUndefined()
+    expect(retryBody.guestToken).toBeUndefined()
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-new')
+    expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBe('new.identity')
+  })
+
+  it('forgetGuest deletes on the server with the guest token, then clears the device', async () => {
+    seedGuest()
+    serveSessionAnd({ ok: true, status: 200, json: async () => ({ success: true }) })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await waitFor(() => expect(result.current.isGuest).toBe(true))
+
+    await act(async () => {
+      await result.current.forgetGuest()
+    })
+
+    const forgetCall = mockFetch.mock.calls.find(([url]) => url === '/api/user/forget-guest')
+    expect(forgetCall?.[1]).toMatchObject({ method: 'POST', headers: { 'X-Guest-Token': 'stored.jwt.token' } })
+    expectDeviceCleared()
+    expect(result.current.isGuest).toBe(false)
+  })
+
+  it('forgetGuest treats "already gone" as done', async () => {
+    seedGuest()
+    serveSessionAnd({ ok: false, status: 404, json: async () => ({ code: 'GUEST_NOT_FOUND' }) })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await waitFor(() => expect(result.current.isGuest).toBe(true))
+
+    await act(async () => {
+      await result.current.forgetGuest()
+    })
+
+    expectDeviceCleared()
+  })
+
+  it('forgetGuest keeps the guest and reports the code while they are in a running game', async () => {
+    seedGuest()
+    serveSessionAnd({ ok: false, status: 409, json: async () => ({ code: 'GUEST_IN_ACTIVE_GAME' }) })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await waitFor(() => expect(result.current.isGuest).toBe(true))
+
+    let caught: unknown
+    await act(async () => {
+      await result.current.forgetGuest().catch((error: unknown) => {
+        caught = error
+      })
+    })
+
+    expect((caught as { code?: string }).code).toBe('GUEST_IN_ACTIVE_GAME')
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-stored')
+    expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBe('stored.identity.token')
+  })
+})

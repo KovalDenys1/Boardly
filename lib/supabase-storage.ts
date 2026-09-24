@@ -76,7 +76,7 @@ async function removeStoredAvatars(
   supabase: StorageClient,
   userId: string,
   keepPaths: string[] = []
-): Promise<void> {
+): Promise<Error | null> {
   const keep = new Set(keepPaths)
   const { data: listed, error } = await supabase.storage.from(BUCKET).list(userId)
 
@@ -87,12 +87,24 @@ async function removeStoredAvatars(
     : listed.map((entry) => `${userId}/${entry.name}`)
 
   const removable = paths.filter((path) => !keep.has(path))
-  if (removable.length === 0) return
+  if (removable.length === 0) return null
 
-  await supabase.storage.from(BUCKET).remove(removable)
+  const { error: removeError } = await supabase.storage.from(BUCKET).remove(removable)
+  return removeError ? new Error(`Avatar removal failed: ${removeError.message}`) : null
 }
 
+/** Whether avatars can have been stored at all; without it there is nothing to remove. */
+export function isAvatarStorageConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+}
+
+/**
+ * Removes every stored avatar for a user. Throws when storage answers with an
+ * error, because account deletion relies on it: a leftover object stays
+ * publicly served under the deleted user's id (#1128).
+ */
 export async function deleteAvatar(userId: string): Promise<void> {
   const supabase = getSupabaseAdmin()
-  await removeStoredAvatars(supabase, userId)
+  const error = await removeStoredAvatars(supabase, userId)
+  if (error) throw error
 }

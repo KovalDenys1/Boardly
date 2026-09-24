@@ -6,9 +6,16 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { getStripe } from '@/lib/stripe'
 import { clearRoleConnection } from '@/lib/discord/role-connection'
+import { deleteAvatar, isAvatarStorageConfigured } from '@/lib/supabase-storage'
+import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '@/lib/account-erasure'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/delete-account')
+
+function isStripeResourceMissing(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err &&
+    (err as { code?: string }).code === 'resource_missing'
+}
 
 export async function POST(req: NextRequest) {
   if (!verifyCsrfToken(req)) {
@@ -83,17 +90,103 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    log.info('Starting account deletion', {
+    // Only the id is logged, here and below: a deletion log line carrying the
+    // email or username would keep exactly what the deletion removes (#1128).
+    log.info('Starting account deletion', { userId: user.id })
+
+    // Everything that can fail and must not be half-done runs before anything
+    // is deleted, the deletion token included, so a failure answers "try again"
+    // and the same confirmation link still works.
+
+    // The avatar sits in a public bucket under the user's id. Nothing links to
+    // it once the row is gone, but the URL keeps serving the image to anyone who
+    // kept it, so a failed removal refuses the deletion (#1128).
+    if (isAvatarStorageConfigured()) {
+      try {
+        await deleteAvatar(user.id)
+      } catch (err) {
+        log.error(
+          'Refusing to delete an account whose avatar could not be removed',
+          err instanceof Error ? err : new Error(String(err)),
+          { userId: user.id }
+        )
+        return NextResponse.json(
+          { error: 'Could not remove your profile picture. Please try again shortly.' },
+          { status: 502 }
+        )
+      }
+    }
+
+    // Cancel billing BEFORE the row goes, and fail closed if that does not work.
+    // stripeCustomerId and stripeSubscriptionId live on Users, so deleting the
+    // row destroys the only mapping we have while the subscription in Stripe
+    // stays active: the person keeps being charged, cannot sign in to stop it,
+    // and no query of ours can even find them afterwards (#827). A user who
+    // stays deletable is recoverable; a silently billed ghost is not.
+    if (user.stripeSubscriptionId) {
+      try {
+        await getStripe().subscriptions.cancel(user.stripeSubscriptionId)
+        log.info('Cancelled Stripe subscription before account deletion', {
+          userId: user.id,
+          subscriptionId: user.stripeSubscriptionId,
+        })
+      } catch (err) {
+        if (!isStripeResourceMissing(err)) {
+          log.error(
+            'Refusing to delete an account whose subscription could not be cancelled',
+            err instanceof Error ? err : new Error(String(err)),
+            { userId: user.id, subscriptionId: user.stripeSubscriptionId }
+          )
+          return NextResponse.json(
+            { error: 'Could not cancel your subscription. Please try again shortly.' },
+            { status: 502 }
+          )
+        }
+      }
+    }
+
+    // Then the customer object, which holds the name and email collected at
+    // checkout (#1128). Not fail-closed: billing is already stopped above, and a
+    // retry would trip over the subscription that is now cancelled. A failure is
+    // logged with the customer id so it can be finished by hand.
+    if (user.stripeCustomerId) {
+      try {
+        await getStripe().customers.del(user.stripeCustomerId)
+        log.info('Deleted Stripe customer before account deletion', { userId: user.id })
+      } catch (err) {
+        if (!isStripeResourceMissing(err)) {
+          log.error(
+            'Stripe customer could not be deleted; delete it by hand',
+            err instanceof Error ? err : new Error(String(err)),
+            { userId: user.id, stripeCustomerId: user.stripeCustomerId }
+          )
+        }
+      }
+    }
+
+    // Empty the Discord Linked Roles metadata before the Accounts cascade takes the token
+    // with it – afterwards nothing could authenticate the write and the roles would stay
+    // granted on a deleted account (#939). Never throws, so it cannot block the deletion.
+    const cleared = await clearRoleConnection(user.id)
+    log.info('Discord role connection clear before account deletion', {
       userId: user.id,
-      email: user.email,
-      username: user.username
+      status: cleared.status,
     })
 
-    // Delete all related data (cascade delete will handle most of this)
-    // But we'll be explicit for logging purposes
-    
+    // Other players' games and replays keep this person's name in Games.state
+    // and the snapshots, and Feedback keeps their address; the cascade reaches
+    // neither (#1128).
+    const scrubbed = await scrubPlayersFromGameRecords([{ id: user.id, username: user.username }])
+    const feedbackDetached = await detachFeedbackFrom([user.id], user.email)
+    log.info('Scrubbed game records and feedback before account deletion', {
+      userId: user.id,
+      games: scrubbed.games,
+      snapshots: scrubbed.snapshots,
+      feedback: feedbackDetached,
+    })
+
     // Delete tokens
-      await prisma.passwordResetTokens.deleteMany({
+    await prisma.passwordResetTokens.deleteMany({
       where: { userId: user.id }
     })
     await prisma.emailVerificationTokens.deleteMany({
@@ -120,56 +213,12 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Cancel billing BEFORE the row goes, and fail closed if that does not work.
-    // stripeCustomerId and stripeSubscriptionId live on Users, so deleting the
-    // row destroys the only mapping we have while the subscription in Stripe
-    // stays active: the person keeps being charged, cannot sign in to stop it,
-    // and no query of ours can even find them afterwards (#827). A user who
-    // stays deletable is recoverable; a silently billed ghost is not.
-    if (user.stripeSubscriptionId) {
-      try {
-        await getStripe().subscriptions.cancel(user.stripeSubscriptionId)
-        log.info('Cancelled Stripe subscription before account deletion', {
-          userId: user.id,
-          subscriptionId: user.stripeSubscriptionId,
-        })
-      } catch (err) {
-        const alreadyGone =
-          typeof err === 'object' && err !== null && 'code' in err &&
-          (err as { code?: string }).code === 'resource_missing'
-
-        if (!alreadyGone) {
-          log.error(
-            'Refusing to delete an account whose subscription could not be cancelled',
-            err instanceof Error ? err : new Error(String(err)),
-            { userId: user.id, subscriptionId: user.stripeSubscriptionId }
-          )
-          return NextResponse.json(
-            { error: 'Could not cancel your subscription. Please try again shortly.' },
-            { status: 502 }
-          )
-        }
-      }
-    }
-
-    // Empty the Discord Linked Roles metadata before the Accounts cascade takes the token
-    // with it – afterwards nothing could authenticate the write and the roles would stay
-    // granted on a deleted account (#939). Never throws, so it cannot block the deletion.
-    const cleared = await clearRoleConnection(user.id)
-    log.info('Discord role connection clear before account deletion', {
-      userId: user.id,
-      status: cleared.status,
-    })
-
     // Delete the user (this will cascade delete sessions, accounts, players, lobbies)
     await prisma.users.delete({
       where: { id: user.id }
     })
 
-    log.info('Account deleted successfully', {
-      userId: user.id,
-      email: user.email
-    })
+    log.info('Account deleted successfully', { userId: user.id })
 
     return NextResponse.json({
       success: true,
