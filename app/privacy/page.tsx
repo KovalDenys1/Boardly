@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import DiscordPrivacySection from './DiscordPrivacySection'
+import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
+import { formatLegalDate, TERMS_VERSION } from '@/lib/terms-version'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -11,6 +13,10 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPolicy() {
+  // The controller (#1163, #1126). Absent until NEXT_PUBLIC_SELLER_LEGAL_NAME and
+  // NEXT_PUBLIC_SELLER_ADDRESS are set, and then the section below is not drawn.
+  const seller = getSellerIdentity()
+
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -29,6 +35,21 @@ export default function PrivacyPolicy() {
           </h1>
 
           <div className="space-y-8 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            {seller && (
+              <section>
+                <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>Who is responsible for your data</h2>
+                <p>
+                  The controller responsible for the personal data described in this policy is {seller.legalName},{' '}
+                  {formatSellerAddress(seller)}, Norway. Email:{' '}
+                  <a href={`mailto:${seller.email}`} className="underline">{seller.email}</a>.
+                </p>
+                <p className="mt-3">
+                  Requests about your personal data, including access, correction, deletion and export, go to that
+                  email address.
+                </p>
+              </section>
+            )}
+
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>1. Introduction</h2>
               <p>
@@ -160,7 +181,8 @@ export default function PrivacyPolicy() {
             </section>
 
             <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-muted)', borderTop: '1px solid var(--bd-line)' }}>
-              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {/* TERMS_VERSION is bumped by hand when this text changes; it never tracks the render date. */}
+              Last updated: {formatLegalDate(TERMS_VERSION)}
             </p>
           </div>
         </div>

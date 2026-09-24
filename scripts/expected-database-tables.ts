@@ -163,6 +163,12 @@ export const EXPECTED_TABLES: ExpectedTable[] = [
     policyMode: 'required',
   },
   {
+    name: 'PurchaseConsents',
+    domain: 'billing',
+    purpose: 'express-start consent and the confirmation sent, one row per checkout session (#1162, #1164)',
+    policyMode: 'required',
+  },
+  {
     name: 'AdminAuditLogs',
     domain: 'admin',
     purpose: 'admin action audit trail',

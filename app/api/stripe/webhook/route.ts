@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import Stripe from 'stripe'
 import { pushRoleConnection } from '@/lib/discord/role-connection'
+import { sendPremiumConfirmationEmail } from '@/lib/email'
+import type { PremiumPlan } from '@/lib/premium-plans'
 
 const log = apiLogger('/api/stripe/webhook')
 
@@ -157,6 +159,221 @@ function isWorthRetrying(event: Stripe.Event): boolean {
   return Date.now() - event.created * 1000 < RETRYABLE_EVENT_AGE_MS
 }
 
+// ---------------------------------------------------------------------------
+// The record of the sale and its confirmation (#1164)
+//
+// angrerettloven section 18 wants, within reasonable time after the contract,
+// a confirmation on a durable medium that repeats the section 8 information
+// and states that the buyer asked for the service to start at once;
+// ehandelsloven section 12 wants an order confirmation. Checkout (#1162) puts
+// the consent on the Checkout Session's metadata and on the subscription's.
+// Here it becomes a PurchaseConsents row, and the confirmation email goes out
+// exactly once per session.
+// ---------------------------------------------------------------------------
+
+type ConsentMetadata = {
+  userId: string | null
+  termsVersion: string
+  withdrawalInfoVersion: string
+  consentAt: Date
+  consentReceivedAt: Date
+}
+
+// The four consent keys are written together by the checkout route, so a
+// session either carries the full set or none of it. Sessions created before
+// that release carry none, and they must still grant Premium; the caller
+// handles the null.
+function readConsentMetadata(metadata: Stripe.Metadata | null | undefined): ConsentMetadata | null {
+  if (!metadata) return null
+  const { consentTermsVersion, consentWithdrawalInfoVersion, consentAt, consentReceivedAt, userId } = metadata
+  if (!consentTermsVersion || !consentWithdrawalInfoVersion || !consentAt || !consentReceivedAt) {
+    return null
+  }
+  const at = new Date(consentAt)
+  const receivedAt = new Date(consentReceivedAt)
+  if (Number.isNaN(at.getTime()) || Number.isNaN(receivedAt.getTime())) {
+    return null
+  }
+  return {
+    userId: typeof userId === 'string' && userId.length > 0 ? userId : null,
+    termsVersion: consentTermsVersion,
+    withdrawalInfoVersion: consentWithdrawalInfoVersion,
+    consentAt: at,
+    consentReceivedAt: receivedAt,
+  }
+}
+
+// Which plan was bought is read off the subscription's price, not the metadata:
+// the price is what Stripe actually billed. Anything that is not the yearly
+// price is monthly, and an empty PREMIUM_PRICE_ID_YEARLY can never match.
+function planFromSubscription(subscription: Stripe.Subscription): PremiumPlan {
+  const priceId = subscription.items.data[0]?.price?.id
+  return PREMIUM_PRICE_ID_YEARLY !== '' && priceId === PREMIUM_PRICE_ID_YEARLY ? 'yearly' : 'monthly'
+}
+
+type Purchaser = { id: string; email: string | null; username: string | null }
+
+// The buyer, by the customer id first. updateSubscriptionState has already
+// repaired a stale stripeCustomerId by the time this runs, so the customer id
+// resolves in the recovery case too; the metadata userId is the last resort.
+async function resolvePurchaser(customerId: string, fallbackUserId: string | null): Promise<Purchaser | null> {
+  const select = { id: true, email: true, username: true } as const
+  const byCustomer = await prisma.users.findUnique({ where: { stripeCustomerId: customerId }, select })
+  if (byCustomer) return byCustomer
+  if (!fallbackUserId) return null
+  return prisma.users.findUnique({ where: { id: fallbackUserId }, select })
+}
+
+// Sends the confirmation at most once per Checkout Session, whatever happens
+// to the event around it. The sequence is fixed:
+//
+//   1. claim: updateMany where confirmationSentAt IS NULL. Postgres makes this
+//      atomic, so of two concurrent runs exactly one sees count 1.
+//   2. send, only after a count of 1.
+//   3. on a failed send, put confirmationSentAt back to null and log at error
+//      level, so the row is visibly unconfirmed and a later run can send.
+//
+// Exactly one email per session, and a failed send is retried by Stripe rather
+// than lost: the claim is taken before the send, so a redelivery after a
+// successful send finds it and stops; after a failed send the claim is released
+// and, while the event is young enough for Stripe to retry, the failure is
+// thrown so POST releases the event claim and Stripe redelivers. Once the event
+// is too old to be retried the failure is only logged and the row keeps
+// confirmationSentAt null, which is visible. Nothing else in here throws.
+async function sendPurchaseConfirmationOnce(
+  checkoutSessionId: string,
+  purchaser: Purchaser,
+  details: Parameters<typeof sendPremiumConfirmationEmail>[1],
+  event: Stripe.Event
+): Promise<void> {
+  if (!purchaser.email) {
+    // The row stands with confirmationSentAt null, so the missing send is visible.
+    log.warn('Purchase confirmation has no email address to go to', { checkoutSessionId, userId: purchaser.id })
+    return
+  }
+
+  try {
+    const claimed = await prisma.purchaseConsents.updateMany({
+      where: { checkoutSessionId, confirmationSentAt: null },
+      data: { confirmationSentAt: new Date() },
+    })
+    if (claimed.count !== 1) {
+      log.info('Purchase confirmation already sent', { checkoutSessionId })
+      return
+    }
+  } catch (error) {
+    log.error('failed to claim purchase confirmation', error, { checkoutSessionId })
+    return
+  }
+
+  let result: { success: boolean; error?: string }
+  try {
+    result = await sendPremiumConfirmationEmail(purchaser.email, details)
+  } catch (error) {
+    result = { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+
+  if (result.success) {
+    log.info('Purchase confirmation sent', { checkoutSessionId, userId: purchaser.id })
+    return
+  }
+
+  log.error('failed to send purchase confirmation', undefined, {
+    checkoutSessionId,
+    userId: purchaser.id,
+    error: result.error,
+  })
+  let released = false
+  try {
+    await prisma.purchaseConsents.updateMany({
+      where: { checkoutSessionId },
+      data: { confirmationSentAt: null },
+    })
+    released = true
+  } catch (error) {
+    log.error('failed to release purchase confirmation claim', error, { checkoutSessionId })
+  }
+  // Only a released claim may be retried: with the claim still set a redelivery
+  // would find it and send nothing, so throwing would be a 500 for no gain.
+  if (released && isWorthRetrying(event)) {
+    throw new Error(`Purchase confirmation send failed for ${checkoutSessionId}; claim released for Stripe to redeliver`)
+  }
+}
+
+// Runs after the entitlement is written. Writing the row may still throw, and
+// while a retry could help it does: nothing has been sent yet, and every step
+// before this one is idempotent, so a redelivery repeats them harmlessly and
+// gives the record a second chance. Past RETRYABLE_EVENT_AGE_MS the failure is
+// logged instead, for the same reason stampFirstGrant never throws.
+async function recordPurchaseConsent(
+  event: Stripe.Event,
+  session: Stripe.Checkout.Session,
+  subscription: Stripe.Subscription,
+  customerId: string
+): Promise<void> {
+  const checkoutSessionId = session.id
+  const consent = readConsentMetadata(session.metadata) ?? readConsentMetadata(subscription.metadata)
+  if (!consent) {
+    log.warn('Checkout session without consent metadata', { checkoutSessionId, customerId })
+    return
+  }
+
+  const plan = planFromSubscription(subscription)
+  let purchaser: Purchaser | null
+  try {
+    purchaser = await resolvePurchaser(customerId, consent.userId ?? metadataUserId(subscription))
+    if (!purchaser) {
+      // The entitlement write just matched a row, so this cannot normally
+      // happen; a retry would not find one either.
+      log.error('Purchase consent matched no user', undefined, { checkoutSessionId, customerId })
+      return
+    }
+    const record = {
+      userId: purchaser.id,
+      stripeSubscriptionId: subscription.id,
+      plan,
+      termsVersion: consent.termsVersion,
+      withdrawalInfoVersion: consent.withdrawalInfoVersion,
+      consentAt: consent.consentAt,
+      consentReceivedAt: consent.consentReceivedAt,
+    }
+    // Keyed on the session id, so a redelivered event rewrites the same row
+    // with the same values and never adds a second one. confirmationSentAt is
+    // deliberately absent from both halves: only the claim below touches it.
+    await prisma.purchaseConsents.upsert({
+      where: { checkoutSessionId },
+      create: { checkoutSessionId, ...record },
+      update: record,
+    })
+  } catch (error) {
+    if (isWorthRetrying(event)) throw error
+    log.error('failed to record purchase consent', error, { checkoutSessionId, customerId })
+    return
+  }
+
+  const conversion = session.currency_conversion
+  await sendPurchaseConfirmationOnce(
+    checkoutSessionId,
+    purchaser,
+    {
+    idempotencyKey: `purchase-confirmation:${checkoutSessionId}`,
+    username: purchaser.username,
+    plan,
+    // What was actually charged, which Adaptive Pricing may have converted;
+    // the price's own amount is only a fallback for a session without a total.
+    amountTotal: session.amount_total ?? subscription.items.data[0]?.price?.unit_amount ?? 0,
+    currency: session.currency ?? subscription.currency,
+    convertedFrom: conversion
+      ? { amountTotal: conversion.amount_total, currency: conversion.source_currency }
+      : null,
+    renewsAt: resolveSubscriptionEnd(subscription),
+    consentAt: consent.consentAt,
+    termsVersion: consent.termsVersion,
+    },
+    event
+  )
+}
+
 async function handleEvent(event: Stripe.Event): Promise<void> {
   switch (event.type) {
     case 'customer.subscription.created':
@@ -236,6 +453,7 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       }
       if (granted > 0) {
         await pushDiscordRoleForCustomer(customerId, metadataUserId(subscription))
+        await recordPurchaseConsent(event, session, subscription, customerId)
       }
       log.info('Checkout session completed', { customerId, subscriptionId })
       break

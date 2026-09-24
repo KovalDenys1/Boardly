@@ -29,7 +29,7 @@
  *   thumbs/<gameId>-256.png   tile on the dark band, for the LFG embeds
  *   palette/palette-card.png  1024×512, the 16 token swatches with names
  *   boost/banner-960x540.png, boost/splash-1920x1080.png (prepared only)
- *   games.json                the seven public games, pinned
+ *   games.json                the eleven public games, pinned
  *   sheets/code-<date>.png    contact sheet (name, WxH, KiB, alpha)
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -79,12 +79,17 @@ interface PublicGame {
 }
 
 /**
- * The seven public games, pinned. Values copied from lib/game-catalog.ts
+ * The eleven public games, pinned. Values copied from lib/game-catalog.ts
  * (`GAME_METADATA` for name, players and bots, `FEATURED_GAME_CATALOG` for the
  * routes) on 2026-09-15 rather than imported, because the catalog module pulls
  * in feature flags and this list must never follow a runtime flag. The two
  * `-deep` accents are Discord-only overrides so three coral tiles do not
- * collide in an emoji picker.
+ * collide in an emoji picker. The last four were added on 2026-09-24 the same
+ * way: Sketch & Guess and Ludo take the `-deep` of their catalog accent and
+ * Liar's Party `lav-mid`, because Memory, Rock Paper Scissors and Guess the Spy
+ * already hold the base; Checkers keeps the catalog coral it shares with Tic
+ * Tac Toe, as every coral is taken. Sketch & Guess's catalog id is
+ * `guess-my-drawing`, which is also its glyph and thumbnail name.
  */
 const GAMES: readonly PublicGame[] = [
   { id: 'yahtzee', gameType: 'yahtzee', name: 'Yahtzee', minPlayers: 1, maxPlayers: 4, supportsBots: true, accentHex: T.sky, emojiName: 'bd_yahtzee', route: '/games/yahtzee', lobbiesRoute: '/games/yahtzee/lobbies' },
@@ -94,6 +99,10 @@ const GAMES: readonly PublicGame[] = [
   { id: 'connect-four', gameType: 'connect_four', name: 'Connect Four', minPlayers: 2, maxPlayers: 2, supportsBots: true, accentHex: T['coral-deep'], emojiName: 'bd_connectfour', route: '/games/connect-four', lobbiesRoute: '/games/connect-four/lobbies' },
   { id: 'alias', gameType: 'alias', name: 'Alias', minPlayers: 3, maxPlayers: 16, supportsBots: false, accentHex: T['lav-deep'], emojiName: 'bd_alias', route: '/games/alias', lobbiesRoute: '/games/alias/lobbies' },
   { id: 'rps', gameType: 'rock_paper_scissors', name: 'Rock Paper Scissors', minPlayers: 2, maxPlayers: 2, supportsBots: true, accentHex: T.sun, emojiName: 'bd_rps', route: '/games/rock-paper-scissors', lobbiesRoute: '/games/rock-paper-scissors/lobbies' },
+  { id: 'liars-party', gameType: 'liars_party', name: "Liar's Party", minPlayers: 4, maxPlayers: 12, supportsBots: false, accentHex: T['lav-mid'], emojiName: 'bd_liarsparty', route: '/games/liars-party', lobbiesRoute: '/games/liars-party/lobbies' },
+  { id: 'guess-my-drawing', gameType: 'sketch_and_guess', name: 'Sketch & Guess', minPlayers: 3, maxPlayers: 10, supportsBots: false, accentHex: T['mint-deep'], emojiName: 'bd_sketch', route: '/games/sketch-and-guess', lobbiesRoute: '/games/sketch-and-guess/lobbies' },
+  { id: 'checkers', gameType: 'checkers', name: 'Checkers', minPlayers: 2, maxPlayers: 2, supportsBots: true, accentHex: T.coral, emojiName: 'bd_checkers', route: '/games/checkers', lobbiesRoute: '/games/checkers/lobbies' },
+  { id: 'ludo', gameType: 'ludo', name: 'Ludo', minPlayers: 2, maxPlayers: 4, supportsBots: true, accentHex: T['sun-deep'], emojiName: 'bd_ludo', route: '/games/ludo', lobbiesRoute: '/games/ludo/lobbies' },
 ]
 
 /**
@@ -702,7 +711,7 @@ async function main(): Promise<void> {
   const alpha = (width: number, height = width) => ({ width, height, alpha: true })
   const opaque = (width: number, height = width) => ({ width, height, alpha: false })
 
-  // Emoji: seven game tiles, the B-tile, thirty chrome glyphs.
+  // Emoji: eleven game tiles, the B-tile, thirty chrome glyphs.
   const E = 128
   for (const game of GAMES) {
     const name = checkName(game.emojiName)

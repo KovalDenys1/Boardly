@@ -49,9 +49,18 @@ const optionalVars = [
   // Absent locally, which is exactly what makes the ENABLE_* flags usable there.
   'VERCEL_ENV',
   'NEXT_PUBLIC_VERCEL_ENV',
+  // Operator imprint (#1163): name and geographic address of whoever runs the
+  // site, which ehandelsloven section 8 and GDPR Art. 13(1)(a) require on it.
+  // Public values by law, hence NEXT_PUBLIC_, but personal ones, so they are set
+  // in Vercel's Production environment and never committed. Optional locally;
+  // missing in production they are reported below, because /terms, /privacy,
+  // the footer and the emails then name no operator.
+  'NEXT_PUBLIC_SELLER_LEGAL_NAME',
+  'NEXT_PUBLIC_SELLER_ADDRESS',
 ]
 
 const vapidVars = ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT']
+const sellerIdentityVars = ['NEXT_PUBLIC_SELLER_LEGAL_NAME', 'NEXT_PUBLIC_SELLER_ADDRESS']
 
 // A webhook URL carries its own token in the path and the internal secret is a
 // secret, so these are reported as present without printing any of the value.
@@ -205,6 +214,23 @@ const vapidSet = vapidVars.filter((name) => Boolean(process.env[name]))
 if (vapidSet.length > 0 && vapidSet.length < vapidVars.length) {
   const missing = vapidVars.filter((name) => !process.env[name])
   console.log(`\nWARN Web Push is half-configured; missing: ${missing.join(', ')}`)
+}
+
+// The imprint needs both values or it renders nothing (lib/seller-identity.ts),
+// so one without the other is a warning everywhere, and both missing is a
+// warning where it matters: production, where the site is legally required to
+// name its operator.
+const isProduction = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+const sellerIdentityMissing = sellerIdentityVars.filter((name) => !process.env[name])
+if (sellerIdentityMissing.length > 0 && sellerIdentityMissing.length < sellerIdentityVars.length) {
+  console.log(
+    `\nWARN Operator imprint is half-configured and renders nothing; missing: ${sellerIdentityMissing.join(', ')}`
+  )
+} else if (sellerIdentityMissing.length === sellerIdentityVars.length && isProduction) {
+  console.log(
+    `\nWARN Operator imprint is not configured in production; /terms, /privacy, the footer and the emails ` +
+      `name no operator (#1163). Set: ${sellerIdentityMissing.join(', ')}`
+  )
 }
 
 console.log('\nCross-project consistency:\n')

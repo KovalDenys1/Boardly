@@ -95,6 +95,17 @@ Recommended:
 - repo variable `PROJECT_HYGIENE_PROJECT_NUMBER` (target GitHub Project v2 number, for example `1`)
 - optional repo variable `PROJECT_HYGIENE_OWNER` (user/org login; defaults to repository owner)
 
+Operator imprint (#1163): `NEXT_PUBLIC_SELLER_LEGAL_NAME` and `NEXT_PUBLIC_SELLER_ADDRESS` hold the
+name and geographic address of whoever operates Boardly, which ehandelsloven section 8,
+angrerettloven section 8 d and GDPR Art. 13(1)(a) require on the site. They are public values
+by law (hence the prefix, so the client-side footer can read them) but personal ones, so they are
+set in Vercel's Production environment only and never committed; address lines are separated by
+`|`. With both set, the footer shows "Operated by <name>", the address and the support email on
+every page, the Terms of Service page opens with a "Who we are" section naming the seller of
+Boardly Premium, the Privacy Policy page opens with "Who is responsible for your data", and every
+email ends with the same name, address and email. With either unset, all four render nothing,
+and `npm run check:env` warns when that is the case in production.
+
 ## Secret migration notes
 
 Canonical secrets only:
@@ -139,6 +150,30 @@ Note: `npm run db:migrate` automatically bootstraps required RLS roles
 (`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
 so CI/local PostgreSQL environments do not require a separate manual role-prep step.
 
+### Storage: the `avatars` bucket
+
+Checked and locked down on 2026-09-24 (security audit, part A). The bucket is **public for reads**
+(avatar URLs are served straight from Supabase) and **written only by the server** through
+`lib/supabase-storage.ts` with `SUPABASE_SERVICE_ROLE_KEY`; the service role bypasses RLS, so no
+storage policy is needed for the app to work, and **no policy on `storage.objects` may name `anon` or
+`authenticated`**. Two such policies had been created by hand in the console (anon INSERT and UPDATE on
+the bucket) and were dropped on 2026-09-24. The bucket itself enforces what the upload route also
+checks: `file_size_limit = 2097152` and `allowed_mime_types = {image/jpeg,image/png,image/webp,image/gif}`.
+
+This configuration lives in the console, not in a Prisma migration (the `storage` schema does not
+exist in local or CI Postgres), so `scripts/rls-smoke.psql` asserts it whenever the schema is present.
+To verify by hand, on either project:
+
+```sql
+select policyname, roles from pg_policies where schemaname = 'storage' and tablename = 'objects';
+select id, public, file_size_limit, allowed_mime_types from storage.buckets where id = 'avatars';
+```
+
+Expected: no row with `anon` or `authenticated` in `roles`; the limits above. From outside, a `POST` to
+the Supabase storage endpoint (`https://<project>.supabase.co` + the storage object path for the
+`avatars` bucket) with the public anon key answers `403 AccessDenied`.
+The dev project (`inmvbxfflqeblynpktay`) got the same bucket with the same limits on 2026-09-24.
+
 ### Timestamp migration rollout notes (`timestamptz` phases)
 
 When migrating existing timestamp columns from `TIMESTAMP` to `TIMESTAMPTZ`:
@@ -170,6 +205,15 @@ Runtime note:
 - If you want strict certificate verification, configure `MCP_POSTGRES_CA_CERT_PATH` so runtime uses `sslmode=verify-full`.
 
 ### Realtime not working locally
+
+The `supabase_realtime` publication is console state, not a migration: it must contain `Lobbies` (and
+`Games`, `Players`, as production does) or Postgres Changes subscriptions join with `SUBSCRIBED` and
+never receive anything, with `realtime.subscription` staying empty. `boardly-dev` was aligned with
+production on 2026-09-24. Check with `select * from pg_publication_tables where pubname = 'supabase_realtime'`.
+Since the same day the API roles hold only a column-limited `SELECT` on `Lobbies` (migration
+`20260924141000_revoke_anon_authenticated_grants`); Realtime delivers exactly those columns to `anon`
+subscribers, which is what the lobby list needs, and `scripts/rls-smoke.psql` asserts the grants after
+every production migration (`migrate.yml`).
 
 Check:
 
@@ -216,6 +260,28 @@ Check:
 - `CRON_SECRET` is set in Vercel Production — Vercel sends it as the `Authorization: Bearer` header on every scheduled invocation, which is what `authorizeCronRequest` checks
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
+
+### Runbook: withdrawal request (angrerett)
+
+A consumer may withdraw from a Premium purchase within 14 days of buying it, for any reason. Policy
+(Denys, 2026-09-24): full refund of everything paid for that purchase, no proportionate charge; a yearly
+plan cancelled later refunds the unused whole months. Legal basis and sources: the vault's
+Security & Law Audit 2026-09, Part E.
+
+1. A notice arrives by email to support@ (forwarded by the inbound webhook) or as the copied form from
+   the withdrawal page. The same day, reply from support@ confirming receipt and the date it was received
+   (angrerettloven § 20 tredje ledd). Company voice, "The Boardly team".
+2. In the Stripe Dashboard: cancel the subscription immediately (not at period end), then refund the
+   payment in full from the payment's page. Stripe returns the customer's local amount at the original
+   rate. Do this within 14 days of the notice (§ 24); in practice the same day.
+3. Premium access ends when the webhook processes the cancellation; if the customer asks, confirm by
+   email that nothing more will be charged.
+4. Log the case in the vault's Boardly log (date received, date refunded, Stripe refund id, no personal
+   data beyond the username).
+
+Yearly plan cancelled outside the 14 days: cancel at period end is the default; if the customer asks for
+the refund of unused months, refund `(remaining whole months / 12) x amount paid` from the Dashboard and
+cancel immediately.
 
 ### Runbook: discord_bot_stale
 

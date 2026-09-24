@@ -55,3 +55,17 @@ describe('Footer crawl links', () => {
     expect(hrefs).toContain('/guides')
   })
 })
+
+/**
+ * #1162: the withdrawal information has to be reachable from every page, next
+ * to the terms it belongs with, not only from the block on /premium.
+ */
+describe('Footer legal links', () => {
+  it('lists privacy, terms and the right of withdrawal', () => {
+    render(<Footer />)
+
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy')
+    expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms')
+    expect(screen.getByRole('link', { name: 'Right of withdrawal' })).toHaveAttribute('href', '/withdrawal')
+  })
+})

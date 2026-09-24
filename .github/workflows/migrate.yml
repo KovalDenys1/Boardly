@@ -47,3 +47,6 @@ jobs:
 
       - name: Verify migration status
         run: npm run db:migrate:status
+
+      - name: RLS and grant smoke check
+        run: npm run db:rls:smoke

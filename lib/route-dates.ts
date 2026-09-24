@@ -43,6 +43,8 @@ export const ROUTE_UPDATED = {
   '/guides': '2026-09-20',
   '/privacy': '2026-09-02',
   '/terms': '2026-06-20',
+  // #1162: the right-of-withdrawal page, dated the day it was written.
+  '/withdrawal': '2026-09-24',
 } as const satisfies Record<string, string>
 
 export type DatedRoute = keyof typeof ROUTE_UPDATED

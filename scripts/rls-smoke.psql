@@ -3,6 +3,8 @@
 
 DO $$
 DECLARE
+  api_role TEXT;
+  offending_tables TEXT[];
   required_tables TEXT[] := ARRAY[
     '_prisma_migrations',
     'Users',
@@ -127,8 +129,6 @@ BEGIN
   WITH required_policy_pairs(table_name, policy_name) AS (
     VALUES
       ('_prisma_migrations', 'Service role can manage prisma migrations'),
-      ('Users', 'Authenticated users can view public user info'),
-      ('Users', 'Anon users can view public user info'),
       ('Users', 'Service role can manage users'),
       ('Bots', 'Anyone can view bots'),
       ('Games', 'Players can view their games'),
@@ -165,6 +165,42 @@ BEGIN
 
   IF missing_policies IS NOT NULL THEN
     RAISE EXCEPTION 'RLS smoke check failed: missing critical policies: %', array_to_string(missing_policies, '; ');
+  END IF;
+
+  -- Grants (security audit 2026-09-24): the API roles hold no table privilege in public,
+  -- except the column-limited SELECT on Lobbies that Postgres Changes needs.
+  FOR api_role IN SELECT unnest(ARRAY['anon', 'authenticated']) LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = api_role) THEN
+      SELECT array_agg(c.relname::text ORDER BY c.relname) INTO offending_tables
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+        AND has_table_privilege(api_role, c.oid, 'SELECT, INSERT, UPDATE, DELETE');
+      IF offending_tables IS NOT NULL THEN
+        RAISE EXCEPTION 'RLS smoke check failed: role % holds table privileges on: %', api_role, array_to_string(offending_tables, ', ');
+      END IF;
+      IF NOT has_column_privilege(api_role, 'public."Lobbies"', 'code', 'SELECT') THEN
+        RAISE EXCEPTION 'RLS smoke check failed: role % cannot select Lobbies.code (Postgres Changes needs it)', api_role;
+      END IF;
+      IF has_column_privilege(api_role, 'public."Lobbies"', 'realtimeSecret', 'SELECT')
+         OR has_column_privilege(api_role, 'public."Lobbies"', 'password', 'SELECT') THEN
+        RAISE EXCEPTION 'RLS smoke check failed: role % can select a secret column of Lobbies', api_role;
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- Storage (Supabase projects only; the schema is absent in local/CI Postgres).
+  -- Uploads go through the service role, so no storage policy may open the bucket to anon or authenticated.
+  IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'storage') THEN
+    IF EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = 'storage'
+        AND tablename = 'objects'
+        AND (roles @> ARRAY['anon']::name[] OR roles @> ARRAY['authenticated']::name[])
+    ) THEN
+      RAISE EXCEPTION 'RLS smoke check failed: storage.objects has a policy for anon or authenticated';
+    END IF;
   END IF;
 
   RAISE NOTICE 'RLS smoke checks passed.';
