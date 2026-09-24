@@ -50,8 +50,23 @@ export async function POST(request: NextRequest) {
       ? verifyGuestIdentityToken(parsed.data.guestIdentityToken)
       : null
 
-    const guestId = existingGuest?.guestId || identityGuestId || createGuestId()
-    const guestUser = await getOrCreateGuestUser(guestId, parsed.data.guestName, getSignupSourceFromRequest(request))
+    // A token naming a guest whose row is gone – purged after the retention
+    // window, or erased with "Forget me" – is answered 404, not re-created
+    // under the same id. The client then drops every guest key it holds, so the
+    // device no longer carries an identity for a person we deleted (#1155,
+    // #1129). Only a freshly minted id creates a row here.
+    const tokenGuestId = existingGuest?.guestId || identityGuestId
+    const signupSource = getSignupSourceFromRequest(request)
+    const guestUser = tokenGuestId
+      ? await getOrCreateGuestUser(tokenGuestId, parsed.data.guestName, signupSource, { createIfMissing: false })
+      : await getOrCreateGuestUser(createGuestId(), parsed.data.guestName, signupSource)
+
+    if (!guestUser) {
+      return NextResponse.json(
+        { error: 'Guest not found', code: 'GUEST_NOT_FOUND' },
+        { status: 404 }
+      )
+    }
     const guestName = guestUser.username || parsed.data.guestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 

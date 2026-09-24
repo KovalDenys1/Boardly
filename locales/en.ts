@@ -28,7 +28,7 @@ const en = {
     in_development: 'This game is still in development',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    advertisement: 'Advertisement',
+    advertisement: 'Advertisements',
     premium: 'Premium',
   },
   breadcrumbs: {

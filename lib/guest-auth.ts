@@ -18,8 +18,15 @@ const DEFAULT_GUEST_TOKEN_TTL = '12h'
  * It is still a bearer credential, which is why it is signed rather than being
  * a bare guest id — a plain id in localStorage would let anyone who learned one
  * take over that guest.
+ *
+ * Its lifetime is the guest retention, not longer: a guest who has played is
+ * deleted after 90 idle days (scripts/cleanup-old-guests.ts,
+ * PLAYED_GUEST_CLEANUP_DAYS), and the token is re-issued on every visit, so
+ * both clocks run from the same last visit. At 180 days the device kept a
+ * credential for a row that no longer existed (#1155, ekomloven § 3-15).
  */
-const DEFAULT_GUEST_IDENTITY_TTL = '180d'
+export const GUEST_IDENTITY_TTL_DAYS = 90
+const DEFAULT_GUEST_IDENTITY_TTL = `${GUEST_IDENTITY_TTL_DAYS}d`
 
 interface GuestJwtPayload extends jwt.JwtPayload {
   type?: string

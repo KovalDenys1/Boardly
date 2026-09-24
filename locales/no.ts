@@ -28,7 +28,7 @@ const no = {
     in_development: 'Dette spillet er fortsatt under utvikling',
     enabled: 'Aktivert',
     disabled: 'Deaktivert',
-    advertisement: 'Annonse',
+    advertisement: 'Annonser',
     premium: 'Premium',
   },
   breadcrumbs: {
