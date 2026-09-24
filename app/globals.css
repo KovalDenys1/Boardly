@@ -1733,6 +1733,16 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
+   so the scoreboard never relays. */
+.score-pop {
+  animation: score-pop var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes score-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
 /* Shared result overlay (components/game-chrome/GameResultOverlay, #1111).
    The component holds data-state="pending" for its reveal delay, then flips to
    "shown": the scrim fades, the panel rises and settles. */

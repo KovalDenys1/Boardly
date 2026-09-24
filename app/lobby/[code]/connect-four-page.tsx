@@ -37,6 +37,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import ScorePop from '@/components/game-chrome/ScorePop'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -939,18 +940,18 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                             <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
                         </div>
-                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        <ScorePop value={`${p1Wins}:${p2Wins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
-                        </div>
+                        </ScorePop>
                         <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                             {t('games.connect_four.game.winsLabel')}
                         </div>
                     </>
                 }
                 centerCompact={
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                    <ScorePop value={`${p1Wins}:${p2Wins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{p2Wins}
-                    </div>
+                    </ScorePop>
                 }
                 rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
             />

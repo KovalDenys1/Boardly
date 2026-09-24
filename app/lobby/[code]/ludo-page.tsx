@@ -43,6 +43,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import ScorePop from '@/components/game-chrome/ScorePop'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -931,18 +932,18 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                                 <GameIcon gameId="ludo" accentColor="var(--bd-sun)" size={18} />
                             </div>
-                            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                            <ScorePop value={`${gameEngine.tokensHome(state.players[0].id)}:${gameEngine.tokensHome(state.players[1].id)}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                                 {gameEngine.tokensHome(state.players[0].id)}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{gameEngine.tokensHome(state.players[1].id)}
-                            </div>
+                            </ScorePop>
                             <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                                 {t('games.ludo.game.homeLabel')}
                             </div>
                         </>
                     }
                     centerCompact={
-                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        <ScorePop value={`${gameEngine.tokensHome(state.players[0].id)}:${gameEngine.tokensHome(state.players[1].id)}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {gameEngine.tokensHome(state.players[0].id)}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{gameEngine.tokensHome(state.players[1].id)}
-                        </div>
+                        </ScorePop>
                     }
                     rightCard={renderPlayerCard(state.players[1].id, 'right')}
                 />

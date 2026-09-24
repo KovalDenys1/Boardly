@@ -37,6 +37,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import ScorePop from '@/components/game-chrome/ScorePop'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -914,18 +915,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                             {t('games.tictactoe.game.roundNumber', { num: roundNum })}
                         </div>
-                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        <ScorePop value={`${xWins}:${oWins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
-                        </div>
+                        </ScorePop>
                         <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                             {t('games.tictactoe.game.drawsCount', { count: drawsCount })}{targetRounds ? ` · BO${targetRounds}` : ''}
                         </div>
                     </>
                 }
                 centerCompact={
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                    <ScorePop value={`${xWins}:${oWins}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
                         {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{oWins}
-                    </div>
+                    </ScorePop>
                 }
                 rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
             />
