@@ -3,13 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { normalizeProfileEmail } from '@/lib/profile-email'
 import { insensitiveEquals } from '@/lib/username-match'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 const log = apiLogger('/api/auth/resend-verification')
 const GENERIC_RESEND_RESPONSE = {
   success: true,

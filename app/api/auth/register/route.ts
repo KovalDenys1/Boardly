@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
@@ -15,7 +15,7 @@ import {
 import { insensitiveEquals, sameName } from '@/lib/username-match'
 import { z } from 'zod'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting

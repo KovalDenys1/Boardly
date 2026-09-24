@@ -68,6 +68,8 @@ const submitLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   maxRequests: 5,
   message: 'Too many feedback submissions. Please try again later.',
+  // Fail closed on a shared-store outage (#1156): each submission is a row and a Discord post.
+  failClosed: true,
 })
 
 export async function POST(request: NextRequest) {

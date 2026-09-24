@@ -4,10 +4,10 @@ import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { insensitiveEquals } from '@/lib/username-match'
 
-const limiter = rateLimit(rateLimitPresets.auth)
+const limiter = rateLimit(failClosedAuthPreset)
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email('Invalid email address').transform((value) => value.toLowerCase()),
