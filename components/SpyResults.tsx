@@ -5,6 +5,7 @@ import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome'
+import { onOwnAnimationEnd, staggerStyle } from '@/lib/social-motion'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -41,6 +42,13 @@ interface SpyResultsProps {
   lobbyCode?: string
   /** Decided by the caller — a spectator is neither registered here nor a guest (#982). */
   isRegistered?: boolean
+  /**
+   * Stagger the round's reveal in (#1115): the verdict, then the spy, then the
+   * vote rows. True only while this round's result is fresh (SpyGameBoard's
+   * useFreshKey), so a reload or a tab switch shows it settled.
+   */
+  reveal?: boolean
+  onRevealEnd?: () => void
 }
 
 export default function SpyResults({
@@ -66,8 +74,17 @@ export default function SpyResults({
   registerUrl = '/auth/register',
   lobbyCode,
   isRegistered = false,
+  reveal = false,
+  onRevealEnd,
 }: SpyResultsProps) {
   const { t } = useTranslation()
+
+  // Class and delay for the `step`-th element of the reveal, or nothing.
+  // The last step is the last vote/score row; the spacing shrinks to fit a
+  // long table rather than letting the later rows start together.
+  const lastStep = 4 + Math.max(0, players.length - 1)
+  const rise = (step: number, className = 'social-rise') =>
+    reveal ? { className, style: staggerStyle(step, lastStep) } : { className: '', style: undefined }
 
   const { wasGuessRound, guessWasCorrect, spyWon, noElimination } = resolveSpyOutcome({
     spyGuessedLocation,
@@ -106,25 +123,28 @@ export default function SpyResults({
       <div className="spy-results-card">
         <div className="text-center">
           <p className="bd-kicker">{t('spy.phases.results')}</p>
-          <h2 className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
+          <h2
+            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'} ${rise(0, 'social-reveal').className}`}
+            style={rise(0, 'social-reveal').style}
+          >
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
           {wasGuessRound ? (
-            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">
+            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>
               {guessWasCorrect
                 ? t('spy.guessCorrect', { player: spyPlayer?.name })
                 : t('spy.guessWrong', { player: spyPlayer?.name, guess: spyGuessedLocation })}
             </p>
           ) : !noElimination ? (
-            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">
+            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
                 : t('spy.wasSpy', { player: spyPlayer?.name })}
             </p>
           ) : (
-            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">{t('spy.tieNoElimination')}</p>
+            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>{t('spy.tieNoElimination')}</p>
           )}
-          <div className="mx-auto mt-4 inline-flex rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-[var(--bd-ink)]">
+          <div style={rise(3).style} className={`mx-auto mt-4 inline-flex ${rise(3).className} rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-[var(--bd-ink)]`}>
             {t('spy.locationRevealed', { location })}
           </div>
         </div>
@@ -133,13 +153,19 @@ export default function SpyResults({
           <section className="spy-subpanel">
             <h3 className="spy-section-title">{t('spy.votes')}</h3>
             <div className="mt-3 space-y-2">
-              {sortedByVotes.map((player) => {
+              {sortedByVotes.map((player, index) => {
                 const voteCount = voteCounts[player.id] || 0
                 const wasEliminated = player.id === eliminatedId
                 const wasSpy = player.id === spyId
 
                 return (
-                  <div key={player.id} className={`spy-result-row ${wasEliminated ? 'spy-result-row-danger' : ''}`}>
+                  <div
+                    key={player.id}
+                    // The spy's row lands with an overshoot: that is the unmasking.
+                    // Same duration as a plain row, so the last score row still ends last.
+                    className={`spy-result-row ${wasEliminated ? 'spy-result-row-danger' : ''} ${rise(4 + index, wasSpy ? 'social-entry-hit' : 'social-rise').className}`}
+                    style={rise(4 + index).style}
+                  >
                     <div className="flex min-w-0 items-center gap-2">
                       <span className={`bd-avatar h-9 w-9 ${wasSpy ? 'bd-avatar-coral' : 'bd-avatar-lav'}`}>
                         {player.name.charAt(0).toUpperCase()}
@@ -168,7 +194,12 @@ export default function SpyResults({
             <h3 className="spy-section-title">{t('spy.scores')}</h3>
             <div className="mt-3 space-y-2">
               {sortedByScore.map((player, index) => (
-                <div key={player.id} className="spy-score-row">
+                <div
+                  key={player.id}
+                  className={`spy-score-row ${rise(4 + index).className}`}
+                  style={rise(4 + index).style}
+                  onAnimationEnd={reveal && onRevealEnd && index === sortedByScore.length - 1 ? onOwnAnimationEnd(onRevealEnd) : undefined}
+                >
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bd-ink)] text-xs font-black text-[var(--bd-bg)]">
                       {index + 1}
