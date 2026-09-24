@@ -139,6 +139,30 @@ Note: `npm run db:migrate` automatically bootstraps required RLS roles
 (`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
 so CI/local PostgreSQL environments do not require a separate manual role-prep step.
 
+### Storage: the `avatars` bucket
+
+Checked and locked down on 2026-09-24 (security audit, part A). The bucket is **public for reads**
+(avatar URLs are served straight from Supabase) and **written only by the server** through
+`lib/supabase-storage.ts` with `SUPABASE_SERVICE_ROLE_KEY`; the service role bypasses RLS, so no
+storage policy is needed for the app to work, and **no policy on `storage.objects` may name `anon` or
+`authenticated`**. Two such policies had been created by hand in the console (anon INSERT and UPDATE on
+the bucket) and were dropped on 2026-09-24. The bucket itself enforces what the upload route also
+checks: `file_size_limit = 2097152` and `allowed_mime_types = {image/jpeg,image/png,image/webp,image/gif}`.
+
+This configuration lives in the console, not in a Prisma migration (the `storage` schema does not
+exist in local or CI Postgres), so `scripts/rls-smoke.psql` asserts it whenever the schema is present.
+To verify by hand, on either project:
+
+```sql
+select policyname, roles from pg_policies where schemaname = 'storage' and tablename = 'objects';
+select id, public, file_size_limit, allowed_mime_types from storage.buckets where id = 'avatars';
+```
+
+Expected: no row with `anon` or `authenticated` in `roles`; the limits above. From outside, a `POST` to
+the Supabase storage endpoint (`https://<project>.supabase.co` + the storage object path for the
+`avatars` bucket) with the public anon key answers `403 AccessDenied`.
+The dev project (`inmvbxfflqeblynpktay`) got the same bucket with the same limits on 2026-09-24.
+
 ### Timestamp migration rollout notes (`timestamptz` phases)
 
 When migrating existing timestamp columns from `TIMESTAMP` to `TIMESTAMPTZ`:

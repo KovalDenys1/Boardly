@@ -167,6 +167,19 @@ BEGIN
     RAISE EXCEPTION 'RLS smoke check failed: missing critical policies: %', array_to_string(missing_policies, '; ');
   END IF;
 
+  -- Storage (Supabase projects only; the schema is absent in local/CI Postgres).
+  -- Uploads go through the service role, so no storage policy may open the bucket to anon or authenticated.
+  IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'storage') THEN
+    IF EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = 'storage'
+        AND tablename = 'objects'
+        AND (roles @> ARRAY['anon']::name[] OR roles @> ARRAY['authenticated']::name[])
+    ) THEN
+      RAISE EXCEPTION 'RLS smoke check failed: storage.objects has a policy for anon or authenticated';
+    END IF;
+  END IF;
+
   RAISE NOTICE 'RLS smoke checks passed.';
 END
 $$;
