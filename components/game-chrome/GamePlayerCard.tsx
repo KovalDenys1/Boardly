@@ -55,7 +55,7 @@ export default function GamePlayerCard({
       className={`game-player-card game-player-card--${side}${isActive ? ' game-player-card--active' : ''}`}
       data-active={isActive ? 'true' : 'false'}
     >
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      <div className="game-player-avatar-wrap" style={{ position: 'relative', flexShrink: 0 }}>
         {avatarSrc ? (
           <img src={avatarSrc} alt={name} className="game-player-avatar" />
         ) : (

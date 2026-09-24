@@ -1966,7 +1966,6 @@ input[type="range"].slider-thumb::-moz-range-track {
    Direct children only: Ludo nests its own roster grid of cards in a cell, and
    that grid has its own container rules. */
 @container game-scoreboard (max-width: 479px) {
-  .game-scoreboard-header { gap: 8px; }
   .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
 }
@@ -1981,6 +1980,16 @@ input[type="range"].slider-thumb::-moz-range-track {
     height: 34px;
   }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
+  /* The corner badge (C4 disc, Checkers piece, RPS pick, Ludo token, TTT mark)
+     is 18-22px of inline style sized for the 42px avatar; on the 34px one it
+     covered most of the initial. Scaled from its own anchored corner to ~12px
+     and pushed a little further out, so the initial reads and the badge still
+     sits on the avatar's edge. A transform, because the games set its size
+     inline and an inline width outranks any stylesheet. */
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.6);
+    transform-origin: bottom right;
+  }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
     align-self: stretch;
     min-width: 0;
@@ -2424,6 +2433,11 @@ input[type="range"].slider-thumb::-moz-range-track {
      block need ~274px of the ~244px this column leaves after the card's own
      padding, which is why the score ran out over both names (#901). */
   .game-landscape-side .game-scoreboard-header { gap: 6px; }
+  /* The rules above are this column's player card. Its cells are ~110px, under
+     the stacked form's 149px threshold (#1180), and that form's 34px avatar and
+     second row made the header ~30px taller here and took it from chat. Not a
+     size container in this column, so the stacked form never matches. */
+  .game-landscape-side .game-scoreboard-cell { container-type: normal; }
   .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
   .game-landscape-side .game-player-card { gap: 6px; padding: 4px 6px; }
