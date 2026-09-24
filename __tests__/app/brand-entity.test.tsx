@@ -128,7 +128,13 @@ describe('site JSON-LD graph (#886)', () => {
   })
 
   it('names only profiles Boardly controls in sameAs', () => {
-    expect(organizationNode.sameAs).toEqual(['https://github.com/KovalDenys1/Boardly'])
+    // The repo plus every account in lib/social-profiles.ts (#1091) – the list is
+    // derived there, so a profile added to that file shows up here by design.
+    const { SOCIAL_PROFILES } = jest.requireActual('@/lib/social-profiles')
+    expect(organizationNode.sameAs).toEqual([
+      'https://github.com/KovalDenys1/Boardly',
+      ...SOCIAL_PROFILES.map((profile: { url: string }) => profile.url),
+    ])
   })
 })
 
