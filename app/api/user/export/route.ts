@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
+import { requireSessionUser } from '@/lib/session-user'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -55,11 +54,11 @@ export async function GET(request: NextRequest) {
   const limited = await exportRateLimit(request)
   if (limited) return limited
 
-  const session = await getServerSession(authOptions)
-  const userId = session?.user?.id
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const userId = auth.user.id
 
   try {
     const [
