@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 import jwt, { SignOptions } from 'jsonwebtoken'
+import { RETENTION_DAYS } from './retention-periods'
 
 const GUEST_TOKEN_ISSUER = 'boardly-guest'
 const DEFAULT_GUEST_TOKEN_TTL = '12h'
@@ -25,7 +26,7 @@ const DEFAULT_GUEST_TOKEN_TTL = '12h'
  * both clocks run from the same last visit. At 180 days the device kept a
  * credential for a row that no longer existed (#1155, ekomloven § 3-15).
  */
-export const GUEST_IDENTITY_TTL_DAYS = 90
+export const GUEST_IDENTITY_TTL_DAYS = RETENTION_DAYS.guestIdentityToken
 const DEFAULT_GUEST_IDENTITY_TTL = `${GUEST_IDENTITY_TTL_DAYS}d`
 
 interface GuestJwtPayload extends jwt.JwtPayload {

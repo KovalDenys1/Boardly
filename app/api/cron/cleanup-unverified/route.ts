@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const warningResult = await warnUnverifiedAccounts(2, 7)
     
     // Then cleanup accounts older than 7 days
-    const cleanupResult = await cleanupUnverifiedAccounts(7)
+    const cleanupResult = await cleanupUnverifiedAccounts()
 
     log.info('Cleanup completed', {
       warned: warningResult.warned,

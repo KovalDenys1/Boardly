@@ -2,6 +2,7 @@ import { apiLogger } from './logger'
 import { prisma } from './db'
 import { sendUnverifiedAccountWarningEmail } from './email'
 import { nanoid } from 'nanoid'
+import { RETENTION_DAYS } from './retention-periods'
 
 const log = apiLogger('/cleanup/unverified-accounts')
 
@@ -15,7 +16,7 @@ function calculateDaysUntilDeletion(createdAt: Date, totalDaysBeforeDeletion: nu
  * Delete unverified accounts older than specified days
  * @param daysOld - Number of days after which unverified accounts should be deleted (default: 7)
  */
-export async function cleanupUnverifiedAccounts(daysOld: number = 7) {
+export async function cleanupUnverifiedAccounts(daysOld: number = RETENTION_DAYS.unverifiedAccounts) {
   try {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - daysOld)

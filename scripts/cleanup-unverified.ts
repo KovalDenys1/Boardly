@@ -83,7 +83,7 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve, 5000))
 
       console.log('🗑️  Deleting unverified accounts...')
-      const cleanupResult = await cleanupUnverifiedAccounts(7)
+      const cleanupResult = await cleanupUnverifiedAccounts()
 
       console.log(`\n✅ Cleanup completed!`)
       console.log(`   Deleted: ${cleanupResult.deleted} accounts`)
