@@ -31,7 +31,7 @@ const gameState = () => ({
   ],
   currentPlayerIndex: 1,
   data: {
-    teams: [{ id: 'team-1', name: 'Team 1', playerIds: [ERASED.id] }],
+    teams: [{ id: 'team-1', name: 'Team 1', playerIds: [ERASED.id, OTHER] }],
     questions: [
       { askerId: ERASED.id, askerName: 'Denys', targetId: OTHER, targetName: 'Ann', question: 'Where?' },
       { askerId: OTHER, askerName: 'Ann', targetId: ERASED.id, targetName: 'Denys', question: 'Why?' },
@@ -56,13 +56,43 @@ describe('scrubErasedPlayers (#1128)', () => {
     expect(state.data.results[0].playerName).toBe(DELETED_PLAYER_NAME)
     expect(state.data.winnerName).toBe(DELETED_PLAYER_NAME)
     // Ids, scores and structure survive – only the name goes.
-    expect(state.data.teams[0]).toEqual({ id: 'team-1', name: 'Team 1', playerIds: [ERASED.id] })
+    expect(state.data.teams[0]).toEqual({ id: 'team-1', name: 'Team 1', playerIds: [ERASED.id, OTHER] })
     expect(JSON.stringify(state)).not.toContain('"Denys"')
   })
 
-  it('leaves a team alone even when a player once used its name', () => {
+  it('leaves a shared team alone even when one of its members once used its name', () => {
     const { value } = scrubErasedPlayers(gameState(), [{ id: ERASED.id, username: 'Team 1' }])
     expect((value as ReturnType<typeof gameState>).data.teams[0].name).toBe('Team 1')
+  })
+
+  // lib/games/alias.ts names each of three solo teams after its one player.
+  const aliasSoloState = () => ({
+    players: [
+      { id: ERASED.id, name: 'Denys' },
+      { id: OTHER, name: 'Ann' },
+    ],
+    data: {
+      teams: [
+        { id: 'team-1', name: 'Denys', playerIds: [ERASED.id], score: 3, describerIndex: 0 },
+        { id: 'team-2', name: 'Ann', playerIds: [OTHER], score: 2, describerIndex: 0 },
+      ],
+    },
+  })
+
+  it('renames an Alias solo team named after the erased player, and only theirs', () => {
+    const { value, changed } = scrubErasedPlayers(aliasSoloState(), [ERASED])
+    const state = value as ReturnType<typeof aliasSoloState>
+
+    expect(changed).toBe(true)
+    expect(state.data.teams[0]).toEqual({
+      id: 'team-1',
+      name: DELETED_PLAYER_NAME,
+      playerIds: [ERASED.id],
+      score: 3,
+      describerIndex: 0,
+    })
+    expect(state.data.teams[1].name).toBe('Ann')
+    expect(JSON.stringify(state)).not.toContain('"Denys"')
   })
 
   it('returns the input by reference when nothing matches, so the caller skips the write', () => {
@@ -133,6 +163,54 @@ describe('scrubPlayersFromGameRecords (#1128)', () => {
     )
     const games = (prisma.games.findUnique as jest.Mock).mock.calls.map(([args]) => args.where.id)
     expect(games.sort()).toEqual(['g1', 'g2'])
+  })
+
+  it('keeps a finished game\'s updatedAt, so its history date and "latest game" order stay put', async () => {
+    ;(prisma.games.findUnique as jest.Mock).mockImplementation(async ({ where }: { where: { id: string } }) =>
+      where.id === 'g1' ? { state: gameState(), status: 'finished', updatedAt } : null
+    )
+
+    await scrubPlayersFromGameRecords([ERASED])
+
+    const gameWrite = (prisma.games.updateMany as jest.Mock).mock.calls[0][0]
+    expect(gameWrite.where).toEqual({ id: 'g1', updatedAt })
+    expect(gameWrite.data.updatedAt).toBe(updatedAt)
+  })
+
+  it('lets a live game take a fresh updatedAt, so a concurrent mover sees the change', async () => {
+    ;(prisma.games.findUnique as jest.Mock).mockImplementation(async ({ where }: { where: { id: string } }) =>
+      where.id === 'g1' ? { state: gameState(), status: 'playing', updatedAt } : null
+    )
+
+    await scrubPlayersFromGameRecords([ERASED])
+
+    const gameWrite = (prisma.games.updateMany as jest.Mock).mock.calls[0][0]
+    expect(gameWrite.data).not.toHaveProperty('updatedAt')
+  })
+
+  it('scrubs an Alias solo team from the game state and from its snapshots', async () => {
+    const aliasState = () => ({
+      players: [{ id: ERASED.id, name: 'Denys' }],
+      data: { teams: [{ id: 'team-1', name: 'Denys', playerIds: [ERASED.id], score: 0, describerIndex: 0 }] },
+    })
+    ;(prisma.$queryRaw as jest.Mock).mockResolvedValue([])
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockImplementation(async (args: { where: { gameId?: string } }) =>
+      args.where.gameId === 'g1'
+        ? [{ id: 's1', stateCompressed: encoded(aliasState()), stateEncoding: 'gzip-base64', actionPayload: null }]
+        : []
+    )
+    ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({ state: aliasState(), status: 'finished', updatedAt })
+
+    await expect(scrubPlayersFromGameRecords([ERASED])).resolves.toEqual({ games: 1, snapshots: 1 })
+
+    const gameWrite = (prisma.games.updateMany as jest.Mock).mock.calls[0][0]
+    expect(gameWrite.data.state.data.teams[0].name).toBe(DELETED_PLAYER_NAME)
+    expect(JSON.stringify(gameWrite.data.state)).not.toContain('"Denys"')
+
+    const snapshotWrite = (prisma.gameStateSnapshots.update as jest.Mock).mock.calls[0][0]
+    const restored = JSON.parse(gunzipSync(Buffer.from(snapshotWrite.data.stateCompressed, 'base64')).toString('utf-8'))
+    expect(restored.data.teams[0].name).toBe(DELETED_PLAYER_NAME)
+    expect(JSON.stringify(restored)).not.toContain('"Denys"')
   })
 
   it('retries once when the game moved under it, then gives up rather than overwrite', async () => {

@@ -1,4 +1,4 @@
-import { Prisma } from '@/prisma/client'
+import { GameStatus, Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { decodeReplayState, encodeReplayState } from '@/lib/game-replay'
 
@@ -39,6 +39,15 @@ function scrubObject(
   const ownId = OWN_ID_KEYS.map((key) => node[key]).find((value) => typeof value === 'string')
 
   for (const identity of identities) {
+    // { id: 'team-2', name: 'Denys', playerIds: ['<their id>'] } – an object
+    // whose only member is this player is theirs even though its own id is not:
+    // Alias names each solo team after its one player (lib/games/alias.ts).
+    // A single member only, so a shared team called "Team 1" stays "Team 1"
+    // even when one of its members once picked that name.
+    const isSoleMember = Object.values(node).some(
+      (value) => Array.isArray(value) && value.length === 1 && value[0] === identity.id
+    )
+
     // { id, name } – the Player shape every engine stores in state.players.
     if (OWN_ID_KEYS.some((key) => node[key] === identity.id)) {
       OWN_NAME_KEYS.forEach(set)
@@ -53,12 +62,13 @@ function scrubObject(
 
       // A name with no id beside it at all. Matched on the exact username and
       // only where nothing says the object is somebody else, so a team called
-      // "Team 1" is left alone even if a player once picked that name.
+      // "Team 1" is left alone even if a player once picked that name. A solo
+      // team (isSoleMember) counts as theirs.
       if (
         identity.username &&
         value === identity.username &&
         /name$/i.test(key) &&
-        (ownId === undefined || ownId === identity.id)
+        (ownId === undefined || ownId === identity.id || isSoleMember)
       ) {
         const pairedId = key.length > 4 ? node[`${key.slice(0, -4)}Id`] : undefined
         if (pairedId === undefined || pairedId === identity.id) set(key)
@@ -143,22 +153,40 @@ async function findGamesNaming(identities: ErasedIdentity[]): Promise<string[]> 
   )
 }
 
+/**
+ * Games that will never move again. Their updatedAt is read as when the game
+ * ended (GameHistory's date, getGameEndedAt) and as which game in a lobby is
+ * the latest (lib/lobby-series-transition.ts, the Play again roster in
+ * app/api/game/create), so a scrub must not bump it.
+ */
+const TERMINAL_GAME_STATUSES: ReadonlySet<GameStatus> = new Set<GameStatus>([
+  GameStatus.finished,
+  GameStatus.abandoned,
+  GameStatus.cancelled,
+])
+
 async function scrubGameState(gameId: string, identities: ErasedIdentity[]): Promise<boolean> {
   // Two attempts: the write is guarded on updatedAt so a move landing between
   // our read and our write is never overwritten with the older state.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const game = await prisma.games.findUnique({
       where: { id: gameId },
-      select: { state: true, updatedAt: true },
+      select: { state: true, status: true, updatedAt: true },
     })
     if (!game) return false
 
     const result = scrubErasedPlayers(game.state, identities)
     if (!result.changed) return false
 
+    // A finished game keeps its timestamp: Prisma sets @updatedAt to now unless
+    // the write names a value. A waiting or playing game gets a fresh one, so a
+    // concurrent mover's own updatedAt guard sees that the state changed.
     const written = await prisma.games.updateMany({
       where: { id: gameId, updatedAt: game.updatedAt },
-      data: { state: result.value as Prisma.InputJsonValue },
+      data: {
+        state: result.value as Prisma.InputJsonValue,
+        ...(TERMINAL_GAME_STATUSES.has(game.status) ? { updatedAt: game.updatedAt } : {}),
+      },
     })
     if (written.count > 0) return true
   }
