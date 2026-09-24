@@ -3286,6 +3286,45 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   background: rgba(79,201,166,0.15);
 }
 
+/* Match and mismatch cues (#1114). Both wait for the second card's flip
+   (.memory-tile-inner, 0.46s) to land before they play, and both move only
+   transform and opacity: the pair pops with a mint glow (a pseudo-element's
+   opacity) and settles into the matched style; a mismatch shakes sideways
+   before the pair flips back. */
+.memory-tile-match-cue {
+  animation: memory-match-pop var(--bd-dur-slow) var(--bd-ease-spring) 0.4s both;
+}
+.memory-tile-match-cue::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: clamp(12px, 2.2vw, 20px);
+  box-shadow: 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
+  pointer-events: none;
+  opacity: 0;
+  animation: memory-match-glow 0.6s var(--bd-ease-out) 0.4s both;
+}
+@keyframes memory-match-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes memory-match-glow {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.memory-tile-mismatch-cue {
+  animation: memory-mismatch-shake 0.4s ease-in-out 0.46s both;
+}
+@keyframes memory-mismatch-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
 .memory-score-row-active {
   background: var(--bd-bg2);
 }

@@ -21,6 +21,8 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { sounds } from '@/lib/sounds'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { faceUpCardIds, idsAddedSince, matchedCardIds, takeRemoteFlips } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
@@ -93,6 +95,8 @@ interface MemoryGameBoardProps {
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
+/** How long a freshly matched pair keeps its cue class: flip (~460 ms) + pop (~420 ms). */
+const MATCH_CUE_MS = 1000
 const MISMATCH_RESOLVE_WATCHDOG_MS = MISMATCH_RESOLVE_DELAY_MS + 3500
 
 function getPlayerDisplayName(player: LobbyPlayer): string {
@@ -213,6 +217,38 @@ export default function MemoryGameBoard({
     ])
     setOptimisticFlippedIds((prev) => prev.filter((id) => !confirmedIds.has(id)))
   }, [flippedCardIds, cards]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Motion cues (#1114): the opponent's flips sound like the viewer's own, and a
+  // freshly matched pair gets a short pop before settling. Keyed on id lists so
+  // the effect runs once per arriving change, never per render.
+  const faceUpKey = faceUpCardIds(cards).join(',')
+  const matchedKey = matchedCardIds(cards).join(',')
+  const prevFaceUpRef = useRef<Set<string> | null>(null)
+  const prevMatchedRef = useRef<Set<string> | null>(null)
+  const ownFlipsRef = useRef<Set<string>>(new Set())
+  const [justMatchedIds, setJustMatchedIds] = useState<string[]>([])
+
+  const cardsLoaded = cards.length > 0
+  useEffect(() => {
+    if (!cardsLoaded) return
+    const current = faceUpKey ? faceUpKey.split(',') : []
+    const arrived = idsAddedSince(prevFaceUpRef.current, current)
+    prevFaceUpRef.current = new Set(current)
+    if (takeRemoteFlips(arrived, ownFlipsRef.current).length > 0) {
+      sounds.play('cardFlip', { force: true })
+    }
+  }, [faceUpKey, cardsLoaded])
+
+  useEffect(() => {
+    if (!cardsLoaded) return
+    const current = matchedKey ? matchedKey.split(',') : []
+    const added = idsAddedSince(prevMatchedRef.current, current)
+    prevMatchedRef.current = new Set(current)
+    if (added.length === 0) return
+    setJustMatchedIds(added)
+    const timer = window.setTimeout(() => setJustMatchedIds([]), MATCH_CUE_MS)
+    return () => window.clearTimeout(timer)
+  }, [matchedKey, cardsLoaded])
 
   const submitMoveRef = useRef<typeof submitMove | null>(null)
 
@@ -401,10 +437,12 @@ export default function MemoryGameBoard({
       }
 
       setOptimisticFlippedIds((prev) => [...prev, cardId])
+      ownFlipsRef.current.add(cardId)
       sounds.play('cardFlip', { force: true })
 
       void submitMove({ type: 'flip', data: { cardId } }).then((success) => {
         if (!success) {
+          ownFlipsRef.current.delete(cardId)
           setOptimisticFlippedIds((prev) => prev.filter((id) => id !== cardId))
         }
       })
@@ -460,7 +498,7 @@ export default function MemoryGameBoard({
             type="button"
             onClick={() => handleCardClick(card.id)}
             disabled={isDisabled}
-            className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}`}
+            className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}${justMatchedIds.includes(card.id) ? ' memory-tile-match-cue' : ''}${pendingMismatchCardIds.includes(card.id) ? ' memory-tile-mismatch-cue' : ''}`}
           >
             <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
               <span className="memory-tile-back">
@@ -592,7 +630,7 @@ export default function MemoryGameBoard({
               isPremium={premiumByUserId.get(player0.id)}
               accentColor="var(--bd-mint)"
               turnDotColor="var(--bd-mint-deep)"
-              subline={t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player0.id] ?? 0 })}
+              subline={<ScorePop value={scoreByPlayerId[player0.id] ?? 0} style={{ display: 'inline-block' }}>{t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player0.id] ?? 0 })}</ScorePop>}
             />
           }
           center={
@@ -600,18 +638,18 @@ export default function MemoryGameBoard({
               <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                 {difficultyLabel}
               </div>
-              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+              <ScorePop value={matchedPairs} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                 {matchedPairs}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>/</span>{totalPairs}
-              </div>
+              </ScorePop>
               <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                 {t('games.memory.game.scoreboardTitle')}
               </div>
             </>
           }
           centerCompact={
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+            <ScorePop value={matchedPairs} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
               {matchedPairs}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 4px' }}>/</span>{totalPairs}
-            </div>
+            </ScorePop>
           }
           rightCard={
             <GamePlayerCard
@@ -624,7 +662,7 @@ export default function MemoryGameBoard({
               isPremium={premiumByUserId.get(player1.id)}
               accentColor="var(--bd-mint)"
               turnDotColor="var(--bd-mint-deep)"
-              subline={t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player1.id] ?? 0 })}
+              subline={<ScorePop value={scoreByPlayerId[player1.id] ?? 0} style={{ display: 'inline-block' }}>{t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player1.id] ?? 0 })}</ScorePop>}
             />
           }
           trailing={onLeave ? <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} /> : undefined}
@@ -657,7 +695,7 @@ export default function MemoryGameBoard({
                   <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isPremium ? 'var(--bd-premium)' : undefined }}>
                     {name}{isPremium ? ' 👑' : ''}{isWinnerCard ? ' 🏆' : ''}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)' }}>{t('games.memory.game.pairsLabel', { count: score })}</div>
+                  <ScorePop value={score} style={{ fontSize: 11, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{t('games.memory.game.pairsLabel', { count: score })}</ScorePop>
                 </div>
                 {isActive && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--bd-mint-deep)', flexShrink: 0 }} />}
               </div>
@@ -702,7 +740,7 @@ export default function MemoryGameBoard({
               )}
               <div style={{ minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{score}p</div>
+                <ScorePop value={score} style={{ fontSize: 10, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{score}p</ScorePop>
               </div>
             </div>
           )
