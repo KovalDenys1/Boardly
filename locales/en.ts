@@ -2225,6 +2225,7 @@ const en = {
       termsOfService: 'Terms of Service',
       privacyPolicy: 'Privacy Policy',
       mustAgreeToTerms: 'You must agree to the Terms of Service and Privacy Policy',
+      marketingConsent: 'I’d like to receive occasional emails from the Boardly team about new games and features',
     },
     forgotPassword: {
       title: 'Forgot Password?',
@@ -2628,6 +2629,8 @@ const en = {
         pushUnavailable: 'Push notifications are not available on this server yet.',
         pushEnabled: 'Push notifications are on.',
         pushFailed: 'Could not turn on push notifications. Try again.',
+        marketing: 'Marketing emails',
+        marketingDesc: 'Occasional emails from the Boardly team about new games and features. Off by default.',
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
         categories: {

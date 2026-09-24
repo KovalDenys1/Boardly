@@ -2316,6 +2316,7 @@ const uk: TranslationWithPlurals = {
       termsOfService: 'Умовами використання',
       privacyPolicy: 'Політикою конфіденційності',
       mustAgreeToTerms: 'Ви повинні погодитися з Умовами використання та Політикою конфіденційності',
+      marketingConsent: 'Хочу час від часу отримувати листи від команди Boardly про нові ігри та функції',
     },
     forgotPassword: {
       title: 'Забули пароль?',
@@ -2725,6 +2726,8 @@ const uk: TranslationWithPlurals = {
         pushUnavailable: 'Push-сповіщення поки що недоступні на цьому сервері.',
         pushEnabled: 'Push-сповіщення увімкнено.',
         pushFailed: 'Не вдалося увімкнути push-сповіщення. Спробуйте ще раз.',
+        marketing: 'Листи про новини',
+        marketingDesc: 'Час від часу листи від команди Boardly про нові ігри та функції. За замовчуванням вимкнено.',
         sound: 'Звукові ефекти',
         soundDesc: 'Відтворювати звуки для ігрових дій та сповіщень',
         categories: {

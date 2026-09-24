@@ -132,6 +132,7 @@ type NotificationPreferences = {
   friendAccepted: boolean
   unsubscribedAll: boolean
   pushNotifications: boolean
+  marketingConsent: boolean
 }
 
 type ProfileSummary = {
@@ -276,6 +277,7 @@ export default function ProfilePage() {
     friendAccepted: true,
     unsubscribedAll: false,
     pushNotifications: false,
+    marketingConsent: false,
   })
   const [pushPermission, setPushPermission] = useState<'loading' | 'unsupported' | 'unavailable' | NotificationPermission>('loading')
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
@@ -2398,6 +2400,25 @@ export default function ProfilePage() {
                           checked={notificationPreferences.pushNotifications && pushPermission === 'granted'}
                           onCheckedChange={(checked) => handleTogglePush(Boolean(checked))}
                           disabled={notificationsSaving || pushPermission === 'unsupported' || pushPermission === 'unavailable' || pushPermission === 'denied' || pushPermission === 'loading'}
+                          className="mt-0.5 shrink-0"
+                        />
+                      </Label>
+
+                      {/* #1154: a separate legal consent, not a delivery channel like the three
+                          above - it stays available whatever emailNotificationsEnabled is. */}
+                      <Label className={settingsToggleCardClassName}>
+                        <div className="min-w-0 pr-3">
+                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                            {t('profile.settings.notifications.marketing')}
+                          </div>
+                          <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                            {t('profile.settings.notifications.marketingDesc')}
+                          </div>
+                        </div>
+                        <Checkbox
+                          checked={notificationPreferences.marketingConsent}
+                          onCheckedChange={(checked) => updateNotificationPreference('marketingConsent', Boolean(checked))}
+                          disabled={notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>

@@ -177,6 +177,7 @@ describe('ProfilePage', () => {
             friendRequests: true,
             friendAccepted: true,
             unsubscribedAll: false,
+            marketingConsent: false,
           },
         })
       }

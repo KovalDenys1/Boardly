@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
+import { upsertNotificationPreferences } from '@/lib/notification-preferences'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { email, username, password } = registerSchema.parse(body)
+    const { email, username, password, marketingConsent } = registerSchema.parse(body)
 
     // Check if user already exists. `findMany`, not `findFirst`: a guest row and a
     // real account can hold the email and the username separately, and the two
@@ -118,6 +119,22 @@ export async function POST(request: NextRequest) {
         )
       }
       throw error
+    }
+
+    // #1154: the unticked-by-default checkbox reaching this point true is the consent
+    // itself; upsertNotificationPreferences stamps the timestamp that proves it. Only
+    // written when checked - unchecked (the default) needs no row, since
+    // getNotificationPreferences already answers marketingConsent: false with no row at
+    // all. A failure here must never fail a signup that already created the account.
+    if (marketingConsent) {
+      try {
+        await upsertNotificationPreferences(user.id, { marketingConsent: true })
+      } catch (err) {
+        const log = apiLogger('POST /api/auth/register')
+        log.error('Failed to record marketing consent at signup', err instanceof Error ? err : new Error(String(err)), {
+          userId: user.id,
+        })
+      }
     }
 
     // Generate verification token
