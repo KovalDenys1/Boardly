@@ -1724,6 +1724,23 @@ input[type="range"].slider-thumb::-moz-range-track {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Shared result overlay (components/game-chrome/GameResultOverlay, #1111).
+   The component holds data-state="pending" for its reveal delay, then flips to
+   "shown": the scrim fades, the panel rises and settles. */
+.game-result-overlay[data-state='shown'] {
+  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both;
+}
+.game-result-overlay[data-state='shown'] .game-result-overlay__panel {
+  animation: result-panel-in var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes fade-in-plain {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes result-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
 .ttt-board-overlay {
   position: absolute;
   inset: 0;

@@ -1,5 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+import GameResultOverlay, {
+  RESULT_REVEAL_DELAY_MS,
+  resetResultOverlayRevealState,
+} from '@/components/game-chrome/GameResultOverlay'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -106,5 +109,106 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     render(<GameResultOverlay {...base} title="It's a draw" isDraw />)
     expect(document.querySelector('[data-icon="handshake"]')).toBeTruthy()
     expect(screen.queryByText('🏆')).toBeNull()
+  })
+})
+
+describe('GameResultOverlay reveal (#1111)', () => {
+  const base = {
+    title: 'Alice wins!',
+    onInspect: jest.fn(),
+    isHost: true,
+    onPlayAgain: jest.fn(),
+    gameType: 'tic_tac_toe' as const,
+  }
+  const originalMatchMedia = window.matchMedia
+
+  function mockReducedMotion(reduce: boolean) {
+    ;(window as unknown as { matchMedia: unknown }).matchMedia = (query: string) => ({
+      matches: reduce && query.includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+    })
+  }
+
+  const overlay = () => screen.getByTestId('game-result-overlay')
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    resetResultOverlayRevealState()
+    mockReducedMotion(false)
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+    ;(window as unknown as { matchMedia: unknown }).matchMedia = originalMatchMedia
+  })
+
+  it('waits the default delay, invisible and click-through, then shows', () => {
+    render(<GameResultOverlay {...base} />)
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+    expect(overlay().style.opacity).toBe('0')
+    expect(overlay().style.pointerEvents).toBe('none')
+    // Still mounted with its content, so adopters that query it keep working.
+    expect(screen.getByText('Alice wins!')).toBeTruthy()
+
+    act(() => { jest.advanceTimersByTime(RESULT_REVEAL_DELAY_MS - 1) })
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+
+    act(() => { jest.advanceTimersByTime(1) })
+    expect(overlay().getAttribute('data-state')).toBe('shown')
+    expect(overlay().style.opacity).toBe('')
+    expect(overlay().style.pointerEvents).toBe('')
+  })
+
+  it('honours a custom revealDelayMs, and 0 shows at once', () => {
+    const { unmount } = render(<GameResultOverlay {...base} revealDelayMs={200} />)
+    act(() => { jest.advanceTimersByTime(199) })
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+    act(() => { jest.advanceTimersByTime(1) })
+    expect(overlay().getAttribute('data-state')).toBe('shown')
+    unmount()
+
+    render(<GameResultOverlay {...base} revealDelayMs={0} />)
+    expect(overlay().getAttribute('data-state')).toBe('shown')
+  })
+
+  it('does not wait under prefers-reduced-motion', () => {
+    mockReducedMotion(true)
+    render(<GameResultOverlay {...base} />)
+    expect(overlay().getAttribute('data-state')).toBe('shown')
+    expect(overlay().style.opacity).toBe('')
+  })
+
+  it('does not wait again when the player comes back from View board', () => {
+    const { unmount } = render(<GameResultOverlay {...base} />)
+    act(() => { jest.advanceTimersByTime(RESULT_REVEAL_DELAY_MS) })
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    expect(base.onInspect).toHaveBeenCalled()
+    unmount()
+
+    const second = render(<GameResultOverlay {...base} />)
+    expect(overlay().getAttribute('data-state')).toBe('shown')
+    second.unmount()
+
+    // The note is used once: the next game's finish waits again.
+    render(<GameResultOverlay {...base} />)
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+  })
+
+  it('does not carry a View board note across games of a different type', () => {
+    const { unmount } = render(<GameResultOverlay {...base} revealDelayMs={0} />)
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    unmount()
+    render(<GameResultOverlay {...base} gameType="connect_four" />)
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+  })
+
+  it('clears its timer on unmount', () => {
+    const { unmount } = render(<GameResultOverlay {...base} />)
+    unmount()
+    expect(jest.getTimerCount()).toBe(0)
   })
 })
