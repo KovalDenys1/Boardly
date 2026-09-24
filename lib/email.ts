@@ -190,8 +190,8 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 /**
  * Sent once to accounts whose password hash had been readable through a misconfigured
  * database grant (security incident 2026-09-24). The hash has already been cleared by the
- * caller; this mail tells the person why and how to set a new password. Company voice,
- * replies go to support@.
+ * caller; this mail tells the person, in plain words, that the password was reset for
+ * security reasons and how to set a new one. Company voice, replies go to support@.
  */
 export async function sendSecurityPasswordResetEmail(email: string, username?: string | null) {
   if (!resend) {
@@ -207,7 +207,7 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
       from: FROM_EMAIL,
       to: email,
       replyTo: 'support@boardly.online',
-      subject: 'We reset your Boardly password as a precaution',
+      subject: 'Please set a new Boardly password',
       html: `
         <!DOCTYPE html>
         <html>
@@ -221,8 +221,7 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <p style="margin-top: 0;">${greeting}</p>
-              <p>During a security review of Boardly on 24 September 2026 we found a database permission that was set too widely. In theory it allowed the encrypted (hashed) form of account passwords to be read. We closed it the same day, and we have found no sign that anyone actually read or misused this data.</p>
-              <p>As a precaution we have reset the password on your account. Your old password no longer works. To keep playing, set a new one:</p>
+              <p>For security reasons we have reset the password on your Boardly account. Your old password no longer works, and setting a new one takes a minute:</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Set a new password
@@ -230,11 +229,11 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
               </div>
               <p style="color: #666; font-size: 14px;">If the button doesn't work, open this link and enter the email address of your Boardly account:</p>
               <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
-              <p>If you sign in with Google, GitHub or Discord, nothing changes for you: those sign-ins were not affected. If you used the same password anywhere else, we recommend changing it there too.</p>
-              <p>Your games, friends and Premium status are untouched. We are sorry for the inconvenience.</p>
+              <p>If you sign in with Google, GitHub or Discord, nothing changes for you.</p>
+              <p>Your games, friends and Premium are exactly as you left them. Sorry for the interruption, and thanks for playing.</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
               <p style="color: #999; font-size: 12px; margin: 0;">
-                Questions? Reply to this email and it reaches us at support@boardly.online.<br>
+                Questions? Just reply to this email.<br>
                 The Boardly team
               </p>
             </div>
