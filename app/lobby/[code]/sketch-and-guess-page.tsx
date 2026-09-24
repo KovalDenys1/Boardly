@@ -44,6 +44,7 @@ import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[c
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { sketchPhaseSeconds } from '@/lib/games/sketch-and-guess-phases'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 import {
     SKETCH_LIVE_EVENT,
     SKETCH_LIVE_RESYNC_MS,
@@ -696,6 +697,17 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // that has only `lastMoveAt`, which was the phase start then.
     const phaseStartedAt = gameData.phaseStartedAt ?? game?.lastMoveAt
 
+    // Turn and table cues (#1111): the drawer's seat coming to the viewer, and
+    // another player's correct guess, which is the move everyone else hears.
+    const othersGuessed = gameData.submittedPlayerIds.filter((id) => id !== currentUserId).length
+    useTurnSounds({
+        isMyTurn: isDrawer && !isFinished && (phase === 'choosing' || phase === 'drawing'),
+        lastMoveSignature: game ? `${gameData.currentRound}:${othersGuessed}` : null,
+        opponentMoved: othersGuessed > 0,
+        enabled: !isSpectator && !!game && !isFinished,
+        moveSound: 'score',
+    })
+
     // The strokes on the canvas and the half-typed guess belong to the round,
     // not to a layout tree: the desktop, landscape and portrait trees each mount
     // their own board, and only one of them is on screen at a time. Held here,
@@ -1108,6 +1120,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="sketch_and_guess"
+                    resultKey={`${game?.id}:${gameData.finishedAt ?? game?.lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

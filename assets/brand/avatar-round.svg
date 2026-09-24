@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Circle-safe avatar: ink fills the whole canvas, so any circular crop shows no corners.
+       The brand's coral offset shadow moves from the tile onto the letter itself. -->
+  <rect width="1024" height="1024" fill="#1F1B16"/>
+  <text x="534" y="548" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="600" fill="#FF6B5B" text-anchor="middle" dominant-baseline="central">B</text>
+  <text x="506" y="520" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="600" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
+</svg>

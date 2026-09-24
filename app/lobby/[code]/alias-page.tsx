@@ -32,6 +32,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 
 interface AliasPageProps {
   code: string
@@ -875,6 +876,21 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       sendGuess()
     }
   }, [sendGuess])
+
+  // Turn and table cues (#1111), read off the engine here because the derived
+  // values below sit after the loading return and a hook cannot. Describing is
+  // the viewer's turn; each word the describer settles is a move for the rest.
+  const soundUserId = getCurrentUserId()
+  const soundData = game?.status === 'playing' ? (gameEngine?.getState()?.data as AliasGameData | undefined) : undefined
+  const soundTeam = soundData?.teams?.[soundData.currentTeamIndex]
+  const soundDescriberId = soundTeam?.playerIds[soundTeam.describerIndex ?? 0]
+  const soundResults = soundData?.phase === 'turn_active' ? soundData.currentCardResults.length : 0
+  useTurnSounds({
+    isMyTurn: soundData?.phase === 'turn_active' && !!soundUserId && soundDescriberId === soundUserId,
+    lastMoveSignature: soundData ? `${soundData.turnStartedAt ?? ''}:${soundResults}` : null,
+    opponentMoved: soundResults > 0 && soundDescriberId !== soundUserId,
+    enabled: !isSpectator && !!soundData,
+  })
 
   // ─── Loading ───────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -51,6 +51,8 @@ import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { checkersMoverKeyframes, checkersSquareMotion } from './checkers-motion'
+import { ActiveCheckersMotion, useCheckersMotion } from './hooks/useCheckersMotion'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
 function parseLobbyGameState(activeGame: unknown): unknown {
@@ -88,33 +90,45 @@ function describeMove(record: CheckersMoveRecord): string {
     return record.path.map(squareName).join(joiner)
 }
 
-function CrownMark({ color }: { color: string }) {
+function CrownMark({ color, pop }: { color: string; pop?: boolean }) {
     return (
-        <svg viewBox="0 0 24 24" width="46%" height="46%" aria-hidden="true" style={{ display: 'block' }}>
+        <svg className={pop ? 'ck-crown ck-crown--pop' : 'ck-crown'} viewBox="0 0 24 24" width="46%" height="46%" aria-hidden="true" style={{ display: 'block' }}>
             <path d="M4 17h16l1.4-9.2-5 3.6L12 5l-4.4 6.4-5-3.6z" fill={color} stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
         </svg>
     )
 }
 
-function CheckersPiece({ side, king, faded }: { side: Side; king: boolean; faded?: boolean }) {
+function CheckersPiece({ side, king, faded, popCrown, motionClass, motionStyle }: {
+    side: Side
+    king: boolean
+    faded?: boolean
+    popCrown?: boolean
+    /** `ck-piece--jumped` / `ck-piece--captured` while a move animates (#1112). */
+    motionClass?: string
+    motionStyle?: React.CSSProperties
+}) {
     const fill = side === 1 ? PIECE_DARK : PIECE_LIGHT
     const ring = side === 1 ? 'rgba(255,255,255,0.22)' : 'rgba(120,90,50,0.35)'
     return (
         <div
-            className="ck-piece"
+            className={motionClass ? `ck-piece ${motionClass}` : 'ck-piece'}
             style={{
                 background: fill,
                 boxShadow: `inset 0 0 0 3px ${ring}, 0 3px 0 rgba(0,0,0,0.35)`,
                 opacity: faded ? 0.35 : 1,
+                ...motionStyle,
             }}
         >
-            {king && <CrownMark color={side === 1 ? '#FFC44D' : '#B7791F'} />}
+            {king && <CrownMark color={side === 1 ? '#FFC44D' : '#B7791F'} pop={popCrown} />}
         </div>
     )
 }
 
+const ms = (value: number) => `${Math.round(value)}ms`
+
 function CheckersBoard({
     board, flipped, selected, movable, mustCapture, destinations, lastPath, pendingCaptures, disabled, onSquareClick, squareLabel,
+    motion, popCrownAt,
 }: {
     board: number[][]
     flipped: boolean
@@ -127,8 +141,31 @@ function CheckersBoard({
     disabled: boolean
     onSquareClick: (r: number, c: number) => void
     squareLabel: (square: Square) => string
+    /** The move in flight, if any (#1112). */
+    motion: ActiveCheckersMotion | null
+    /** The square of a man just crowned; its crown pops in when it lands. */
+    popCrownAt: Square | null
 }) {
     const order = Array.from({ length: BOARD_SIZE }, (_, i) => (flipped ? BOARD_SIZE - 1 - i : i))
+    const moverRef = React.useRef<HTMLDivElement>(null)
+    const plan = motion?.plan ?? null
+    const moverDest = plan ? plan.hops[plan.hops.length - 1].to : null
+    const moverOrigin = plan ? plan.hops[0].from : null
+    const display = (n: number) => (flipped ? BOARD_SIZE - 1 - n : n)
+
+    // The travelling piece: one transform animation over every hop, measured in
+    // squares (see checkersMoverKeyframes). A chain hop that extends the run
+    // restarts it at the time already played, so the piece does not jump back.
+    useLayoutEffect(() => {
+        const el = moverRef.current
+        if (!motion || !el || typeof el.animate !== 'function') return
+        const { timing } = motion
+        const travel = timing.liftStart
+        const animation = el.animate(checkersMoverKeyframes(motion.plan, timing, flipped), { duration: travel, fill: 'both' })
+        animation.currentTime = Math.min(motion.offset, travel)
+        return () => animation.cancel()
+    }, [motion, flipped])
+
     return (
         <div className="ck-board" style={{ background: FRAME }} data-testid="checkers-board">
             {order.map((r) =>
@@ -142,6 +179,23 @@ function CheckersBoard({
                     const onLastPath = lastPath.some(([lr, lc]) => lr === r && lc === c)
                     const isPendingCapture = pendingCaptures.some(([pr, pc]) => pr === r && pc === c)
                     const clickable = !disabled && dark && (isMovable || isDestination || isSelected)
+                    // While a move is in flight its piece is drawn by the mover, so
+                    // the destination square holds nothing until it lands.
+                    const hiddenForMover = sameSquare(moverDest, r, c)
+                    let pieceNode: React.ReactNode = null
+                    const squareMotion = motion && plan ? checkersSquareMotion(plan, motion.timing, motion.offset, [r, c], cell) : null
+                    if (squareMotion?.kind === 'jumped' && side) {
+                        // Jumped mid-chain: it stays until the turn ends, faded as the mover passes.
+                        pieceNode = <CheckersPiece key={`j${motion!.epoch}`} side={side} king={isKing(cell)} faded motionClass="ck-piece--jumped" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
+                    } else if (squareMotion?.kind === 'captured') {
+                        // Taken and already lifted from the state: a ghost fades out as the mover passes.
+                        pieceNode = <CheckersPiece key={`c${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
+                    } else if (squareMotion?.kind === 'lifted') {
+                        // Taken earlier in the turn: stays dimmed until the mover lands.
+                        pieceNode = <CheckersPiece key={`l${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured ck-piece--lifted" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
+                    } else if (side && !hiddenForMover) {
+                        pieceNode = <CheckersPiece side={side} king={isKing(cell)} faded={isPendingCapture} popCrown={sameSquare(popCrownAt, r, c)} />
+                    }
                     let ring = 'none'
                     if (isSelected) ring = `inset 0 0 0 3px ${HIGHLIGHT}`
                     else if (isMovable && mustCapture) ring = `inset 0 0 0 3px ${HIGHLIGHT}`
@@ -165,11 +219,25 @@ function CheckersBoard({
                             }}
                         >
                             {onLastPath && <span className="ck-last" style={{ background: LAST_MOVE_TINT }} />}
-                            {side && <CheckersPiece side={side} king={isKing(cell)} faded={isPendingCapture} />}
+                            {pieceNode}
                             {isDestination && <span className="ck-dot" style={{ background: HIGHLIGHT }} />}
                         </button>
                     )
                 })
+            )}
+            {plan && moverOrigin && (
+                <div
+                    ref={moverRef}
+                    className="ck-mover"
+                    aria-hidden="true"
+                    data-testid="checkers-mover"
+                    style={{
+                        left: `calc(var(--ck-pad) + ${display(moverOrigin[1])} * var(--ck-cell))`,
+                        top: `calc(var(--ck-pad) + ${display(moverOrigin[0])} * var(--ck-cell))`,
+                    }}
+                >
+                    <CheckersPiece side={pieceSide(plan.movingCell) ?? plan.side} king={isKing(plan.movingCell)} />
+                </div>
             )}
         </div>
     )
@@ -707,6 +775,10 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     // Hoisted above the early returns so these hooks always run (Rules of Hooks).
     const earlyData = gameEngine ? (gameEngine.getState().data as CheckersGameData) : undefined
     const earlyMoveHistory = earlyData?.moveHistory
+    // Motion (#1112): the viewer's side decides whether an arriving move is theirs.
+    const earlyViewerIndex = gameEngine ? gameEngine.getState().players.findIndex((p) => p.id === getCurrentUserId()) : -1
+    const viewerSide: Side | null = earlyViewerIndex === 0 ? 1 : earlyViewerIndex === 1 ? 2 : null
+    const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide)
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
@@ -988,6 +1060,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     disabled={boardDisabled}
                     onSquareClick={handleSquareClick}
                     squareLabel={(square) => t('games.checkers.game.square', { square: squareName(square) })}
+                    motion={boardMotion}
+                    popCrownAt={gameData.lastMove?.promoted ? gameData.lastMove.path[gameData.lastMove.path.length - 1] ?? null : null}
                 />
                 {isFinished && !isSpectator && overlayInspecting && (
                     <button
@@ -1001,6 +1075,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                     title={isDraw ? t('games.checkers.game.draw') : winnerName ? t('games.checkers.game.playerWins', { player: winnerName }) : t('games.checkers.game.gameWon')}
                     kicker={isDraw ? t('games.checkers.game.drawRule') : endReasonLine ?? undefined}
                     isDraw={isDraw}

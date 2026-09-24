@@ -105,8 +105,7 @@ describe('GameStatusBanner clock and untimed phases (#905)', () => {
     )
     expect(screen.getByText('0/3 players ready')).toBeTruthy()
     expect(screen.queryByText(':00')).toBeNull()
-    // The bar is the only element carrying a width percentage.
-    expect(container.querySelector('[style*="width: 100%"]')).toBeNull()
+    expect(container.querySelector('[data-testid="game-status-timer-bar"]')).toBeNull()
   })
 
   /**
@@ -130,5 +129,53 @@ describe('GameStatusBanner clock and untimed phases (#905)', () => {
   it('still raises the idle nudge on the same turn when the banner owns the clock', () => {
     render(<GameStatusBanner {...idleShape} />)
     expect(screen.getByText('game.ui.firstMoveNudge')).toBeTruthy()
+  })
+})
+
+describe('GameStatusBanner motion (#1111)', () => {
+  const base = {
+    isFinished: false,
+    activeTitle: "Alice's turn",
+    secs: 30,
+    turnTimerLimit: 60,
+    barColor: 'var(--bd-mint)',
+  }
+
+  it('remounts the title with the cue class when the turn changes', () => {
+    const { rerender } = render(<GameStatusBanner {...base} />)
+    const first = screen.getByTestId('game-status-title')
+    expect(first.className).toContain('game-status-cue')
+
+    rerender(<GameStatusBanner {...base} secs={29} />)
+    // A timer tick is not a turn change: same node, no replayed cue.
+    expect(screen.getByTestId('game-status-title')).toBe(first)
+
+    rerender(<GameStatusBanner {...base} activeTitle="Your turn" />)
+    const second = screen.getByTestId('game-status-title')
+    expect(second).not.toBe(first)
+    expect(second.className).toContain('game-status-cue')
+    expect(second.textContent).toContain('Your turn')
+  })
+
+  it('cues the spectator line and the finished plate too', () => {
+    const { rerender } = render(<GameStatusBanner {...base} isSpectator />)
+    const spectating = screen.getByTestId('game-status-title')
+    rerender(<GameStatusBanner {...base} isSpectator activeTitle="Bob's turn" />)
+    expect(screen.getByTestId('game-status-title')).not.toBe(spectating)
+
+    rerender(<GameStatusBanner {...base} isFinished finishedMessage="Alice wins!" />)
+    expect(screen.getByTestId('game-status-title').className).toContain('game-status-cue')
+  })
+
+  it('drives the timer bar with scaleX from the left, never width', () => {
+    const { rerender } = render(<GameStatusBanner {...base} />)
+    const bar = screen.getByTestId('game-status-timer-bar')
+    expect(bar.style.transform).toBe('scaleX(0.5)')
+    expect(bar.style.transformOrigin).toBe('left center')
+    expect(bar.style.width).toBe('100%')
+    expect(bar.style.transition).not.toContain('width')
+
+    rerender(<GameStatusBanner {...base} secs={90} />)
+    expect(screen.getByTestId('game-status-timer-bar').style.transform).toBe('scaleX(1)')
   })
 })

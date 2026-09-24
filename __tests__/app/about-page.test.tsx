@@ -39,7 +39,11 @@ describe('/about JSON-LD', () => {
       name: 'Boardly',
       url: 'https://boardly.online',
       logo: { '@type': 'ImageObject', url: 'https://boardly.online/brand/logo.png' },
-      sameAs: ['https://github.com/KovalDenys1/Boardly'],
+      sameAs: [
+        'https://github.com/KovalDenys1/Boardly',
+        'https://www.tiktok.com/@playboardly',
+        'https://www.youtube.com/@playboardly',
+      ],
       contactPoint: { '@type': 'ContactPoint', email: 'support@boardly.online' },
     })
   })
