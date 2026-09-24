@@ -19,8 +19,8 @@ is built and reachable behind a feature flag or a direct lobby code; it still ap
 `noindex`. `planned` has a catalog entry, a name and an icon, and no engine or route
 behind them.
 
-**Available (9):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Memory, Connect Four, Alias, Rock Paper Scissors, Liar's Party, Sketch & Guess
-**In development:** Checkers, Ludo, Fake Artist, Telephone Doodle
+**Available (11):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Memory, Connect Four, Alias, Rock Paper Scissors, Liar's Party, Sketch & Guess, Checkers, Ludo
+**In development:** Fake Artist, Telephone Doodle
 **Planned:** Words-Mines, Anagrams, Crocodile, Alibi Night
 
 `npm run audit:docs` fails if these three lines and the catalog ever disagree.

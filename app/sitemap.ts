@@ -40,6 +40,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/games/rock-paper-scissors', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/liars-party', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/sketch-and-guess', { changeFrequency: 'monthly', priority: 0.85 }),
+    page('/games/checkers', { changeFrequency: 'monthly', priority: 0.85 }),
+    page('/games/ludo', { changeFrequency: 'monthly', priority: 0.85 }),
 
     // Guides index
     page('/guides', { changeFrequency: 'weekly', priority: 0.85 }),

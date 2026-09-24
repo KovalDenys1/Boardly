@@ -590,6 +590,27 @@ Server-as-code and the bot live in `KovalDenys1/boardly-discord`, ids only in
 `server/snapshot.json`; the vault note is `03 Projects/Boardly/Discord Server.md`; one phase
 per session.
 
+## Research before build, agents in parallel (Denys, 2026-09-24)
+
+A new game or a rework of one starts with research, not code. Run it as short, single-question
+agents and write the result into the vault under `03 Projects/Boardly/`:
+- **Demand:** Google Trends against *yahtzee online*, plus `SearchConsoleDaily`.
+- **Competitors:** who ranks, and what they offer.
+- **Player sentiment:** what people praise and hate (reviews, forums).
+- **Fit and cost:** in this codebase.
+
+The result becomes acceptance criteria on the ticket. The first run is in
+`New Games Research 2026-09-24.md` and `Competitor UX Research 2026-09-24.md`.
+
+**Builds:**
+- Independent builds go to agents in separate git worktrees.
+- Every agent-built PR gets a code review and an adversarial refuter before merge. On 2026-09-24 that caught a seat/side desync in Checkers, a forgeable host accept in Sketch & Guess, and #1103: the results route was leaking running games' secrets.
+
+**Limits:**
+- Keep the fan-out small: one or two long-reading agents at a time, each writing its result before the next one starts.
+- Wide parallelism burns Denys's usage limit and returns nothing if stopped.
+- One agent owns Chrome at a time.
+
 ## Growth work runs as a loop, not as ideas
 
 Sunday funnel routine → Tuesday planner (cloud, Sonnet, Supabase only) → Wednesday builder
