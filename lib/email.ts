@@ -187,6 +187,71 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   }
 }
 
+/**
+ * Sent once to accounts whose password hash had been readable through a misconfigured
+ * database grant (security incident 2026-09-24). The hash has already been cleared by the
+ * caller; this mail tells the person why and how to set a new password. Company voice,
+ * replies go to support@.
+ */
+export async function sendSecurityPasswordResetEmail(email: string, username?: string | null) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
+  const greeting = username ? `Hi ${escapeHtml(username)},` : 'Hi,'
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: 'support@boardly.online',
+      subject: 'We reset your Boardly password as a precaution',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <p style="margin-top: 0;">${greeting}</p>
+              <p>During a security review of Boardly on 24 September 2026 we found a database permission that was set too widely. In theory it allowed the encrypted (hashed) form of account passwords to be read. We closed it the same day, and we have found no sign that anyone actually read or misused this data.</p>
+              <p>As a precaution we have reset the password on your account. Your old password no longer works. To keep playing, set a new one:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                  Set a new password
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">If the button doesn't work, open this link and enter the email address of your Boardly account:</p>
+              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
+              <p>If you sign in with Google, GitHub or Discord, nothing changes for you: those sign-ins were not affected. If you used the same password anywhere else, we recommend changing it there too.</p>
+              <p>Your games, friends and Premium status are untouched. We are sorry for the inconvenience.</p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                Questions? Reply to this email and it reaches us at support@boardly.online.<br>
+                The Boardly team
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true, id: data?.id }
+  } catch (error) {
+    logger.error('Failed to send security password reset email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
 export async function sendWelcomeEmail(email: string, name: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
