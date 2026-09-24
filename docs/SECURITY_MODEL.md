@@ -7,9 +7,12 @@
 - Registered users are validated via NextAuth session/JWT.
 - Canonical signing secret: `NEXTAUTH_SECRET`.
 - Sessions are stateless JWTs, so revocation is a per-user cutoff: `Users.sessionsValidFrom`.
-  The jwt callback in `lib/next-auth.ts` reads it on every request and ends any session whose
-  `authenticatedAt` is earlier, or whose account no longer exists (#1136). A password reset and
-  a completed email change set it to now; NULL, the default, revokes nothing.
+  The custom `jwt.decode` in `lib/next-auth.ts` reads it on every request and treats any session
+  whose `authenticatedAt` is earlier, or whose account no longer exists, as an invalid cookie
+  (#1136). It sits in decode, not the jwt callback, because NextAuth's OAuth callback decodes the
+  existing cookie to choose the account a new provider identity is linked to and never runs the
+  jwt callback on it. A password reset and a completed email change set it to now; NULL, the
+  default, revokes nothing. `proxy.ts` uses `getToken`'s default decode and does not check it.
 - An email change needs the current password, or a sign-in within the last ten minutes for an
   account without one, and the address being replaced is told (#1136).
 

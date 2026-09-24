@@ -8,7 +8,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
-import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
+import { decode as defaultJwtDecode, encode as defaultJwtEncode, type JWT } from 'next-auth/jwt'
 import {
   getCredentialsSessionMaxAgeSeconds,
   REMEMBER_ME_MAX_AGE_SECONDS,
@@ -29,16 +29,6 @@ function getOAuthProfileEmail(profile: unknown): string {
   return typeof email === 'string' && email.length > 0 ? email : 'unknown'
 }
 
-// Thrown from the jwt callback to end a session (#1136). NextAuth catches any
-// error there: /api/auth/session clears the cookie and answers `{}`, and
-// getServerSession returns null, so the request is treated as signed out.
-export class SessionRevokedError extends Error {
-  constructor(reason: string) {
-    super(`Session revoked: ${reason}`)
-    this.name = 'SessionRevokedError'
-  }
-}
-
 /**
  * True when a token signed in before the account's session cutoff. A null
  * cutoff never revokes anything, which is every row until a password reset or
@@ -57,10 +47,32 @@ export function isBeforeSessionCutoff(
   return signedInAt < sessionsValidFrom.getTime()
 }
 
-// Read on every request, not inside the 30-minute refresh below: the point is
-// that a session stolen before a password reset stops working on its very next
-// request (#1136, the fix #805 specified). One primary-key read of one column.
-async function assertSessionNotRevoked(userId: string, authenticatedAt: unknown) {
+// The session cutoff (#1136) lives in jwt.decode, not in callbacks.jwt,
+// because decode is the one step every use of an existing session cookie
+// passes. /api/auth/session and getServerSession decode the cookie before
+// callbacks.jwt runs, but the OAuth callback decodes it to choose the account a
+// new provider identity is linked to and never runs callbacks.jwt for that
+// cookie (next-auth 4.24 core/lib/callback-handler.js). With the check only in
+// callbacks.jwt, a cookie stolen before a password reset could link the thief's
+// own Google, GitHub or Discord account to the victim's and come back with a
+// fresh session. Returning null from decode makes the session route clear the
+// cookie and answer `{}`, getServerSession return null, and the OAuth callback
+// treat the request as signed out, so nothing is linked.
+//
+// Read on every request, not inside the 30-minute refresh: a stolen session
+// stops working on its very next request (the fix #805 specified). One
+// primary-key read of one column.
+async function isSessionRevoked(payload: JWT): Promise<boolean> {
+  const userId =
+    typeof payload.id === 'string' && payload.id.length > 0
+      ? payload.id
+      : typeof payload.sub === 'string' && payload.sub.length > 0
+        ? payload.sub
+        : null
+  if (!userId) {
+    return false
+  }
+
   let row: { sessionsValidFrom: Date | null } | null
   try {
     row = await prisma.users.findUnique({
@@ -68,23 +80,26 @@ async function assertSessionNotRevoked(userId: string, authenticatedAt: unknown)
       select: { sessionsValidFrom: true },
     })
   } catch (error) {
-    // A database blip must not sign every user out: an error thrown from here
-    // clears the cookie. The check runs again on the next request.
+    // A database blip must not sign every user out. The check runs again on
+    // the next request.
     apiLogger('NextAuth jwt').warn('Session cutoff check skipped: database read failed', {
       userId,
       error: error instanceof Error ? error.message : String(error),
     })
-    return
+    return false
   }
 
   // The account was deleted (delete-account removes the row), so the session
   // has nothing left to stand for.
   if (!row) {
-    throw new SessionRevokedError('the account no longer exists')
+    apiLogger('NextAuth jwt').info('Session ended: the account no longer exists', { userId })
+    return true
   }
-  if (isBeforeSessionCutoff(authenticatedAt, row.sessionsValidFrom)) {
-    throw new SessionRevokedError('signed in before the account\'s session cutoff')
+  if (isBeforeSessionCutoff(payload.authenticatedAt, row.sessionsValidFrom)) {
+    apiLogger('NextAuth jwt').info('Session ended: signed in before the account\'s session cutoff', { userId })
+    return true
   }
+  return false
 }
 
 export const authOptions: NextAuthOptions = {
@@ -203,7 +218,11 @@ export const authOptions: NextAuthOptions = {
       })
     },
     async decode(params) {
-      return defaultJwtDecode(params)
+      const payload = await defaultJwtDecode(params)
+      if (payload && (await isSessionRevoked(payload))) {
+        return null
+      }
+      return payload
     },
   },
   pages: {
@@ -363,12 +382,6 @@ export const authOptions: NextAuthOptions = {
         token.banExpiresAt = (user as { banExpiresAt?: string | null }).banExpiresAt ?? token.banExpiresAt ?? null
         token.rememberMe = (user as { rememberMe?: boolean }).rememberMe ?? token.rememberMe ?? true
         token.authenticatedAt = Date.now()
-      }
-
-      // Not on the sign-in call itself: `user` is set there and authenticatedAt
-      // was stamped a line above, so the token cannot predate any cutoff.
-      if (!user && token.id) {
-        await assertSessionNotRevoked(String(token.id), token.authenticatedAt)
       }
 
       if (typeof token.rememberMe !== 'boolean') {
