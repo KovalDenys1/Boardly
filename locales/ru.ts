@@ -1713,7 +1713,6 @@ const ru = {
         guessTooFast: 'Не так быстро – подождите секунду',
         waitingForDrawing: 'Ждём рисунок...',
         hintLabel: 'Букв в слове: {{count}}',
-        wordInChat: 'Так вы выдадите слово – оставьте его для догадки',
       },
     },
     liars_party: {

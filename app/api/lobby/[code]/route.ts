@@ -103,6 +103,7 @@ async function commitTimeoutFallback(params: {
     dbPlayers: fallbackDbPlayers,
   })
 
+  const writtenAt = new Date()
   const updateResult = await prisma.games.updateMany({
     where: { id: activeGame.id, updatedAt: activeGame.updatedAt },
     data: {
@@ -110,11 +111,14 @@ async function commitTimeoutFallback(params: {
       status: nextState.status as 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled',
       ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
       ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
-      updatedAt: new Date(),
+      updatedAt: writtenAt,
     },
   })
 
   if (updateResult.count === 0) return
+  // So a second write in the same request (Sketch & Guess's hint lock) is
+  // conditioned on this row, not the one read before it.
+  activeGame.updatedAt = writtenAt
 
   if (terminalUpdate) {
     // The terminal diff supersedes the plain score sync below — one update per
@@ -540,6 +544,28 @@ export async function GET(
               },
             })
           }
+
+          // The first language a guesser asks in fixes their word hint's
+          // language for the round (PR #1100 review): written here, once per
+          // player per round, and only then built – so a request that names
+          // another language gets the locked one, and a failed write gets none.
+          const hintLocale = searchParams.get('locale')
+          if (requestUser?.id && hintLocale && activeGame.status === 'playing') {
+            const lockGame = new SketchAndGuessGame(activeGame.id)
+            lockGame.restoreState(parsePersistedGameState<RestorableGameState>(activeGame.state))
+            if (lockGame.lockHintLocale(requestUser.id, hintLocale)) {
+              const lockedState = lockGame.getState()
+              const writtenAt = new Date()
+              const locked = await prisma.games.updateMany({
+                where: { id: activeGame.id, updatedAt: activeGame.updatedAt },
+                data: { state: toPersistedGameStateInput(lockedState), updatedAt: writtenAt },
+              })
+              if (locked.count === 1) {
+                activeGame.state = JSON.stringify(lockedState)
+                activeGame.updatedAt = writtenAt
+              }
+            }
+          }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
           log.warn('Sketch & Guess timeout fallback on lobby GET failed', {
@@ -557,10 +583,7 @@ export async function GET(
           ...activeGame,
           state: (() => {
             const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
-            // `locale` is the viewer's UI language, which Sketch & Guess builds
-            // its word hint in (#1082); any other game ignores it.
             const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null, {
-              viewerLocale: searchParams.get('locale'),
               hostUserId: lobby.creatorId ?? null,
             })
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])

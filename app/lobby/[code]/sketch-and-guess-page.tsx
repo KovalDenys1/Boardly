@@ -108,6 +108,9 @@ type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-
  */
 const EMPTY_DRAFT: SketchAndGuessDraft = Object.freeze(emptySketchAndGuessDraft())
 
+/** How long after the drawer's last stroke the canvas is saved to the server (PR #1100 review). */
+const SKETCH_DRAWING_SAVE_DEBOUNCE_MS = 5000
+
 function defaultSketchState(): SketchAndGuessGameData {
     return {
         phase: 'choosing',
@@ -818,6 +821,26 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         }
         clientLogger.warn('Sketch & Guess drawing was not stored for the reveal', { gameId: gameIdForDrawing })
     }, [gameIdForDrawing, locale, loadLobbyData])
+    // And while drawing, the canvas is saved a few seconds after each stroke
+    // (`save-drawing`), so a drawer whose final send never lands – tab closed,
+    // connection gone – still has the picture everyone watched kept, rather
+    // than a blank-drawing penalty (PR #1100 review). Quiet on the server: no
+    // broadcast, no replay row. A lost save is not worth a retry; the next
+    // stroke brings another.
+    useEffect(() => {
+        if (!isStreamingDrawer || !gameIdForDrawing || committedStrokes === EMPTY_DRAFT.strokes) return
+        const timer = window.setTimeout(() => {
+            void Promise.resolve(
+                fetchWithGuest(`/api/game/${gameIdForDrawing}/sketch-and-guess-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save-drawing', data: { content: serializeSketchDrawing(committedStrokes) }, locale }),
+                })
+            ).catch(() => {})
+        }, SKETCH_DRAWING_SAVE_DEBOUNCE_MS)
+        return () => window.clearTimeout(timer)
+    }, [isStreamingDrawer, gameIdForDrawing, committedStrokes, locale])
+
     useEffect(() => {
         if (!needsDrawingSent || drawingSentForRoundRef.current === roundNumber) return
         drawingSentForRoundRef.current = roundNumber

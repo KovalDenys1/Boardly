@@ -1651,7 +1651,6 @@ const en = {
         guessTooFast: 'Not so fast – wait a moment',
         waitingForDrawing: 'Waiting for the drawing...',
         hintLabel: 'Letters in the word: {{count}}',
-        wordInChat: 'That gives the word away – keep it for your guess',
       },
     },
     liars_party: {

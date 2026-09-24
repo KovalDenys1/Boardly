@@ -97,6 +97,8 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
     onAcceptGuess,
     liveView,
     isHost,
+    draft,
+    onDraftChange,
   }: {
     onSubmitGuess: (guess: string) => void
     onLiveStroke?: (stroke: unknown) => void
@@ -104,6 +106,8 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
     onAcceptGuess?: (guessId: string) => void
     liveView?: { strokes: unknown[]; live: unknown } | null
     isHost?: boolean
+    draft?: { strokes: unknown[] }
+    onDraftChange?: (next: unknown) => void
   }) => (
     <div
       data-testid="sketch-board"
@@ -115,6 +119,7 @@ jest.mock('@/components/SketchAndGuessGameBoard', () => ({
       <button onClick={() => onLiveStroke?.({ color: '#1F1B16', width: 3, points: [{ x: 1, y: 2 }] })}>draw</button>
       <button onClick={() => onChooseWord?.('castle')}>choose</button>
       <button onClick={() => onAcceptGuess?.('r1-g1')}>accept</button>
+      <button onClick={() => onDraftChange?.({ ...draft, strokes: [...(draft?.strokes ?? []), { color: '#000', width: 3, points: [{ x: 1, y: 1 }] }] })}>stroke</button>
     </div>
   ),
   SketchScoreRows: ({ players }: { players: Array<{ id: string; name: string }> }) => (
@@ -742,6 +747,42 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     await waitFor(() => expect(actionBodies().map((body) => body.action)).toEqual(['submit-drawing', 'submit-drawing']), {
       timeout: 3000,
     })
+  })
+
+  // PR #1100 review: a drawer whose final send never lands used to lose the
+  // drawing outright. The page now saves it a few seconds after each stroke.
+  it('saves the drawer\u2019s canvas five seconds after the last stroke, and not before', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+    })
+    jest.useFakeTimers()
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(3000) })
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(4000) })
+      expect(actionBodies()).toHaveLength(0)
+      act(() => { jest.advanceTimersByTime(1500) })
+      expect(actionBodies().map((body) => body.action)).toEqual(['save-drawing'])
+      expect(JSON.parse(actionBodies()[0].data.content).strokes).toHaveLength(2)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('never saves a canvas for a guesser', async () => {
+    await renderWith((response) => {
+      response.activeGame.state.data.phase = 'drawing'
+    })
+    jest.useFakeTimers()
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'stroke' })[0])
+      act(() => { jest.advanceTimersByTime(6000) })
+      expect(actionBodies()).toHaveLength(0)
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('sends nothing from a guesser at the reveal', async () => {

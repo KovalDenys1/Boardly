@@ -54,7 +54,8 @@ export async function POST(
     }
 
     const rawBody = await request.json()
-    // The mover's UI language, for the word hint in the state handed back (#1082).
+    // The mover's UI language. The first one seen for a guesser in a round fixes
+    // the language of their word hint for that round (lockHintLocale).
     const viewerLocale =
       rawBody && typeof rawBody === 'object' && typeof (rawBody as { locale?: unknown }).locale === 'string'
         ? ((rawBody as { locale: string }).locale.slice(0, 16))
@@ -139,7 +140,8 @@ export async function POST(
         action: string
         playerId?: string | null
         data?: Record<string, unknown>
-      }
+      },
+      options: { quiet?: boolean } = {}
     ) => {
       const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
 
@@ -219,15 +221,20 @@ export async function POST(
         }
       }
 
-      await appendGameReplaySnapshot({
-        gameId,
-        playerId: actingPlayerId ?? null,
-        actionType,
-        actionPayload,
-        state: nextState,
-      })
+      // A mid-round drawing save is bookkeeping, not a move: every five seconds a
+      // 100 KB replay row and a lobby-wide refetch would buy nobody anything –
+      // the others are watching the live stream already.
+      if (!options.quiet) {
+        await appendGameReplaySnapshot({
+          gameId,
+          playerId: actingPlayerId ?? null,
+          actionType,
+          actionPayload,
+          state: nextState,
+        })
+      }
 
-      if (game.lobby?.code) {
+      if (game.lobby?.code && !options.quiet) {
         // No single viewer for a shared broadcast — strip the live prompt for
         // everyone; each client re-fetches its own viewer-sanitized state via
         // GET /api/lobby/[code] rather than trusting this payload directly.
@@ -273,13 +280,16 @@ export async function POST(
       })
     }
 
+    // Fixed the first time; the state written below carries it (PR #1100 review).
+    const hintLockedNow = viewerLocale ? sketchGame.lockHintLocale(userId, viewerLocale) : false
+
     const body = parsedBody.data
     const now = new Date()
     let move: Move
     if (body.action === 'advance-round') {
       move = { playerId: userId, type: 'advance-round', data: {}, timestamp: now }
-    } else if (body.action === 'submit-drawing') {
-      move = { playerId: userId, type: 'submit-drawing', data: { content: body.data.content.trim() }, timestamp: now }
+    } else if (body.action === 'submit-drawing' || body.action === 'save-drawing') {
+      move = { playerId: userId, type: body.action, data: { content: body.data.content.trim() }, timestamp: now }
     } else if (body.action === 'choose-word') {
       move = { playerId: userId, type: 'choose-word', data: { wordId: body.data.wordId }, timestamp: now }
     } else if (body.action === 'accept-guess') {
@@ -291,19 +301,17 @@ export async function POST(
       // Accepting a guess that is already accepted changes nothing, so it
       // writes nothing – a double tap or a retry after a lost response is a
       // success, not an error and not a second row in the replay.
-      if (!timeoutFallbackApplied && sketchGame.isGuessAcceptedByHost(body.data.guessId)) {
+      if (!timeoutFallbackApplied && !hintLockedNow && sketchGame.isGuessAcceptedByHost(body.data.guessId)) {
         return NextResponse.json({
           success: true,
-          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
+          state: sanitizeSketchAndGuessStateForBroadcast(sketchGame.getState(), userId, { hostUserId: game.lobby?.creatorId ?? null }),
           timeoutFallbackApplied: false,
         })
       }
-      move = {
-        playerId: userId,
-        type: 'accept-guess',
-        data: { guessId: body.data.guessId, authorizedAsHost: true },
-        timestamp: now,
-      }
+      // Authority goes to the engine by this call, never in move data, which a
+      // client writes (PR #1100 review).
+      sketchGame.authorizeHost(userId)
+      move = { playerId: userId, type: 'accept-guess', data: { guessId: body.data.guessId }, timestamp: now }
     } else {
       move = { playerId: userId, type: 'submit-guess', data: { guess: body.data.guess.trim() }, timestamp: now }
     }
@@ -340,7 +348,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
+            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId, { hostUserId: game.lobby?.creatorId ?? null }),
           },
           { status: 409 }
         )
@@ -376,12 +384,13 @@ export async function POST(
         action: body.action,
         playerId: userId,
         data: move.data,
-      }
+      },
+      { quiet: body.action === 'save-drawing' && !timeoutFallbackApplied }
     )
 
     return NextResponse.json({
       success: true,
-      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId, { viewerLocale, hostUserId: game.lobby?.creatorId ?? null }),
+      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId, { hostUserId: game.lobby?.creatorId ?? null }),
       timeoutFallbackApplied,
       ...(guessOutcome ? { guessResult: { correct: guessOutcome.correct, close: guessOutcome.close } } : {}),
       timeoutFallback: timeoutFallbackApplied

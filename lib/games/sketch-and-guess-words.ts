@@ -284,23 +284,66 @@ export function sketchWordKeys(word: Pick<SketchWord, SketchWordLocale>): string
   return [...keys]
 }
 
-/** Levenshtein distance, stopping as soon as it is known to exceed `limit`. */
-export function boundedEditDistance(a: string, b: string, limit: number): number {
+/**
+ * Optimal-string-alignment distance: Levenshtein plus a swap of two adjacent
+ * letters counted as one edit, so "elepahnt" is one from "elephant" – the typo
+ * people actually make. Works on code points, not UTF-16 units, so a letter
+ * outside the BMP is one letter. Stops early once it is known to exceed `limit`.
+ */
+export function boundedEditDistance(left: string, right: string, limit: number): number {
+  const a = Array.from(left)
+  const b = Array.from(right)
   if (Math.abs(a.length - b.length) > limit) return limit + 1
+  let beforePrevious: number[] = []
   let previous = Array.from({ length: b.length + 1 }, (_, i) => i)
   for (let i = 1; i <= a.length; i += 1) {
     const current = [i]
     let rowMin = i
     for (let j = 1; j <= b.length; j += 1) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1
-      const value = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+      let value = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        value = Math.min(value, beforePrevious[j - 2] + 1)
+      }
       current.push(value)
       if (value < rowMin) rowMin = value
     }
     if (rowMin > limit) return limit + 1
+    beforePrevious = previous
     previous = current
   }
   return previous[b.length]
+}
+
+/** Letters only, the length the thresholds below are about. */
+function letterCount(key: string): number {
+  return Array.from(key.replace(/ /g, '')).length
+}
+
+/**
+ * How many edits away a wrong guess may be and still be hidden from the table
+ * as a near miss: none under 4 letters, 1 from 4, 2 from 8 (PR #1100 review).
+ */
+export function nearMissEditBudget(form: string): number {
+  const letters = letterCount(form)
+  if (letters >= 8) return 2
+  if (letters >= 4) return 1
+  return 0
+}
+
+/**
+ * A wrong guess that would give the word away to whoever read it: within the
+ * edit budget of any form in any language, or containing a whole form of 4
+ * letters or more as whole words ("big elephant", not "whenever" for "hen").
+ */
+export function isSketchNearMissKey(key: string, forms: string[]): boolean {
+  if (!key) return false
+  const padded = ` ${key} `
+  return forms.some((form) => {
+    const budget = nearMissEditBudget(form)
+    if (budget > 0 && boundedEditDistance(key, form, budget) <= budget) return true
+    return letterCount(form) >= 4 && padded.includes(` ${form} `)
+  })
 }
 
 /** Below this length a one-letter-off hint gives the word away, so none is offered. */
@@ -314,7 +357,7 @@ export function matchSketchGuess(guess: string, word: Pick<SketchWord, SketchWor
   const keys = sketchWordKeys(word)
   if (keys.includes(key)) return 'correct'
   const isClose = keys.some(
-    (form) => form.length >= MIN_CLOSE_HINT_LENGTH && boundedEditDistance(key, form, 1) === 1
+    (form) => letterCount(form) >= MIN_CLOSE_HINT_LENGTH && boundedEditDistance(key, form, 1) === 1
   )
   return isClose ? 'close' : 'wrong'
 }

@@ -1651,7 +1651,6 @@ const no = {
         guessTooFast: 'Ikke så fort – vent litt',
         waitingForDrawing: 'Venter på tegningen...',
         hintLabel: 'Bokstaver i ordet: {{count}}',
-        wordInChat: 'Det avslører ordet – spar det til gjetningen',
       },
     },
     liars_party: {

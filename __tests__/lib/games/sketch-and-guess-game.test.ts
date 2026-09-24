@@ -4,8 +4,8 @@ import {
   SketchAndGuessGameData,
   buildSketchWordHint,
   isSketchAndGuessSolverMuted,
+  isSketchNearMiss,
   sanitizeSketchAndGuessActionEventForBroadcast,
-  sketchAndGuessChatRevealsWord,
   sanitizeSketchAndGuessStateForBroadcast,
 } from '@/lib/games/sketch-and-guess-game'
 import {
@@ -279,10 +279,12 @@ describe('SketchAndGuessGame – every language counts (#1082)', () => {
 
 describe('SketchAndGuessGame – host accepts a guess (#1082)', () => {
   const accept = (guessId: string, by = 'player1', at?: number) =>
-    createMove(by, 'accept-guess', { guessId, authorizedAsHost: true }, at)
+    createMove(by, 'accept-guess', { guessId }, at)
 
   function withWrongGuess() {
     const { game, word, startAt } = drawingGame()
+    // What the route does once it has checked lobby.creatorId.
+    game.authorizeHost('player1')
     game.makeMove(createMove('player2', 'submit-guess', { guess: 'elefant-ish typo' }, startAt + 1000))
     const guessId = getData(game).rounds[0].guesses[0].id
     return { game, word, startAt, guessId }
@@ -316,7 +318,9 @@ describe('SketchAndGuessGame – host accepts a guess (#1082)', () => {
   })
 
   it('refuses without the route saying the mover is the host', () => {
-    const { game, guessId } = withWrongGuess()
+    const { game, startAt } = drawingGame()
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'typo' }, startAt + 1000))
+    const guessId = getData(game).rounds[0].guesses[0].id
     expect(game.validateMove(createMove('player1', 'accept-guess', { guessId }))).toBe(false)
   })
 
@@ -331,6 +335,7 @@ describe('SketchAndGuessGame – host accepts a guess (#1082)', () => {
     game.makeMove(createMove('player2', 'choose-word', { wordId: round2.wordChoices[0].id }))
     game.makeMove(createMove('player1', 'submit-guess', { guess: 'my own miss' }))
     const ownGuessId = getData(game).rounds[1].guesses[0].id
+    game.authorizeHost('player1')
 
     expect(game.validateMove(accept(ownGuessId, 'player1'))).toBe(false)
   })
@@ -739,23 +744,24 @@ describe('Sketch & Guess word hint (#1082)', () => {
     expect(a).toEqual(b)
   })
 
-  it('is given to a guesser who names a language, never to the drawer, never without one', () => {
+  it('is given to a guesser in their locked language only, never to the drawer, the broadcast or a spectator', () => {
     const { game } = drawingGame(1, 'sketch-hint')
-    const state = game.getState()
     const round = (published: unknown) => (published as { data: SketchAndGuessGameData }).data.rounds[0]
+    expect(game.lockHintLocale('player2', 'no')).toBe(true)
+    const state = game.getState()
 
-    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player2', { viewerLocale: 'no' })).wordHint?.lang).toBe('no')
-    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, null, { viewerLocale: 'en' })).wordHint).toBeDefined()
-    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player2')).wordHint).toBeUndefined()
-    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player1', { viewerLocale: 'en' })).wordHint).toBeUndefined()
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player2')).wordHint?.lang).toBe('no')
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, null)).wordHint).toBeUndefined()
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player3')).wordHint).toBeUndefined()
+    expect(round(sanitizeSketchAndGuessStateForBroadcast(state, 'player1')).wordHint).toBeUndefined()
   })
 
   it('never spells the word out, even at the end of the clock', () => {
-    const { game, word } = drawingGame(1, 'sketch-hint-late')
-    const startedAt = getData(game).rounds[0].drawingStartedAt as number
     for (const lang of ['en', 'no', 'ru', 'uk'] as const) {
+      const { game, word } = drawingGame(1, `sketch-hint-late-${lang}`)
+      const startedAt = getData(game).rounds[0].drawingStartedAt as number
+      game.lockHintLocale('player2', lang)
       const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2', {
-        viewerLocale: lang,
         now: startedAt + DRAW_MS - 1,
       }) as { data: SketchAndGuessGameData }
       const hint = published.data.rounds[0].wordHint!
@@ -768,7 +774,8 @@ describe('Sketch & Guess word hint (#1082)', () => {
 
   it('is not given while the word is still being chosen', () => {
     const game = newGame(1, 'sketch-hint-choosing')
-    const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2', { viewerLocale: 'en' }) as {
+    expect(game.lockHintLocale('player2', 'en')).toBe(false)
+    const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2') as {
       data: SketchAndGuessGameData
     }
     expect(published.data.rounds[0].wordHint).toBeUndefined()
@@ -812,15 +819,16 @@ describe('near-miss redaction (#1082)', () => {
     for (const text of texts) expect(json).not.toContain(JSON.stringify(text))
   })
 
-  it('hands the text to its author, the drawer and the host', () => {
+  it('hands the text to its author and the drawer (who is the host here)', () => {
     const game = roundWithNearMisses()
     for (const viewer of ['player2', 'player1']) {
       const guesses = (sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer, { hostUserId: HOST }).data as SketchAndGuessGameData).rounds[0].guesses
       expect(guesses.filter((g) => g.nearMiss).map((g) => g.guess)).toEqual(texts)
     }
-    // A host who is guessing this round, not drawing it.
+    // A host who is guessing this round and has not got it yet is a guesser
+    // like any other (PR #1100 review) – see the review block below.
     const asHostGuesser = (sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player3', { hostUserId: 'player3' }).data as SketchAndGuessGameData).rounds[0].guesses
-    expect(asHostGuesser.filter((g) => g.nearMiss).map((g) => g.guess)).toEqual(texts)
+    expect(asHostGuesser.filter((g) => g.nearMiss).map((g) => g.guess)).toEqual(['', '', ''])
   })
 
   it('shows everything once the round is revealed', () => {
@@ -844,23 +852,111 @@ describe('Sketch & Guess chat rules (#1082)', () => {
     expect(isSketchAndGuessSolverMuted(params('player2'))).toBe(false)
   })
 
-  it('refuses a message that contains the word in any language while it is drawn', () => {
-    const game = newGame(1, 'sketch-chat-word')
-    withWord(game, 'castle')
-    game.makeMove(createMove('player1', 'choose-word', { wordId: 'castle' }))
-    const leaks = (message: string) => sketchAndGuessChatRevealsWord({ gameStatus: 'playing', state: game.getState(), message })
-    expect(leaks('it is a CASTLE')).toBe(true)
-    expect(leaks('замок!')).toBe(true)
-    expect(leaks('Slott?')).toBe(true)
-    expect(leaks('nice drawing')).toBe(false)
-    expect(sketchAndGuessChatRevealsWord({ gameStatus: 'finished', state: game.getState(), message: 'castle' })).toBe(false)
+})
+
+/** PR #1100 review, items 1–3 and 5–8. */
+describe('PR #1100 review fixes', () => {
+  it('1: ignores a client-supplied authorizedAsHost – authority comes only from authorizeHost()', () => {
+    const { game, startAt } = drawingGame(2, 'review-forgery')
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'not it' }, startAt + 1000))
+    const guessId = getData(game).rounds[0].guesses[0].id
+    // player3 forges the flag the old engine trusted.
+    expect(game.makeMove(createMove('player3', 'accept-guess', { guessId, authorizedAsHost: true }))).toBe(false)
+    expect(game.makeMove(createMove('player1', 'accept-guess', { guessId, authorizedAsHost: true }))).toBe(false)
+    game.authorizeHost('player1')
+    expect(game.makeMove(createMove('player1', 'accept-guess', { guessId }))).toBe(true)
   })
 
-  it('lets the word be said once the round is revealed', () => {
-    const game = newGame(1, 'sketch-chat-reveal')
-    withWord(game, 'castle')
-    game.makeMove(createMove('player1', 'choose-word', { wordId: 'castle' }))
+  it('2: shows a host who is guessing (and has not solved it) no near-miss text', () => {
+    const game = newGame(2, 'review-host-guesser')
+    withWord(game, 'elephant')
+    game.makeMove(createMove('player1', 'choose-word', { wordId: 'elephant' }))
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'elephnat' }))
+    const view = (host: string) =>
+      (sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player3', { hostUserId: host }).data as SketchAndGuessGameData)
+        .rounds[0].guesses[0].guess
+    expect(view('player3')).toBe('')
+    // Once the host has solved the round they may read it.
+    game.makeMove(createMove('player3', 'submit-guess', { guess: 'elephant' }, Date.now() + 5000))
+    expect(view('player3')).toBe('elephnat')
+  })
+
+  it('3: locks the hint language per player per round; a second language is never served', () => {
+    const { game } = drawingGame(2, 'review-hint-lock')
+    const hintFor = (viewer: string) =>
+      (sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer).data as SketchAndGuessGameData).rounds[0].wordHint
+    expect(hintFor('player2')).toBeUndefined()
+    expect(game.lockHintLocale('player2', 'ru')).toBe(true)
+    expect(game.lockHintLocale('player2', 'en')).toBe(false)
+    expect(hintFor('player2')?.lang).toBe('ru')
+    expect(game.lockHintLocale('player1', 'en')).toBe(false) // the drawer gets no hint
+    expect(hintFor('player3')).toBeUndefined()
+  })
+
+  it('5: hides near misses by whole token and transposition, ignores short forms in text', () => {
+    const elephant = getSketchWord('elephant')!
+    expect(isSketchNearMiss('elepahnt', elephant)).toBe(true) // transposition = 1
+    expect(isSketchNearMiss('big elephant here', elephant)).toBe(true) // whole token
+    expect(isSketchNearMiss('elephants', elephant)).toBe(true)
+    expect(isSketchNearMiss('elepantx', elephant)).toBe(true) // 2 edits, 8 letters
+    const chicken = getSketchWord('chicken')!
+    expect(isSketchNearMiss('when', chicken)).toBe(false) // "hen" is too short to hunt for in text
+    expect(isSketchNearMiss('the hen', chicken)).toBe(false)
+    const cat = getSketchWord('cat')!
+    expect(isSketchNearMiss('который', cat)).toBe(false)
+  })
+
+  it('6: a drawer-host who accepts a guess earns no drawer points for it', () => {
+    const { game, startAt } = drawingGame(2, 'review-drawer-host')
+    game.makeMove(createMove('player2', 'submit-guess', { guess: 'close enough' }, startAt + 1000))
+    const guessId = getData(game).rounds[0].guesses[0].id
+    game.authorizeHost('player1') // player1 created the lobby and draws round 1
+    expect(game.makeMove(createMove('player1', 'accept-guess', { guessId }))).toBe(true)
+    expect(getData(game).scores.player2).toBeGreaterThan(0)
+    expect(getData(game).scores.player1).toBe(0)
+    expect(getData(game).scoreBreakdown.player1.drawerPoints).toBe(0)
+  })
+
+  it('7: save-drawing stores the drawing mid-round and the reveal timeout keeps it without a penalty', () => {
+    const { game, startAt } = drawingGame(1, 'review-save')
+    expect(game.makeMove(createMove('player2', 'save-drawing', { content: DRAWING }, startAt + 1000))).toBe(false)
+    expect(game.makeMove(createMove('player1', 'save-drawing', { content: DRAWING }, startAt + 6000))).toBe(true)
+    expect(getData(game).phase).toBe('drawing')
+    expect(game.validateMove(createMove('player1', 'save-drawing', { content: DRAWING }, startAt + 6500))).toBe(false) // too soon
+    const started = getData(game).phaseStartedAt as number
+    const result = game.applyTimeoutFallback(undefined, started + DRAWING_MS + SKETCH_PHASE_SECONDS.reveal * 1000)
+    expect(result.autoSubmittedDrawings).toBe(0)
+    expect(getData(game).rounds[0].drawingContent).toBe(DRAWING)
+    expect(getData(game).scoreBreakdown.player1.autoSubmissionPenalty).toBe(0)
+  })
+
+  it('7: the final submit at the reveal still replaces a saved drawing', () => {
+    const { game, startAt } = drawingGame(1, 'review-save-final')
+    game.makeMove(createMove('player1', 'save-drawing', { content: BLANK_DRAWING }, startAt + 6000))
     game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
-    expect(sketchAndGuessChatRevealsWord({ gameStatus: 'playing', state: game.getState(), message: 'castle' })).toBe(false)
+    expect(game.makeMove(createMove('player1', 'submit-drawing', { content: DRAWING }))).toBe(true)
+    expect(getData(game).rounds[0].drawingContent).toBe(DRAWING)
+    expect(getData(game).rounds[0].drawingAutoSubmitted).toBe(false)
+    expect(game.validateMove(createMove('player1', 'submit-drawing', { content: DRAWING }))).toBe(false)
+  })
+
+  it('8: a legacy guessing phase runs its clock from when guessing began (drawingSubmittedAt)', () => {
+    const now = Date.now()
+    const game = new SketchAndGuessGame('legacy-clock')
+    game.restoreState({
+      id: 'legacy-clock', gameType: 'sketch_and_guess', status: 'playing',
+      players: [{ id: 'a', name: 'A', score: 0 }, { id: 'b', name: 'B', score: 0 }, { id: 'c', name: 'C', score: 0 }],
+      currentPlayerIndex: 0, lastMoveAt: now - 1000, updatedAt: new Date(),
+      data: {
+        phase: 'guessing', currentRound: 1, totalRounds: 1, drawerOrder: ['a', 'b', 'c'], currentDrawerId: 'a',
+        rounds: [{ round: 1, drawerId: 'a', prompt: 'castle', drawingContent: DRAWING, drawingSubmittedAt: now - 50_000,
+          drawingAutoSubmitted: false, guesses: [{ playerId: 'b', guess: 'x', submittedAt: now - 1000, isCorrect: false }],
+          revealAt: null, isScored: false, scoredAt: null }],
+        submittedPlayerIds: ['b'], scores: {}, scoreBreakdown: {}, winnerId: null, ranking: [], completionReason: null,
+        finishedAt: null, isMvpScaffold: true,
+      },
+    } as never)
+    expect(getData(game).phaseStartedAt).toBe(now - 50_000)
+    expect(getData(game).rounds[0].drawingStartedAt).toBe(now - 50_000)
   })
 })

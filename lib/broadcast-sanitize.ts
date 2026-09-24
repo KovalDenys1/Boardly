@@ -25,13 +25,9 @@ type Sanitizer = <T extends { data?: unknown; status?: string }>(
   options?: SanitizeOptions
 ) => T
 
-/**
- * Per-viewer extras a sanitizer may use. `viewerLocale` is the viewer's UI
- * language: Sketch & Guess builds its word hint in it (#1082).
- */
+/** Per-viewer extras a sanitizer may use. */
 export interface SanitizeOptions {
-  viewerLocale?: string | null
-  /** The lobby's creator. Sketch & Guess shows them near-miss guesses so they can accept one. */
+  /** The lobby's creator. Sketch & Guess shows them near-miss guesses they are allowed to judge. */
   hostUserId?: string | null
 }
 
@@ -49,10 +45,7 @@ const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   guess_the_spy: (state) => sanitizeSpyStateForBroadcast(state),
   rock_paper_scissors: (state, viewerUserId) => sanitizeRpsStateForBroadcast(state, viewerUserId),
   sketch_and_guess: (state, viewerUserId, options) =>
-    sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId, {
-      viewerLocale: options?.viewerLocale ?? null,
-      hostUserId: options?.hostUserId ?? null,
-    }),
+    sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId, { hostUserId: options?.hostUserId ?? null }),
   memory: (state) => sanitizeMemoryStateForBroadcast(state),
   alias: (state, viewerUserId) => sanitizeAliasStateForBroadcast(state, viewerUserId),
   fake_artist: (state, viewerUserId) => sanitizeFakeArtistStateForBroadcast(state, viewerUserId),

@@ -328,6 +328,17 @@ export async function POST(
       log.warn('Game not found', { gameId, userId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
+
+    // Sketch & Guess has its own move route, which applies the game's phase
+    // clock, checks who the host is, and redacts the answer per viewer. This
+    // generic one did none of that and passed the client's move data straight
+    // to the engine, so a forged host acceptance got through (PR #1100 review).
+    if (game.lobby.gameType === 'sketch_and_guess') {
+      return NextResponse.json(
+        { error: 'Sketch & Guess moves go through /sketch-and-guess-action', code: 'USE_SKETCH_ACTION_ROUTE' },
+        { status: 400 }
+      )
+    }
     
     log.debug('Game fetched successfully', { gameId, status: game.status })
 

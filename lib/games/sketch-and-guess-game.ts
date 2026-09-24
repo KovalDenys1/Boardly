@@ -11,8 +11,8 @@ import {
 } from './sketch-and-guess-phases'
 import {
   SKETCH_WORDS,
-  boundedEditDistance,
   findSketchWordByEnglish,
+  isSketchNearMissKey,
   matchSketchGuess,
   normalizeSketchGuess,
   resolveSketchWordLocale,
@@ -34,6 +34,8 @@ export interface SketchAndGuessGuess {
   autoSubmitted?: boolean
   /** The host marked this wrong guess correct (#1082). */
   acceptedByHost?: boolean
+  /** ...and the host was drawing this round, so it earns the drawer nothing (PR #1100 review). */
+  acceptedByDrawer?: boolean
   /**
    * Never stored: set by the sanitizer on a wrong guess that nearly spells the
    * word, whose text only its author, the drawer and the host are handed.
@@ -61,6 +63,13 @@ export interface SketchAndGuessRound {
   drawingSubmittedAt: number | null
   /** No drawing arrived, or it was blank: the drawer pays the auto-submission penalty. */
   drawingAutoSubmitted: boolean
+  /** When the drawer's page last saved the canvas mid-round (`save-drawing`). */
+  drawingSavedAt?: number | null
+  /**
+   * The one language each guesser's word hint is built in this round, fixed the
+   * first time they ask, so nobody can collect the pattern in all four.
+   */
+  hintLocales?: Record<string, SketchWordLocale>
   guesses: SketchAndGuessGuess[]
   revealAt: number | null
   isScored: boolean
@@ -139,6 +148,8 @@ const MIN_GUESS_LENGTH = 2
 const MAX_GUESS_LENGTH = 80
 const SKETCH_TIMEOUT_FALLBACK_MAX_ITERATIONS = 256
 const WORD_CHOICE_COUNT = 3
+/** The drawer's page saves the canvas every few seconds; not more often than this. */
+const DRAWING_SAVE_MIN_INTERVAL_MS = 2000
 
 /** Every correct guess is worth this much before the speed bonus. */
 const SCORE_CORRECT_GUESS_BASE = 50
@@ -154,6 +165,12 @@ const SCORE_AUTO_GUESS_PENALTY = 10
 function moveTime(move: Move): number {
   const at = move.timestamp instanceof Date ? move.timestamp.getTime() : NaN
   return Number.isFinite(at) ? at : Date.now()
+}
+
+function isDrawingContentSized(content: string | null | undefined): boolean {
+  if (!content) return false
+  const length = content.trim().length
+  return length >= MIN_DRAWING_CONTENT_LENGTH && length <= MAX_DRAWING_CONTENT_LENGTH
 }
 
 /** A drawing with no strokes in it, which scores like no drawing at all. */
@@ -173,6 +190,12 @@ function legacyWord(prompt: string): SketchWord {
 
 export class SketchAndGuessGame extends GameEngine {
   private lastGuessOutcome: SketchAndGuessGuessOutcome | null = null
+  /**
+   * The one player the route has confirmed is the lobby's creator, for
+   * `accept-guess`. Set only by `authorizeHost`, never from move data – a client
+   * writes move data, and trusting it let anyone accept a guess (PR #1100 review).
+   */
+  private authorizedHostId: string | null = null
 
   constructor(gameId: string, config: GameConfig = { maxPlayers: 10, minPlayers: 3 }) {
     super(gameId, 'sketch_and_guess', config)
@@ -267,6 +290,12 @@ export class SketchAndGuessGame extends GameEngine {
     }
 
     const current = data.rounds.find((round) => round.round === data.currentRound)
+    // Guessing began when the old drawing was submitted, which is a truer start
+    // for its clock than lastMoveAt – every old guess moved that (PR #1100 review).
+    if (wasGuessing && current && typeof current.drawingSubmittedAt === 'number' && Number.isFinite(current.drawingSubmittedAt)) {
+      data.phaseStartedAt = current.drawingSubmittedAt
+      current.drawingStartedAt = current.drawingSubmittedAt
+    }
     if (current && data.phase === 'drawing') {
       if (current.drawingStartedAt === null) current.drawingStartedAt = data.phaseStartedAt
       if (wasGuessing || !Array.isArray(data.submittedPlayerIds)) {
@@ -317,17 +346,26 @@ export class SketchAndGuessGame extends GameEngine {
       case 'submit-drawing': {
         if (move.playerId !== data.currentDrawerId) return false
         if (data.phase !== 'drawing' && data.phase !== 'reveal') return false
-        if (round.isScored || round.drawingContent !== null) return false
-        const content = getStringField(move.data, 'content')
-        if (!content) return false
-        const length = content.trim().length
-        return length >= MIN_DRAWING_CONTENT_LENGTH && length <= MAX_DRAWING_CONTENT_LENGTH
+        if (round.isScored || typeof round.drawingSubmittedAt === 'number') return false
+        return isDrawingContentSized(getStringField(move.data, 'content'))
+      }
+
+      // The canvas as it stands, saved by the drawer's page a few seconds after
+      // each stroke, so a drawer whose final send never lands still has their
+      // drawing kept (PR #1100 review). Drawer only, drawing phase only, not
+      // more than once per DRAWING_SAVE_MIN_INTERVAL_MS, and never ends a phase.
+      case 'save-drawing': {
+        if (move.playerId !== data.currentDrawerId || data.phase !== 'drawing') return false
+        if (round.isScored || typeof round.drawingSubmittedAt === 'number') return false
+        const lastSave = typeof round.drawingSavedAt === 'number' ? round.drawingSavedAt : -Infinity
+        if (moveTime(move) - lastSave < DRAWING_SAVE_MIN_INTERVAL_MS) return false
+        return isDrawingContentSized(getStringField(move.data, 'content'))
       }
 
       case 'accept-guess': {
         // Who the host is lives on the lobby, not in game state: the route
-        // checks `lobby.creatorId` and says so here. Everything else is ours.
-        if (move.data?.authorizedAsHost !== true) return false
+        // checks `lobby.creatorId` and calls authorizeHost. Everything else is ours.
+        if (this.authorizedHostId === null || this.authorizedHostId !== move.playerId) return false
         if (data.phase !== 'drawing' && data.phase !== 'reveal') return false
         if (round.isScored) return false
         const guessId = getStringField(move.data, 'guessId')
@@ -378,6 +416,27 @@ export class SketchAndGuessGame extends GameEngine {
     return !!round?.guesses.some((guess) => guess.id === guessId && guess.acceptedByHost === true)
   }
 
+  /** The route calls this once it has checked the mover is the lobby's creator. */
+  authorizeHost(userId: string): void {
+    this.authorizedHostId = userId
+  }
+
+  /**
+   * Fixes the language `playerId`'s word hint is built in for the current
+   * round, the first time they ask. True when this call set it – the caller
+   * then has state to write. Later calls, in any language, change nothing.
+   */
+  lockHintLocale(playerId: string, locale: string | null | undefined): boolean {
+    const data = this.state.data as SketchAndGuessGameData
+    if (this.state.status !== 'playing' || data.phase !== 'drawing' || !locale) return false
+    const round = this.getCurrentRound(data)
+    if (!round?.word || playerId === round.drawerId) return false
+    if (!this.state.players.some((player) => player.id === playerId)) return false
+    if (round.hintLocales?.[playerId]) return false
+    round.hintLocales = { ...(round.hintLocales ?? {}), [playerId]: resolveSketchWordLocale(locale) }
+    return true
+  }
+
   processMove(move: Move): void {
     const data = this.state.data as SketchAndGuessGameData
     const now = moveTime(move)
@@ -409,12 +468,13 @@ export class SketchAndGuessGame extends GameEngine {
       return
     }
 
-    if (move.type === 'submit-drawing') {
+    if (move.type === 'submit-drawing' || move.type === 'save-drawing') {
       const content = getStringField(move.data, 'content')
       if (!content) return
       const trimmed = content.trim()
       round.drawingContent = trimmed
-      round.drawingSubmittedAt = now
+      if (move.type === 'submit-drawing') round.drawingSubmittedAt = now
+      else round.drawingSavedAt = now
       round.drawingAutoSubmitted = isBlankDrawing(trimmed)
       this.recomputeScoreboard(data)
       return
@@ -428,6 +488,9 @@ export class SketchAndGuessGame extends GameEngine {
       // so the speed bonus and the first-correct bonus fall where they would have.
       guess.isCorrect = true
       guess.acceptedByHost = true
+      // A drawer-host may still judge – they know best what they drew – but is
+      // not paid for a guess they ruled correct themselves.
+      if (move.playerId === round.drawerId) guess.acceptedByDrawer = true
       this.recordCorrectGuesser(data, round, guess.playerId, now)
       return
     }
@@ -670,11 +733,12 @@ export class SketchAndGuessGame extends GameEngine {
         }
       }
 
-      if (correctGuesses.length > 0) {
+      const paidToDrawer = correctGuesses.filter((guess) => !guess.acceptedByDrawer)
+      if (paidToDrawer.length > 0) {
         const drawerBreakdown = breakdownByPlayer.get(round.drawerId)
         if (drawerBreakdown) {
           drawerBreakdown.drawerRoundsWithCorrectGuesses += 1
-          drawerBreakdown.drawerPoints += correctGuesses.length * SCORE_DRAWER_PER_CORRECT_GUESS
+          drawerBreakdown.drawerPoints += paidToDrawer.length * SCORE_DRAWER_PER_CORRECT_GUESS
         }
       }
 
@@ -867,10 +931,22 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
     data.phaseStartedAt ??
     ((state as { lastMoveAt?: unknown }).lastMoveAt as number | undefined) ??
     null
+  // Only in the language locked for this viewer this round (lockHintLocale):
+  // a hint built from whatever language a request names let one guesser
+  // collect the pattern in all four (PR #1100 review).
+  const lockedLang = viewerUserId !== null ? currentRound.hintLocales?.[viewerUserId] : undefined
   const wordHint =
-    !viewerIsDrawer && options.viewerLocale && hintWord && (data.phase as string) !== 'choosing'
-      ? buildSketchWordHint(hintWord, options.viewerLocale, drawingStartedAt, options.now ?? Date.now(), currentRound.round)
+    !viewerIsDrawer && lockedLang && hintWord && (data.phase as string) !== 'choosing'
+      ? buildSketchWordHint(hintWord, lockedLang, drawingStartedAt, options.now ?? Date.now(), currentRound.round)
       : undefined
+  // The host reads near misses to decide on Accept, but only once the word is
+  // no news to them: drawing it, or having guessed it (PR #1100 review).
+  const hostMayRead =
+    options.hostUserId != null &&
+    viewerUserId === options.hostUserId &&
+    (viewerIsDrawer ||
+      (Array.isArray(currentRound.guesses) &&
+        currentRound.guesses.some((guess) => guess.playerId === viewerUserId && guess.isCorrect)))
 
   const sanitizedRound: SketchAndGuessRound = {
     ...currentRound,
@@ -884,7 +960,6 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
           // A near miss spells the word all but a letter, so it is a secret too –
           // except from the host, who has to read it to decide whether to accept it.
           if (hintWord && isSketchNearMiss(guess.guess, hintWord)) {
-            const hostMayRead = options.hostUserId != null && viewerUserId === options.hostUserId
             return mayReadIt || hostMayRead ? { ...guess, nearMiss: true } : { ...guess, guess: '', nearMiss: true }
           }
           return guess
@@ -901,55 +976,15 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
 }
 
 export interface SketchSanitizeOptions {
-  /** The viewer's UI language, which the word hint is built in. No language, no hint. */
-  viewerLocale?: string | null
   /** The lobby's creator, who may read near misses because they decide whether to accept one. */
   hostUserId?: string | null
   /** For tests: the moment the hint is built for. */
   now?: number
 }
 
-/**
- * A wrong guess that gives the word away if read: one edit from any form in any
- * language, or containing a whole form ("big castle", "castles!!"). Checked at
- * every length – unlike the author's private "close!" hint, which is about
- * helping, this is about hiding, and hiding too much only costs a line of text.
- */
+/** A wrong guess that gives the word away if read – see `isSketchNearMissKey`. */
 export function isSketchNearMiss(guess: string, word: Pick<SketchWord, SketchWordLocale>): boolean {
-  const key = normalizeSketchGuess(guess)
-  if (!key) return false
-  return sketchWordKeys(word).some(
-    (form) =>
-      boundedEditDistance(key, form, 1) <= 1 ||
-      (form.length >= 3 && (key.includes(form) || key.replace(/ /g, '').includes(form.replace(/ /g, ''))))
-  )
-}
-
-/** The current round's word as the server holds it, for the chat checks below; null outside a live round. */
-function liveSketchWord(state: unknown): Pick<SketchWord, SketchWordLocale> | null {
-  const data = (state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
-  if (!data || typeof data !== 'object' || !Array.isArray(data.rounds)) return null
-  const phase = data.phase as string
-  if (phase !== 'drawing' && phase !== 'guessing') return null
-  const round = data.rounds.find((r) => r.round === data.currentRound)
-  if (!round) return null
-  return round.word ?? (round.prompt ? legacyWord(round.prompt) : null)
-}
-
-/**
- * Whether a lobby chat message would hand the round's word to the table: it
- * contains a form of it, in any language, while the round is being drawn.
- * Whoever sends it – a guesser who has just got it is the likely one – the
- * message would end the round for everyone else (#1082).
- */
-export function sketchAndGuessChatRevealsWord(params: { gameStatus: string; state: unknown; message: string }): boolean {
-  if (params.gameStatus !== 'playing') return false
-  const word = liveSketchWord(params.state)
-  if (!word) return false
-  const key = normalizeSketchGuess(params.message)
-  if (!key) return false
-  const padded = ` ${key} `
-  return sketchWordKeys(word).some((form) => (form.length >= 3 ? key.includes(form) : padded.includes(` ${form} `)))
+  return isSketchNearMissKey(normalizeSketchGuess(guess), sketchWordKeys(word))
 }
 
 /**

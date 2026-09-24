@@ -174,7 +174,10 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
     expect(mockBroadcastToLobby).not.toHaveBeenCalled()
   })
 
-  it('refuses a message that spells the word, from anyone, while it is drawn (#1082)', async () => {
+  // PR #1100 review: refusing messages that contain the word was a yes/no
+  // oracle for the word, misfired on substrings, and was beaten by a zero-width
+  // character. Only the mutes remain.
+  it('does not refuse a guesser’s message for its content', async () => {
     const { state, word } = solvedDrawingState()
     seedLobby(state)
     asUser(THIRD)
@@ -187,11 +190,8 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
       }),
       { params: Promise.resolve({ code: 'ABCD12' }) }
     )
-    const body = (await response.json()) as { code?: string }
 
-    expect(response.status).toBe(403)
-    expect(body.code).toBe('WORD_IN_CHAT')
-    expect(mockPersistChatMessage).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
   })
 
   it('still lets a guesser without the word chat normally (#1082)', async () => {

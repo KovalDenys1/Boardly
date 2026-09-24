@@ -232,9 +232,45 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action broadcast payload (#10
     // The host reads it, to decide on Accept. DRAWER created this lobby; make the
     // other guesser the creator to see it from a host who is not drawing.
     seedGame(withMiss.state, SECOND_GUESSER)
+    // A host who is guessing reads near misses once they have the word themselves (PR #1100 review).
     asUser(SECOND_GUESSER)
-    const host = await (await post({ action: 'submit-guess', data: { guess: 'another miss' } })).json()
+    const host = await (await post({ action: 'submit-guess', data: { guess: prompt } })).json()
+    expect(host.guessResult).toEqual({ correct: true, close: false })
     expect(host.state.data.rounds[0].guesses[0]).toMatchObject({ guess: freshNear, nearMiss: true })
+  })
+
+  it('locks the hint language on first sight: a later request in another language still gets the first', async () => {
+    asUser(SECOND_GUESSER)
+    await post({ action: 'submit-guess', data: { guess: 'first try' }, locale: 'ru' })
+    const written = (prisma.games.updateMany as jest.Mock).mock.calls[0][0].data.state
+    const reread = typeof written === 'string' ? JSON.parse(written) : written
+    // Back-date that guess past the 800 ms guess limit, so the second is accepted.
+    for (const guess of reread.data.rounds[0].guesses) guess.submittedAt -= 5000
+    seedGame(reread)
+
+    const later = await (await post({ action: 'submit-guess', data: { guess: 'second try' }, locale: 'en' })).json()
+    expect(later.state.data.rounds[0].wordHint?.lang).toBe('ru')
+    expect(JSON.stringify(later)).not.toContain('"lang":"en"')
+  })
+
+  it('saves the drawer\u2019s canvas mid-round quietly: no replay row, no broadcast, phase unchanged', async () => {
+    const replay = jest.requireMock('@/lib/game-replay').appendGameReplaySnapshot as jest.Mock
+    asUser(DRAWER)
+    const content = '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[{"color":"#000","width":3,"points":[{"x":1,"y":1}]}]}'
+    const response = await post({ action: 'save-drawing', data: { content } })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.state.data.phase).toBe('drawing')
+    expect(body.state.data.rounds[0].drawingContent).toBe(content)
+    expect(replay).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('refuses save-drawing from anyone but the drawer', async () => {
+    asUser(FIRST_GUESSER)
+    const response = await post({ action: 'save-drawing', data: { content: '{"type":"drawing","strokes":[]}' } })
+    expect(response.status).toBe(400)
   })
 
   it('tells only the author a guess was close, and never the topic', async () => {
@@ -338,7 +374,8 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action accept-guess (#1082)',
     const guessId = (round.state.data as { rounds: Array<{ guesses: Array<{ id: string }> }> }).rounds[0].guesses[0].id
     const accepted = new SketchAndGuessGame('game-123')
     accepted.restoreState(round.state as never)
-    accepted.makeMove({ playerId: DRAWER, type: 'accept-guess', data: { guessId, authorizedAsHost: true }, timestamp: new Date() })
+    accepted.authorizeHost(DRAWER)
+    accepted.makeMove({ playerId: DRAWER, type: 'accept-guess', data: { guessId }, timestamp: new Date() })
     seedGame(accepted.getState())
     asUser(DRAWER)
 
@@ -347,6 +384,13 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action accept-guess (#1082)',
     expect(response.status).toBe(200)
     expect(prisma.games.updateMany).not.toHaveBeenCalled()
     expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
+  it('drops a client-supplied authorizedAsHost: a non-host who sends it is still refused', async () => {
+    asUser(SECOND_GUESSER)
+    const response = await post({ action: 'accept-guess', data: { guessId: wrongGuessId, authorizedAsHost: true } })
+    expect(response.status).toBe(403)
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
   })
 
   it('does not let the host skip the matcher with a guess id that does not exist', async () => {

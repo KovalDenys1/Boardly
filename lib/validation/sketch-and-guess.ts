@@ -44,6 +44,10 @@ export const sketchAndGuessActionRequestSchema = z.discriminatedUnion('action', 
     data: sketchAndGuessSubmitDrawingRequestSchema,
   }),
   z.object({
+    action: z.literal('save-drawing'),
+    data: sketchAndGuessSubmitDrawingRequestSchema,
+  }),
+  z.object({
     action: z.literal('submit-guess'),
     data: sketchAndGuessSubmitGuessRequestSchema,
   }),
