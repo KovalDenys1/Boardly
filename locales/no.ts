@@ -30,6 +30,7 @@ const no = {
     disabled: 'Deaktivert',
     advertisement: 'Annonser',
     premium: 'Premium',
+    skipToContent: 'Hopp til innhold',
   },
   breadcrumbs: {
     label: 'Brødsmulesti',

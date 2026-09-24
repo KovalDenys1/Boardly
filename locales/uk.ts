@@ -32,6 +32,7 @@ const uk: TranslationWithPlurals = {
     disabled: 'Вимкнено',
     advertisement: 'Реклама',
     premium: 'Premium',
+    skipToContent: 'Перейти до вмісту',
   },
   breadcrumbs: {
     label: 'Навігаційний ланцюжок',

@@ -30,6 +30,7 @@ const en = {
     disabled: 'Disabled',
     advertisement: 'Advertisements',
     premium: 'Premium',
+    skipToContent: 'Skip to content',
   },
   breadcrumbs: {
     label: 'Breadcrumb',

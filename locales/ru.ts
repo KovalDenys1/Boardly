@@ -30,6 +30,7 @@ const ru = {
     disabled: 'Отключено',
     advertisement: 'Реклама',
     premium: 'Premium',
+    skipToContent: 'Перейти к содержимому',
   },
   breadcrumbs: {
     label: 'Навигационная цепочка',

@@ -1,5 +1,6 @@
 import './globals.css'
 import { AnnouncementBanner } from '@/components/AnnouncementBanner'
+import SkipToContentLink from '@/components/SkipToContentLink'
 import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
@@ -251,10 +252,11 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
+          <SkipToContentLink />
           {/* Renders nothing unless the control panel has a live announcement. */}
           <AnnouncementBanner />
           <Header />
-          <main>{children}</main>
+          <main id="main">{children}</main>
           <FeedbackWidget />
         </Providers>
         {isProduction && <DeferredTelemetry />}
