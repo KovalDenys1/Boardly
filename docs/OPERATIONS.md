@@ -195,6 +195,15 @@ Runtime note:
 
 ### Realtime not working locally
 
+The `supabase_realtime` publication is console state, not a migration: it must contain `Lobbies` (and
+`Games`, `Players`, as production does) or Postgres Changes subscriptions join with `SUBSCRIBED` and
+never receive anything, with `realtime.subscription` staying empty. `boardly-dev` was aligned with
+production on 2026-09-24. Check with `select * from pg_publication_tables where pubname = 'supabase_realtime'`.
+Since the same day the API roles hold only a column-limited `SELECT` on `Lobbies` (migration
+`20260924141000_revoke_anon_authenticated_grants`); Realtime delivers exactly those columns to `anon`
+subscribers, which is what the lobby list needs, and `scripts/rls-smoke.psql` asserts the grants after
+every production migration (`migrate.yml`).
+
 Check:
 
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in `.env.local`
