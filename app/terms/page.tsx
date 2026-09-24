@@ -68,7 +68,36 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>3. User Conduct</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>3. Boardly Premium: subscription and right of withdrawal</h2>
+              <p>
+                Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the
+                Premium page in US dollars; if you pay in another currency, Stripe's exchange rate includes a
+                conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page
+                without it. No VAT is added at present. Payments are processed by Stripe; we never see or
+                store your card details.
+              </p>
+              <p className="mt-3">
+                The subscription renews automatically at the end of each paid period at the same price until
+                you cancel. You can cancel at any time from your profile; access continues to the end of the
+                period you have paid for. If you cancel a yearly plan early, we refund the unused whole months.
+              </p>
+              <p className="mt-3">
+                At checkout you ask us to start Premium immediately. You still have the right to withdraw
+                from the purchase within 14 days, without giving a reason: email{' '}
+                <a href="mailto:support@boardly.online" className="underline">support@boardly.online</a> or use
+                the form on our <Link href="/withdrawal" className="underline">withdrawal page</Link>. We refund
+                everything you paid for that purchase within 14 days of receiving your notice, by the same
+                payment method and without a fee. After each purchase we email you a confirmation that repeats
+                this information; please keep it.
+              </p>
+              <p className="mt-3">
+                Premium can be bought by adults, or from the age of 15 with money you are entitled to spend
+                yourself. A purchase made by a minor without that right is refunded at the guardian's request.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>4. User Conduct</h2>
               <p className="mb-3">You agree not to use Boardly to:</p>
               <ul className="list-disc space-y-1.5 pl-5">
                 <li>Violate any laws or regulations</li>
@@ -80,7 +109,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>4. Intellectual Property</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>5. Intellectual Property</h2>
               <p>
                 All content on Boardly, including text, graphics, logos, and software, is the property of
                 Boardly or its licensors and is protected by copyright and other intellectual property laws.
@@ -88,7 +117,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>5. Limitation of Liability</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>6. Limitation of Liability</h2>
               <p>
                 Boardly is provided &quot;as is&quot; without warranties of any kind. We are not liable for any damages
                 arising from your use of the service, including but not limited to direct, indirect, incidental,
@@ -97,7 +126,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>6. Termination</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>7. Termination</h2>
               <p>
                 We reserve the right to suspend or terminate your account at any time, with or without notice,
                 for violations of these Terms or for any other reason.
@@ -105,7 +134,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>7. Changes to Terms</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>8. Changes to Terms</h2>
               <p>
                 We may update these Terms from time to time. Continued use of Boardly after changes constitutes
                 acceptance of the updated Terms.
@@ -113,7 +142,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>8. Contact</h2>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>9. Contact</h2>
               <p>
                 If you have questions about these Terms, please contact us through our website or support channels.
               </p>

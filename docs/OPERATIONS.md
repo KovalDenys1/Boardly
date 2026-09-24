@@ -261,6 +261,28 @@ Check:
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 
+### Runbook: withdrawal request (angrerett)
+
+A consumer may withdraw from a Premium purchase within 14 days of buying it, for any reason. Policy
+(Denys, 2026-09-24): full refund of everything paid for that purchase, no proportionate charge; a yearly
+plan cancelled later refunds the unused whole months. Legal basis and sources: the vault's
+Security & Law Audit 2026-09, Part E.
+
+1. A notice arrives by email to support@ (forwarded by the inbound webhook) or as the copied form from
+   the withdrawal page. The same day, reply from support@ confirming receipt and the date it was received
+   (angrerettloven § 20 tredje ledd). Company voice, "The Boardly team".
+2. In the Stripe Dashboard: cancel the subscription immediately (not at period end), then refund the
+   payment in full from the payment's page. Stripe returns the customer's local amount at the original
+   rate. Do this within 14 days of the notice (§ 24); in practice the same day.
+3. Premium access ends when the webhook processes the cancellation; if the customer asks, confirm by
+   email that nothing more will be charged.
+4. Log the case in the vault's Boardly log (date received, date refunded, Stripe refund id, no personal
+   data beyond the username).
+
+Yearly plan cancelled outside the 14 days: cancel at period end is the default; if the customer asks for
+the refund of unused months, refund `(remaining whole months / 12) x amount paid` from the Dashboard and
+cancel immediately.
+
 ### Runbook: discord_bot_stale
 
 The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts
