@@ -45,8 +45,6 @@ export default function GamePlayerCard({
   turnDotColor,
 }: GamePlayerCardProps) {
   const { t } = useTranslation()
-  const justify = side === 'right' ? 'flex-end' : 'flex-start'
-
   // Sizing lives in app/globals.css (.game-player-card): an inline style
   // outranks every stylesheet rule, so the phone-landscape breakpoint could not
   // shrink this card while the numbers were here (#901). The active plate is
@@ -57,7 +55,7 @@ export default function GamePlayerCard({
       className={`game-player-card game-player-card--${side}${isActive ? ' game-player-card--active' : ''}`}
       data-active={isActive ? 'true' : 'false'}
     >
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      <div className="game-player-avatar-wrap" style={{ position: 'relative', flexShrink: 0 }}>
         {avatarSrc ? (
           <img src={avatarSrc} alt={name} className="game-player-avatar" />
         ) : (
@@ -67,14 +65,13 @@ export default function GamePlayerCard({
         )}
         {cornerBadge}
       </div>
-      {/* `minWidth: 0` alone let this resolve to 0px next to the unshrinkable
-          42px avatar, so at 390 and in the 300px landscape side column the name,
-          subline and turn line disappeared entirely instead of truncating — a
-          player card with no player on it (#874). A floor plus `flex: 1 1 auto`
-          means the card gives up characters, not the whole identity. */}
-      <div className="game-player-identity" style={{ textAlign: side === 'right' ? 'right' : 'left' }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: justify }}>
-          <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
+      {/* Alignment, truncation and the narrow stacked form live in
+          app/globals.css (.game-player-identity and friends): an inline
+          text-align or justify-content here outranked the container query that
+          stacks the card on a phone, the same trap #901 hit with sizing (#1180). */}
+      <div className="game-player-identity">
+        <div className="game-player-name-row">
+          <span className="game-player-name" style={{ color: isPremium ? 'var(--bd-premium)' : undefined }}>
             {name}
           </span>
           {isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" />}
@@ -87,13 +84,10 @@ export default function GamePlayerCard({
           )}
         </div>
         {subline !== undefined && (
-          <div className="game-player-subline" style={{
-            fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>{subline}</div>
+          <div className="game-player-subline">{subline}</div>
         )}
         {isActive && (
-          <div className="game-player-turn game-status-cue" style={{ justifyContent: justify }}>
+          <div className="game-player-turn game-status-cue">
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: turnDotColor ?? accentColor, display: 'inline-block', flexShrink: 0 }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {isMe ? t('game.ui.yourTurn') : t('game.ui.theirTurn')}
