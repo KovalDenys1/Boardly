@@ -15,7 +15,7 @@ import {
 } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
-import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
+import { advanceLifecycleStatus, decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import {
   getLobbyJoinRefusalMessageKey,
@@ -231,8 +231,15 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // The player rows are not part of that judgement: someone joining or
       // leaving changes them with no move and no new stamp, and dropping the
       // whole snapshot would freeze the roster for the rest of the game.
+      // Nor is the lifecycle: the start broadcast can move the watermark to
+      // this very stamp, and then this is the only thing saying 'playing'
+      // (#1183). Forward only, so a stale snapshot never rewinds it.
       setGame((prevGame) => (prevGame && prevGame.id === normalizedGame.id
-        ? { ...prevGame, players: normalizedGame.players }
+        ? {
+            ...prevGame,
+            players: normalizedGame.players,
+            status: advanceLifecycleStatus(prevGame.status, normalizedGame.status),
+          }
         : prevGame))
       return
     }

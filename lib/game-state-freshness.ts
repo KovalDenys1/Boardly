@@ -107,3 +107,23 @@ export function isUpdateForAnotherGame(update: unknown, currentGameId: string): 
   const tagged = (update as { gameId?: unknown }).gameId
   return typeof tagged === 'string' && tagged.length > 0 && tagged !== currentGameId
 }
+
+const LIFECYCLE_ORDER = ['waiting', 'playing', 'finished'] as const
+export type LifecycleStatus = (typeof LIFECYCLE_ORDER)[number]
+
+/**
+ * The game row's lifecycle status after seeing `incoming`, moving only forward
+ * (waiting → playing → finished) (#1183).
+ *
+ * The watermark judges the board, not the lifecycle. When the start broadcast
+ * was applied first, every later snapshot carrying `status: 'playing'` had the
+ * same `lastMoveAt` and was rejected as stale, so a non-host sat on "Waiting
+ * for host to start" until they reloaded. A forward step cannot rewind
+ * anything, so it is safe to take even from a snapshot whose board is dropped.
+ */
+export function advanceLifecycleStatus<T extends string>(current: T, incoming: unknown): T | LifecycleStatus {
+  const currentRank = LIFECYCLE_ORDER.indexOf(current as LifecycleStatus)
+  const incomingRank = LIFECYCLE_ORDER.indexOf(incoming as LifecycleStatus)
+  if (currentRank === -1 || incomingRank === -1 || incomingRank <= currentRank) return current
+  return LIFECYCLE_ORDER[incomingRank]
+}
