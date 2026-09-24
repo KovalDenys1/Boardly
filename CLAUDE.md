@@ -163,6 +163,23 @@ plus 844×390 landscape). Check before calling it done:
    - Result: `GameResultOverlay` over the board.
    Exceptions only where a game genuinely needs a different UI, and they are
    written down in the game's ticket.
+3. **Every state change moves (Denys, 2026-09-24).** A game with instant state swaps is not
+   done: the player loses focus and cannot see what happened. Denys's example: a Checkers
+   opponent's move landed instantly, when an animation would have shown the eye who moved
+   and where. Required in every game:
+   - **The opponent's or bot's move arriving over realtime travels on screen,** from where
+     it started to where it landed. It is never swapped in.
+   - **Other changes:**
+     - captures and removals fade or scale out;
+     - dice roll;
+     - cards flip;
+     - the turn and score change with a visible cue.
+   - **A last-move highlight** stays until the next move.
+   - **Rules for the motion itself:**
+     - `transform` and `opacity` only (see "Animations — never animate height");
+     - roughly 200–450 ms;
+     - `prefers-reduced-motion` respected;
+     - a `lib/sounds` cue alongside, where one exists.
 
 ## Adding a new game — checklist
 
@@ -189,6 +206,13 @@ plus 844×390 landscape). Check before calling it done:
 
 ### Pages & UI
 - [ ] **Layout DoD above: Leave in the header trailing slot, no empty regions at 320 / 390 / 768 / 1280.**
+- [ ] **Motion DoD above (item 3):**
+  - the opponent's and bot's moves animate from their origin to their destination;
+  - captures, rolls, flips, turn and score changes move;
+  - there is a last-move highlight;
+  - `prefers-reduced-motion` is honoured.
+
+  Verify by watching a bot game, not only by reading code.
 - [ ] **In-game chrome comes from the shared kit — never re-implement it.**
       Compose `components/game-chrome/` (`GameResultOverlay`, `GamePlayerCard`,
       `GameScoreboardHeader`, `GameStatusBanner`, `GameTabs`) plus
