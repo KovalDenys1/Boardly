@@ -44,6 +44,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -791,6 +792,22 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         () => (Array.isArray(earlyEvents) ? earlyEvents.slice().reverse() : []),
         [earlyEvents]
     )
+
+    // Turn and opponent cues (#1111); the win cue stays in handleMove. The
+    // latest of the last roll and the last move is what just happened, and an
+    // opponent's roll gets the dice sound rather than the move click.
+    const soundData = gameEngine ? gameEngine.getData() : null
+    const lastLudoRoll = soundData?.lastRoll ?? null
+    const lastLudoMove = soundData?.lastMove ?? null
+    const latestLudoAction = lastLudoRoll && (!lastLudoMove || lastLudoRoll.at > lastLudoMove.at) ? 'roll' : 'move'
+    const latestLudoActor = latestLudoAction === 'roll' ? lastLudoRoll?.playerId : lastLudoMove?.playerId
+    useTurnSounds({
+        isMyTurn: isMyTurn(),
+        lastMoveSignature: soundData ? `${lastLudoRoll?.at ?? ''}:${lastLudoMove?.at ?? ''}` : null,
+        opponentMoved: !!latestLudoActor && latestLudoActor !== boardUserId,
+        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        moveSound: latestLudoAction === 'roll' ? 'diceRoll' : 'click',
+    })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 

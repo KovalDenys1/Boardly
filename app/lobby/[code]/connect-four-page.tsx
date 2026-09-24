@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -822,6 +823,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
+
+    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
+    // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
+    const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
+    const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
+    useTurnSounds({
+        isMyTurn: isMyTurn(),
+        lastMoveSignature: Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null,
+        opponentMoved: !!lastC4Move && soundSeat >= 0 && lastC4Move.disc !== soundSeat + 1,
+        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+    })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 

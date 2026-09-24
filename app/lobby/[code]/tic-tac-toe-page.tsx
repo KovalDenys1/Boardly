@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -769,6 +770,15 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
+
+    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
+    const lastTttMove = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
+    useTurnSounds({
+        isMyTurn: isMyTurn(),
+        lastMoveSignature: Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null,
+        opponentMoved: !!lastTttMove && lastTttMove.playerId !== getCurrentUserId(),
+        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+    })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 

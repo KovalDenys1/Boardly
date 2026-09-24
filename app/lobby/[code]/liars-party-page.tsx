@@ -30,6 +30,7 @@ import { getThemePageStyle } from '@/lib/lobby-themes'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { useTurnSounds } from '@/hooks/useTurnSounds'
 
 interface LiarsPartyPageProps {
   code: string
@@ -898,6 +899,23 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       setIsStarting(false)
     }
   }, [code, getCurrentUserId, lobby, onGameReset, router])
+
+  // Turn and table cues (#1111), read off the engine here because the derived
+  // values below sit after the loading return and a hook cannot. The claim
+  // coming to the viewer is their turn; someone else's claim or challenge vote
+  // is a move at the table.
+  const soundUserId = getCurrentUserId() ?? ''
+  const soundData = game?.status === 'playing' ? (gameEngine?.getState().data as LiarsPartyGameData | undefined) : undefined
+  const othersActed = soundData
+    ? (soundData.claim && soundData.currentClaimantId !== soundUserId ? 1 : 0) +
+      soundData.challengeVotes.filter((v) => v.playerId !== soundUserId).length
+    : 0
+  useTurnSounds({
+    isMyTurn: !!soundData && soundData.phase === 'claim' && soundData.currentClaimantId === soundUserId,
+    lastMoveSignature: soundData ? `${soundData.currentRound}:${othersActed}` : null,
+    opponentMoved: othersActed > 0,
+    enabled: !isSpectator && !!soundData,
+  })
 
   if (loading) {
     return (
