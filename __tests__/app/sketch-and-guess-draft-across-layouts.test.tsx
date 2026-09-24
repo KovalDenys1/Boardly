@@ -58,9 +58,10 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 const UNDO = 'games.guess_my_drawing.game.undo'
 const GUESS_BOX = 'games.guess_my_drawing.game.guessPlaceholder'
 
-function buildResponse(phase: 'drawing' | 'guessing') {
-  // user-2 draws, so user-1 is the drawer only in the 'drawing' fixture below.
-  const drawerId = phase === 'drawing' ? 'user-1' : 'user-2'
+function buildResponse(role: 'drawer' | 'guesser') {
+  // Since #1082 guessers type while the drawer draws, so both halves of a round
+  // are the drawing phase; user-1 is the drawer in one fixture and a guesser in the other.
+  const drawerId = role === 'drawer' ? 'user-1' : 'user-2'
   return {
     lobby: { id: 'lobby-1', code: 'ABCD', gameType: 'sketch_and_guess', creatorId: 'user-1', name: 'Lobby', isActive: true },
     activeGame: {
@@ -69,7 +70,8 @@ function buildResponse(phase: 'drawing' | 'guessing') {
       status: 'playing',
       state: {
         data: {
-          phase,
+          phase: 'drawing',
+          phaseStartedAt: Date.now(),
           currentRound: 1,
           totalRounds: 3,
           drawerOrder: ['user-1', 'user-2', 'user-3'],
@@ -78,8 +80,12 @@ function buildResponse(phase: 'drawing' | 'guessing') {
             {
               round: 1,
               drawerId,
-              prompt: phase === 'drawing' ? 'castle' : '',
-              drawingContent: phase === 'drawing' ? null : '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}',
+              prompt: role === 'drawer' ? 'castle' : '',
+              word: role === 'drawer' ? { id: 'castle', en: ['castle'], no: ['slott'], ru: ['замок'], uk: ['замок'] } : null,
+              wordChoices: [],
+              wordAutoPicked: false,
+              drawingStartedAt: Date.now(),
+              drawingContent: null,
               drawingSubmittedAt: null,
               drawingAutoSubmitted: false,
               guesses: [],
@@ -109,8 +115,8 @@ function buildResponse(phase: 'drawing' | 'guessing') {
 
 const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
 
-async function renderPage(phase: 'drawing' | 'guessing') {
-  mockFetchWithGuest.mockResolvedValue({ ok: true, status: 200, json: async () => buildResponse(phase) } as Response)
+async function renderPage(role: 'drawer' | 'guesser') {
+  mockFetchWithGuest.mockResolvedValue({ ok: true, status: 200, json: async () => buildResponse(role) } as Response)
   const view = render(<SketchAndGuessLobbyPage code="ABCD" />)
   await waitFor(() => expect(view.container.querySelectorAll('canvas').length).toBeGreaterThan(0))
   return view
@@ -125,7 +131,7 @@ describe('Sketch & Guess draft survives a layout-tree swap (#1034)', () => {
   })
 
   it('draws the same strokes in every layout tree, whichever tree the pointer was in', async () => {
-    const { container } = await renderPage('drawing')
+    const { container } = await renderPage('drawer')
 
     const canvases = Array.from(container.querySelectorAll('canvas'))
     // The three trees are the desktop, phone-landscape and phone-portrait ones;
@@ -152,7 +158,7 @@ describe('Sketch & Guess draft survives a layout-tree swap (#1034)', () => {
   })
 
   it('carries a half-typed guess into every tree as well', async () => {
-    await renderPage('guessing')
+    await renderPage('guesser')
 
     const boxes = screen.getAllByPlaceholderText(GUESS_BOX) as HTMLInputElement[]
     expect(boxes.length).toBeGreaterThan(1)

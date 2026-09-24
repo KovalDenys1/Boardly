@@ -619,7 +619,9 @@ export async function POST(request: NextRequest) {
         id: game.id,
         type: gameType,
         status: game.status,
-        state: gameEngine.getState(),
+        // Sanitized for the caller like every other copy of the state: whoever
+        // presses Start is not necessarily round 1's drawer (#1103).
+        state: sanitizeStateForBroadcast(gameType, gameEngine.getState(), userId, { hostUserId: lobby.creatorId }),
         players: game.players.map(p => ({
           userId: p.userId,
           name: p.user.username || 'Unknown',

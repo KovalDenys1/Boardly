@@ -1,29 +1,91 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
 import { resolveBoundedRuleNumber, getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
-import { SKETCH_PHASE_SECONDS, type SketchAndGuessPhase } from './sketch-and-guess-phases'
+import {
+  SKETCH_GUESS_MIN_INTERVAL_MS,
+  SKETCH_MAX_GUESSES_PER_ROUND,
+  SKETCH_PHASE_SECONDS,
+  sketchPhaseSeconds,
+  type SketchAndGuessPersistedPhase,
+  type SketchAndGuessPhase,
+} from './sketch-and-guess-phases'
+import {
+  SKETCH_WORDS,
+  findSketchWordByEnglish,
+  isSketchNearMissKey,
+  matchSketchGuess,
+  normalizeSketchGuess,
+  resolveSketchWordLocale,
+  sketchWordKeys,
+  type SketchWord,
+  type SketchWordLocale,
+} from './sketch-and-guess-words'
 
-export type { SketchAndGuessPhase }
+export type { SketchAndGuessPhase, SketchWord }
 
 export interface SketchAndGuessGuess {
+  /** `r<round>-g<n>`; what `accept-guess` names. Backfilled on restore for pre-#1082 rows. */
+  id: string
   playerId: string
   guess: string
   submittedAt: number
   isCorrect: boolean
+  /** Pre-#1082 only: the guessing phase ran out and the server filled the seat in. */
   autoSubmitted?: boolean
+  /** The host marked this wrong guess correct (#1082). */
+  acceptedByHost?: boolean
+  /** ...and the host was drawing this round, so it earns the drawer nothing (PR #1100 review). */
+  acceptedByDrawer?: boolean
+  /**
+   * Never stored: set by the sanitizer on a wrong guess that nearly spells the
+   * word, whose text only its author, the drawer and the host are handed.
+   */
+  nearMiss?: boolean
 }
 
 export interface SketchAndGuessRound {
   round: number
   drawerId: string
+  /**
+   * The chosen word's English display form, '' until one is chosen. Kept because a
+   * round persisted before #1082 stored only this; new code reads `word`.
+   */
   prompt: string
+  /** The chosen word, every language. Null during `choosing`. */
+  word: SketchWord | null
+  /** The three words offered to the drawer. Only the drawer sees them before the reveal. */
+  wordChoices: SketchWord[]
+  /** The choosing clock ran out and the server picked. */
+  wordAutoPicked: boolean
+  /** When drawing (and so guessing) began; the speed bonus is measured from here. */
+  drawingStartedAt: number | null
   drawingContent: string | null
   drawingSubmittedAt: number | null
+  /** No drawing arrived, or it was blank: the drawer pays the auto-submission penalty. */
   drawingAutoSubmitted: boolean
+  /** When the drawer's page last saved the canvas mid-round (`save-drawing`). */
+  drawingSavedAt?: number | null
+  /**
+   * The one language each guesser's word hint is built in this round, fixed the
+   * first time they ask, so nobody can collect the pattern in all four.
+   */
+  hintLocales?: Record<string, SketchWordLocale>
   guesses: SketchAndGuessGuess[]
   revealAt: number | null
   isScored: boolean
   scoredAt: number | null
+  /**
+   * Never stored: added by the sanitizer for a guesser who asked in a language.
+   * The word in that language as blanks, with a letter uncovered at half and at
+   * three quarters of the drawing clock (see `buildSketchWordHint`).
+   */
+  wordHint?: SketchWordHint
+}
+
+/** One cell per character of the viewer-language form: the character if shown, null if still a blank. */
+export interface SketchWordHint {
+  lang: SketchWordLocale
+  cells: Array<string | null>
 }
 
 export interface SketchAndGuessScoreBreakdown {
@@ -37,11 +99,14 @@ export interface SketchAndGuessScoreBreakdown {
 
 export interface SketchAndGuessGameData {
   phase: SketchAndGuessPhase
+  /** When the current phase began. The phase clock, since every guess moves `lastMoveAt`. */
+  phaseStartedAt: number | null
   currentRound: number
   totalRounds: number
   drawerOrder: string[]
   currentDrawerId: string
   rounds: SketchAndGuessRound[]
+  /** Who has guessed the current round correctly. Public: it says who, never what. */
   submittedPlayerIds: string[]
   scores: Record<string, number>
   scoreBreakdown: Record<string, SketchAndGuessScoreBreakdown>
@@ -57,10 +122,22 @@ export interface SketchAndGuessTimeoutResolution {
   timeoutWindowsConsumed: number
   phaseTransitions: number
   revealAdvances: number
+  autoPickedWords: number
   autoSubmittedDrawings: number
+  /** Always 0 since #1082 – nobody owes a guess any more. Kept for the event shape. */
   autoSubmittedGuesses: number
   autoSubmittedPlayerIds: string[]
 }
+
+/** What the author of the last accepted `submit-guess` is told, and nobody else. */
+export interface SketchAndGuessGuessOutcome {
+  guessId: string
+  correct: boolean
+  /** One letter off a form of the word: a private "close!" hint, not a correct answer. */
+  close: boolean
+}
+
+export type SketchAndGuessGuessRejection = 'too-fast' | 'limit-reached'
 
 const DEFAULT_TOTAL_ROUNDS = 3
 const MIN_TOTAL_ROUNDS = 1
@@ -70,49 +147,64 @@ const MAX_DRAWING_CONTENT_LENGTH = 120_000
 const MIN_GUESS_LENGTH = 2
 const MAX_GUESS_LENGTH = 80
 const SKETCH_TIMEOUT_FALLBACK_MAX_ITERATIONS = 256
+const WORD_CHOICE_COUNT = 3
+/** The drawer's page saves the canvas every few seconds; not more often than this. */
+const DRAWING_SAVE_MIN_INTERVAL_MS = 2000
 
-const SCORE_CORRECT_GUESS_POINTS = 100
+/** Every correct guess is worth this much before the speed bonus. */
+const SCORE_CORRECT_GUESS_BASE = 50
+/** Up to this much more, by the share of the drawing clock still left. */
+const SCORE_CORRECT_GUESS_SPEED_MAX = 50
+/** A round persisted before #1082 has no drawing start to measure speed from; it scores as it did then. */
+const SCORE_LEGACY_CORRECT_GUESS_POINTS = 100
 const SCORE_FIRST_CORRECT_BONUS = 20
 const SCORE_DRAWER_PER_CORRECT_GUESS = 40
 const SCORE_AUTO_DRAWING_PENALTY = 20
 const SCORE_AUTO_GUESS_PENALTY = 10
 
-const PROMPT_POOL = [
-  'castle',
-  'spaceship',
-  'volcano',
-  'pirate',
-  'robot',
-  'dragon',
-  'island',
-  'unicorn',
-  'sheriff',
-  'treasure',
-  'jungle',
-  'rainbow',
-  'thunder',
-  'mermaid',
-  'tornado',
-  'piano',
-  'astronaut',
-  'whale',
-  'viking',
-  'waterfall',
-  'carnival',
-  'skateboard',
-  'mountain',
-  'submarine',
-  'fireworks',
-]
+function moveTime(move: Move): number {
+  const at = move.timestamp instanceof Date ? move.timestamp.getTime() : NaN
+  return Number.isFinite(at) ? at : Date.now()
+}
+
+function isDrawingContentSized(content: string | null | undefined): boolean {
+  if (!content) return false
+  const length = content.trim().length
+  return length >= MIN_DRAWING_CONTENT_LENGTH && length <= MAX_DRAWING_CONTENT_LENGTH
+}
+
+/** A drawing with no strokes in it, which scores like no drawing at all. */
+function isBlankDrawing(content: string): boolean {
+  try {
+    const parsed = JSON.parse(content) as { strokes?: unknown }
+    return Array.isArray(parsed?.strokes) && parsed.strokes.length === 0
+  } catch {
+    return false
+  }
+}
+
+/** A pre-#1082 round's English prompt that is not in the bank any more. */
+function legacyWord(prompt: string): SketchWord {
+  return { id: `legacy:${prompt}`, en: [prompt], no: [], ru: [], uk: [] }
+}
 
 export class SketchAndGuessGame extends GameEngine {
+  private lastGuessOutcome: SketchAndGuessGuessOutcome | null = null
+  /**
+   * The one player the route has confirmed is the lobby's creator, for
+   * `accept-guess`. Set only by `authorizeHost`, never from move data – a client
+   * writes move data, and trusting it let anyone accept a guess (PR #1100 review).
+   */
+  private authorizedHostId: string | null = null
+
   constructor(gameId: string, config: GameConfig = { maxPlayers: 10, minPlayers: 3 }) {
     super(gameId, 'sketch_and_guess', config)
   }
 
   getInitialGameData(): SketchAndGuessGameData {
     return {
-      phase: 'drawing',
+      phase: 'choosing',
+      phaseStartedAt: null,
       currentRound: 1,
       totalRounds: this.resolveTotalRounds(),
       drawerOrder: [],
@@ -140,9 +232,10 @@ export class SketchAndGuessGame extends GameEngine {
     data.currentRound = 1
     data.drawerOrder = this.state.players.map((player) => player.id)
     data.currentDrawerId = this.resolveDrawerId(1, data.drawerOrder)
-    data.phase = 'drawing'
+    data.phase = 'choosing'
+    data.phaseStartedAt = typeof this.state.lastMoveAt === 'number' ? this.state.lastMoveAt : Date.now()
     data.submittedPlayerIds = []
-    data.rounds = [this.createRound(1, data.currentDrawerId)]
+    data.rounds = [this.createRound(1, data.currentDrawerId, [])]
     data.scores = {}
     data.scoreBreakdown = {}
     data.winnerId = null
@@ -151,6 +244,65 @@ export class SketchAndGuessGame extends GameEngine {
     data.finishedAt = null
     this.recomputeScoreboard(data)
     return true
+  }
+
+  /**
+   * A game persisted before #1082 is still being played somewhere when this
+   * ships, and it has none of the new fields and possibly a `guessing` phase.
+   * It is brought up to shape here, on every restore, so nothing downstream
+   * has to know there was an older one:
+   *
+   * - every round gets its `word` from its English `prompt` (the old pool is the
+   *   head of the bank, so all four languages start counting mid-game);
+   * - every guess gets an id, so the host can accept it;
+   * - `guessing` becomes `drawing` with the guesses it already had, its clock
+   *   restarted from when guessing began. The drawing is already stored, so the
+   *   round carries on as a drawing phase in which the drawer has stopped;
+   * - `submittedPlayerIds` goes from "has answered" to "has answered correctly",
+   *   so a player who guessed wrong in the old one-shot phase may try again.
+   */
+  protected normalizeRestoredData(): void {
+    const data = this.state.data as (Omit<SketchAndGuessGameData, 'phase'> & { phase: SketchAndGuessPersistedPhase }) | undefined
+    if (!data || typeof data !== 'object' || !Array.isArray(data.rounds)) return
+
+    const lastMoveAt =
+      typeof this.state.lastMoveAt === 'number' && Number.isFinite(this.state.lastMoveAt) ? this.state.lastMoveAt : null
+
+    for (const round of data.rounds) {
+      const legacy = round as Partial<SketchAndGuessRound> & SketchAndGuessRound
+      if (legacy.word === undefined) {
+        legacy.word = legacy.prompt ? findSketchWordByEnglish(legacy.prompt) ?? legacyWord(legacy.prompt) : null
+      }
+      if (!Array.isArray(legacy.wordChoices)) legacy.wordChoices = []
+      if (typeof legacy.wordAutoPicked !== 'boolean') legacy.wordAutoPicked = false
+      if (legacy.drawingStartedAt === undefined) legacy.drawingStartedAt = null
+      if (!Array.isArray(legacy.guesses)) legacy.guesses = []
+      legacy.guesses.forEach((guess, index) => {
+        if (typeof guess.id !== 'string' || !guess.id) guess.id = `r${legacy.round}-g${index + 1}`
+      })
+    }
+
+    const wasGuessing = data.phase === 'guessing'
+    if (wasGuessing) data.phase = 'drawing'
+    if (data.phase !== 'choosing' && data.phase !== 'drawing' && data.phase !== 'reveal') data.phase = 'drawing'
+    if (typeof data.phaseStartedAt !== 'number' || !Number.isFinite(data.phaseStartedAt)) {
+      data.phaseStartedAt = lastMoveAt
+    }
+
+    const current = data.rounds.find((round) => round.round === data.currentRound)
+    // Guessing began when the old drawing was submitted, which is a truer start
+    // for its clock than lastMoveAt – every old guess moved that (PR #1100 review).
+    if (wasGuessing && current && typeof current.drawingSubmittedAt === 'number' && Number.isFinite(current.drawingSubmittedAt)) {
+      data.phaseStartedAt = current.drawingSubmittedAt
+      current.drawingStartedAt = current.drawingSubmittedAt
+    }
+    if (current && data.phase === 'drawing') {
+      if (current.drawingStartedAt === null) current.drawingStartedAt = data.phaseStartedAt
+      if (wasGuessing || !Array.isArray(data.submittedPlayerIds)) {
+        data.submittedPlayerIds = [...new Set(current.guesses.filter((g) => g.isCorrect).map((g) => g.playerId))]
+      }
+    }
+    if (!Array.isArray(data.submittedPlayerIds)) data.submittedPlayerIds = []
   }
 
   validateMove(move: Move): boolean {
@@ -164,101 +316,186 @@ export class SketchAndGuessGame extends GameEngine {
       return false
     }
 
-    if (data.phase === 'drawing') {
-      if (move.type !== 'submit-drawing' || move.playerId !== data.currentDrawerId) {
-        return false
-      }
-
-      const currentRound = this.getCurrentRound(data)
-      if (!currentRound || currentRound.drawingContent !== null) {
-        return false
-      }
-
-      const content = getStringField(move.data, 'content')
-      if (!content) {
-        return false
-      }
-      const normalizedLength = content.trim().length
-      return normalizedLength >= MIN_DRAWING_CONTENT_LENGTH && normalizedLength <= MAX_DRAWING_CONTENT_LENGTH
+    const round = this.getCurrentRound(data)
+    if (!round) {
+      return false
     }
 
-    if (data.phase === 'guessing') {
-      if (move.type !== 'submit-guess' || move.playerId === data.currentDrawerId) {
-        return false
+    switch (move.type) {
+      case 'choose-word': {
+        if (data.phase !== 'choosing' || move.playerId !== data.currentDrawerId) return false
+        const wordId = getStringField(move.data, 'wordId')
+        return !!wordId && round.wordChoices.some((choice) => choice.id === wordId)
       }
 
-      if (data.submittedPlayerIds.includes(move.playerId)) {
-        return false
+      case 'submit-guess': {
+        if (data.phase !== 'drawing' || !round.word) return false
+        if (move.playerId === data.currentDrawerId) return false
+        if (data.submittedPlayerIds.includes(move.playerId)) return false
+        const guess = getStringField(move.data, 'guess')
+        if (!guess) return false
+        const length = guess.trim().length
+        if (length < MIN_GUESS_LENGTH || length > MAX_GUESS_LENGTH) return false
+        return this.getGuessRejection(move) === null
       }
 
-      const currentRound = this.getCurrentRound(data)
-      if (!currentRound) {
-        return false
+      // The drawing that is kept for the reveal. Since #1082 the drawer draws
+      // until the clock or the last guesser ends the round, and their page sends
+      // the canvas as the reveal begins; so this is accepted in the reveal too,
+      // once, and never ends a phase.
+      case 'submit-drawing': {
+        if (move.playerId !== data.currentDrawerId) return false
+        if (data.phase !== 'drawing' && data.phase !== 'reveal') return false
+        if (round.isScored || typeof round.drawingSubmittedAt === 'number') return false
+        return isDrawingContentSized(getStringField(move.data, 'content'))
       }
 
-      const guess = getStringField(move.data, 'guess')
-      if (!guess) {
-        return false
+      // The canvas as it stands, saved by the drawer's page a few seconds after
+      // each stroke, so a drawer whose final send never lands still has their
+      // drawing kept (PR #1100 review). Drawer only, drawing phase only, not
+      // more than once per DRAWING_SAVE_MIN_INTERVAL_MS, and never ends a phase.
+      case 'save-drawing': {
+        if (move.playerId !== data.currentDrawerId || data.phase !== 'drawing') return false
+        if (round.isScored || typeof round.drawingSubmittedAt === 'number') return false
+        const lastSave = typeof round.drawingSavedAt === 'number' ? round.drawingSavedAt : -Infinity
+        if (moveTime(move) - lastSave < DRAWING_SAVE_MIN_INTERVAL_MS) return false
+        return isDrawingContentSized(getStringField(move.data, 'content'))
       }
 
-      const normalizedLength = guess.trim().length
-      return normalizedLength >= MIN_GUESS_LENGTH && normalizedLength <= MAX_GUESS_LENGTH
+      case 'accept-guess': {
+        // Who the host is lives on the lobby, not in game state: the route
+        // checks `lobby.creatorId` and calls authorizeHost. Everything else is ours.
+        if (this.authorizedHostId === null || this.authorizedHostId !== move.playerId) return false
+        if (data.phase !== 'drawing' && data.phase !== 'reveal') return false
+        if (round.isScored) return false
+        const guessId = getStringField(move.data, 'guessId')
+        const guess = guessId ? round.guesses.find((entry) => entry.id === guessId) : undefined
+        if (!guess) return false
+        if (guess.playerId === move.playerId || guess.playerId === round.drawerId) return false
+        // Accepting twice is the same as accepting once.
+        if (guess.acceptedByHost) return true
+        if (guess.isCorrect || guess.autoSubmitted) return false
+        // One correct answer per player per round: once they have it, the rest
+        // of what they typed is history, not another chance to score.
+        return !round.guesses.some((entry) => entry.playerId === guess.playerId && entry.isCorrect)
+      }
+
+      case 'advance-round':
+        // Not before the drawing is in: the drawer's page sends it as the reveal
+        // opens, and moving on first would score the drawer for a blank canvas.
+        // A drawer who never sends one is covered by the reveal timeout.
+        return data.phase === 'reveal' && round.drawingContent !== null
+
+      default:
+        return false
     }
+  }
 
-    if (data.phase === 'reveal') {
-      return move.type === 'advance-round'
-    }
+  /**
+   * Why a guess that is otherwise well formed is being turned away, so the route
+   * can say "slow down" rather than "invalid move". Null when it may go in.
+   */
+  getGuessRejection(move: Move): SketchAndGuessGuessRejection | null {
+    const round = this.getCurrentRound(this.state.data as SketchAndGuessGameData)
+    if (!round) return null
+    const own = round.guesses.filter((guess) => guess.playerId === move.playerId && !guess.autoSubmitted)
+    if (own.length >= SKETCH_MAX_GUESSES_PER_ROUND) return 'limit-reached'
+    const last = own.reduce((latest, guess) => Math.max(latest, guess.submittedAt), -Infinity)
+    if (moveTime(move) - last < SKETCH_GUESS_MIN_INTERVAL_MS) return 'too-fast'
+    return null
+  }
 
-    return false
+  /** The private result of the last `submit-guess` this instance applied. */
+  getLastGuessOutcome(): SketchAndGuessGuessOutcome | null {
+    return this.lastGuessOutcome
+  }
+
+  /** Whether `accept-guess` for this guess would change nothing, so the route need not write. */
+  isGuessAcceptedByHost(guessId: string): boolean {
+    const round = this.getCurrentRound(this.state.data as SketchAndGuessGameData)
+    return !!round?.guesses.some((guess) => guess.id === guessId && guess.acceptedByHost === true)
+  }
+
+  /** The route calls this once it has checked the mover is the lobby's creator. */
+  authorizeHost(userId: string): void {
+    this.authorizedHostId = userId
+  }
+
+  /**
+   * Fixes the language `playerId`'s word hint is built in for the current
+   * round, the first time they ask. True when this call set it – the caller
+   * then has state to write. Later calls, in any language, change nothing.
+   */
+  lockHintLocale(playerId: string, locale: string | null | undefined): boolean {
+    const data = this.state.data as SketchAndGuessGameData
+    if (this.state.status !== 'playing' || data.phase !== 'drawing' || !locale) return false
+    const round = this.getCurrentRound(data)
+    if (!round?.word || playerId === round.drawerId) return false
+    if (!this.state.players.some((player) => player.id === playerId)) return false
+    if (round.hintLocales?.[playerId]) return false
+    round.hintLocales = { ...(round.hintLocales ?? {}), [playerId]: resolveSketchWordLocale(locale) }
+    return true
   }
 
   processMove(move: Move): void {
     const data = this.state.data as SketchAndGuessGameData
-    const now = Date.now()
+    const now = moveTime(move)
+    const round = this.getCurrentRound(data)
+    if (!round) return
 
-    if (data.phase === 'drawing' && move.type === 'submit-drawing') {
-      const currentRound = this.getCurrentRound(data)
-      const content = getStringField(move.data, 'content')
-      if (!currentRound || !content) {
-        return
-      }
-
-      currentRound.drawingContent = content.trim()
-      currentRound.drawingSubmittedAt = now
-      currentRound.drawingAutoSubmitted = false
-
-      data.phase = 'guessing'
-      data.submittedPlayerIds = []
-      this.state.lastMoveAt = now
+    if (move.type === 'choose-word' && data.phase === 'choosing') {
+      const wordId = getStringField(move.data, 'wordId')
+      const word = round.wordChoices.find((choice) => choice.id === wordId)
+      if (word) this.beginDrawing(data, round, word, now, false)
       return
     }
 
-    if (data.phase === 'guessing' && move.type === 'submit-guess') {
-      const currentRound = this.getCurrentRound(data)
+    if (move.type === 'submit-guess' && data.phase === 'drawing' && round.word) {
       const guess = getStringField(move.data, 'guess')
-      if (!currentRound || !guess) {
-        return
-      }
-
-      const normalizedGuess = guess.trim()
-      currentRound.guesses.push({
+      if (!guess) return
+      const text = guess.trim()
+      const match = matchSketchGuess(text, round.word)
+      const entry: SketchAndGuessGuess = {
+        id: `r${round.round}-g${round.guesses.length + 1}`,
         playerId: move.playerId,
-        guess: normalizedGuess,
+        guess: text,
         submittedAt: now,
-        isCorrect: this.normalizeAnswer(normalizedGuess) === this.normalizeAnswer(currentRound.prompt),
-      })
-      data.submittedPlayerIds.push(move.playerId)
-
-      if (data.submittedPlayerIds.length >= this.getExpectedGuesserCount(data)) {
-        data.phase = 'reveal'
-        data.submittedPlayerIds = []
-        currentRound.revealAt = now
-        this.state.lastMoveAt = now
+        isCorrect: match === 'correct',
       }
+      round.guesses.push(entry)
+      this.lastGuessOutcome = { guessId: entry.id, correct: entry.isCorrect, close: match === 'close' }
+      if (entry.isCorrect) this.recordCorrectGuesser(data, round, move.playerId, now)
       return
     }
 
-    if (data.phase === 'reveal' && move.type === 'advance-round') {
+    if (move.type === 'submit-drawing' || move.type === 'save-drawing') {
+      const content = getStringField(move.data, 'content')
+      if (!content) return
+      const trimmed = content.trim()
+      round.drawingContent = trimmed
+      if (move.type === 'submit-drawing') round.drawingSubmittedAt = now
+      else round.drawingSavedAt = now
+      round.drawingAutoSubmitted = isBlankDrawing(trimmed)
+      this.recomputeScoreboard(data)
+      return
+    }
+
+    if (move.type === 'accept-guess') {
+      const guessId = getStringField(move.data, 'guessId')
+      const guess = round.guesses.find((entry) => entry.id === guessId)
+      if (!guess || guess.acceptedByHost) return
+      // Scored exactly as a match at the moment it was typed: same submittedAt,
+      // so the speed bonus and the first-correct bonus fall where they would have.
+      guess.isCorrect = true
+      guess.acceptedByHost = true
+      // A drawer-host may still judge – they know best what they drew – but is
+      // not paid for a guess they ruled correct themselves.
+      if (move.playerId === round.drawerId) guess.acceptedByDrawer = true
+      this.recordCorrectGuesser(data, round, guess.playerId, now)
+      return
+    }
+
+    if (move.type === 'advance-round' && data.phase === 'reveal') {
       this.advanceAfterReveal(data, now)
     }
   }
@@ -274,10 +511,10 @@ export class SketchAndGuessGame extends GameEngine {
 
   getGameRules(): string[] {
     return [
-      'A drawer receives a prompt and submits one drawing each round.',
-      'All non-drawers submit one guess for the drawing.',
-      'Correct guesses award points to guessers and bonus points to the drawer.',
-      'Timeout auto-submissions are penalized.',
+      'Each round the drawer picks one of three words and draws it.',
+      'Everyone else guesses as often as they like while the drawing is made; any site language counts.',
+      'A correct guess scores 50 points plus up to 50 for speed, and 20 more for the first one in.',
+      'The drawer scores 40 points for every player who guesses the word; the host may accept a near miss.',
       'After all rounds are revealed, ranking is resolved deterministically.',
     ]
   }
@@ -291,6 +528,9 @@ export class SketchAndGuessGame extends GameEngine {
    * and deliberately ignored — see `SKETCH_PHASE_SECONDS`. Before #1022 this game had no
    * clock a client could see at all, so a player who closed their tab stalled the
    * round for everyone until somebody reloaded.
+   *
+   * Measured from `data.phaseStartedAt`, not `lastMoveAt`: every guess is a move,
+   * and a clock that restarted on each one would never run out while anyone typed.
    */
   applyTimeoutFallback(_turnTimerSeconds?: number, nowMs: number = Date.now()): SketchAndGuessTimeoutResolution {
     const result: SketchAndGuessTimeoutResolution = {
@@ -298,6 +538,7 @@ export class SketchAndGuessGame extends GameEngine {
       timeoutWindowsConsumed: 0,
       phaseTransitions: 0,
       revealAdvances: 0,
+      autoPickedWords: 0,
       autoSubmittedDrawings: 0,
       autoSubmittedGuesses: 0,
       autoSubmittedPlayerIds: [],
@@ -307,10 +548,13 @@ export class SketchAndGuessGame extends GameEngine {
       return result
     }
 
+    const initialData = this.state.data as SketchAndGuessGameData
     let phaseStartedAt =
-      typeof this.state.lastMoveAt === 'number' && Number.isFinite(this.state.lastMoveAt)
-        ? this.state.lastMoveAt
-        : nowMs
+      typeof initialData.phaseStartedAt === 'number' && Number.isFinite(initialData.phaseStartedAt)
+        ? initialData.phaseStartedAt
+        : typeof this.state.lastMoveAt === 'number' && Number.isFinite(this.state.lastMoveAt)
+          ? this.state.lastMoveAt
+          : nowMs
 
     if (phaseStartedAt > nowMs) {
       phaseStartedAt = nowMs
@@ -321,7 +565,7 @@ export class SketchAndGuessGame extends GameEngine {
       const data = this.state.data as SketchAndGuessGameData
       // Each phase has its own budget, so the deadline is recomputed every lap
       // rather than fixed before the loop (#1022).
-      const timeoutMs = Math.max(1, SKETCH_PHASE_SECONDS[data.phase] * 1000)
+      const timeoutMs = Math.max(1, sketchPhaseSeconds(data.phase) * 1000)
       if (nowMs - phaseStartedAt < timeoutMs) break
 
       safetyCounter += 1
@@ -331,89 +575,78 @@ export class SketchAndGuessGame extends GameEngine {
         break
       }
 
-      if (data.phase === 'drawing') {
-        if (!currentRound.drawingContent) {
+      if (data.phase === 'choosing') {
+        const choices = currentRound.wordChoices.length > 0 ? currentRound.wordChoices : this.pickWordChoices(data.rounds)
+        const word = choices[Math.floor(Math.random() * choices.length)] || choices[0]
+        if (!word) break
+        this.beginDrawing(data, currentRound, word, timeoutAt, true)
+        result.autoPickedWords += 1
+      } else if (data.phase === 'drawing') {
+        this.enterReveal(data, currentRound, timeoutAt)
+      } else if (data.phase === 'reveal') {
+        if (currentRound.drawingContent === null) {
           currentRound.drawingContent = this.buildTimeoutFallbackDrawing()
           currentRound.drawingAutoSubmitted = true
           currentRound.drawingSubmittedAt = timeoutAt
           result.autoSubmittedDrawings += 1
-          result.changed = true
           if (!result.autoSubmittedPlayerIds.includes(currentRound.drawerId)) {
             result.autoSubmittedPlayerIds.push(currentRound.drawerId)
           }
         }
-
-        data.phase = 'guessing'
-        data.submittedPlayerIds = []
-        this.state.lastMoveAt = timeoutAt
-
-        result.changed = true
-        result.timeoutWindowsConsumed += 1
-        result.phaseTransitions += 1
-        phaseStartedAt = timeoutAt
-        continue
-      }
-
-      if (data.phase === 'guessing') {
-        const autoSubmittedCount = this.autoSubmitMissingGuesses(data, currentRound, timeoutAt)
-        if (autoSubmittedCount > 0) {
-          result.changed = true
-          result.autoSubmittedGuesses += autoSubmittedCount
-        }
-
-        data.phase = 'reveal'
-        data.submittedPlayerIds = []
-        currentRound.revealAt = currentRound.revealAt || timeoutAt
-        this.state.lastMoveAt = timeoutAt
-
-        result.changed = true
-        result.timeoutWindowsConsumed += 1
-        result.phaseTransitions += 1
-        phaseStartedAt = timeoutAt
-        continue
-      }
-
-      if (data.phase === 'reveal') {
         this.advanceAfterReveal(data, timeoutAt)
-        result.changed = true
-        result.timeoutWindowsConsumed += 1
         result.revealAdvances += 1
-        phaseStartedAt = timeoutAt
-        continue
+      } else {
+        break
       }
 
-      break
+      result.changed = true
+      result.timeoutWindowsConsumed += 1
+      phaseStartedAt = timeoutAt
     }
 
+    // A reveal that moved the game on is counted as such; every other lap was a phase transition.
+    result.phaseTransitions = result.timeoutWindowsConsumed - result.revealAdvances
     return result
   }
 
-  private autoSubmitMissingGuesses(
+  private beginDrawing(
     data: SketchAndGuessGameData,
     round: SketchAndGuessRound,
-    submittedAt: number,
-  ): number {
-    const submittedSet = new Set(round.guesses.map((guess) => guess.playerId))
-    let created = 0
+    word: SketchWord,
+    at: number,
+    autoPicked: boolean
+  ): void {
+    round.word = word
+    round.prompt = word.en[0] || ''
+    round.wordAutoPicked = autoPicked
+    round.drawingStartedAt = at
+    data.phase = 'drawing'
+    data.phaseStartedAt = at
+    data.submittedPlayerIds = []
+    this.state.lastMoveAt = at
+  }
 
-    for (const player of this.state.players) {
-      if (player.id === round.drawerId || submittedSet.has(player.id)) {
-        continue
-      }
+  private enterReveal(data: SketchAndGuessGameData, round: SketchAndGuessRound, at: number): void {
+    data.phase = 'reveal'
+    data.phaseStartedAt = at
+    round.revealAt = round.revealAt || at
+    this.state.lastMoveAt = at
+  }
 
-      round.guesses.push({
-        playerId: player.id,
-        guess: '[AUTO TIMEOUT]',
-        submittedAt,
-        isCorrect: false,
-        autoSubmitted: true,
-      })
-      created += 1
-      data.submittedPlayerIds.push(player.id)
-      submittedSet.add(player.id)
-    }
+  /** A guesser has it – typed or accepted. Scores go up now, and the round ends if they were the last. */
+  private recordCorrectGuesser(
+    data: SketchAndGuessGameData,
+    round: SketchAndGuessRound,
+    playerId: string,
+    at: number
+  ): void {
+    if (!data.submittedPlayerIds.includes(playerId)) data.submittedPlayerIds.push(playerId)
+    this.recomputeScoreboard(data)
 
-    return created
+    if (data.phase !== 'drawing') return
+    const guessers = this.state.players.filter((player) => player.id !== round.drawerId)
+    const everyoneHasIt = guessers.length > 0 && guessers.every((player) => data.submittedPlayerIds.includes(player.id))
+    if (everyoneHasIt) this.enterReveal(data, round, at)
   }
 
   private advanceAfterReveal(data: SketchAndGuessGameData, nowMs: number): void {
@@ -435,9 +668,10 @@ export class SketchAndGuessGame extends GameEngine {
 
     data.currentRound += 1
     data.currentDrawerId = this.resolveDrawerId(data.currentRound, data.drawerOrder)
-    data.phase = 'drawing'
+    data.phase = 'choosing'
+    data.phaseStartedAt = nowMs
     data.submittedPlayerIds = []
-    data.rounds.push(this.createRound(data.currentRound, data.currentDrawerId))
+    data.rounds.push(this.createRound(data.currentRound, data.currentDrawerId, data.rounds))
     this.state.lastMoveAt = nowMs
   }
 
@@ -451,6 +685,23 @@ export class SketchAndGuessGame extends GameEngine {
     this.state.lastMoveAt = nowMs
   }
 
+  /**
+   * Points for one correct guess, before the first-correct bonus. A round with
+   * no recorded drawing start was persisted before #1082 and keeps its old flat
+   * score, so a game that spans the deploy does not re-rank its finished rounds.
+   */
+  private correctGuessPoints(round: SketchAndGuessRound, guess: SketchAndGuessGuess): number {
+    if (typeof round.drawingStartedAt !== 'number') return SCORE_LEGACY_CORRECT_GUESS_POINTS
+    const drawingMs = SKETCH_PHASE_SECONDS.drawing * 1000
+    const left = (round.drawingStartedAt + drawingMs - guess.submittedAt) / drawingMs
+    const share = Math.min(1, Math.max(0, left))
+    return SCORE_CORRECT_GUESS_BASE + Math.round(SCORE_CORRECT_GUESS_SPEED_MAX * share)
+  }
+
+  /**
+   * Scores are live since #1082: the round being played counts as soon as
+   * somebody guesses it, rather than one round late at the reveal.
+   */
   private recomputeScoreboard(data: SketchAndGuessGameData): void {
     const breakdownByPlayer = new Map<string, SketchAndGuessScoreBreakdown>()
 
@@ -466,14 +717,14 @@ export class SketchAndGuessGame extends GameEngine {
     }
 
     for (const round of data.rounds) {
-      if (!round.isScored) {
+      if (!round.isScored && round.round !== data.currentRound) {
         continue
       }
 
       const correctGuesses = round.guesses
         .filter((guess) => guess.isCorrect)
         .sort((left, right) => left.submittedAt - right.submittedAt)
-      const firstCorrectGuesserId = correctGuesses[0]?.playerId || null
+      const firstCorrectGuessId = correctGuesses[0]?.id ?? null
 
       if (round.drawingAutoSubmitted) {
         const drawerBreakdown = breakdownByPlayer.get(round.drawerId)
@@ -482,11 +733,12 @@ export class SketchAndGuessGame extends GameEngine {
         }
       }
 
-      if (correctGuesses.length > 0) {
+      const paidToDrawer = correctGuesses.filter((guess) => !guess.acceptedByDrawer)
+      if (paidToDrawer.length > 0) {
         const drawerBreakdown = breakdownByPlayer.get(round.drawerId)
         if (drawerBreakdown) {
           drawerBreakdown.drawerRoundsWithCorrectGuesses += 1
-          drawerBreakdown.drawerPoints += correctGuesses.length * SCORE_DRAWER_PER_CORRECT_GUESS
+          drawerBreakdown.drawerPoints += paidToDrawer.length * SCORE_DRAWER_PER_CORRECT_GUESS
         }
       }
 
@@ -506,8 +758,8 @@ export class SketchAndGuessGame extends GameEngine {
         }
 
         guesserBreakdown.correctGuesses += 1
-        guesserBreakdown.guessPoints += SCORE_CORRECT_GUESS_POINTS
-        if (firstCorrectGuesserId === guess.playerId) {
+        guesserBreakdown.guessPoints += this.correctGuessPoints(round, guess)
+        if (firstCorrectGuessId === guess.id) {
           guesserBreakdown.guessPoints += SCORE_FIRST_CORRECT_BONUS
         }
       }
@@ -558,11 +810,15 @@ export class SketchAndGuessGame extends GameEngine {
     return resolvePlayerByRoundIndex(round, drawerOrder) || ''
   }
 
-  private createRound(round: number, drawerId: string): SketchAndGuessRound {
+  private createRound(round: number, drawerId: string, previousRounds: SketchAndGuessRound[]): SketchAndGuessRound {
     return {
       round,
       drawerId,
-      prompt: this.resolvePrompt(),
+      prompt: '',
+      word: null,
+      wordChoices: this.pickWordChoices(previousRounds),
+      wordAutoPicked: false,
+      drawingStartedAt: null,
       drawingContent: null,
       drawingSubmittedAt: null,
       drawingAutoSubmitted: false,
@@ -573,9 +829,21 @@ export class SketchAndGuessGame extends GameEngine {
     }
   }
 
-  private resolvePrompt(): string {
-    const randomIndex = Math.floor(Math.random() * PROMPT_POOL.length)
-    return PROMPT_POOL[randomIndex] || PROMPT_POOL[0]
+  /**
+   * Three distinct words no earlier round of this game was played with. The
+   * bank is far larger than the ten-round ceiling, but if it ever ran short the
+   * pick falls back to words already played rather than offering fewer.
+   */
+  private pickWordChoices(previousRounds: SketchAndGuessRound[]): SketchWord[] {
+    const used = new Set(previousRounds.map((round) => round.word?.id).filter((id): id is string => !!id))
+    const fresh = SKETCH_WORDS.filter((word) => !used.has(word.id))
+    const pool = fresh.length >= WORD_CHOICE_COUNT ? fresh.slice() : SKETCH_WORDS.slice()
+    const picked: SketchWord[] = []
+    while (picked.length < WORD_CHOICE_COUNT && pool.length > 0) {
+      const index = Math.floor(Math.random() * pool.length)
+      picked.push(pool.splice(index, 1)[0])
+    }
+    return picked.map((word) => ({ ...word, en: [...word.en], no: [...word.no], ru: [...word.ru], uk: [...word.uk] }))
   }
 
   private resolveTotalRounds(): number {
@@ -584,14 +852,6 @@ export class SketchAndGuessGame extends GameEngine {
       max: MAX_TOTAL_ROUNDS,
       fallback: DEFAULT_TOTAL_ROUNDS,
     })
-  }
-
-  private getExpectedGuesserCount(data: SketchAndGuessGameData): number {
-    return Math.max(0, this.state.players.length - 1)
-  }
-
-  private normalizeAnswer(value: string): string {
-    return value.trim().toLowerCase().replace(/\s+/g, ' ')
   }
 
   // #1032: this used to carry `promptHint: prompt`, which nothing ever read - the client
@@ -627,22 +887,28 @@ export class SketchAndGuessGame extends GameEngine {
  * only increments currentRound after that round's reveal+scoring), so every other
  * round in the array is always safe to return untouched.
  *
- * There are two secrets, not one. The prompt is the obvious one and was the
- * only one redacted until #1032. The other is the guesses themselves: a correct
- * guess *is* the prompt, spelled out, and `isCorrect` labels it as such. Played
- * with three seats on 2026-09-20, the second guesser's own snapshot came back
- * carrying `[{"guess":"island","isCorrect":true}]` while they were still typing
- * – the answer, handed to them, in every round. So a live round shows a viewer
- * only their own guess; the count everyone is allowed to see is
- * `data.submittedPlayerIds`, which says how many have answered and never what.
+ * The secrets, for everybody but the drawer, until the reveal:
+ *
+ * - the word, in every language: `prompt` (its English form), `word` (all four),
+ *   and `wordChoices` (the three it was picked from, which narrow it to one in
+ *   three). The drawer keeps them – it is their move.
+ * - the text of every correct guess, which *is* the word spelled out (#1032:
+ *   played with three seats on 2026-09-20, the second guesser's own snapshot
+ *   carried `[{"guess":"island","isCorrect":true}]` while they were still typing).
+ *   Since #1082 the feed shows every guess to everyone, so a correct one stays in
+ *   the list – "<name> guessed it!" is the point of the feed – with its text
+ *   blanked for everyone but its author and the drawer.
+ *
+ * A wrong guess is not a secret and is left alone: the whole table watching the
+ * misses is what the feed is for, and the host needs to read them to accept one.
  *
  * `viewerUserId === null` is the shared-broadcast and spectator case: no guess
- * has an owner to match, so all of them drop, which is the redaction those
- * viewers should get anyway.
+ * has an owner to match, so every correct guess is blanked and no word is given.
  */
 export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unknown; status?: string }>(
   state: T,
-  viewerUserId: string | null = null
+  viewerUserId: string | null = null,
+  options: SketchSanitizeOptions = {}
 ): T {
   const data = state.data as SketchAndGuessGameData | undefined
   if (!data || !Array.isArray(data.rounds)) return state
@@ -654,20 +920,142 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
   if (currentRoundIndex === -1) return state
 
   const currentRound = data.rounds[currentRoundIndex]
-  // The drawer keeps the prompt – it is their move – but not the live guesses:
-  // nobody reads another player's answer before the reveal.
   const viewerIsDrawer = viewerUserId !== null && viewerUserId === currentRound.drawerId
 
-  const sanitizedRounds = data.rounds.slice()
-  sanitizedRounds[currentRoundIndex] = {
+  // The hint is the one thing about the word a guesser is given: blanks in their
+  // own language, a few letters uncovered as the clock runs. Only with a
+  // language to build it in – the shared broadcast has none and gets none.
+  const hintWord = currentRound.word ?? (currentRound.prompt ? legacyWord(currentRound.prompt) : null)
+  const drawingStartedAt =
+    currentRound.drawingStartedAt ??
+    data.phaseStartedAt ??
+    ((state as { lastMoveAt?: unknown }).lastMoveAt as number | undefined) ??
+    null
+  // Only in the language locked for this viewer this round (lockHintLocale):
+  // a hint built from whatever language a request names let one guesser
+  // collect the pattern in all four (PR #1100 review).
+  const lockedLang = viewerUserId !== null ? currentRound.hintLocales?.[viewerUserId] : undefined
+  const wordHint =
+    !viewerIsDrawer && lockedLang && hintWord && (data.phase as string) !== 'choosing'
+      ? buildSketchWordHint(hintWord, lockedLang, drawingStartedAt, options.now ?? Date.now(), currentRound.round)
+      : undefined
+  // The host reads near misses to decide on Accept, but only once the word is
+  // no news to them: drawing it, or having guessed it (PR #1100 review).
+  const hostMayRead =
+    options.hostUserId != null &&
+    viewerUserId === options.hostUserId &&
+    (viewerIsDrawer ||
+      (Array.isArray(currentRound.guesses) &&
+        currentRound.guesses.some((guess) => guess.playerId === viewerUserId && guess.isCorrect)))
+
+  const sanitizedRound: SketchAndGuessRound = {
     ...currentRound,
     prompt: viewerIsDrawer ? currentRound.prompt : '',
+    word: viewerIsDrawer ? currentRound.word ?? null : null,
+    wordChoices: viewerIsDrawer && Array.isArray(currentRound.wordChoices) ? currentRound.wordChoices : [],
     guesses: Array.isArray(currentRound.guesses)
-      ? currentRound.guesses.filter((guess) => guess.playerId === viewerUserId)
+      ? currentRound.guesses.map((guess) => {
+          const mayReadIt = viewerIsDrawer || guess.playerId === viewerUserId
+          if (guess.isCorrect) return mayReadIt ? guess : { ...guess, guess: '' }
+          // A near miss spells the word all but a letter, so it is a secret too –
+          // except from the host, who has to read it to decide whether to accept it.
+          if (hintWord && isSketchNearMiss(guess.guess, hintWord)) {
+            return mayReadIt || hostMayRead ? { ...guess, nearMiss: true } : { ...guess, guess: '', nearMiss: true }
+          }
+          return guess
+        })
       : [],
   }
+  if (wordHint) sanitizedRound.wordHint = wordHint
+  else delete sanitizedRound.wordHint
+
+  const sanitizedRounds = data.rounds.slice()
+  sanitizedRounds[currentRoundIndex] = sanitizedRound
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
+}
+
+export interface SketchSanitizeOptions {
+  /** The lobby's creator, who may read near misses because they decide whether to accept one. */
+  hostUserId?: string | null
+  /** For tests: the moment the hint is built for. */
+  now?: number
+}
+
+/** A wrong guess that gives the word away if read – see `isSketchNearMissKey`. */
+export function isSketchNearMiss(guess: string, word: Pick<SketchWord, SketchWordLocale>): boolean {
+  return isSketchNearMissKey(normalizeSketchGuess(guess), sketchWordKeys(word))
+}
+
+/**
+ * A guesser who has the word must not be able to type it into the chat for
+ * the others while the round is drawn – the same mute as the drawer's, and
+ * lifted at the reveal the same way (#1082).
+ */
+export function isSketchAndGuessSolverMuted(params: { gameStatus: string; state: unknown; userId: string }): boolean {
+  if (params.gameStatus !== 'playing') return false
+  const data = (params.state as { data?: unknown } | null)?.data as SketchAndGuessGameData | undefined
+  if (!data || typeof data !== 'object') return false
+  const phase = data.phase as string
+  if (phase !== 'drawing' && phase !== 'guessing') return false
+  if (Array.isArray(data.submittedPlayerIds) && phase === 'drawing' && data.submittedPlayerIds.includes(params.userId)) {
+    return true
+  }
+  const round = Array.isArray(data.rounds) ? data.rounds.find((r) => r.round === data.currentRound) : undefined
+  return !!round?.guesses?.some((g) => g.playerId === params.userId && g.isCorrect)
+}
+
+/** Uncover one letter at each of these shares of the drawing clock (#1082). */
+const HINT_REVEAL_AT = [0.5, 0.75]
+
+function isHintLetter(ch: string): boolean {
+  return /[\p{L}\p{N}]/u.test(ch)
+}
+
+/** FNV-1a, so the letters a hint uncovers are the same on every request. */
+function hashString(value: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash
+}
+
+/**
+ * The word as a guesser in `locale` may see it while it is being drawn: every
+ * letter a blank at first, one uncovered at half the drawing clock and another
+ * at three quarters, but never more than a third of the letters – so a
+ * three-letter word gets one and a two-letter word none. Spaces, hyphens and
+ * apostrophes are shown as they are, because they are the shape of the answer,
+ * not the answer. Which letters is fixed per word and round, so a refetch
+ * never shows a different one.
+ */
+export function buildSketchWordHint(
+  word: Pick<SketchWord, 'id' | SketchWordLocale>,
+  locale: string,
+  drawingStartedAt: number | null,
+  now: number,
+  round: number
+): SketchWordHint {
+  const lang = resolveSketchWordLocale(locale)
+  const form = word[lang]?.[0] || word.en?.[0] || ''
+  const chars = Array.from(form)
+  const letterIndexes = chars.map((ch, index) => (isHintLetter(ch) ? index : -1)).filter((index) => index >= 0)
+
+  const drawingMs = SKETCH_PHASE_SECONDS.drawing * 1000
+  const elapsedShare = typeof drawingStartedAt === 'number' ? (now - drawingStartedAt) / drawingMs : 0
+  const stage = HINT_REVEAL_AT.filter((share) => elapsedShare >= share).length
+  const count = Math.min(stage, Math.floor(letterIndexes.length / 3))
+
+  const seed = hashString(`${word.id}:${lang}:${round}`)
+  const order = letterIndexes
+    .map((index) => ({ index, key: hashString(`${seed}:${index}`) }))
+    .sort((left, right) => left.key - right.key)
+    .map((entry) => entry.index)
+  const shown = new Set(order.slice(0, count))
+
+  return { lang, cells: chars.map((ch, index) => (!isHintLetter(ch) || shown.has(index) ? ch : null)) }
 }
 
 /**
@@ -680,21 +1068,18 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
  * lobby topic is the one channel every seated player is joined to
  * (lib/lobby-channel-registry.ts), so the first correct guess – which is the
  * prompt, spelled out – arrived at every other player the moment it was made.
- * Nothing in the app subscribes to this event, so no client lost anything when
- * the payload stopped carrying it; a player watching their own socket did.
+ * Since #1082 `choose-word` carries `{ wordId }`, which is the word by another
+ * name, and is dropped the same way.
  *
  * An allowlist rather than a denylist: a payload field reaches the whole lobby
  * only by being named here, so a new move type leaks nothing by default. The
  * counters below are the timeout-fallback bookkeeping, which says how many
  * submissions the server filled in and for whom – all of it already public in
  * the sanitized state.
- *
- * What the round genuinely needs to publish it publishes through `state`:
- * `submittedPlayerIds` for who has answered, `rounds[].drawingContent` for the
- * drawing, and the guesses themselves once the reveal makes them safe.
  */
 const BROADCAST_SAFE_ACTION_EVENT_FIELDS = new Set([
   'timeoutWindowsConsumed',
+  'autoPickedWords',
   'autoSubmittedDrawings',
   'autoSubmittedGuesses',
   'autoSubmittedPlayerIds',

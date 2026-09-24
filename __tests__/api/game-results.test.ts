@@ -143,4 +143,43 @@ describe('GET /api/game/[gameId]/results', () => {
     expect(payload.endedAt).toBe('2026-02-27T18:06:00.000Z')
     expect(payload.durationMs).toBe(6 * 60 * 1000)
   })
+
+  // #1103: this route returned `game.state` raw to any player while the game was
+  // still running – the Sketch & Guess word in every language, the drawer's three
+  // choices and every guess, before a single stroke; the same for Memory's card
+  // values and Alias's words. It now goes through the broadcast sanitizer.
+  it('never hands a player the secrets of a game that is still running', async () => {
+    const { SketchAndGuessGame } = require('@/lib/games/sketch-and-guess-game')
+    const engine = new SketchAndGuessGame('game-live', { maxPlayers: 10, minPlayers: 3 })
+    engine.addPlayer({ id: 'user-1', name: 'Drawer', score: 0 })
+    engine.addPlayer({ id: 'user-2', name: 'Guesser', score: 0 })
+    engine.addPlayer({ id: 'user-3', name: 'Other', score: 0 })
+    engine.startGame()
+    const state = engine.getState()
+    const drawerId = state.data.currentDrawerId
+    const guesserId = ['user-1', 'user-2', 'user-3'].find((id) => id !== drawerId)
+    const secrets = JSON.stringify(state.data.rounds[0]?.wordChoices ?? [])
+    expect(secrets.length).toBeGreaterThan(2)
+
+    mockPrisma.games.findUnique.mockResolvedValue({
+      ...mockGame,
+      id: 'game-live',
+      gameType: 'sketch_and_guess',
+      status: 'playing',
+      state: JSON.stringify(state),
+      lobby: { ...mockGame.lobby, gameType: 'sketch_and_guess' },
+      players: ['user-1', 'user-2', 'user-3'].map((id) => ({ ...mockGame.players[0], userId: id, user: { ...mockGame.players[0].user, id } })),
+    } as any)
+    mockGetRequestAuthUser.mockResolvedValue({ id: guesserId } as any)
+
+    const response = await GET(buildRequest('http://localhost:3000/api/game/game-live/results'), {
+      params: Promise.resolve({ gameId: 'game-live' }),
+    })
+    expect(response.status).toBe(200)
+    const body = JSON.stringify(await response.json())
+    // The Russian forms are Cyrillic, so they can only be in the body as the secret.
+    for (const choice of state.data.rounds[0].wordChoices) {
+      expect(body).not.toContain(choice.ru[0])
+    }
+  })
 })

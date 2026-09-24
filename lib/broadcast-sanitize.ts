@@ -21,8 +21,15 @@ import { sanitizeFakeArtistStateForBroadcast } from './games/fake-artist-game'
  */
 type Sanitizer = <T extends { data?: unknown; status?: string }>(
   state: T,
-  viewerUserId: string | null
+  viewerUserId: string | null,
+  options?: SanitizeOptions
 ) => T
+
+/** Per-viewer extras a sanitizer may use. */
+export interface SanitizeOptions {
+  /** The lobby's creator. Sketch & Guess shows them near-miss guesses they are allowed to judge. */
+  hostUserId?: string | null
+}
 
 /**
  * Every supported game must make an explicit sanitization decision. `null` means
@@ -37,7 +44,8 @@ type Sanitizer = <T extends { data?: unknown; status?: string }>(
 const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   guess_the_spy: (state) => sanitizeSpyStateForBroadcast(state),
   rock_paper_scissors: (state, viewerUserId) => sanitizeRpsStateForBroadcast(state, viewerUserId),
-  sketch_and_guess: (state, viewerUserId) => sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId),
+  sketch_and_guess: (state, viewerUserId, options) =>
+    sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId, { hostUserId: options?.hostUserId ?? null }),
   memory: (state) => sanitizeMemoryStateForBroadcast(state),
   alias: (state, viewerUserId) => sanitizeAliasStateForBroadcast(state, viewerUserId),
   fake_artist: (state, viewerUserId) => sanitizeFakeArtistStateForBroadcast(state, viewerUserId),
@@ -61,12 +69,13 @@ function isSupportedGameType(gameType: string): gameType is SupportedGameType {
 export function sanitizeStateForBroadcast<T extends { data?: unknown; status?: string }>(
   gameType: string,
   state: T,
-  viewerUserId: string | null = null
+  viewerUserId: string | null = null,
+  options: SanitizeOptions = {}
 ): T {
   if (!isSupportedGameType(gameType)) {
     return state
   }
 
   const sanitizer = SANITIZERS[gameType]
-  return sanitizer ? sanitizer(state, viewerUserId) : state
+  return sanitizer ? sanitizer(state, viewerUserId, options) : state
 }

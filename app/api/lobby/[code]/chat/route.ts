@@ -4,7 +4,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getChatHistory, persistChatMessage } from '@/lib/chat-history'
 import { broadcastToLobby } from '@/lib/supabase-server'
-import { isSketchAndGuessDrawerMuted } from '@/lib/games/sketch-and-guess-game'
+import { isSketchAndGuessDrawerMuted, isSketchAndGuessSolverMuted } from '@/lib/games/sketch-and-guess-game'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
@@ -130,6 +130,15 @@ export async function POST(
     if (isSketchAndGuessDrawerMuted({ gameStatus: activeGame.status, state: parsedState, userId: user.id })) {
       return NextResponse.json(
         { error: 'The drawer cannot chat until the reveal', code: 'DRAWER_CHAT_MUTED' },
+        { status: 403 }
+      )
+    }
+    // #1082: a guesser who has the word is muted the same way until the reveal.
+    // Messages are not screened for the word itself: that was an oracle for the
+    // answer, misfired on substrings, and a zero-width character beat it.
+    if (isSketchAndGuessSolverMuted({ gameStatus: activeGame.status, state: parsedState, userId: user.id })) {
+      return NextResponse.json(
+        { error: 'You have guessed the word – chat opens again at the reveal', code: 'SOLVER_CHAT_MUTED' },
         { status: 403 }
       )
     }

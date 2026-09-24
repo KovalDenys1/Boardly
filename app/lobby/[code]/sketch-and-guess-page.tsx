@@ -17,10 +17,13 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import SketchAndGuessGameBoard, {
     SketchScoreRows,
     emptySketchAndGuessDraft,
+    serializeSketchDrawing,
     type SketchAndGuessDraft,
+    type SketchGuessResult,
     type SketchLiveView,
 } from '@/components/SketchAndGuessGameBoard'
-import { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
+import type { SketchAndGuessGameData } from '@/lib/games/sketch-and-guess-game'
+import { sketchWordDisplay } from '@/lib/games/sketch-and-guess-word-display'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
@@ -40,7 +43,7 @@ import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { SKETCH_PHASE_SECONDS } from '@/lib/games/sketch-and-guess-phases'
+import { sketchPhaseSeconds } from '@/lib/games/sketch-and-guess-phases'
 import {
     SKETCH_LIVE_EVENT,
     SKETCH_LIVE_RESYNC_MS,
@@ -93,7 +96,9 @@ const SKETCH_ACCENT = 'var(--bd-mint)'
 const SKETCH_ACCENT_DEEP = 'var(--bd-mint-deep)'
 
 /** The engine's three phases, as a number the turn timer can hang a signature off. */
-const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { drawing: 0, guessing: 1, reveal: 2 }
+const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { choosing: 0, drawing: 1, reveal: 2 }
+
+type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-guess' | 'advance-round'
 
 /**
  * What a round starts with, and what a page shows for any round the draft below
@@ -103,9 +108,13 @@ const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { drawing
  */
 const EMPTY_DRAFT: SketchAndGuessDraft = Object.freeze(emptySketchAndGuessDraft())
 
+/** How long after the drawer's last stroke the canvas is saved to the server (PR #1100 review). */
+const SKETCH_DRAWING_SAVE_DEBOUNCE_MS = 5000
+
 function defaultSketchState(): SketchAndGuessGameData {
     return {
-        phase: 'drawing',
+        phase: 'choosing',
+        phaseStartedAt: null,
         currentRound: 1,
         totalRounds: 3,
         drawerOrder: [],
@@ -153,14 +162,24 @@ function parseSketchState(state: unknown): SketchAndGuessGameData {
     if (!data || typeof data !== 'object') return fallback
 
     const d = data as Record<string, unknown>
+    const rounds = Array.isArray(d.rounds) ? (d.rounds as SketchAndGuessGameData['rounds']) : []
+    // Pre-#1082 `submittedPlayerIds` meant "has answered", right or wrong; now it
+    // means "has it". Until the server next writes the game, read it the new way.
+    const legacyCorrectIds =
+        d.phase === 'guessing'
+            ? [...new Set((rounds.find((r) => r.round === d.currentRound)?.guesses ?? []).filter((g) => g.isCorrect).map((g) => g.playerId))]
+            : null
     return {
-        phase: d.phase === 'guessing' || d.phase === 'reveal' ? d.phase : 'drawing',
+        // A game persisted before #1082 can still say `guessing`; the engine reads
+        // it as drawing with guesses in it, and so does the page.
+        phase: d.phase === 'choosing' || d.phase === 'reveal' ? d.phase : 'drawing',
+        phaseStartedAt: typeof d.phaseStartedAt === 'number' ? d.phaseStartedAt : null,
         currentRound: typeof d.currentRound === 'number' ? d.currentRound : fallback.currentRound,
         totalRounds: typeof d.totalRounds === 'number' ? d.totalRounds : fallback.totalRounds,
         drawerOrder: Array.isArray(d.drawerOrder) ? (d.drawerOrder as string[]) : [],
         currentDrawerId: typeof d.currentDrawerId === 'string' ? d.currentDrawerId : '',
-        rounds: Array.isArray(d.rounds) ? (d.rounds as SketchAndGuessGameData['rounds']) : [],
-        submittedPlayerIds: Array.isArray(d.submittedPlayerIds) ? (d.submittedPlayerIds as string[]) : [],
+        rounds,
+        submittedPlayerIds: legacyCorrectIds ?? (Array.isArray(d.submittedPlayerIds) ? (d.submittedPlayerIds as string[]) : []),
         scores: typeof d.scores === 'object' && d.scores ? (d.scores as Record<string, number>) : {},
         scoreBreakdown:
             typeof d.scoreBreakdown === 'object' && d.scoreBreakdown
@@ -178,7 +197,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
+    const locale = i18n?.language || 'en'
 
     const [loading, setLoading] = useState(true)
     const [lobby, setLobby] = useState<LobbyData | null>(null)
@@ -331,7 +351,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     const loadLobbyData = useCallback(async () => {
         try {
-            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
+            // `locale` is what the server builds the word hint in for a guesser (#1082).
+            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true&locale=${encodeURIComponent(locale)}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             })
@@ -360,7 +381,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         } finally {
             setLoading(false)
         }
-    }, [code, normalizeLobbyResponse])
+    }, [code, normalizeLobbyResponse, locale])
 
     useEffect(() => {
         const redirectReason = resolveLifecycleRedirectReason({ gameStatus: lobby?.status, lobbyIsActive: lobby?.isActive })
@@ -449,9 +470,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     useLobbyChatHistory({ code, isConnected: socketConnected, isReconnecting, mergeHistoryMessages })
 
     const submitAction = useCallback(
-        async (action: 'submit-drawing' | 'submit-guess' | 'advance-round', data: Record<string, unknown>) => {
-            if (!lobby?.game) return
-            if (submitInFlightRef.current) return
+        async (
+            action: SketchAction,
+            data: Record<string, unknown>,
+            options: { silent?: boolean } = {}
+        ): Promise<Record<string, unknown> | null> => {
+            if (!lobby?.game) return null
+            if (submitInFlightRef.current) return null
 
             const submitStartedAt = Date.now()
             let responseStatus: number | undefined
@@ -461,7 +486,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 const sendAction = () => fetchWithGuest(`/api/game/${lobby.game!.id}/sketch-and-guess-action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, data }),
+                    body: JSON.stringify({ action, data, locale }),
                 })
 
                 let res = await sendAction()
@@ -492,8 +517,24 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     })
                     if (payload?.code === 'ROUND_TIMEOUT_ADVANCED') {
                         await loadLobbyData()
-                        showToast.info('games.guess_my_drawing.game.roundAdvancedByTimeout')
-                        return
+                        if (!options.silent) showToast.info('games.guess_my_drawing.game.roundAdvancedByTimeout')
+                        return null
+                    }
+                    // #1082: the server's rate limit on guesses, said in words a player acts on.
+                    if (payload?.code === 'GUESS_TOO_FAST') {
+                        showToast.info('games.guess_my_drawing.game.guessTooFast', undefined, undefined, { id: 'sketch-guess-too-fast' })
+                        return null
+                    }
+                    if (payload?.code === 'GUESS_LIMIT_REACHED') {
+                        showToast.info('games.guess_my_drawing.game.guessLimitReached', undefined, undefined, { id: 'sketch-guess-limit' })
+                        return null
+                    }
+                    if (options.silent) {
+                        // The drawing the page sends by itself as the reveal opens: if it
+                        // lost a race with the reveal clock, the round has moved on and
+                        // there is nothing for the player to do about it.
+                        clientLogger.warn(`Sketch & Guess ${action} was not applied`, { status: res.status, error: payload?.error })
+                        return null
                     }
                     throw new Error(payload?.error || 'Failed to submit action')
                 }
@@ -543,24 +584,35 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     statusCode: responseStatus,
                     source: 'sketch_and_guess_page',
                 })
-                showToast.success('lobby.game.move_submitted')
+                // A guess is one of dozens in a round and the feed already shows it
+                // landing; a toast per guess would bury the board.
+                if (!options.silent && action !== 'submit-guess' && action !== 'choose-word') {
+                    showToast.success('lobby.game.move_submitted')
+                }
+                return payload as Record<string, unknown> | null
             } catch (err) {
                 clientLogger.error(`Failed to submit ${action}:`, err)
                 const errorMessage = err instanceof Error ? err.message : t('errors.generic')
                 // A rejected guess or drawing is a toast, never a page-level error screen: the
                 // round is still live and the player has to stay on the board to try again.
-                showToast.error('errors.general', undefined, { message: errorMessage })
+                if (!options.silent) showToast.error('errors.general', undefined, { message: errorMessage })
+                return null
             } finally {
                 submitInFlightRef.current = false
                 setIsSubmitting(false)
             }
         },
-        [lobby, isGuest, t, loadLobbyData]
+        [lobby, isGuest, t, loadLobbyData, locale]
     )
 
-    const handleSubmitDrawing = useCallback((content: string) => submitAction('submit-drawing', { content }), [submitAction])
-    const handleSubmitGuess = useCallback((guess: string) => submitAction('submit-guess', { guess }), [submitAction])
-    const handleAdvanceRound = useCallback(() => submitAction('advance-round', {}), [submitAction])
+    const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | void> => {
+        const payload = await submitAction('submit-guess', { guess })
+        const result = payload?.guessResult as SketchGuessResult | undefined
+        return result && typeof result.close === 'boolean' ? result : undefined
+    }, [submitAction])
+    const handleAdvanceRound = useCallback(async () => { await submitAction('advance-round', {}) }, [submitAction])
+    const handleChooseWord = useCallback(async (wordId: string) => { await submitAction('choose-word', { wordId }) }, [submitAction])
+    const handleAcceptGuess = useCallback(async (guessId: string) => { await submitAction('accept-guess', { guessId }) }, [submitAction])
 
     const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
@@ -629,11 +681,20 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const currentUserId = getCurrentUserId()
     const isFinished = game?.status === 'finished'
     const phase = gameData.phase
-    const phaseSeconds = SKETCH_PHASE_SECONDS[phase] ?? SKETCH_PHASE_SECONDS.drawing
+    const phaseSeconds = sketchPhaseSeconds(phase)
     const isDrawer = !isSpectator && !!currentUserId && currentUserId === gameData.currentDrawerId
     const currentRound = gameData.rounds.find((r) => r.round === gameData.currentRound) || null
-    const hasGuessed = !!currentUserId && (currentRound?.guesses.some((g) => g.playerId === currentUserId) ?? false)
-    const iOweAMove = !isFinished && !isSpectator && (phase === 'drawing' ? isDrawer : phase === 'guessing' ? !isDrawer && !hasGuessed : false)
+    // "Has it", not "has typed something": since #1082 a guesser keeps guessing
+    // until they are right, so only a correct guess takes them out of the round.
+    const hasGuessed = !!currentUserId && gameData.submittedPlayerIds.includes(currentUserId)
+    const iOweAMove =
+        !isFinished &&
+        !isSpectator &&
+        (phase === 'choosing' ? isDrawer : phase === 'drawing' ? isDrawer || !hasGuessed : false)
+    // The phase clock. Every guess is a move and moves `lastMoveAt`, so the engine
+    // keeps the phase's own start in `phaseStartedAt` (#1082); a game saved before
+    // that has only `lastMoveAt`, which was the phase start then.
+    const phaseStartedAt = gameData.phaseStartedAt ?? game?.lastMoveAt
 
     // The strokes on the canvas and the half-typed guess belong to the round,
     // not to a layout tree: the desktop, landscape and portrait trees each mount
@@ -717,14 +778,97 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         if (liveTimerRef.current !== null) window.clearTimeout(liveTimerRef.current)
     }, [])
 
+    // The drawing that is kept for the reveal. There is no submit button since
+    // #1082 – the round ends on the clock or when the last guesser has it – so
+    // the drawer's page sends the canvas the moment it sees the reveal, once per
+    // round. Everyone else is already looking at the streamed copy meanwhile,
+    // and "Next round" waits for this to land. A blank canvas is sent too: the
+    // engine scores it as the empty drawing it is, and nobody waits the full
+    // reveal clock for a drawing that is never coming.
+    //
+    // It has its own sender rather than submitAction, for two reasons found by
+    // playing it. submitAction drops a call while another is in flight, and the
+    // move that opens the reveal is often the drawer's own (the host accepting
+    // the last guess). And a single 429 or lost write-lock race lost the drawing
+    // outright, so the drawer paid the blank-drawing penalty for a picture
+    // everyone had watched being drawn. So: retried, briefly, on anything that
+    // might succeed a moment later.
+    const drawingSentForRoundRef = useRef<number | null>(null)
+    const needsDrawingSent =
+        isDrawer && !isFinished && phase === 'reveal' && !!currentRound && currentRound.drawingContent === null
+    const strokesForReveal = activeDraft.strokes
+    const gameIdForDrawing = game?.id
+    const sendRevealDrawing = useCallback(async (content: string) => {
+        if (!gameIdForDrawing) return
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** (attempt - 1)))
+            try {
+                const res = await fetchWithGuest(`/api/game/${gameIdForDrawing}/sketch-and-guess-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'submit-drawing', data: { content }, locale }),
+                })
+                if (res.ok) {
+                    void loadLobbyData()
+                    return
+                }
+                const payload = await res.json().catch(() => null)
+                const retryable = res.status === 429 || res.status >= 500 || payload?.code === 'STATE_CONFLICT'
+                if (!retryable) return
+            } catch {
+                // A network blip: try again.
+            }
+        }
+        clientLogger.warn('Sketch & Guess drawing was not stored for the reveal', { gameId: gameIdForDrawing })
+    }, [gameIdForDrawing, locale, loadLobbyData])
+    // And while drawing, the canvas is saved a few seconds after each stroke
+    // (`save-drawing`), so a drawer whose final send never lands – tab closed,
+    // connection gone – still has the picture everyone watched kept, rather
+    // than a blank-drawing penalty (PR #1100 review). Quiet on the server: no
+    // broadcast, no replay row. A lost save is not worth a retry; the next
+    // stroke brings another.
+    useEffect(() => {
+        if (!isStreamingDrawer || !gameIdForDrawing || committedStrokes === EMPTY_DRAFT.strokes) return
+        const timer = window.setTimeout(() => {
+            void Promise.resolve(
+                fetchWithGuest(`/api/game/${gameIdForDrawing}/sketch-and-guess-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save-drawing', data: { content: serializeSketchDrawing(committedStrokes) }, locale }),
+                })
+            ).catch(() => {})
+        }, SKETCH_DRAWING_SAVE_DEBOUNCE_MS)
+        return () => window.clearTimeout(timer)
+    }, [isStreamingDrawer, gameIdForDrawing, committedStrokes, locale])
+
+    useEffect(() => {
+        if (!needsDrawingSent || drawingSentForRoundRef.current === roundNumber) return
+        drawingSentForRoundRef.current = roundNumber
+        void sendRevealDrawing(serializeSketchDrawing(strokesForReveal))
+    }, [needsDrawingSent, roundNumber, strokesForReveal, sendRevealDrawing])
+
+    // The word hint uncovers a letter at half and at three quarters of the drawing
+    // clock, and the server only builds it when asked, so a guesser's page asks
+    // at those two moments rather than waiting for somebody else to move (#1082).
+    const hintClockStart = phase === 'drawing' && !isDrawer && !isFinished ? currentRound?.drawingStartedAt ?? phaseStartedAt ?? null : null
+    useEffect(() => {
+        if (typeof hintClockStart !== 'number') return
+        const drawingMs = sketchPhaseSeconds('drawing') * 1000
+        const timers = [0.5, 0.75]
+            .map((share) => hintClockStart + share * drawingMs + 300 - Date.now())
+            .filter((delay) => delay > 0)
+            .map((delay) => window.setTimeout(() => { void loadLobbyData() }, delay))
+        return () => timers.forEach((timer) => window.clearTimeout(timer))
+    }, [hintClockStart, loadLobbyData])
+
     const timerState = useMemo(() => {
         if (!game) return null
         return {
             currentPlayerIndex: gameData.currentRound * 10 + PHASE_ORDINAL[phase],
-            lastMoveAt: game.lastMoveAt,
+            lastMoveAt: phaseStartedAt,
             status: game.status,
         }
-    }, [game, gameData.currentRound, phase])
+    }, [game, gameData.currentRound, phase, phaseStartedAt])
 
     const { timeLeft } = useGameTimer({
         isMyTurn: iOweAMove,
@@ -741,7 +885,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             // request per ten seconds, six at most, then it stops rather than
             // hammering a dead round.
             const decision = stuckPhaseRecoveryRef.current.decide(
-                turnSignatureOf(timerState?.currentPlayerIndex, game?.lastMoveAt),
+                turnSignatureOf(timerState?.currentPlayerIndex, phaseStartedAt),
                 Date.now()
             )
             if (decision === 'give-up') return true
@@ -804,22 +948,27 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // the row never shows the same person twice and never shows an empty card.
     const contenders = players.filter((p) => p.id !== drawerId).sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0))
     const meSeatId = !isSpectator && currentUserId && currentUserId !== drawerId ? currentUserId : contenders[0]?.id || ''
-    // Who has answered. `submittedPlayerIds` is the public half and the only
-    // complete one: since #1032 a live round carries the viewer's own guess and
-    // nobody else's, so counting `guesses` alone would show every other seat as
-    // still thinking.
-    const guessedIds = new Set([...(currentRound?.guesses.map((g) => g.playerId) ?? []), ...gameData.submittedPlayerIds])
+    // Who has it. `submittedPlayerIds` is the public record of correct guessers
+    // (#1082); the guesses themselves are all in the feed, but a correct one's
+    // text is blanked for everyone else, so the id list is what is counted.
+    const guessedIds = new Set(gameData.submittedPlayerIds)
     const winnerId = gameData.winnerId
     const iWon = !!winnerId && winnerId === currentUserId
     const totalGuessers = Math.max(0, players.length - 1)
     const submittedCount = gameData.submittedPlayerIds.length
 
     const phaseLabel =
-        phase === 'drawing'
-            ? t('games.guess_my_drawing.game.phaseDrawing')
-            : phase === 'guessing'
-              ? t('games.guess_my_drawing.game.phaseGuessing')
+        phase === 'choosing'
+            ? t('games.guess_my_drawing.game.phaseChoosing')
+            : phase === 'drawing'
+              ? t('games.guess_my_drawing.game.phaseDrawing')
               : t('games.guess_my_drawing.game.phaseReveal')
+
+    // The word in the viewer's own language. Before the reveal only the drawer's
+    // state carries it; a round saved before #1082 has only its English prompt.
+    const revealedWord = currentRound
+        ? sketchWordDisplay(currentRound.word ?? (currentRound.prompt ? { en: [currentRound.prompt] } : null), locale)
+        : ''
 
     const finishedMessage = iWon
         ? t('games.guess_my_drawing.game.youWin')
@@ -828,18 +977,17 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const activeTitle = isFinished
         ? finishedMessage
         : phase === 'reveal'
-          ? t('games.guess_my_drawing.game.revealHeading', { prompt: currentRound?.prompt || '' })
-          : phase === 'drawing'
+          ? t('games.guess_my_drawing.game.revealHeading', { prompt: revealedWord })
+          : phase === 'choosing'
             ? isDrawer
-                ? t('games.guess_my_drawing.game.drawerIntro')
-                : t('games.guess_my_drawing.game.waitingForDrawer', { name: nameOf(drawerId) })
-            : isSpectator
-              // A spectator has no seat and is handed no guesses at all by the
-              // sanitizer, so both branches below would be false and the banner
-              // told a watcher to guess (#1033/#1034).
-              ? t('games.guess_my_drawing.game.spectatorGuessing')
-              : isDrawer
-                ? t('games.guess_my_drawing.game.youAreDrawingWait')
+                ? t('games.guess_my_drawing.game.chooseWordTitle')
+                : t('games.guess_my_drawing.game.choosingWait', { name: nameOf(drawerId) })
+            : isDrawer
+              ? t('games.guess_my_drawing.game.drawerIntro')
+              : isSpectator
+                // A spectator has no seat, so "guess now" would be an instruction
+                // they cannot follow (#1033/#1034).
+                ? t('games.guess_my_drawing.game.spectatorGuessing')
                 : hasGuessed
                   ? t('games.guess_my_drawing.game.alreadyGuessed')
                   : t('games.guess_my_drawing.game.guessNow')
@@ -876,7 +1024,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 <Icon name="palette" size={96} />
             </div>
             <GameScoreboardHeader
-                leftCard={seatCard(drawerId, 'left', !isFinished && phase === 'drawing', pencilBadge)}
+                leftCard={seatCard(drawerId, 'left', !isFinished && phase !== 'reveal', pencilBadge)}
                 center={
                     <>
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
@@ -895,7 +1043,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                         {gameData.currentRound}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>/</span>{gameData.totalRounds}
                     </div>
                 }
-                rightCard={seatCard(meSeatId, 'right', !isFinished && phase === 'guessing' && !!meSeatId && !guessedIds.has(meSeatId))}
+                rightCard={seatCard(meSeatId, 'right', !isFinished && phase === 'drawing' && !!meSeatId && !guessedIds.has(meSeatId))}
                 trailing={
                     isSpectator
                         ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
@@ -910,7 +1058,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             isFinished={isFinished}
             finishedMessage={finishedMessage}
             activeTitle={activeTitle}
-            meta={phase === 'guessing' && !isFinished ? `${submittedCount}/${totalGuessers}` : undefined}
+            meta={phase === 'drawing' && !isFinished ? `${submittedCount}/${totalGuessers}` : undefined}
             secs={timeLeft}
             turnTimerLimit={phaseSeconds}
             isYourTurn={iOweAMove}
@@ -927,11 +1075,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 gameStatus={game.status}
                 playerId={isSpectator ? '' : currentPlayer!.id}
                 players={players}
-                onSubmitDrawing={handleSubmitDrawing}
                 onSubmitGuess={handleSubmitGuess}
                 onAdvanceRound={handleAdvanceRound}
+                onChooseWord={handleChooseWord}
+                onAcceptGuess={handleAcceptGuess}
                 isSubmitting={isSubmitting}
                 isSpectator={isSpectator}
+                isHost={isCreator}
                 draft={activeDraft}
                 onDraftChange={handleDraftChange}
                 onLiveStroke={handleLiveStroke}
@@ -996,9 +1146,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // The drawer is the one player who already knows the word, and the scoring
     // pays them 40 points for every correct guess – so the chat they can type
     // into is a channel they are paid to leak the answer down. They read it,
-    // they do not write it, until the reveal (#1034). Everybody else talks
-    // throughout: this is a party game and the talking is the point.
-    const chatMutedForDrawer = isDrawer && !isFinished && phase !== 'reveal'
+    // they do not write it, until the reveal (#1034). Since #1082 the same goes
+    // for a guesser who has already got it: they know the word too, and one
+    // message from them would end the round for everyone still guessing. The
+    // server refuses both (POST /api/lobby/[code]/chat); this greys the box.
+    // Everybody else talks throughout: this is a party game and the talking is the point.
+    const chatMutedForDrawer =
+        !isFinished && ((isDrawer && phase !== 'reveal') || (!isSpectator && phase === 'drawing' && hasGuessed))
     const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
     for (const p of players) chatPlayerProfiles.set(p.id, { avatarUrl: p.avatarUrl, isPremium: p.isPremium })
 
