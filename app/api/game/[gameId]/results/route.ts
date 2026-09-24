@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 export async function GET(
   request: NextRequest,
@@ -85,6 +86,23 @@ export async function GET(
       ? g.durationSeconds * 1000
       : getGameDurationMs(game.createdAt, endedAt)
 
+    // The state goes through the same per-viewer sanitizer as every broadcast.
+    // Handing `game.state` back raw let any player read a running game's
+    // secrets – the Sketch & Guess word and choices, Memory's card faces,
+    // Alias's words – mid-round (#1103). A finished game's sanitizers reveal
+    // everything anyway, so the results view loses nothing.
+    const parsedState = (() => {
+      if (typeof game.state !== 'string') return game.state as Record<string, unknown> | null
+      try {
+        return JSON.parse(game.state) as Record<string, unknown>
+      } catch {
+        return null
+      }
+    })()
+    const viewerState = parsedState
+      ? sanitizeStateForBroadcast(resolvedGameType, parsedState as { data?: unknown; status?: string }, userId)
+      : null
+
     const now = new Date()
     // Format response
     const formattedGame = {
@@ -101,7 +119,7 @@ export async function GET(
       abandonedAt: game.abandonedAt?.toISOString() || null,
       hasReplay: game.status === 'finished',
       replayStepCount: game._count.snapshots,
-      state: game.state, // Include full game state for detailed view
+      state: viewerState,
       players: game.players.map(player => ({
         id: player.user.id,
         username: player.user.username,
