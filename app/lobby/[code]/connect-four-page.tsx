@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { useFreshKey } from '@/hooks/useFreshKey'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
@@ -73,8 +74,25 @@ const DISC_YELLOW = 'var(--bd-sun)'
 // light-mode value exactly, so light mode is visually unchanged.
 const DISC_EMPTY = '#F2E9D8'
 
-function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
+/**
+ * Last-disc marker (#1114): a small ring on the newest disc that stays until
+ * the next move. When the disc is still falling it fades in once the drop has
+ * landed (animation-delay = the drop's duration), so it never rides the fall.
+ */
+function C4LastMarker({ delayMs }: { delayMs?: number }) {
+    return (
+        <span
+            className={delayMs !== undefined ? 'c4-last-marker c4-last-marker--in' : 'c4-last-marker'}
+            data-testid="c4-last-marker"
+            style={delayMs !== undefined ? { animationDelay: `${delayMs}ms` } : undefined}
+            aria-hidden
+        />
+    )
+}
+
+function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, onDropEnd }: {
     disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc; fallDistancePx?: number
+    isLast?: boolean; onDropEnd?: () => void
 }) {
     if (ghost) {
         const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
@@ -97,15 +115,20 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
                 {/* Keep the empty hole visible while disc is in flight */}
                 <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: DISC_EMPTY }} />
                 {/* Falling disc, animated from above */}
-                <div style={{
-                    position: 'absolute', inset: 0,
-                    borderRadius: '50%',
-                    background: color,
-                    boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
-                    animation: `c4-drop ${durationMs}ms linear both`,
-                    '--c4-fall-dist': `${fallDistancePx}px`,
-                    '--c4-end-scale': isWin ? '1.12' : '1',
-                } as React.CSSProperties} />
+                <div
+                    onAnimationEnd={(e) => { if (e.target === e.currentTarget) onDropEnd?.() }}
+                    style={{
+                        position: 'absolute', inset: 0,
+                        borderRadius: '50%',
+                        background: color,
+                        boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+                        animation: `c4-drop ${durationMs}ms linear both`,
+                        '--c4-fall-dist': `${fallDistancePx}px`,
+                        '--c4-end-scale': isWin ? '1.12' : '1',
+                    } as React.CSSProperties}
+                >
+                    {isLast && !isWin && <C4LastMarker delayMs={durationMs} />}
+                </div>
             </div>
         )
     }
@@ -119,11 +142,14 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
             boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
             transform: isWin ? 'scale(1.12)' : 'scale(1)',
             transition: 'transform 0.15s, box-shadow 0.15s',
-        }} />
+            position: 'relative',
+        }}>
+            {isLast && !!disc && !isWin && <C4LastMarker />}
+        </div>
     )
 }
 
-function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol }: {
+function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled }: {
     board: (PlayerDisc | null)[][]
     winningLine: [number, number][] | null
     hoverCol: number | null
@@ -133,6 +159,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     currentDisc: PlayerDisc
     lastDroppedRow: number | null
     lastDroppedCol: number | null
+    /** The newest disc falls only while this is true, so a remount does not replay it (#1114). */
+    dropFresh?: boolean
+    onDropSettled?: () => void
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
     const cellRef = useRef<HTMLButtonElement>(null)
@@ -191,7 +220,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                         const isGhost = isHoveredCol && r === ghostRow && !cell
                         const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
                         const isLastDropped = !!cell && r === lastDroppedRow && c === lastDroppedCol
-                        const fallDistancePx = isLastDropped && lastDroppedRow !== null
+                        const fallDistancePx = isLastDropped && dropFresh && lastDroppedRow !== null
                             ? getFallDistancePx(lastDroppedRow)
                             : undefined
                         return (
@@ -221,8 +250,10 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 <C4Disc
                                     disc={cell}
                                     isWin={win}
-                                    pop={isLastDropped}
+                                    pop={isLastDropped && dropFresh}
                                     fallDistancePx={fallDistancePx}
+                                    isLast={isLastDropped}
+                                    onDropEnd={onDropSettled}
                                     ghost={isGhost}
                                     ghostDisc={isGhost ? currentDisc : undefined}
                                 />
@@ -828,9 +859,12 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
     const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
     const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
+    const lastC4MoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null
+    // The newest disc falls once; a remount shows it landed, marker and all (#1114).
+    const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(lastC4Move ? lastC4MoveSignature : null)
     useTurnSounds({
         isMyTurn: isMyTurn(),
-        lastMoveSignature: Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null,
+        lastMoveSignature: lastC4MoveSignature,
         opponentMoved: !!lastC4Move && soundSeat >= 0 && lastC4Move.disc !== soundSeat + 1,
         enabled: !isSpectator && gameEngine?.getState().status === 'playing',
     })
@@ -1073,6 +1107,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     currentDisc={gameData.currentDisc}
                     lastDroppedRow={gameData.lastDroppedRow}
                     lastDroppedCol={gameData.lastDroppedCol}
+                    dropFresh={lastDropFresh}
+                    onDropSettled={settleLastDrop}
                 />
                 {/* Inside the surface, not beside it: this pill is
                     `position: absolute; bottom`, so it hangs off the nearest
