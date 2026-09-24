@@ -28,7 +28,7 @@ const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false
 const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
 const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
 const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
-const Scorecard = dynamic(() => import('@/components/Scorecard'), { ssr: false })
+const YahtzeeTileGrid = dynamic(() => import('@/components/yahtzee/YahtzeeTileGrid'), { ssr: false })
 
 const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers', 'ludo'])
 
@@ -702,8 +702,6 @@ export default function SpectatorLobbyPage() {
                 game={data.activeGame!}
                 isMyTurn={false}
                 isSpectator
-                timeLeft={0}
-                turnTimerLimit={data.lobby.turnTimer ?? 0}
                 isMoveInProgress={false}
                 isRolling={false}
                 isScoring={false}
@@ -719,17 +717,17 @@ export default function SpectatorLobbyPage() {
             </div>
             <div style={{ minHeight: 0, overflow: 'auto' }}>
               {yahtzeeScorecard && (
-                <Scorecard
+                <YahtzeeTileGrid
                   scorecard={yahtzeeScorecard}
-                  currentDice={yahtzeeEngine.getDice()}
-                  rollsLeft={yahtzeeEngine.getRollsLeft()}
-                  onSelectCategory={() => undefined}
-                  canSelectCategory={false}
-                  isCurrentPlayer={false}
-                  playerName={(() => {
+                  mode={yahtzeeEngine.getMode()}
+                  dice={yahtzeeEngine.getDice()}
+                  canScore={false}
+                  onScore={() => undefined}
+                  otherPlayerName={(() => {
                     const p = data.activeGame?.players?.find(pl => pl.userId === yahtzeeCurrentPlayerId)
-                    return p?.user?.username || p?.name || undefined
+                    return p?.user?.username || p?.name || null
                   })()}
+                  variant="card"
                 />
               )}
             </div>

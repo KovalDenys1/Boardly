@@ -948,14 +948,6 @@ input:focus, select:focus, textarea:focus {
   @apply bg-[#5865F2] hover:bg-[#4752C4] text-white border-[#5865F2];
 }
 
-.scorecard-row {
-  @apply flex justify-between items-center p-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors rounded;
-}
-
-.scorecard-row.filled {
-  @apply cursor-default bg-gray-100 dark:bg-gray-800;
-}
-
 /* Compact card for game UI */
 .card-compact {
   @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
@@ -2318,29 +2310,362 @@ input[type="range"].slider-thumb::-moz-range-track {
   to { opacity: 0; }
 }
 
-/* ============ YAHTZEE SCORECARD ============ */
+/* ============ YAHTZEE – TILE GRID (#1187) ============ */
+/* One screen on a phone: score pills, dice + Roll, and every box of the
+   scorecard as a tile, with nothing to scroll between the roll and the box it
+   goes in. The grid is the one flexible region: its rows are 1fr with a 44px
+   floor, so on a tall screen the tiles grow and on a short one the grid scrolls
+   rather than dropping below the tap-target size. Colours are tokens only. */
 
-@keyframes scorecard-just-scored {
-  0%   { background: rgba(79,201,166,0.55); box-shadow: 0 0 0 3px rgba(79,201,166,0.45); }
-  100% { background: rgba(79,201,166,0); box-shadow: 0 0 0 0 rgba(79,201,166,0); }
-}
-.scorecard-row-flash {
-  animation: scorecard-just-scored 0.9s ease-out forwards;
+.yz-panel {
+  container: yzpanel / size;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  box-sizing: border-box;
 }
 
-/* A scorecard column scrolls under the pinned TOTAL bar, and at 844x390 the bar
-   sat on the last visible row: the hard edge sliced a line of text mid-glyph,
-   which reads as damage rather than as content that continues (#906).
-   The fade zone is the column's own bottom padding, so a row scrolled past the
-   end fades out instead of being cut, and the last row - the subtotal - comes to
-   rest above the fade rather than inside it. The gradient stops are mask alpha,
-   not colours. */
-.scorecard-scroll {
-  --scorecard-fade: 1.25rem;
-  padding-bottom: var(--scorecard-fade);
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scorecard-fade)), transparent 100%);
+/* Score pills: a single-line rail that scrolls sideways, never wraps. */
+.yz-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
+  padding-right: 16px;
 }
+.yz-pills::-webkit-scrollbar { display: none; }
+.yz-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--bd-dur-fast, 120ms), color var(--bd-dur-fast, 120ms);
+}
+.yz-pill__name { max-width: 7ch; overflow: hidden; text-overflow: ellipsis; }
+.yz-pill__score { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
+.yz-pill--viewing { background: var(--bd-ink); border-color: var(--bd-ink); color: var(--bd-bg); }
+.yz-pill__turn {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--bd-coral); flex-shrink: 0;
+}
+
+.yz-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 12px 0;
+}
+.yz-sound {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 12px;
+  border: 1.5px solid var(--bd-line); background: var(--bd-input-bg); color: var(--bd-ink);
+}
+.yz-status { flex-shrink: 0; padding: 8px 12px 0; }
+
+/* Dice + Roll. A die is the min() of a width-derived and a height-derived size
+   (layout DoD rule 6), both from the panel container, never the viewport. */
+.yz-dicebar {
+  --yz-roll-w: 112px;
+  --yz-die: min(calc((100cqw - var(--yz-roll-w) - 8px - 4 * 6px) / 5), 12cqh, 64px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.yz-dice { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.yz-die {
+  position: relative;
+  width: var(--yz-die);
+  height: var(--yz-die);
+  flex-shrink: 0;
+  border-radius: 24%;
+  border: 2px solid var(--bd-ink);
+  background: var(--bd-input-bg);
+  box-shadow: 0 3px 0 var(--bd-ink);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: transform var(--bd-dur-fast, 120ms), background var(--bd-dur-fast, 120ms);
+}
+.yz-die--held { background: var(--bd-sun); transform: translateY(-2px); }
+.yz-die--pop { animation: dice-hold-pop 0.28s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.yz-die:disabled { cursor: default; }
+.yz-die--blank { opacity: 0.45; }
+.yz-die__pips {
+  width: 70%; height: 70%;
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+}
+.yz-die__pip { width: 62%; height: 62%; border-radius: 999px; background: var(--bd-ink-on-accent); place-self: center; }
+.yz-die:not(.yz-die--held) .yz-die__pip { background: var(--bd-ink); }
+.yz-die:focus-visible, .yz-tile:focus-visible, .yz-pill:focus-visible, .yz-roll:focus-visible {
+  outline: 3px solid var(--bd-sky); outline-offset: 2px;
+}
+
+.yz-roll {
+  width: var(--yz-roll-w);
+  min-height: 48px;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 14px;
+  background: var(--bd-ink); color: var(--bd-bg);
+  border: 0;
+  font-weight: 800; font-size: 14px;
+  box-shadow: 0 4px 0 var(--bd-coral-deep);
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1.1;
+  text-align: center;
+}
+/* A longer state ("No rolls left", or its Russian) wraps to two lines inside
+   the same button rather than widening it. */
+.yz-roll > span { min-width: 0; overflow-wrap: anywhere; }
+.yz-roll:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 var(--bd-coral-deep); }
+.yz-roll:disabled {
+  background: var(--bd-bg2); color: var(--bd-ink-soft); box-shadow: none;
+  border: 1.5px solid var(--bd-line); cursor: default;
+}
+/* A narrow phone (320px) cannot fit five usable dice beside the button:
+   the button drops under the dice and the dice take the full width. */
+@container yzpanel (max-width: 359px) {
+  .yz-dicebar { flex-wrap: wrap; --yz-die: min(calc((100cqw - 4 * 6px) / 5), 11cqh, 56px); }
+  .yz-dice { flex-basis: 100%; justify-content: space-between; }
+  .yz-roll { width: 100%; min-height: 44px; }
+}
+
+.yz-revert {
+  flex-shrink: 0;
+  padding: 6px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; text-align: center;
+  color: var(--bd-coral-deep); background: var(--bd-bg2); border: 1.5px solid var(--bd-coral);
+}
+
+/* The grid. Section rows are auto, tile rows share what is left. */
+.yz-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.yz-grid--classic { grid-template-rows: auto repeat(2, minmax(44px, 1fr)) auto repeat(3, minmax(44px, 1fr)); }
+.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 1fr)); }
+.yz-grid[aria-busy='true'] .yz-tile { opacity: 0.6; }
+
+.yz-section {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--bd-ink);
+}
+.yz-section__label {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bd-ink-soft);
+}
+.yz-section__spacer { flex: 1; }
+.yz-section__bar { flex: 1; height: 6px; border-radius: 3px; background: var(--bd-bg2); overflow: hidden; }
+.yz-section__bar > i {
+  display: block; height: 100%; width: 100%; background: var(--bd-sun); transform-origin: left center;
+  transition: transform var(--bd-dur-slow, 400ms) var(--bd-ease-out, ease-out);
+}
+.yz-section__bar--done > i { background: var(--bd-mint); }
+.yz-section__pace { font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--bd-ink-soft); }
+/* Mint and coral text fail 4.5:1 at 11px on the cream page (DESIGN.md), so
+   the colour goes on a dot and the words stay ink. */
+.yz-section__pace::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 999px;
+  margin-right: 4px; vertical-align: 1px; background: var(--bd-mint);
+}
+.yz-section__pace--behind::before { background: var(--bd-coral); }
+
+.yz-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 14px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+  text-align: left;
+  font: inherit;
+  overflow: hidden;
+  /* Its own size container: a short tile (a 664px-tall iPhone viewport, a
+     landscape pane) drops to one line of name without the icon. */
+  container-type: size;
+}
+button.yz-tile { cursor: pointer; }
+button.yz-tile:disabled { cursor: default; }
+.yz-tile__head {
+  display: flex; align-items: flex-start; gap: 5px; min-width: 0;
+  font-size: 12px; font-weight: 700; line-height: 1.15;
+}
+.yz-tile__icon { flex-shrink: 0; display: inline-flex; line-height: 0; }
+/* The shared Die carries a 4px ink drop shadow as an inline style; at 16px it
+   reads as a black slab, so the tile's glyph drops it. */
+.yz-tile__icon > div { box-shadow: none !important; border-width: 1.5px !important; }
+.yz-tile__name {
+  min-width: 0; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.yz-tile__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; min-width: 0; }
+.yz-tile__mark { display: inline-flex; line-height: 0; color: var(--bd-mint-deep); }
+.yz-tile__badge { font-size: 10px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+.yz-tile__confirm { font-size: 10px; font-weight: 800; line-height: 1.1; color: var(--bd-ink); }
+.yz-tile--best .yz-tile__confirm { color: var(--bd-ink-on-accent); }
+.yz-tile__value {
+  margin-left: auto;
+  font-family: var(--bd-font-display); font-weight: 800; font-size: 20px; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.yz-tile--scored { background: var(--bd-bg2); border-color: transparent; color: var(--bd-ink-soft); }
+.yz-tile--potential {
+  background: var(--bd-input-bg); border-color: var(--bd-ink); box-shadow: 0 3px 0 var(--bd-line);
+}
+.yz-tile--potential .yz-tile__value { font-size: 22px; }
+.yz-tile--zero { background: var(--bd-input-bg); border-style: dashed; border-color: var(--bd-ink-muted); }
+.yz-tile--zero .yz-tile__value, .yz-tile--open .yz-tile__value { color: var(--bd-ink-muted); }
+.yz-tile--best {
+  background: var(--bd-sun); color: var(--bd-ink-on-accent);
+  border: 2px solid var(--bd-ink); border-style: solid; box-shadow: 0 4px 0 var(--bd-ink);
+}
+.yz-tile--best .yz-tile__value { color: var(--bd-ink-on-accent); font-size: 22px; }
+.yz-tile--armed { border: 2px solid var(--bd-coral-deep); border-style: solid; }
+button.yz-tile:not(:disabled):active { transform: translateY(2px); }
+
+@container (max-height: 46px) {
+  .yz-tile__icon { display: none; }
+  .yz-tile__head { font-size: 11px; }
+  .yz-tile__name { -webkit-line-clamp: 1; }
+  .yz-tile__value, .yz-tile--potential .yz-tile__value, .yz-tile--best .yz-tile__value { font-size: 18px; }
+  .yz-tile__badge { font-size: 9px; letter-spacing: 0.08em; }
+}
+
+/* A narrow tile (six columns in phone landscape): the name gets the width,
+   and the amber fill alone marks the best move. Container sizes are the
+   content box, so these are the tile's size less its padding and border. */
+@container (max-width: 80px) {
+  .yz-tile__icon { display: none; }
+  .yz-tile__head { font-size: 11px; }
+  .yz-tile__badge { display: none; }
+  .yz-tile__value, .yz-tile--potential .yz-tile__value, .yz-tile--best .yz-tile__value { font-size: 18px; }
+}
+
+/* A box just banked: a mint wash that fades - opacity on an overlay, so
+   nothing relays while it plays. */
+.yz-tile--just-scored::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--bd-mint);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: yz-tile-flash 0.9s ease-out;
+}
+@keyframes yz-tile-flash {
+  0% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+/* Short mode has 9 boxes and the room of 15: bigger type in the same tiles. */
+.yz-grid--short .yz-tile { padding: 10px 12px; border-radius: 16px; }
+.yz-grid--short .yz-tile__head { font-size: 14px; }
+.yz-grid--short .yz-tile__value { font-size: 26px; }
+.yz-grid--short .yz-tile--potential .yz-tile__value,
+.yz-grid--short .yz-tile--best .yz-tile__value { font-size: 28px; }
+
+.yz-footer {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--bd-card-warm);
+  border: 1px solid var(--bd-line);
+}
+.yz-footer__label {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bd-ink-soft);
+}
+.yz-footer__detail {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; font-weight: 700; color: var(--bd-ink-soft);
+}
+.yz-footer__total { font-family: var(--bd-font-display); font-weight: 800; font-size: 17px; color: var(--bd-ink); }
+.yz-footer__back {
+  flex-shrink: 0; min-height: 32px; padding: 0 10px; border-radius: 999px;
+  border: 1.5px solid var(--bd-ink); background: var(--bd-input-bg); color: var(--bd-ink);
+  font-size: 12px; font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yz-tile--just-scored::after { animation-duration: 0.01ms; }
+  .yz-die--pop { animation: none; }
+  .yz-section__bar > i { transition: none; }
+}
+
+.yz-footer--in-grid { display: none; }
+
+/* A wide, short pane (phone landscape): six columns, so the card is three rows
+   of tiles, and the total takes the three cells the lower section leaves free
+   in its last row instead of a row of its own. */
+@container yzpanel (min-width: 480px) and (max-height: 440px) {
+  .yz-grid--classic {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: auto minmax(44px, 1fr) auto repeat(2, minmax(44px, 1fr));
+  }
+  .yz-grid--short {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: auto repeat(2, minmax(44px, 1fr));
+  }
+  .yz-grid .yz-footer--in-grid { display: flex; grid-column: span 3; min-height: 0; }
+  .yz-panel > .yz-footer { display: none; }
+}
+
+/* Desktop centre column: the same grid inside a card. */
+.yz-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--bd-line);
+  background: linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%);
+  box-sizing: border-box;
+}
+.yz-card .yz-tile__head { font-size: 13px; }
+.yz-card .yz-tile__value { font-size: 24px; }
+.yz-card .yz-tile--potential .yz-tile__value,
+.yz-card .yz-tile--best .yz-tile__value { font-size: 26px; }
+.yz-card .yz-tile { padding: 8px 10px; }
+
 .ttt-cell-coord {
   position: absolute;
   top: 6px;
@@ -3657,23 +3982,30 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   justify-content: center;
 }
 
-/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS (#751) ===== */
-/* Yahtzee has no dedicated CSS family otherwise (pure Tailwind, inline in
-   LobbyPageClient.tsx) — .yahtzee-screen/.yahtzee-mobile-layout exist only
-   as scoping hooks for this override. Scorecard is functionally required to
-   bank a roll (unlike TTT's history or Memory's moves log), so it's the one
-   thing kept in the side pane; Players/RollHistory/Chat stay reachable by
-   rotating back to portrait. */
+/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS (#751, #1187) ===== */
+/* .yahtzee-screen/.yahtzee-mobile-layout are scoping hooks for this override.
+   Landscape puts the tile grid in the board pane (it is what the player acts
+   on, and it needs the width) and the pills, status banner, dice and Roll in
+   the side column. Players/RollHistory/Chat stay reachable in portrait. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .yahtzee-mobile-layout { display: none !important; }
-  /* The persistent top status bar sits above Main Game Area (outside both
-     .yahtzee-mobile-layout and the landscape tree), so it needs its own hide
-     rule – .yahtzee-landscape-side shows the same content inside the pane
-     instead (compactStatusBar). Without this the bar silently ate ~60-65px
-     out of the already-tight landscape height budget. */
+  /* The portrait header sits above Main Game Area, outside both trees; the
+     side column renders the same header instead of losing ~100px to it. */
   .yahtzee-top-status-bar { display: none !important; }
   .yahtzee-landscape-layout { padding: 0 10px 10px; }
-  .yahtzee-landscape-side { overflow: hidden; } /* Scorecard manages its own internal scroll */
+  .yahtzee-landscape-layout .game-landscape-board > .yz-panel { flex: 1 1 auto; padding: 8px 0 0; }
+  .yahtzee-landscape-side { overflow-y: auto; }
+  .yahtzee-landscape-side .yz-topbar,
+  .yahtzee-landscape-side .yz-status { padding-left: 0; padding-right: 0; }
+  .yahtzee-landscape-side > .yz-panel--side {
+    flex: 1 1 auto;
+    min-height: 96px;
+    justify-content: center;
+    padding: 0;
+  }
+  /* The side column is narrower than the 360px wrap point, so the dice take
+     its full width and Roll sits under them; size from its height too. */
+  .yz-panel--side .yz-dicebar { --yz-die: min(calc((100cqw - 4 * 6px) / 5), 40cqh, 56px); }
 }
 
 /* spy mobile (unchanged from existing) */
