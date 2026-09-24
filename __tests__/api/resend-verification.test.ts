@@ -35,6 +35,13 @@ jest.mock('@/lib/email', () => ({
   sendVerificationEmail: jest.fn().mockResolvedValue({ success: true }),
 }))
 
+const mockReserveMail = jest.fn(
+  async (..._args: unknown[]): Promise<{ allowed: boolean; reason?: string }> => ({ allowed: true })
+)
+jest.mock('@/lib/email-send-guard', () => ({
+  reserveTransactionalMailSend: (...args: unknown[]) => mockReserveMail(...args),
+}))
+
 jest.mock('nanoid', () => ({
   nanoid: jest.fn(() => 'mock-verification-token'),
 }))
@@ -234,4 +241,29 @@ describe('POST /api/auth/resend-verification', () => {
       'player-four'
     )
   })
+
+  it('answers generically and keeps the old link when the mail guard refuses (#1158)', async () => {
+    mockPrisma.users.findFirst.mockResolvedValue({
+      id: 'user-2',
+      email: 'pending@example.com',
+      pendingEmail: null,
+      emailVerified: null,
+      username: 'pending-user',
+    } as any)
+    mockReserveMail.mockResolvedValueOnce({ allowed: false, reason: 'address_cooldown' })
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'pending@example.com' }),
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.message).toContain('If an unverified account exists')
+    expect(mockPrisma.emailVerificationTokens.deleteMany).not.toHaveBeenCalled()
+    expect(mockSendVerificationEmail).not.toHaveBeenCalled()
+  })
 })
+
