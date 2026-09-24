@@ -52,7 +52,7 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { ActiveLudoMotion, useLudoMotion } from './hooks/useLudoMotion'
-import { Point, ludoMoverKeyframes, ludoVictimKeyframes } from './ludo-motion'
+import { LudoRingTiming, Point, ludoMoverKeyframes, ludoRingKey, ludoVictimKeyframes, nextLudoRingTiming } from './ludo-motion'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
@@ -194,8 +194,12 @@ function LudoBoard({
         return () => animations.forEach((a) => a.cancel())
     }, [motion])
 
-    const moverKey = motion ? `${motion.plan.playerId}-${motion.plan.token}` : null
-    const ringDelay = motion && moverKey === lastMovedKey ? motion.timing.travel : 0
+    // The ring's delay is frozen per move (nextLudoRingTiming): read off the
+    // run, it would drop to 0 when the run ends and restart the pop-in.
+    const [ringTiming, setRingTiming] = useState<LudoRingTiming | null>(null)
+    const nextRing = nextLudoRingTiming(ringTiming, lastMoveRingKey, motion)
+    if (nextRing !== ringTiming) setRingTiming(nextRing)
+    const ringDelay = nextRing?.delay ?? 0
 
     const startSquares = new Map(LUDO_COLORS.map((color) => [LUDO_START_OFFSET[color], color] as const))
 
@@ -949,7 +953,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const currentName = currentPlayer ? getDisplayName(currentPlayer.id) : ''
 
     const lastMovedKey = data.lastMove ? `${data.lastMove.playerId}-${data.lastMove.token}` : null
-    const lastMoveRingKey = data.lastMove ? `${lastMovedKey}:${data.lastMove.from}:${data.lastMove.to}` : null
+    const lastMoveRingKey = ludoRingKey(data.lastMove)
 
     const handleRoll = async () => {
         const userId = getCurrentUserId()

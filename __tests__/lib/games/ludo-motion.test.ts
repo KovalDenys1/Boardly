@@ -11,7 +11,9 @@ import {
     deriveLudoMotion,
     ludoMoverKeyframes,
     ludoPathSteps,
+    ludoRingKey,
     ludoVictimKeyframes,
+    nextLudoRingTiming,
     timeLudoMotion,
 } from '@/app/lobby/[code]/ludo-motion'
 
@@ -188,5 +190,29 @@ describe('keyframes', () => {
         const hidden = frames.filter((f) => f.opacity === 0)
         expect(hidden.map((f) => f.transform)).toEqual(['translate(5.500px, 6.500px) scale(0.4)', 'translate(11.000px, 11.000px) scale(0.4)'])
         expect(frames[frames.length - 1]).toMatchObject({ offset: 1, opacity: 1, transform: 'translate(11.000px, 11.000px)' })
+    })
+})
+
+describe('nextLudoRingTiming', () => {
+    const walk = { playerId: 'r', color: 'red' as const, token: 0, own: false, from: 2, to: 7, steps: [3, 4, 5, 6, 7], captured: [] }
+    const run = { plan: walk, timing: timeLudoMotion(walk) }
+    const key = ludoRingKey(walk)!
+
+    it('takes the walk as its delay, and keeps it after the run is cleared', () => {
+        const first = nextLudoRingTiming(null, key, null)
+        expect(first).toEqual({ key, delay: 0 })
+        const withRun = nextLudoRingTiming(first, key, run)
+        expect(withRun).toEqual({ key, delay: 500 })
+        // The run ends: the delay must not drop back to 0 (that restarts the pop-in).
+        expect(nextLudoRingTiming(withRun, key, null)).toBe(withRun)
+    })
+
+    it('ignores a run for another move and resets on the next move', () => {
+        const other = { ...walk, token: 1 }
+        expect(nextLudoRingTiming(null, key, { plan: other, timing: run.timing })).toEqual({ key, delay: 0 })
+        const settled = { key, delay: 500 }
+        const nextKey = ludoRingKey({ ...walk, from: 7, to: 9 })!
+        expect(nextLudoRingTiming(settled, nextKey, null)).toEqual({ key: nextKey, delay: 0 })
+        expect(nextLudoRingTiming(settled, null, null)).toBeNull()
     })
 })

@@ -237,3 +237,39 @@ export function ludoVictimKeyframes(timing: LudoMotionTiming, start: Point, yard
         { transform: at(yard), opacity: 1, offset: 1 },
     ]
 }
+
+// ─── Last-move ring ──────────────────────────────────────────────────────────
+
+/** Identifies one move for the last-move ring; equal keys are the same move. */
+export function ludoRingKey(move: { playerId: string; token: number; from: number; to: number } | null | undefined): string | null {
+    return move ? `${move.playerId}-${move.token}:${move.from}:${move.to}` : null
+}
+
+export interface LudoRingTiming {
+    key: string
+    /** CSS animation delay: the ring pops in as the walking token lands. */
+    delay: number
+}
+
+/**
+ * The ring's delay, frozen once per move.
+ *
+ * The run is cleared when it ends, and a delay read straight off it would drop
+ * to 0 then – restarting the ring's CSS animation as if it had begun `travel`
+ * ms earlier, so it snaps to full size instead of popping in. The first run
+ * that matches the ring's move sets the delay; nothing after it changes it until
+ * the next move. Returns `prev` itself when nothing changed.
+ */
+export function nextLudoRingTiming(
+    prev: LudoRingTiming | null,
+    ringKey: string | null,
+    motion: { plan: LudoMotionPlan; timing: LudoMotionTiming } | null
+): LudoRingTiming | null {
+    if (!ringKey) return null
+    const motionDelay = motion && ludoRingKey(motion.plan) === ringKey ? motion.timing.travel : null
+    if (prev?.key === ringKey) {
+        // The state (and so the ring) renders once before its run is set up.
+        return prev.delay === 0 && motionDelay ? { key: ringKey, delay: motionDelay } : prev
+    }
+    return { key: ringKey, delay: motionDelay ?? 0 }
+}
