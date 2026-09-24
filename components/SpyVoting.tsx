@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
+import ScorePop from '@/components/game-chrome/ScorePop'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -41,7 +42,7 @@ export default function SpyVoting({
 
   return (
     <div className="spy-stage">
-      <div className="spy-vote-card">
+      <div className="spy-vote-card bd-screen">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
@@ -80,12 +81,12 @@ export default function SpyVoting({
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase text-[var(--bd-ink-muted)]">
             <span>{t('spy.votes')}</span>
-            <span>{votesSubmitted}/{players.length}</span>
+            <ScorePop value={votesSubmitted} style={{ display: 'inline-block' }}>{votesSubmitted}/{players.length}</ScorePop>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
             <div
-              className="h-full rounded-full bg-[var(--bd-lav)] transition-all"
-              style={{ width: `${players.length > 0 ? (votesSubmitted / players.length) * 100 : 0}%` }}
+              className="social-meter-fill bg-[var(--bd-lav)]"
+              style={{ transform: `scaleX(${players.length > 0 ? votesSubmitted / players.length : 0})` }}
             />
           </div>
         </div>

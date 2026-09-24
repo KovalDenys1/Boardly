@@ -11,6 +11,10 @@ import type {
 } from '@/lib/games/sketch-and-guess-game'
 import { sketchWordDisplay, type SketchWord } from '@/lib/games/sketch-and-guess-word-display'
 import LoadingButton from '@/components/LoadingButton'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { useFreshKey } from '@/hooks/useFreshKey'
+import { useFreshFor } from '@/hooks/useFreshFor'
+import { latestEntryKey, onOwnAnimationEnd } from '@/lib/social-motion'
 
 type TFn = (key: TranslationKeys, options?: string | Record<string, unknown>) => string
 
@@ -365,15 +369,26 @@ function GuessFeed({
     () => guesses.filter((g) => !g.autoSubmitted).slice().sort((a, b) => b.submittedAt - a.submittedAt),
     [guesses]
   )
+  const entryKey = (g: SketchAndGuessGuess) => g.id || `${g.playerId}-${g.submittedAt}`
+  // The newest line slides in (#1115); a correct one lands with an overshoot.
+  // The feed remounts with each phase view, and a mount is never fresh, so the
+  // reveal does not replay the whole list.
+  const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(ordered, entryKey, true))
 
   return (
     <section className="sketch-feed" aria-label={t('games.guess_my_drawing.game.guessesTitle')}>
       <ul className="sketch-feed__list">
         {ordered.length === 0 && <li className="sketch-feed__empty">{t('games.guess_my_drawing.game.guessFeedEmpty')}</li>}
-        {ordered.map((g) => {
+        {ordered.map((g, index) => {
           const name = `${nameOf(g.playerId)}${g.playerId === currentUserId ? ` ${t('game.ui.you')}` : ''}`
+          const isNewest = index === 0 && newestFresh
+          const entryClass = isNewest ? (g.isCorrect ? ' social-entry-hit' : ' social-entry-in') : ''
           return (
-            <li key={g.id || `${g.playerId}-${g.submittedAt}`} className={`sketch-feed__item${g.isCorrect ? ' sketch-feed__item--correct' : ''}`}>
+            <li
+              key={entryKey(g)}
+              className={`sketch-feed__item${g.isCorrect ? ' sketch-feed__item--correct' : ''}${entryClass}`}
+              onAnimationEnd={isNewest ? onOwnAnimationEnd(settleNewest) : undefined}
+            >
               {g.isCorrect ? (
                 <>
                   <Icon name="check" size={13} />
@@ -681,6 +696,9 @@ function GuesserDrawingView({
 // scoring stays server-authoritative; the scores panel reads `data.scores`,
 // which since #1082 already includes this round.
 
+/** Word, then picture: long enough for both reveal animations to land. */
+const REVEAL_IN_MS = 900
+
 function RevealView({
   round,
   word,
@@ -692,6 +710,7 @@ function RevealView({
   isSubmitting,
   isLastRound,
   feed,
+  animate = false,
   t,
 }: {
   round: SketchAndGuessRound
@@ -704,6 +723,8 @@ function RevealView({
   isSubmitting: boolean
   isLastRound: boolean
   feed: ReactNode
+  /** The reveal just opened while the board was mounted: the word and the picture scale in (#1115). */
+  animate?: boolean
   t: TFn
 }) {
   const parsedContent = useMemo(() => parseDrawingContent(round.drawingContent), [round.drawingContent])
@@ -718,7 +739,7 @@ function RevealView({
   // "Next round" is on screen at 320x640 and 844x390 without scrolling the
   // board – below the feed it sat under the fold on both.
   return (
-    <div className="sketch-phase">
+    <div className={`sketch-phase${animate ? ' sketch-reveal-in' : ''}`} data-testid="sketch-reveal-view">
       <div className="sketch-reveal-head">
         <div className="sketch-reveal-head__text">
           <p className="sketch-word-chip__label">{t('games.guess_my_drawing.game.revealPrompt')}</p>
@@ -794,7 +815,7 @@ export function SketchScoreRows({
             {p.name}
             {p.id === currentUserId ? ` ${t('game.ui.you')}` : ''}
           </span>
-          <span className="sketch-score-row__score">{scores[p.id] || 0}</span>
+          <ScorePop value={scores[p.id] || 0} className="sketch-score-row__score" style={{ display: 'inline-block' }}>{scores[p.id] || 0}</ScorePop>
         </div>
       ))}
     </div>
@@ -841,6 +862,15 @@ export default function SketchAndGuessGameBoard({
     [activeDraft, onDraftChange]
   )
   const setGuess = useCallback((next: string) => patchDraft({ guess: next }), [patchDraft])
+
+  // The finished board is the last reveal kept on screen, so finishing is not
+  // a new reveal: both share one key (#1115).
+  const revealFresh = useFreshFor(
+    gameStatus === 'finished' || gameData.phase === 'reveal'
+      ? `reveal-${gameData.currentRound}`
+      : `${gameData.currentRound}:${gameData.phase}`,
+    REVEAL_IN_MS,
+  )
 
   const currentRound = useMemo(
     () => gameData.rounds.find((r) => r.round === gameData.currentRound) || null,
@@ -912,6 +942,7 @@ export default function SketchAndGuessGameBoard({
         isSubmitting={isSubmitting}
         isLastRound={gameData.currentRound >= gameData.totalRounds}
         feed={feed}
+        animate={revealFresh && !isFinished}
         t={t}
       />
     )

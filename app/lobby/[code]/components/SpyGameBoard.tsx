@@ -20,6 +20,10 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { GameState } from '@/lib/game-engine'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { useFreshKey } from '@/hooks/useFreshKey'
+import { useFreshOnArrival } from '@/hooks/useFreshFor'
+import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey } from '@/lib/social-motion'
 
 interface SpyRoleInfo {
   role: string
@@ -239,6 +243,29 @@ export default function SpyGameBoard({
   const availableTargets = React.useMemo(
     () => normalizedPlayers.filter((player) => player.id !== currentUserId),
     [normalizedPlayers, currentUserId]
+  )
+
+  // Motion (#1115). Each is "did this just happen while I was watching": the
+  // state a page loads into is never fresh, so a reload does not replay it.
+  const round = data.currentRound || 1
+  // Round 1's roles are dealt with the game, so its reveal arrives together
+  // with this board: fresh on arrival when the phase has only just begun.
+  const { fresh: roleFlipFresh, settle: settleRoleFlip } = useFreshOnArrival(
+    phase === SpyGamePhase.ROLE_REVEAL ? `reveal-${round}` : null,
+    Number(data.phaseStartTime || 0),
+  )
+  const { fresh: resultsFresh, settle: settleResults } = useFreshKey(
+    phase === SpyGamePhase.RESULTS ? `results-${round}` : null,
+  )
+  // The turn passing: a new questioner, or the same one again after a full
+  // lap (the history length tells those apart, and a skip changes the id).
+  // Only a pass seen live nudges the roster row; load, reconnect and a
+  // remount of the Players tab show it still (#1175 review).
+  const { fresh: turnPassFresh, settle: settleTurnPass } = useFreshKey(
+    spyTurnPassKey(phase === SpyGamePhase.QUESTIONING, round, questionHistory.length, data.currentQuestionerId),
+  )
+  const { fresh: latestEntryFresh, settle: settleLatestEntry } = useFreshKey(
+    latestEntryKey(questionHistory, (entry) => `${entry.timestamp}-${entry.askerId}`),
   )
 
   const fetchRoleInfo = React.useCallback(async () => {
@@ -695,8 +722,13 @@ export default function SpyGameBoard({
         <div className="spy-roster-list mt-3">
           {normalizedPlayers.map((player) => {
             const isCurrent = player.id === data.currentQuestionerId
+            const nudge = isCurrent && turnPassFresh
             return (
-              <div key={player.id} className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}`}>
+              <div
+                key={player.id}
+                className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}${nudge ? ' social-turn-nudge' : ''}`}
+                onAnimationEnd={nudge ? onOwnAnimationEnd(settleTurnPass) : undefined}
+              >
                 {player.avatarSrc ? (
                   <img src={player.avatarSrc} alt={player.name} className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover" />
                 ) : (
@@ -706,7 +738,7 @@ export default function SpyGameBoard({
                   {player.name}
                   {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                 </span>
-                <span className="font-black">{scores[player.id] || 0}</span>
+                <ScorePop value={scores[player.id] || 0} className="font-black" style={{ display: 'inline-block' }}>{scores[player.id] || 0}</ScorePop>
               </div>
             )
           })}
@@ -736,7 +768,7 @@ export default function SpyGameBoard({
   const phaseContent = (
     <>
         {phase === SpyGamePhase.WAITING && (
-          <div className="spy-panel p-6 text-center">
+          <div className="spy-panel bd-screen p-6 text-center">
             <p className="bd-kicker">{t('spy.phases.waiting')}</p>
             <h3 className="mt-2 text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h3>
             <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
@@ -769,6 +801,8 @@ export default function SpyGameBoard({
             playersReady={playersReady.length}
             totalPlayers={normalizedPlayers.length}
             isReady={!!currentUserId && playersReady.includes(currentUserId)}
+            flip={roleFlipFresh}
+            onFlipEnd={settleRoleFlip}
           />
         )}
 
@@ -783,7 +817,7 @@ export default function SpyGameBoard({
         )}
 
         {phase === SpyGamePhase.QUESTIONING && (
-          <div className="space-y-4">
+          <div className="bd-screen space-y-4">
               <section className="spy-panel p-5">
                 {/* No title row and no timer pill: GameStatusBanner directly
                     above already says whose turn it is and how long is left,
@@ -873,7 +907,8 @@ export default function SpyGameBoard({
                 )}
 
                 {(!isMyQuestionTurn || isSpectator) && !shouldAnswerNow && (
-                  <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
+                  // Keyed on the questioner, so the turn passing slides the line in again.
+                  <div key={data.currentQuestionerId || 'none'} className="game-status-cue mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
                     {currentQuestioner
                       ? t('spy.decidingQuestion', { player: currentQuestioner.name })
                       : t('spy.waitingForQuestioner')}
@@ -908,15 +943,22 @@ export default function SpyGameBoard({
                   {questionHistory.length === 0 && (
                     <p className="rounded-xl bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">{t('spy.noQuestionsYet')}</p>
                   )}
-                  {questionHistory.map((entry) => (
-                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-3 text-sm">
+                  {questionHistory.map((entry, index) => {
+                    const isNewest = index === questionHistory.length - 1 && latestEntryFresh
+                    return (
+                    <div
+                      key={`${entry.timestamp}-${entry.askerId}`}
+                      className={`rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-3 text-sm ${isNewest ? 'social-entry-in' : ''}`}
+                      onAnimationEnd={isNewest ? onOwnAnimationEnd(settleLatestEntry) : undefined}
+                    >
                       <p className="font-black text-[var(--bd-ink)]">
                         {entry.askerName} - {entry.targetName}
                       </p>
                       <p className="mt-2 text-[var(--bd-ink-soft)]"><strong>{t('spy.questionPrefix')}</strong> {entry.question}</p>
                       <p className="mt-1 text-[var(--bd-ink-soft)]"><strong>{t('spy.answerPrefix')}</strong> {entry.answer}</p>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </section>
           </div>
@@ -934,11 +976,11 @@ export default function SpyGameBoard({
         )}
 
         {phase === SpyGamePhase.VOTING && isSpectator && (
-          <div className="spy-panel p-5 text-center">
+          <div className="spy-panel bd-screen p-5 text-center">
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
-            <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
+            <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
               {votesSubmitted}/{normalizedPlayers.length} {t('spy.phases.voting').toLowerCase()}
-            </p>
+            </ScorePop>
           </div>
         )}
 
@@ -970,6 +1012,8 @@ export default function SpyGameBoard({
             registerUrl={registerUrl}
             lobbyCode={lobbyCode}
             isRegistered={!isSpectator && !isGuest && !!currentUserId}
+            reveal={resultsFresh}
+            onRevealEnd={settleResults}
           />
         )}
     </>

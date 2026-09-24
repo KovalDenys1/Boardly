@@ -33,6 +33,17 @@ import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useFreshKey } from '@/hooks/useFreshKey'
+import { useFreshIds } from '@/hooks/useFreshFor'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import {
+  advanceWordSwap,
+  guessMatchesWord,
+  initialWordSwap,
+  latestEntryKey,
+  onOwnAnimationEnd,
+  staggerStyle,
+} from '@/lib/social-motion'
 
 interface AliasPageProps {
   code: string
@@ -232,8 +243,9 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number 
 const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ kind, count }) => {
   const { t } = useTranslation()
   const ok = kind === 'guessed'
+  // Pops when its count changes (#1115); the first count on a screen never does.
   return (
-    <span style={{
+    <ScorePop value={count} style={{
       display: 'inline-flex', alignItems: 'center', gap: 8,
       padding: '8px 14px', borderRadius: 999,
       background: ok ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.22)',
@@ -247,7 +259,47 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
       <span style={{ fontSize: 11, opacity: 0.7, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
         {ok ? t('alias.tallyGuessed') : t('alias.tallySkipped')}
       </span>
-    </span>
+    </ScorePop>
+  )
+}
+
+/**
+ * The describer's secret word (#1115). A new word used to replace the old one
+ * in place, so a quick "Guessed" looked like nothing had happened. Now the old
+ * word leaves – up with a mint flash over the card for a guess, sideways for a
+ * skip – while the next one comes in. Both layers share one grid cell, so the
+ * card never changes height. The flash is positioned against the card itself
+ * (the nearest positioned ancestor), not this slot.
+ */
+function AliasWordSwap({ word, lastResult, style }: {
+  word: string
+  lastResult: 'guessed' | 'skipped' | undefined
+  style: React.CSSProperties
+}) {
+  const [swap, setSwap] = useState(() => initialWordSwap(word))
+  const next = advanceWordSwap(swap, word, lastResult)
+  if (next !== swap) setSwap(next)
+  const { leaving, generation } = next
+  return (
+    <>
+      {leaving?.exit === 'correct' && <span key={`flash-${generation}`} aria-hidden className="alias-word-flash" />}
+      <span className="alias-word-slot" style={{ zIndex: 1, width: '100%', justifyItems: 'center' }}>
+        {leaving && (
+          <span
+            key={`out-${generation}`}
+            aria-hidden
+            className={leaving.exit === 'correct' ? 'alias-word-out-correct' : 'alias-word-out-skip'}
+            style={style}
+            onAnimationEnd={onOwnAnimationEnd(() => setSwap((current) => (current.generation === generation ? { ...current, leaving: null } : current)))}
+          >
+            {leaving.word}
+          </span>
+        )}
+        <span key={`in-${generation}`} className={generation > 0 ? 'alias-word-in' : undefined} style={style} data-testid="alias-secret-word">
+          {word}
+        </span>
+      </span>
+    </>
   )
 }
 
@@ -377,14 +429,14 @@ const AliasGameHeader: React.FC<{
             <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: FONT_MONO, marginBottom: 2 }}>
               {kicker}
             </div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</div>
+            <ScorePop value={scores.join(':')} style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</ScorePop>
             <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: FONT_MONO }}>
               {lobbyCode}
             </div>
           </>
         }
         centerCompact={
-          <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</div>
+          <ScorePop value={scores.join(':')} style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</ScorePop>
         }
         rightCard={seat(rightTeam, 'right', activeTeamIndex === 1)}
         trailing={
@@ -400,8 +452,10 @@ const AliasGameHeader: React.FC<{
 }
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [] }: {
   guesses: GuessMessage[]
+  /** Words the describer has marked guessed this turn; matching bubbles are celebrated (#1115). */
+  guessedWords?: readonly string[]
   guessInput: string
   onInputChange: (v: string) => void
   onSend: () => void
@@ -413,6 +467,15 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   fillHeight?: boolean
 }) {
   const { t } = useTranslation()
+  // Guesses arrive live only (there is no history to load), so `[]` is a
+  // loaded empty feed and every guess after it is fresh.
+  const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(guesses, (g) => String(g.id)))
+  // A bubble turns mint when the describer marks its word guessed, usually
+  // after it arrived. Only the bubble that has just become a hit bounces; the
+  // hits the panel mounted with (a reload, a remount) sit still, and a settled
+  // one does not replay when a mobile tab shows the panel again.
+  const hitIds = guesses.filter((g) => guessMatchesWord(g.text, guessedWords)).map((g) => String(g.id))
+  const { isFresh: isFreshHit, settle: settleHit } = useFreshIds(hitIds)
   return (
     <div className={`w-full md:w-[280px] md:max-w-[280px] ${fillHeight ? 'flex-1 min-h-0' : 'h-[220px]'} md:h-full md:max-h-[560px]`} style={{
       ...cardBase,
@@ -429,24 +492,40 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
             {t('alias.noGuessesYet')}
           </p>
         )}
-        {guesses.map((g) => {
+        {guesses.map((g, index) => {
           const isMe = g.userId === currentUserId
+          const isNewest = index === guesses.length - 1 && newestFresh
+          const isHit = guessMatchesWord(g.text, guessedWords)
+          const hitFresh = isHit && isFreshHit(String(g.id))
           return (
-            <div key={g.id} style={{
-              display: 'flex', flexDirection: 'column', gap: 2,
-              alignItems: isMe ? 'flex-end' : 'flex-start',
-            }}>
+            <div
+              key={g.id}
+              className={isNewest ? 'social-entry-in' : undefined}
+              onAnimationEnd={isNewest ? onOwnAnimationEnd(settleNewest) : undefined}
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 2,
+                alignItems: isMe ? 'flex-end' : 'flex-start',
+              }}
+            >
               {!isMe && (
                 <BdLabel style={{ fontSize: 9, marginLeft: 4 }}>{g.username}</BdLabel>
               )}
-              <span style={{
+              {/* A guess the describer marked correct turns mint; the one that
+                  has just become a hit lands with an overshoot, once. */}
+              <span
+                className={hitFresh ? 'social-entry-hit' : undefined}
+                onAnimationEnd={hitFresh ? onOwnAnimationEnd(() => settleHit(String(g.id))) : undefined}
+                data-guess-hit={isHit || undefined}
+                style={{
                 padding: '7px 12px',
                 borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                background: isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
-                color: isMe ? 'var(--bd-bg)' : 'var(--bd-ink)',
-                fontSize: 14, fontWeight: 500, maxWidth: 220,
+                background: isHit ? 'var(--bd-mint)' : isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
+                color: isHit ? '#06322a' : isMe ? 'var(--bd-bg)' : 'var(--bd-ink)',
+                fontSize: 14, fontWeight: isHit ? 700 : 500, maxWidth: 220,
                 wordBreak: 'break-word',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
+                {isHit && <Icon name="check" size={14} />}
                 {g.text}
               </span>
             </div>
@@ -885,6 +964,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const soundTeam = soundData?.teams?.[soundData.currentTeamIndex]
   const soundDescriberId = soundTeam?.playerIds[soundTeam.describerIndex ?? 0]
   const soundResults = soundData?.phase === 'turn_active' ? soundData.currentCardResults.length : 0
+  // The turn-results screen counts in only when the turn ended while this page
+  // was open (#1115); undefined until a playing game is loaded.
+  const turnResultsKey = soundData
+    ? soundData.phase === 'turn_results' && soundData.lastTurnResult
+      ? `${soundData.lastTurnResult.teamId}:${soundData.turnStartedAt ?? ''}:${(soundData.teams ?? []).map((team) => team.score).join(',')}`
+      : null
+    : undefined
+  const { fresh: turnResultsFresh, settle: settleTurnResults } = useFreshKey(turnResultsKey)
   useTurnSounds({
     isMyTurn: soundData?.phase === 'turn_active' && !!soundUserId && soundDescriberId === soundUserId,
     lastMoveSignature: soundData ? `${soundData.turnStartedAt ?? ''}:${soundResults}` : null,
@@ -1216,7 +1303,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <div className="alias-team-screen" style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
-        <main className="alias-team-main" style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
+        <main className="alias-team-main bd-screen" style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
           <AliasPregameHeader
             code={code}
             leaveLabel={t('game.ui.leave')}
@@ -1371,6 +1458,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
+    guessedWords: data.currentCardResults.filter((r) => r.result === 'guessed').map((r) => r.word),
   }
 
   // ─── Shared chrome (#905) ──────────────────────────────────────────────────
@@ -1442,7 +1530,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               onTabChange={setTurnTab}
             />
           )}
-          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1469,13 +1557,17 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <div aria-hidden style={{ position: 'absolute', top: -120, left: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,107,91,0.10)' }} />
                 <div aria-hidden style={{ position: 'absolute', bottom: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(155,140,255,0.08)' }} />
                 <BdLabel>{t('alias.theSecretWord')}</BdLabel>
-                <span style={{
-                  fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
-                  lineHeight: 1.02, textAlign: 'center',
-                  color: 'var(--bd-ink)', letterSpacing: '-0.02em',
-                  zIndex: 1, wordBreak: 'break-word',
-                }}>{word}</span>
+                <AliasWordSwap
+                  word={word}
+                  lastResult={data.currentCardResults[data.currentCardResults.length - 1]?.result}
+                  style={{
+                    fontFamily: FONT_DISPLAY, fontWeight: 700,
+                    fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
+                    lineHeight: 1.02, textAlign: 'center',
+                    color: 'var(--bd-ink)', letterSpacing: '-0.02em',
+                    wordBreak: 'break-word',
+                  }}
+                />
                 <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
                   {t('alias.doNotSayItFull')}
                 </span>
@@ -1496,7 +1588,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                       fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
                     }}>
                       <span style={{ opacity: 0.6, fontSize: 11 }}>{t('alias.net')}</span>
-                      <span style={{ fontSize: 14 }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</span>
+                      <ScorePop value={guessed - skipped} style={{ fontSize: 14, display: 'inline-block' }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</ScorePop>
                     </span>
                   </div>
                   {danger && (
@@ -1616,7 +1708,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               onTabChange={setTurnTab}
             />
           )}
-          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
+          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
@@ -1722,13 +1814,19 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const nextTeamIdx = (data.currentTeamIndex + 1) % data.teams.length
     const nextTeam = data.teams[nextTeamIdx]
     const isNextTeamPlayer = !!nextTeam?.playerIds.includes(currentUserId ?? '')
+    // Only while this turn's result is fresh (#1115): a reload shows it settled.
+    const countIn = turnResultsFresh
+    // Words, then the turn score, then the team total, in that order however
+    // long the turn was: the stagger compresses to fit, it never clamps.
+    const wordsDoneStep = Math.max(1, wordResults.length)
+    const totalStep = wordsDoneStep + 3
 
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           {renderHeader(t('alias.turnCompleteTitle'))}
-          <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
+          <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
             {/* Word list */}
             <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
@@ -1750,7 +1848,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {wordResults.map((w, i) => {
                   const ok = w.result === 'guessed'
                   return (
-                    <div key={i} style={{
+                    <div key={i} className={countIn ? 'social-rise' : undefined} style={{
+                      ...(countIn ? staggerStyle(i, totalStep) : null),
                       display: 'grid', gridTemplateColumns: '28px 1fr auto', alignItems: 'center', gap: 12,
                       padding: '12px 16px', borderRadius: 12,
                       background: ok ? 'rgba(79,201,166,0.12)' : 'rgba(255,196,77,0.12)',
@@ -1789,7 +1888,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                   <BdLabel style={{ color: positive ? 'rgba(251,246,238,0.7)' : 'var(--bd-ink-muted)' }}>{t('alias.turnScoreLabel')}</BdLabel>
-                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1 }}>
+                  {/* The turn's total lands after its words, as a stamp. */}
+                  <span
+                    className={countIn ? 'social-stamp' : undefined}
+                    style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1, display: 'inline-block', transformOrigin: 'left center', ...(countIn ? staggerStyle(wordsDoneStep, totalStep) : null) }}
+                    data-testid="alias-turn-score"
+                  >
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
                   </span>
                 </div>
@@ -1816,7 +1920,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
                           {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>{t('alias.justPlayed')}</BdLabel>}
                         </div>
-                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
+                        {/* The team that just played pops its new total once the turn score has landed. */}
+                        <span
+                          className={countIn && isActive ? 'score-pop' : undefined}
+                          onAnimationEnd={countIn && isActive ? onOwnAnimationEnd(settleTurnResults) : undefined}
+                          style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums', display: 'inline-block', ...(countIn && isActive ? staggerStyle(totalStep, totalStep) : null) }}
+                        >
+                          {team.score}
+                        </span>
                       </div>
                     )
                   })}
@@ -1901,7 +2012,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         </div>
 
         {renderHeader(t('alias.finalTitle'))}
-        <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
+        <main className="bd-screen" style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? t('alias.noWinnerLabel') : t('alias.championsLabel')}</BdLabel>
             <h1 style={{

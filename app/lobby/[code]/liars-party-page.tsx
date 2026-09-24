@@ -31,6 +31,11 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useFreshFor } from '@/hooks/useFreshFor'
+import { useFreshKey } from '@/hooks/useFreshKey'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { sounds } from '@/lib/sounds'
+import { staggerDelayMs, staggerStyle } from '@/lib/social-motion'
 
 interface LiarsPartyPageProps {
   code: string
@@ -106,10 +111,25 @@ interface Game {
 const LIARS_PARTY_ACCENT = 'var(--bd-lav)'
 const LIARS_PARTY_ACCENT_DEEP = 'var(--bd-lav-deep)'
 
+/**
+ * The reveal screen plays in order (#1115): the claim, the verdict stamped on
+ * it, the vote rows one by one, then who is out. Steps are STAGGER_STEP_MS
+ * apart (lib/social-motion); the verdict gets a beat of its own first.
+ */
+const VERDICT_STEP = 3
+const BREAKDOWN_FIRST_STEP = 6
+/** Long enough for the last staggered row and the eliminated card to land. */
+const LIARS_REVEAL_MS = 1600
+/**
+ * The last round's verdict is the thing the table wants to read; the result
+ * overlay waits this long before covering it.
+ */
+const LIARS_RESULT_REVEAL_DELAY_MS = 1200
+
 /** A themed card. One class so the phases cannot drift apart again. */
-function LiarsCard({ children, className = '', role, testId }: { children: React.ReactNode; className?: string; role?: string; testId?: string }) {
+function LiarsCard({ children, className = '', role, testId, style }: { children: React.ReactNode; className?: string; role?: string; testId?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`bd-card liars-card ${className}`.trim()} role={role} data-testid={testId}>
+    <div className={`bd-card liars-card ${className}`.trim()} role={role} data-testid={testId} style={style}>
       {children}
     </div>
   )
@@ -255,9 +275,13 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinishe
                     )}
                     <span className="truncate">{nameOf(pid)}</span>
                   </span>
-                  <span className="shrink-0 text-bd-ink-soft">
+                  <ScorePop
+                    value={`${data.scores[pid] ?? 0}:${data.strikes[pid] ?? 0}`}
+                    className="shrink-0 text-bd-ink-soft"
+                    style={{ display: 'inline-block' }}
+                  >
                     {t('liarsParty.points', { count: data.scores[pid] ?? 0 })} · {t('liarsParty.strikes', { count: data.strikes[pid] ?? 0, max: data.eliminationThreshold })}
-                  </span>
+                  </ScorePop>
                 </div>
               )
             })
@@ -278,9 +302,9 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinishe
 }
 
 /** The eliminated player's banner, the one piece their screens add. */
-function EliminatedBanner({ round, t }: { round: number | null | undefined; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string }) {
+function EliminatedBanner({ round, animate = false, t }: { round: number | null | undefined; animate?: boolean; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string }) {
   return (
-    <LiarsCard className="liars-card--danger text-center" role="alert" testId="eliminated-banner">
+    <LiarsCard className={`liars-card--danger text-center${animate ? ' social-slide-in' : ''}`} role="alert" testId="eliminated-banner">
       {t('liarsParty.eliminatedAt', { round: round ?? '?' })}
     </LiarsCard>
   )
@@ -371,15 +395,20 @@ function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, t }:
   )
 }
 
-function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, isClaimant, eliminatedRound, draft, onDraftChange, t }: ClaimContentProps & {
+function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, isClaimant, eliminatedRound, draft, onDraftChange, animate = false, t }: ClaimContentProps & {
   isClaimant: boolean
   eliminatedRound: number | null | undefined
   draft: LiarsClaimDraft
   onDraftChange: (next: LiarsClaimDraft) => void
+  /** This phase just started while the page was open (#1115). */
+  animate?: boolean
 }) {
+  // The banner is news only in the first claim phase after the round that
+  // knocked this player out; every later phase shows it still.
+  const bannerIsNews = animate && eliminatedRound != null && eliminatedRound === data.currentRound - 1
   return (
     <>
-      {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
+      {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} animate={bannerIsNews} t={t} />}
       {isClaimant && <ClaimForm draft={draft} onDraftChange={onDraftChange} isMoveSubmitting={isMoveSubmitting} onSubmitClaim={onSubmitClaim} t={t} />}
       <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
     </>
@@ -387,17 +416,21 @@ function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, i
 }
 
 /** The claim under vote, plus how many votes are in. */
-function ClaimUnderVote({ data, heading, t }: {
+function ClaimUnderVote({ data, heading, animate = false, t }: {
   data: LiarsPartyGameData
   heading?: string
+  /** The claim just arrived while the page was open: it lands instead of appearing (#1115). */
+  animate?: boolean
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
   const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
   return (
     <LiarsCard>
       {heading && <div className="liars-card__title">{heading}</div>}
-      <blockquote className="liars-claim">&ldquo;{data.claim?.text}&rdquo;</blockquote>
-      <div className="text-sm text-bd-ink-muted">{t('liarsParty.voted', { done: data.challengeVotes.length, total: totalVoters })}</div>
+      <blockquote className={`liars-claim${animate ? ' social-reveal' : ''}`} data-testid="liars-claim-text">&ldquo;{data.claim?.text}&rdquo;</blockquote>
+      <ScorePop value={data.challengeVotes.length} className="text-sm text-bd-ink-muted" style={{ display: 'inline-block', transformOrigin: 'left center' }}>
+        {t('liarsParty.voted', { done: data.challengeVotes.length, total: totalVoters })}
+      </ScorePop>
     </LiarsCard>
   )
 }
@@ -412,14 +445,14 @@ interface ChallengeContentProps {
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eliminatedRound, t }: ChallengeContentProps) {
+function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eliminatedRound, animate = false, t }: ChallengeContentProps & { animate?: boolean }) {
   const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
   const canVote = !isClaimant && !myVote && eliminatedRound === undefined
 
   return (
     <>
       {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
-      <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} t={t} />
+      <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} animate={animate} t={t} />
 
       {!canVote && myVote && (
         <LiarsCard className="text-center">
@@ -445,7 +478,10 @@ interface RevealContentProps {
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function RevealContent({ data, players, rules, t }: RevealContentProps) {
+function RevealContent({ data, players, rules, animate = false, t }: RevealContentProps & {
+  /** The reveal just started while the page was open: play it in order (#1115). */
+  animate?: boolean
+}) {
   // The engine only resolves a round inside `advanceAfterReveal`, which runs
   // when somebody submits `advance-round` – i.e. on the way OUT of this phase
   // (lib/games/liars-party-game.ts:479). So while this screen is on show there
@@ -459,6 +495,8 @@ function RevealContent({ data, players, rules, t }: RevealContentProps) {
   const resolved: LiarsPartyRoundResult | undefined =
     data.roundResults.find(result => result.round === data.currentRound)
   const wasBluff = resolved?.wasBluff ?? data.claim?.isBluff ?? false
+  // Verdict, vote rows, eliminated card: the last step is the card's.
+  const lastStep = BREAKDOWN_FIRST_STEP + data.challengeVotes.length
   const eliminatedThisRound = players.filter(p => {
     const pid = p.userId || p.id
     return data.eliminatedPlayerIds.includes(pid) && data.eliminatedAtRound[pid] === data.currentRound
@@ -469,7 +507,11 @@ function RevealContent({ data, players, rules, t }: RevealContentProps) {
       {data.claim && (
         <LiarsCard>
           <blockquote className="liars-claim">&ldquo;{data.claim.text}&rdquo;</blockquote>
-          <div className="liars-verdict" style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}>
+          <div
+            className={`liars-verdict${animate ? ' social-stamp' : ''}`}
+            data-testid="liars-verdict"
+            style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', ...(animate ? staggerStyle(VERDICT_STEP, lastStep) : null) }}
+          >
             {data.claim.isBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
           </div>
         </LiarsCard>
@@ -479,7 +521,7 @@ function RevealContent({ data, players, rules, t }: RevealContentProps) {
         <LiarsCard testId="liars-vote-breakdown">
           <div className="liars-card__title">{t('liarsParty.voteBreakdown')}</div>
           <div className="space-y-2">
-            {data.challengeVotes.map(vote => {
+            {data.challengeVotes.map((vote, index) => {
               const voter = players.find(p => p.userId === vote.playerId || p.id === vote.playerId)
               // A challenge is right when the claim was a bluff – which is how
               // the engine scores it (`resolveCurrentRound`, :511). It used to
@@ -491,7 +533,11 @@ function RevealContent({ data, players, rules, t }: RevealContentProps) {
               // have not moved, so none are shown rather than invented.
               const delta = resolved?.voterScoreDeltas[vote.playerId]
               return (
-                <div key={vote.playerId} className="flex items-center justify-between gap-2 text-sm text-bd-ink">
+                <div
+                  key={vote.playerId}
+                  className={`flex items-center justify-between gap-2 text-sm text-bd-ink${animate ? ' social-rise' : ''}`}
+                  style={animate ? { animationDelay: `${staggerDelayMs(BREAKDOWN_FIRST_STEP + index, lastStep)}ms` } : undefined}
+                >
                   <span className="min-w-0 flex-1 truncate">{playerNameOf(voter, t)}</span>
                   <span className="text-bd-ink-soft">{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
                   <span style={{ color: correct ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}><Icon name={correct ? 'check' : 'close'} size={14} /></span>
@@ -506,7 +552,11 @@ function RevealContent({ data, players, rules, t }: RevealContentProps) {
       )}
 
       {eliminatedThisRound.length > 0 && (
-        <LiarsCard className="liars-card--danger text-center">
+        <LiarsCard
+          className={`liars-card--danger text-center${animate ? ' social-slide-in' : ''}`}
+          testId="liars-eliminated-this-round"
+          style={animate ? { animationDelay: `${staggerDelayMs(lastStep, lastStep)}ms` } : undefined}
+        >
           <div className="mb-1 font-semibold">{t('liarsParty.eliminatedThisRound')}</div>
           {eliminatedThisRound.map(p => <div key={p.id} className="text-sm">{playerNameOf(p, t)}</div>)}
         </LiarsCard>
@@ -910,6 +960,33 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     ? (soundData.claim && soundData.currentClaimantId !== soundUserId ? 1 : 0) +
       soundData.challengeVotes.filter((v) => v.playerId !== soundUserId).length
     : 0
+  // A phase counts as news only when it changed while this page was open
+  // (#1115): a reload or a reconnect shows it settled.
+  const phaseFresh = useFreshFor(
+    // A playing game whose engine has not been restored yet is "not loaded",
+    // not "empty": otherwise the restore itself would read as a phase change.
+    soundData
+      ? `${soundData.currentRound}:${soundData.phase}`
+      : game && game.status !== 'playing' ? null : undefined,
+    LIARS_REVEAL_MS,
+  )
+  // The winner hears the win cue, like the other dedicated pages – once, and
+  // only for a finish that happened while they watched.
+  const finishedData = game?.status === 'finished' ? (gameEngine?.getState().data as LiarsPartyGameData | undefined) : undefined
+  const { fresh: finishFresh, settle: settleFinish } = useFreshKey(
+    !game
+      ? undefined
+      : game.status !== 'finished'
+        ? null
+        : finishedData
+          ? (finishedData.winnerId ? `${game.id}:${finishedData.winnerId}` : null)
+          : undefined,
+  )
+  useEffect(() => {
+    if (!finishFresh) return
+    if (!isSpectator && finishedData?.winnerId && finishedData.winnerId === soundUserId) sounds.play('win')
+    settleFinish()
+  }, [finishFresh, finishedData?.winnerId, isSpectator, settleFinish, soundUserId])
   useTurnSounds({
     isMyTurn: !!soundData && soundData.phase === 'claim' && soundData.currentClaimantId === soundUserId,
     lastMoveSignature: soundData ? `${soundData.currentRound}:${othersActed}` : null,
@@ -1139,6 +1216,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         onDraftChange={setClaimDraft}
         isMoveSubmitting={isMoveSubmitting}
         onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
+        animate={phaseFresh}
         t={t}
       />
     )
@@ -1152,6 +1230,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         currentUserId={currentUserId}
         isClaimant={isClaimant}
         eliminatedRound={eliminatedRound}
+        animate={phaseFresh}
         t={t}
       />
     )
@@ -1177,7 +1256,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     }
   } else if (isPlaying && phase === 'reveal') {
     phaseTestId = 'liars-party-reveal-screen'
-    phaseContent = <RevealContent data={data!} players={players} rules={rules} t={t} />
+    phaseContent = <RevealContent data={data!} players={players} rules={rules} animate={phaseFresh} t={t} />
     // Open to every player, not just the host – the engine's validateMove for
     // advance-round has no player-ownership check (any known player can legally
     // advance). Gating this to isHost made the game permanently soft-lock for
@@ -1226,6 +1305,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           inviteCode={code}
           gameType="liars_party"
           resultKey={`${game?.id}:${data?.finishedAt ?? lastMoveAt ?? ''}`}
+          revealDelayMs={LIARS_RESULT_REVEAL_DELAY_MS}
           isRegistered={status === 'authenticated' && !isGuest}
         />
       )}
