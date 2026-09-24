@@ -1,4 +1,4 @@
-import { isSignatureAuthenticatedWebhook } from '@/lib/csrf'
+import { isSignatureAuthenticatedWebhook, isTokenAuthenticatedEndpoint } from '@/lib/csrf'
 
 // Note: verifyCsrfToken and the proxy middleware itself take a NextRequest, which
 // cannot be constructed under jsdom (whatwg-fetch's Request conflicts with it) and
@@ -20,5 +20,22 @@ describe('isSignatureAuthenticatedWebhook', () => {
     expect(isSignatureAuthenticatedWebhook('/api/stripe/webhook-spoof')).toBe(false)
     expect(isSignatureAuthenticatedWebhook('/api/stripe/webhook/')).toBe(false)
     expect(isSignatureAuthenticatedWebhook('/api/stripe/webhook/extra')).toBe(false)
+  })
+})
+
+describe('isTokenAuthenticatedEndpoint', () => {
+  it('exempts the one-click unsubscribe endpoint (#1154), which RFC 8058 delivers as a server-to-server POST with no Origin or Referer', () => {
+    expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe')).toBe(true)
+  })
+
+  it('does not exempt ordinary API routes', () => {
+    expect(isTokenAuthenticatedEndpoint('/api/lobby')).toBe(false)
+    expect(isTokenAuthenticatedEndpoint('/api/stripe/webhook')).toBe(false)
+  })
+
+  it('matches exactly, so a lookalike path is not exempt', () => {
+    expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe-spoof')).toBe(false)
+    expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe/')).toBe(false)
+    expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe/extra')).toBe(false)
   })
 })

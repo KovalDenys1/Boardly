@@ -105,6 +105,28 @@ export function isUnauthenticatedReportingEndpoint(pathname: string): boolean {
 }
 
 /**
+ * Routes whose own signed token authenticates the request, so the browser-origin check
+ * this file otherwise enforces adds nothing and would only break a legitimate caller.
+ *
+ * `/api/notifications/unsubscribe` (#1154) is the RFC 8058 one-click unsubscribe target:
+ * a mail client delivers `List-Unsubscribe-Post` as a server-to-server POST with no
+ * Origin or Referer a page could attach — the same shape as the CSP report exemption
+ * above, but authenticated (verifyNotificationUnsubscribeToken) rather than open, since
+ * this one mutates a user's preferences. Without this exemption every provider's
+ * one-click "Unsubscribe" would get a silent 403 the person never sees.
+ *
+ * Same exact-match discipline as the sets above: a path merely starting with one of
+ * these is not exempt.
+ */
+const TOKEN_AUTHENTICATED_PATHS = new Set([
+  '/api/notifications/unsubscribe',
+])
+
+export function isTokenAuthenticatedEndpoint(pathname: string): boolean {
+  return TOKEN_AUTHENTICATED_PATHS.has(pathname)
+}
+
+/**
  * Verify that the request origin matches our allowed origins
  */
 export function verifyCsrfToken(request: NextRequest): boolean {

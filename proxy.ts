@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt'
 import {
   getSecurityHeaders,
   isSignatureAuthenticatedWebhook,
+  isTokenAuthenticatedEndpoint,
   isUnauthenticatedReportingEndpoint,
   verifyCsrfToken,
 } from '@/lib/csrf'
@@ -309,6 +310,7 @@ export async function proxy(request: NextRequest) {
       !isSignatureAuthenticatedWebhook(pathname) &&
       !isTrustedServerRequest(request) &&
       !isUnauthenticatedReportingEndpoint(pathname) &&
+      !isTokenAuthenticatedEndpoint(pathname) &&
       !verifyCsrfToken(request)
     ) {
       return NextResponse.json(

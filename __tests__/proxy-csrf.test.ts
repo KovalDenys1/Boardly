@@ -120,4 +120,20 @@ describe('proxy CSRF enforcement', () => {
 
     expect(response.status).toBe(403)
   })
+
+  // #1154: RFC 8058 one-click unsubscribe is delivered by the mail client as a
+  // server-to-server POST (List-Unsubscribe-Post), so it carries no Origin or Referer a
+  // page could attach. The route authenticates the caller through the signed unsubscribe
+  // token itself, not the browser origin, so this must reach the handler rather than get
+  // a silent 403 the person subscribing out never sees.
+  it('allows a one-click unsubscribe POST through with no origin header at all', async () => {
+    const request = new NextRequest(
+      'http://localhost:3000/api/notifications/unsubscribe?token=abc',
+      { method: 'POST' }
+    )
+
+    const response = await proxy(request)
+
+    expect(response.status).not.toBe(403)
+  })
 })
