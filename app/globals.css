@@ -1540,8 +1540,9 @@ input[type="range"].slider-thumb::-moz-range-track {
    a 40px chip floating halfway down a ~100px card (Denys, real iPhone, v1.37.0).
    Keyed to the row's own width, not the viewport, and only where the scoreboard
    takes its compact form: wider rows (768 portrait) and the landscape side
-   column keep the chip as it was. */
-.ttt-mobile-layout > .ttt-top-row { container: game-top-row / inline-size; }
+   column keep the chip as it was. Liar's Party tunes its own phone header
+   (.liars-header-card), so it is left out. */
+.ttt-mobile-layout > .ttt-top-row:not(:has(.liars-header-card)) { container: game-top-row / inline-size; }
 @container game-top-row (max-width: 559px) {
   .ttt-top-row > .game-room-card--compact { align-self: stretch; align-items: stretch; }
   .ttt-top-row > .game-room-card--compact > :is(.game-leave-button, .game-room-card__copy) { border-radius: 18px; }
