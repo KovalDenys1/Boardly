@@ -201,7 +201,7 @@ export default function YahtzeeTileGrid({
             <span className={`yz-section__bar${upper.bonusEarned ? ' yz-section__bar--done' : ''}`} aria-hidden>
               <i style={{ transform: `scaleX(${Math.min(1, upper.total / upper.target)})` }} />
             </span>
-            <span>{t('yahtzee.ui.upperProgress', { current: upper.total, target: upper.target })}</span>
+            <span>{upper.total}/{upper.target}</span>
             {upper.bonusEarned ? (
               <span className="yz-section__pace yz-section__pace--ahead">{t('yahtzee.ui.bonusEarned')}</span>
             ) : upper.par > 0 ? (

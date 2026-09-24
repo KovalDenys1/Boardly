@@ -2313,7 +2313,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   gap: 5px;
   flex-shrink: 0;
   min-height: 36px;
-  padding: 0 12px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1.5px solid var(--bd-line);
   background: var(--bd-input-bg);
@@ -2324,7 +2324,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   cursor: pointer;
   transition: background var(--bd-dur-fast, 120ms), color var(--bd-dur-fast, 120ms);
 }
-.yz-pill__name { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; }
+.yz-pill__name { max-width: 7ch; overflow: hidden; text-overflow: ellipsis; }
 .yz-pill__score { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
 .yz-pill--viewing { background: var(--bd-ink); border-color: var(--bd-ink); color: var(--bd-bg); }
 .yz-pill__turn {
@@ -2396,8 +2396,13 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-weight: 800; font-size: 14px;
   box-shadow: 0 4px 0 var(--bd-coral-deep);
   cursor: pointer;
-  white-space: nowrap;
+  padding: 0 8px;
+  line-height: 1.1;
+  text-align: center;
 }
+/* A longer state ("No rolls left", or its Russian) wraps to two lines inside
+   the same button rather than widening it. */
+.yz-roll > span { min-width: 0; overflow-wrap: anywhere; }
 .yz-roll:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 var(--bd-coral-deep); }
 .yz-roll:disabled {
   background: var(--bd-bg2); color: var(--bd-ink-soft); box-shadow: none;
@@ -2487,6 +2492,9 @@ button.yz-tile:disabled { cursor: default; }
   font-size: 12px; font-weight: 700; line-height: 1.15;
 }
 .yz-tile__icon { flex-shrink: 0; display: inline-flex; line-height: 0; }
+/* The shared Die carries a 4px ink drop shadow as an inline style; at 16px it
+   reads as a black slab, so the tile's glyph drops it. */
+.yz-tile__icon > div { box-shadow: none !important; border-width: 1.5px !important; }
 .yz-tile__name {
   min-width: 0; overflow: hidden;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;

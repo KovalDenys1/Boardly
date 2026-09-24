@@ -102,7 +102,7 @@ export default function YahtzeeDiceBar({
     : !isMyTurn
       ? t('yahtzee.ui.rollWaiting')
       : rollsLeft === 0
-        ? t('yahtzee.ui.rollNone')
+        ? t('yahtzee.ui.noRollsLeft')
         : rollsLeft === 3
           ? t('yahtzee.ui.rollDice')
           : t('yahtzee.ui.rollWithCount', { count: rollsLeft })
