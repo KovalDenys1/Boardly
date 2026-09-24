@@ -70,7 +70,7 @@ export function useCheckersMotion(data: CheckersGameData | undefined, viewerSide
         const t = now()
         const running = motionRef.current
         const extended = running && t - running.startedAt < running.timing.total
-            ? extendCheckersMotion(running.plan, plan)
+            ? extendCheckersMotion(running.plan, plan, t - running.startedAt)
             : null
         epochRef.current += 1
         if (running && extended) {

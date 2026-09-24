@@ -51,7 +51,7 @@ import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { checkersMoverKeyframes } from './checkers-motion'
+import { checkersMoverKeyframes, checkersSquareMotion } from './checkers-motion'
 import { ActiveCheckersMotion, useCheckersMotion } from './hooks/useCheckersMotion'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
@@ -183,16 +183,16 @@ function CheckersBoard({
                     // the destination square holds nothing until it lands.
                     const hiddenForMover = sameSquare(moverDest, r, c)
                     let pieceNode: React.ReactNode = null
-                    const captured = plan?.captured.find(({ square }) => square[0] === r && square[1] === c)
-                    const lifted = plan?.lifted.find(({ square }) => square[0] === r && square[1] === c)
-                    if (motion && captured && side) {
+                    const squareMotion = motion && plan ? checkersSquareMotion(plan, motion.timing, motion.offset, [r, c], cell) : null
+                    if (squareMotion?.kind === 'jumped' && side) {
                         // Jumped mid-chain: it stays until the turn ends, faded as the mover passes.
-                        pieceNode = <CheckersPiece key={`j${motion.epoch}`} side={side} king={isKing(cell)} faded motionClass="ck-piece--jumped" motionStyle={{ animationDelay: ms(motion.timing.captureStarts[plan!.captured.indexOf(captured)] - motion.offset) }} />
-                    } else if (motion && captured && pieceSide(captured.cell)) {
+                        pieceNode = <CheckersPiece key={`j${motion!.epoch}`} side={side} king={isKing(cell)} faded motionClass="ck-piece--jumped" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
+                    } else if (squareMotion?.kind === 'captured') {
                         // Taken and already lifted from the state: a ghost fades out as the mover passes.
-                        pieceNode = <CheckersPiece key={`c${motion.epoch}`} side={pieceSide(captured.cell)!} king={isKing(captured.cell)} motionClass="ck-piece--captured" motionStyle={{ animationDelay: ms(motion.timing.captureStarts[plan!.captured.indexOf(captured)] - motion.offset) }} />
-                    } else if (motion && lifted && !side && pieceSide(lifted.cell)) {
-                        pieceNode = <CheckersPiece key={`l${motion.epoch}`} side={pieceSide(lifted.cell)!} king={isKing(lifted.cell)} motionClass="ck-piece--captured ck-piece--lifted" motionStyle={{ animationDelay: ms(motion.timing.liftStart - motion.offset) }} />
+                        pieceNode = <CheckersPiece key={`c${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
+                    } else if (squareMotion?.kind === 'lifted') {
+                        // Taken earlier in the turn: stays dimmed until the mover lands.
+                        pieceNode = <CheckersPiece key={`l${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured ck-piece--lifted" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
                     } else if (side && !hiddenForMover) {
                         pieceNode = <CheckersPiece side={side} king={isKing(cell)} faded={isPendingCapture} popCrown={sameSquare(popCrownAt, r, c)} />
                     }

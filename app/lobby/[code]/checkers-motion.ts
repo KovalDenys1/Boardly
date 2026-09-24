@@ -23,6 +23,12 @@ export interface CheckersMotionHop {
     to: Square
     /** The jumped square, or null for a plain step. */
     capture: Square | null
+    /**
+     * Earliest start, ms from the start of the run. Set on a chain hop that
+     * joined a run in flight: it cannot start before it arrived, or the part
+     * that should already have played would be skipped.
+     */
+    minStart?: number
 }
 
 export interface CheckersMotionPlan {
@@ -182,10 +188,11 @@ export function timeCheckersMotion(plan: CheckersMotionPlan): CheckersMotionTimi
     const hopDurations = plan.hops.map((hop) => (plan.own ? OWN_HOP_MS : hop.capture ? JUMP_HOP_MS : STEP_MS))
     const hopStarts: number[] = []
     let t = 0
-    for (const d of hopDurations) {
+    plan.hops.forEach((hop, i) => {
+        t = Math.max(t, hop.minStart ?? 0)
         hopStarts.push(t)
-        t += d
-    }
+        t += hopDurations[i]
+    })
     const captureStarts = plan.captured.map(({ hopIndex }) => hopStarts[hopIndex] + hopDurations[hopIndex] / 2)
     const liftStart = t
     const total = Math.max(t, ...captureStarts.map((s) => s + CAPTURE_FADE_MS), plan.lifted.length ? t + CAPTURE_FADE_MS : 0)
@@ -195,20 +202,65 @@ export function timeCheckersMotion(plan: CheckersMotionPlan): CheckersMotionTimi
 /**
  * Chain hops that arrive while the previous hop is still in the air join the
  * running animation instead of restarting it, so each hop plays in order.
+ *
+ * `elapsed` is how far the running animation has played. The joining hops
+ * start at the later of that and the end of the travel already planned, so a
+ * hop that arrives during the previous hop's capture fade plays whole instead
+ * of starting part-way through.
  */
-export function extendCheckersMotion(current: CheckersMotionPlan, next: CheckersMotionPlan): CheckersMotionPlan | null {
+export function extendCheckersMotion(
+    current: CheckersMotionPlan,
+    next: CheckersMotionPlan,
+    elapsed = 0
+): CheckersMotionPlan | null {
     if (!next.continuation || next.side !== current.side) return null
     const lastTo = current.hops[current.hops.length - 1]?.to
     if (!sameSq(lastTo, next.hops[0]?.from)) return null
     const offset = current.hops.length
-    const captured = [...current.captured, ...next.captured.map((c) => ({ ...c, hopIndex: c.hopIndex + offset }))]
+    const travelEnd = timeCheckersMotion(current).liftStart
+    const [firstNew, ...restNew] = next.hops
     return {
         ...current,
-        hops: [...current.hops, ...next.hops],
-        captured,
-        lifted: next.lifted.filter((l) => !captured.some((c) => sameSq(c.square, l.square))),
+        hops: [...current.hops, { ...firstNew, minStart: Math.max(elapsed, travelEnd) }, ...restNew],
+        captured: [...current.captured, ...next.captured.map((c) => ({ ...c, hopIndex: c.hopIndex + offset }))],
+        // Pieces jumped by the earlier hops stay dimmed (lifted) until the chain
+        // lands, the way they sit on the board mid-chain; they are not faded again.
+        lifted: next.lifted,
         promoted: current.promoted || next.promoted,
     }
+}
+
+export type CheckersSquareMotion =
+    /** Still on the board, jumped mid-chain: dips to the pending fade as the mover passes. */
+    | { kind: 'jumped'; delay: number }
+    /** Taken by a hop in this run and already gone from the state: fades out as the mover passes. */
+    | { kind: 'captured'; cell: CheckersCell; delay: number }
+    /** Taken earlier in the turn, lifted now: stays dimmed, goes when the mover lands. */
+    | { kind: 'lifted'; cell: CheckersCell; delay: number }
+
+/**
+ * What one square shows while a run animates, or null for its normal render.
+ * `delay` is the CSS animation delay, already shifted by how far the run had
+ * played when this render began.
+ */
+export function checkersSquareMotion(
+    plan: CheckersMotionPlan,
+    timing: CheckersMotionTiming,
+    offset: number,
+    square: Square,
+    boardCell: number
+): CheckersSquareMotion | null {
+    const onBoard = pieceSide(boardCell) !== null
+    const lifted = plan.lifted.find((l) => sameSq(l.square, square))
+    if (lifted && !onBoard && pieceSide(lifted.cell)) {
+        return { kind: 'lifted', cell: lifted.cell, delay: timing.liftStart - offset }
+    }
+    const index = plan.captured.findIndex((c) => sameSq(c.square, square))
+    if (index === -1) return null
+    const delay = timing.captureStarts[index] - offset
+    if (onBoard) return { kind: 'jumped', delay }
+    const { cell } = plan.captured[index]
+    return pieceSide(cell) ? { kind: 'captured', cell, delay } : null
 }
 
 /**
@@ -230,8 +282,14 @@ export function checkersMoverKeyframes(
     }
     const total = timing.hopStarts.length ? timing.hopStarts[timing.hopStarts.length - 1] + timing.hopDurations[timing.hopDurations.length - 1] : 1
     const frames: Keyframe[] = [{ transform: at(plan.hops[0].from), offset: 0, easing: 'ease-in-out' }]
+    let previousEnd = 0
     plan.hops.forEach((hop, i) => {
-        const end = (timing.hopStarts[i] + timing.hopDurations[i]) / total
+        if (timing.hopStarts[i] > previousEnd) {
+            // A joined hop that waits: hold on its origin until it starts.
+            frames.push({ transform: at(hop.from), offset: timing.hopStarts[i] / total, easing: 'ease-in-out' })
+        }
+        previousEnd = timing.hopStarts[i] + timing.hopDurations[i]
+        const end = previousEnd / total
         if (hop.capture) {
             const mid = (timing.hopStarts[i] + timing.hopDurations[i] / 2) / total
             frames.push({ transform: at(hop.capture, 1.12), offset: mid, easing: 'ease-in-out' })

@@ -7,6 +7,7 @@ import {
     STEP_MS,
     CheckersMotionPlan,
     checkersMoverKeyframes,
+    checkersSquareMotion,
     deriveCheckersMotion,
     extendCheckersMotion,
     timeCheckersMotion,
@@ -99,12 +100,64 @@ describe('deriveCheckersMotion', () => {
             { square: [5, 2], cell: 2, hopIndex: 0 },
             { square: [3, 4], cell: 2, hopIndex: 1 },
         ])
-        expect(joined.lifted).toEqual([])
+        // The first hop's victim stays dimmed until the chain lands.
+        expect(joined.lifted).toEqual([{ square: [5, 2], cell: 2 }])
         const timing = timeCheckersMotion(joined)
         expect(timing.hopStarts).toEqual([0, JUMP_HOP_MS])
         // Each captured piece starts to go as the mover passes over it, not at the end.
         expect(timing.captureStarts).toEqual([JUMP_HOP_MS / 2, JUMP_HOP_MS * 1.5])
-        expect(timing.total).toBe(JUMP_HOP_MS * 1.5 + CAPTURE_FADE_MS)
+        expect(timing.liftStart).toBe(JUMP_HOP_MS * 2)
+        expect(timing.total).toBe(JUMP_HOP_MS * 2 + CAPTURE_FADE_MS)
+
+        // The page, once the chain has landed in the state (s2): the first victim
+        // is gone from the board but is drawn at the lifted 0.35, going only when
+        // the mover lands - not faded again on the first hop's timing.
+        const at = JUMP_HOP_MS + 40
+        expect(checkersSquareMotion(joined, timing, at, [5, 2], s2.board[5][2])).toEqual({ kind: 'lifted', cell: 2, delay: JUMP_HOP_MS * 2 - at })
+        // The second victim fades as the mover passes over it.
+        expect(checkersSquareMotion(joined, timing, at, [3, 4], s2.board[3][4])).toEqual({ kind: 'captured', cell: 2, delay: JUMP_HOP_MS * 1.5 - at })
+        // Mid-chain (s1) the first victim is still on the board: it dips as the mover passes.
+        expect(checkersSquareMotion(first, timeCheckersMotion(first), 0, [5, 2], s1.board[5][2])).toEqual({ kind: 'jumped', delay: JUMP_HOP_MS / 2 })
+        expect(checkersSquareMotion(joined, timing, at, [7, 0], 0)).toBeNull()
+    })
+
+    it('starts a hop that arrives during the capture fade where it arrived, playing it whole', () => {
+        const g = makeGame()
+        setPosition(g, [[6, 1, 1], [5, 2, 2], [3, 4, 2], [0, 7, 2]], 1)
+        const s0 = snap(g)
+        g.makeMove(step('p1', [6, 1], [4, 3]))
+        const s1 = snap(g)
+        g.makeMove(step('p1', [4, 3], [2, 5]))
+        const s2 = snap(g)
+        const first = planOf(deriveCheckersMotion(s0, s1, 2))
+        const second = planOf(deriveCheckersMotion(s1, s2, 2))
+        const firstTiming = timeCheckersMotion(first)
+        // Landed at 220, capture fade runs to 330: the run is still going at 300.
+        const elapsed = 300
+        expect(elapsed).toBeGreaterThan(firstTiming.liftStart)
+        expect(elapsed).toBeLessThan(firstTiming.total)
+
+        const joined = extendCheckersMotion(first, second, elapsed)!
+        const timing = timeCheckersMotion(joined)
+        expect(timing.hopStarts).toEqual([0, elapsed])
+        expect(timing.liftStart).toBe(elapsed + JUMP_HOP_MS)
+        expect(timing.captureStarts[1]).toBe(elapsed + JUMP_HOP_MS / 2)
+
+        // The mover holds on the first landing square until the second hop starts.
+        const frames = checkersMoverKeyframes(joined, timing, false)
+        const travel = elapsed + JUMP_HOP_MS
+        expect(frames.map((f) => f.transform)).toEqual([
+            'translate(0%, 0%)',
+            'translate(100%, -100%) scale(1.12)',
+            'translate(200%, -200%)',
+            'translate(200%, -200%)',
+            'translate(300%, -300%) scale(1.12)',
+            'translate(400%, -400%)',
+        ])
+        expect(frames.map((f) => f.offset)).toEqual([0, 110 / travel, 220 / travel, 300 / travel, 410 / travel, 1])
+
+        // Arriving mid-flight, the hop still waits for the travel already planned.
+        expect(timeCheckersMotion(extendCheckersMotion(first, second, 100)!).hopStarts).toEqual([0, JUMP_HOP_MS])
     })
 
     it('sees a whole chain in one state as all of its hops', () => {
