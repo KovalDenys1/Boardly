@@ -3871,6 +3871,15 @@ html.dark .memory-tile-face {
 .sketch-reveal-head__text { flex: 1 1 auto; min-width: 0; }
 .sketch-reveal-head__text > .sketch-word-chip__label { margin: 0; display: block; }
 .sketch-reveal-head__word { margin: 0; line-height: 1.2; font-size: 18px; font-weight: 800; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The reveal opening (#1115): the word scales in from its left edge, then the
+   picture. Only while the reveal is fresh (SketchAndGuessGameBoard). */
+.sketch-reveal-in .sketch-reveal-head__word {
+  transform-origin: left center;
+  animation: social-reveal var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+.sketch-reveal-in .sketch-canvas-frame {
+  animation: social-reveal var(--bd-dur-slow) var(--bd-ease-out) 180ms both;
+}
 .sketch-reveal-head__meta { margin: 0; font-size: 11px; color: var(--bd-ink-muted); line-height: 1.3; }
 .sketch-reveal-head__next { flex: 0 1 auto; max-width: 48%; white-space: normal; line-height: 1.15; }
 .sketch-guess-row { display: flex; gap: 8px; min-width: 0; }
