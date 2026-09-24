@@ -1663,10 +1663,12 @@ input[type="range"].slider-thumb::-moz-range-track {
    the frame's padding (2×6), rounded up. */
 .ck-board {
   --ck-cell: clamp(26px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+  --ck-pad: 6px;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(8, var(--ck-cell));
   grid-template-rows: repeat(8, var(--ck-cell));
-  padding: 6px;
+  padding: var(--ck-pad);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(31,27,22,0.24);
   user-select: none;
@@ -1711,6 +1713,53 @@ input[type="range"].slider-thumb::-moz-range-track {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  animation: ck-last-in 300ms ease-out both;
+}
+/* Motion (#1112). The travelling piece: one square, placed on the origin by
+   left/top once, then moved only by a transform animation (useCheckersMotion +
+   checkersMoverKeyframes). It never takes a click. */
+.ck-mover {
+  position: absolute;
+  width: var(--ck-cell);
+  height: var(--ck-cell);
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  pointer-events: none;
+  will-change: transform;
+}
+/* Jumped mid-chain: dips as the mover passes, then rests at the pending fade. */
+.ck-piece--jumped {
+  animation: ck-jumped 220ms ease-out both;
+}
+/* Taken: fades and shrinks away as the mover passes (a lifted one from 0.35). */
+.ck-piece--captured {
+  --ck-ghost-from: 1;
+  animation: ck-captured 220ms ease-in both;
+  pointer-events: none;
+}
+.ck-piece--lifted {
+  --ck-ghost-from: 0.35;
+}
+.ck-crown--pop {
+  animation: ck-crown-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes ck-last-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ck-jumped {
+  from { opacity: 1; transform: scale(1); }
+  50% { transform: scale(0.82); }
+  to { opacity: 0.35; transform: scale(1); }
+}
+@keyframes ck-captured {
+  from { opacity: var(--ck-ghost-from); transform: scale(1); }
+  to { opacity: 0; transform: scale(0.4); }
+}
+@keyframes ck-crown-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
 }
 /* One line, fixed height, so the board above never resizes when it changes. */
 .ck-hint {
