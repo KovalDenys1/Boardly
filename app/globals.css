@@ -1535,6 +1535,17 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-top-row > :first-child { flex: 1 1 auto; min-width: 0; }
 .ttt-top-row > .game-room-card { align-self: center; flex-shrink: 0; }
+/* Phone portrait: Leave runs the full height of the scoreboard card beside it –
+   same top and bottom, same 18px radius as .ttt-card, icon centred – instead of
+   a 40px chip floating halfway down a ~100px card (Denys, real iPhone, v1.37.0).
+   Keyed to the row's own width, not the viewport, and only where the scoreboard
+   takes its compact form: wider rows (768 portrait) and the landscape side
+   column keep the chip as it was. */
+.ttt-mobile-layout > .ttt-top-row { container: game-top-row / inline-size; }
+@container game-top-row (max-width: 559px) {
+  .ttt-top-row > .game-room-card--compact { align-self: stretch; align-items: stretch; }
+  .ttt-top-row > .game-room-card--compact > :is(.game-leave-button, .game-room-card__copy) { border-radius: 18px; }
+}
 
 /* Cards */
 .ttt-card {
@@ -1979,11 +1990,21 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
 }
 @container game-scoreboard-cell (max-width: 149px) {
+  /* Centred on both axes: the avatar-and-name block sits in the middle of the
+     plate, so the two cards line up with each other and with the score between
+     them. 8px between avatar and name – at 3px the corner badge, which hangs
+     off the avatar's bottom edge, touched the name (Denys, real iPhone, v1.37.0). */
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
     flex-direction: column;
-    gap: 3px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
     padding: 6px 4px;
   }
+  /* A photo avatar is an inline <img>, which leaves a descender gap under it
+     inside the wrap – extra space under the avatar that the initial avatar
+     does not have, so the block sat lower in the plate with a photo. */
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
     width: 34px;
     height: 34px;
@@ -2005,7 +2026,20 @@ input[type="range"].slider-thumb::-moz-range-track {
     text-align: center;
   }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 13px; }
+  /* A tight line box, so the name's leading does not add invisible space
+     under the text and push the visible block off centre. */
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 13px; line-height: 1.25; }
+  /* The WIN pill is taller than the name and, inline, took half the name's
+     width: the winner's card grew and sat lower than the other one. Stacked, it
+     hangs on the plate's top edge instead, out of the flow, so both cards keep
+     the same box and the name keeps its width. */
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-win-badge {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-subline { display: none; }
   :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-turn {
     position: absolute;
