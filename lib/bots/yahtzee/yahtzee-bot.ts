@@ -77,6 +77,16 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
 
         // Roll again, but hold promising dice
         const diceToHold = YahtzeeBotAI.decideDiceToHold(dice, held, rollsLeft, scorecard, mode)
+        // Holding all five leaves nothing to roll, and the engine rejects that
+        // roll as a no-op - the bot then retried the same move forever and the
+        // game never finished (#1191). Keeping every die means this hand is
+        // the one to score.
+        if (new Set(diceToHold).size >= dice.length) {
+            return {
+                type: 'score',
+                category: bestCategory,
+            }
+        }
         return {
             type: 'roll',
             diceToHold,
