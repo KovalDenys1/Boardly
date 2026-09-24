@@ -1096,20 +1096,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Pulse animation for timer */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(168, 85, 247, 0.8);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
 /* Shake animation for wrong vote */
 @keyframes shake {
   0%, 100% {
@@ -1125,54 +1111,6 @@ input:focus, select:focus, textarea:focus {
 
 .animate-shake {
   animation: shake 0.6s ease-in-out;
-}
-
-/* Slide-up animation for results */
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.5s ease-out;
-}
-
-/* Glow text animation for spy */
-@keyframes glow-text {
-  0%, 100% {
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5),
-                 0 0 20px rgba(239, 68, 68, 0.3);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8),
-                 0 0 40px rgba(239, 68, 68, 0.5);
-  }
-}
-
-.animate-glow-text {
-  animation: glow-text 2s ease-in-out infinite;
-}
-
-/* Timer warning (last 10 seconds) */
-@keyframes timer-warning {
-  0%, 100% {
-    color: rgb(239, 68, 68);
-    transform: scale(1);
-  }
-  50% {
-    color: rgb(248, 113, 113);
-    transform: scale(1.1);
-  }
-}
-
-.animate-timer-warning {
-  animation: timer-warning 0.5s ease-in-out infinite;
 }
 
 /* Custom Range Slider Styles */
@@ -2067,6 +2005,165 @@ input[type="range"].slider-thumb::-moz-range-track {
 @keyframes ttt-history-row-in {
   from { opacity: 0; transform: translateX(-10px); }
   to { opacity: 1; transform: none; }
+}
+
+/* ============ CONVERSATION-GAME MOTION (#1115) ============
+   Guess the Spy, Alias, Liar's Party, Sketch & Guess. Transform and opacity
+   only, the #1111 tokens, and the global prefers-reduced-motion rule collapses
+   every duration and delay here. Entry classes go on a node only while it is
+   fresh (hooks/useFreshKey), so a remount or a reload does not replay them. */
+
+/* A new entry in a feed (Q&A, guesses, claims). */
+.social-entry-in {
+  animation: social-entry-in var(--bd-dur) var(--bd-ease-out) both;
+}
+@keyframes social-entry-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+/* A new entry that matters (a correct guess): lands with a small overshoot. */
+.social-entry-hit {
+  animation: social-entry-hit var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes social-entry-hit {
+  0% { opacity: 0; transform: translateY(8px) scale(0.92); }
+  60% { opacity: 1; transform: translateY(0) scale(1.04); }
+  100% { opacity: 1; transform: none; }
+}
+/* Staggered rows of a reveal (vote breakdowns, results). The delay comes
+   inline from lib/social-motion staggerStyle(). */
+.social-rise {
+  animation: social-rise var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+@keyframes social-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+/* A verdict stamped onto the table (Liar's Party truth/bluff). */
+.social-stamp {
+  animation: social-stamp var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes social-stamp {
+  0% { opacity: 0; transform: scale(1.5) rotate(-6deg); }
+  70% { opacity: 1; transform: scale(0.97) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
+}
+/* A revealed word or picture: scales up out of a fade. */
+.social-reveal {
+  animation: social-reveal var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes social-reveal {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+/* A banner sliding in from the side (eliminated player). */
+.social-slide-in {
+  animation: social-slide-in var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+@keyframes social-slide-in {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: none; }
+}
+/* Whose turn it is moved to this row: a short nudge, no layout. */
+.social-turn-nudge {
+  animation: social-turn-nudge var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes social-turn-nudge {
+  0% { transform: none; }
+  40% { transform: translateX(4px) scale(1.02); }
+  100% { transform: none; }
+}
+/* Progress meters: the fill scales instead of animating width (#1115). */
+.social-meter-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left center;
+  transition: transform var(--bd-dur-slow) var(--bd-ease-out);
+}
+
+/* Guess the Spy role card flip. The wrapper holds the perspective, the inner
+   layer turns from its back (an eye on lavender) to the role, and each face
+   hides its reverse, like .memory-tile-inner. */
+.spy-role-flip {
+  width: min(100%, 720px);
+  perspective: 1400px;
+}
+.spy-role-flip > .spy-role-flip__inner {
+  position: relative;
+  transform-style: preserve-3d;
+}
+.spy-role-flip .spy-role-card {
+  width: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.spy-role-flip__back {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  border-radius: 18px;
+  border: 2px solid var(--bd-ink);
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
+    var(--bd-lav);
+  color: #fff;
+  transform: rotateY(180deg) translateZ(1px);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.spy-role-flip__inner--play > .spy-role-flip__back { display: grid; }
+.spy-role-flip__inner--play {
+  animation: spy-role-flip 0.46s var(--bd-ease-out) 0.3s both;
+}
+@keyframes spy-role-flip {
+  from { transform: rotateY(180deg); }
+  to { transform: rotateY(0deg); }
+}
+
+/* Alias: the describer's word leaves (up and a mint flash for a guess,
+   sideways for a skip) while the next one comes in. Both layers are absolutely
+   stacked in a fixed-height slot, so nothing reflows. */
+.alias-word-slot {
+  position: relative;
+  display: grid;
+}
+.alias-word-slot > * { grid-area: 1 / 1; }
+.alias-word-in {
+  animation: alias-word-in var(--bd-dur) var(--bd-ease-out) both;
+}
+@keyframes alias-word-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.alias-word-out-correct {
+  animation: alias-word-out-correct var(--bd-dur) var(--bd-ease-out) both;
+  pointer-events: none;
+}
+@keyframes alias-word-out-correct {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-22px) scale(1.04); }
+}
+.alias-word-out-skip {
+  animation: alias-word-out-skip var(--bd-dur) var(--bd-ease-out) both;
+  pointer-events: none;
+}
+@keyframes alias-word-out-skip {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(-36px) rotate(-3deg); }
+}
+.alias-word-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--bd-mint);
+  pointer-events: none;
+  animation: alias-word-flash var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+@keyframes alias-word-flash {
+  from { opacity: 0.45; }
+  to { opacity: 0; }
 }
 
 /* ============ YAHTZEE SCORECARD ============ */
