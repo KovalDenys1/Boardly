@@ -13,7 +13,10 @@ import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
-import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import { useHeldValue } from '@/hooks/useHeldValue'
+import { prefersReducedMotion } from '@/lib/motion'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
@@ -513,6 +516,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     const currentUserId = getCurrentUserId()
     const rpsData = game?.state.data ?? EMPTY_DATA
+    // The score changes when the hands finish revealing, not when the round
+    // resolves: until then the previous score stays up (#1114).
+    const shownScores = useHeldValue(
+        rpsData.scores,
+        JSON.stringify(rpsData.scores),
+        rpsData.rounds.length,
+        prefersReducedMotion() ? 0 : RPS_REVEAL_MS,
+    )
     const isFinished = game?.status === 'finished' || game?.state.status === 'finished' || !!rpsData.gameWinner
     const mySubmitted = !!currentUserId && rpsData.playersReady.includes(currentUserId)
     const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted
@@ -703,8 +714,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const opponentName = opponentId ? getDisplayName(opponentId) : '—'
     const winsNeeded = winsNeededFor(rpsData.mode)
     const maxRounds = rpsData.mode === 'best-of-5' ? 5 : 3
-    const leftScore = rpsData.scores[leftId] ?? 0
-    const rightScore = rpsData.scores[rightId] ?? 0
+    const leftScore = shownScores[leftId] ?? 0
+    const rightScore = shownScores[rightId] ?? 0
     const roundNum = rpsData.rounds.length + (isFinished ? 0 : 1)
     const latestRound = rpsData.rounds[rpsData.rounds.length - 1] ?? null
     const winnerId = rpsData.gameWinner
@@ -756,18 +767,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                             {t('games.rock_paper_scissors.roundNum', { num: roundNum })}
                         </div>
-                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                        <ScorePop value={`${leftScore}:${rightScore}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                             {leftScore}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{rightScore}
-                        </div>
+                        </ScorePop>
                         <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
                             {t('games.rock_paper_scissors.seriesTarget', { count: winsNeeded, rounds: maxRounds })}
                         </div>
                     </>
                 }
                 centerCompact={
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                    <ScorePop value={`${leftScore}:${rightScore}`} style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>
                         {leftScore}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{rightScore}
-                    </div>
+                    </ScorePop>
                 }
                 rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
             />
@@ -799,6 +810,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             <div className="ttt-board-surface ttt-board-surface--wide">
                 <RockPaperScissorsGameBoard
                     gameData={rpsData}
+                    shownScores={shownScores}
                     playerId={isSpectator ? '' : currentUserId ?? ''}
                     players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
                     onSubmitChoice={async (choice) => { await submitChoice(choice) }}
@@ -840,6 +852,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     inviteCode={code}
                     gameType="rock_paper_scissors"
                     resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
+                    revealDelayMs={RPS_RESULT_REVEAL_DELAY_MS}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}
