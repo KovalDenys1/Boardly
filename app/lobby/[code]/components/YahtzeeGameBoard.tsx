@@ -16,6 +16,8 @@ interface GameBoardProps {
   turnTimerLimit: number // Total time limit for percentage calculation
   isMoveInProgress: boolean
   isRolling: boolean
+  /** An opponent's or bot's roll just arrived: the dice shake as for the viewer's own (#1114). */
+  isOpponentRolling?: boolean
   isScoring: boolean
   isStateReverting: boolean
   celebrationEvent: CelebrationEvent | null
@@ -43,6 +45,7 @@ export default function GameBoard({
   turnTimerLimit,
   isMoveInProgress,
   isRolling,
+  isOpponentRolling = false,
   isScoring,
   isStateReverting,
   celebrationEvent,
@@ -145,7 +148,7 @@ export default function GameBoard({
             held={isMyTurn ? held : gameEngine.getHeld()}
             onToggleHold={isSpectator ? () => undefined : onToggleHold}
             disabled={isSpectator || !isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
-            isRolling={isRolling}
+            isRolling={isRolling || isOpponentRolling}
             isMyTurn={isMyTurn && !isSpectator}
             onRollDice={isSpectator ? undefined : onRollDice}
             canRoll={
