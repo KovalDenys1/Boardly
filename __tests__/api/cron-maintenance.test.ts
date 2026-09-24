@@ -10,6 +10,8 @@ import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
 import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/lib/cleanup-replays'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { authorizeCronRequest } from '@/lib/cron-auth'
+import { enforceRetention } from '@/lib/data-retention'
+import { recordCronRun } from '@/lib/cron-heartbeat'
 
 jest.mock('@/lib/cleanup-unverified', () => ({
   warnUnverifiedAccounts: jest.fn(),
@@ -27,6 +29,14 @@ jest.mock('@/lib/cleanup-replays', () => ({
 
 jest.mock('@/lib/lobby-health', () => ({
   cleanupStaleLobbiesAndGames: jest.fn(),
+}))
+
+jest.mock('@/lib/data-retention', () => ({
+  enforceRetention: jest.fn(),
+}))
+
+jest.mock('@/lib/cron-heartbeat', () => ({
+  recordCronRun: jest.fn(),
 }))
 
 jest.mock('@/lib/cron-auth', () => ({
@@ -88,6 +98,10 @@ describe('GET /api/cron/maintenance', () => {
       deletedSnapshots: 12,
       affectedGames: 2,
     })
+    enforceRetention.mockResolvedValue({
+      feedback: { days: 365, cutoff: 'c', enforced: true, matched: 2, deleted: 2 },
+      operationalEvents: { days: 180, cutoff: 'c', enforced: false, matched: 9, deleted: 0 },
+    })
     mockCleanupStaleLobbiesAndGames.mockResolvedValue({
       deactivatedLobbies: 6,
       cancelledWaitingGames: 7,
@@ -115,5 +129,15 @@ describe('GET /api/cron/maintenance', () => {
     expect(payload.timestamp).toEqual(expect.any(String))
 
     expect(mockCleanupOldGuests).toHaveBeenCalledWith({ disconnect: false })
+
+    // #1130: the retention run is reported in full, and a report-only rule leaves the
+    // count it would have deleted in the heartbeat payload.
+    expect(enforceRetention).toHaveBeenCalledTimes(1)
+    expect(payload.retention.feedback.deleted).toBe(2)
+    const heartbeat = recordCronRun.mock.calls[0][0].payload
+    expect(heartbeat.retention_feedback_enforced).toBe(true)
+    expect(heartbeat.retention_feedback_deleted).toBe(2)
+    expect(heartbeat.retention_operationalEvents_enforced).toBe(false)
+    expect(heartbeat.retention_operationalEvents_matched).toBe(9)
   })
 })
