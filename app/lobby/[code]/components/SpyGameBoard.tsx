@@ -22,6 +22,7 @@ import { GameState } from '@/lib/game-engine'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
+import { useFreshOnArrival } from '@/hooks/useFreshFor'
 import { latestEntryKey, onOwnAnimationEnd } from '@/lib/social-motion'
 
 interface SpyRoleInfo {
@@ -247,8 +248,11 @@ export default function SpyGameBoard({
   // Motion (#1115). Each is "did this just happen while I was watching": the
   // state a page loads into is never fresh, so a reload does not replay it.
   const round = data.currentRound || 1
-  const { fresh: roleFlipFresh, settle: settleRoleFlip } = useFreshKey(
+  // Round 1's roles are dealt with the game, so its reveal arrives together
+  // with this board: fresh on arrival when the phase has only just begun.
+  const { fresh: roleFlipFresh, settle: settleRoleFlip } = useFreshOnArrival(
     phase === SpyGamePhase.ROLE_REVEAL ? `reveal-${round}` : null,
+    Number(data.phaseStartTime || 0),
   )
   const { fresh: resultsFresh, settle: settleResults } = useFreshKey(
     phase === SpyGamePhase.RESULTS ? `results-${round}` : null,

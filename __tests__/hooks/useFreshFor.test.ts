@@ -1,5 +1,35 @@
 import { act, renderHook } from '@testing-library/react'
-import { useFreshFor } from '@/hooks/useFreshFor'
+import { startedJustNow, useFreshFor, useFreshOnArrival } from '@/hooks/useFreshFor'
+
+describe('startedJustNow', () => {
+  it('is a window either side of now, and nothing without a start', () => {
+    expect(startedJustNow(10_000, 12_000, 4000)).toBe(true)
+    expect(startedJustNow(14_000, 12_000, 4000)).toBe(true)
+    expect(startedJustNow(10_000, 20_000, 4000)).toBe(false)
+    expect(startedJustNow(0, 1000, 4000)).toBe(false)
+    expect(startedJustNow(undefined, 1000, 4000)).toBe(false)
+  })
+})
+
+describe('useFreshOnArrival', () => {
+  it('a phase the board mounts into is fresh only if it began just now, until settled', () => {
+    const recent = renderHook(() => useFreshOnArrival('reveal-1', Date.now() - 500))
+    expect(recent.result.current.fresh).toBe(true)
+    act(() => recent.result.current.settle())
+    expect(recent.result.current.fresh).toBe(false)
+
+    const old = renderHook(() => useFreshOnArrival('reveal-1', Date.now() - 60_000))
+    expect(old.result.current.fresh).toBe(false)
+  })
+
+  it('a later change is fresh the ordinary way', () => {
+    const { result, rerender } = renderHook(({ k }) => useFreshOnArrival(k, Date.now() - 60_000), {
+      initialProps: { k: null as string | null },
+    })
+    rerender({ k: 'reveal-2' })
+    expect(result.current.fresh).toBe(true)
+  })
+})
 
 type Key = string | null | undefined
 
