@@ -231,6 +231,7 @@ export default function ProfilePage() {
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
@@ -1107,6 +1108,33 @@ export default function ProfilePage() {
       showToast.errorFrom(error, 'toast.error')
     } finally {
       setDeleteLoading(false)
+    }
+  }
+
+  // GDPR access and portability (#1127): the file comes from the server with the user
+  // taken from the session, so this only turns the response into a download.
+  const handleDownloadData = async () => {
+    setExportLoading(true)
+    try {
+      const res = await fetch('/api/user/export', { cache: 'no-store' })
+      if (!res.ok) {
+        showToast.error(res.status === 429 ? 'profile.dataExport.rateLimited' : 'profile.dataExport.failed')
+        return
+      }
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'boardly-data.json'
+      const url = URL.createObjectURL(await res.blob())
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      showToast.error('profile.dataExport.failed')
+    } finally {
+      setExportLoading(false)
     }
   }
 
@@ -2171,6 +2199,23 @@ export default function ProfilePage() {
                       })}
                     </div>
                   )}
+                </div>
+
+                <div className={profileSurfaceClassName}>
+                  <h3 className="text-lg font-bold text-bd-ink dark:text-white">
+                    {t('profile.dataExport.title')}
+                  </h3>
+                  <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                    {t('profile.dataExport.description')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDownloadData}
+                    disabled={exportLoading}
+                    className={`${actionSecondaryButtonClassName} mt-4 disabled:opacity-50`}
+                  >
+                    {exportLoading ? t('profile.dataExport.preparing') : t('profile.dataExport.download')}
+                  </button>
                 </div>
 
                 <div className="rounded-[1.5rem] border border-bd-danger-border bg-bd-danger-bg p-5 dark:border-red-500/20 dark:bg-red-500/10">

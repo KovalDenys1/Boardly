@@ -2560,6 +2560,14 @@ const en = {
       connect: 'Connect',
       unlinkConfirm: 'Are you sure you want to unlink your {{provider}} account?',
     },
+    dataExport: {
+      title: 'Your data',
+      description: 'Download a copy of the data we hold about your account as a JSON file: profile, games, purchases, friends, notifications and feedback.',
+      download: 'Download my data',
+      preparing: 'Preparing…',
+      failed: 'We could not prepare your data. Please try again.',
+      rateLimited: 'You have asked for several exports recently. Please try again in an hour.',
+    },
     dangerZone: {
       title: 'Danger Zone',
       description: 'Once you delete your account, there is no going back. Please be certain.',

@@ -2560,6 +2560,14 @@ const no = {
       connect: 'Koble til',
       unlinkConfirm: 'Er du sikker på at du vil koble fra {{provider}}-kontoen din?',
     },
+    dataExport: {
+      title: 'Dataene dine',
+      description: 'Last ned en kopi av dataene vi har om kontoen din som en JSON-fil: profil, spill, kjøp, venner, varsler og tilbakemeldinger.',
+      download: 'Last ned dataene mine',
+      preparing: 'Forbereder…',
+      failed: 'Vi kunne ikke klargjøre dataene dine. Prøv igjen.',
+      rateLimited: 'Du har bedt om flere eksporter nylig. Prøv igjen om en time.',
+    },
     dangerZone: {
       title: 'Faresone',
       description: 'Når du sletter kontoen din, finnes det ingen vei tilbake. Vær helt sikker.',
