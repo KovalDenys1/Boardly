@@ -133,6 +133,7 @@ export default function Footer() {
               {([
                 { labelKey: 'footer.privacy', href: '/privacy' },
                 { labelKey: 'footer.terms', href: '/terms' },
+                { labelKey: 'footer.withdrawal', href: '/withdrawal' },
               ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
                 <li key={link.href}>
                   <Link

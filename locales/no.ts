@@ -3495,6 +3495,7 @@ const no = {
     legal: 'Juridisk',
     privacy: 'Personvernregler',
     terms: 'Tjenestevilkår',
+    withdrawal: 'Angrerett',
     operatedBy: 'Drives av {{name}}',
     community: 'Fellesskap',
     discord: 'Discord',
@@ -3554,6 +3555,7 @@ const no = {
     priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Stripes vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
     yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
     ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
+    consentRequired: 'Kryss av i boksen for å bekrefte at du ber oss om å starte Premium nå. Kassen kan ikke åpnes uten.',
     includedTitle: 'Dette låser Premium opp',
     freeTitle: 'Gratis for alltid, med eller uten Premium',
     features: {

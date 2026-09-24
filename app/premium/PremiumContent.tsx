@@ -15,6 +15,8 @@ import {
   type PremiumPlan,
   type PremiumPricing,
 } from '@/lib/premium-plans'
+import { TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
+import { CONSENT_REQUIRED_CODE } from '@/lib/validation/stripe-checkout'
 
 /**
  * The two CTAs this page fires, named so the funnel can tell the button beside
@@ -59,7 +61,11 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
   const yearly = pricing.yearly
   const [plan, setPlan] = useState<PremiumPlan>(yearly ? 'yearly' : 'monthly')
   const [loading, setLoading] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [failure, setFailure] = useState<'none' | 'consent' | 'checkout'>('none')
+  // The express request angrerettloven § 19 asks for before a digital service
+  // starts inside the withdrawal period (#1162). Unticked on every visit: it is
+  // a decision about this purchase, not a preference to remember.
+  const [consented, setConsented] = useState(false)
 
   const selectedPlan: PremiumPlan = yearly ? plan : 'monthly'
   const savings = yearlySavingsPercent(pricing)
@@ -78,28 +84,44 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
 
   const startCheckout = useCallback(
     async (source: string) => {
+      // The buttons are disabled until the box is ticked; this covers any path
+      // that reaches here without it, and the route refuses independently.
+      if (!consented) {
+        setFailure('consent')
+        return
+      }
       trackPremiumCta(source, selectedPlan)
-      setFailed(false)
+      setFailure('none')
       setLoading(true)
       try {
         const res = await fetch('/api/stripe/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: selectedPlan }),
+          body: JSON.stringify({
+            plan: selectedPlan,
+            // Which text was on screen when the box was ticked, and when. The
+            // route checks the versions against its own and the time against
+            // its clock, then writes all three onto the Stripe session.
+            consent: {
+              termsVersion: TERMS_VERSION,
+              withdrawalInfoVersion: WITHDRAWAL_INFO_VERSION,
+              acceptedAt: new Date().toISOString(),
+            },
+          }),
         })
-        const data: { url?: string } = await res.json()
+        const data: { url?: string; code?: string } = await res.json()
         if (data.url) {
           window.location.href = data.url
           return
         }
-        setFailed(true)
+        setFailure(data.code === CONSENT_REQUIRED_CODE ? 'consent' : 'checkout')
       } catch {
-        setFailed(true)
+        setFailure('checkout')
       } finally {
         setLoading(false)
       }
     },
-    [selectedPlan]
+    [consented, selectedPlan]
   )
 
   const signedOut = status === 'unauthenticated' || !session?.user
@@ -117,16 +139,47 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
         </Link>
       )
     }
+    const blocked = loading || status === 'loading' || !consented
     return (
       <button
         type="button"
         onClick={() => void startCheckout(source)}
-        disabled={loading || status === 'loading'}
+        disabled={blocked}
+        aria-disabled={blocked}
         className={`${CTA_CLASS} disabled:cursor-not-allowed disabled:opacity-60`}
       >
         <Icon name="crown" size={18} />
         {loading ? t('premium.ctaLoading') : t('premium.cta')}
       </button>
+    )
+  }
+
+  /**
+   * The consent box, rendered beside each checkout button so the closing CTA at
+   * the foot of the page is never a disabled button whose reason is two screens
+   * up. Both boxes drive the one `consented` state: ticking either enables both
+   * buttons. A native checkbox with a real label: the label is the accessible
+   * name and the whole sentence is the tap target.
+   */
+  function consentBox(id: string) {
+    if (signedOut) return null
+    return (
+      <div className="mt-4 flex max-w-xl items-start gap-3">
+        <input
+          type="checkbox"
+          id={id}
+          checked={consented}
+          onChange={(event) => {
+            setConsented(event.target.checked)
+            if (event.target.checked && failure === 'consent') setFailure('none')
+          }}
+          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bd-coral"
+          style={{ accentColor: 'var(--bd-coral)' }}
+        />
+        <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed" style={{ color: 'var(--bd-ink)' }}>
+          {t('premium.consentLabel')}
+        </label>
+      </div>
     )
   }
 
@@ -206,6 +259,45 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
               {yearly ? t('premium.currencyNote') : `${t('premium.monthlyOnlyNote')} ${t('premium.currencyNote')}`}
             </p>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+              {t('premium.priceNoteTax')} {t('premium.priceNoteConversion')}
+            </p>
+            {selectedPlan === 'yearly' && (
+              <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+                {t('premium.yearlyRefundNote')}
+              </p>
+            )}
+
+            {/* The pre-contract withdrawal information (angrerettloven § 8),
+                given above the button that starts the purchase. Prose on the
+                card behind a hairline, not a card of its own: at 320 px a nested
+                card would leave each line a few words wide. */}
+            <div
+              className="mt-5 max-w-xl pt-4"
+              style={{ borderTop: '1px solid var(--bd-line)' }}
+              data-testid="premium-withdrawal"
+            >
+              <h2 className="text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
+                {t('premium.withdrawalTitle')}
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                {t('premium.withdrawalBody')}
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                {t('premium.withdrawalStartNow')}
+              </p>
+              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                {t('premium.withdrawalHow')}{' '}
+                <Link
+                  href="/withdrawal"
+                  style={{ color: 'var(--bd-coral-deep)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                >
+                  {t('premium.withdrawalFormLink')}
+                </Link>
+              </p>
+            </div>
+
+            {consentBox('premium-consent-hero')}
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
               {cta(HERO_CTA)}
@@ -213,9 +305,9 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                 {t('premium.ctaNote')}
               </span>
             </div>
-            {failed && (
+            {failure !== 'none' && (
               <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--bd-coral-deep)' }} role="alert">
-                {t('premium.ctaError')}
+                {failure === 'consent' ? t('premium.consentRequired') : t('premium.ctaError')}
               </p>
             )}
             {!signedOut && (
@@ -318,6 +410,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('premium.closingBody')}
             </p>
+            {consentBox('premium-consent-closing')}
             <div className="mt-5">{cta(CLOSING_CTA)}</div>
           </section>
         </article>

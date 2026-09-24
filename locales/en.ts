@@ -3507,6 +3507,7 @@ const en = {
     legal: 'Legal',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
+    withdrawal: 'Right of withdrawal',
     operatedBy: 'Operated by {{name}}',
     community: 'Community',
     discord: 'Discord',
@@ -3566,6 +3567,7 @@ const en = {
     priceNoteConversion: 'If you pay in your own currency, Stripe\'s exchange rate includes a conversion fee of 2 to 4%. You can choose to pay in US dollars on the payment page without it.',
     yearlyRefundNote: 'If you cancel a yearly plan early, we refund the unused whole months.',
     ctaError: 'Could not open checkout. Please try again in a few minutes.',
+    consentRequired: 'Tick the box to confirm that you ask us to start Premium now. Checkout cannot open without it.',
     includedTitle: 'What Premium unlocks',
     freeTitle: 'Free forever, with or without Premium',
     features: {

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
+import { formatLegalDate, TERMS_VERSION } from '@/lib/terms-version'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -119,7 +120,8 @@ export default function TermsOfService() {
             </section>
 
             <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-muted)', borderTop: '1px solid var(--bd-line)' }}>
-              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {/* TERMS_VERSION is bumped by hand when this text changes; it never tracks the render date. */}
+              Last updated: {formatLegalDate(TERMS_VERSION)}
             </p>
           </div>
         </div>

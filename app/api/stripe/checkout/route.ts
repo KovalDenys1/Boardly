@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { getStripe, PREMIUM_PRICE_ID, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
-import { isPremiumPlan, type PremiumPlan } from '@/lib/premium-plans'
+import { CONSENT_REQUIRED_CODE, checkoutRequestSchema, type CheckoutRequest } from '@/lib/validation/stripe-checkout'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
@@ -48,18 +48,23 @@ function toCheckoutErrorResponse(err: unknown, log: ReturnType<typeof apiLogger>
 }
 
 /**
- * Which plan the caller asked for (#926). Monthly is the default because the
- * older call sites – the profile page and the avatar picker – post no body at
- * all, and a missing field must keep charging what it always charged.
+ * Which plan the caller asked for (#926) and their express request to start
+ * Premium inside the withdrawal period (#1162). The plan stays lenient: a
+ * missing or unknown value is monthly, so a body that used to charge the
+ * monthly price still does. The consent is not: without a fresh one, given
+ * against the current terms and withdrawal text, this answers null and the
+ * caller gets a 400. The one remaining body-less caller, the profile's "Manage
+ * subscription" button, is served by the billing-portal branch before this runs.
  */
-async function readRequestedPlan(req: NextRequest): Promise<PremiumPlan> {
+async function readCheckoutRequest(req: NextRequest): Promise<CheckoutRequest | null> {
+  let body: unknown
   try {
-    const body: unknown = await req.json()
-    const plan = (body as { plan?: unknown } | null)?.plan
-    return isPremiumPlan(plan) ? plan : 'monthly'
+    body = await req.json()
   } catch {
-    return 'monthly'
+    return null
   }
+  const parsed = checkoutRequestSchema.safeParse(body)
+  return parsed.success ? parsed.data : null
 }
 
 async function recreateStripeCustomer(user: { id: string; email: string | null }): Promise<string> {
@@ -112,7 +117,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const plan = await readRequestedPlan(req)
+  const request = await readCheckoutRequest(req)
+  if (!request) {
+    return NextResponse.json(
+      {
+        error: 'Confirm that you ask us to start Premium now before checking out.',
+        code: CONSENT_REQUIRED_CODE,
+      },
+      { status: 400 }
+    )
+  }
+  const { plan, consent } = request
   // Never silently bill a different plan than the one that was chosen: if the
   // yearly price ID is missing, this is an error, not a fall back to monthly.
   const priceId = plan === 'yearly' ? PREMIUM_PRICE_ID_YEARLY : PREMIUM_PRICE_ID
@@ -133,6 +148,20 @@ export async function POST(req: NextRequest) {
   // Get or create Stripe customer
   let customerId = user.stripeCustomerId ?? (await recreateStripeCustomer(user))
 
+  // The record of the sale (#1162): who bought, which terms and withdrawal text
+  // they saw, and when they asked for Premium to start. On the session, and
+  // copied onto the subscription Stripe creates from it, so it outlives the
+  // session and reads back from the customer's subscription years later.
+  // Deliberately not `consent_collection.terms_of_service`: that needs a Terms
+  // URL entered under the Stripe Dashboard's public business details, which is
+  // not set, and Stripe rejects the session when it is missing.
+  const consentMetadata = {
+    userId: user.id,
+    consentTermsVersion: consent.termsVersion,
+    consentWithdrawalInfoVersion: consent.withdrawalInfoVersion,
+    consentAt: consent.acceptedAt,
+  }
+
   const createCheckoutSession = () =>
     getStripe().checkout.sessions.create({
       customer: customerId,
@@ -141,8 +170,12 @@ export async function POST(req: NextRequest) {
       success_url: `${origin}/profile?premium=success`,
       cancel_url: `${origin}/profile`,
       allow_promotion_codes: true,
+      // The withdrawal information was given in the site's language; the
+      // payment page follows the browser's rather than defaulting to English.
+      locale: 'auto',
+      metadata: consentMetadata,
       subscription_data: {
-        metadata: { userId: user.id },
+        metadata: consentMetadata,
       },
     })
 

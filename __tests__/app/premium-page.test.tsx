@@ -52,6 +52,15 @@ const BOTH_PLANS: PremiumPricing = {
   yearly: toPlanPrice('yearly', 1999, 'usd'),
 }
 
+/** The checkout buttons stay disabled until the § 19 box is ticked (#1162). */
+function tickConsent() {
+  fireEvent.click(screen.getAllByRole('checkbox')[0])
+}
+
+function sentBody(): { plan: string; consent: Record<string, string> } {
+  return JSON.parse(fetchMock.mock.calls[0][1].body as string)
+}
+
 describe('/premium metadata', () => {
   it('carries the same metadata discipline as /about', () => {
     expect(metadata.title).toEqual({ absolute: 'Boardly Premium – Subscription Plans and Pricing' })
@@ -109,9 +118,9 @@ describe('/premium prices', () => {
   })
 })
 
-describe('/premium checkout', () => {
-  const fetchMock = jest.fn()
+const fetchMock = jest.fn()
 
+describe('/premium checkout', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     fetchMock.mockResolvedValue({ json: async () => ({ url: 'https://checkout.stripe.com/s' }) })
@@ -120,35 +129,33 @@ describe('/premium checkout', () => {
 
   it('sends the selected plan and reports it to the funnel', async () => {
     render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
     fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/stripe/checkout',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ plan: 'yearly' }) })
-    )
+    expect(fetchMock).toHaveBeenCalledWith('/api/stripe/checkout', expect.objectContaining({ method: 'POST' }))
+    expect(sentBody().plan).toBe('yearly')
     expect(trackPremiumCta).toHaveBeenCalledWith('premium_page_hero', 'yearly')
   })
 
   it('switches the charge with the toggle, from both CTAs', async () => {
     render(<PremiumContent pricing={BOTH_PLANS} />)
     fireEvent.click(screen.getByRole('radio', { name: /Monthly/ }))
+    tickConsent()
 
     const ctas = screen.getAllByRole('button', { name: /Get Premium/ })
     expect(ctas).toHaveLength(2)
     fireEvent.click(ctas[1])
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/stripe/checkout',
-      expect.objectContaining({ body: JSON.stringify({ plan: 'monthly' }) })
-    )
+    expect(sentBody().plan).toBe('monthly')
     expect(trackPremiumCta).toHaveBeenCalledWith('premium_page_closing', 'monthly')
   })
 
   it('says so instead of hanging when checkout cannot be opened', async () => {
     fetchMock.mockResolvedValue({ json: async () => ({ error: 'nope' }) })
     render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
     fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not open checkout/)
