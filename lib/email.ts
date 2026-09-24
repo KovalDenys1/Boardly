@@ -283,6 +283,88 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
   }
 }
 
+// "jane.doe@example.com" -> "ja***@example.com". Enough for the owner to tell
+// their own new address from a stranger's without spelling it out in full.
+export function maskEmailAddress(email: string): string {
+  const at = email.lastIndexOf('@')
+  if (at <= 0) {
+    return '***'
+  }
+  const local = email.slice(0, at)
+  const visible = local.length > 2 ? local.slice(0, 2) : local.slice(0, 1)
+  return `${visible}***${email.slice(at)}`
+}
+
+// Sent to the address being replaced when someone asks to change the account's
+// email (#1136). Until this existed only the new address was mailed, so a
+// session thief could move the account to their own mailbox without the owner
+// ever hearing about it. A password reset from here ends every other session
+// and cancels the pending change.
+export async function sendEmailChangeNoticeEmail(
+  previousEmail: string,
+  newEmail: string,
+  username?: string | null
+) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
+  const greeting = username ? `Hi ${escapeHtml(username)},` : 'Hi,'
+  const maskedNewEmail = escapeHtml(maskEmailAddress(newEmail))
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: previousEmail,
+      replyTo: 'support@boardly.online',
+      subject: 'Your Boardly email address is being changed',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <p style="margin-top: 0;">${greeting}</p>
+              <p>We received a request to change the email address on your Boardly account to <strong>${maskedNewEmail}</strong>. The change takes effect once the new address is confirmed.</p>
+              <p>If this was you, there is nothing more to do.</p>
+              <p>If it was not you, please reset your password now, even if you usually sign in with Google, GitHub or Discord. A reset signs out every other session on your account and cancels the pending change:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                  Reset my password
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">If the button doesn't work, open this link and enter this email address:</p>
+              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
+              <p>Then reply to this email and we will help you check your account.</p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                Questions? Just reply to this email.<br>
+                The Boardly team
+              </p>
+              ${emailFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true, id: data?.id }
+  } catch (error) {
+    logger.error('Failed to send email change notice:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
 export async function sendWelcomeEmail(email: string, name: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')

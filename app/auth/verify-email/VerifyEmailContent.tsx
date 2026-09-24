@@ -18,6 +18,9 @@ export default function VerifyEmailContent() {
   const [verifyState, setVerifyState] = useState<VerifyState>('idle')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  // A confirmed email change signs every session out (#1136), so the page
+  // sends the user to sign in with the new address instead of home.
+  const [signedOut, setSignedOut] = useState(false)
   const token = searchParams.get('token')
 
   // Prevent duplicate verification requests
@@ -56,8 +59,10 @@ export default function VerifyEmailContent() {
       }
 
       showToast.success('auth.verifyEmail.successMessage')
+      const sessionEnded = data.signedOut === true
+      setSignedOut(sessionEnded)
       setVerifyState('success')
-      setTimeout(() => router.push('/'), 2000)
+      setTimeout(() => router.push(sessionEnded ? '/auth/login' : '/'), 2000)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('auth.verifyEmail.error')
       showToast.error('auth.verifyEmail.errorMessage', errorMessage)
@@ -151,6 +156,9 @@ export default function VerifyEmailContent() {
         >
           {t('auth.verifyEmail.success')}
         </h1>
+        {signedOut && (
+          <p className="mb-4 text-sm font-semibold text-bd-ink-soft">{t('auth.verifyEmail.signInAgain')}</p>
+        )}
         <LoadingSpinner />
       </div>
     )

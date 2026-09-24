@@ -29,6 +29,64 @@ function getOAuthProfileEmail(profile: unknown): string {
   return typeof email === 'string' && email.length > 0 ? email : 'unknown'
 }
 
+// Thrown from the jwt callback to end a session (#1136). NextAuth catches any
+// error there: /api/auth/session clears the cookie and answers `{}`, and
+// getServerSession returns null, so the request is treated as signed out.
+export class SessionRevokedError extends Error {
+  constructor(reason: string) {
+    super(`Session revoked: ${reason}`)
+    this.name = 'SessionRevokedError'
+  }
+}
+
+/**
+ * True when a token signed in before the account's session cutoff. A null
+ * cutoff never revokes anything, which is every row until a password reset or
+ * an email change sets one. A token without `authenticatedAt` predates the
+ * claim and counts as signed in at 0.
+ */
+export function isBeforeSessionCutoff(
+  authenticatedAt: unknown,
+  sessionsValidFrom: Date | null | undefined
+): boolean {
+  if (!sessionsValidFrom) {
+    return false
+  }
+  const signedInAt =
+    typeof authenticatedAt === 'number' && Number.isFinite(authenticatedAt) ? authenticatedAt : 0
+  return signedInAt < sessionsValidFrom.getTime()
+}
+
+// Read on every request, not inside the 30-minute refresh below: the point is
+// that a session stolen before a password reset stops working on its very next
+// request (#1136, the fix #805 specified). One primary-key read of one column.
+async function assertSessionNotRevoked(userId: string, authenticatedAt: unknown) {
+  let row: { sessionsValidFrom: Date | null } | null
+  try {
+    row = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { sessionsValidFrom: true },
+    })
+  } catch (error) {
+    // A database blip must not sign every user out: an error thrown from here
+    // clears the cookie. The check runs again on the next request.
+    apiLogger('NextAuth jwt').warn('Session cutoff check skipped: database read failed', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return
+  }
+
+  // The account was deleted (delete-account removes the row), so the session
+  // has nothing left to stand for.
+  if (!row) {
+    throw new SessionRevokedError('the account no longer exists')
+  }
+  if (isBeforeSessionCutoff(authenticatedAt, row.sessionsValidFrom)) {
+    throw new SessionRevokedError('signed in before the account\'s session cutoff')
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
   providers: [
@@ -307,6 +365,12 @@ export const authOptions: NextAuthOptions = {
         token.authenticatedAt = Date.now()
       }
 
+      // Not on the sign-in call itself: `user` is set there and authenticatedAt
+      // was stamped a line above, so the token cannot predate any cutoff.
+      if (!user && token.id) {
+        await assertSessionNotRevoked(String(token.id), token.authenticatedAt)
+      }
+
       if (typeof token.rememberMe !== 'boolean') {
         token.rememberMe = true
       }
@@ -441,6 +505,11 @@ export const authOptions: NextAuthOptions = {
         session.user.suspended = Boolean(token.suspended)
         session.user.banReason = (token.banReason as string | null | undefined) ?? null
         session.user.banExpiresAt = (token.banExpiresAt as string | null | undefined) ?? null
+        // When this session signed in (ms). PATCH /api/user/profile asks for a
+        // recent sign-in before an account without a password changes its
+        // email (#1136).
+        session.user.authenticatedAt =
+          typeof token.authenticatedAt === 'number' ? token.authenticatedAt : null
       }
       return session
     },

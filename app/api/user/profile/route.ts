@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { nanoid } from 'nanoid'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
-import { sendVerificationEmail } from '@/lib/email'
+import { comparePassword } from '@/lib/auth'
+import { sendEmailChangeNoticeEmail, sendVerificationEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
@@ -15,14 +14,26 @@ import {
 } from '@/lib/guest-helpers'
 import { insensitiveEquals, sameName } from '@/lib/username-match'
 import {
+  AppError,
   AuthenticationError,
   ConflictError,
   ValidationError,
   withErrorHandler,
 } from '@/lib/error-handler'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
+// The current-password check below is a password oracle for whoever holds the
+// session, so it gets the sign-in limiter, not the general API one (#1136).
+const emailChangeLimiter = rateLimit({
+  ...rateLimitPresets.auth,
+  keyScope: 'profile-email-change',
+})
+
+// An account with no password (OAuth only) proves itself by a recent sign-in
+// instead: the session must have signed in within this window (#1136).
+const EMAIL_CHANGE_RECENT_SIGN_IN_MS = 10 * 60 * 1000
 
 const log = apiLogger('/api/user/profile')
 const EMAIL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000
@@ -32,6 +43,7 @@ type SelectedProfileUser = {
   username: string | null
   email: string | null
   pendingEmail: string | null
+  passwordHash: string | null
   image: string | null
   avatarUrl: string | null
   emailVerified: Date | null
@@ -64,6 +76,9 @@ function buildProfilePayload(
     username: user.username,
     email: user.email,
     pendingEmail: user.pendingEmail,
+    // Whether an email change asks for the current password or for a recent
+    // sign-in (#1136). The hash itself never leaves this file.
+    hasPassword: Boolean(user.passwordHash),
     image: user.image,
     avatarUrl: user.avatarUrl,
     emailVerified: user.emailVerified?.toISOString() ?? null,
@@ -119,6 +134,7 @@ async function getCurrentProfileUser(userId: string) {
       username: true,
       email: true,
       pendingEmail: true,
+      passwordHash: true,
       image: true,
       avatarUrl: true,
       emailVerified: true,
@@ -136,12 +152,45 @@ async function getCurrentProfileUser(userId: string) {
   })
 }
 
-async function getProfileHandler() {
-  const session = await getServerSession(authOptions)
+/**
+ * An email change is the first step of an account takeover: the new address
+ * receives the password resets from then on. So the caller proves they are the
+ * owner, not just the holder of a session cookie (#1136): the current password
+ * for an account that has one, a sign-in within the last ten minutes for an
+ * account that signs in only through Google, GitHub or Discord.
+ */
+async function refuseEmailChange(
+  req: NextRequest,
+  passwordHash: string | null,
+  authenticatedAt: number | null | undefined,
+  currentPassword: unknown
+): Promise<NextResponse | null> {
+  if (passwordHash) {
+    const rl = await emailChangeLimiter(req)
+    if (rl) return rl
 
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Unauthorized')
+    if (typeof currentPassword !== 'string' || currentPassword.length === 0) {
+      throw new AppError('Current password is required', 403, 'CURRENT_PASSWORD_REQUIRED')
+    }
+    if (!(await comparePassword(currentPassword, passwordHash))) {
+      throw new AppError('Current password is incorrect', 403, 'CURRENT_PASSWORD_INCORRECT')
+    }
+    return null
   }
+
+  const signedInAt = typeof authenticatedAt === 'number' ? authenticatedAt : 0
+  if (Date.now() - signedInAt > EMAIL_CHANGE_RECENT_SIGN_IN_MS) {
+    throw new AppError(
+      'Sign in again to change your email address',
+      403,
+      'RECENT_SIGN_IN_REQUIRED'
+    )
+  }
+  return null
+}
+
+async function getProfileHandler(req: NextRequest) {
+  const { session } = await getSessionUserOrThrow(req)
 
   const user = await getCurrentProfileUser(session.user.id)
 
@@ -166,15 +215,12 @@ async function getProfileHandler() {
 }
 
 async function patchProfileHandler(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Unauthorized')
-  }
+  const { session } = await getSessionUserOrThrow(req)
 
   const body = (await req.json()) as {
     username?: unknown
     email?: unknown
+    currentPassword?: unknown
   }
 
   const nextUsername = typeof body.username === 'string' ? body.username.trim() : undefined
@@ -289,6 +335,16 @@ async function patchProfileHandler(req: NextRequest) {
         throw new ConflictError('Email is already in use')
       }
 
+      const refused = await refuseEmailChange(
+        req,
+        currentUser.passwordHash,
+        session.user.authenticatedAt,
+        body.currentPassword
+      )
+      if (refused) {
+        return refused
+      }
+
       updateData.pendingEmail = nextEmail
       verificationEmailTarget = nextEmail
     }
@@ -327,6 +383,7 @@ async function patchProfileHandler(req: NextRequest) {
         username: true,
         email: true,
         pendingEmail: true,
+        passwordHash: true,
         image: true,
         avatarUrl: true,
         emailVerified: true,
@@ -402,6 +459,24 @@ async function patchProfileHandler(req: NextRequest) {
       updateResult.verificationToken,
       updateResult.user.username || currentUser.username || 'User'
     )
+
+    // The address being replaced hears about it too (#1136). Before this, only
+    // the new address was mailed, so a takeover through this route was silent
+    // for the owner. The result is logged, never thrown: the change itself
+    // has already been written.
+    if (currentUser.email) {
+      const notice = await sendEmailChangeNoticeEmail(
+        currentUser.email,
+        updateResult.user.pendingEmail,
+        updateResult.user.username || currentUser.username
+      )
+      if (!notice.success) {
+        log.warn('Email change notice to the previous address was not sent', {
+          userId: session.user.id,
+          error: notice.error,
+        })
+      }
+    }
   }
 
   log.info('Profile updated successfully', {
@@ -433,7 +508,7 @@ async function patchProfileHandler(req: NextRequest) {
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const rl = await limiter(req)
   if (rl) return rl
-  return getProfileHandler()
+  return getProfileHandler(req)
 })
 
 export const PATCH = withErrorHandler(async (req: NextRequest) => {
