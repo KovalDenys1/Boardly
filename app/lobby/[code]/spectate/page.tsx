@@ -18,6 +18,7 @@ import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
+const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false })
 const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false })
 const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
 const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
@@ -29,7 +30,7 @@ const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: 
 const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
 const Scorecard = dynamic(() => import('@/components/Scorecard'), { ssr: false })
 
-const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers'])
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers', 'ludo'])
 
 type SpectatorUser = {
   userId: string
@@ -580,6 +581,7 @@ export default function SpectatorLobbyPage() {
           isMidMatch={data.activeGame?.status === 'playing'}
         />
         {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
+        {gameType === 'ludo' && <LudoLobbyPage code={code} isSpectator />}
         {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
         {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
         {gameType === 'alias' && <AliasPage code={code} isSpectator />}

@@ -63,6 +63,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Line Tactician',
     hard: 'Ink Master',
   },
+  ludo: {
+    easy: 'Token Rookie',
+    medium: 'Token Tactician',
+    hard: 'Ludo Grandmaster',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {

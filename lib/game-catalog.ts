@@ -22,6 +22,8 @@ export type RegisteredGameType =
   // decision #873 makes.
   | 'sketch_and_guess'
   | 'checkers'
+  // #1084, 'in-development' in FEATURED_GAME_CATALOG below.
+  | 'ludo'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'fake_artist'
@@ -318,6 +320,23 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: true,
     translationKey: 'checkers',
     advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
+  },
+
+  ludo: {
+    type: 'ludo',
+    name: 'Ludo',
+    svgId: 'ludo',
+    accentColor: 'var(--bd-sun)',
+    minPlayers: 2,
+    maxPlayers: 4,
+    supportsBots: true,
+    translationKey: 'ludo',
+    // Like Yahtzee: the departed seat's tokens stay on the board and the turn
+    // steps off it. No turnResetOnLeave: every restored LudoGame resets a phase
+    // left behind by another seat itself (normalizeRestoredData, #1102).
+    advanceTurnOnLeave: true,
     engineHandlesLeave: false,
     usesTurnIndex: true,
   },
@@ -770,6 +789,51 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
+  },
+  {
+    id: 'ludo',
+    gameType: 'ludo',
+    nameKey: 'games.ludo.name',
+    descriptionKey: 'games.ludo.description',
+    // 1: a lone player fills the other seats with bots.
+    players: '1-4',
+    difficultyKey: 'games.ludo.difficulty',
+    seo: {
+      title: 'Play Ludo Online Free with Friends or Bots',
+      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and send rivals home, with friends or bots. No download.',
+      synonyms: [
+        'ludo online',
+        'ludo online free',
+        'play ludo online with friends',
+        'ludo multiplayer',
+        'ludo game online',
+        'ludo with bots',
+        'parcheesi online',
+        'fia med knuff',
+        'mensch argere dich nicht online',
+      ],
+      genre: [
+        'Board Game',
+        'Dice Game',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Race board game for two to four players on a cross-shaped track. Roll a die to move your tokens from the yard to home, capture rivals by landing on them, and bring every token home first. Quick mode uses two tokens each, classic four.',
+      questionKey: 'games.ludo.seo.question',
+      answerKey: 'games.ludo.seo.answer',
+    },
+    // In development (#1084): playable behind ENABLE_IN_DEVELOPMENT_GAMES.
+    // Featuring it publicly is Denys's call, not the natural last step of the
+    // ticket, so the flip belongs to a ticket of its own.
+    availability: 'in-development',
+    route: '/games/ludo/lobbies',
+    color: 'from-yellow-400 to-red-500',
+    lobbyCreateConfig: {
+      gradient: 'from-amber-400 via-orange-500 to-rose-500',
+      allowedPlayers: [2, 3, 4],
+      defaultMaxPlayers: 4,
+      turnTimer: { options: [30, 60, 90, 120], default: 30 },
+      gameModes: { options: ['quick', 'classic'], default: 'quick' },
     },
   },
   {

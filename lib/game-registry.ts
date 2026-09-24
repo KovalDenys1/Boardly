@@ -19,6 +19,7 @@ import { LiarsPartyGame } from './games/liars-party-game'
 import { FakeArtistGame } from './games/fake-artist-game'
 import { AliasGame } from './games/alias'
 import { CheckersGame } from './games/checkers-game'
+import { LudoGame } from './games/ludo-game'
 import {
   isFakeArtistEnabled,
   isTelephoneDoodleEnabled,
@@ -44,6 +45,9 @@ export type RegisteredGameType =
   // the catalog's `availability`, which #873 flips.
   | 'sketch_and_guess'
   | 'checkers'
+  // #1084. Registered from the start: whether players are offered it is the
+  // catalog's `availability`, which stays 'in-development' until Denys decides.
+  | 'ludo'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'fake_artist'
@@ -202,6 +206,19 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     // third seat would hold a turn it cannot play and a forfeit with no opponent.
     create: (id, cfg) =>
       new CheckersGame(id, { ...cfg, maxPlayers: 2, minPlayers: 2 }),
+  },
+
+  ludo: {
+    metadata: {
+      type: 'ludo',
+      name: 'Ludo',
+      minPlayers: 2,
+      maxPlayers: 4,
+      supportsBots: true,
+      translationKey: 'ludo',
+    },
+    create: (id, cfg) =>
+      new LudoGame(id, { maxPlayers: 4, minPlayers: 2, ...cfg }),
   },
 }
 

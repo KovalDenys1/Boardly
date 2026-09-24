@@ -275,6 +275,12 @@ function getIllustration(gameId: string, accentColor: string) {
           <GameIcon gameId="checkers" accentColor="var(--bd-coral)" size={72} />
         </div>
       )
+    case 'ludo':
+      return (
+        <div className="bd-float" style={{ animationDelay: '1s' }}>
+          <GameIcon gameId="ludo" accentColor="var(--bd-sun)" size={72} />
+        </div>
+      )
     default:
       return (
         <div className="bd-float" style={{ animationDelay: '0.2s' }}>
@@ -374,6 +380,15 @@ export default function GameRibbon() {
       time: t('games.checkers.ribbon.time'),
       diff: t('games.checkers.difficulty'),
       desc: t('games.checkers.ribbon.desc'),
+    },
+    // Ready before the flip, for the same reason as Sketch & Guess above (#1084).
+    ludo: {
+      name: t('games.ludo.name'),
+      tag: t('games.ludo.ribbon.tag'),
+      players: '1-4',
+      time: t('games.ludo.ribbon.time'),
+      diff: t('games.ludo.difficulty'),
+      desc: t('games.ludo.ribbon.desc'),
     },
   }
 

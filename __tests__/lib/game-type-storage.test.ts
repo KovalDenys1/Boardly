@@ -6,6 +6,7 @@ describe('game type storage', () => {
     'sketch_and_guess',
     'liars_party',
     'fake_artist',
+    'ludo',
   ] as const)('persists %s without downgrading to other', (gameType) => {
     expect(toPersistedGameType(gameType)).toBe(gameType)
   })
