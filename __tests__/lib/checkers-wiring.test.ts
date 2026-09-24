@@ -80,3 +80,14 @@ describe('Checkers wiring (#1083)', () => {
     expect(migration.trim()).toBe(`ALTER TYPE "GameType" ADD VALUE 'checkers';`)
   })
 })
+
+describe('checkers seat count', () => {
+  it('keeps two seats even when a create request asks for more', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createGameEngine } = require('@/lib/game-registry')
+    const engine = createGameEngine('checkers', 'g-seats', { maxPlayers: 3, minPlayers: 3 })
+    expect(engine.addPlayer({ id: 'a', name: 'A' })).toBe(true)
+    expect(engine.addPlayer({ id: 'b', name: 'B' })).toBe(true)
+    expect(engine.addPlayer({ id: 'c', name: 'C' })).toBe(false)
+  })
+})

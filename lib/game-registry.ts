@@ -198,8 +198,10 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       supportsBots: true,
       translationKey: 'checkers',
     },
+    // Two seats, whatever the request says: the rules only have two sides, and a
+    // third seat would hold a turn it cannot play and a forfeit with no opponent.
     create: (id, cfg) =>
-      new CheckersGame(id, { maxPlayers: 2, minPlayers: 2, ...cfg }),
+      new CheckersGame(id, { ...cfg, maxPlayers: 2, minPlayers: 2 }),
   },
 }
 
