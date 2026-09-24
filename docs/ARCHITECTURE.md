@@ -142,7 +142,7 @@ Core tables (pluralized schema):
 - Game content: `SpyLocations`
 - Social and achievements: `FriendRequests`, `Friendships`, `UserAchievements`
 - Notifications: `NotificationPreferences`, `Notifications`, `PushSubscriptions`
-- Billing: `StripeWebhookEvents`
+- Billing: `StripeWebhookEvents`, `PurchaseConsents`
 - Operations/admin: `OperationalEvents`, `OperationalAlertStates`, `AdminAuditLogs`, `Feedback`, `Announcements`, `RuntimeFlags`
 
 `prisma/schema.prisma` is the list that counts; `docs/DATABASE.md` covers ownership and RLS.

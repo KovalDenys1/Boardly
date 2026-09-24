@@ -1,5 +1,7 @@
 import { Resend } from 'resend'
 import { logger } from './logger'
+import { SUPPORT_EMAIL } from './organization-json-ld'
+import { majorUnitAmount, type PremiumPlan } from './premium-plans'
 import { formatSellerAddress, getSellerIdentity } from './seller-identity'
 
 // Only initialize Resend if API key is available
@@ -28,6 +30,17 @@ function emailFooterHtml(): string {
   }
   const email = escapeHtml(seller.email)
   return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">${escapeHtml(seller.legalName)}, ${escapeHtml(formatSellerAddress(seller))}, Norway. Email: <a href="mailto:${email}" style="color: #999;">${email}</a></p>`
+}
+
+// The same imprint for a plain-text part. Only the purchase confirmation has
+// one so far; it must name the seller there as well, since a text-only client
+// never sees emailFooterHtml().
+function emailFooterText(): string {
+  const seller = getSellerIdentity()
+  if (!seller) {
+    return ''
+  }
+  return `${seller.legalName}, ${formatSellerAddress(seller)}, Norway. Email: ${seller.email}`
 }
 
 export async function sendVerificationEmail(email: string, token: string, username?: string) {
@@ -460,6 +473,283 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
     return { success: true }
   } catch (error) {
     logger.error('Failed to send account deletion email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export type PremiumConfirmationDetails = {
+  username?: string | null
+  plan: PremiumPlan
+  /** Stripe's `amount_total` for the Checkout Session: minor units of `currency`. */
+  amountTotal: number
+  /** Stripe's `currency`: lower-case ISO 4217. */
+  currency: string
+  /**
+   * Stripe's `currency_conversion` when Adaptive Pricing converted the charge
+   * (#919): the amount in the currency the price is defined in, so the buyer
+   * can match the figure to the "from" price the site showed.
+   */
+  convertedFrom?: { amountTotal: number; currency: string } | null
+  /** The end of the period just paid for, when Stripe reported one. */
+  renewsAt: Date | null
+  /** When the buyer asked us to start Premium, from the session metadata (#1162). */
+  consentAt: Date
+  /** TERMS_VERSION as it was at checkout, from the same metadata. */
+  termsVersion: string
+}
+
+type ConfirmationSection = { heading: string; paragraphs: string[] }
+
+type ConfirmationCopy = {
+  greeting: string
+  intro: string
+  sections: ConfirmationSection[]
+}
+
+// ICU puts a narrow no-break space before "PM" and between a number and "kr".
+// Mail clients render it unevenly, and it would make the plain-text part
+// differ from what a person types when searching, so both become a space.
+function plainSpaces(value: string): string {
+  return value.replace(/[  ]/g, ' ')
+}
+
+function formatChargedAmount(amountMinor: number, currency: string, locale: string): string {
+  const value = majorUnitAmount(amountMinor, currency)
+  try {
+    return plainSpaces(
+      new Intl.NumberFormat(locale, { style: 'currency', currency: currency.toUpperCase() }).format(value)
+    )
+  } catch {
+    return `${value} ${currency.toUpperCase()}`
+  }
+}
+
+// Always UTC and always labelled so: nothing here knows the buyer's time zone,
+// and a bare local-looking time would be wrong for most of them.
+function formatMoment(date: Date, locale: string): string {
+  return `${plainSpaces(
+    new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(date)
+  )} UTC`
+}
+
+function formatDay(date: Date, locale: string): string {
+  return plainSpaces(new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(date))
+}
+
+type ConfirmationLinks = { profile: string; withdrawal: string; terms: string }
+
+function englishConfirmationCopy(d: PremiumConfirmationDetails, links: ConfirmationLinks): ConfirmationCopy {
+  const locale = 'en-US'
+  const yearly = d.plan === 'yearly'
+  const amount = formatChargedAmount(d.amountTotal, d.currency, locale)
+  const converted = d.convertedFrom
+    ? ` That is ${formatChargedAmount(d.convertedFrom.amountTotal, d.convertedFrom.currency, locale)} converted into your currency at checkout.`
+    : ''
+  const renewal = d.renewsAt ? ` Next renewal: ${formatDay(d.renewsAt, locale)}.` : ''
+  const when = formatMoment(d.consentAt, locale)
+
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro:
+      'Thanks for subscribing to Boardly Premium. This email confirms your purchase and repeats the information you were given before you paid, so please keep it.',
+    sections: [
+      {
+        heading: 'What you bought',
+        paragraphs: [
+          `Boardly Premium, ${yearly ? 'yearly' : 'monthly'} plan, purchased on ${when}.`,
+          `Amount charged: ${amount}.${converted}`,
+          `The subscription renews automatically every ${yearly ? 'year' : 'month'} at the same price until you cancel.${renewal}`,
+        ],
+      },
+      {
+        heading: 'How to cancel',
+        paragraphs: [
+          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.`,
+        ],
+      },
+      {
+        heading: 'Right of withdrawal',
+        paragraphs: [
+          `You have 14 days from the purchase date to withdraw from this purchase, without giving a reason. To withdraw, send an email to ${SUPPORT_EMAIL} or use the withdrawal form at ${links.withdrawal}. We refund everything you have paid for the purchase within 14 days of receiving your notice, by the same payment method and with no fee.`,
+        ],
+      },
+      {
+        heading: 'Your request at checkout',
+        paragraphs: [
+          `At checkout on ${when} you asked us to start Premium immediately and confirmed you had read the withdrawal information; the right of withdrawal still applies for 14 days.`,
+        ],
+      },
+      {
+        heading: 'Terms',
+        paragraphs: [
+          `The Boardly Terms of Service, version ${d.termsVersion}, apply to this subscription: ${links.terms}.`,
+        ],
+      },
+    ],
+  }
+}
+
+function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: ConfirmationLinks): ConfirmationCopy {
+  const locale = 'nb-NO'
+  const yearly = d.plan === 'yearly'
+  const amount = formatChargedAmount(d.amountTotal, d.currency, locale)
+  const converted = d.convertedFrom
+    ? ` Det tilsvarer ${formatChargedAmount(d.convertedFrom.amountTotal, d.convertedFrom.currency, locale)} omregnet til din valuta i kassen.`
+    : ''
+  const renewal = d.renewsAt ? ` Neste fornyelse: ${formatDay(d.renewsAt, locale)}.` : ''
+  const when = formatMoment(d.consentAt, locale)
+
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro:
+      'Takk for at du abonnerer på Boardly Premium. Denne e-posten bekrefter kjøpet og gjentar opplysningene du fikk før du betalte, så ta vare på den.',
+    sections: [
+      {
+        heading: 'Hva du kjøpte',
+        paragraphs: [
+          `Boardly Premium, ${yearly ? 'årsabonnement' : 'månedsabonnement'}, kjøpt ${when}.`,
+          `Belastet beløp: ${amount}.${converted}`,
+          `Abonnementet fornyes automatisk ${yearly ? 'hvert år' : 'hver måned'} til samme pris til du sier det opp.${renewal}`,
+        ],
+      },
+      {
+        heading: 'Slik sier du opp',
+        paragraphs: [
+          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
+        ],
+      },
+      {
+        heading: 'Angrerett',
+        paragraphs: [
+          `Du har 14 dagers angrerett fra kjøpsdatoen, uten å oppgi noen grunn. For å angre sender du en e-post til ${SUPPORT_EMAIL} eller bruker angreskjemaet på ${links.withdrawal}. Vi betaler tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr.`,
+        ],
+      },
+      {
+        heading: 'Det du ba om i kassen',
+        paragraphs: [
+          `I kassen ${when} ba du oss om å starte Premium med en gang og bekreftet at du hadde lest informasjonen om angrerett. Angreretten gjelder likevel i 14 dager.`,
+        ],
+      },
+      {
+        heading: 'Vilkår',
+        paragraphs: [
+          `Boardlys vilkår for bruk, versjon ${d.termsVersion}, gjelder for abonnementet: ${links.terms}.`,
+        ],
+      },
+    ],
+  }
+}
+
+// Every paragraph is escaped whole, then the three site links and the support
+// address are turned back into anchors by exact match. Copy therefore never
+// carries markup, and the username cannot smuggle any in.
+function linkify(escaped: string, links: ConfirmationLinks): string {
+  let html = escaped
+  for (const url of [links.profile, links.withdrawal, links.terms]) {
+    const safe = escapeHtml(url)
+    html = html.split(safe).join(`<a href="${safe}" style="color: #FF6B5B;">${safe}</a>`)
+  }
+  return html
+    .split(SUPPORT_EMAIL)
+    .join(`<a href="mailto:${SUPPORT_EMAIL}" style="color: #FF6B5B;">${SUPPORT_EMAIL}</a>`)
+}
+
+function confirmationCopyHtml(copy: ConfirmationCopy, links: ConfirmationLinks): string {
+  const paragraph = (text: string) => `<p>${linkify(escapeHtml(text), links)}</p>`
+  const sections = copy.sections
+    .map(
+      (section) =>
+        `<h3 style="color: #FF6B5B; font-size: 16px; margin: 24px 0 6px;">${escapeHtml(section.heading)}</h3>` +
+        section.paragraphs.map(paragraph).join('')
+    )
+    .join('')
+  return `<p style="margin-top: 0;">${escapeHtml(copy.greeting)}</p>${paragraph(copy.intro)}${sections}`
+}
+
+function confirmationCopyText(copy: ConfirmationCopy): string {
+  const sections = copy.sections.map((section) => [section.heading.toUpperCase(), ...section.paragraphs].join('\n'))
+  return [copy.greeting, copy.intro, ...sections].join('\n\n')
+}
+
+/**
+ * The confirmation a Premium buyer gets once the Checkout Session completes
+ * (#1164). angrerettloven section 18 wants, on a durable medium, the section 8
+ * information repeated and a statement that the buyer asked for the service
+ * to start at once; ehandelsloven section 12 wants an order confirmation.
+ * English first, then Norwegian bokmal, in one message: no language is stored
+ * per user. Sent once per session, which the caller guarantees through
+ * PurchaseConsents.confirmationSentAt, not this function.
+ */
+export async function sendPremiumConfirmationEmail(email: string, details: PremiumConfirmationDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ConfirmationLinks = {
+    profile: `${base}/profile`,
+    withdrawal: `${base}/withdrawal`,
+    terms: `${base}/terms`,
+  }
+  const english = englishConfirmationCopy(details, links)
+  const norwegian = norwegianConfirmationCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+  const signature = 'The Boardly team'
+  const footerText = emailFooterText()
+
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}\n${signature}`,
+    footerText,
+  ]
+    .filter((part) => part.length > 0)
+    .join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: 'Your Boardly Premium confirmation / Bekreftelse på Boardly Premium',
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}<br>
+                ${signature}
+              </p>
+              ${emailFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send premium confirmation email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

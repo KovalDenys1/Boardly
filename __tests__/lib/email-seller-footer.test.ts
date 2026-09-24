@@ -36,6 +36,16 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
   sendGameInviteEmail: (m) =>
     m.sendGameInviteEmail('player@example.com', 'Ola', 'Kari', 'Friday night', 'yahtzee', 'https://boardly.test/lobby/ABC123'),
   sendAccountDeletionEmail: (m) => m.sendAccountDeletionEmail('player@example.com', 'token', 'Ola'),
+  sendPremiumConfirmationEmail: (m) =>
+    m.sendPremiumConfirmationEmail('player@example.com', {
+      username: 'Ola',
+      plan: 'monthly',
+      amountTotal: 299,
+      currency: 'usd',
+      renewsAt: new Date('2026-10-24T14:00:00Z'),
+      consentAt: new Date('2026-09-24T14:00:00Z'),
+      termsVersion: '2026-09-24',
+    }),
 }
 
 function loadEmailModule(): EmailModule {

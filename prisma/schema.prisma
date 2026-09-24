@@ -59,6 +59,7 @@ model Users {
   pushSubscriptions       PushSubscriptions[]
   feedback                Feedback[]
   userAchievements        UserAchievements[]
+  purchaseConsents        PurchaseConsents[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -534,6 +535,29 @@ model StripeWebhookEvents {
   processedAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([processedAt])
+}
+
+// The record of a Premium sale (#1164): who bought, under which version of the
+// terms and the withdrawal information, and when they asked for Premium to
+// start. Written by the Stripe webhook from the metadata checkout put on the
+// session (#1162); one row per Checkout Session. confirmationSentAt is the
+// once-only claim for the purchase confirmation email: null until the send is
+// claimed, set back to null when the send fails so a later run can retry.
+model PurchaseConsents {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkoutSessionId     String    @unique // Stripe's Checkout Session id, the natural key for the sale
+  stripeSubscriptionId  String?
+  plan                  String // 'monthly' | 'yearly', see lib/premium-plans.ts
+  termsVersion          String // TERMS_VERSION shown at checkout
+  withdrawalInfoVersion String // WITHDRAWAL_INFO_VERSION shown at checkout
+  consentAt             DateTime  @db.Timestamptz(3) // the client's moment, bounded by the checkout route
+  consentReceivedAt     DateTime  @db.Timestamptz(3) // the server's own observation of the same request
+  confirmationSentAt    DateTime? @db.Timestamptz(3)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
 }
 
 model Feedback {
