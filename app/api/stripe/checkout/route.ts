@@ -160,6 +160,9 @@ export async function POST(req: NextRequest) {
     consentTermsVersion: consent.termsVersion,
     consentWithdrawalInfoVersion: consent.withdrawalInfoVersion,
     consentAt: consent.acceptedAt,
+    // The client's claimed moment above is bounded to a window; this is the
+    // server's own observation, so the record carries both.
+    consentReceivedAt: new Date().toISOString(),
   }
 
   const createCheckoutSession = () =>

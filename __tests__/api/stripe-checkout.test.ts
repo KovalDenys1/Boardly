@@ -412,6 +412,7 @@ describe('POST /api/stripe/checkout', () => {
         consentTermsVersion: TERMS_VERSION,
         consentWithdrawalInfoVersion: WITHDRAWAL_INFO_VERSION,
         consentAt: acceptedAt,
+        consentReceivedAt: expect.any(String),
       }
       expect(create).toHaveBeenCalledWith(
         expect.objectContaining({
