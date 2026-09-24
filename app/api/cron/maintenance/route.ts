@@ -6,6 +6,7 @@ import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
 import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/lib/cleanup-replays'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
+import { enforceRetention } from '@/lib/data-retention'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
@@ -23,6 +24,16 @@ async function handleCronRequest(request: NextRequest) {
     const replayCleanupResult = await cleanupOldReplaySnapshots()
     const replayOverflowResult = await cleanupOversizedReplaySnapshots()
     const lobbyCleanupResult = await cleanupStaleLobbiesAndGames()
+    // Retention periods (#1130) run last, so a game the stale sweep has just closed is
+    // judged by the endedAt it was given a moment ago.
+    const retentionResult = await enforceRetention()
+    // The heartbeat payload is flat: per rule, what was deleted, or in report mode what
+    // would have been, so a report-only rule leaves its daily count in cron_run.
+    const retentionSummary: Record<string, number | boolean> = {}
+    for (const [key, entry] of Object.entries(retentionResult)) {
+      retentionSummary[`retention_${key}_enforced`] = entry.enforced
+      retentionSummary[`retention_${key}_${entry.enforced ? 'deleted' : 'matched'}`] = entry.error ? -1 : entry.matched
+    }
 
     await recordCronRun({
       cron: 'maintenance',
@@ -32,6 +43,7 @@ async function handleCronRequest(request: NextRequest) {
         deletedGuests: guestCleanupResult.deleted,
         deletedUnverified: cleanupUnverifiedResult.deleted,
         cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
+        ...retentionSummary,
       },
     })
 
@@ -50,6 +62,7 @@ async function handleCronRequest(request: NextRequest) {
       replayCutoffDate: replayCleanupResult.cutoffDate,
       deletedOversizedReplaySnapshots: replayOverflowResult.deletedSnapshots,
       oversizedReplayGames: replayOverflowResult.affectedGames,
+      retention: retentionResult,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
