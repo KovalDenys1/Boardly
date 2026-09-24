@@ -523,6 +523,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         JSON.stringify(rpsData.scores),
         rpsData.rounds.length,
         prefersReducedMotion() ? 0 : RPS_REVEAL_MS,
+        // EMPTY_DATA until the game loads: the first real score shows at once.
+        !!game,
     )
     const isFinished = game?.status === 'finished' || game?.state.status === 'finished' || !!rpsData.gameWinner
     const mySubmitted = !!currentUserId && rpsData.playersReady.includes(currentUserId)

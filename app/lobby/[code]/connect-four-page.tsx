@@ -861,7 +861,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
     const lastC4MoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null
     // The newest disc falls once; a remount shows it landed, marker and all (#1114).
-    const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(lastC4Move ? lastC4MoveSignature : null)
+    const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(gameEngine ? (lastC4Move ? lastC4MoveSignature : null) : undefined)
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastC4MoveSignature,

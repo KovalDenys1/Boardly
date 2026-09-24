@@ -786,7 +786,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const lastTttMoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null
     // Only the just-placed mark pops and its history row slides in; a board
     // remount (mobile tab switch) shows the settled state (#1114).
-    const { fresh: lastMoveFresh, settle: settleLastMove } = useFreshKey(lastTttMove ? lastTttMoveSignature : null)
+    const { fresh: lastMoveFresh, settle: settleLastMove } = useFreshKey(gameEngine ? (lastTttMove ? lastTttMoveSignature : null) : undefined)
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastTttMoveSignature,

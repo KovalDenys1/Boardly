@@ -12,27 +12,37 @@ import { useEffect, useState } from 'react'
  * Any other change (a rematch resetting the score, a snapshot correcting it)
  * shows at once.
  *
+ * `ready` is false while the value is a placeholder (no game loaded yet). The
+ * first real snapshot is shown at once, never held: a refresh, a reconnect or
+ * a spectator joining mid-series has nothing to reveal (#1159 review).
+ *
  * `key` identifies the value (objects are compared by it, not by identity).
  * Pass `holdMs = 0` to disable, e.g. under prefers-reduced-motion.
  */
-export function shouldHoldChange(shownRevealIndex: number, nextRevealIndex: number, holdMs: number): boolean {
-  return holdMs > 0 && nextRevealIndex > shownRevealIndex
+export function shouldHoldChange(
+  shownRevealIndex: number,
+  nextRevealIndex: number,
+  holdMs: number,
+  shownWasReady = true,
+): boolean {
+  return shownWasReady && holdMs > 0 && nextRevealIndex > shownRevealIndex
 }
 
 interface Shown<T> {
   value: T
   key: string
   revealIndex: number
+  ready: boolean
 }
 
-export function useHeldValue<T>(value: T, key: string, revealIndex: number, holdMs: number): T {
-  const [shown, setShown] = useState<Shown<T>>({ value, key, revealIndex })
-  const changed = key !== shown.key
-  const hold = changed && shouldHoldChange(shown.revealIndex, revealIndex, holdMs)
+export function useHeldValue<T>(value: T, key: string, revealIndex: number, holdMs: number, ready = true): T {
+  const [shown, setShown] = useState<Shown<T>>({ value, key, revealIndex, ready })
+  const changed = key !== shown.key || ready !== shown.ready
+  const hold = changed && ready && shouldHoldChange(shown.revealIndex, revealIndex, holdMs, shown.ready)
 
   useEffect(() => {
     if (!changed) return
-    const next = { value, key, revealIndex }
+    const next = { value, key, revealIndex, ready }
     if (!hold) {
       setShown(next)
       return
@@ -41,7 +51,7 @@ export function useHeldValue<T>(value: T, key: string, revealIndex: number, hold
     return () => window.clearTimeout(timer)
     // `value` is identified by `key`; a new object with the same key is not a change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, revealIndex, holdMs, changed, hold])
+  }, [key, revealIndex, holdMs, ready, changed, hold])
 
   return hold ? shown.value : value
 }
