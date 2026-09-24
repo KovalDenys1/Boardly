@@ -20,6 +20,8 @@ export type SocialProfile = {
 export const SOCIAL_PROFILES: readonly SocialProfile[] = [
   { platform: 'tiktok', url: 'https://www.tiktok.com/@playboardly' },
   { platform: 'youtube', url: 'https://www.youtube.com/@playboardly' },
+  { platform: 'instagram', url: 'https://www.instagram.com/playboardly/' },
+  { platform: 'x', url: 'https://x.com/playboardly' },
 ]
 
 /** Brand names, spelled the same in every locale. */

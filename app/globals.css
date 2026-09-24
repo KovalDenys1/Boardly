@@ -1828,9 +1828,16 @@ input[type="range"].slider-thumb::-moz-range-track {
   grid-template-areas: "left center right";
   align-items: center;
   gap: 12px;
+  /* Its width comes from the card around it, never from its content, so it
+     can be a size container: the narrow-row rules below read it (#1180). */
+  container: game-scoreboard / inline-size;
 }
 .game-scoreboard-cell { min-width: 0; }
-.game-scoreboard-cell--left { grid-area: left; }
+/* Each player cell is a container too, so a card stacks on the width it
+   actually has – which depends on the centre block and on Leave, not just on
+   the viewport (#1180). Both cells are 1fr tracks, so both cards switch
+   together and stay the same size (layout DoD). */
+.game-scoreboard-cell--left { grid-area: left; container: game-scoreboard-cell / inline-size; }
 .game-scoreboard-center {
   grid-area: center;
   text-align: center;
@@ -1839,12 +1846,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 .game-scoreboard-center--compact { display: none; }
 .game-scoreboard-cell--right {
   grid-area: right;
+  container: game-scoreboard-cell / inline-size;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
 }
 .game-scoreboard-right-card { flex: 1 1 auto; min-width: 0; }
+/* Not in the conversation games. On phones they shrink the right cell to its
+   content (an auto track holding Leave), and a size container has no content
+   width – the cell would collapse to 0 and Leave would spill out of the header.
+   Their phone header is one wide drawer card, tuned on its own further down, so
+   neither cell stacks there (#1180). */
+:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) .game-scoreboard-cell { container-type: normal; }
 
 .game-player-card {
   position: relative;
@@ -1906,6 +1920,32 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex: 1 1 auto;
   min-width: 4.5ch;
   overflow: hidden;
+  text-align: left;
+}
+.game-player-card--right .game-player-identity { text-align: right; }
+.game-player-name-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+}
+.game-player-card--right .game-player-name-row,
+.game-player-card--right .game-player-turn { justify-content: flex-end; }
+.game-player-name {
+  min-width: 0;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-player-subline {
+  font-size: 11px;
+  color: var(--bd-ink-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .game-player-turn {
   margin-top: 2px;
@@ -1915,8 +1955,72 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: flex;
   gap: 4px;
   align-items: center;
+  justify-content: flex-start;
   white-space: nowrap;
   overflow: hidden;
+}
+
+/* Narrow scoreboard (#1180). On a 390px phone each player cell of a two-player
+   header is ~96px (55px in RPS beside its round block), and the row form needs
+   ~76px of padding, avatar and gap before the name starts – so names came out
+   as "Kov…", the turn line and the active plate ran over the score. Below
+   150px of cell the card stacks: avatar on top, the name under it with the
+   whole cell width, which reads "Kovalenko" and "Gravity Gra…" at 390.
+
+   The subline and the turn line go, as they already do in the landscape side
+   column (#901): the subline repeats the score and the corner badge, and whose
+   turn it is is the whole subject of GameStatusBanner one row down and of the
+   active plate around this card. The turn text stays in the accessibility tree.
+
+   Direct children only: Ludo nests its own roster grid of cards in a cell, and
+   that grid has its own container rules. */
+@container game-scoreboard (max-width: 479px) {
+  .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
+  .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
+}
+@container game-scoreboard-cell (max-width: 149px) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 4px;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+    width: 34px;
+    height: 34px;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
+  /* The corner badge (C4 disc, Checkers piece, RPS pick, Ludo token, TTT mark)
+     is 18-22px of inline style sized for the 42px avatar; on the 34px one it
+     covered most of the initial. Scaled from its own anchored corner to ~12px
+     and pushed a little further out, so the initial reads and the badge still
+     sits on the avatar's edge. A transform, because the games set its size
+     inline and an inline width outranks any stylesheet. */
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.6);
+    transform-origin: bottom right;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+    align-self: stretch;
+    min-width: 0;
+    text-align: center;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 13px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-subline { display: none; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-turn {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+/* A 320px phone leaves ~64px a cell: two pixels of side padding and a point
+   of type are another letter or two of the name. */
+@container game-scoreboard-cell (max-width: 79px) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card { padding-inline: 2px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; }
 }
 
 /* Shared in-game chat dock (#736) — wraps components/Chat.tsx (fullScreen)
@@ -2338,6 +2442,11 @@ input[type="range"].slider-thumb::-moz-range-track {
      block need ~274px of the ~244px this column leaves after the card's own
      padding, which is why the score ran out over both names (#901). */
   .game-landscape-side .game-scoreboard-header { gap: 6px; }
+  /* The rules above are this column's player card. Its cells are ~110px, under
+     the stacked form's 149px threshold (#1180), and that form's 34px avatar and
+     second row made the header ~30px taller here and took it from chat. Not a
+     size container in this column, so the stacked form never matches. */
+  .game-landscape-side .game-scoreboard-cell { container-type: normal; }
   .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .game-landscape-side .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
   .game-landscape-side .game-player-card { gap: 6px; padding: 4px 6px; }

@@ -26,7 +26,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { advanceLifecycleStatus, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -667,11 +667,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             }
           }
 
-          // Update game object with new state
+          // Update game object with new state. The status goes with it: this
+          // broadcast has just moved the watermark, so the snapshot that would
+          // otherwise bring 'playing' is now rejected as stale, and without it a
+          // non-host never leaves the waiting room (#1183).
           setGame((prevGame) => {
             if (!prevGame || prevGame.id !== gameId) return prevGame
             return {
               ...prevGame,
+              status: advanceLifecycleStatus(prevGame.status, parsedStatus),
               state: JSON.stringify(parsedState),
             }
           })

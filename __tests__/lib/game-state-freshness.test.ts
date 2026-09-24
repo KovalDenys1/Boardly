@@ -5,6 +5,7 @@ import {
   isUpdateForAnotherGame,
   readLastMoveAt,
   resetFreshnessWatermark,
+  advanceLifecycleStatus,
 } from '@/lib/game-state-freshness'
 
 describe('game state freshness (#985)', () => {
@@ -88,5 +89,25 @@ describe('isUpdateForAnotherGame (#1160)', () => {
   it('accepts an untagged update', () => {
     expect(isUpdateForAnotherGame({ action: 'state-change', payload: {} }, 'cm-current')).toBe(false)
     expect(isUpdateForAnotherGame(null, 'cm-current')).toBe(false)
+  })
+})
+
+describe('advanceLifecycleStatus (#1183)', () => {
+  it('moves a waiting game forward to playing or finished', () => {
+    expect(advanceLifecycleStatus('waiting', 'playing')).toBe('playing')
+    expect(advanceLifecycleStatus('waiting', 'finished')).toBe('finished')
+    expect(advanceLifecycleStatus('playing', 'finished')).toBe('finished')
+  })
+
+  it('never moves a game backward, so a stale snapshot cannot rewind the lifecycle', () => {
+    expect(advanceLifecycleStatus('playing', 'waiting')).toBe('playing')
+    expect(advanceLifecycleStatus('finished', 'playing')).toBe('finished')
+    expect(advanceLifecycleStatus('playing', 'playing')).toBe('playing')
+  })
+
+  it('ignores anything that is not a lifecycle status', () => {
+    expect(advanceLifecycleStatus('waiting', undefined)).toBe('waiting')
+    expect(advanceLifecycleStatus('waiting', 'abandoned')).toBe('waiting')
+    expect(advanceLifecycleStatus('waiting', 42)).toBe('waiting')
   })
 })

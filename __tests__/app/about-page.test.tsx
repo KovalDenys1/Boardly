@@ -43,6 +43,8 @@ describe('/about JSON-LD', () => {
         'https://github.com/KovalDenys1/Boardly',
         'https://www.tiktok.com/@playboardly',
         'https://www.youtube.com/@playboardly',
+        'https://www.instagram.com/playboardly/',
+        'https://x.com/playboardly',
       ],
       contactPoint: { '@type': 'ContactPoint', email: 'support@boardly.online' },
     })
