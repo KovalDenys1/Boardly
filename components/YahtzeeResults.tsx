@@ -69,6 +69,8 @@ export default function YahtzeeResults({
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
   const totalRounds = getActiveCategories(mode).length
+  // Short mode has no upper section, so an "Upper 0" box is noise (#1187).
+  const hasUpperSection = mode !== 'short'
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -128,8 +130,9 @@ export default function YahtzeeResults({
                       {t('yahtzee.results.gameOver')}
                     </h2>
                     <p className="mt-1 text-sm text-bd-ink-soft sm:text-base">
-                      {t('yahtzee.results.roundsCompleted', { count: totalRounds })} • {results.length}{' '}
-                      {t('yahtzee.results.players', { count: results.length })}
+                      {/* The player count is the chip beside this; saying it twice
+                          printed "2 2 player" (#1187). */}
+                      {t('yahtzee.results.roundsCompleted', { count: totalRounds })}
                     </p>
                   </div>
                 </div>
@@ -174,6 +177,9 @@ export default function YahtzeeResults({
                 {winner.playerName}
               </p>
 
+              {/* Short mode scores the lower section only, so the split would
+                  repeat the total printed just above (#1187). */}
+              {hasUpperSection && (
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
                   <div className="bd-kicker">{t('yahtzee.results.upperSectionShort')}</div>
@@ -189,6 +195,7 @@ export default function YahtzeeResults({
                   <div className="mt-1 text-2xl font-bold text-bd-ink">{winner.lowerSectionScore}</div>
                 </div>
               </div>
+              )}
 
               {winner.achievements.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -287,6 +294,8 @@ export default function YahtzeeResults({
                     />
                   </div>
 
+                  {/* In short mode every point is lower section: the total says it. */}
+                  {hasUpperSection && (
                   <div className="grid grid-cols-1 gap-2 text-sm text-bd-ink-soft sm:grid-cols-2">
                     <div>
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
@@ -302,6 +311,7 @@ export default function YahtzeeResults({
                       <span className="font-semibold text-bd-ink">{player.lowerSectionScore}</span>
                     </div>
                   </div>
+                  )}
 
                   {player.achievements.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

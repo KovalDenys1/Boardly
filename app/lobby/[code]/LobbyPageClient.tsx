@@ -1929,6 +1929,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           : t('yahtzee.ui.turnHoldOrPick')
       : t('yahtzee.ui.playerTurn', { player: nameOf(currentPlayerId) })
 
+    const statusBanner = (
+      <GameStatusBanner
+        isFinished={false}
+        activeTitle={statusTitle}
+        meta={t('yahtzee.ui.roundOf', { current: roundInfo.current, total: roundInfo.total })}
+        secs={timeLeft}
+        turnTimerLimit={turnTimerLimit}
+        barColor="var(--bd-sun)"
+        isYourTurn={myTurn}
+      />
+    )
+
     const header = (
       <>
         <div className="yz-topbar">
@@ -1949,17 +1961,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           </button>
           <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />
         </div>
-        <div className="yz-status">
-          <GameStatusBanner
-            isFinished={false}
-            activeTitle={statusTitle}
-            meta={t('yahtzee.ui.roundOf', { current: roundInfo.current, total: roundInfo.total })}
-            secs={timeLeft}
-            turnTimerLimit={turnTimerLimit}
-            barColor="var(--bd-sun)"
-            isYourTurn={myTurn}
-          />
-        </div>
+        <div className="yz-status">{statusBanner}</div>
       </>
     )
 
@@ -2000,7 +2002,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div className="yz-revert" role="status">{t('yahtzee.ui.moveReverted')}</div>
     ) : null
 
-    return { header, diceBar, tiles, revertNotice }
+    return { header, statusBanner, diceBar, tiles, revertNotice }
   })() : null
 
   return (
@@ -2340,8 +2342,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       gameEngine={gameEngine}
                       game={game}
                       isMyTurn={isMyTurn()}
-                      timeLeft={timeLeft}
-                      turnTimerLimit={turnTimerLimit}
+                      statusBanner={yahtzeeView?.statusBanner}
                       isMoveInProgress={isMoveInProgress}
                       isRolling={isRolling}
                       isOpponentRolling={isOpponentRolling}

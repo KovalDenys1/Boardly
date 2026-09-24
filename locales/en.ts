@@ -2040,7 +2040,7 @@ const en = {
       gameOver: 'Game Over!',
       roundsCompleted: '{{count}} rounds completed',
       players: '{{count}} player',
-      players_plural: '{{count}} players',
+      players_other: '{{count}} players',
       youWon: 'You Won!',
       playerWins: '{{player}} Wins!',
       points: '{{count}} points',
