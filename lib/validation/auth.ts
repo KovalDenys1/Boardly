@@ -30,6 +30,10 @@ export const registerSchema = z.object({
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/\d/, 'Password must contain at least one number'),
+  // #1154: unticked by default, never assumed. Optional so a caller with no opinion
+  // (an older client build, a script) still gets the lawful default rather than a
+  // validation error.
+  marketingConsent: z.boolean().optional().default(false),
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>

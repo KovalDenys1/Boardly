@@ -14,6 +14,9 @@ const updateSchema = z.object({
   friendAccepted: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
   unsubscribedAll: z.boolean().optional(),
+  // #1154. marketingConsentAt is never accepted from the client - it is stamped
+  // server-side by upsertNotificationPreferences whenever this field is present.
+  marketingConsent: z.boolean().optional(),
 })
 
 export async function GET() {

@@ -453,6 +453,13 @@ model NotificationPreferences {
   pushNotifications  Boolean @default(false)
   unsubscribedAll    Boolean @default(false)
 
+  // #1154 (L2-05, markedsføringsloven § 15): opt-in only, unticked by default. The
+  // timestamp is the evidence a consent question needs — it is stamped whenever
+  // marketingConsent changes (granted or withdrawn), never inferred from updatedAt,
+  // which any other preference edit also touches.
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime? @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 

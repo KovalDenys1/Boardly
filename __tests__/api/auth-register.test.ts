@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
+import { upsertNotificationPreferences } from '@/lib/notification-preferences'
 
 let mockRateLimitResult: Response | null = null
 
@@ -44,6 +45,10 @@ jest.mock('nanoid', () => ({
   nanoid: jest.fn(),
 }))
 
+jest.mock('@/lib/notification-preferences', () => ({
+  upsertNotificationPreferences: jest.fn(),
+}))
+
 jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(() => jest.fn(async () => mockRateLimitResult)),
   rateLimitPresets: {
@@ -63,6 +68,9 @@ const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockHashPassword = hashPassword as jest.MockedFunction<typeof hashPassword>
 const mockSendVerificationEmail = sendVerificationEmail as jest.MockedFunction<typeof sendVerificationEmail>
 const mockNanoid = nanoid as jest.MockedFunction<typeof nanoid>
+const mockUpsertNotificationPreferences = upsertNotificationPreferences as jest.MockedFunction<
+  typeof upsertNotificationPreferences
+>
 
 // Production shapes. A registered account's id is a cuid (Users.id
 // @default(cuid()) in prisma/schema.prisma); a guest sets its own id, and
@@ -544,6 +552,50 @@ describe('POST /api/auth/register', () => {
       username: 'new_user',
       emailVerified: false,
     })
+  })
+
+  it('does not record marketing consent when the checkbox was left unticked', async () => {
+    const response = await POST(
+      buildRequest({
+        email: 'nomarketing@example.com',
+        username: 'nomarketing',
+        password: 'ValidPass123',
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockUpsertNotificationPreferences).not.toHaveBeenCalled()
+  })
+
+  it('records marketing consent when the checkbox was ticked at signup', async () => {
+    const response = await POST(
+      buildRequest({
+        email: 'marketing@example.com',
+        username: 'marketing_fan',
+        password: 'ValidPass123',
+        marketingConsent: true,
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockUpsertNotificationPreferences).toHaveBeenCalledWith(REAL_USER_ID, { marketingConsent: true })
+  })
+
+  it('still returns success when recording marketing consent fails', async () => {
+    mockUpsertNotificationPreferences.mockRejectedValueOnce(new Error('db down'))
+
+    const response = await POST(
+      buildRequest({
+        email: 'marketing2@example.com',
+        username: 'marketing_fan2',
+        password: 'ValidPass123',
+        marketingConsent: true,
+      })
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.user.id).toBe(REAL_USER_ID)
   })
 
   it('returns success even when verification email sending fails', async () => {

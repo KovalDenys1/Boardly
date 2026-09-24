@@ -31,6 +31,11 @@ export default function RegisterForm() {
     username: '',
     password: '',
     confirmPassword: '',
+    // #1154: unticked by default, never assumed. Kept in formData (not a bare useState
+    // like agreedToTerms) so it flows through registerSchema into sanitizedInput and
+    // reaches POST /api/auth/register with everything else, instead of needing its own
+    // wiring into the request body.
+    marketingConsent: false,
   })
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({})
@@ -354,6 +359,15 @@ export default function RegisterForm() {
                 <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
                   <Checkbox checked={rememberMe} onCheckedChange={setRememberMe} disabled={loading} />
                   {t('auth.login.rememberMe')}
+                </Label>
+                <Label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox
+                    checked={formData.marketingConsent}
+                    onCheckedChange={(checked) => setFormData({ ...formData, marketingConsent: Boolean(checked) })}
+                    disabled={loading}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <span>{t('auth.register.marketingConsent')}</span>
                 </Label>
               </div>
 

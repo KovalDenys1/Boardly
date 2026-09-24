@@ -2224,7 +2224,8 @@ const no = {
       agreeToTerms: 'Jeg godtar',
       termsOfService: 'Vilkårene for bruk',
       privacyPolicy: 'Personvernerklæringen',
-      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen'
+      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen',
+      marketingConsent: 'Jeg vil gjerne motta noen e-poster fra Boardly-teamet om nye spill og funksjoner'
     },
     forgotPassword: {
       title: 'Glemt passord?',
@@ -2636,6 +2637,8 @@ const no = {
         pushUnavailable: 'Push-varsler er ikke tilgjengelige på denne serveren ennå.',
         pushEnabled: 'Push-varsler er på.',
         pushFailed: 'Kunne ikke slå på push-varsler. Prøv igjen.',
+        marketing: 'Markedsføringsepost',
+        marketingDesc: 'Noen e-poster fra Boardly-teamet om nye spill og funksjoner. Av som standard.',
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {

@@ -51,6 +51,10 @@ export const SERVER_OPERATIONAL_EVENT_NAMES = [
   // Written by lib/lobby-participation.ts when a lobby reaches its second non-bot
   // participant. A rate anyone could post with any lobby code is worse than none.
   'second_human_joined',
+  // Written by lib/csp-report.ts from POST /api/security/csp-report (#1145). That route
+  // takes whatever shape a browser's CSP reporting sends, so eventName is hardcoded
+  // server-side rather than taken from the request the way OPERATIONAL_EVENT_NAMES is.
+  'csp_violation_reported',
 ] as const
 
 export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]

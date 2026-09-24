@@ -58,6 +58,8 @@ function prefs(overrides: Partial<Record<string, boolean>> = {}) {
     friendAccepted: true,
     pushNotifications: true,
     unsubscribedAll: false,
+    marketingConsent: false,
+    marketingConsentAt: null,
     ...overrides,
   }
 }
