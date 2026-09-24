@@ -1,5 +1,7 @@
 import {
-  aliasWordExit,
+  advanceWordSwap,
+  guessMatchesWord,
+  initialWordSwap,
   latestEntryKey,
   onOwnAnimationEnd,
   STAGGER_MAX_STEPS,
@@ -64,19 +66,26 @@ describe('onOwnAnimationEnd', () => {
   })
 })
 
-describe('aliasWordExit', () => {
-  const turn = (word: string | null, correct = 0, skipped = 0) => ({ word, correct, skipped })
-
+describe('advanceWordSwap', () => {
   it('a guessed word leaves as correct, a skipped one as skip', () => {
-    expect(aliasWordExit(turn('cat'), turn('dog', 1, 0))).toBe('correct')
-    expect(aliasWordExit(turn('cat', 1, 0), turn('dog', 1, 1))).toBe('skip')
+    const guessed = advanceWordSwap(initialWordSwap('cat'), 'dog', 'guessed')
+    expect(guessed).toEqual({ word: 'dog', leaving: { word: 'cat', exit: 'correct' }, generation: 1 })
+    const skipped = advanceWordSwap(guessed, 'owl', 'skipped')
+    expect(skipped).toEqual({ word: 'owl', leaving: { word: 'dog', exit: 'skip' }, generation: 2 })
   })
 
-  it('nothing leaves on the first word, on the same word, or without a count change', () => {
-    expect(aliasWordExit(null, turn('dog'))).toBeNull()
-    expect(aliasWordExit(turn(null), turn('dog'))).toBeNull()
-    expect(aliasWordExit(turn('cat'), turn('cat', 1))).toBeNull()
-    expect(aliasWordExit(turn('cat'), turn(null, 1))).toBeNull()
-    expect(aliasWordExit(turn('cat', 2, 1), turn('dog', 0, 0))).toBeNull()
+  it('the same word is no change, and a word with no outcome just comes in', () => {
+    const state = initialWordSwap('cat')
+    expect(advanceWordSwap(state, 'cat', 'guessed')).toBe(state)
+    expect(advanceWordSwap(state, 'dog', undefined)).toEqual({ word: 'dog', leaving: null, generation: 1 })
+    expect(advanceWordSwap(initialWordSwap(''), 'dog', 'guessed').leaving).toBeNull()
+  })
+})
+
+describe('guessMatchesWord', () => {
+  it('matches ignoring case and surrounding space', () => {
+    expect(guessMatchesWord('  Apple ', ['banana', 'apple'])).toBe(true)
+    expect(guessMatchesWord('apples', ['apple'])).toBe(false)
+    expect(guessMatchesWord('', [''])).toBe(false)
   })
 })

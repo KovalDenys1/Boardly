@@ -52,19 +52,49 @@ export function onOwnAnimationEnd(callback: () => void) {
 }
 
 /**
- * Direction the Alias word leaves in: a guessed word goes up, a skipped one
- * sideways. Derived from the score change between two turn snapshots, since
- * the word itself carries no outcome. `null` means nothing to animate (first
- * word of a turn, a snapshot that did not advance the word).
+ * The Alias describer's word card (#1115). When the word changes, the old one
+ * leaves in the direction of what happened to it – up for a guess, sideways
+ * for a skip – while the new one comes in. The outcome is read off the turn's
+ * last card result, which the engine appends in the same move that advances
+ * the word. `generation` keys the layers so each change mounts fresh nodes.
  */
 export type WordExit = 'correct' | 'skip'
 
-export function aliasWordExit(
-  previous: { word: string | null; correct: number; skipped: number } | null,
-  next: { word: string | null; correct: number; skipped: number },
-): WordExit | null {
-  if (!previous || !previous.word || !next.word || previous.word === next.word) return null
-  if (next.correct > previous.correct) return 'correct'
-  if (next.skipped > previous.skipped) return 'skip'
-  return null
+export interface WordSwapState {
+  word: string
+  leaving: { word: string; exit: WordExit } | null
+  generation: number
+}
+
+export function initialWordSwap(word: string): WordSwapState {
+  return { word, leaving: null, generation: 0 }
+}
+
+export function advanceWordSwap(
+  state: WordSwapState,
+  word: string,
+  lastResult: 'guessed' | 'skipped' | undefined,
+): WordSwapState {
+  if (state.word === word) return state
+  const exit: WordExit | null = lastResult === 'guessed' ? 'correct' : lastResult === 'skipped' ? 'skip' : null
+  return {
+    word,
+    leaving: exit && state.word ? { word: state.word, exit } : null,
+    generation: state.generation + 1,
+  }
+}
+
+function normalizeGuess(text: string): string {
+  return text.normalize('NFKC').trim().toLocaleLowerCase()
+}
+
+/**
+ * Whether a typed guess is one of the words the describer has marked guessed.
+ * Alias has no server-side guess check – the describer presses "Guessed" – so
+ * this is how the feed knows which bubble to celebrate.
+ */
+export function guessMatchesWord(text: string, guessedWords: readonly string[]): boolean {
+  const guess = normalizeGuess(text)
+  if (!guess) return false
+  return guessedWords.some((word) => normalizeGuess(word) === guess)
 }
