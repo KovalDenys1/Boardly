@@ -28,7 +28,7 @@ const en = {
     in_development: 'This game is still in development',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    advertisement: 'Advertisement',
+    advertisement: 'Advertisements',
     premium: 'Premium',
   },
   breadcrumbs: {
@@ -3508,6 +3508,7 @@ const en = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     withdrawal: 'Right of withdrawal',
+    privacySettings: 'Privacy and cookie settings',
     operatedBy: 'Operated by {{name}}',
     community: 'Community',
     discord: 'Discord',

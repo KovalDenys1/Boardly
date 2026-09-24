@@ -3627,6 +3627,7 @@ const ru = {
     privacy: 'Политика конфиденциальности',
     terms: 'Условия использования',
     withdrawal: 'Право на отказ',
+    privacySettings: 'Настройки конфиденциальности и файлов cookie',
     operatedBy: 'Оператор: {{name}}',
     community: 'Сообщество',
     discord: 'Discord',

@@ -3641,6 +3641,7 @@ const uk: TranslationWithPlurals = {
     privacy: 'Політика конфіденційності',
     terms: 'Умови використання',
     withdrawal: 'Право на відмову',
+    privacySettings: 'Налаштування конфіденційності та файлів cookie',
     operatedBy: 'Оператор: {{name}}',
     community: 'Спільнота',
     discord: 'Discord',
