@@ -36,6 +36,15 @@
   --bd-input-bg: #ffffff;
   --bd-font-display: Georgia, serif;
   --bd-premium: #F59E0B;
+  /* Motion tokens (#1111). One vocabulary for every game's motion, inside the
+     200-450 ms band of CLAUDE.md's in-game DoD item 3. Theme-independent, so
+     html.dark does not redefine them. --bd-ease-out is the curve five rules
+     used to hard-code; --bd-ease-spring overshoots slightly, for pops. */
+  --bd-dur-fast: 150ms;
+  --bd-dur: 250ms;
+  --bd-dur-slow: 420ms;
+  --bd-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --bd-ease-spring: cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 html.dark {
@@ -716,21 +725,17 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Delays too (#1111): RPS's reveal held its result back 1 s with
+       animation-delay/transition-delay, which the duration reset left intact. */
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 }
 
-/* Animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
+/* Animations. fade-in, scale-in and bounce-in are defined once, further
+   down with the Spy animations; fade-out once, after shake-roll (#1111). */
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -749,15 +754,6 @@ body {
   }
   to {
     transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
     opacity: 0;
   }
 }
@@ -785,42 +781,6 @@ body {
 }
 
 
-@keyframes scale-in {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.animate-fade-out {
-  animation: fade-out 0.3s ease-out;
-}
-
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
 }
@@ -833,13 +793,6 @@ body {
   animation: slide-in-up 0.4s ease-out;
 }
 
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out;
-}
-
-.animate-bounce-in {
-  animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
 
 @keyframes roll {
   0%, 100% { transform: rotate(0deg) scale(1); }
@@ -1346,7 +1299,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.bd-screen { animation: bd-screen-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.bd-screen { animation: bd-screen-in 0.35s var(--bd-ease-out); }
 
 /* Warm page background with radial accents */
 /* In the components layer on purpose: this file comes after @tailwind
@@ -1780,7 +1733,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   backdrop-filter: blur(2px);
   border-radius: inherit;
   z-index: 10;
-  animation: ttt-overlay-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: ttt-overlay-in 0.4s var(--bd-ease-out);
 }
 .ttt-history-card {
   display: flex;
@@ -3123,7 +3076,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transition: transform 0.46s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform 0.46s var(--bd-ease-out);
 }
 
 .memory-tile-inner-flipped {
@@ -3867,7 +3820,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   -webkit-tap-highlight-color: transparent;
 }
 .ludo-board-surface { padding: 12px; }
-.ludo-token { transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.ludo-token { transition: transform 0.32s var(--bd-ease-out); }
 .ludo-token--selectable { cursor: pointer; }
 .ludo-token--selectable:focus { outline: none; }
 .ludo-token__halo {
@@ -3883,7 +3836,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   50% { opacity: 0.35; }
 }
 .ludo-die { flex-shrink: 0; display: block; }
-.ludo-die--rolled { animation: ludo-die-roll 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.ludo-die--rolled { animation: ludo-die-roll 0.45s var(--bd-ease-out); }
 @keyframes ludo-die-roll {
   0% { transform: rotate(-200deg) scale(0.6); opacity: 0.3; }
   70% { transform: rotate(12deg) scale(1.06); opacity: 1; }

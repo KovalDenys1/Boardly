@@ -57,23 +57,8 @@ module.exports = {
         'bd-lg': '24px',
         'bd-xl': '36px',
       },
-      keyframes: {
-        'shake-roll': {
-          '0%, 100%': { transform: 'rotate(0deg)' },
-          '10%': { transform: 'rotate(-5deg)' },
-          '20%': { transform: 'rotate(5deg)' },
-          '30%': { transform: 'rotate(-5deg)' },
-          '40%': { transform: 'rotate(5deg)' },
-          '50%': { transform: 'rotate(-5deg)' },
-          '60%': { transform: 'rotate(5deg)' },
-          '70%': { transform: 'rotate(-5deg)' },
-          '80%': { transform: 'rotate(5deg)' },
-          '90%': { transform: 'rotate(-5deg)' },
-        },
-      },
-      animation: {
-        'shake-roll': 'shake-roll 0.6s ease-in-out',
-      },
+      // shake-roll lives in app/globals.css only (#1111). This copy was emitted at
+      // @tailwind utilities, above the stylesheet's own, so it never applied.
     },
   },
   plugins: [],
