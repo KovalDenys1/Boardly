@@ -15,7 +15,7 @@ function makeRequest() {
   })
 }
 
-const recordServerReliabilityEvent = jest.fn(async () => undefined)
+const recordServerReliabilityEvent = jest.fn(async (_event: { eventName: string; [key: string]: unknown }) => undefined)
 
 async function loadRateLimitModule(redisImplementation?: Record<string, unknown>): Promise<RateLimitModule> {
   jest.resetModules()
