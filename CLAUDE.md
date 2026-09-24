@@ -104,7 +104,7 @@ disagree, the vault's newer dated entry wins; fix this file in the same session.
 - Next.js 16, React 19, TypeScript, Tailwind CSS
 - PostgreSQL via Supabase, Prisma 7
 - Auth: NextAuth, Supabase Realtime (Broadcast + Postgres Changes)
-- Deployed on Vercel (iad1 / US East)
+- Deployed on Vercel, functions in `fra1` (Frankfurt) — `vercel.json` "regions" since #622; it was iad1 before
 
 ## Responsive UI — Definition of Done (details: docs/RESPONSIVE.md)
 

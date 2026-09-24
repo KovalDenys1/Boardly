@@ -9,6 +9,7 @@ import CtaBanner from '@/components/HomePage/CtaBanner'
 import GuidesSection from '@/components/GuidesSection'
 import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
 import { buildFaqFacts } from '@/lib/faq-facts'
+import { getPremiumPricing } from '@/lib/server/premium-pricing'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
 export const dynamic = 'force-static'
 export const revalidate = 3600
 
-export default function HomePage() {
+export default async function HomePage() {
+  // The FAQ quotes Premium's price: take it from Stripe like /premium does
+  // (#1167), refreshed with the page's hourly revalidation.
+  const pricing = await getPremiumPricing()
   const catalogGames = getCatalogGames()
   const availableGames = getCatalogAvailableGames()
   const quickPlayGameCount = availableGames.filter((game) => game.gameType && hasBotSupport(game.gameType)).length
@@ -70,7 +74,7 @@ export default function HomePage() {
 
       {/* FAQ — kept for SEO value */}
       <div className="home-faq-wrap">
-        <FaqSection facts={buildFaqFacts()} />
+        <FaqSection facts={buildFaqFacts(pricing.monthly?.label)} />
       </div>
 
       <Footer />

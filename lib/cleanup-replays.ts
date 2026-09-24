@@ -2,9 +2,10 @@ import { GameStatus } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { MAX_SNAPSHOTS_PER_GAME } from '@/lib/game-replay'
+import { RETENTION_DAYS } from '@/lib/retention-periods'
 
 const log = apiLogger('cleanup-replays')
-const DEFAULT_REPLAY_RETENTION_DAYS = 90
+const DEFAULT_REPLAY_RETENTION_DAYS = RETENTION_DAYS.replays
 
 export interface ReplayCleanupResult {
   deleted: number

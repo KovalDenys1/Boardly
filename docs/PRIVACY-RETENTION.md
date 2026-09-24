@@ -3,10 +3,12 @@
 How long Boardly keeps each kind of personal data, and what deletes it (#1130).
 GDPR Art. 5(1)(e): personal data is kept "slik at det ikke er mulig å identifisere de
 registrerte i lengre perioder enn det som er nødvendig for formålene" (Lovdata,
-personopplysningsloven § 1, ARTIKKEL_5). The periods for the tables that used to be kept
-forever live in one module, `lib/data-retention.ts`, and the daily maintenance cron
-(`app/api/cron/maintenance/route.ts`) enforces them. Change a period there, here and on
-`/privacy` together.
+personopplysningsloven § 1, ARTIKKEL_5). Every number below lives once, in
+`lib/retention-periods.ts` (#1126): the cleanup jobs read it and `/privacy` prints it, so
+the notice cannot drift from what gets deleted. `lib/data-retention.ts` adds what each
+table rule deletes, and the daily maintenance cron (`app/api/cron/maintenance/route.ts`)
+enforces it. Change a period there and here together, and bump `PRIVACY_UPDATED` in
+`lib/terms-version.ts`.
 
 ## Periods the maintenance cron enforces
 

@@ -1,12 +1,14 @@
 import { GameStatus } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { RETENTION_DAYS } from '@/lib/retention-periods'
+import { deleteFeedbackDiscordCopies } from '@/lib/feedback-discord'
 
 /**
  * Retention periods for the tables nothing else ever deleted (#1130, GDPR Art. 5(1)(e)).
  *
- * One place for every period, read by the maintenance cron and restated in
- * docs/PRIVACY-RETENTION.md and on /privacy. Change a number here and there together.
+ * The numbers live in lib/retention-periods.ts, which /privacy also prints; this
+ * module adds what each rule deletes and how. docs/PRIVACY-RETENTION.md restates them.
  *
  * Periods that already live elsewhere are not repeated here: unverified accounts
  * (7 days, lib/cleanup-unverified.ts), guests (3 / 90 days idle,
@@ -41,14 +43,11 @@ export interface RetentionRule {
   enforceByDefault: boolean
 }
 
-const MONTHS_12 = 365
-const MONTHS_24 = 730
-
 export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> = {
   games: {
     key: 'games',
     table: 'Games',
-    days: MONTHS_12,
+    days: RETENTION_DAYS.games,
     measuredFrom: 'the end of the game (endedAt, else last update); finished, abandoned and cancelled games only',
     purpose: 'Game history and statistics shown to the players',
     enforceByDefault: true,
@@ -56,7 +55,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   lobbies: {
     key: 'lobbies',
     table: 'Lobbies',
-    days: MONTHS_12,
+    days: RETENTION_DAYS.lobbies,
     measuredFrom: 'creation; inactive lobbies with no game left in them only',
     purpose: 'Lobby name, code and creator for the games played in it',
     enforceByDefault: true,
@@ -64,7 +63,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   lobbyParticipations: {
     key: 'lobbyParticipations',
     table: 'LobbyParticipations',
-    days: MONTHS_24,
+    days: RETENTION_DAYS.lobbyParticipations,
     measuredFrom: 'joining the lobby',
     purpose: 'Pseudonymous join counts (salted hash, no id or name) for year-over-year product analytics',
     enforceByDefault: true,
@@ -72,7 +71,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   operationalEvents: {
     key: 'operationalEvents',
     table: 'OperationalEvents',
-    days: 180,
+    days: RETENTION_DAYS.operationalEvents,
     measuredFrom: 'the event (occurredAt)',
     purpose: 'Reliability monitoring and alerting',
     enforceByDefault: true,
@@ -80,7 +79,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   feedback: {
     key: 'feedback',
     table: 'Feedback',
-    days: MONTHS_12,
+    days: RETENTION_DAYS.feedback,
     measuredFrom: 'submission',
     purpose: 'Answering and acting on feedback and bug reports',
     enforceByDefault: true,
@@ -88,7 +87,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   notifications: {
     key: 'notifications',
     table: 'Notifications',
-    days: MONTHS_12,
+    days: RETENTION_DAYS.notifications,
     measuredFrom: 'creation',
     purpose: 'In-app notification inbox and email/push delivery de-duplication',
     enforceByDefault: true,
@@ -96,7 +95,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
   adminAuditLogs: {
     key: 'adminAuditLogs',
     table: 'AdminAuditLogs',
-    days: MONTHS_24,
+    days: RETENTION_DAYS.adminAuditLogs,
     measuredFrom: 'the admin action',
     purpose: 'Accountability for actions taken in the Control Panel (bans, refunds, edits)',
     enforceByDefault: true,
@@ -174,7 +173,13 @@ function ruleOperations(key: RetentionRuleKey, cutoff: Date): RuleOperations {
       const where = { createdAt: { lt: cutoff } }
       return {
         count: () => prisma.feedback.count({ where }),
-        remove: async () => (await prisma.feedback.deleteMany({ where })).count,
+        remove: async () => {
+          // The Discord copy goes with the row. A row whose copy Discord refused to
+          // delete is kept, with its message id, for the next run to try again.
+          const { failed } = await deleteFeedbackDiscordCopies(where)
+          const removable = failed.length > 0 ? { ...where, id: { notIn: failed } } : where
+          return (await prisma.feedback.deleteMany({ where: removable })).count
+        },
       }
     }
     case 'notifications': {

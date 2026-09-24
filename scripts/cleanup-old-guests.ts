@@ -13,6 +13,7 @@
 import { prisma } from '../lib/db'
 import type { Prisma } from '../prisma/client'
 import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '../lib/account-erasure'
+import { RETENTION_DAYS } from '../lib/retention-periods'
 
 interface CleanupOptions {
   days?: number
@@ -44,8 +45,8 @@ interface CleanupOptions {
  *   row is never kept past the point where the returning guest could still
  *   prove it is theirs, and the token never outlives a played guest's row.
  */
-const DEFAULT_GUEST_CLEANUP_DAYS = 3
-const PLAYED_GUEST_CLEANUP_DAYS = 90
+const DEFAULT_GUEST_CLEANUP_DAYS = RETENTION_DAYS.guestIdle
+const PLAYED_GUEST_CLEANUP_DAYS = RETENTION_DAYS.guestPlayedIdle
 
 /**
  * What counts as "this guest actually played".

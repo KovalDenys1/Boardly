@@ -569,15 +569,18 @@ model PurchaseConsents {
 }
 
 model Feedback {
-  id        String   @id @default(cuid())
-  type      String // 'bug' | 'feature' | 'other'
-  status    String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
-  message   String
-  email     String?
-  pageUrl   String?
-  userId    String?
-  user      Users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  id               String   @id @default(cuid())
+  type             String // 'bug' | 'feature' | 'other'
+  status           String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
+  message          String
+  email            String?
+  pageUrl          String?
+  userId           String?
+  user             Users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  /// Id of the copy posted to the Discord feedback channel, so retention and account
+  /// deletion can delete that copy too (lib/feedback-discord.ts). Null when none was posted.
+  discordMessageId String?
 
   @@index([type, createdAt])
   @@index([userId])

@@ -38,7 +38,12 @@ function toFaqGame(game: GameCatalogEntry): FaqGame | null {
   return { nameKey: game.nameKey, nameEn: meta.name }
 }
 
-export function buildFaqFacts(): FaqFacts {
+/**
+ * `premiumPrice` is the monthly list price Stripe answered with (#1167), so the
+ * FAQ quotes the same figure /premium sells at. `PREMIUM_BASE_PRICE` stands in
+ * only when Stripe could not be asked, exactly as it does on /premium.
+ */
+export function buildFaqFacts(premiumPrice: string = PREMIUM_BASE_PRICE): FaqFacts {
   const availableGames = getCatalogAvailableGames()
   const games = availableGames.map(toFaqGame).filter((game): game is FaqGame => game !== null)
   const botGames = availableGames
@@ -59,6 +64,6 @@ export function buildFaqFacts(): FaqFacts {
     maxPlayers: biggest?.max ?? 0,
     // games is never empty — the six original games are always available
     maxPlayersGame: biggest?.game ?? games[0],
-    premiumPrice: PREMIUM_BASE_PRICE,
+    premiumPrice,
   }
 }

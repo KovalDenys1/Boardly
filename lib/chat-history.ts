@@ -5,11 +5,12 @@
  */
 
 import { logger } from './logger'
+import { CHAT_RETENTION_HOURS } from './retention-periods'
 import { getRedisRestCredentials, REDIS_CREDENTIALS_MISSING_MESSAGE } from './redis-credentials'
 
 const CHAT_KEY_PREFIX = 'chat:lobby:'
 const MAX_MESSAGES = 50
-const TTL_SECONDS = 24 * 60 * 60 // 24 hours
+const TTL_SECONDS = CHAT_RETENTION_HOURS * 60 * 60
 
 interface ChatRedisClient {
   lpush(key: string, ...values: string[]): Promise<unknown>

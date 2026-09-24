@@ -19,7 +19,7 @@ async function handleCronRequest(request: NextRequest) {
   try {
     // Consolidated daily maintenance to stay within Vercel cron limits.
     const warningResult = await warnUnverifiedAccounts(2, 7)
-    const cleanupUnverifiedResult = await cleanupUnverifiedAccounts(7)
+    const cleanupUnverifiedResult = await cleanupUnverifiedAccounts()
     const guestCleanupResult = await cleanupOldGuests({ disconnect: false })
     const replayCleanupResult = await cleanupOldReplaySnapshots()
     const replayOverflowResult = await cleanupOversizedReplaySnapshots()
