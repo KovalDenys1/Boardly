@@ -1225,6 +1225,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
           inviteCode={code}
           gameType="liars_party"
+          resultKey={`${game?.id}:${data?.finishedAt ?? lastMoveAt ?? ''}`}
           isRegistered={status === 'authenticated' && !isGuest}
         />
       )}

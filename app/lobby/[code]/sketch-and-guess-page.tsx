@@ -1120,6 +1120,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="sketch_and_guess"
+                    resultKey={`${game?.id}:${gameData.finishedAt ?? game?.lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

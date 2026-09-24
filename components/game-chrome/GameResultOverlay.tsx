@@ -24,7 +24,7 @@ import { prefersReducedMotion } from '@/lib/motion'
  * land. It now waits `revealDelayMs` (invisible and click-through, still in the
  * DOM) and then fades in with the panel scaling up. No wait under
  * prefers-reduced-motion, and none when the player comes back from "View
- * board" — they have already seen the board.
+ * board" to the same finish (`resultKey`) — they have already seen the board.
  */
 export interface GameResultOverlayProps {
   /** Already-translated personalized title ("Alice wins!", "You win!", "It's a draw"). */
@@ -65,6 +65,14 @@ export interface GameResultOverlayProps {
    * own animation can play (#1111). 0 shows it at once.
    */
   revealDelayMs?: number
+  /**
+   * Identifies this finish: the game id plus something that changes whenever a
+   * game or round finishes again, e.g. `${game.id}:${state.lastMoveAt}` (#1111).
+   * Coming back from "View board" skips the reveal wait only for the same key,
+   * so a rematch or next round can never inherit the skip. Omit it and every
+   * mount waits.
+   */
+  resultKey?: string
 }
 
 /** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
@@ -72,20 +80,22 @@ export const RESULT_REVEAL_DELAY_MS = 700
 
 /**
  * "View board" unmounts the overlay in every adopter, and coming back mounts it
- * again. The overlay itself sees the click, so it leaves a note for its next
- * mount: that one is a return, not a fresh finish, and must not wait again.
- * Bounded in time so a note nobody picked up cannot skip a later game's wait.
+ * again. The overlay itself sees the click, so it notes which finish was being
+ * inspected: a later mount with the same `resultKey` is a return, not a fresh
+ * finish, and must not wait again. Keyed on the finish rather than on time or
+ * game type, because several pages reset their inspect state on a rematch
+ * without remounting the overlay, and the next game's overlay must still wait
+ * (#1111 review).
  */
-const RESUME_WINDOW_MS = 10 * 60 * 1000
-let inspectNote: { gameType: string; at: number } | null = null
+let inspectedResultKey: string | null = null
 
-function isReturnFromInspect(gameType: string): boolean {
-  return !!inspectNote && inspectNote.gameType === gameType && Date.now() - inspectNote.at < RESUME_WINDOW_MS
+function isReturnFromInspect(resultKey: string | undefined): boolean {
+  return !!resultKey && inspectedResultKey === resultKey
 }
 
 /** Test seam: forget any pending "View board" note. */
 export function resetResultOverlayRevealState(): void {
-  inspectNote = null
+  inspectedResultKey = null
 }
 
 const ghostBtn: React.CSSProperties = {
@@ -133,15 +143,17 @@ export default function GameResultOverlay({
   gameType,
   isRegistered = false,
   revealDelayMs = RESULT_REVEAL_DELAY_MS,
+  resultKey,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
   // Decided once, at mount: a later prop change must not hide a visible overlay.
   const [revealed, setRevealed] = useState(
-    () => revealDelayMs <= 0 || prefersReducedMotion() || isReturnFromInspect(gameType)
+    () => revealDelayMs <= 0 || prefersReducedMotion() || isReturnFromInspect(resultKey)
   )
 
   useEffect(() => {
-    inspectNote = null
+    // A mount for any other finish makes the note stale for good.
+    if (inspectedResultKey !== resultKey) inspectedResultKey = null
     if (revealed) return
     const timer = setTimeout(() => setRevealed(true), revealDelayMs)
     return () => clearTimeout(timer)
@@ -149,7 +161,7 @@ export default function GameResultOverlay({
   }, [])
 
   const handleInspect = () => {
-    inspectNote = { gameType, at: Date.now() }
+    inspectedResultKey = resultKey ?? null
     onInspect()
   }
 

@@ -839,6 +839,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="rock_paper_scissors"
+                    resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

@@ -1124,6 +1124,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="ludo"
+                    resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

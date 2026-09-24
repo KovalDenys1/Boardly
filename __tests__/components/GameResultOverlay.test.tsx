@@ -182,27 +182,56 @@ describe('GameResultOverlay reveal (#1111)', () => {
     expect(overlay().style.opacity).toBe('')
   })
 
-  it('does not wait again when the player comes back from View board', () => {
-    const { unmount } = render(<GameResultOverlay {...base} />)
+  it('does not wait again when the player comes back from View board to the same finish', () => {
+    const { unmount } = render(<GameResultOverlay {...base} resultKey="g1:100" />)
     act(() => { jest.advanceTimersByTime(RESULT_REVEAL_DELAY_MS) })
     fireEvent.click(screen.getByText('game.ui.viewBoard'))
     expect(base.onInspect).toHaveBeenCalled()
     unmount()
 
-    const second = render(<GameResultOverlay {...base} />)
+    const back = render(<GameResultOverlay {...base} resultKey="g1:100" />)
     expect(overlay().getAttribute('data-state')).toBe('shown')
-    second.unmount()
+    back.unmount()
+  })
 
-    // The note is used once: the next game's finish waits again.
-    render(<GameResultOverlay {...base} />)
+  // #1111 review: several pages reset their inspect state on a rematch without
+  // remounting the overlay, so the note outlived its game and the next game's
+  // overlay appeared instantly over the finishing move.
+  it('waits again after View board and a rematch (new game id), with no mount in between', () => {
+    const { unmount } = render(<GameResultOverlay {...base} resultKey="g1:100" />)
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    unmount()
+
+    render(<GameResultOverlay {...base} resultKey="g2:250" />)
     expect(overlay().getAttribute('data-state')).toBe('pending')
   })
 
-  it('does not carry a View board note across games of a different type', () => {
-    const { unmount } = render(<GameResultOverlay {...base} revealDelayMs={0} />)
+  it('waits again for the next round of the same game (same id, new finish)', () => {
+    const { unmount } = render(<GameResultOverlay {...base} resultKey="g1:100" />)
     fireEvent.click(screen.getByText('game.ui.viewBoard'))
     unmount()
-    render(<GameResultOverlay {...base} gameType="connect_four" />)
+
+    render(<GameResultOverlay {...base} resultKey="g1:180" />)
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+  })
+
+  it('drops the note once another finish mounts, so an old key cannot come back', () => {
+    const first = render(<GameResultOverlay {...base} resultKey="g1:100" />)
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    first.unmount()
+    const other = render(<GameResultOverlay {...base} resultKey="g2:250" />)
+    other.unmount()
+
+    render(<GameResultOverlay {...base} resultKey="g1:100" />)
+    expect(overlay().getAttribute('data-state')).toBe('pending')
+  })
+
+  it('always waits when the adopter passes no resultKey', () => {
+    const { unmount } = render(<GameResultOverlay {...base} />)
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    unmount()
+
+    render(<GameResultOverlay {...base} />)
     expect(overlay().getAttribute('data-state')).toBe('pending')
   })
 

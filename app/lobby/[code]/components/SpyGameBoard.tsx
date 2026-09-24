@@ -1006,6 +1006,7 @@ export default function SpyGameBoard({
           registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="guess_the_spy"
+          resultKey={`${gameId}:${state.lastMoveAt ?? ''}`}
           isRegistered={!isGuest && !!currentUserId}
         />
       )}
