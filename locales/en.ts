@@ -1501,7 +1501,7 @@ const en = {
         exactHome: 'You need the exact number to reach home.',
         winner: 'The first player to bring every token home wins; the others are ranked by progress.',
         modes: 'Quick mode plays with two tokens each, classic with four.',
-        timer: 'When the turn timer runs out, the server rolls and moves for you and the turn passes.',
+        timer: 'One turn timer covers your roll and your move, and a bonus roll after a 6 gets a fresh one. When it runs out, the server rolls and moves for you and the turn passes.',
       },
       detail: {
         title: 'Play Ludo Online',

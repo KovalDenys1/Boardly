@@ -334,12 +334,11 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: true,
     translationKey: 'ludo',
     // Like Yahtzee: the departed seat's tokens stay on the board and the turn
-    // steps off it. The engine also resets a phase left behind by another seat
-    // on its own (LudoGame.syncTurnOwner), so these resets are belt and braces.
+    // steps off it. No turnResetOnLeave: every restored LudoGame resets a phase
+    // left behind by another seat itself (normalizeRestoredData, #1102).
     advanceTurnOnLeave: true,
     engineHandlesLeave: false,
     usesTurnIndex: true,
-    turnResetOnLeave: { phase: 'roll', dice: null, legalTokens: [], consecutiveSixes: 0 },
   },
 }
 

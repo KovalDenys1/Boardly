@@ -1501,7 +1501,7 @@ const no = {
         exactHome: 'Du må slå nøyaktig riktig tall for å komme hjem.',
         winner: 'Den første som får alle brikkene hjem vinner; de andre rangeres etter hvor langt de har kommet.',
         modes: 'Hurtigmodus spilles med to brikker hver, klassisk med fire.',
-        timer: 'Når turtiden går ut, kaster og flytter serveren for deg, og turen går videre.',
+        timer: 'Én turtid gjelder både kastet og trekket, og et ekstrakast etter en sekser får ny tid. Når tiden går ut, kaster og flytter serveren for deg, og turen går videre.',
       },
       detail: {
         title: 'Spill Ludo på nett',

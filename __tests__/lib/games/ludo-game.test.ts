@@ -113,13 +113,13 @@ describe('LudoGame rolling and leaving the yard', () => {
     queueRolls(6)
     game.makeMove(move(P1, 'roll'))
     // Two tokens in the yard: a choice, so the player picks.
-    expect(game.getEffectivePhase()).toBe('move')
+    expect(game.getPhase()).toBe('move')
     expect(dataOf(game).legalTokens).toEqual([0, 1])
     expect(game.makeMove(move(P1, 'move', { token: 1 }))).toBe(true)
     expect(dataOf(game).tokens[P1]).toEqual([LUDO_YARD, 0])
     // The 6 earns another roll for the same seat.
     expect(game.getCurrentPlayer()?.id).toBe(P1)
-    expect(game.getEffectivePhase()).toBe('roll')
+    expect(game.getPhase()).toBe('roll')
   })
 
   it('moves automatically when only one move is legal', () => {
@@ -247,6 +247,93 @@ describe('LudoGame reaching home and winning', () => {
   })
 })
 
+describe('LudoGame review fixes (#1102)', () => {
+  it('keeps the bonus roll after a 6 that has no legal move', () => {
+    const game = newGame()
+    // Both tokens home-bound: 54 + 6 and 55 + 6 overshoot, so the 6 cannot be played.
+    place(game, { [P1]: [54, 55] })
+    queueRolls(6)
+    game.makeMove(move(P1, 'roll'))
+    expect(dataOf(game).events.at(-1)?.kind).toBe('no-move')
+    expect(game.getCurrentPlayer()?.id).toBe(P1)
+    expect(dataOf(game).phase).toBe('roll')
+    expect(dataOf(game).consecutiveSixes).toBe(1)
+  })
+
+  it('still loses the turn when the unplayable 6 is the third in a row', () => {
+    const game = newGame()
+    place(game, { [P1]: [54, 55] })
+    queueRolls(6, 6, 6)
+    game.makeMove(move(P1, 'roll'))
+    game.makeMove(move(P1, 'roll'))
+    game.makeMove(move(P1, 'roll'))
+    expect(dataOf(game).events.at(-1)?.kind).toBe('triple-six')
+    expect(game.getCurrentPlayer()?.id).toBe(P2)
+  })
+
+  it('ranks a seat that left the game after every player who stayed', () => {
+    const game = newGame([P1, P2, P3])
+    place(game, {
+      [P1]: [54, LUDO_FINISH],
+      [P2]: [LUDO_FINISH, 40],
+      [P3]: [3, LUDO_YARD],
+    })
+    // P2 left mid-game: the leave path marks the seat inactive on the raw state.
+    const state = game.getState()
+    state.players = state.players.map((p) => (p.id === P2 ? { ...p, isActive: false } : p))
+    game.restoreState(state)
+    queueRolls(2)
+    game.makeMove(move(P1, 'roll'))
+    expect(game.getState().status).toBe('finished')
+    expect(dataOf(game).ranking).toEqual([P1, P3, P2])
+  })
+
+  it('runs one clock per turn: a roll that leaves a choice does not restart it', () => {
+    const game = newGame()
+    place(game, { [P1]: [10, 20] })
+    const state = game.getState()
+    state.turnStartedAt = 1_000
+    game.restoreState(state)
+    queueRolls(3)
+    game.makeMove(move(P1, 'roll'))
+    expect(dataOf(game).phase).toBe('move')
+    expect(game.getState().turnStartedAt).toBe(1_000)
+  })
+
+  it('gives a bonus roll after a 6 a fresh clock', () => {
+    const game = newGame()
+    place(game, { [P1]: [10, 20] })
+    const state = game.getState()
+    state.turnStartedAt = 1_000
+    game.restoreState(state)
+    queueRolls(6)
+    game.makeMove(move(P1, 'roll'))
+    game.makeMove(move(P1, 'move', { token: 0 }))
+    expect(game.getCurrentPlayer()?.id).toBe(P1)
+    expect(game.getState().turnStartedAt).toBeGreaterThan(1_000)
+  })
+
+  it('only accepts timeout through the turn-timer path', () => {
+    const game = newGame()
+    expect(game.isTimerOnlyMove(move(P1, 'timeout'))).toBe(true)
+    expect(game.isTimerOnlyMove(move(P1, 'roll'))).toBe(false)
+  })
+
+  it('brings a restored engine to a fresh roll when the seat on the clock changed outside it', () => {
+    const game = newGame()
+    place(game, { [P1]: [10, 20] })
+    queueRolls(3)
+    game.makeMove(move(P1, 'roll'))
+    const state = game.getState()
+    state.currentPlayerIndex = 1
+    const copy = new LudoGame('ludo-test')
+    copy.restoreState(JSON.parse(JSON.stringify(state)))
+    expect(copy.getData().phase).toBe('roll')
+    expect(copy.getData().turnPlayerId).toBe(P2)
+    expect(copy.getData().legalTokens).toEqual([])
+  })
+})
+
 describe('LudoGame turn timer and stale turns', () => {
   it('lets the timeout roll, move and pass the turn without a bonus roll', () => {
     const game = newGame()
@@ -264,7 +351,7 @@ describe('LudoGame turn timer and stale turns', () => {
     place(game, { [P1]: [10, 20] })
     queueRolls(3)
     game.makeMove(move(P1, 'roll'))
-    expect(game.getEffectivePhase()).toBe('move')
+    expect(game.getPhase()).toBe('move')
     game.makeMove(move(P1, 'timeout'))
     expect(dataOf(game).tokens[P1]).toEqual([10, 23])
     expect(game.getCurrentPlayer()?.id).toBe(P2)
@@ -279,7 +366,7 @@ describe('LudoGame turn timer and stale turns', () => {
     const state = game.getState()
     state.currentPlayerIndex = 1
     game.restoreState(state)
-    expect(game.getEffectivePhase()).toBe('roll')
+    expect(game.getPhase()).toBe('roll')
     queueRolls(4)
     expect(game.makeMove(move(P2, 'roll'))).toBe(true)
   })

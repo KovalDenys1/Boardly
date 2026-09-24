@@ -490,13 +490,69 @@ describe('useBotTurn watchdog', () => {
 
     await act(async () => {
       resolveFirst({ ok: true, json: async () => ({}) })
-      await Promise.resolve()
+      for (let i = 0; i < 50; i++) await Promise.resolve()
     })
-    await advanceAndFlush(300)
+    // It asks the server once the open request is done (#1102), and bot-2 is
+    // still on turn after the answer, so it goes out one allowance later.
+    await advanceAndFlush(BOT_COMMIT_DELIVERY_ALLOWANCE_MS + 300)
     expect(mockFetchWithGuest).toHaveBeenCalledTimes(2)
     expect(mockFetchWithGuest.mock.calls[1][1]).toEqual(
       expect.objectContaining({ body: JSON.stringify({ botUserId: 'bot-2', lobbyCode: 'ABCD12' }) })
     )
+  })
+
+  it('does not re-fire for a bot whose own open request already ended the turn (#1102)', async () => {
+    // The armed trigger has already reconciled this turn and is waiting out the
+    // delivery allowance when a request for the same bot goes out from elsewhere
+    // (the page's turn-timeout fallback). When that request answers, the bot's turn
+    // is over - the broadcast saying so is just late. Re-firing then is a wasted
+    // POST answered "Not bot's turn"; the hook has to ask the server first.
+    let resolveFirst: (value: unknown) => void = () => {}
+    mockFetchWithGuest
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }) as any)
+      .mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: "Not bot's turn" }) } as any)
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const { result, rerender } = renderHook(
+      ({ engine }) =>
+        useBotTurn({
+          game: botGame,
+          gameEngine: engine,
+          code: 'ABCD12',
+          isGameStarted: true,
+          gameType: 'tic_tac_toe',
+          reconcileWithServerSnapshot,
+        }),
+      { initialProps: { engine: makeBotEngine('bot-1', 1, 1000) as any } }
+    )
+
+    // The grace expires into its reconcile; the armed trigger now waits the allowance.
+    await advanceAndFlush(TTT_GRACE_MS + 10)
+    expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+    expect(mockFetchWithGuest).not.toHaveBeenCalled()
+
+    // The fallback fires a request for the same bot, which stays open.
+    await act(async () => {
+      void result.current.triggerBotTurn('bot-1', 'game-123')
+      await Promise.resolve()
+    })
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+
+    // The armed trigger comes due while that request is open, and waits on it.
+    await advanceAndFlush(BOT_COMMIT_DELIVERY_ALLOWANCE_MS + 10)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveFirst({ ok: true, json: async () => ({}) })
+      // Let the finished request run to its `finally`, which frees the lock.
+      for (let i = 0; i < 50; i++) await Promise.resolve()
+    })
+    await advanceAndFlush(300)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+
+    // The reconcile brings the real state: the turn is the human's.
+    rerender({ engine: makeHumanTurnEngine(3000) as any })
+    await advanceAndFlush(10_000)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
   })
 
   it('does not POST again after a 409 - it reconciles and lets the state decide (#1049)', async () => {

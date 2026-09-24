@@ -118,16 +118,17 @@ function LudoBoard({
 }) {
     // Tokens that share a square are fanned out a little so each stays visible and tappable.
     const placed = useMemo(() => {
-        const groups = new Map<string, BoardToken[]>()
+        const groups = new Map<string, Array<{ token: BoardToken; point: { x: number; y: number } }>>()
         for (const token of tokens) {
             const point = ludoTokenPoint(token.color, token.position, token.token)
             const key = `${point.x.toFixed(2)}:${point.y.toFixed(2)}`
-            groups.set(key, [...(groups.get(key) ?? []), token])
+            const group = groups.get(key)
+            if (group) group.push({ token, point })
+            else groups.set(key, [{ token, point }])
         }
         const result: Array<BoardToken & { x: number; y: number; r: number }> = []
         for (const group of groups.values()) {
-            group.forEach((token, index) => {
-                const point = ludoTokenPoint(token.color, token.position, token.token)
+            group.forEach(({ token, point }, index) => {
                 const shift = group.length > 1 ? (index - (group.length - 1) / 2) * 0.24 : 0
                 const isFinished = token.position >= LUDO_FINISH
                 result.push({
@@ -759,6 +760,31 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     }, [code, getCurrentUserId, lobby, onGameReset, router])
 
     // Hoisted above the early returns so the hook always runs.
+    // The board's token list, memoised on the engine (a new engine per state) and
+    // the few things that decide what is tappable. Hoisted with the other hooks.
+    const boardUserId = getCurrentUserId()
+    const canPickToken =
+        !isSpectator &&
+        !isMoveSubmitting &&
+        !!gameEngine &&
+        gameEngine.getState().status === 'playing' &&
+        gameEngine.getCurrentPlayer()?.id === boardUserId &&
+        gameEngine.getPhase() === 'move'
+    const boardTokens = useMemo<BoardToken[]>(() => {
+        if (!gameEngine) return []
+        const data = gameEngine.getData()
+        return data.seats.flatMap((seat) =>
+            (data.tokens[seat.playerId] ?? []).map((position, token) => ({
+                playerId: seat.playerId,
+                color: seat.color,
+                token,
+                position,
+                isMine: seat.playerId === boardUserId,
+                selectable: canPickToken && seat.playerId === boardUserId && data.legalTokens.includes(token),
+            }))
+        )
+    }, [gameEngine, boardUserId, canPickToken])
+
     const earlyEvents = gameEngine ? gameEngine.getData().events : undefined
     const reversedEvents = useMemo(
         () => (Array.isArray(earlyEvents) ? earlyEvents.slice().reverse() : []),
@@ -812,7 +838,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const lobbyPlayers = game?.players || []
     const currentUserId = getCurrentUserId()
     const currentPlayer = gameEngine.getCurrentPlayer()
-    const phase = gameEngine.getEffectivePhase()
+    const phase = gameEngine.getPhase()
     const myTurn = !isSpectator && isMyTurn() && !isFinished
 
     const lobbyPlayerOf = (playerId: string) => lobbyPlayers.find((p) => p.userId === playerId)
@@ -837,16 +863,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const currentColor = currentPlayer ? colorOf(currentPlayer.id) : 'red'
     const currentName = currentPlayer ? getDisplayName(currentPlayer.id) : ''
 
-    const boardTokens: BoardToken[] = data.seats.flatMap((seat) =>
-        (data.tokens[seat.playerId] ?? []).map((position, token) => ({
-            playerId: seat.playerId,
-            color: seat.color,
-            token,
-            position,
-            isMine: seat.playerId === currentUserId,
-            selectable: myTurn && phase === 'move' && seat.playerId === currentUserId && data.legalTokens.includes(token) && !isMoveSubmitting,
-        }))
-    )
     const lastMovedKey = data.lastMove ? `${data.lastMove.playerId}-${data.lastMove.token}` : null
 
     const handleRoll = async () => {

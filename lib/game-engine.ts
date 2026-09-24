@@ -87,6 +87,20 @@ export function hasScorecard(engine: GameEngine): engine is GameEngine & HasScor
   return typeof (engine as { getScorecard?: unknown }).getScorecard === 'function'
 }
 
+/**
+ * Engines with a move only the turn timer may send - Ludo's `timeout`, which plays
+ * the turn for an idle player (#1102). The state route refuses such a move unless
+ * it arrives as a turn-timeout auto-action, whose deadline the route checks itself.
+ */
+export interface HasTimerOnlyMoves {
+  isTimerOnlyMove(move: Move): boolean
+}
+
+export function isTimerOnlyMove(engine: GameEngine, move: Move): boolean {
+  const candidate = engine as Partial<HasTimerOnlyMoves>
+  return typeof candidate.isTimerOnlyMove === 'function' && candidate.isTimerOnlyMove(move) === true
+}
+
 export function hasPendingRequest(engine: GameEngine): engine is GameEngine & HasPendingRequest {
   return typeof (engine as { getPendingRequest?: unknown }).getPendingRequest === 'function'
 }

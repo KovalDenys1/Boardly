@@ -43,7 +43,7 @@ export class LudoBotExecutor {
       if (state.status !== 'playing') return
       if (gameEngine.getCurrentPlayer()?.id !== botUserId) return
 
-      const isRoll = gameEngine.getEffectivePhase() === 'roll'
+      const isRoll = gameEngine.getPhase() === 'roll'
       await botDelay(difficulty, isRoll ? LUDO_BOT_ROLL_PAUSE_BASE : LUDO_BOT_MOVE_PAUSE_BASE)
 
       const decision = await bot.makeDecision()

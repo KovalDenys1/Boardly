@@ -157,6 +157,8 @@ export function isSafeSquare(absolute: number): boolean {
 export class LudoGame extends GameEngine {
   /** Set by processMove, read by shouldAdvanceTurn in the same makeMove call. */
   private turnEnded = false
+  /** Set by processMove when a 6 gave the same seat another roll; read by restartsTurnClock. */
+  private bonusRollGranted = false
 
   constructor(gameId: string, config: GameConfig = { maxPlayers: 4, minPlayers: 2 }) {
     super(gameId, 'ludo', config)
@@ -207,6 +209,10 @@ export class LudoGame extends GameEngine {
     data.eventCount = typeof data.eventCount === 'number' ? data.eventCount : data.events.length
     data.ranking = Array.isArray(data.ranking) ? data.ranking : []
     data.winnerId = typeof data.winnerId === 'string' ? data.winnerId : null
+    // Once, here, so every restored engine agrees with the seat on the clock:
+    // the leave path and the disconnected-seat skip move currentPlayerIndex on
+    // the raw state (#992) and leave the previous seat's phase and dice behind.
+    if (this.state.status === 'playing') this.syncTurnOwner()
   }
 
   startGame(): boolean {
@@ -243,7 +249,6 @@ export class LudoGame extends GameEngine {
 
     const current = this.getCurrentPlayer()
     if (!current || current.id !== move.playerId) return false
-    this.syncTurnOwner()
 
     switch (move.type) {
       case 'roll':
@@ -255,6 +260,7 @@ export class LudoGame extends GameEngine {
       }
       case 'timeout':
         // The clock ran out: the server finishes whatever step the seat was on.
+        // Only ever accepted through the turn-timer path - see isTimerOnlyMove.
         return true
       default:
         return false
@@ -263,7 +269,7 @@ export class LudoGame extends GameEngine {
 
   processMove(move: Move): void {
     this.turnEnded = false
-    this.syncTurnOwner()
+    this.bonusRollGranted = false
     const data = this.getData()
     const at = move.timestamp instanceof Date ? move.timestamp.getTime() : Date.now()
 
@@ -311,7 +317,27 @@ export class LudoGame extends GameEngine {
       'You need the exact number to reach home',
       'First player to bring every token home wins; the rest are ranked by progress',
       'Quick mode plays with 2 tokens each, classic with 4',
+      'The turn timer covers the roll and the move; a bonus roll after a 6 gets a fresh timer',
     ]
+  }
+
+  /**
+   * `timeout` plays the turn for an idle player, so it must never be something a
+   * client can send whenever it likes. The state route accepts it only as a
+   * turn-timer auto-action whose deadline has genuinely passed (#1102).
+   */
+  isTimerOnlyMove(move: Move): boolean {
+    return move.type === 'timeout'
+  }
+
+  /**
+   * One clock per turn (#1102). The roll that leaves a choice does not restart
+   * it, so the timer covers rolling and moving together; a 6 that grants
+   * another roll does, because that is a new roll with a new decision. Handing
+   * the turn over restarts it in advanceTurnIndex whatever this says.
+   */
+  protected restartsTurnClock(_move: Move): boolean {
+    return this.bonusRollGranted
   }
 
   protected shouldAdvanceTurn(_move: Move): boolean {
@@ -345,12 +371,9 @@ export class LudoGame extends GameEngine {
     return [...(this.getData().tokens[playerId] ?? [])]
   }
 
-  /** Phase for the seat on the clock, treating a phase left over from another seat as a fresh turn. */
-  getEffectivePhase(): LudoPhase {
-    const data = this.getData()
-    const current = this.getCurrentPlayer()
-    if (!current || data.turnPlayerId !== current.id) return 'roll'
-    return data.phase
+  /** What the seat on the clock does next. */
+  getPhase(): LudoPhase {
+    return this.getData().phase
   }
 
   tokensHome(playerId: string): number {
@@ -430,7 +453,11 @@ export class LudoGame extends GameEngine {
     const options = this.getMoveOptionsFor(playerId, value)
     if (options.length === 0) {
       this.logEvent({ playerId, roll: value, kind: 'no-move', at, auto: isTimeout || undefined })
-      this.endTurn()
+      // A 6 still earns the next roll even when it cannot be played (#1102) -
+      // the rules say "a 6 earns another roll", not "a played 6". An idle
+      // player's timeout never gets one.
+      if (value === 6 && !isTimeout) this.grantBonusRoll(playerId)
+      else this.endTurn()
       return
     }
 
@@ -496,15 +523,21 @@ export class LudoGame extends GameEngine {
     }
 
     if (roll === 6 && !isTimeout) {
-      // Another roll for the same seat.
-      data.phase = 'roll'
-      data.turnPlayerId = playerId
-      data.dice = null
-      data.legalTokens = []
+      this.grantBonusRoll(playerId)
       return
     }
 
     this.endTurn()
+  }
+
+  /** Another roll for the same seat, on a fresh clock (see restartsTurnClock). */
+  private grantBonusRoll(playerId: string): void {
+    const data = this.getData()
+    data.phase = 'roll'
+    data.turnPlayerId = playerId
+    data.dice = null
+    data.legalTokens = []
+    this.bonusRollGranted = true
   }
 
   private finishGame(winnerId: string): void {
@@ -513,9 +546,13 @@ export class LudoGame extends GameEngine {
     data.phase = 'roll'
     data.dice = null
     data.legalTokens = []
+    // Seats that left mid-game (the leave path marks them isActive: false) rank
+    // after everyone who stayed to the end, however far their tokens had got.
+    const hasLeft = (player: Player) => player.isActive === false
     const others = this.state.players
       .filter((player) => player.id !== winnerId)
       .sort((a, b) =>
+        Number(hasLeft(a)) - Number(hasLeft(b)) ||
         this.tokensHome(b.id) - this.tokensHome(a.id) ||
         this.progress(b.id) - this.progress(a.id)
       )

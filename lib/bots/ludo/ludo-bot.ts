@@ -3,7 +3,6 @@ import {
   LudoGame,
   LudoMoveOption,
   LudoColor,
-  LUDO_FINISH,
   LUDO_HOME_COLUMN_START,
   LUDO_LAST_TRACK_STEP,
   LUDO_TRACK_LENGTH,
@@ -40,7 +39,7 @@ export class LudoBot extends BaseBot<LudoGame, LudoBotDecision> {
 
   async makeDecision(): Promise<LudoBotDecision> {
     const playerId = this.resolvePlayerId()
-    if (this.gameEngine.getEffectivePhase() === 'roll') return { type: 'roll' }
+    if (this.gameEngine.getPhase() === 'roll') return { type: 'roll' }
 
     const data = this.gameEngine.getData()
     const options = this.gameEngine
@@ -62,7 +61,7 @@ export class LudoBot extends BaseBot<LudoGame, LudoBotDecision> {
   evaluateState(): string {
     const state = this.gameEngine.getState()
     const data = this.gameEngine.getData()
-    return `Ludo turn=${state.currentPlayerIndex} phase=${this.gameEngine.getEffectivePhase()} dice=${data.dice ?? '-'}`
+    return `Ludo turn=${state.currentPlayerIndex} phase=${this.gameEngine.getPhase()} dice=${data.dice ?? '-'}`
   }
 
   chooseOption(playerId: string, options: LudoMoveOption[]): LudoMoveOption {
@@ -161,6 +160,6 @@ export class LudoBot extends BaseBot<LudoGame, LudoBotDecision> {
     const distance = (square - from + LUDO_TRACK_LENGTH) % LUDO_TRACK_LENGTH
     if (distance < 1 || distance > 6) return false
     // The opponent turns into their home column after step 50 and never reaches it.
-    return position + distance <= LUDO_LAST_TRACK_STEP && position + distance < LUDO_FINISH
+    return position + distance <= LUDO_LAST_TRACK_STEP
   }
 }
