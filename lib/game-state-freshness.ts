@@ -91,3 +91,19 @@ export function readGameStateId(state: unknown): string | null {
   const value = (state as { id?: unknown }).id
   return typeof value === 'string' && value.length > 0 ? value : null
 }
+
+/**
+ * Whether a game-update broadcast belongs to a different game row than the one
+ * on screen – a rematch – and must be dropped (#994).
+ *
+ * Judged only by the `gameId` the server puts on the broadcast, never by the
+ * state's own `id`: engines are created with `game_${Date.now()}` in
+ * POST /api/game/create, so that id never equals the row id. Comparing the two
+ * dropped every broadcast for Memory, Yahtzee and Spy from 18.09 (#1160). An
+ * untagged update is accepted, as it was before #994.
+ */
+export function isUpdateForAnotherGame(update: unknown, currentGameId: string): boolean {
+  if (!update || typeof update !== 'object') return false
+  const tagged = (update as { gameId?: unknown }).gameId
+  return typeof tagged === 'string' && tagged.length > 0 && tagged !== currentGameId
+}

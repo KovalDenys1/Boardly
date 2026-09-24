@@ -557,6 +557,7 @@ export async function POST(request: NextRequest) {
     // snapshot from GET /api/lobby/[code].
     void broadcastToLobby(lobby.code, 'game-update', {
       action: 'state-change',
+      gameId: game.id,
       payload: { state: sanitizeStateForBroadcast(gameType, gameEngine.getState(), null) },
     })
 

@@ -2,6 +2,7 @@ import {
   createFreshnessWatermark,
   decideFreshness,
   readGameStateId,
+  isUpdateForAnotherGame,
   readLastMoveAt,
   resetFreshnessWatermark,
 } from '@/lib/game-state-freshness'
@@ -66,5 +67,26 @@ describe('game state freshness (#985)', () => {
     resetFreshnessWatermark(w)
     expect(w.current).toBeNull()
     expect(decideFreshness(w, { lastMoveAt: 1 }).accept).toBe(true)
+  })
+})
+
+// #1160: the #994 rematch guard compared the snapshot's `state.id` with the DB
+// row id. Engines are created in POST /api/game/create with `game_${Date.now()}`,
+// so the two never match and every game-update broadcast was dropped – Memory,
+// Yahtzee and Spy (the games on LobbyPageClient) stopped showing moves on 18.09.
+describe('isUpdateForAnotherGame (#1160)', () => {
+  it('never judges by the engine id inside the state', () => {
+    const payload = { action: 'state-change', payload: { id: 'game_1790239727412', lastMoveAt: 1 } }
+    expect(isUpdateForAnotherGame(payload, 'cmufaicvc0001zwsidpd6gf95')).toBe(false)
+  })
+
+  it('drops an update the server tags with a different game row', () => {
+    expect(isUpdateForAnotherGame({ action: 'state-change', gameId: 'cm-rematch', payload: {} }, 'cm-current')).toBe(true)
+    expect(isUpdateForAnotherGame({ action: 'state-change', gameId: 'cm-current', payload: {} }, 'cm-current')).toBe(false)
+  })
+
+  it('accepts an untagged update', () => {
+    expect(isUpdateForAnotherGame({ action: 'state-change', payload: {} }, 'cm-current')).toBe(false)
+    expect(isUpdateForAnotherGame(null, 'cm-current')).toBe(false)
   })
 })

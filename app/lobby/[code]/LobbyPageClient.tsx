@@ -24,7 +24,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { createFreshnessWatermark, decideFreshness, readGameStateId, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -560,10 +560,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         if (game?.id) {
           const gameId = game.id
           // A rematch is a different row; its state must not be written into the
-          // game on screen, nor move that game's watermark.
-          const payloadGameId = readGameStateId(parsedState)
-          if (payloadGameId && payloadGameId !== gameId) {
-            clientLogger.debug('Ignoring game-update for another game', { gameId, payloadGameId })
+          // game on screen, nor move that game's watermark. Judged by the row id
+          // the server tags the broadcast with – the state's own `id` is the
+          // engine's `game_<ts>`, which never matches (#1160).
+          if (isUpdateForAnotherGame(payload, gameId)) {
+            clientLogger.debug('Ignoring game-update for another game', { gameId })
             return
           }
           // #994: broadcasts are fire-and-forget and take two hops the move

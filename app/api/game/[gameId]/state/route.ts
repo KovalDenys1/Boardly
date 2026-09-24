@@ -709,6 +709,8 @@ export async function POST(
     void replaySnapshotPromise
     void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
+      // The row id, so a client can tell a rematch's update from its own (#1160).
+      gameId: game.id,
       payload: broadcastState,
     }).then((ok) => {
       if (!ok) {

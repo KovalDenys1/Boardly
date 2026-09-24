@@ -169,6 +169,7 @@ export async function POST(
     void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: broadcastState })
     void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
+      gameId: game.id,
       payload: { state: broadcastState },
     })
 
