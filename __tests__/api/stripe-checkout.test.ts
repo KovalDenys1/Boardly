@@ -427,6 +427,63 @@ describe('POST /api/stripe/checkout', () => {
       expect(create.mock.calls[0][0]).not.toHaveProperty('consent_collection')
     })
 
+    it('sells through Managed Payments, with Link as merchant of record (#1179)', async () => {
+      freeUser()
+      const create = stripeThatSucceeds()
+
+      const response = await POST(buyRequest('monthly'))
+
+      expect(response.status).toBe(200)
+      expect(create).toHaveBeenCalledTimes(1)
+      const params = create.mock.calls[0][0]
+      // Per session: "Enable by default" is off in the Dashboard, so a session
+      // without this would be an ordinary Stripe sale with no VAT collected.
+      expect(params.managed_payments).toEqual({ enabled: true })
+      // Stripe computes the tax under Managed Payments and refuses these.
+      expect(params).not.toHaveProperty('automatic_tax')
+      expect(params).not.toHaveProperty('payment_method_types')
+      expect(params).not.toHaveProperty('customer_update')
+      expect(params.subscription_data).not.toHaveProperty('invoice_settings')
+    })
+
+    it('opens no Managed Payments session at all without the consent', async () => {
+      freeUser()
+      const create = stripeThatSucceeds()
+
+      const response = await POST(makeRequest({ plan: 'monthly' }))
+
+      expect(response.status).toBe(400)
+      expect((await response.json()).code).toBe('consent_required')
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    it('keeps Managed Payments on the retry after a stale customer is recreated', async () => {
+      freeUser()
+      const staleCustomer = new Stripe.errors.StripeInvalidRequestError({
+        code: 'resource_missing',
+        param: 'customer',
+        message: "No such customer: 'cus_existing'",
+        type: 'invalid_request_error',
+      })
+      const create = jest
+        .fn()
+        .mockRejectedValueOnce(staleCustomer)
+        .mockResolvedValueOnce({ url: 'https://checkout.stripe.com/s' })
+      mockGetStripe.mockReturnValue({
+        checkout: { sessions: { create } },
+        customers: { create: jest.fn().mockResolvedValue({ id: 'cus_new' }) },
+      } as any)
+      mockPrisma.users.update.mockResolvedValue({} as any)
+
+      const response = await POST(buyRequest('monthly'))
+
+      expect(response.status).toBe(200)
+      expect(create).toHaveBeenCalledTimes(2)
+      expect(create.mock.calls[1][0]).toEqual(
+        expect.objectContaining({ customer: 'cus_new', managed_payments: { enabled: true } })
+      )
+    })
+
     it('needs no consent to open the billing portal for someone already on Premium', async () => {
       mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
       mockPrisma.users.findUnique.mockResolvedValue({

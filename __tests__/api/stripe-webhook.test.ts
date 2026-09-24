@@ -264,6 +264,7 @@ function checkoutEvent(session = {}) {
       object: {
         id: 'cs_1',
         mode: 'subscription',
+        payment_status: 'paid',
         subscription: 'sub_1',
         customer: 'cus_new',
         amount_total: 299,
@@ -565,5 +566,95 @@ describe('POST /api/stripe/webhook - checkout.session.completed records the cons
       expect.any(Error),
       expect.objectContaining({ checkoutSessionId: 'cs_1' })
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Payments that settle after checkout (#1179): a session can be 'complete'
+// while payment_status is still 'unpaid'. No grant and no confirmation until
+// the money arrives; the consent record is written straight away.
+// ---------------------------------------------------------------------------
+
+describe('POST /api/stripe/webhook - a checkout whose payment settles later', () => {
+  let event
+  let retrieve
+
+  beforeEach(() => {
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
+    retrieve = jest.fn().mockResolvedValue(subscription({ status: 'incomplete' }))
+    getStripe.mockReturnValue({
+      webhooks: { constructEvent: jest.fn(() => event) },
+      subscriptions: { retrieve },
+    })
+    prisma.stripeWebhookEvents.create.mockResolvedValue({})
+    prisma.stripeWebhookEvents.delete.mockResolvedValue({})
+    prisma.users.updateMany.mockResolvedValue({ count: 1 })
+    prisma.users.findUnique.mockResolvedValue(PURCHASER)
+    prisma.users.findFirst.mockResolvedValue(null)
+    prisma.purchaseConsents.upsert.mockResolvedValue({})
+    prisma.purchaseConsents.updateMany.mockResolvedValue({ count: 1 })
+    sendPremiumConfirmationEmail.mockResolvedValue({ success: true })
+  })
+
+  afterEach(() => jest.resetAllMocks())
+
+  it('records the consent but neither grants Premium nor confirms while payment_status is unpaid', async () => {
+    event = checkoutEvent({ payment_status: 'unpaid' })
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(prisma.purchaseConsents.upsert).toHaveBeenCalledTimes(1)
+    expect(prisma.purchaseConsents.upsert.mock.calls[0][0].create).toEqual(
+      expect.objectContaining({ checkoutSessionId: 'cs_1', userId: 'user_1', stripeSubscriptionId: 'sub_1' })
+    )
+    // No entitlement write, no first-grant stamp, no claim, no email.
+    expect(prisma.users.updateMany).not.toHaveBeenCalled()
+    expect(prisma.purchaseConsents.updateMany).not.toHaveBeenCalled()
+    expect(sendPremiumConfirmationEmail).not.toHaveBeenCalled()
+  })
+
+  it('grants and confirms once the late payment succeeds', async () => {
+    event = checkoutEvent({ payment_status: 'paid' })
+    event.type = 'checkout.session.async_payment_succeeded'
+    retrieve.mockResolvedValue(subscription())
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(entitlementCalls()).toHaveLength(1)
+    expect(entitlementCalls()[0]).toEqual({
+      where: { stripeCustomerId: 'cus_new' },
+      data: { premiumUntil: new Date(1893456000 * 1000), stripeSubscriptionId: 'sub_1', premiumCancelAtPeriod: false },
+    })
+    expect(prisma.purchaseConsents.upsert).toHaveBeenCalledTimes(1)
+    expect(sendPremiumConfirmationEmail).toHaveBeenCalledTimes(1)
+    expect(sendPremiumConfirmationEmail.mock.calls[0][1].idempotencyKey).toBe('purchase-confirmation:cs_1')
+  })
+
+  it('grants nothing and sends nothing when the late payment fails', async () => {
+    event = checkoutEvent({ payment_status: 'unpaid' })
+    event.type = 'checkout.session.async_payment_failed'
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(prisma.users.updateMany).not.toHaveBeenCalled()
+    expect(sendPremiumConfirmationEmail).not.toHaveBeenCalled()
+    expect(mockLog.warn).toHaveBeenCalledWith(
+      'Checkout payment failed after completion',
+      expect.objectContaining({ checkoutSessionId: 'cs_1', customerId: 'cus_new' })
+    )
+  })
+
+  it('treats a checkout that needed no payment (a 100 % promotion code) as paid', async () => {
+    event = checkoutEvent({ payment_status: 'no_payment_required', amount_total: 0 })
+    retrieve.mockResolvedValue(subscription())
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    expect(entitlementCalls()).toHaveLength(1)
+    expect(sendPremiumConfirmationEmail).toHaveBeenCalledTimes(1)
   })
 })

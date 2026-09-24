@@ -7,10 +7,14 @@
  * that is no longer shown, and /terms prints TERMS_VERSION (/privacy its own
  * PRIVACY_UPDATED) as its "Last updated" date instead of whatever day the page
  * happened to render.
+ *
+ * __tests__/lib/legal-text-versions.test.ts pins each of TERMS_VERSION and
+ * WITHDRAWAL_INFO_VERSION to a digest of the English text it covers, so
+ * changing that text without a bump fails CI (#1179).
  */
 
 /** When the current Terms of Service took effect. */
-export const TERMS_VERSION = '2026-09-24'
+export const TERMS_VERSION = '2026-09-25'
 
 /**
  * When the current Privacy Policy took effect (#1126). Separate from
@@ -18,10 +22,10 @@ export const TERMS_VERSION = '2026-09-24'
  * consent a buyer recorded at checkout against the Terms. Bump by hand
  * whenever the text of /privacy or the retention numbers it prints change.
  */
-export const PRIVACY_UPDATED = '2026-09-24'
+export const PRIVACY_UPDATED = '2026-09-25'
 
 /** When the current withdrawal information on /premium and /withdrawal took effect. */
-export const WITHDRAWAL_INFO_VERSION = '2026-09-24'
+export const WITHDRAWAL_INFO_VERSION = '2026-09-25'
 
 /**
  * A version date as /terms and /privacy have always shown it: "September 24,
