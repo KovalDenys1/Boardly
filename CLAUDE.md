@@ -564,8 +564,10 @@ cookie before any consent existed; preview and development gained nothing from c
 so it no longer loads there). That script is **three things at once**, which is why it
 stays on in production even with no ad showing: site verification, the ad loader, and
 **Google's EEA/UK consent message**. The consent message has been published for
-boardly.online in 32 languages since 2026-09-02 and is delivered by that loader. So
-`app/privacy/page.tsx:113` promising consent-gated personalised ads is backed.
+boardly.online in 32 languages since 2026-09-02 and is delivered by that loader. So the
+privacy notice's promise of consent-gated personalised ads (`app/privacy/PrivacyNotice.tsx`,
+rewritten in #1126 — `app/privacy/page.tsx` is now a thin wrapper, not the line to cite) is
+backed.
 
 **The absence of a CMP, TCF shim or cookie banner in the tree is conditional, not settled
 (#1153): it holds only as long as Google's own message is verified to render and produce a
@@ -577,9 +579,10 @@ does not render and produce a TC string with `cmpId 300` there, ads stay off and
 home-made banner is not a substitute — do not "fix" a failed check by adding one. A footer
 control (`lib/consent.ts`, wired into `components/Footer.tsx`, production only) reopens the
 message via the `googlefc` revocation API for anyone who wants to change their choice.
-Google is the holder of the consent record itself (its CMP, its TC string) — the privacy
-notice's processor list should name it accordingly (#1153; not edited here — `/privacy` is
-owned separately).
+Google is the holder of the consent record itself (its CMP, its TC string), and the
+2026-09-24 privacy notice rewrite (#1126) names it: the AdSense/Funding Choices script, the
+`FCCDCF` cookie, and Google as an independent controller for that data are in
+`app/privacy/PrivacyNotice.tsx` / `locales/*.ts` `privacyPolicy.recipients`.
 
 Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
 open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.
