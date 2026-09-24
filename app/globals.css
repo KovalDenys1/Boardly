@@ -2781,6 +2781,9 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-weight: 800;
   font-size: 26px;
   line-height: 1;
+  /* The verdict stamps on from its own left edge (#1115), not the card's middle. */
+  display: inline-block;
+  transform-origin: left center;
 }
 
 /* Truth / Bluff and Challenge / Believe: two equal buttons that stay on one
