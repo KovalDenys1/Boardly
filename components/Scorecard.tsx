@@ -441,14 +441,15 @@ const Scorecard = React.memo(function Scorecard({
             </div>
             <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'var(--bd-bg2)' }}>
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
+                className={`h-full w-full origin-left rounded-full transition-transform duration-500 ${
                   bonus > 0
                     ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
                     : bonusProgress > 60
                     ? 'bg-gradient-to-r from-yellow-400 to-amber-500'
                     : 'bg-gradient-to-r from-blue-400 to-cyan-400'
                 }`}
-                style={{ width: `${bonusProgress}%` }}
+                // scaleX, not width: transform only, so the bar never relays (#1114).
+                style={{ transform: `scaleX(${bonusProgress / 100})` }}
               />
             </div>
           </div>

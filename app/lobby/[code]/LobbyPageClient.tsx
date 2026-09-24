@@ -4,11 +4,13 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import dynamic from 'next/dynamic'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { sounds } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
+import { useRemoteRoll } from '@/hooks/useRemoteRoll'
+import { resolveScorecardPlayerId } from '@/lib/yahtzee-motion'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
@@ -24,7 +26,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { createFreshnessWatermark, decideFreshness, readGameStateId, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -181,6 +183,8 @@ const LudoLobbyPage = dynamic(
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
+/** How long the finished turn's scorecard stays up: its row flash is 0.9 s (#1114). */
+const SCORECARD_LINGER_MS = 1200
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -249,6 +253,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Selected player for viewing their scorecard
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  // The card of the player whose turn just ended stays up briefly, so their
+  // scored row's flash is seen before the view follows the turn (#1114).
+  const [lingerPlayerId, setLingerPlayerId] = useState<string | null>(null)
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
 
   // Friends invite modal state
@@ -498,12 +505,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       if (turnChanged &&
         (selectedPlayerId === null || selectedPlayerId === prevCurrentPlayerIdRef.current)) {
         setSelectedPlayerId(null) // Reset to show new current player
+        setLingerPlayerId(prevCurrentPlayerIdRef.current ?? null)
       }
 
       // Update ref
       prevCurrentPlayerIdRef.current = currentPlayerId
     }
   }, [gameEngine, getCurrentUserId, selectedPlayerId])
+
+  useEffect(() => {
+    if (!lingerPlayerId) return
+    const timer = setTimeout(() => setLingerPlayerId(null), SCORECARD_LINGER_MS)
+    return () => clearTimeout(timer)
+  }, [lingerPlayerId])
 
   // Separate effect to track the complex expression
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
@@ -560,10 +574,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         if (game?.id) {
           const gameId = game.id
           // A rematch is a different row; its state must not be written into the
-          // game on screen, nor move that game's watermark.
-          const payloadGameId = readGameStateId(parsedState)
-          if (payloadGameId && payloadGameId !== gameId) {
-            clientLogger.debug('Ignoring game-update for another game', { gameId, payloadGameId })
+          // game on screen, nor move that game's watermark. Judged by the row id
+          // the server tags the broadcast with – the state's own `id` is the
+          // engine's `game_<ts>`, which never matches (#1160).
+          if (isUpdateForAnotherGame(payload, gameId)) {
+            clientLogger.debug('Ignoring game-update for another game', { gameId })
             return
           }
           // #994: broadcasts are fire-and-forget and take two hops the move
@@ -1338,6 +1353,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     moveInFlightRef,
   })
 
+  // An opponent's or bot's roll shakes the dice like the viewer's own (#1114).
+  const isOpponentRolling = useRemoteRoll(
+    gameEngine instanceof YahtzeeGame ? (gameEngine.getState().data as unknown as YahtzeeGameData | undefined)?.lastRoll : undefined,
+    getCurrentUserId(),
+    gameEngine instanceof YahtzeeGame,
+  )
+
   // Update refs for timer
   React.useEffect(() => {
     handleScoreRef.current = handleScore
@@ -1922,7 +1944,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // phone-landscape side pane (#751).
   const scorecardSection = gameEngine instanceof YahtzeeGame ? (() => {
     const currentUserId = getCurrentUserId()
-    const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+    const viewingPlayerId = resolveScorecardPlayerId(selectedPlayerId, lingerPlayerId, gameEngine.getCurrentPlayer()?.id)
     const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
     const isViewingOtherPlayer = viewingPlayerId !== currentUserId
 
@@ -1930,6 +1952,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     return (
       <Scorecard
+        // One instance per player: its just-scored flash compares a card with
+        // its own previous state, never with another player's card.
+        key={viewingPlayerId || 'none'}
         scorecard={scorecard}
         mode={gameEngine.getMode()}
         currentDice={gameEngine.getDice()}
@@ -2302,6 +2327,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       turnTimerLimit={turnTimerLimit}
                       isMoveInProgress={isMoveInProgress}
                       isRolling={isRolling}
+                      isOpponentRolling={isOpponentRolling}
                       isScoring={isScoring}
                       isStateReverting={isStateReverting}
                       celebrationEvent={celebrationEvent}
@@ -2369,6 +2395,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         turnTimerLimit={turnTimerLimit}
                         isMoveInProgress={isMoveInProgress}
                         isRolling={isRolling}
+                        isOpponentRolling={isOpponentRolling}
                         isScoring={isScoring}
                         isStateReverting={isStateReverting}
                         celebrationEvent={celebrationEvent}
@@ -2454,6 +2481,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       turnTimerLimit={turnTimerLimit}
                       isMoveInProgress={isMoveInProgress}
                       isRolling={isRolling}
+                      isOpponentRolling={isOpponentRolling}
                       isScoring={isScoring}
                       isStateReverting={isStateReverting}
                       celebrationEvent={celebrationEvent}

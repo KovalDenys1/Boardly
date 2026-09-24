@@ -6,6 +6,7 @@ import { Icon } from '@/components/icons'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import Modal from './Modal'
 import { sounds } from '@/lib/sounds'
+import ScorePop from '@/components/game-chrome/ScorePop'
 
 interface Player {
   id: string
@@ -385,9 +386,9 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Score Display */}
                     <div className="text-right">
                       <div className="text-xs mb-0.5" style={{ color: 'var(--bd-ink-muted)' }}>{t('game.ui.score')}</div>
-                      <div className="text-2xl font-bold" style={{ color: 'var(--bd-ink)' }}>
+                      <ScorePop value={player.score} className="text-2xl font-bold" style={{ color: 'var(--bd-ink)' }}>
                         {player.score}
-                      </div>
+                      </ScorePop>
                     </div>
 
                     {/* View Profile Button */}

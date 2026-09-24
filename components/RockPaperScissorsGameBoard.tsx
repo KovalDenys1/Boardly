@@ -31,6 +31,11 @@ export interface RPSPlayer {
 
 interface RockPaperScissorsGameBoardProps {
   gameData: RockPaperScissorsGameData
+  /**
+   * The score to draw, when the page holds it back until the reveal has
+   * played (#1114). Defaults to `gameData.scores`.
+   */
+  shownScores?: Record<string, number>
   /** Empty string for spectators. */
   playerId: string
   players: RPSPlayer[]
@@ -80,8 +85,17 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
 
 type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
 
+/**
+ * When the reveal has finished: `.rps-hand--reveal` shakes for 0.75 s, then
+ * flips the choice in over 0.35 s (app/globals.css). The score waits for this.
+ */
+export const RPS_REVEAL_MS = 1100
+/** The final round's result overlay waits for the reveal plus a beat to read it. */
+export const RPS_RESULT_REVEAL_DELAY_MS = 1300
+
 export default function RockPaperScissorsGameBoard({
   gameData,
+  shownScores,
   playerId,
   players,
   onSubmitChoice,
@@ -110,8 +124,9 @@ export default function RockPaperScissorsGameBoard({
   // turns back into two hands choosing.
   const showReveal = !!latestRound && (!roundInProgress || isGameOver)
   const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
-  const leftScore = leftPlayer ? gameData.scores[leftPlayer.id] ?? 0 : 0
-  const rightScore = rightPlayer ? gameData.scores[rightPlayer.id] ?? 0 : 0
+  const scores = shownScores ?? gameData.scores
+  const leftScore = leftPlayer ? scores[leftPlayer.id] ?? 0 : 0
+  const rightScore = rightPlayer ? scores[rightPlayer.id] ?? 0 : 0
   const roundNumber = gameData.rounds.length + (isGameOver ? 0 : 1)
 
   const handFor = (player: RPSPlayer | null): { icon: IconName; state: string; tone: HandTone } => {

@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { useFreshKey } from '@/hooks/useFreshKey'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -102,13 +103,19 @@ function TttMark({ mark, size = 24, responsive = false, pop = false }: {
     )
 }
 
-function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
+function TttBoard({ board, winningLine, onCellClick, disabled, testId, lastMove, popLastMove = false, onLastMovePopped }: {
     board: CellValue[][];
     winningLine: [number, number][] | null;
     onCellClick: (row: number, col: number) => void;
     disabled: boolean;
     testId?: string;
+    /** The most recent move: its cell keeps a ring until the next move (#1114). */
+    lastMove?: { row: number; col: number } | null;
+    /** Only the just-placed mark pops, and only until its animation ends (#1114). */
+    popLastMove?: boolean;
+    onLastMovePopped?: () => void;
 }) {
+    const isLast = (r: number, c: number) => !!lastMove && lastMove.row === r && lastMove.col === c
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
     // Partially-restored or mismatched game state can arrive without a board;
     // rendering an empty grid beats crashing the whole page (#771).
@@ -122,13 +129,16 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
                     row.map((cell, ci) => (
                         <button
                             key={`${ri}-${ci}`}
-                            className={`ttt-cell${isWin(ri, ci) ? ' ttt-win' : ''}`}
+                            className={`ttt-cell${isWin(ri, ci) ? ' ttt-win' : ''}${cell && isLast(ri, ci) && !isWin(ri, ci) ? ' ttt-cell--last' : ''}`}
+                            data-last-move={cell && isLast(ri, ci) ? 'true' : undefined}
                             onClick={() => onCellClick(ri, ci)}
                             disabled={disabled || !!cell}
                             aria-label={`cell ${tttCoord(ri, ci)}`}
                         >
                             {!cell && <span className="ttt-cell-coord">{tttCoord(ri, ci)}</span>}
-                            {cell && <TttMark mark={cell} responsive pop />}
+                            {cell && (isLast(ri, ci) && popLastMove
+                                ? <span className="ttt-mark-pop-host" onAnimationEnd={onLastMovePopped}><TttMark mark={cell} responsive pop /></span>
+                                : <TttMark mark={cell} responsive />)}
                         </button>
                     ))
                 )}
@@ -773,9 +783,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
     const lastTttMove = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
+    const lastTttMoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null
+    // Only the just-placed mark pops and its history row slides in; a board
+    // remount (mobile tab switch) shows the settled state (#1114).
+    const { fresh: lastMoveFresh, settle: settleLastMove } = useFreshKey(gameEngine ? (lastTttMove ? lastTttMoveSignature : null) : undefined)
     useTurnSounds({
         isMyTurn: isMyTurn(),
-        lastMoveSignature: Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null,
+        lastMoveSignature: lastTttMoveSignature,
         opponentMoved: !!lastTttMove && lastTttMove.playerId !== getCurrentUserId(),
         enabled: !isSpectator && gameEngine?.getState().status === 'playing',
     })
@@ -1038,6 +1052,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     onCellClick={handleCellClick}
                     disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || isPendingResponder}
                     testId={testId}
+                    lastMove={lastTttMove ?? null}
+                    popLastMove={lastMoveFresh}
+                    onLastMovePopped={settleLastMove}
                 />
                 {/* Inside the surface, not beside it: this pill is
                     `position: absolute; bottom`, so it hangs off the nearest
@@ -1159,7 +1176,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 {moveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
                     : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
-                        <div key={`${m.timestamp}-${m.row}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
+                        <div key={`${m.timestamp}-${m.row}-${m.col}`} className={index === 0 && lastMoveFresh ? 'ttt-history-row-in' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>

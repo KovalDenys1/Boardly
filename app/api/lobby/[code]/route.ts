@@ -197,6 +197,7 @@ async function commitTimeoutFallback(params: {
 
   void broadcastToLobby(lobbyCode, 'game-update', {
     action: 'state-change',
+    gameId: activeGame.id,
     payload: { state: broadcastState },
   })
 }

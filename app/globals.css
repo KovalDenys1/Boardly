@@ -1263,6 +1263,29 @@ input[type="range"].slider-thumb::-moz-range-track {
   100% { transform: translateY(0) scale(var(--c4-end-scale, 1)); }
 }
 
+/* Last-disc marker (#1114): a pale ring in the newest disc, kept until the next
+   move. After a drop it fades and settles in once the disc has landed (the
+   delay is set inline to the drop's duration); a remount shows it static. */
+.c4-last-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  height: 38%;
+  margin: -19% 0 0 -19%;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 1px rgba(31,27,22,0.12);
+  pointer-events: none;
+}
+.c4-last-marker--in {
+  animation: c4-last-marker-in var(--bd-dur) var(--bd-ease-spring) both;
+}
+@keyframes c4-last-marker-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ============ TIC-TAC-TOE GAME SCREEN ============ */
 
 @keyframes ttt-mark-in {
@@ -2019,6 +2042,31 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell.ttt-win {
   background: rgba(255,196,77,0.95) !important;
   box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
+}
+/* Last move (#1114): a ring on the newest mark that stays until the next move.
+   The ring is a pseudo-element faded and scaled in, so only opacity and
+   transform animate. The pop host wraps just the newly placed mark so its
+   animationend can settle it; display: contents keeps the mark's % sizing. */
+.ttt-mark-pop-host { display: contents; }
+.ttt-cell--last::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px rgba(31,27,22,0.28);
+  pointer-events: none;
+  animation: ttt-last-ring-in var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+@keyframes ttt-last-ring-in {
+  from { opacity: 0; transform: scale(1.12); }
+  to { opacity: 1; transform: none; }
+}
+.ttt-history-row-in {
+  animation: ttt-history-row-in var(--bd-dur) var(--bd-ease-out) both;
+}
+@keyframes ttt-history-row-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ============ YAHTZEE SCORECARD ============ */
@@ -3238,6 +3286,45 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   background: rgba(79,201,166,0.15);
 }
 
+/* Match and mismatch cues (#1114). Both wait for the second card's flip
+   (.memory-tile-inner, 0.46s) to land before they play, and both move only
+   transform and opacity: the pair pops with a mint glow (a pseudo-element's
+   opacity) and settles into the matched style; a mismatch shakes sideways
+   before the pair flips back. */
+.memory-tile-match-cue {
+  animation: memory-match-pop var(--bd-dur-slow) var(--bd-ease-spring) 0.4s both;
+}
+.memory-tile-match-cue::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: clamp(12px, 2.2vw, 20px);
+  box-shadow: 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
+  pointer-events: none;
+  opacity: 0;
+  animation: memory-match-glow 0.6s var(--bd-ease-out) 0.4s both;
+}
+@keyframes memory-match-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes memory-match-glow {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.memory-tile-mismatch-cue {
+  animation: memory-mismatch-shake 0.4s ease-in-out 0.46s both;
+}
+@keyframes memory-mismatch-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
 .memory-score-row-active {
   background: var(--bd-bg2);
 }
@@ -3919,7 +4006,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
    board is one square SVG sized by min() of the board card's container width
    and height (the card is `container-type: size`), minus the surface's own
    padding and border (2 × 12px + 2 × 1.5px), so it can never outgrow either
-   axis. Tokens move with a transform transition only; nothing animates size. */
+   axis. Tokens move by transform only (a WAAPI walk, #1113); nothing animates size. */
 .ludo-board {
   display: block;
   width: clamp(180px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
@@ -3929,7 +4016,23 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   -webkit-tap-highlight-color: transparent;
 }
 .ludo-board-surface { padding: 12px; }
-.ludo-token { transition: transform 0.32s var(--bd-ease-out); }
+/* No transition on the token: a move walks square by square through
+   useLudoMotion + ludoMoverKeyframes (#1113), and anything else (a resync, a
+   rematch) settles at once rather than gliding across the corners. */
+.ludo-token:not(.ludo-token--selectable) { pointer-events: none; }
+/* The last move's token keeps a soft halo until the next move; it appears as
+   the token lands (the delay is the walk, set inline). */
+.ludo-token__last {
+  fill-opacity: 0.35;
+  stroke-width: 0.06;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ludo-last-in var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes ludo-last-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
 .ludo-token--selectable { cursor: pointer; }
 .ludo-token--selectable:focus { outline: none; }
 .ludo-token__halo {
@@ -3952,8 +4055,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   100% { transform: rotate(0deg) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ludo-token { transition: none; }
-  .ludo-token__halo, .ludo-die--rolled { animation: none; }
+  .ludo-token__halo, .ludo-token__last, .ludo-die--rolled { animation: none; }
 }
 
 /* The die and the Roll button: one row, fixed height, never grows. */
