@@ -268,16 +268,44 @@ A consumer may withdraw from a Premium purchase within 14 days of buying it, for
 plan cancelled later refunds the unused whole months. Legal basis and sources: the vault's
 Security & Law Audit 2026-09, Part E.
 
+**Since #1179 Premium is sold through Stripe Managed Payments.** Stripe's affiliate Sold through Link,
+LLC is the merchant of record: the buyer's receipt, invoice and refund notice come from Link, and the
+card statement reads `LINK.COM* <descriptor>`. What that changes here, from
+https://docs.stripe.com/payments/managed-payments/how-it-works.md and the Stripe Managed Payments
+Terms (https://stripe.com/legal/managed-payments, sections 3.3 and 3.4):
+
+- **We still refund from our own Dashboard.** "You can still respond directly to customers, issue
+  refunds, update subscriptions, and handle product-related issues yourself." Link emails the buyer the
+  refund notice; we send no receipt of our own.
+- **A refund can also arrive without us.** Buyers can ask Link support
+  (https://support.link.com/topics/sold-through-link), and Link's terms give EU and UK consumers a
+  14-day "cooling off period" handled there. SMP "reserves the right to issue refunds within 60 days"
+  of purchase, and the Dashboard's refund-request setting is "Refund without emailing me" (Denys,
+  2026-09-24), so such a refund shows up in the Dashboard already made. If Stripe does ask us about a
+  request, answer within 48 hours or it "may refund the payment to the Customer without User's input".
+- **Tax on a refund.** The buyer gets the full amount back, tax included, but "in certain jurisdictions"
+  Stripe keeps remitting the original tax and our balance is reduced by it.
+- **Link does not refund unused subscription periods** ("Unless required by Law, we do not provide
+  refunds for unused subscription periods"), so the yearly plan's unused-months refund below is always
+  ours to issue.
+
 1. A notice arrives by email to support@ (forwarded by the inbound webhook) or as the copied form from
    the withdrawal page. The same day, reply from support@ confirming receipt and the date it was received
    (angrerettloven § 20 tredje ledd). Company voice, "The Boardly team".
 2. In the Stripe Dashboard: cancel the subscription immediately (not at period end), then refund the
    payment in full from the payment's page. Stripe returns the customer's local amount at the original
-   rate. Do this within 14 days of the notice (§ 24); in practice the same day.
+   rate (Link's terms: "the same Applicable Exchange Rate will apply to the refund"). Do this within 14
+   days of the notice (§ 24); in practice the same day. First check the payment's page for a refund Link
+   has already made, so the buyer is not refunded twice.
 3. Premium access ends when the webhook processes the cancellation; if the customer asks, confirm by
    email that nothing more will be charged.
 4. Log the case in the vault's Boardly log (date received, date refunded, Stripe refund id, no personal
    data beyond the username).
+
+**A refund Link made on its own** (a Premium payment in the Dashboard shows a refund nobody here issued):
+check the subscription. Link's pages do not say whether its refund also cancels the subscription. If the
+whole payment was refunded and the subscription is still active, cancel it immediately so the next
+renewal does not charge a buyer who withdrew. Log it like step 4, noting that Link made the refund.
 
 Yearly plan cancelled outside the 14 days: cancel at period end is the default; if the customer asks for
 the refund of unused months, refund `(remaining whole months / 12) x amount paid` from the Dashboard and

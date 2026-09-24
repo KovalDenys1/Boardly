@@ -41,7 +41,9 @@ const RECIPIENTS = [
   { id: 'vercel', name: 'Vercel' },
   { id: 'upstash', name: 'Upstash' },
   { id: 'resend', name: 'Resend' },
-  { id: 'stripe', name: 'Stripe' },
+  // Premium is sold through Stripe Managed Payments (#1179): Stripe holds our
+  // customer records, its affiliate Sold through Link, LLC is merchant of record.
+  { id: 'stripe', name: 'Stripe / Link (Sold through Link, LLC)' },
   { id: 'sentry', name: 'Sentry' },
   { id: 'discord', name: 'Discord' },
   { id: 'google', name: 'Google' },

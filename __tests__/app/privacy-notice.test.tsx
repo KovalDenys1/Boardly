@@ -108,6 +108,33 @@ describe('privacy notice (#1126)', () => {
     expect(container.textContent).toContain(`Last updated: ${expected}`)
   })
 
+  it('names Link as merchant of record for Premium, on its own account, with the US transfer (#1179)', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Stripe / Link (Sold through Link, LLC)')
+    expect(text).toContain(
+      'Its affiliate Sold through Link, LLC is the merchant of record for Premium and acts on its own account'
+    )
+    expect(text).toContain('Sold through Link, LLC: in the USA, so your order data is transferred there')
+    expect(text).toContain('Link collects your name, billing address and any tax ID at checkout')
+    expect(text).toContain('it shares the order information with us')
+
+    const locales = {
+      en: require('@/locales/en').default,
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const recipient = locale.privacyPolicy.recipients.stripe
+      const premium = locale.privacyPolicy.purposes.premium
+      expect({ name, ok: recipient.purpose.includes('Sold through Link, LLC') }).toEqual({ name, ok: true })
+      expect({ name, ok: recipient.where.includes('Sold through Link, LLC') }).toEqual({ name, ok: true })
+      expect({ name, ok: premium.data.includes('Sold through Link, LLC') }).toEqual({ name, ok: true })
+      expect({ name, ok: premium.retention.includes('Link') }).toEqual({ name, ok: true })
+    }
+  })
+
   it('names every processor the code uses, and Discord Linked Roles', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''

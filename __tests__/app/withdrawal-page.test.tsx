@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import WithdrawalContent from '@/app/withdrawal/WithdrawalContent'
 import { metadata } from '@/app/withdrawal/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
+import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
@@ -89,6 +90,23 @@ describe('/withdrawal page (#1162)', () => {
     expect(mailLinks.length).toBe(2)
     const prefilled = mailLinks.find((link) => link.getAttribute('href')?.includes('subject='))
     expect(prefilled?.getAttribute('href')).toContain(encodeURIComponent(en.withdrawal.emailSubject))
+  })
+
+  it('says the sale goes through Link and keeps our own refund next to Link support (#1179)', () => {
+    render(<WithdrawalContent />)
+
+    expect(screen.getByTestId('withdrawal-sold-through-link')).toHaveTextContent(en.withdrawal.soldThroughLink)
+    expect(en.withdrawal.soldThroughLink).toContain('merchant of record')
+
+    const channel = screen.getByTestId('withdrawal-link-channel')
+    expect(channel).toHaveTextContent(en.withdrawal.linkBody)
+    expect(en.withdrawal.linkBody).toContain('cooling off period')
+    expect(en.withdrawal.linkBody).toContain('14')
+    const support = screen.getByRole('link', { name: en.withdrawal.linkSupportLabel })
+    expect(support).toHaveAttribute('href', LINK_SUPPORT_URL)
+    expect(support).toHaveAttribute('rel', expect.stringContaining('noopener'))
+
+    expect(screen.getByText(en.withdrawal.after3)).toBeInTheDocument()
   })
 
   it('renders the same page in Norwegian, with the Q-0319B wording', () => {

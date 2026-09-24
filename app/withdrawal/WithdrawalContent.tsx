@@ -6,6 +6,7 @@ import Footer from '@/components/Footer'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
+import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import {
   WITHDRAWAL_RECIPIENT,
   buildWithdrawalEmailText,
@@ -96,6 +97,8 @@ export default function WithdrawalContent() {
               </p>
               <p>{t('withdrawal.refund')}</p>
               <p>{t('withdrawal.startNow')}</p>
+              {/* Sold through Stripe Managed Payments (#1179); sources in lib/sold-through-link.ts */}
+              <p data-testid="withdrawal-sold-through-link">{t('withdrawal.soldThroughLink')}</p>
             </section>
 
             <section>
@@ -119,7 +122,18 @@ export default function WithdrawalContent() {
               <ol className="list-decimal space-y-1.5 pl-5">
                 <li>{t('withdrawal.after1')}</li>
                 <li>{t('withdrawal.after2')}</li>
+                <li>{t('withdrawal.after3')}</li>
               </ol>
+            </section>
+
+            <section data-testid="withdrawal-link-channel">
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('withdrawal.linkTitle')}</h2>
+              <p>
+                {t('withdrawal.linkBody')}{' '}
+                <a href={LINK_SUPPORT_URL} style={linkStyle} target="_blank" rel="noopener noreferrer">
+                  {t('withdrawal.linkSupportLabel')}
+                </a>
+              </p>
             </section>
 
             <section>

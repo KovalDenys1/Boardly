@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/db'
 import { getStripe, PREMIUM_PRICE_ID, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
+import { buildPremiumCheckoutSessionParams } from '@/lib/premium-checkout-session'
 import { CONSENT_REQUIRED_CODE, checkoutRequestSchema, type CheckoutRequest } from '@/lib/validation/stripe-checkout'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -165,22 +166,13 @@ export async function POST(req: NextRequest) {
     consentReceivedAt: new Date().toISOString(),
   }
 
+  // Sold through Stripe Managed Payments (#1179): Link is the merchant of
+  // record, so the parameters live in lib/premium-checkout-session.ts next to
+  // the list of ones Managed Payments refuses.
   const createCheckoutSession = () =>
-    getStripe().checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/profile?premium=success`,
-      cancel_url: `${origin}/profile`,
-      allow_promotion_codes: true,
-      // The withdrawal information was given in the site's language; the
-      // payment page follows the browser's rather than defaulting to English.
-      locale: 'auto',
-      metadata: consentMetadata,
-      subscription_data: {
-        metadata: consentMetadata,
-      },
-    })
+    getStripe().checkout.sessions.create(
+      buildPremiumCheckoutSessionParams({ customerId, priceId, origin, metadata: consentMetadata })
+    )
 
   let checkoutSession
   try {

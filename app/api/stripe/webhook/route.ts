@@ -300,16 +300,20 @@ async function sendPurchaseConfirmationOnce(
   }
 }
 
-// Runs after the entitlement is written. Writing the row may still throw, and
-// while a retry could help it does: nothing has been sent yet, and every step
-// before this one is idempotent, so a redelivery repeats them harmlessly and
-// gives the record a second chance. Past RETRYABLE_EVENT_AGE_MS the failure is
-// logged instead, for the same reason stampFirstGrant never throws.
+// Runs after the entitlement is written, or, for a checkout whose payment is
+// still pending, on its own with `confirm: false`: the record of what the buyer
+// agreed to exists from the moment they finished checkout, but the confirmation
+// email waits for the money. Writing the row may still throw, and while a
+// retry could help it does: nothing has been sent yet, and every step before
+// this one is idempotent, so a redelivery repeats them harmlessly and gives the
+// record a second chance. Past RETRYABLE_EVENT_AGE_MS the failure is logged
+// instead, for the same reason stampFirstGrant never throws.
 async function recordPurchaseConsent(
   event: Stripe.Event,
   session: Stripe.Checkout.Session,
   subscription: Stripe.Subscription,
-  customerId: string
+  customerId: string,
+  { confirm }: { confirm: boolean }
 ): Promise<void> {
   const checkoutSessionId = session.id
   const consent = readConsentMetadata(session.metadata) ?? readConsentMetadata(subscription.metadata)
@@ -323,8 +327,8 @@ async function recordPurchaseConsent(
   try {
     purchaser = await resolvePurchaser(customerId, consent.userId ?? metadataUserId(subscription))
     if (!purchaser) {
-      // The entitlement write just matched a row, so this cannot normally
-      // happen; a retry would not find one either.
+      // After a grant the entitlement write just matched a row, so this cannot
+      // normally happen; a retry would not find one either.
       log.error('Purchase consent matched no user', undefined, { checkoutSessionId, customerId })
       return
     }
@@ -351,6 +355,8 @@ async function recordPurchaseConsent(
     return
   }
 
+  if (!confirm) return
+
   const conversion = session.currency_conversion
   await sendPurchaseConfirmationOnce(
     checkoutSessionId,
@@ -372,6 +378,55 @@ async function recordPurchaseConsent(
     },
     event
   )
+}
+
+// A Checkout Session reaches `complete` before the money has arrived when the
+// buyer picks a payment method that settles later (a bank debit, say); Stripe
+// then reports payment_status 'unpaid' and follows up with
+// checkout.session.async_payment_succeeded or _failed. Only 'paid', or
+// 'no_payment_required' (a 100 % promotion code), is a finished sale.
+function isSessionPaid(session: Stripe.Checkout.Session): boolean {
+  return session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+}
+
+type SubscriptionCheckout = { session: Stripe.Checkout.Session; subscriptionId: string; customerId: string }
+
+function subscriptionCheckout(event: Stripe.Event): SubscriptionCheckout | null {
+  const session = event.data.object as Stripe.Checkout.Session
+  if (session.mode !== 'subscription' || !session.subscription || !session.customer) {
+    return null
+  }
+  return {
+    session,
+    subscriptionId: typeof session.subscription === 'string' ? session.subscription : session.subscription.id,
+    customerId: typeof session.customer === 'string' ? session.customer : session.customer.id,
+  }
+}
+
+// The paid checkout: grant, then the record of the sale and its confirmation.
+// Entitlement previously depended entirely on a customer.subscription.* event
+// arriving; if one was missed, a paid checkout never granted Premium and
+// nothing reconciled it. The subscription events remain the source of truth
+// for renewals and cancels.
+async function fulfilPaidCheckout(event: Stripe.Event, checkout: SubscriptionCheckout): Promise<void> {
+  const { session, subscriptionId, customerId } = checkout
+  // Re-read the subscription so the period end comes from Stripe rather than
+  // being inferred from the checkout session.
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+  const granted = await updateSubscriptionState(
+    customerId,
+    subscriptionId,
+    resolveSubscriptionEnd(subscription),
+    subscription.cancel_at_period_end,
+    metadataUserId(subscription)
+  )
+  if (granted === 0 && isWorthRetrying(event)) {
+    throw new Error(`Checkout session matched no user (customer ${customerId})`)
+  }
+  if (granted > 0) {
+    await pushDiscordRoleForCustomer(customerId, metadataUserId(subscription))
+    await recordPurchaseConsent(event, session, subscription, customerId, { confirm: true })
+  }
 }
 
 async function handleEvent(event: Stripe.Event): Promise<void> {
@@ -424,38 +479,54 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       break
     }
 
-    // Entitlement previously depended entirely on a customer.subscription.*
-    // event arriving. If one was missed, a paid checkout never granted Premium
-    // and nothing reconciled it. Grant on the checkout itself as well; the
-    // subscription events remain the source of truth for renewals and cancels.
     case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session
-      if (session.mode !== 'subscription' || !session.subscription || !session.customer) {
+      const checkout = subscriptionCheckout(event)
+      if (!checkout) break
+      const { session, subscriptionId, customerId } = checkout
+
+      if (!isSessionPaid(session)) {
+        // Checkout finished but the money has not arrived. Record what the
+        // buyer agreed to, grant nothing and send no confirmation: an unpaid
+        // purchase is not a sale yet (#1179). async_payment_succeeded
+        // finishes the job; async_payment_failed leaves it unfinished.
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+        await recordPurchaseConsent(event, session, subscription, customerId, { confirm: false })
+        log.info('Checkout session completed, payment pending', {
+          customerId,
+          subscriptionId,
+          paymentStatus: session.payment_status,
+        })
         break
       }
 
-      const subscriptionId =
-        typeof session.subscription === 'string' ? session.subscription : session.subscription.id
-      const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id
-
-      // Re-read the subscription so the period end comes from Stripe rather than
-      // being inferred from the checkout session.
-      const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
-      const granted = await updateSubscriptionState(
-        customerId,
-        subscriptionId,
-        resolveSubscriptionEnd(subscription),
-        subscription.cancel_at_period_end,
-        metadataUserId(subscription)
-      )
-      if (granted === 0 && isWorthRetrying(event)) {
-        throw new Error(`Checkout session matched no user (customer ${customerId})`)
-      }
-      if (granted > 0) {
-        await pushDiscordRoleForCustomer(customerId, metadataUserId(subscription))
-        await recordPurchaseConsent(event, session, subscription, customerId)
-      }
+      await fulfilPaidCheckout(event, checkout)
       log.info('Checkout session completed', { customerId, subscriptionId })
+      break
+    }
+
+    case 'checkout.session.async_payment_succeeded': {
+      const checkout = subscriptionCheckout(event)
+      if (!checkout) break
+      await fulfilPaidCheckout(event, checkout)
+      log.info('Checkout session paid after completion', {
+        customerId: checkout.customerId,
+        subscriptionId: checkout.subscriptionId,
+      })
+      break
+    }
+
+    case 'checkout.session.async_payment_failed': {
+      // Nothing was granted and nothing was sent for this session, so there is
+      // nothing to take back; the consent row stays as the record that the
+      // buyer tried. The subscription never becomes active, and its own
+      // events keep premiumUntil empty.
+      const checkout = subscriptionCheckout(event)
+      if (!checkout) break
+      log.warn('Checkout payment failed after completion', {
+        checkoutSessionId: checkout.session.id,
+        customerId: checkout.customerId,
+        subscriptionId: checkout.subscriptionId,
+      })
       break
     }
   }
