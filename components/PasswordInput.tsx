@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useState, useMemo } from 'react'
+import { type ReactNode, useState, useMemo, useId } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import HelpTooltip from '@/components/ui/help-tooltip'
 
@@ -43,6 +43,7 @@ export default function PasswordInput({
   hintLabel,
 }: PasswordInputProps) {
   const { t } = useTranslation()
+  const inputId = useId()
   const [showPassword, setShowPassword] = useState(false)
 
   const strength = useMemo((): PasswordStrength => {
@@ -87,7 +88,7 @@ export default function PasswordInput({
             parameter value rather than JSX, so audit-i18n could not see it and
             it shipped English onto the Russian login page. Resolved here, where
             the hook is available, instead of in the signature. */}
-        <label className="label !mb-0">{label ?? t('auth.password.label')}</label>
+        <label htmlFor={inputId} className="label !mb-0">{label ?? t('auth.password.label')}</label>
         <div className="flex items-center gap-2">
           {statusText ? (
             <span className={`text-xs font-semibold ${statusClassName ?? ''}`} style={!statusClassName ? { color: 'var(--bd-ink-muted)' } : undefined}>
@@ -99,6 +100,7 @@ export default function PasswordInput({
       </div>
       <div className="relative">
         <input
+          id={inputId}
           type={showPassword ? 'text' : 'password'}
           required={required}
           className="input pr-10"

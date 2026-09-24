@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Die from '@/components/ui/Die'
@@ -38,6 +38,7 @@ export default function RegisterForm() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const emailInputId = useId()
   const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
   const isLobbyInviteFlow =
     returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
@@ -288,8 +289,9 @@ export default function RegisterForm() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
+                  <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
                   <input
+                    id={emailInputId}
                     type="email"
                     required
                     disabled={loading}
