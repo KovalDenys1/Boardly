@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -12,6 +12,7 @@ import {
     LUDO_FINISH,
     LUDO_SAFE_SQUARES,
     LUDO_START_OFFSET,
+    LUDO_YARD,
 } from '@/lib/games/ludo-game'
 import {
     LUDO_HOME_COLUMN_CELLS,
@@ -50,6 +51,8 @@ import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
+import { ActiveLudoMotion, useLudoMotion } from './hooks/useLudoMotion'
+import { LudoRingTiming, Point, ludoMoverKeyframes, ludoRingKey, ludoVictimKeyframes, nextLudoRingTiming } from './ludo-motion'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
@@ -108,6 +111,8 @@ function LudoBoard({
     activeColors,
     onTokenClick,
     lastMovedKey,
+    lastMoveRingKey,
+    motion,
     tokenLabel,
     boardLabel,
 }: {
@@ -116,6 +121,9 @@ function LudoBoard({
     activeColors: LudoColor[]
     onTokenClick: (token: number) => void
     lastMovedKey: string | null
+    /** Identifies the last move itself, so its ring restarts on each new move. */
+    lastMoveRingKey: string | null
+    motion: ActiveLudoMotion | null
     tokenLabel: (token: BoardToken) => string
 }) {
     // Tokens that share a square are fanned out a little so each stays visible and tappable.
@@ -144,6 +152,54 @@ function LudoBoard({
         // Selectable tokens last, so they paint on top and take the tap.
         return result.sort((a, b) => Number(a.selectable) - Number(b.selectable))
     }, [tokens])
+
+    // Motion (#1113). Where each token is drawn now, and where it was drawn
+    // before the last change of position: a walk starts from the old spot,
+    // fan-out included, not from the bare square centre.
+    const tokenEls = useRef(new Map<string, SVGGElement>())
+    const drawnRef = useRef<{ prev: Map<string, Point>; curr: Map<string, Point> }>({ prev: new Map(), curr: new Map() })
+    useLayoutEffect(() => {
+        const next = new Map(placed.map((t) => [`${t.playerId}-${t.token}`, { x: t.x, y: t.y }] as const))
+        const { curr } = drawnRef.current
+        const moved = next.size !== curr.size || [...next].some(([key, p]) => {
+            const q = curr.get(key)
+            return !q || q.x !== p.x || q.y !== p.y
+        })
+        drawnRef.current = { prev: moved ? curr : drawnRef.current.prev, curr: next }
+    }, [placed])
+
+    // One transform (+ opacity) animation per token the move touches. The
+    // tokens' own transform is already the new state, so cancelling a run –
+    // a newer move, a resync, the run ending – settles every token where it is.
+    useLayoutEffect(() => {
+        if (!motion) return
+        const { plan, timing } = motion
+        const { prev, curr } = drawnRef.current
+        const animations: Animation[] = []
+        const moverKey = `${plan.playerId}-${plan.token}`
+        const mover = tokenEls.current.get(moverKey)
+        const moverEnd = curr.get(moverKey)
+        if (mover && moverEnd && typeof mover.animate === 'function') {
+            const start = prev.get(moverKey) ?? ludoTokenPoint(plan.color, plan.from, plan.token)
+            animations.push(mover.animate(ludoMoverKeyframes(plan, start, moverEnd), { duration: timing.travel, fill: 'both' }))
+        }
+        for (const victim of plan.captured) {
+            const key = `${victim.playerId}-${victim.token}`
+            const el = tokenEls.current.get(key)
+            if (!el || typeof el.animate !== 'function') continue
+            const start = prev.get(key) ?? ludoTokenPoint(victim.color, victim.from, victim.token)
+            const yard = curr.get(key) ?? ludoTokenPoint(victim.color, LUDO_YARD, victim.token)
+            animations.push(el.animate(ludoVictimKeyframes(timing, start, yard), { duration: timing.total, fill: 'both' }))
+        }
+        return () => animations.forEach((a) => a.cancel())
+    }, [motion])
+
+    // The ring's delay is frozen per move (nextLudoRingTiming): read off the
+    // run, it would drop to 0 when the run ends and restart the pop-in.
+    const [ringTiming, setRingTiming] = useState<LudoRingTiming | null>(null)
+    const nextRing = nextLudoRingTiming(ringTiming, lastMoveRingKey, motion)
+    if (nextRing !== ringTiming) setRingTiming(nextRing)
+    const ringDelay = nextRing?.delay ?? 0
 
     const startSquares = new Map(LUDO_COLORS.map((color) => [LUDO_START_OFFSET[color], color] as const))
 
@@ -197,6 +253,10 @@ function LudoBoard({
                 return (
                     <g
                         key={key}
+                        ref={(el) => {
+                            if (el) tokenEls.current.set(key, el)
+                            else tokenEls.current.delete(key)
+                        }}
                         className={`ludo-token${interactive ? ' ludo-token--selectable' : ''}${lastMovedKey === key ? ' ludo-token--last' : ''}`}
                         style={{ transform: `translate(${token.x}px, ${token.y}px)` }}
                         role={interactive ? 'button' : undefined}
@@ -211,6 +271,14 @@ function LudoBoard({
                             }
                         } : undefined}
                     >
+                        {lastMovedKey === key && lastMoveRingKey && (
+                            <circle
+                                key={lastMoveRingKey}
+                                className="ludo-token__last"
+                                r={token.r + 0.16}
+                                style={{ fill: COLOR_FILL[token.color], stroke: COLOR_FILL[token.color], animationDelay: `${Math.round(ringDelay)}ms` }}
+                            />
+                        )}
                         {interactive && <circle className="ludo-token__halo" r={token.r + 0.2} />}
                         {/* A generous invisible target: a cell is under 20px wide on a phone. */}
                         {interactive && <circle r={0.72} style={{ fill: 'transparent' }} />}
@@ -787,6 +855,9 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         )
     }, [gameEngine, boardUserId, canPickToken])
 
+    // Motion (#1113): the viewer's id decides whether an arriving move is theirs.
+    const boardMotion = useLudoMotion(gameEngine ? gameEngine.getData() : undefined, isSpectator ? null : boardUserId ?? null)
+
     const earlyEvents = gameEngine ? gameEngine.getData().events : undefined
     const reversedEvents = useMemo(
         () => (Array.isArray(earlyEvents) ? earlyEvents.slice().reverse() : []),
@@ -882,6 +953,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const currentName = currentPlayer ? getDisplayName(currentPlayer.id) : ''
 
     const lastMovedKey = data.lastMove ? `${data.lastMove.playerId}-${data.lastMove.token}` : null
+    const lastMoveRingKey = ludoRingKey(data.lastMove)
 
     const handleRoll = async () => {
         const userId = getCurrentUserId()
@@ -1095,6 +1167,8 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     activeColors={data.seats.map((seat) => seat.color)}
                     onTokenClick={(token) => void handleTokenClick(token)}
                     lastMovedKey={lastMovedKey}
+                    lastMoveRingKey={lastMoveRingKey}
+                    motion={boardMotion}
                     tokenLabel={tokenLabel}
                     boardLabel={t('games.ludo.game.boardLabel')}
                 />

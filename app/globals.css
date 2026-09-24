@@ -3919,7 +3919,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
    board is one square SVG sized by min() of the board card's container width
    and height (the card is `container-type: size`), minus the surface's own
    padding and border (2 × 12px + 2 × 1.5px), so it can never outgrow either
-   axis. Tokens move with a transform transition only; nothing animates size. */
+   axis. Tokens move by transform only (a WAAPI walk, #1113); nothing animates size. */
 .ludo-board {
   display: block;
   width: clamp(180px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
@@ -3929,7 +3929,23 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   -webkit-tap-highlight-color: transparent;
 }
 .ludo-board-surface { padding: 12px; }
-.ludo-token { transition: transform 0.32s var(--bd-ease-out); }
+/* No transition on the token: a move walks square by square through
+   useLudoMotion + ludoMoverKeyframes (#1113), and anything else (a resync, a
+   rematch) settles at once rather than gliding across the corners. */
+.ludo-token:not(.ludo-token--selectable) { pointer-events: none; }
+/* The last move's token keeps a soft halo until the next move; it appears as
+   the token lands (the delay is the walk, set inline). */
+.ludo-token__last {
+  fill-opacity: 0.35;
+  stroke-width: 0.06;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ludo-last-in var(--bd-dur-slow) var(--bd-ease-spring) both;
+}
+@keyframes ludo-last-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
 .ludo-token--selectable { cursor: pointer; }
 .ludo-token--selectable:focus { outline: none; }
 .ludo-token__halo {
@@ -3952,8 +3968,7 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   100% { transform: rotate(0deg) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ludo-token { transition: none; }
-  .ludo-token__halo, .ludo-die--rolled { animation: none; }
+  .ludo-token__halo, .ludo-token__last, .ludo-die--rolled { animation: none; }
 }
 
 /* The die and the Roll button: one row, fixed height, never grows. */
