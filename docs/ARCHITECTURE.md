@@ -15,7 +15,9 @@ Boardly uses a single-server model:
 3. API persists authoritative state in DB.
 4. API broadcasts the update to the lobby's Supabase Broadcast channel. The topic is
    `lobby:<code>:<realtimeSecret>` – both sides build it in `lib/lobby-realtime-topic.ts`,
-   and the secret is handed out only by `GET /api/lobby/[code]/realtime-topic`.
+   and the secret is handed out by `GET /api/lobby/[code]/realtime-topic` to players and, inside the
+   topic string, by the spectate route to admitted spectators. It is not readable through PostgREST or
+   Postgres Changes since migration `20260924141000` (no grant on the column).
 5. Clients reconcile local UI with server snapshot.
 
 Client optimism is allowed for responsiveness, but server state is final.
@@ -97,7 +99,16 @@ Architecture: Supabase Realtime — no separate server process.
   - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events)
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
 - `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
-- `components/ReactionOverlay.tsx` — `reactions:{code}` Broadcast channel (internal)
+- `app/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
+- `components/ReactionOverlay.tsx` – `reactions:{code}` Broadcast channel (no sender in the repo, #1107)
+- `components/SocialLoopListener.tsx` – `user:{userId}` Broadcast channel (invites, rematches)
+- `components/Header/NotificationsMenu.tsx` – `user-notifications:{userId}` Broadcast channel
+- `app/lobby/[code]/spectate/page.tsx` – `spectators:{code}` Broadcast channel with presence
+
+All Postgres Changes subscribers run as `anon` and receive only the columns that role may select
+(never `password` or `realtimeSecret`); the `supabase_realtime` publication must contain `Lobbies`
+(console state, see docs/OPERATIONS.md). The per-user and spectator channels are public and keyed by
+id or code alone (advisory GHSA-g868-9224-wr3p tracks the redesign).
 
 ### When to use Broadcast vs Postgres Changes
 

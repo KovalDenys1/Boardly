@@ -26,12 +26,19 @@
 
 ### Database safety layer (RLS)
 
-- RLS policies are used as defense-in-depth for direct DB access scenarios.
-- Application traffic via service role remains functional.
+- The public anon key ships in every client bundle, so table grants plus RLS are the only control
+  between the public and the tables, not defence-in-depth. Grants decide which columns are readable
+  (RLS filters rows only); since migration `20260924141000` the API roles hold no table privilege in
+  `public` except a column-limited `SELECT` on `Lobbies` for Realtime, schema defaults are revoked so
+  new tables stay closed, and `scripts/rls-smoke.psql` asserts it after every production migration.
+  The Supabase security advisor checks only whether RLS is enabled, never grants or column exposure.
+- Application traffic runs as the table owner through Prisma and bypasses RLS; the server broadcasts
+  with the service key.
 
 ## Guest security model
 
-- Guests receive short-lived signed tokens from server endpoints.
+- Guests receive two signed HS256 tokens from server endpoints: a 12-hour session token and a 180-day
+  identity token (`lib/guest-auth.ts`), both on `GUEST_JWT_SECRET` with `NEXTAUTH_SECRET` as fallback.
 - Token transport header: `X-Guest-Token`.
 - Guest claims are verified server-side through `lib/guest-auth.ts`; the header is never trusted as sent.
 - Raw client-supplied guest IDs/names are not trusted as identity.
@@ -78,7 +85,10 @@
 
 - Server remains authoritative for turn completion and auto-actions.
 - Prevent duplicate auto-actions with server guards/debouncing.
-- On reconnect or action error, clients reconcile with server snapshots.
+- On reconnect or action error, clients reconcile with server snapshots. Known gap (audit 2026-09-24,
+  advisory GHSA-g868-9224-wr3p): four game pages apply a broadcast `state-change` payload directly, and
+  the lobby topic is a public channel any holder can send on, so reconciliation is the target state,
+  not the current one.
 
 ## Operational checks
 
