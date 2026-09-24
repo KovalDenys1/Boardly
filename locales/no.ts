@@ -2040,7 +2040,7 @@ const no = {
       gameOver: 'Spillet er over!',
       roundsCompleted: '{{count}} runder fullført',
       players: '{{count}} spiller',
-      players_plural: '{{count}} spillere',
+      players_other: '{{count}} spillere',
       youWon: 'Du vant!',
       playerWins: '{{player}} vinner!',
       points: '{{count}} poeng',

@@ -600,7 +600,9 @@ describe('the board card does not paint the space the board leaves (#903)', () =
   })
 
   describe('yahtzee hugs its dice instead of stretching around them (#903)', () => {
-    function renderYahtzee(compact: boolean) {
+    // The phone-landscape `compact` variant went with #1187 (landscape shows
+    // the tile grid and its own dice bar), so only the desktop column is left.
+    function renderYahtzee() {
       const engine = new YahtzeeGame('game-1')
       engine.addPlayer({ id: 'user-1', name: 'Alice', score: 0, isActive: true })
       engine.addPlayer({ id: 'user-2', name: 'Bob', score: 0, isActive: true })
@@ -611,8 +613,6 @@ describe('the board card does not paint the space the board leaves (#903)', () =
           gameEngine={engine}
           game={{ id: 'game-1' } as never}
           isMyTurn
-          timeLeft={60}
-          turnTimerLimit={60}
           isMoveInProgress={false}
           isRolling={false}
           isScoring={false}
@@ -624,7 +624,6 @@ describe('the board card does not paint the space the board leaves (#903)', () =
           onToggleHold={() => undefined}
           onScore={() => undefined}
           onCelebrationComplete={() => undefined}
-          compact={compact}
         />
       )
     }
@@ -634,8 +633,8 @@ describe('the board card does not paint the space the board leaves (#903)', () =
     // around a 112px dice strip - ~197px of empty card above it and ~246px
     // below. `flex-1` on either box is what put it there.
     it('neither the dice card nor the dice box takes the column\'s spare height', () => {
-      for (const compact of [false, true]) {
-        const { container, unmount } = renderYahtzee(compact)
+      {
+        const { container, unmount } = renderYahtzee()
 
         const card = container.querySelector('.bd-card')
         expect(card).toBeTruthy()
@@ -645,7 +644,7 @@ describe('the board card does not paint the space the board leaves (#903)', () =
         expect(card!.className).toMatch(/(^|\s)overflow-y-auto(\s|$)/)
         expect(card!.className).toMatch(/(^|\s)min-h-0(\s|$)/)
 
-        const diceBox = card!.querySelector(compact ? '.min-h-\\[110px\\]' : '.min-h-\\[190px\\]')
+        const diceBox = card!.querySelector('.min-h-\\[190px\\]')
         expect(diceBox).toBeTruthy()
         expect((diceBox as HTMLElement).className).not.toMatch(/(^|\s)flex-1(\s|$)/)
 
@@ -654,7 +653,7 @@ describe('the board card does not paint the space the board leaves (#903)', () =
     })
 
     it('centres what is left, so the freed height is page padding and not empty card', () => {
-      const { container } = renderYahtzee(false)
+      const { container } = renderYahtzee()
       const root = container.firstElementChild as HTMLElement
       expect(root.className).toMatch(/(^|\s)justify-center(\s|$)/)
     })

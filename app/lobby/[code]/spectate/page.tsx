@@ -702,8 +702,6 @@ export default function SpectatorLobbyPage() {
                 game={data.activeGame!}
                 isMyTurn={false}
                 isSpectator
-                timeLeft={0}
-                turnTimerLimit={data.lobby.turnTimer ?? 0}
                 isMoveInProgress={false}
                 isRolling={false}
                 isScoring={false}

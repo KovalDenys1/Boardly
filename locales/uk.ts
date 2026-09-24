@@ -2116,7 +2116,7 @@ const uk: TranslationWithPlurals = {
       roundsCompleted_few: '{{count}} раунди завершено',
       roundsCompleted_many: '{{count}} раундів завершено',
       players: '{{count}} гравець',
-      players_plural: '{{count}} гравців',
+      players_other: '{{count}} гравців',
       players_one: '{{count}} гравець',
       players_few: '{{count}} гравці',
       players_many: '{{count}} гравців',

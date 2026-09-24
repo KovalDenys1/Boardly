@@ -2114,7 +2114,7 @@ const ru = {
       roundsCompleted_few: 'Завершено {{count}} раунда',
       roundsCompleted_many: 'Завершено {{count}} раундов',
       players: '{{count}} игрок',
-      players_plural: '{{count}} игроков',
+      players_other: '{{count}} игроков',
       players_one: '{{count}} игрок',
       players_few: '{{count}} игрока',
       players_many: '{{count}} игроков',
