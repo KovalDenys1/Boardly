@@ -87,9 +87,9 @@ async function requestDeletionHandler(req: NextRequest) {
   // confirmed, the nightly discord-role-sync cron pushes the metadata back (#939).
   const cleared = await clearRoleConnection(user.id)
 
+  // userId only: the email is exactly what this request asks us to erase (#1128).
   log.info('Account deletion requested', {
     userId: user.id,
-    email: user.email,
     discordRoleConnection: cleared.status,
   })
 

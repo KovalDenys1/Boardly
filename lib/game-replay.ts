@@ -156,3 +156,7 @@ export function decodeGameReplaySnapshots(
     }
   })
 }
+
+// Shared with lib/account-erasure.ts, which rewrites stored snapshots in place
+// when a player is erased and must write them back in exactly this encoding.
+export { encodeState as encodeReplayState, decodeState as decodeReplayState }
