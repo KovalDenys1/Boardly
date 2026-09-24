@@ -34,6 +34,7 @@ import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useFreshKey } from '@/hooks/useFreshKey'
+import { useFreshIds } from '@/hooks/useFreshFor'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import {
   advanceWordSwap,
@@ -469,6 +470,12 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   // Guesses arrive live only (there is no history to load), so `[]` is a
   // loaded empty feed and every guess after it is fresh.
   const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(guesses, (g) => String(g.id)))
+  // A bubble turns mint when the describer marks its word guessed, usually
+  // after it arrived. Only the bubble that has just become a hit bounces; the
+  // hits the panel mounted with (a reload, a remount) sit still, and a settled
+  // one does not replay when a mobile tab shows the panel again.
+  const hitIds = guesses.filter((g) => guessMatchesWord(g.text, guessedWords)).map((g) => String(g.id))
+  const { isFresh: isFreshHit, settle: settleHit } = useFreshIds(hitIds)
   return (
     <div className={`w-full md:w-[280px] md:max-w-[280px] ${fillHeight ? 'flex-1 min-h-0' : 'h-[220px]'} md:h-full md:max-h-[560px]`} style={{
       ...cardBase,
@@ -489,6 +496,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
           const isMe = g.userId === currentUserId
           const isNewest = index === guesses.length - 1 && newestFresh
           const isHit = guessMatchesWord(g.text, guessedWords)
+          const hitFresh = isHit && isFreshHit(String(g.id))
           return (
             <div
               key={g.id}
@@ -502,9 +510,13 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
               {!isMe && (
                 <BdLabel style={{ fontSize: 9, marginLeft: 4 }}>{g.username}</BdLabel>
               )}
-              {/* A guess the describer marked correct turns mint and lands with
-                  an overshoot; the class is added when it matches, so it plays then. */}
-              <span className={isHit ? 'social-entry-hit' : undefined} data-guess-hit={isHit || undefined} style={{
+              {/* A guess the describer marked correct turns mint; the one that
+                  has just become a hit lands with an overshoot, once. */}
+              <span
+                className={hitFresh ? 'social-entry-hit' : undefined}
+                onAnimationEnd={hitFresh ? onOwnAnimationEnd(() => settleHit(String(g.id))) : undefined}
+                data-guess-hit={isHit || undefined}
+                style={{
                 padding: '7px 12px',
                 borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                 background: isHit ? 'var(--bd-mint)' : isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
@@ -1804,7 +1816,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const isNextTeamPlayer = !!nextTeam?.playerIds.includes(currentUserId ?? '')
     // Only while this turn's result is fresh (#1115): a reload shows it settled.
     const countIn = turnResultsFresh
+    // Words, then the turn score, then the team total, in that order however
+    // long the turn was: the stagger compresses to fit, it never clamps.
     const wordsDoneStep = Math.max(1, wordResults.length)
+    const totalStep = wordsDoneStep + 3
 
     return (
       <>
@@ -1834,7 +1849,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   const ok = w.result === 'guessed'
                   return (
                     <div key={i} className={countIn ? 'social-rise' : undefined} style={{
-                      ...(countIn ? staggerStyle(i) : null),
+                      ...(countIn ? staggerStyle(i, totalStep) : null),
                       display: 'grid', gridTemplateColumns: '28px 1fr auto', alignItems: 'center', gap: 12,
                       padding: '12px 16px', borderRadius: 12,
                       background: ok ? 'rgba(79,201,166,0.12)' : 'rgba(255,196,77,0.12)',
@@ -1876,7 +1891,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   {/* The turn's total lands after its words, as a stamp. */}
                   <span
                     className={countIn ? 'social-stamp' : undefined}
-                    style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1, display: 'inline-block', transformOrigin: 'left center', ...(countIn ? staggerStyle(wordsDoneStep) : null) }}
+                    style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 40 : 56, lineHeight: 1, display: 'inline-block', transformOrigin: 'left center', ...(countIn ? staggerStyle(wordsDoneStep, totalStep) : null) }}
                     data-testid="alias-turn-score"
                   >
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
@@ -1909,7 +1924,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                         <span
                           className={countIn && isActive ? 'score-pop' : undefined}
                           onAnimationEnd={countIn && isActive ? onOwnAnimationEnd(settleTurnResults) : undefined}
-                          style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums', display: 'inline-block', ...(countIn && isActive ? staggerStyle(wordsDoneStep + 3) : null) }}
+                          style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 32, fontVariantNumeric: 'tabular-nums', display: 'inline-block', ...(countIn && isActive ? staggerStyle(totalStep, totalStep) : null) }}
                         >
                           {team.score}
                         </span>

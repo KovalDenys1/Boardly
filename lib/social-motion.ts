@@ -23,21 +23,42 @@ export function latestEntryKey<T>(
   return keyOf(items[index], index)
 }
 
-/** Default step between staggered rows, and how many steps before it stops growing. */
+/** Default step between staggered rows, and the longest a whole reveal may take to start its last step. */
 export const STAGGER_STEP_MS = 70
-export const STAGGER_MAX_STEPS = 8
+export const STAGGER_MAX_TOTAL_MS = 840
 
 /**
- * Animation delay for the `index`-th row of a staggered reveal. Capped, so a
- * ten-player table does not keep the last row waiting for a second.
+ * A staggered reveal of `lastStep + 1` steps (0..lastStep). Each step starts
+ * `stepMs` after the one before it – unless that would push the last step past
+ * `maxTotalMs`, in which case the spacing shrinks so the whole sequence fits
+ * (#1175 review). It never clamps: a clamp made every step past the cap start
+ * at the same moment, so a long Alias turn fired its last words, the turn
+ * score and the team total together. Shrinking keeps the order.
  */
-export function staggerDelayMs(index: number, stepMs = STAGGER_STEP_MS, maxSteps = STAGGER_MAX_STEPS): number {
-  if (!Number.isFinite(index) || index <= 0) return 0
-  return Math.min(Math.floor(index), maxSteps) * stepMs
+export function staggerSpacingMs(lastStep: number, stepMs = STAGGER_STEP_MS, maxTotalMs = STAGGER_MAX_TOTAL_MS): number {
+  if (!Number.isFinite(lastStep) || lastStep <= 0) return stepMs
+  return Math.min(stepMs, maxTotalMs / lastStep)
 }
 
-export function staggerStyle(index: number, stepMs?: number, maxSteps?: number): React.CSSProperties {
-  return { animationDelay: `${staggerDelayMs(index, stepMs, maxSteps)}ms` }
+/** Delay of `step` within a reveal whose last step is `lastStep`. */
+export function staggerDelayMs(step: number, lastStep: number, stepMs = STAGGER_STEP_MS, maxTotalMs = STAGGER_MAX_TOTAL_MS): number {
+  if (!Number.isFinite(step) || step <= 0) return 0
+  return Math.round(step * staggerSpacingMs(Math.max(lastStep, step), stepMs, maxTotalMs))
+}
+
+export function staggerStyle(step: number, lastStep: number, stepMs?: number, maxTotalMs?: number): React.CSSProperties {
+  return { animationDelay: `${staggerDelayMs(step, lastStep, stepMs, maxTotalMs)}ms` }
+}
+
+/**
+ * Of `ids`, the ones that are news: not there when the list first loaded
+ * (`baseline`, null while nothing has loaded) and not yet animated
+ * (`settled`). The per-entry counterpart of `isFreshKey`, for a list where any
+ * entry – not just the newest – can change into the state that animates.
+ */
+export function isFreshId(id: string, baseline: ReadonlySet<string> | null, settled: ReadonlySet<string>): boolean {
+  if (!baseline) return false
+  return !baseline.has(id) && !settled.has(id)
 }
 
 /**
@@ -97,4 +118,20 @@ export function guessMatchesWord(text: string, guessedWords: readonly string[]):
   const guess = normalizeGuess(text)
   if (!guess) return false
   return guessedWords.some((word) => normalizeGuess(word) === guess)
+}
+
+/**
+ * Guess the Spy: identifies one pass of the questioning turn, for the roster
+ * row's nudge. A new questioner changes it, and so does the same questioner
+ * coming round again (the history grew in between); `null` outside the
+ * questioning phase. Fed to `useFreshKey`, so only a pass seen live nudges.
+ */
+export function spyTurnPassKey(
+  isQuestioning: boolean,
+  round: number,
+  historyLength: number,
+  questionerId: string | null | undefined,
+): string | null {
+  if (!isQuestioning || !questionerId) return null
+  return `${round}:${historyLength}:${questionerId}`
 }

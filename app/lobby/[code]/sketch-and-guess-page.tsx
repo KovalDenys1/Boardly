@@ -1027,7 +1027,19 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             accentColor={side === 'left' ? SKETCH_ACCENT : 'var(--bd-lav)'}
             turnDotColor={SKETCH_ACCENT_DEEP}
             subline={
-                <ScorePop value={id ? scores[id] || 0 : 0} style={{ display: 'inline-block' }}>
+                // A block, not inline-block: it fills the subline, so it can
+                // carry the ellipsis itself and still take the pop's transform
+                // (an inline-block shrink-wraps its text and never truncates,
+                // #874). Keyed on the seat, so the seat changing hands is not
+                // read as a score change.
+                <ScorePop
+                    key={id}
+                    value={id ? scores[id] || 0 : 0}
+                    style={{
+                        display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        transformOrigin: side === 'left' ? 'left center' : 'right center',
+                    }}
+                >
                     {t('games.guess_my_drawing.game.points', { count: id ? scores[id] || 0 : 0 })}
                 </ScorePop>
             }

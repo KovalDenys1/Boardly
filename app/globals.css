@@ -2065,8 +2065,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   to { opacity: 1; transform: none; }
 }
 /* Whose turn it is moved to this row: a short nudge, no layout. */
+/* No fill mode: the keyframes start and end at rest, and a fill would leave
+   the row holding a transform (a stacking context) after it finished. */
 .social-turn-nudge {
-  animation: social-turn-nudge var(--bd-dur-slow) var(--bd-ease-spring) both;
+  animation: social-turn-nudge var(--bd-dur-slow) var(--bd-ease-spring);
 }
 @keyframes social-turn-nudge {
   0% { transform: none; }

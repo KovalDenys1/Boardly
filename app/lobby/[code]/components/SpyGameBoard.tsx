@@ -23,7 +23,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useFreshOnArrival } from '@/hooks/useFreshFor'
-import { latestEntryKey, onOwnAnimationEnd } from '@/lib/social-motion'
+import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey } from '@/lib/social-motion'
 
 interface SpyRoleInfo {
   role: string
@@ -256,6 +256,13 @@ export default function SpyGameBoard({
   )
   const { fresh: resultsFresh, settle: settleResults } = useFreshKey(
     phase === SpyGamePhase.RESULTS ? `results-${round}` : null,
+  )
+  // The turn passing: a new questioner, or the same one again after a full
+  // lap (the history length tells those apart, and a skip changes the id).
+  // Only a pass seen live nudges the roster row; load, reconnect and a
+  // remount of the Players tab show it still (#1175 review).
+  const { fresh: turnPassFresh, settle: settleTurnPass } = useFreshKey(
+    spyTurnPassKey(phase === SpyGamePhase.QUESTIONING, round, questionHistory.length, data.currentQuestionerId),
   )
   const { fresh: latestEntryFresh, settle: settleLatestEntry } = useFreshKey(
     latestEntryKey(questionHistory, (entry) => `${entry.timestamp}-${entry.askerId}`),
@@ -715,10 +722,13 @@ export default function SpyGameBoard({
         <div className="spy-roster-list mt-3">
           {normalizedPlayers.map((player) => {
             const isCurrent = player.id === data.currentQuestionerId
+            const nudge = isCurrent && turnPassFresh
             return (
-              // The active class carries a one-off nudge, so the row the turn
-              // just moved to moves once (#1115).
-              <div key={player.id} className={`spy-player-row ${isCurrent ? 'spy-player-row-active social-turn-nudge' : ''}`}>
+              <div
+                key={player.id}
+                className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}${nudge ? ' social-turn-nudge' : ''}`}
+                onAnimationEnd={nudge ? onOwnAnimationEnd(settleTurnPass) : undefined}
+              >
                 {player.avatarSrc ? (
                   <img src={player.avatarSrc} alt={player.name} className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover" />
                 ) : (

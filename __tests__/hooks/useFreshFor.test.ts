@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { startedJustNow, useFreshFor, useFreshOnArrival } from '@/hooks/useFreshFor'
+import { startedJustNow, useFreshFor, useFreshIds, useFreshOnArrival } from '@/hooks/useFreshFor'
 
 describe('startedJustNow', () => {
   it('is a window either side of now, and nothing without a start', () => {
@@ -61,5 +61,29 @@ describe('useFreshFor', () => {
     expect(result.current).toBe(false)
     rerender({ k: '2:reveal' })
     expect(result.current).toBe(true)
+  })
+})
+
+describe('useFreshIds', () => {
+  const render = (initial: string[] | undefined) =>
+    renderHook(({ ids }: { ids: string[] | undefined }) => useFreshIds(ids), { initialProps: { ids: initial } })
+
+  it('hits the panel mounts with never bounce; a new hit does, once', () => {
+    const { result, rerender } = render(['1'])
+    expect(result.current.isFresh('1')).toBe(false)
+    rerender({ ids: ['1', '2'] })
+    expect(result.current.isFresh('2')).toBe(true)
+    act(() => result.current.settle('2'))
+    // Settled: a tab switch that shows the panel again does not replay it.
+    expect(result.current.isFresh('2')).toBe(false)
+    expect(result.current.isFresh('1')).toBe(false)
+  })
+
+  it('takes the first defined list as the baseline', () => {
+    const { result, rerender } = render(undefined)
+    rerender({ ids: ['7'] })
+    expect(result.current.isFresh('7')).toBe(false)
+    rerender({ ids: ['7', '8'] })
+    expect(result.current.isFresh('8')).toBe(true)
   })
 })

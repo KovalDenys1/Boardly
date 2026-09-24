@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFreshKey } from '@/hooks/useFreshKey'
+import { isFreshId } from '@/lib/social-motion'
 
 /**
  * `useFreshKey` that settles itself after `ms` (#1115).
@@ -21,6 +22,30 @@ export function useFreshFor(key: string | null | undefined, ms: number): boolean
     return () => window.clearTimeout(timer)
   }, [fresh, settle, ms])
   return fresh
+}
+
+/**
+ * Per-entry freshness for a list (#1175 review). `ids` are the entries that
+ * are in the animating state right now (Alias: guesses that match a word
+ * marked guessed). The set present when `ids` is first defined is the loaded
+ * state and never animates; an id that joins later is fresh until `settle(id)`,
+ * wired to its node's `onAnimationEnd`. Without the settle a `display: none`
+ * → `flex` tab switch restarts the CSS animation on every entry still wearing
+ * the class.
+ */
+export function useFreshIds(ids: readonly string[] | undefined): {
+  isFresh: (id: string) => boolean
+  settle: (id: string) => void
+} {
+  const baselineRef = useRef<ReadonlySet<string> | null>(null)
+  if (baselineRef.current === null && ids !== undefined) baselineRef.current = new Set(ids)
+  const baseline = baselineRef.current
+  const [settled, setSettled] = useState<ReadonlySet<string>>(() => new Set())
+  const isFresh = useCallback((id: string) => isFreshId(id, baseline, settled), [baseline, settled])
+  const settle = useCallback((id: string) => {
+    setSettled((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  }, [])
+  return { isFresh, settle }
 }
 
 /**

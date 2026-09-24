@@ -495,6 +495,8 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
   const resolved: LiarsPartyRoundResult | undefined =
     data.roundResults.find(result => result.round === data.currentRound)
   const wasBluff = resolved?.wasBluff ?? data.claim?.isBluff ?? false
+  // Verdict, vote rows, eliminated card: the last step is the card's.
+  const lastStep = BREAKDOWN_FIRST_STEP + data.challengeVotes.length
   const eliminatedThisRound = players.filter(p => {
     const pid = p.userId || p.id
     return data.eliminatedPlayerIds.includes(pid) && data.eliminatedAtRound[pid] === data.currentRound
@@ -508,7 +510,7 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
           <div
             className={`liars-verdict${animate ? ' social-stamp' : ''}`}
             data-testid="liars-verdict"
-            style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', ...(animate ? staggerStyle(VERDICT_STEP) : null) }}
+            style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', ...(animate ? staggerStyle(VERDICT_STEP, lastStep) : null) }}
           >
             {data.claim.isBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
           </div>
@@ -534,7 +536,7 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
                 <div
                   key={vote.playerId}
                   className={`flex items-center justify-between gap-2 text-sm text-bd-ink${animate ? ' social-rise' : ''}`}
-                  style={animate ? { animationDelay: `${staggerDelayMs(BREAKDOWN_FIRST_STEP) + staggerDelayMs(index)}ms` } : undefined}
+                  style={animate ? { animationDelay: `${staggerDelayMs(BREAKDOWN_FIRST_STEP + index, lastStep)}ms` } : undefined}
                 >
                   <span className="min-w-0 flex-1 truncate">{playerNameOf(voter, t)}</span>
                   <span className="text-bd-ink-soft">{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
@@ -553,7 +555,7 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
         <LiarsCard
           className={`liars-card--danger text-center${animate ? ' social-slide-in' : ''}`}
           testId="liars-eliminated-this-round"
-          style={animate ? { animationDelay: `${staggerDelayMs(BREAKDOWN_FIRST_STEP) + staggerDelayMs(data.challengeVotes.length)}ms` } : undefined}
+          style={animate ? { animationDelay: `${staggerDelayMs(lastStep, lastStep)}ms` } : undefined}
         >
           <div className="mb-1 font-semibold">{t('liarsParty.eliminatedThisRound')}</div>
           {eliminatedThisRound.map(p => <div key={p.id} className="text-sm">{playerNameOf(p, t)}</div>)}

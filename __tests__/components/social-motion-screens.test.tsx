@@ -100,4 +100,15 @@ describe('Guess the Spy motion', () => {
     // The spy's vote row is the one that lands with an overshoot.
     expect(container.querySelectorAll('.spy-result-row.social-entry-hit')).toHaveLength(1)
   })
+
+  it('keeps a ten-seat table in order: every score row starts after the one above it', () => {
+    const players = Array.from({ length: 10 }, (_, i) => ({ id: `p${i}`, name: `P${i}` }))
+    const scores = Object.fromEntries(players.map((p, i) => [p.id, 100 - i]))
+    const { container } = render(
+      <SpyResults players={players} votes={{}} eliminatedId="" spyId="p3" location="Beach" scores={scores} currentRound={1} totalRounds={3} reveal />,
+    )
+    const delays = [...container.querySelectorAll('.spy-score-row')].map((row) => parseInt((row as HTMLElement).style.animationDelay, 10))
+    expect(delays).toHaveLength(10)
+    for (let i = 1; i < delays.length; i++) expect(delays[i]).toBeGreaterThan(delays[i - 1])
+  })
 })

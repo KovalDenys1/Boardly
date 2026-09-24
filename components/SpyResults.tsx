@@ -80,8 +80,11 @@ export default function SpyResults({
   const { t } = useTranslation()
 
   // Class and delay for the `step`-th element of the reveal, or nothing.
+  // The last step is the last vote/score row; the spacing shrinks to fit a
+  // long table rather than letting the later rows start together.
+  const lastStep = 4 + Math.max(0, players.length - 1)
   const rise = (step: number, className = 'social-rise') =>
-    reveal ? { className, style: staggerStyle(step) } : { className: '', style: undefined }
+    reveal ? { className, style: staggerStyle(step, lastStep) } : { className: '', style: undefined }
 
   const { wasGuessRound, guessWasCorrect, spyWon, noElimination } = resolveSpyOutcome({
     spyGuessedLocation,

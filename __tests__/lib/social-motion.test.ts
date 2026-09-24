@@ -3,8 +3,10 @@ import {
   guessMatchesWord,
   initialWordSwap,
   latestEntryKey,
+  isFreshId,
   onOwnAnimationEnd,
-  STAGGER_MAX_STEPS,
+  spyTurnPassKey,
+  STAGGER_MAX_TOTAL_MS,
   STAGGER_STEP_MS,
   staggerDelayMs,
   staggerStyle,
@@ -36,20 +38,55 @@ describe('latestEntryKey', () => {
 })
 
 describe('staggerDelayMs', () => {
-  it('steps per row and stops growing at the cap', () => {
-    expect(staggerDelayMs(0)).toBe(0)
-    expect(staggerDelayMs(1)).toBe(STAGGER_STEP_MS)
-    expect(staggerDelayMs(3)).toBe(3 * STAGGER_STEP_MS)
-    expect(staggerDelayMs(50)).toBe(STAGGER_MAX_STEPS * STAGGER_STEP_MS)
+  it('spaces a short reveal at the full step', () => {
+    expect(staggerDelayMs(0, 5)).toBe(0)
+    expect(staggerDelayMs(1, 5)).toBe(STAGGER_STEP_MS)
+    expect(staggerDelayMs(5, 5)).toBe(5 * STAGGER_STEP_MS)
   })
 
-  it('treats nonsense as the first row', () => {
-    expect(staggerDelayMs(-2)).toBe(0)
-    expect(staggerDelayMs(Number.NaN)).toBe(0)
+  it('compresses a long reveal to fit instead of clamping, so every step stays in order', () => {
+    // A 20-word Alias turn: words 0..19, the turn score at 20, the team total at 23.
+    const last = 23
+    const delays = Array.from({ length: last + 1 }, (_, step) => staggerDelayMs(step, last))
+    for (let step = 1; step <= last; step++) expect(delays[step]).toBeGreaterThan(delays[step - 1])
+    expect(delays[last]).toBeLessThanOrEqual(STAGGER_MAX_TOTAL_MS)
+    // The last word, the stamp and the total no longer start together.
+    expect(new Set([delays[19], delays[20], delays[23]]).size).toBe(3)
+  })
+
+  it('treats nonsense as the first step', () => {
+    expect(staggerDelayMs(-2, 5)).toBe(0)
+    expect(staggerDelayMs(Number.NaN, 5)).toBe(0)
   })
 
   it('renders as an inline animation delay', () => {
-    expect(staggerStyle(2, 50)).toEqual({ animationDelay: '100ms' })
+    expect(staggerStyle(2, 4, 50)).toEqual({ animationDelay: '100ms' })
+  })
+})
+
+describe('isFreshId', () => {
+  it('only ids that joined after the list loaded, until settled', () => {
+    const baseline = new Set(['1'])
+    expect(isFreshId('1', baseline, new Set())).toBe(false)
+    expect(isFreshId('2', baseline, new Set())).toBe(true)
+    expect(isFreshId('2', baseline, new Set(['2']))).toBe(false)
+    expect(isFreshId('2', null, new Set())).toBe(false)
+  })
+})
+
+describe('spyTurnPassKey', () => {
+  it('changes when the turn passes, including back to the same questioner', () => {
+    const a1 = spyTurnPassKey(true, 1, 0, 'a')
+    const b = spyTurnPassKey(true, 1, 1, 'b')
+    const a2 = spyTurnPassKey(true, 1, 2, 'a')
+    expect(new Set([a1, b, a2]).size).toBe(3)
+    // A skip passes the turn without a new entry.
+    expect(spyTurnPassKey(true, 1, 1, 'c')).not.toBe(b)
+  })
+
+  it('is null outside questioning or without a questioner', () => {
+    expect(spyTurnPassKey(false, 1, 0, 'a')).toBeNull()
+    expect(spyTurnPassKey(true, 1, 0, null)).toBeNull()
   })
 })
 
