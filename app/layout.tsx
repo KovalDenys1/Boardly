@@ -5,6 +5,7 @@ import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
 import { siteJsonLd } from '@/lib/organization-json-ld'
+import { isProductionDeployment } from '@/lib/feature-flags'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
 
 const bricolageFont = Bricolage_Grotesque({
@@ -122,6 +123,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const isProduction = process.env.NODE_ENV === 'production'
+  // Distinct from isProduction above: `next build` sets NODE_ENV=production for a Vercel
+  // Preview deployment too, so that alone cannot keep the AdSense/consent loader off
+  // Preview (#1152). This checks VERCEL_ENV first and only falls back to NODE_ENV when
+  // Vercel hasn't declared an environment at all (e.g. `pnpm dev`, jest).
+  const adSenseLoaderEnabled = isProductionDeployment()
   const themeInitScript = getThemeInitScript()
   const devServiceWorkerResetScript = !isProduction
     ? `(() => {
@@ -177,12 +183,20 @@ export default function RootLayout({
         {/* AdSense site verification + loader (#784). This also delivers Google's
             EEA/UK consent message, so it stays on regardless of whether any ad
             unit renders. The units themselves are in components/AdSlot.tsx,
-            gated to free users and off until NEXT_PUBLIC_ADS_ENABLED is set. */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044"
-          crossOrigin="anonymous"
-        />
+            gated to free users and off until NEXT_PUBLIC_ADS_ENABLED is set.
+            Production only (#1152): a fresh-profile measurement of boardly.online
+            showed the loader firing a request to fundingchoicesmessages.google.com
+            and writing a first-party `FCCDCF` cookie before any consent existed —
+            that is Google's own consent-message plumbing, not an ad, and is the
+            reason it stays on in production; preview and development serve no
+            AdSense verification purpose and gain nothing from carrying it. */}
+        {adSenseLoaderEnabled && (
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044"
+            crossOrigin="anonymous"
+          />
+        )}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

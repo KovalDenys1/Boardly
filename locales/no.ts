@@ -3516,6 +3516,7 @@ const no = {
     privacy: 'Personvernregler',
     terms: 'Tjenestevilkår',
     withdrawal: 'Angrerett',
+    privacySettings: 'Innstillinger for personvern og informasjonskapsler',
     operatedBy: 'Drives av {{name}}',
     community: 'Fellesskap',
     discord: 'Discord',

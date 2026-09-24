@@ -3528,6 +3528,7 @@ const en = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     withdrawal: 'Right of withdrawal',
+    privacySettings: 'Privacy and cookie settings',
     operatedBy: 'Operated by {{name}}',
     community: 'Community',
     discord: 'Discord',

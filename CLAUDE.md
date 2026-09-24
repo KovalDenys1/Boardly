@@ -557,13 +557,29 @@ type `Secret` for a `NEXT_PUBLIC_*` key, correctly: those values are inlined int
 
 ## Ads — what is already true, and the one place they must not go
 
-`app/layout.tsx` loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`. That
-script is **three things at once**, which is why it stays on even with no ad showing: site
-verification, the ad loader, and **Google's EEA/UK consent message**. The consent message
-has been published for boardly.online in 32 languages since 2026-09-02 and is delivered by
-that loader. So `app/privacy/page.tsx:113` promising consent-gated personalised ads is
-backed, and the absence of a CMP, TCF shim or cookie banner in the tree is not a gap —
-do not "fix" it by adding one.
+`app/layout.tsx` loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`, **in
+production only** (#1152 — a fresh-profile measurement of boardly.online showed the loader
+firing a request to `fundingchoicesmessages.google.com` and writing a first-party `FCCDCF`
+cookie before any consent existed; preview and development gained nothing from carrying it,
+so it no longer loads there). That script is **three things at once**, which is why it
+stays on in production even with no ad showing: site verification, the ad loader, and
+**Google's EEA/UK consent message**. The consent message has been published for
+boardly.online in 32 languages since 2026-09-02 and is delivered by that loader. So
+`app/privacy/page.tsx:113` promising consent-gated personalised ads is backed.
+
+**The absence of a CMP, TCF shim or cookie banner in the tree is conditional, not settled
+(#1153): it holds only as long as Google's own message is verified to render and produce a
+TC string.** #1067 measured `displayStatus: hidden` and an empty TC string while ads were
+off — expected with no ad request in flight, but *unverified* for the moment ads go live.
+Before setting `NEXT_PUBLIC_ADS_ENABLED=true`, run the ads-day checklist in
+`docs/OPERATIONS.md#ads-day-checklist-flipping-next_public_ads_enabled-on`; if the message
+does not render and produce a TC string with `cmpId 300` there, ads stay off and a
+home-made banner is not a substitute — do not "fix" a failed check by adding one. A footer
+control (`lib/consent.ts`, wired into `components/Footer.tsx`, production only) reopens the
+message via the `googlefc` revocation API for anyone who wants to change their choice.
+Google is the holder of the consent record itself (its CMP, its TC string) — the privacy
+notice's processor list should name it accordingly (#1153; not edited here — `/privacy` is
+owned separately).
 
 Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
 open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.

@@ -6,11 +6,20 @@ import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
 import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
+import { reopenGoogleConsentMessage } from '@/lib/consent'
+import { isProductionDeployment } from '@/lib/feature-flags'
 
 export default function Footer() {
   const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
   const seller = getSellerIdentity()
+  // The adsbygoogle loader — which is also what delivers Google's consent
+  // message — only runs in production (#1152), so the control that reopens
+  // it would do nothing anywhere else. `NODE_ENV === 'production'` alone
+  // can't tell a Vercel Preview build from Production (Next.js builds both
+  // with NODE_ENV=production), so this goes through the VERCEL_ENV-aware
+  // helper that app/layout.tsx's loader gate uses.
+  const canReopenConsentMessage = isProductionDeployment()
 
   return (
     <footer
@@ -147,6 +156,23 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
+              {/* Reopens Google's consent message via the googlefc revocation
+                  API (#1153). Only where the adsbygoogle loader itself runs
+                  (production, #1152) — elsewhere there is nothing to reopen. */}
+              {canReopenConsentMessage && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={reopenGoogleConsentMessage}
+                    className="cursor-pointer text-sm text-left transition-colors"
+                    style={{ color: 'var(--bd-ink-soft)', background: 'none', border: 0, padding: 0, fontFamily: 'inherit' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                  >
+                    {t('footer.privacySettings')}
+                  </button>
+                </li>
+              )}
             </ul>
 
             <h3

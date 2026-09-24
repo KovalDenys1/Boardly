@@ -447,6 +447,45 @@ Commands (from a directory linked to the project, `vercel link`):
 Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
 the managed bot rulesets from log to challenge.
 
+### Ads-day checklist: flipping `NEXT_PUBLIC_ADS_ENABLED` on
+
+CLAUDE.md's "no in-tree CMP" rule for ads is conditional (#1153): it holds only as long as
+Google's own consent message actually renders and produces a TC string in the EEA/UK. Before
+setting `NEXT_PUBLIC_ADS_ENABLED=true` on the **Production** environment in Vercel, run every
+step below in order and do not flip the switch if any of steps 1–3 fails.
+
+1. **AdSense shows the site approved.** The AdSense console must say boardly.online is
+   approved and serving, not "Getting ready".
+2. **The message renders and produces a TC string.** On a fresh EEA-geolocated Chrome
+   profile (`--use-mock-keychain`, see the CLAUDE.md browser-automation note), load the home
+   page and one guide page. Google's consent message must render on first load of each, and
+   `window.__tcfapi('getTCData', 2, cb)` must return a non-empty `tcString` with `cmpId: 300`
+   (Google's own CMP). #1067 measured `displayStatus: hidden` and an empty TC string while
+   ads were off — that must have changed before this step passes.
+3. **No ad request before the visitor chooses.** With the network panel open, confirm no
+   request to `googleads.g.doubleclick.net` or an ad-serving `pagead2.googlesyndication.com`
+   path fires before the visitor accepts or dismisses the message. Google's stated TCF
+   behaviour is described at
+   [support.google.com/admanager/answer/9805023](https://support.google.com/admanager/answer/9805023);
+   there is no AdSense-specific page for this, so verify it empirically rather than citing one.
+4. **Declining yields no ad, or a non-personalised one, and no advertising cookie.** Decline
+   the message and re-check cookies/storage for `googleads.g.doubleclick.net` and
+   `pagead2.googlesyndication.com` — none should exist afterward.
+5. **The withdrawal link works.** The footer's "Privacy and cookie settings" control
+   (`lib/consent.ts`, `reopenGoogleConsentMessage`) must reopen the same message.
+6. **The variable is set for Production only, never Preview.** A Preview deployment serving
+   ads would put a non-production host in front of real ad requests.
+7. **The label reads "Advertisements"** (`common.advertisement` in all four locale files,
+   per Google's placement policy at
+   [support.google.com/adsense/answer/1346295](https://support.google.com/adsense/answer/1346295)),
+   and the unit stays the last element before the footer on guide pages — none on any game
+   route (CLAUDE.md's ads rules).
+8. **If step 2 or 3 fails:** leave `NEXT_PUBLIC_ADS_ENABLED` unset and open a ticket. A
+   home-made banner is not a certified TCF CMP, and shipping ads without one is the thing
+   this checklist exists to prevent.
+9. **After go-live, watch AdSense's Transactions page** for invalid-activity deductions in
+   the days that follow.
+
 ### CSP hardening verification (preview/production)
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
