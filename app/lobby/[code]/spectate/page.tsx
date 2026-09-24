@@ -23,12 +23,13 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-
 const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
 const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
 const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page'), { ssr: false })
+const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false })
 const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
 const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
 const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
 const Scorecard = dynamic(() => import('@/components/Scorecard'), { ssr: false })
 
-const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess'])
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers'])
 
 type SpectatorUser = {
   userId: string
@@ -584,6 +585,7 @@ export default function SpectatorLobbyPage() {
         {gameType === 'alias' && <AliasPage code={code} isSpectator />}
         {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
         {gameType === 'sketch_and_guess' && <SketchAndGuessLobbyPage code={code} isSpectator />}
+        {gameType === 'checkers' && <CheckersLobbyPage code={code} isSpectator />}
         <FloatingSpectatorChat
           isAuthenticated={isAuthenticated}
           isAdminView={isAdminView}

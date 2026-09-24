@@ -16,6 +16,7 @@ const CLIENT_RESTORABLE_GAME_TYPES = new Set<SupportedCatalogGameType>([
   'liars_party',
   'fake_artist',
   'alias',
+  'checkers',
 ])
 
 function isClientRestorableGameType(gameType: string): gameType is SupportedCatalogGameType {
@@ -74,6 +75,10 @@ async function createGameEngineClient(
     case 'alias': {
       const { AliasGame } = await import('./games/alias')
       return new AliasGame(gameId)
+    }
+    case 'checkers': {
+      const { CheckersGame } = await import('./games/checkers-game')
+      return new CheckersGame(gameId, { maxPlayers: 2, minPlayers: 2 })
     }
     default: {
       const exhausted: never = gameType

@@ -18,6 +18,7 @@ import { SketchAndGuessGame } from './games/sketch-and-guess-game'
 import { LiarsPartyGame } from './games/liars-party-game'
 import { FakeArtistGame } from './games/fake-artist-game'
 import { AliasGame } from './games/alias'
+import { CheckersGame } from './games/checkers-game'
 import {
   isFakeArtistEnabled,
   isTelephoneDoodleEnabled,
@@ -42,6 +43,7 @@ export type RegisteredGameType =
   // GameType enum value are all permanent. Whether players are offered it is
   // the catalog's `availability`, which #873 flips.
   | 'sketch_and_guess'
+  | 'checkers'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'fake_artist'
@@ -185,6 +187,21 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     },
     create: (id, cfg) =>
       new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
+  },
+
+  checkers: {
+    metadata: {
+      type: 'checkers',
+      name: 'Checkers',
+      minPlayers: 2,
+      maxPlayers: 2,
+      supportsBots: true,
+      translationKey: 'checkers',
+    },
+    // Two seats, whatever the request says: the rules only have two sides, and a
+    // third seat would hold a turn it cannot play and a forfeit with no opponent.
+    create: (id, cfg) =>
+      new CheckersGame(id, { ...cfg, maxPlayers: 2, minPlayers: 2 }),
   },
 }
 

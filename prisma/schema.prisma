@@ -267,6 +267,7 @@ enum GameType {
   liars_party
   fake_artist
   alias
+  checkers
   other
 }
 

@@ -21,6 +21,7 @@ export type RegisteredGameType =
   // the catalog entry is promoted to `available`, which is the product
   // decision #873 makes.
   | 'sketch_and_guess'
+  | 'checkers'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'fake_artist'
@@ -305,6 +306,20 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     advanceTurnOnLeave: false,
     engineHandlesLeave: false,
     usesTurnIndex: false,
+  },
+
+  checkers: {
+    type: 'checkers',
+    name: 'Checkers',
+    svgId: 'checkers',
+    accentColor: 'var(--bd-coral)',
+    minPlayers: 2,
+    maxPlayers: 2,
+    supportsBots: true,
+    translationKey: 'checkers',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
   },
 }
 
@@ -714,6 +729,47 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       // ignores the lobby's turn timer, and the create form's round picker is
       // wired to `ticTacToeRounds`, which the lobby route drops for every other
       // game. Either one would render a control that changes nothing.
+    },
+  },
+  {
+    id: 'checkers',
+    gameType: 'checkers',
+    nameKey: 'games.checkers.name',
+    descriptionKey: 'games.checkers.description',
+    players: '1-2',
+    difficultyKey: 'games.checkers.difficulty',
+    seo: {
+      title: 'Play Checkers Online Free with a Friend or Bot',
+      description: 'Play checkers online free. Classic 8×8 English draughts with forced captures, multi-jumps and kings, against a friend or a bot. In the browser, no download.',
+      synonyms: [
+        'checkers online',
+        'checkers online free',
+        'play checkers online',
+        'checkers with friends',
+        'checkers 2 player',
+        'draughts online',
+        'english draughts online',
+        'checkers against computer',
+      ],
+      genre: [
+        'Strategy',
+        'Board Game',
+        'Multiplayer',
+      ],
+      schemaDescription: 'Two-player strategy board game on an 8×8 board. Pieces move diagonally, captures are mandatory and chain into multi-jumps, and a piece reaching the far row is crowned a king.',
+      questionKey: 'games.checkers.seo.question',
+      answerKey: 'games.checkers.seo.answer',
+    },
+    // In development (#1083). Playable behind ENABLE_IN_DEVELOPMENT_GAMES;
+    // featuring it publicly is a separate decision for Denys, like #873's.
+    availability: 'in-development',
+    route: '/games/checkers/lobbies',
+    color: 'from-red-500 to-stone-700',
+    lobbyCreateConfig: {
+      gradient: 'from-red-600 via-rose-500 to-stone-600',
+      allowedPlayers: [2],
+      defaultMaxPlayers: 2,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
     },
   },
   {

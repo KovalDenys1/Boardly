@@ -41,3 +41,7 @@ export { MemoryBotExecutor, type MemoryBotActionEvent } from './memory/memory-bo
 // Connect Four exports
 export { ConnectFourBot, type ConnectFourBotDecision } from './connect-four/connect-four-bot'
 export { ConnectFourBotExecutor, type ConnectFourBotActionEvent } from './connect-four/connect-four-bot-executor'
+
+// Checkers exports
+export { CheckersBot, type CheckersBotDecision } from './checkers/checkers-bot'
+export { CheckersBotExecutor, type CheckersBotActionEvent } from './checkers/checkers-bot-executor'
