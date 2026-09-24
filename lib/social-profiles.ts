@@ -17,7 +17,10 @@ export type SocialProfile = {
   url: string
 }
 
-export const SOCIAL_PROFILES: readonly SocialProfile[] = []
+export const SOCIAL_PROFILES: readonly SocialProfile[] = [
+  { platform: 'tiktok', url: 'https://www.tiktok.com/@playboardly' },
+  { platform: 'youtube', url: 'https://www.youtube.com/@playboardly' },
+]
 
 /** Brand names, spelled the same in every locale. */
 export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
