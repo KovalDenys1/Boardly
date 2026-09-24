@@ -122,11 +122,13 @@ describe('sendPremiumConfirmationEmail', () => {
       expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
       for (const heading of [
         'What you bought',
+        'Receipt, invoice and payment',
         'How to cancel',
         'Right of withdrawal',
         'Your request at checkout',
         'Terms',
         'Hva du kjøpte',
+        'Kvittering, faktura og betaling',
         'Slik sier du opp',
         'Angrerett',
         'Det du ba om i kassen',
@@ -152,6 +154,9 @@ describe('sendPremiumConfirmationEmail', () => {
     // The plain-text part carries the same figures.
     expect(mail.text).toContain('Amount charged: $2.99.')
     expect(mail.text).toContain('Belastet beløp: 2,99 USD.')
+    // Paid in dollars: nothing to say about renewal exchange rates.
+    expect(text).not.toContain('each renewal is converted')
+    expect(text).not.toContain('regnes hver fornyelse om')
   })
 
   it('formats the charged currency by its own minor unit and names the converted source amount', async () => {
@@ -169,14 +174,36 @@ describe('sendPremiumConfirmationEmail', () => {
     expect(text).toContain('renews automatically every year')
     expect(text).toContain('årsabonnement')
     expect(text).toContain('fornyes automatisk hvert år')
+    // Link converts each renewal at that day's rate (#1179).
+    expect(text).toContain(
+      'Because you pay in your own currency, each renewal is converted at the rate of the day it is charged, so the amount in your currency can vary.'
+    )
+    expect(text).toContain(
+      'Fordi du betaler i din egen valuta, regnes hver fornyelse om etter kursen den dagen beløpet trekkes, så beløpet i din valuta kan variere.'
+    )
   })
 
-  it('explains cancellation: one click in the profile, end of the paid period, yearly refunds whole months', async () => {
+  it('says the purchase is sold through Link, which sends the receipt and invoice (#1179)', async () => {
     const mail = await send()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
-      'You can cancel at any time with one click from your profile at https://boardly.test/profile. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.'
+      "Boardly Premium is sold through Link: Stripe's affiliate Sold through Link, LLC is the merchant of record for this purchase."
+    )
+    expect(text).toContain('it sends your receipt and invoice in a separate email from a link.com address.')
+    expect(text).toContain('Your card or bank statement shows the charge as "LINK.COM*" followed by our name.')
+    expect(text).toContain('Boardly Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet')
+    expect(text).toContain('sender kvittering og faktura i en egen e-post fra en link.com-adresse.')
+    expect(mail.html).toContain('<a href="https://support.link.com/topics/sold-through-link"')
+    expect(mail.text).toContain('https://support.link.com/topics/sold-through-link')
+  })
+
+  it('explains cancellation: one click in the profile or in Link, end of the paid period, yearly refunds whole months', async () => {
+    const mail = await send()
+    const text = visibleText(mail.html)
+
+    expect(text).toContain(
+      'You can cancel at any time with one click from your profile at https://boardly.test/profile, or in your Link account at link.com. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.'
     )
     expect(text).toContain(
       'Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.'
@@ -196,6 +223,18 @@ describe('sendPremiumConfirmationEmail', () => {
     )
     expect(mail.html).toContain('<a href="https://boardly.test/withdrawal"')
     expect(mail.html).toContain('<a href="mailto:support@boardly.online"')
+  })
+
+  it('keeps our own refund promise next to the Link channel, in both languages (#1179)', async () => {
+    const mail = await send()
+    const text = visibleText(mail.html)
+
+    expect(text).toContain('The refund goes through Link, which emails you the refund notice.')
+    expect(text).toContain(
+      'Link\'s terms give consumers in the EU and the UK a 14-day cooling-off period, for which you give "cooling off period" as the reason. If Link cannot help, write to us, and the refund above still applies.'
+    )
+    expect(text).toContain('Refusjonen går gjennom Link, som sender deg varselet om den på e-post.')
+    expect(text).toContain('Kan ikke Link hjelpe deg, skriver du til oss, og refusjonen over gjelder fortsatt.')
   })
 
   it('states the request to start at once, with its date, and that the right of withdrawal still applies', async () => {

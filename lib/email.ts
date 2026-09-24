@@ -3,6 +3,7 @@ import { logger } from './logger'
 import { SUPPORT_EMAIL } from './organization-json-ld'
 import { majorUnitAmount, type PremiumPlan } from './premium-plans'
 import { formatSellerAddress, getSellerIdentity } from './seller-identity'
+import { LINK_SUPPORT_URL } from './sold-through-link'
 
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -663,6 +664,11 @@ function englishConfirmationCopy(d: PremiumConfirmationDetails, links: Confirmat
     ? ` That is ${formatChargedAmount(d.convertedFrom.amountTotal, d.convertedFrom.currency, locale)} converted into your currency at checkout.`
     : ''
   const renewal = d.renewsAt ? ` Next renewal: ${formatDay(d.renewsAt, locale)}.` : ''
+  // Link's Purchase Terms: for a subscription paid in local currency the rate
+  // "is determined on every payment date of your subscription billing cycle".
+  const renewalConversion = d.convertedFrom
+    ? ' Because you pay in your own currency, each renewal is converted at the rate of the day it is charged, so the amount in your currency can vary.'
+    : ''
   const when = formatMoment(d.consentAt, locale)
 
   return {
@@ -675,19 +681,27 @@ function englishConfirmationCopy(d: PremiumConfirmationDetails, links: Confirmat
         paragraphs: [
           `Boardly Premium, ${yearly ? 'yearly' : 'monthly'} plan, purchased on ${when}.`,
           `Amount charged: ${amount}.${converted}`,
-          `The subscription renews automatically every ${yearly ? 'year' : 'month'} at the same price until you cancel.${renewal}`,
+          `The subscription renews automatically every ${yearly ? 'year' : 'month'} at the same price until you cancel.${renewal}${renewalConversion}`,
+        ],
+      },
+      {
+        heading: 'Receipt, invoice and payment',
+        paragraphs: [
+          'Boardly Premium is sold through Link: Stripe\'s affiliate Sold through Link, LLC is the merchant of record for this purchase. Link charged your payment method and collected any VAT or sales tax, and it sends your receipt and invoice in a separate email from a link.com address. Your card or bank statement shows the charge as "LINK.COM*" followed by our name.',
+          `For a problem with the payment itself, such as a charge you do not recognise, you can also contact Link support at ${LINK_SUPPORT_URL}.`,
         ],
       },
       {
         heading: 'How to cancel',
         paragraphs: [
-          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.`,
+          `You can cancel at any time with one click from your profile at ${links.profile}, or in your Link account at link.com. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.`,
         ],
       },
       {
         heading: 'Right of withdrawal',
         paragraphs: [
           `You have 14 days from the purchase date to withdraw from this purchase, without giving a reason. To withdraw, send an email to ${SUPPORT_EMAIL} or use the withdrawal form at ${links.withdrawal}. We refund everything you have paid for the purchase within 14 days of receiving your notice, by the same payment method and with no fee.`,
+          `The refund goes through Link, which emails you the refund notice. You can also ask Link support for the refund at ${LINK_SUPPORT_URL}: Link's terms give consumers in the EU and the UK a 14-day cooling-off period, for which you give "cooling off period" as the reason. If Link cannot help, write to us, and the refund above still applies.`,
         ],
       },
       {
@@ -714,6 +728,9 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
     ? ` Det tilsvarer ${formatChargedAmount(d.convertedFrom.amountTotal, d.convertedFrom.currency, locale)} omregnet til din valuta i kassen.`
     : ''
   const renewal = d.renewsAt ? ` Neste fornyelse: ${formatDay(d.renewsAt, locale)}.` : ''
+  const renewalConversion = d.convertedFrom
+    ? ' Fordi du betaler i din egen valuta, regnes hver fornyelse om etter kursen den dagen beløpet trekkes, så beløpet i din valuta kan variere.'
+    : ''
   const when = formatMoment(d.consentAt, locale)
 
   return {
@@ -726,19 +743,27 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
         paragraphs: [
           `Boardly Premium, ${yearly ? 'årsabonnement' : 'månedsabonnement'}, kjøpt ${when}.`,
           `Belastet beløp: ${amount}.${converted}`,
-          `Abonnementet fornyes automatisk ${yearly ? 'hvert år' : 'hver måned'} til samme pris til du sier det opp.${renewal}`,
+          `Abonnementet fornyes automatisk ${yearly ? 'hvert år' : 'hver måned'} til samme pris til du sier det opp.${renewal}${renewalConversion}`,
+        ],
+      },
+      {
+        heading: 'Kvittering, faktura og betaling',
+        paragraphs: [
+          'Boardly Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for dette kjøpet. Link belastet betalingsmåten din og krevde inn eventuell merverdiavgift eller salgsskatt, og sender kvittering og faktura i en egen e-post fra en link.com-adresse. På kort- eller kontoutskriften står belastningen som «LINK.COM*» etterfulgt av navnet vårt.',
+          `Har du et problem med selve betalingen, for eksempel en belastning du ikke kjenner igjen, kan du også kontakte Links kundestøtte på ${LINK_SUPPORT_URL}.`,
         ],
       },
       {
         heading: 'Slik sier du opp',
         paragraphs: [
-          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
+          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}, eller i Link-kontoen din på link.com. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
         ],
       },
       {
         heading: 'Angrerett',
         paragraphs: [
           `Du har 14 dagers angrerett fra kjøpsdatoen, uten å oppgi noen grunn. For å angre sender du en e-post til ${SUPPORT_EMAIL} eller bruker angreskjemaet på ${links.withdrawal}. Vi betaler tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr.`,
+          `Refusjonen går gjennom Link, som sender deg varselet om den på e-post. Du kan også be Links kundestøtte om refusjonen på ${LINK_SUPPORT_URL}: Links vilkår gir forbrukere i EU og Storbritannia 14 dagers angrefrist, og da oppgir du «cooling off period» som grunn. Kan ikke Link hjelpe deg, skriver du til oss, og refusjonen over gjelder fortsatt.`,
         ],
       },
       {
@@ -757,12 +782,12 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
   }
 }
 
-// Every paragraph is escaped whole, then the three site links and the support
-// address are turned back into anchors by exact match. Copy therefore never
-// carries markup, and the username cannot smuggle any in.
+// Every paragraph is escaped whole, then the three site links, Link's support
+// page and the support address are turned back into anchors by exact match.
+// Copy therefore never carries markup, and the username cannot smuggle any in.
 function linkify(escaped: string, links: ConfirmationLinks): string {
   let html = escaped
-  for (const url of [links.profile, links.withdrawal, links.terms]) {
+  for (const url of [links.profile, links.withdrawal, links.terms, LINK_SUPPORT_URL]) {
     const safe = escapeHtml(url)
     html = html.split(safe).join(`<a href="${safe}" style="color: #FF6B5B;">${safe}</a>`)
   }
@@ -796,6 +821,10 @@ function confirmationCopyText(copy: ConfirmationCopy): string {
  * English first, then Norwegian bokmal, in one message: no language is stored
  * per user. Sent once per session, which the caller guarantees through
  * PurchaseConsents.confirmationSentAt, not this function.
+ *
+ * Not the receipt. Premium is sold through Stripe Managed Payments (#1179),
+ * and Link sends the receipt, the invoice and any refund notice itself; this
+ * message says so, so the buyer knows to expect a second email from link.com.
  */
 export async function sendPremiumConfirmationEmail(email: string, details: PremiumConfirmationDetails) {
   if (!resend) {

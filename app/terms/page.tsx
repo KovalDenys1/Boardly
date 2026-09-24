@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
 import { formatLegalDate, TERMS_VERSION } from '@/lib/terms-version'
+import PremiumTerms from './PremiumTerms'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -67,34 +68,8 @@ export default function TermsOfService() {
               </ul>
             </section>
 
-            <section>
-              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>3. Boardly Premium: subscription and right of withdrawal</h2>
-              <p>
-                Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the
-                Premium page in US dollars; if you pay in another currency, Stripe's exchange rate includes a
-                conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page
-                without it. No VAT is added at present. Payments are processed by Stripe; we never see or
-                store your card details.
-              </p>
-              <p className="mt-3">
-                The subscription renews automatically at the end of each paid period at the same price until
-                you cancel. You can cancel at any time from your profile; access continues to the end of the
-                period you have paid for. If you cancel a yearly plan early, we refund the unused whole months.
-              </p>
-              <p className="mt-3">
-                At checkout you ask us to start Premium immediately. You still have the right to withdraw
-                from the purchase within 14 days, without giving a reason: email{' '}
-                <a href="mailto:support@boardly.online" className="underline">support@boardly.online</a> or use
-                the form on our <Link href="/withdrawal" className="underline">withdrawal page</Link>. We refund
-                everything you paid for that purchase within 14 days of receiving your notice, by the same
-                payment method and without a fee. After each purchase we email you a confirmation that repeats
-                this information; please keep it.
-              </p>
-              <p className="mt-3">
-                Premium can be bought by adults, or from the age of 15 with money you are entitled to spend
-                yourself. A purchase made by a minor without that right is refunded at the guardian's request.
-              </p>
-            </section>
+            {/* Translated (#1179): the section a Premium buyer agrees to at checkout. */}
+            <PremiumTerms />
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>4. User Conduct</h2>
