@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { getGuestClaimsFromRequest } from '@/lib/guest-auth'
 import { apiLogger } from '@/lib/logger'
-import { AuthenticationError, ValidationError, withErrorHandler } from '@/lib/error-handler'
+import { ValidationError, withErrorHandler } from '@/lib/error-handler'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
@@ -237,10 +236,7 @@ async function upgradeGuestHandler(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    throw new AuthenticationError('Unauthorized')
-  }
+  const { session } = await getSessionUserOrThrow(request)
 
   const guestClaims = getGuestClaimsFromRequest(request)
   if (!guestClaims?.guestId) {

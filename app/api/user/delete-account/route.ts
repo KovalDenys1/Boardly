@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
+import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -39,7 +38,13 @@ export async function POST(req: NextRequest) {
     }
 
     // If the caller is authenticated, they must own the account being deleted.
-    const session = await getServerSession(authOptions)
+    // allowSuspended: erasure stays available to a suspended account (GDPR
+    // Art. 17); the session is only an extra ownership check here.
+    const auth = await optionalSessionUser(req, { allowSuspended: true })
+    if ('response' in auth) {
+      return auth.response
+    }
+    const { session } = auth
     if (session?.user?.id && session.user.id !== deletionToken.userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

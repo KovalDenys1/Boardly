@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
+import { requireSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { sanitizeSignupSource } from '@/lib/signup-source'
@@ -25,11 +24,11 @@ export async function POST(request: NextRequest) {
     return rateLimitResult
   }
 
-  const session = await getServerSession(authOptions)
-  const userId = session?.user?.id
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(request)
+  if ('response' in auth) {
+    return auth.response
   }
+  const userId = auth.user.id
 
   let source: string | null = null
   try {

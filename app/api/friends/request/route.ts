@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@/prisma/client'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { extractPublicProfileId } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.friendRequest)
 const log = apiLogger('/api/friends/request')
@@ -20,10 +19,11 @@ export async function POST(req: NextRequest) {
       return rateLimitResult
     }
 
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await requireSessionUser(req)
+    if ('response' in auth) {
+      return auth.response
     }
+    const { session } = auth
 
     // Check if email is verified
     if (!session.user.emailVerified) {
@@ -222,10 +222,11 @@ export async function GET(req: NextRequest) {
       return rateLimitResult
     }
 
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await requireSessionUser(req)
+    if ('response' in auth) {
+      return auth.response
     }
+    const { session } = auth
 
     // Check if email is verified
     if (!session.user.emailVerified) {

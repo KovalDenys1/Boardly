@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/[friendshipId]')
@@ -21,8 +20,12 @@ export async function DELETE(
     
     const { friendshipId } = await params
 
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    const auth = await requireSessionUser(req)
+    if ('response' in auth) {
+      return auth.response
+    }
+    const { session } = auth
+    if (!session.user.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

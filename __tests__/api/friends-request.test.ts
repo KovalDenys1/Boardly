@@ -84,9 +84,23 @@ describe('POST /api/friends/request', () => {
         emailVerified: new Date('2026-03-01T00:00:00.000Z'),
       },
     } as any)
+    // lib/session-user re-reads the caller's `suspended` flag on a write (#1137).
+    mockPrisma.users.findUnique.mockResolvedValue({ suspended: false } as any)
     mockPrisma.friendships.findFirst.mockResolvedValue(null as any)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null as any)
     mockCreateInAppNotification.mockResolvedValue(undefined)
+  })
+
+  // #1137: the token still says active, the database says suspended.
+  it('refuses a suspended sender on the next request', async () => {
+    mockPrisma.users.findUnique.mockResolvedValue({ suspended: true } as any)
+
+    const response = await POST(buildRequest({ receiverPublicProfileId: 'invalid-id' }))
+    const payload = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(payload.code).toBe('ACCOUNT_SUSPENDED')
+    expect(mockPrisma.friendRequests.findFirst).not.toHaveBeenCalled()
   })
 
   it('rejects invalid public profile links before hitting Prisma', async () => {
@@ -95,7 +109,12 @@ describe('POST /api/friends/request', () => {
 
     expect(response.status).toBe(400)
     expect(payload.error).toBe('Invalid public profile link')
-    expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
+    // Only the caller's own suspension re-read; the receiver is never looked up.
+    expect(mockPrisma.users.findUnique).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.users.findUnique).toHaveBeenCalledWith({
+      where: { id: 'sender-1' },
+      select: { suspended: true },
+    })
   })
 
   it('creates a friend request when receiverPublicProfileId is provided', async () => {

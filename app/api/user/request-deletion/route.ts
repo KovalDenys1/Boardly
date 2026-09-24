@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendAccountDeletionEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -32,9 +31,11 @@ async function requestDeletionHandler(req: NextRequest) {
     return rateLimitResult
   }
 
-  const session = await getServerSession(authOptions)
+  // allowSuspended: a suspended account keeps its right to erasure (GDPR
+  // Art. 17), so this route is the one place the suspension does not apply.
+  const { session } = await getSessionUserOrThrow(req, { allowSuspended: true })
 
-  if (!session?.user?.email) {
+  if (!session.user.email) {
     throw new AuthenticationError('Unauthorized')
   }
 

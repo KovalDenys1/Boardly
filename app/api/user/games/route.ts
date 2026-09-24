@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger as log } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { Prisma, GameStatus, GameType } from '@/prisma/client'
+import { requireSessionUser } from '@/lib/session-user'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -33,13 +32,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user session
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const auth = await requireSessionUser(request)
+    if ('response' in auth) {
+      return auth.response
     }
+    const { session } = auth
 
     const userId = session.user.id
     const { searchParams } = new URL(request.url)

@@ -47,6 +47,10 @@ const mockTx = {
 jest.mock('@/lib/db', () => ({
   prisma: {
     $transaction: jest.fn(),
+    // lib/session-user re-reads `suspended` on a write (#1137).
+    users: {
+      findUnique: jest.fn(async () => ({ suspended: false })),
+    },
   },
 }))
 

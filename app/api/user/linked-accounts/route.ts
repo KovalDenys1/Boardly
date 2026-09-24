@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -12,6 +10,7 @@ import {
   ValidationError,
   withErrorHandler,
 } from '@/lib/error-handler'
+import { getSessionUserOrThrow } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/linked-accounts')
@@ -22,9 +21,8 @@ async function getLinkedAccountsHandler(req: NextRequest) {
     return rateLimitResult
   }
 
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.email) {
+  const { session } = await getSessionUserOrThrow(req)
+  if (!session.user.email) {
     throw new AuthenticationError('Unauthorized')
   }
 
@@ -62,9 +60,8 @@ async function deleteLinkedAccountHandler(req: NextRequest) {
     return rateLimitResult
   }
 
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.email) {
+  const { session } = await getSessionUserOrThrow(req)
+  if (!session.user.email) {
     throw new AuthenticationError('Unauthorized')
   }
 

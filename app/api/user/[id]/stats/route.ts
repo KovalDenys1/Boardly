@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getUserStatsDashboard } from '@/lib/user-stats-dashboard'
+import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('GET /api/user/[id]/stats')
@@ -40,10 +39,11 @@ export async function GET(
       return rateLimitResult
     }
 
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await requireSessionUser(request)
+    if ('response' in auth) {
+      return auth.response
     }
+    const { session } = auth
 
     const requesterUserId = session.user.id
     const requesterDbUser = await prisma.users.findUnique({

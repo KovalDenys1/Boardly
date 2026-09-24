@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { getStripe, PREMIUM_PRICE_ID, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
 import { CONSENT_REQUIRED_CODE, checkoutRequestSchema, type CheckoutRequest } from '@/lib/validation/stripe-checkout'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { requireSessionUser } from '@/lib/session-user'
 
 const log = apiLogger('/api/stripe/checkout')
 // cancel and reactivate were limited from the start; checkout was not, so an
@@ -83,10 +82,11 @@ export async function POST(req: NextRequest) {
   const rateLimitResult = await limiter(req)
   if (rateLimitResult) return rateLimitResult
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSessionUser(req)
+  if ('response' in auth) {
+    return auth.response
   }
+  const { session } = auth
 
   const user = await prisma.users.findUnique({
     where: { id: session.user.id },
