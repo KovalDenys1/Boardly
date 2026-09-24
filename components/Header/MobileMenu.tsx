@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
+import { ForgetGuestButton } from './ForgetGuestButton'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
@@ -467,6 +468,19 @@ export function MobileMenu({
                   >
                     {t('header.exitGuest')}
                   </button>
+                  <ForgetGuestButton
+                    style={{
+                      width: '100%',
+                      padding: '8px 16px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: 'var(--bd-ink-soft)',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  />
                 </>
               ) : (
                 <>

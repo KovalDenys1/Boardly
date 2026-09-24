@@ -19,6 +19,12 @@ interface GuestContextType {
     guestToken: string | null
     setGuestMode: (name: string, options?: SetGuestModeOptions) => Promise<void>
     clearGuestMode: () => void
+    /**
+     * "Forget me" (#1129): deletes this guest on the server, then every guest
+     * key on this device. Rejects with `code: 'GUEST_IN_ACTIVE_GAME'` while
+     * the guest is seated in a running game.
+     */
+    forgetGuest: () => Promise<void>
     getHeaders: () => Record<string, string>
 }
 
@@ -40,6 +46,16 @@ interface GuestContextType {
 function refreshFailureInvalidatesIdentity(error: unknown): boolean {
     const status = (error as { statusCode?: number } | null)?.statusCode
     return status === 400 || status === 409
+}
+
+/**
+ * 404 is the one answer that is about the identity itself: the guest it names
+ * was purged or erased, and the server will not re-create it (#1155). Every
+ * key goes then, the long-lived identity token included, or the next visit
+ * would present the same dead identity again.
+ */
+function refreshFailureErasedIdentity(error: unknown): boolean {
+    return (error as { statusCode?: number } | null)?.statusCode === 404
 }
 
 const GuestContext = createContext<GuestContextType | undefined>(undefined)
@@ -126,6 +142,14 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         removeLocal(GUEST_TOKEN_KEY)
     }, [])
 
+    // clearGuestMode ("Exit guest") keeps the identity token on purpose, so a
+    // guest who comes back is the same person (#818). This is for when that
+    // person no longer exists on the server.
+    const eraseGuestIdentity = useCallback(() => {
+        clearGuestMode()
+        removeLocal(GUEST_IDENTITY_KEY)
+    }, [clearGuestMode])
+
     // Load guest data from localStorage on mount
     useEffect(() => {
         const storedId = readLocal(GUEST_ID_KEY)
@@ -144,6 +168,10 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             requestGuestSession(storedName, storedToken)
                 .then((session) => applyGuestSession(session, generation))
                 .catch((error) => {
+                    if (refreshFailureErasedIdentity(error)) {
+                        eraseGuestIdentity()
+                        return
+                    }
                     if (!refreshFailureInvalidatesIdentity(error)) return
                     removeLocal(GUEST_ID_KEY)
                     removeLocal(GUEST_NAME_KEY)
@@ -160,12 +188,16 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         requestGuestSession(storedName)
             .then((session) => applyGuestSession(session, generation))
             .catch((error) => {
+                if (refreshFailureErasedIdentity(error)) {
+                    eraseGuestIdentity()
+                    return
+                }
                 if (!refreshFailureInvalidatesIdentity(error)) return
                 removeLocal(GUEST_ID_KEY)
                 removeLocal(GUEST_NAME_KEY)
                 removeLocal(GUEST_TOKEN_KEY)
             })
-    }, [applyGuestSession, requestGuestSession])
+    }, [applyGuestSession, requestGuestSession, eraseGuestIdentity])
 
     // Never keep guest mode active when authenticated user session exists.
     useEffect(() => {
@@ -245,9 +277,44 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             guestToken ||
             (readLocal(GUEST_TOKEN_KEY) || undefined)
 
-        const session = await requestGuestSession(normalizedName, activeToken)
+        let session: GuestSessionResponse
+        try {
+            session = await requestGuestSession(normalizedName, activeToken)
+        } catch (error) {
+            if (!refreshFailureErasedIdentity(error)) throw error
+            // The stored identity names a guest that no longer exists. The
+            // person is asking to play now, so start them as a new guest.
+            removeLocal(GUEST_TOKEN_KEY)
+            removeLocal(GUEST_IDENTITY_KEY)
+            session = await requestGuestSession(normalizedName)
+        }
         applyGuestSession(session, generation)
     }, [guestToken, requestGuestSession, applyGuestSession])
+
+    const forgetGuest = useCallback(async () => {
+        const token = guestToken || readLocal(GUEST_TOKEN_KEY)
+        if (!token) {
+            eraseGuestIdentity()
+            return
+        }
+
+        const response = await fetch('/api/user/forget-guest', {
+            method: 'POST',
+            headers: { 'X-Guest-Token': token },
+        })
+
+        // 404: already gone on the server, which is the outcome asked for.
+        if (response.ok || response.status === 404) {
+            eraseGuestIdentity()
+            return
+        }
+
+        const data = await response.json().catch(() => null)
+        const error = new Error(data?.error || 'Failed to delete guest data') as Error & { code?: string; statusCode?: number }
+        error.code = data?.code
+        error.statusCode = response.status
+        throw error
+    }, [guestToken, eraseGuestIdentity])
 
     const getHeaders = (): Record<string, string> => {
         if (status === 'authenticated') {
@@ -269,6 +336,7 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         guestToken,
         setGuestMode,
         clearGuestMode,
+        forgetGuest,
         getHeaders,
     }
 

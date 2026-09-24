@@ -58,14 +58,17 @@ export async function getRequestAuthUser(request: Request): Promise<RequestAuthU
     return null
   }
 
-  // No signup source here on purpose. This call only ever creates a row if a
-  // validly signed guest token names a guest that no longer exists, and it
-  // cannot in practice: the cleanup purges on three days of inactivity while a
-  // guest token lives twelve hours, so a purged guest's token is always long
-  // expired. The two routes that genuinely mint guests (auth/guest-session and
-  // lobby/[code]/join-guest) pass the source; this one would only ever be
-  // guessing on behalf of a request that is not a signup.
-  const guestUser = await getOrCreateGuestUser(guestClaims.guestId, guestClaims.guestName)
+  // Never creates a row. The two routes that genuinely mint guests
+  // (auth/guest-session and lobby/[code]/join-guest) do that; here a validly
+  // signed token naming a guest that no longer exists is someone who used
+  // "Forget me" in another tab, or was purged mid-session, and re-creating the
+  // row under the same id would undo the erasure (#1129). Unauthenticated.
+  const guestUser = await getOrCreateGuestUser(guestClaims.guestId, guestClaims.guestName, null, {
+    createIfMissing: false,
+  })
+  if (!guestUser) {
+    return null
+  }
   return {
     id: guestUser.id,
     username: guestUser.username || guestClaims.guestName || 'Guest',
