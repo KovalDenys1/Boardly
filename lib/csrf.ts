@@ -174,17 +174,29 @@ export function getSecurityHeaders() {
   return {
     // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
-    
-    // Enable XSS filtering
-    'X-XSS-Protection': '1; mode=block',
-    
-    // Prevent clickjacking
-    'X-Frame-Options': 'SAMEORIGIN',
-    
+
+    // #1146 (S4-07): OWASP now advises 0 or absent over the old '1; mode=block' — the
+    // browser's own filter heuristic could be turned into an XSS vector in older
+    // browsers, and modern ones ignore the header and rely on CSP instead.
+    'X-XSS-Protection': '0',
+
+    // Prevent clickjacking. DENY, not SAMEORIGIN (#1146, S4-07): proxy.ts's CSP already
+    // sends `frame-ancestors 'none', so no framing is allowed at all — SAMEORIGIN here
+    // just left the two headers disagreeing about what a compliant browser should do.
+    'X-Frame-Options': 'DENY',
+
     // Referrer policy
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    
+
     // Permissions policy (formerly Feature-Policy)
     'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+
+    // #1146 (S4-07): neither existed before. `same-origin-allow-popups` (not the
+    // stricter `same-origin`) because Google's own sign-in and the Google consent
+    // message both open popups/frames this origin still needs a window reference to.
+    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    // Nothing on another site should be able to `<img>`/`fetch` this origin's
+    // responses and read them as same-origin; nothing legitimate does today.
+    'Cross-Origin-Resource-Policy': 'same-site',
   }
 }

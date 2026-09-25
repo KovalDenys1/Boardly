@@ -33,6 +33,15 @@
           "value": "no-store, max-age=0"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        }
+      ]
     }
   ]
 }

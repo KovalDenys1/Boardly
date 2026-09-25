@@ -527,11 +527,17 @@ Check response headers for representative routes (for example `/games`, `/lobby`
 - `Content-Security-Policy` `script-src` includes `'self'` and trusted script origins
 - `Content-Security-Policy` `script-src` includes `'unsafe-inline'` (required by current Next.js App Router bootstrap output)
 - `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
+- `Content-Security-Policy` `connect-src` has no `localhost`/`127.0.0.1` entry in production (#1146)
+- `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Cross-Origin-Opener-Policy:
+  same-origin-allow-popups`, `Cross-Origin-Resource-Policy: same-site` (#1146)
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains` (`vercel.json`, #1146) —
+  only visible on an HTTPS response, since HSTS itself is what tells a browser to always use
+  HTTPS for this host next time
 
 Example:
 
 ```bash
-curl -I https://boardly.online/games | grep -i content-security-policy
+curl -I https://boardly.online/games | grep -iE 'content-security-policy|x-frame-options|x-xss-protection|cross-origin-|strict-transport-security'
 ```
 
 ### Replay storage grows over time
