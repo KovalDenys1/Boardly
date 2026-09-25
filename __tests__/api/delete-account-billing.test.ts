@@ -54,7 +54,10 @@ describe('account deletion cancels billing first (#827)', () => {
   beforeEach(() => {
     cancel = jest.fn().mockResolvedValue({})
     getStripe.mockReturnValue({ subscriptions: { cancel }, customers: { del: jest.fn().mockResolvedValue({}) } })
+    // A hashed deletion-purpose row, as request-deletion writes it since #1141.
     prisma.passwordResetTokens.findUnique.mockResolvedValue({
+      tokenHash: 'stored-hash',
+      purpose: 'delete',
       userId: 'u1',
       expires: new Date(Date.now() + 60_000),
     })

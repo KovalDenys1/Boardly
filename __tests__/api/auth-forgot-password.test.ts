@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/auth/forgot-password/route'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { hashAuthToken, passwordResetTokensOf } from '@/lib/auth-tokens'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -109,17 +110,24 @@ describe('POST /api/auth/forgot-password', () => {
 
     expect(response.status).toBe(200)
     expect(payload.message).toBe(genericSuccessMessage)
+    // Only this user's reset tokens are replaced; a pending deletion link survives (#1141).
     expect(mockPrisma.passwordResetTokens.deleteMany).toHaveBeenCalledWith({
-      where: { userId: 'user-1' },
+      where: passwordResetTokensOf('user-1', 'reset'),
     })
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String))
+
+    // The row holds the hash of the emailed token and nothing that matches it (#1141).
+    const emailedToken = mockSendPasswordResetEmail.mock.calls[0][1]
+    expect(emailedToken).toMatch(/^[0-9a-f]{64}$/)
     expect(mockPrisma.passwordResetTokens.create).toHaveBeenCalledWith({
       data: {
         userId: 'user-1',
-        token: expect.any(String),
+        tokenHash: hashAuthToken(emailedToken),
+        purpose: 'reset',
         expires: expect.any(Date),
       },
     })
-    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String))
+    expect(JSON.stringify(mockPrisma.passwordResetTokens.create.mock.calls)).not.toContain(emailedToken)
   })
 
   it('still returns generic success when sending the reset email fails', async () => {

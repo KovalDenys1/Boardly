@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
-import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { insensitiveEquals } from '@/lib/username-match'
 import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
+import { issueRandomHexToken, passwordResetTokensOf } from '@/lib/auth-tokens'
 
 const limiter = rateLimit(failClosedAuthPreset)
 
@@ -71,20 +71,21 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Generate reset token
-    const token = crypto.randomBytes(32).toString('hex')
+    // Generate reset token. Only its hash is stored (#1141, lib/auth-tokens.ts).
+    const { token, tokenHash } = issueRandomHexToken()
     const expires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    // Delete any existing reset tokens for this user
+    // Replace this user's earlier reset links; a pending account deletion link is
+    // a different purpose and stays valid (#1141).
     await prisma.passwordResetTokens.deleteMany({
-      where: { userId: user.id },
+      where: passwordResetTokensOf(user.id, 'reset'),
     })
 
-    // Create new reset token
     await prisma.passwordResetTokens.create({
       data: {
         userId: user.id,
-        token,
+        tokenHash,
+        purpose: 'reset',
         expires,
       },
     })

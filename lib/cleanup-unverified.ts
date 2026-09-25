@@ -1,7 +1,7 @@
 import { apiLogger } from './logger'
 import { prisma } from './db'
 import { sendUnverifiedAccountWarningEmail } from './email'
-import { nanoid } from 'nanoid'
+import { issueVerificationToken } from './auth-tokens'
 import { RETENTION_DAYS } from './retention-periods'
 
 const log = apiLogger('/cleanup/unverified-accounts')
@@ -183,13 +183,14 @@ export async function warnUnverifiedAccounts(
             where: { userId: user.id },
           })
 
-          const token = nanoid(32)
+          // Only the hash is stored (#1141).
+          const { token, tokenHash } = issueVerificationToken()
           const expires = new Date(Date.now() + tokenTtlHours * 60 * 60 * 1000)
 
           await prisma.emailVerificationTokens.create({
             data: {
               userId: user.id,
-              token,
+              tokenHash,
               expires,
             },
           })

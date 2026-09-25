@@ -4,18 +4,18 @@ import { sendWelcomeEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
 import { normalizeProfileEmail } from '@/lib/profile-email'
+import { findEmailVerificationToken } from '@/lib/auth-tokens'
 
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json()
 
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
 
-    const verificationToken = await prisma.emailVerificationTokens.findUnique({
-      where: { token },
-    })
+    // By hash, with rows issued before #1141 still accepted by their raw value.
+    const verificationToken = await findEmailVerificationToken(token)
 
     if (!verificationToken) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (verificationToken.expires < new Date()) {
       await prisma.emailVerificationTokens.delete({
-        where: { token },
+        where: { id: verificationToken.id },
       })
       return NextResponse.json({ error: 'Token has expired' }, { status: 400 })
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (user.emailVerified && !hasPendingEmailChange) {
       // Clean up token and return success
       await prisma.emailVerificationTokens.delete({
-        where: { token },
+        where: { id: verificationToken.id },
       }).catch(() => {}) // Token might already be deleted
       return NextResponse.json({ message: 'Email verified successfully' })
     }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
       // Delete the verification token
       await tx.emailVerificationTokens.delete({
-        where: { token },
+        where: { id: verificationToken.id },
       })
     })
 

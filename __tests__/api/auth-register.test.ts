@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
+import { hashAuthToken } from '@/lib/auth-tokens'
 import { upsertNotificationPreferences } from '@/lib/notification-preferences'
 
 let mockRateLimitResult: Response | null = null
@@ -538,13 +539,15 @@ describe('POST /api/auth/register', () => {
         signupSource: null,
       },
     })
+    // Only the hash is stored; the raw token goes into the email (#1141).
     expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalledWith({
       data: {
         userId: REAL_USER_ID,
-        token: 'verification-token',
+        tokenHash: hashAuthToken('verification-token'),
         expires: expect.any(Date),
       },
     })
+    expect(JSON.stringify(mockPrisma.emailVerificationTokens.create.mock.calls)).not.toContain('"verification-token"')
     expect(mockSendVerificationEmail).toHaveBeenCalledWith('new@example.com', 'verification-token')
     expect(payload.user).toEqual({
       id: REAL_USER_ID,

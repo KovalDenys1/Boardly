@@ -126,12 +126,26 @@ model Accounts {
   @@index([userId])
 }
 
+// What a PasswordResetTokens row lets its holder do (#1141). Account deletion tokens
+// used to share the table through a `DELETE_` prefix on the token, which the reset
+// route never checked.
+enum PasswordResetTokenPurpose {
+  reset
+  delete
+}
+
+// Tokens are stored as sha256(token) in `tokenHash` (#1141, lib/auth-tokens.ts), so a
+// database read no longer hands over a working link. `token` holds the raw value only
+// for rows issued before that change; nothing writes it any more, and it can be
+// dropped once the last of those rows has expired.
 model PasswordResetTokens {
-  id        String   @id @default(cuid())
+  id        String                    @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String?                   @unique
+  tokenHash String?                   @unique
+  purpose   PasswordResetTokenPurpose @default(reset)
   expires   DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime                  @default(now())
 
   @@index([userId])
   @@index([token])
@@ -140,7 +154,8 @@ model PasswordResetTokens {
 model EmailVerificationTokens {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String?  @unique
+  tokenHash String?  @unique
   expires   DateTime
   createdAt DateTime @default(now())
 

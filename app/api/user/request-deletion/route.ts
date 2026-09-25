@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { sendAccountDeletionEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { randomBytes } from 'crypto'
+import { issueRandomHexToken } from '@/lib/auth-tokens'
 import { clearRoleConnection } from '@/lib/discord/role-connection'
 import {
   AuthenticationError,
@@ -15,15 +15,6 @@ import {
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/request-deletion')
-
-// Token model for account deletion
-interface AccountDeletionToken {
-  id: string
-  userId: string
-  token: string
-  expires: Date
-  createdAt: Date
-}
 
 async function requestDeletionHandler(req: NextRequest) {
   const rateLimitResult = await limiter(req)
@@ -61,26 +52,21 @@ async function requestDeletionHandler(req: NextRequest) {
     throw new ValidationError('Email is required for account deletion')
   }
 
-  // Generate secure token
-  const token = randomBytes(32).toString('hex')
+  // Only the hash is stored, and `purpose` keeps it out of the reset route (#1141).
+  const { token, tokenHash } = issueRandomHexToken()
   const expires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-  // Store token in PasswordResetToken table (reusing for deletion tokens)
-  // We'll use a special format to distinguish deletion tokens: "DELETE_" prefix
   await prisma.passwordResetTokens.create({
     data: {
       userId: user.id,
-      token: `DELETE_${token}`,
+      tokenHash,
+      purpose: 'delete',
       expires,
     },
   })
 
   // Send deletion confirmation email
-  await sendAccountDeletionEmail(
-    user.email,
-    token, // Don't include DELETE_ prefix in email
-    user.username || 'User'
-  )
+  await sendAccountDeletionEmail(user.email, token, user.username || 'User')
 
   // The plan clears the Discord Linked Roles metadata at the request, not only at the
   // confirmed deletion: the person has said they are leaving, and the roles are the one

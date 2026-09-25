@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
+import { hashAuthToken } from '@/lib/auth-tokens'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -153,7 +154,7 @@ describe('POST /api/auth/resend-verification', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userId: 'user-2',
-          token: 'mock-verification-token',
+          tokenHash: hashAuthToken('mock-verification-token'),
         }),
       })
     )
@@ -231,7 +232,7 @@ describe('POST /api/auth/resend-verification', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userId: 'user-4',
-          token: 'mock-verification-token',
+          tokenHash: hashAuthToken('mock-verification-token'),
         }),
       })
     )
