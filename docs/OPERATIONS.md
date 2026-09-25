@@ -389,7 +389,8 @@ Counts `Users` rows with `isGuest = true` created in the last hour against the p
 (`lib/operational-metrics.ts`, #1150). It breaches at 60 an hour or ten times the baseline hourly
 rate, whichever is higher; a normal September 2026 day made 5-17 guests in total. A guest row is
 minted by `POST /api/auth/guest-session` and by a `POST /api/lobby/<code>/join-guest` without a
-valid guest token.
+valid guest token, or with one whose guest no longer exists (erased or purged; since #1157 that
+is a new guest under a new id, charged to the same new-guest budget, never the old id re-created).
 
 When it fires:
 

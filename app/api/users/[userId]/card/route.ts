@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { optionalSessionUser } from '@/lib/session-user'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+// It ran a user lookup with every finished game joined in, per call, with no limiter (#1157).
+const limiter = rateLimit(rateLimitPresets.userCard)
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const rateLimitResult = await limiter(req)
+  if (rateLimitResult) return rateLimitResult
+
   const { userId } = await params
 
   const user = await prisma.users.findUnique({

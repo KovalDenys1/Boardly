@@ -440,6 +440,16 @@ export const rateLimitPresets = {
     message: 'Too many requests. Please slow down.'
   },
 
+  // A player's profile card, `/api/users/<id>/card` (#1157). Opened by a click, so the
+  // `api` rate is plenty; one bucket per IP across every user id, since the id is in the
+  // path. A read: it stays fail-open.
+  userCard: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 60,
+    keyScope: 'user-card',
+    message: 'Too many requests. Please slow down.'
+  },
+
   // Strict limit for friend requests (abuse prevention)
   friendRequest: {
     windowMs: 60 * 60 * 1000, // 1 hour
