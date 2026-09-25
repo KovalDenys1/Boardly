@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       const log = apiLogger('POST /api/auth/forgot-password')
       log.warn('DB lookup failed during forgot-password; returning generic success to caller', {
-        email,
         error: (dbError as Error).message,
       })
       return NextResponse.json({
@@ -50,7 +49,9 @@ export async function POST(request: NextRequest) {
     // This prevents email enumeration attacks
     if (!user) {
       const log = apiLogger('POST /api/auth/forgot-password')
-      log.info('Password reset requested for non-existent email', { email })
+      // The address is not logged (#1132): it names no account, so it is only a
+      // stranger's personal data or a typo.
+      log.info('Password reset requested for non-existent email')
       return NextResponse.json({
         message: 'If an account exists with that email, you will receive password reset instructions.',
       })

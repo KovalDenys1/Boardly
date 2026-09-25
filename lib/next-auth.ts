@@ -16,19 +16,6 @@ import {
 import { loginSchema } from './validation/auth'
 import { insensitiveEquals } from './username-match'
 
-function getOAuthProfileEmail(profile: unknown): string {
-  if (!profile || typeof profile !== 'object') {
-    return 'unknown'
-  }
-
-  if (!('email' in profile)) {
-    return 'unknown'
-  }
-
-  const email = (profile as { email?: unknown }).email
-  return typeof email === 'string' && email.length > 0 ? email : 'unknown'
-}
-
 /**
  * True when a token signed in before the account's session cutoff. A null
  * cutoff never revokes anything, which is every row until a password reset or
@@ -331,7 +318,6 @@ export const authOptions: NextAuthOptions = {
               log.warn('Suspended user OAuth sign-in denied (email match)', {
                 existingUserId: existingUserByEmail.id,
                 provider: account.provider,
-                email: normalizedOAuthEmail,
               })
               return '/suspended'
             }
@@ -347,7 +333,6 @@ export const authOptions: NextAuthOptions = {
             log.info('OAuth sign-in reached an existing account with this email', {
               existingUserId: existingUserByEmail.id,
               provider: account.provider,
-              email: normalizedOAuthEmail
             })
             return true
           }
@@ -356,13 +341,15 @@ export const authOptions: NextAuthOptions = {
           // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user
           // To link to existing user, use /auth/link page workflow
           const log = apiLogger('OAuth signIn')
+          // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {
             provider: account.provider,
-            email: normalizedOAuthEmail
           })
 
         } catch (error) {
-          console.error('Error in signIn callback:', error)
+          // Through the logger, not console.error, so an address inside a provider or
+          // database error is masked like every other log line (#1132).
+          apiLogger('OAuth signIn').error('Error in signIn callback', error)
           return false
         }
       }
@@ -533,7 +520,7 @@ export const authOptions: NextAuthOptions = {
       // Note: This event fires BEFORE accounts are linked by PrismaAdapter
       // We'll verify in signIn callback instead when we can check account type
       const log = apiLogger('OAuth createUser')
-      log.info('New user created', { userId: user.id, email: user.email })
+      log.info('New user created', { userId: user.id })
     },
     async linkAccount({ user, account, profile }) {
       // Auto-verify email when OAuth account is linked
@@ -551,14 +538,12 @@ export const authOptions: NextAuthOptions = {
       })
 
       const log = apiLogger('OAuth linkAccount')
-        log.info('OAuth account linked successfully', {
-          userId: user.id,
-          userEmail: user.email,
-          provider: account.provider,
-          providerAccountId: account.providerAccountId,
-          oauthEmail: getOAuthProfileEmail(profile)
-        })
-      },
+      log.info('OAuth account linked successfully', {
+        userId: user.id,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+      })
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',

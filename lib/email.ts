@@ -315,16 +315,9 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
 }
 
 // "jane.doe@example.com" -> "ja***@example.com". Enough for the owner to tell
-// their own new address from a stranger's without spelling it out in full.
-export function maskEmailAddress(email: string): string {
-  const at = email.lastIndexOf('@')
-  if (at <= 0) {
-    return '***'
-  }
-  const local = email.slice(0, at)
-  const visible = local.length > 2 ? local.slice(0, 2) : local.slice(0, 1)
-  return `${visible}***${email.slice(at)}`
-}
+// their own new address from a stranger's without spelling it out in full. The one
+// masking rule lives in lib/redact.ts, which the logger uses too (#1132).
+export { maskEmail as maskEmailAddress } from './redact'
 
 // Sent to the address being replaced when someone asks to change the account's
 // email (#1136). Until this existed only the new address was mailed, so a
