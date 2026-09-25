@@ -6,6 +6,7 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { postDiscordWebhookMessage } from '@/lib/discord-webhook'
 import { runAfterResponse } from '@/lib/after-response'
+import { buildFeedbackDiscordPayload } from '@/lib/feedback-notification'
 
 const log = apiLogger('/api/feedback')
 
@@ -16,49 +17,12 @@ const feedbackSchema = z.object({
   pageUrl: z.string().max(500).optional(),
 })
 
-const TYPE_COLOR: Record<string, number> = {
-  bug:     0xed4245,
-  feature: 0x57f287,
-  appeal:  0xe67e22,
-  other:   0x95a5a6,
-}
-
-const TYPE_EMOJI: Record<string, string> = {
-  bug:     '🐛',
-  feature: '✨',
-  appeal:  '📣',
-  other:   '💬',
-}
-
-function notifyDiscord(
-  feedbackId: string,
-  type: string,
-  message: string,
-  userLabel: string,
-  pageUrl?: string,
-): void {
+function notifyDiscord(feedbackId: string, type: string, message: string): void {
   const webhookUrl = process.env.FEEDBACK_DISCORD_WEBHOOK_URL
   if (!webhookUrl) return
 
-  const emoji = TYPE_EMOJI[type] ?? '💬'
-  const color = TYPE_COLOR[type] ?? 0x95a5a6
-  const truncated = message.length > 1000 ? message.slice(0, 997) + '…' : message
-
-  const fields = [
-    { name: 'User', value: userLabel, inline: true },
-    { name: 'Type', value: `${emoji} ${type}`, inline: true },
-  ]
-  if (pageUrl) fields.push({ name: 'Page', value: pageUrl.slice(0, 200), inline: false })
-
-  const payload = {
-    embeds: [{
-      title: `${emoji} New feedback — ${type}`,
-      description: truncated,
-      color,
-      fields,
-      timestamp: new Date().toISOString(),
-    }],
-  }
+  // Type, a preview and the id only; never the email, the username or the page (#1133).
+  const payload = buildFeedbackDiscordPayload(feedbackId, type, message)
 
   // After the response: feedback is saved before this runs, and a dead webhook must not
   // turn a successful submission into a 500. The message id is stored on the row so the
@@ -70,7 +34,7 @@ function notifyDiscord(
           ? prisma.feedback.update({ where: { id: feedbackId }, data: { discordMessageId: messageId } })
           : undefined
       )
-      .catch((err) => log.error('Discord webhook failed', { error: err }))
+      .catch((err) => log.error('Discord webhook failed', err))
   )
 }
 
@@ -109,12 +73,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const userLabel = (requestUser ? `${requestUser.username} (id: ${requestUser.id})` : null) ?? email ?? 'anonymous'
-    notifyDiscord(feedback.id, type, message, userLabel, pageUrl)
+    notifyDiscord(feedback.id, type, message)
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
-    log.error('Failed to save feedback', { error })
+    log.error('Failed to save feedback', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

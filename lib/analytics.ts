@@ -40,13 +40,18 @@ interface GameStartEvent extends LobbyEvent {
   botCount: number
 }
 
+// No player names (#1133): the question this event answers is how games end, which a
+// seat index and the scores answer; who played is not Vercel Analytics' business
+// (GDPR Art. 5(1)(c)).
 interface GameEndEvent {
   gameType: GameType
   duration: number // minutes
   playerCount: number
-  winner: string
+  /** Seat of the winner in the game's player order, null for a draw or no winner. */
+  winnerSeat: number | null
   wasBot: boolean
-  finalScores: Array<{ playerName: string; score: number }>
+  /** Scores in seat order. */
+  finalScores: number[]
 }
 
 interface PlayerActionEvent {
@@ -61,7 +66,6 @@ interface AuthEvent {
   event: 'login' | 'register' | 'logout'
   method: 'email' | 'google' | 'guest'
   success: boolean
-  userId?: string
 }
 
 interface ErrorEvent {
@@ -232,9 +236,9 @@ export function trackGameCompleted(event: GameEndEvent): void {
     game_type: event.gameType,
     duration_minutes: event.duration,
     player_count: event.playerCount,
-    winner: event.winner,
+    winner_seat: event.winnerSeat,
     winner_was_bot: event.wasBot,
-    final_scores: JSON.stringify(event.finalScores),
+    final_scores: JSON.stringify(event.finalScores.map((score) => (Number.isFinite(score) ? score : 0))),
   })
   
   clientLogger.log('[analytics] Game completed', event)
@@ -548,13 +552,13 @@ export class GameSessionAnalytics {
     this.actions.push(action)
   }
 
-  end(winner: string, wasBot: boolean, playerCount: number, finalScores: Array<{ playerName: string; score: number }>): void {
+  end(winnerSeat: number | null, wasBot: boolean, playerCount: number, finalScores: number[]): void {
     const duration = Math.floor((Date.now() - this.startTime) / 60000) // minutes
     
     trackGameCompleted({
       gameType: this.gameType,
       duration,
-      winner,
+      winnerSeat,
       wasBot,
       playerCount,
       finalScores,

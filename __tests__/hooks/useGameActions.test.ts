@@ -36,6 +36,7 @@ jest.mock('@/lib/analytics', () => ({
 }))
 
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
+import { trackGameCompleted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 
@@ -305,6 +306,35 @@ describe('useGameActions', () => {
 
       expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
       expect(requestsTo('/api/lobby/')).toHaveLength(1)
+    })
+
+    it('the game_completed event carries the winner seat and scores, never a name (#1133)', async () => {
+      const restoredEngine = makeRestoreEngine()
+      jest.spyOn(restoredEngine, 'getScorecard').mockReturnValue({ ones: 3 } as any)
+      jest.spyOn(restoredEngine, 'isGameFinished').mockReturnValue(true)
+      jest.spyOn(restoredEngine, 'checkWinCondition').mockReturnValue({ id: 'player-1', name: 'Alice' } as any)
+      mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ game: { state: {} } }),
+      })
+
+      const makeMoveSpy = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+      const gameEngine = makeEngine()
+      jest.spyOn(gameEngine, 'getScorecard').mockReturnValue({} as any)
+      jest.spyOn(gameEngine, 'getDice').mockReturnValue([1, 1, 1, 1, 1])
+
+      const props = makeProps({ reconcileWithServerSnapshot: makeReconcile(), gameEngine: gameEngine as any })
+
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleScore('ones') })
+      makeMoveSpy.mockRestore()
+
+      expect(trackGameCompleted).toHaveBeenCalledTimes(1)
+      const event = (trackGameCompleted as jest.Mock).mock.calls[0][0]
+      expect(event).toEqual(expect.objectContaining({ winnerSeat: 0, wasBot: false, finalScores: [0] }))
+      expect(JSON.stringify(event)).not.toContain('Alice')
     })
 
     it('a failed move still reconciles, so the board cannot keep an optimistic update', async () => {
