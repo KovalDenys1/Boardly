@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { constantTimeEqual } from '@/lib/secret-compare'
 
 /**
  * Authorizes the Discord bot's server-to-server calls to `/api/internal/discord/*`.
@@ -17,20 +18,9 @@ import { NextResponse } from 'next/server'
 
 export const DISCORD_INTERNAL_SECRET_ENV = 'DISCORD_INTERNAL_SECRET'
 
-/**
- * Compares two strings in time that depends on their length, not on where they differ.
- * A plain `===` returns at the first mismatching character, which lets an attacker
- * measure their way through a secret one byte at a time.
- */
-export function constantTimeEqual(left: string, right: string): boolean {
-  if (left.length !== right.length) return false
-
-  let diff = 0
-  for (let index = 0; index < left.length; index += 1) {
-    diff |= left.charCodeAt(index) ^ right.charCodeAt(index)
-  }
-  return diff === 0
-}
+// Re-exported for callers that already import the comparator from here; `lib/secret-compare.ts`
+// is the one implementation, shared with `lib/cron-auth.ts` and the bot-turn route (#1119).
+export { constantTimeEqual }
 
 export function getDiscordInternalSecret(): string | null {
   const secret = process.env[DISCORD_INTERNAL_SECRET_ENV]?.trim()

@@ -15,6 +15,7 @@ import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transitio
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
+import { constantTimeEqual } from '@/lib/secret-compare'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -50,7 +51,9 @@ export async function POST(
     const hasConfiguredInternalSecret =
       typeof configuredInternalSecret === 'string' && configuredInternalSecret.length > 0
     const isAuthorizedInternalRequest =
-      hasConfiguredInternalSecret && providedInternalSecret === configuredInternalSecret
+      hasConfiguredInternalSecret &&
+      providedInternalSecret !== null &&
+      constantTimeEqual(providedInternalSecret, configuredInternalSecret)
     const requestUser = isAuthorizedInternalRequest ? null : await getRequestAuthUser(request)
 
     if (!isAuthorizedInternalRequest && !requestUser?.id) {

@@ -17,6 +17,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
+import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -572,26 +573,15 @@ export async function POST(request: NextRequest) {
     if (dbCurrentPlayer && isBot(dbCurrentPlayer)) {
       log.info('First player is a bot, triggering bot turn...', { botUserId: dbCurrentPlayer.userId })
 
-      // Trigger bot turn via separate HTTP request (fire and forget)
-      const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
+      // Trigger bot turn via separate HTTP request (fire and forget). The target is this
+      // app's own fixed origin, never the inbound request's — see getInternalAppOrigin (#1116).
+      const botApiUrl = `${getInternalAppOrigin()}/api/game/${game.id}/bot-turn`
       const internalSecret = process.env.BOARDLY_INTERNAL_SECRET
-      const forwardedAuthorization = request.headers.get('authorization')
-      const forwardedGuestToken = request.headers.get('X-Guest-Token')
-      const botTurnHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-
-      if (internalSecret) {
-        botTurnHeaders['X-Internal-Secret'] = internalSecret
-      }
-
-      if (forwardedAuthorization) {
-        botTurnHeaders.authorization = forwardedAuthorization
-      }
-
-      if (forwardedGuestToken) {
-        botTurnHeaders['X-Guest-Token'] = forwardedGuestToken
-      }
+      const botTurnHeaders = buildBotTurnHeaders({
+        internalSecret,
+        authorization: request.headers.get('authorization'),
+        guestToken: request.headers.get('X-Guest-Token'),
+      })
 
       // Add timeout to prevent hanging
       const controller = new AbortController()
