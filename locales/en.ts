@@ -3656,9 +3656,9 @@ const en = {
       },
       feedback: {
         title: 'Feedback and support',
-        data: 'What you write in the feedback form, its type, the page you sent it from, an email address if you give one, and your account if you are signed in. Each message is also posted to our team\'s feedback channel on our Discord server with your username and id, or your email address. Emails to the support address reach us through Resend.',
+        data: 'What you write in the feedback form, its type, the page you sent it from, an email address if you give one, and your account if you are signed in. A notification is posted to our team\'s feedback channel on our Discord server: the type, the first 200 characters of the message and the feedback\'s id. The email address you give, your username and the page are not posted. Emails to the support address reach us through Resend.',
         basis: 'Our legitimate interest in answering you and improving Boardly.',
-        retention: 'Feedback, including its copy in our Discord feedback channel: {{feedbackMonths}} months. Support emails: as long as we need them to handle your request.',
+        retention: 'Feedback, including its notification in our Discord feedback channel: {{feedbackMonths}} months. Support emails: as long as we need them to handle your request.',
       },
       security: {
         title: 'Keeping Boardly secure and running',
@@ -3668,7 +3668,7 @@ const en = {
       },
       analytics: {
         title: 'Understanding how Boardly is used',
-        data: 'Through Vercel Web Analytics and Speed Insights: the page, the referring site, country and region, browser, operating system, device type and load times. Vercel tells visits apart with a hash made from the request instead of a cookie and discards it after 24 hours. We also send game events such as the game, the number of players and how long it lasted; at the end of a Yahtzee game this includes the players\' display names and scores. For year-on-year counts we keep a record of lobby joins that holds only a salted hash, no id and no name.',
+        data: 'Through Vercel Web Analytics and Speed Insights: the page, the referring site, country and region, browser, operating system, device type and load times. Vercel tells visits apart with a hash made from the request instead of a cookie and discards it after 24 hours. We also send game events such as the game, the number of players and how long it lasted; at the end of a Yahtzee game this includes each seat\'s score and which seat won (and whether it was a bot), never a name. For year-on-year counts we keep a record of lobby joins that holds only a salted hash, no id and no name.',
         basis: 'Our legitimate interest in knowing which pages and games work and fixing what is slow.',
         retention: 'Lobby-join records: {{participationsMonths}} months. Vercel keeps the analytics for the period its service sets.',
       },

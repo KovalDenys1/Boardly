@@ -3644,9 +3644,9 @@ const no = {
       },
       feedback: {
         title: 'Tilbakemeldinger og kundestøtte',
-        data: 'Det du skriver i tilbakemeldingsskjemaet, typen, siden du sendte det fra, en e-postadresse hvis du oppgir en, og kontoen din hvis du er innlogget. Hver melding legges også ut i teamets tilbakemeldingskanal på Discord-serveren vår med brukernavnet og id-en din, eller e-postadressen din. E-post til kundestøtteadressen når oss gjennom Resend.',
+        data: 'Det du skriver i tilbakemeldingsskjemaet, typen, siden du sendte det fra, en e-postadresse hvis du oppgir en, og kontoen din hvis du er innlogget. Et varsel legges ut i teamets tilbakemeldingskanal på Discord-serveren vår: typen, de første 200 tegnene i meldingen og tilbakemeldingens id. E-postadressen du oppgir, brukernavnet ditt og siden legges ikke ut. E-post til kundestøtteadressen når oss gjennom Resend.',
         basis: 'Vår berettigede interesse i å svare deg og forbedre Boardly.',
-        retention: 'Tilbakemeldinger, også kopien i Discord-kanalen vår for tilbakemeldinger: {{feedbackMonths}} måneder. E-post til kundestøtte: så lenge vi trenger den for å behandle henvendelsen.',
+        retention: 'Tilbakemeldinger, også varselet i Discord-kanalen vår for tilbakemeldinger: {{feedbackMonths}} måneder. E-post til kundestøtte: så lenge vi trenger den for å behandle henvendelsen.',
       },
       security: {
         title: 'Å holde Boardly sikkert og i drift',
@@ -3656,7 +3656,7 @@ const no = {
       },
       analytics: {
         title: 'Å forstå hvordan Boardly brukes',
-        data: 'Gjennom Vercel Web Analytics og Speed Insights: siden, nettstedet du kom fra, land og region, nettleser, operativsystem, enhetstype og lastetider. Vercel skiller besøk fra hverandre med en hash laget av forespørselen i stedet for en informasjonskapsel, og forkaster den etter 24 timer. Vi sender også spillhendelser som spillet, antall spillere og hvor lenge det varte; når et Yatzy-spill er slutt, inkluderer dette spillernes visningsnavn og poeng. For tall fra år til år lagrer vi en oversikt over lobbydeltakelser som bare inneholder en saltet hash, ingen id og intet navn.',
+        data: 'Gjennom Vercel Web Analytics og Speed Insights: siden, nettstedet du kom fra, land og region, nettleser, operativsystem, enhetstype og lastetider. Vercel skiller besøk fra hverandre med en hash laget av forespørselen i stedet for en informasjonskapsel, og forkaster den etter 24 timer. Vi sender også spillhendelser som spillet, antall spillere og hvor lenge det varte; når et Yatzy-spill er slutt, inkluderer dette poengsummen for hver plass og hvilken plass som vant (og om det var en robot), aldri et navn. For tall fra år til år lagrer vi en oversikt over lobbydeltakelser som bare inneholder en saltet hash, ingen id og intet navn.',
         basis: 'Vår berettigede interesse i å vite hvilke sider og spill som fungerer, og rette det som er tregt.',
         retention: 'Oversikten over lobbydeltakelser: {{participationsMonths}} måneder. Vercel lagrer analysedataene så lenge tjenesten deres fastsetter.',
       },
