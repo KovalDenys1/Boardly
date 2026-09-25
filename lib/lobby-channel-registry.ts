@@ -2,6 +2,17 @@
 
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { clientLogger } from '@/lib/client-logger'
+import {
+  createRealtimeReplayGuard,
+  openRealtimeMessage,
+  prefetchRealtimeVerifierKey,
+  refreshRealtimeClock,
+  restartReplayWindow,
+  type RealtimeRejectReason,
+  type RealtimeReplayGuard,
+} from '@/lib/client/realtime-verify'
+import { isLobbyPeerEvent, isRealtimeEnvelope } from '@/lib/shared/realtime-envelope'
 
 type BroadcastHandler = (payload: unknown) => void
 
@@ -23,6 +34,11 @@ interface RegistryEntry {
   boundEvents: Set<string>
   lastStatus: string | null
   teardownTimer: ReturnType<typeof setTimeout> | null
+  /** Frames are verified one at a time, so handlers see them in arrival order. */
+  inbox: Promise<void>
+  replayGuard: RealtimeReplayGuard
+  hasSubscribedOnce: boolean
+  loggedRejections: number
 }
 
 /**
@@ -44,16 +60,65 @@ interface RegistryEntry {
  *
  * `hooks/useFriendPresence.ts` already solved this shape for the global
  * presence topic. One subscribe and one teardown per topic, N consumers.
+ *
+ * It is also the one place a broadcast turns into a handler call, which makes
+ * it the gate for signed realtime (GHSA-g868-9224-wr3p): every frame goes
+ * through `openRealtimeMessage` first, and only what the server signed for
+ * this topic and event – plus the few peer events clients send each other by
+ * design – reaches a handler. Nothing in the topic's name restricts who can
+ * send on it; this is what restricts whose messages are believed. The
+ * registry is not lobby-specific: the per-user topic (invites, notification
+ * pokes) goes through it as well.
  */
 const registry = new Map<string, RegistryEntry>()
 
-function bindEvents(entry: RegistryEntry, events: Record<string, BroadcastHandler> | undefined) {
+const MAX_LOGGED_REJECTIONS = 5
+
+function reportRejection(entry: RegistryEntry, topic: string, event: string, reason: RealtimeRejectReason) {
+  // A replay or a stale frame is the guard doing its job quietly; the rest
+  // mean somebody sent something the server did not, or the key is missing.
+  if (reason === 'replayed' || reason === 'stale') return
+  if (entry.loggedRejections >= MAX_LOGGED_REJECTIONS) return
+  entry.loggedRejections += 1
+  clientLogger.warn('⚠️ Dropped a realtime message the server did not sign', { topic: topic.split(':')[0], event, reason })
+}
+
+function dispatch(entry: RegistryEntry, event: string, payload: unknown) {
+  entry.subscribers.forEach((subscriber) => {
+    try {
+      subscriber.events?.[event]?.(payload)
+    } catch (error) {
+      clientLogger.error('Realtime handler threw', { event, error })
+    }
+  })
+}
+
+function deliver(entry: RegistryEntry, topic: string, event: string, raw: unknown): Promise<void> {
+  return openRealtimeMessage(topic, event, raw, entry.replayGuard).then((opened) => {
+    if (!opened.ok) {
+      reportRejection(entry, topic, event, opened.reason)
+      return
+    }
+    dispatch(entry, event, opened.payload)
+  })
+}
+
+function bindEvents(entry: RegistryEntry, topic: string, events: Record<string, BroadcastHandler> | undefined) {
   if (!events) return
   for (const event of Object.keys(events)) {
     if (entry.boundEvents.has(event)) continue
     entry.boundEvents.add(event)
     entry.channel.on('broadcast', { event }, ({ payload }) => {
-      entry.subscribers.forEach((subscriber) => subscriber.events?.[event]?.(payload))
+      // A peer frame (live drawing strokes, ten a second) has no signature to
+      // wait for and must not queue behind one that does; its handlers treat
+      // it as untrusted anyway.
+      if (isLobbyPeerEvent(topic, event) && !isRealtimeEnvelope(payload)) {
+        if (payload !== null && typeof payload === 'object') dispatch(entry, event, payload)
+        return
+      }
+      entry.inbox = entry.inbox
+        .then(() => deliver(entry, topic, event, payload))
+        .catch((error) => clientLogger.error('Realtime delivery failed', { event, error }))
     })
   }
 }
@@ -73,8 +138,13 @@ export function acquireLobbyChannel(
       boundEvents: new Set(),
       lastStatus: null,
       teardownTimer: null,
+      inbox: Promise.resolve(),
+      replayGuard: createRealtimeReplayGuard(),
+      hasSubscribedOnce: false,
+      loggedRejections: 0,
     }
     registry.set(topic, entry)
+    prefetchRealtimeVerifierKey()
   }
 
   if (entry.teardownTimer !== null) {
@@ -84,11 +154,16 @@ export function acquireLobbyChannel(
 
   entry.refCount += 1
   entry.subscribers.add(subscriber)
-  bindEvents(entry, subscriber.events)
+  bindEvents(entry, topic, subscriber.events)
 
   if (isNewChannel) {
     const joining = entry
     joining.channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        restartReplayWindow(joining.replayGuard)
+        if (joining.hasSubscribedOnce) refreshRealtimeClock()
+        joining.hasSubscribedOnce = true
+      }
       joining.lastStatus = status
       joining.subscribers.forEach((s) => s.onStatus?.(status))
     })
@@ -109,6 +184,14 @@ export function acquireLobbyChannel(
     },
   }
 }
+
+/**
+ * The same registry under a name that does not say "lobby": the per-user
+ * topic (invites, rematch requests, notification pokes) is shared by two
+ * components and needs the same one-subscribe-per-topic handling and the same
+ * signature gate.
+ */
+export const acquireRealtimeChannel = acquireLobbyChannel
 
 function releaseLobbyChannel(topic: string, subscriber: LobbyChannelSubscriber) {
   const entry = registry.get(topic)

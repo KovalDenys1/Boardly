@@ -414,6 +414,17 @@ export const rateLimitPresets = {
     message: 'Too many messages. Please slow down.'
   },
 
+  // Alias guesses (GHSA-g868-9224-wr3p): they went client to client until the
+  // lobby topic stopped trusting peer frames, and now pass through the server.
+  // Their own bucket, and a larger one than chat: guessing is rapid-fire, and a
+  // party round is several guessers behind one home network.
+  aliasGuessPost: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 120,
+    keyScope: 'lobby-alias-guess',
+    message: 'Too many guesses. Please slow down.'
+  },
+
   // Strict limit for lobby creation
   lobbyCreation: {
     windowMs: 60 * 60 * 1000, // 1 hour

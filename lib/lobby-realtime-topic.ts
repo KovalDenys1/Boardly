@@ -22,3 +22,22 @@
 export function buildLobbyTopic(code: string, realtimeSecret: string): string {
   return `lobby:${code}:${realtimeSecret}`
 }
+
+/**
+ * The spectate page's own topic: presence (who is watching) and spectator
+ * chat, both client to client. It used to be `spectators:{code}`, which anyone
+ * could join for any four-digit code to post into a lobby's spectator chat or
+ * inflate its viewer count (audit S3-07). It now carries the lobby's secret,
+ * which spectators already receive inside the lobby topic from the spectate
+ * route, so the set of people who can reach it is the set who can already
+ * watch the game.
+ */
+export function buildSpectatorTopic(code: string, realtimeSecret: string): string {
+  return `spectators:${code}:${realtimeSecret}`
+}
+
+/** The spectator topic that belongs to a lobby topic, or null if `lobbyTopic` is not one. */
+export function spectatorTopicFor(lobbyTopic: string): string | null {
+  const match = /^lobby:([^:]+):(.+)$/.exec(lobbyTopic)
+  return match ? buildSpectatorTopic(match[1], match[2]) : null
+}

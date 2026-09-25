@@ -11,6 +11,8 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
+import { spectatorTopicFor } from '@/lib/lobby-realtime-topic'
+import { readSpectatorChatMessage, type SpectatorChatMessage } from '@/lib/spectator-chat'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
@@ -46,15 +48,6 @@ type SpectatorLobbyResponse = {
   // never returns one, so its state is no longer readable by guessing the
   // four-digit code (#845).
   realtimeTopic?: string
-}
-
-type SpectatorChatMessage = {
-  id: string
-  userId: string
-  username: string
-  lobbyCode: string
-  message: string
-  timestamp?: number
 }
 
 function SpectatorTopBar({
@@ -358,15 +351,19 @@ export default function SpectatorLobbyPage() {
     }
   }, [code, realtimeTopic, loadSnapshot])
 
-  // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat
+  // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat.
+  // The topic carries the lobby secret (audit S3-07): it is derived from the
+  // lobby topic the spectate route handed over, so nobody reaches it by
+  // guessing the four-digit code.
+  const spectatorTopic = realtimeTopic ? spectatorTopicFor(realtimeTopic) : null
   useEffect(() => {
-    if (!code) return
+    if (!code || !spectatorTopic) return
 
     const userId = session?.user?.id ?? (isGuest ? guestId : null)
     const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : null)
 
     const supabase = getSupabaseClient()
-    const channel = supabase.channel(`spectators:${code}`, {
+    const channel = supabase.channel(spectatorTopic, {
       config: {
         presence: { key: userId ?? 'anon' },
         broadcast: { self: false },
@@ -404,11 +401,13 @@ export default function SpectatorLobbyPage() {
           })
         }, 2000)
       })
-      .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: SpectatorChatMessage }) => {
-        if (!payload?.id || !payload?.message) return
+      .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: unknown }) => {
+        // Sent by another spectator, not the server: shape and size are checked.
+        const message = readSpectatorChatMessage(payload, code)
+        if (!message) return
         setChatMessages((prev) => {
-          if (prev.some((m) => m.id === payload.id)) return prev
-          return [...prev, payload].slice(-100)
+          if (prev.some((m) => m.id === message.id)) return prev
+          return [...prev, message].slice(-100)
         })
       })
       .subscribe(async (status) => {
@@ -423,7 +422,7 @@ export default function SpectatorLobbyPage() {
       void supabase.removeChannel(channel)
       channelRef.current = null
     }
-  }, [code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView])
+  }, [code, spectatorTopic, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView])
 
   const sendSpectatorChatMessage = useCallback(
     (e: FormEvent) => {

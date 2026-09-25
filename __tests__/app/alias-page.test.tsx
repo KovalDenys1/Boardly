@@ -1,18 +1,26 @@
 // @ts-nocheck
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AliasLobbyPage from '@/app/lobby/[code]/alias-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
 const mockPrefetch = jest.fn()
 
+installSignedRealtime()
+const REALTIME_TOPIC = 'lobby:ABCD:test-secret'
+
 const broadcastHandlers: Record<string, (data: { payload: unknown }) => void> = {}
 const mockChannel: any = {
   on: jest.fn((type: string, filter: { event?: string }, handler: (data: unknown) => void) => {
     if (type === 'broadcast' && filter.event) {
-      broadcastHandlers[filter.event] = handler as any
+      // Pages only act on what the server signed (GHSA-g868-9224-wr3p), so the
+      // payloads these tests feed in are sealed on their way to the registry.
+      const event = filter.event
+      broadcastHandlers[event] = ((data: { payload: unknown }) =>
+        handler({ payload: frameFor(REALTIME_TOPIC, event, data.payload) })) as any
     }
     return mockChannel
   }),
@@ -527,6 +535,34 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
 
     expect(screen.getByPlaceholderText('alias.guessPlaceholder')).toBeTruthy()
+  })
+
+  // GHSA-g868-9224-wr3p: guesses went client to client on the lobby topic, so
+  // anyone holding it could post one under another player's name. They now go
+  // through the server, which broadcasts them signed with the sender's name.
+  it('sends a guess through the server and shows the ones the server relays', async () => {
+    // jsdom has no scrollIntoView; the feed scrolls to the newest guess.
+    Element.prototype.scrollIntoView = jest.fn()
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    fireEvent.change(screen.getByPlaceholderText('alias.guessPlaceholder'), { target: { value: 'banana' } })
+    fireEvent.keyDown(screen.getByPlaceholderText('alias.guessPlaceholder'), { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(mockFetchWithGuest).toHaveBeenCalledWith(
+        '/api/lobby/ABCD/alias-guess',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ message: 'banana' }) })
+      )
+    })
+    expect(screen.getByText('banana')).toBeTruthy()
+
+    act(() => {
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-1', userId: 'user-3', username: 'Carol', message: 'apple', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+    })
+    await waitFor(() => expect(screen.getByText('apple')).toBeTruthy())
   })
 
   it('leaves the describer on the word card, with the feed one tap away', async () => {

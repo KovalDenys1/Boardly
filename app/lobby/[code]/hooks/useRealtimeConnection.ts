@@ -6,6 +6,7 @@ import { getSupabaseClient } from '@/lib/supabase-client'
 import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
 import { fetchLobbyTopic } from '@/lib/lobby-realtime-topic-client'
 import { clientLogger } from '@/lib/client-logger'
+import { LOBBY_PEER_EVENTS, readSpectatorCount } from '@/lib/shared/realtime-envelope'
 import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
 import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/realtime-events'
 import type { BaseBotActionEvent } from '@/lib/bots'
@@ -161,11 +162,9 @@ export function useRealtimeConnection({
         'sketch-live': (payload) => {
           onSketchLiveRef.current?.(payload)
         },
+        // A peer event (the spectate page's presence count), so untrusted: clamped.
         'spectator-count-update': (payload) => {
-          const count = typeof (payload as Record<string, unknown>)?.count === 'number'
-            ? (payload as Record<string, unknown>).count as number
-            : 0
-          onSpectatorCountChangeRef.current?.(count)
+          onSpectatorCountChangeRef.current?.(readSpectatorCount(payload))
         },
       },
       onStatus: (status) => {
@@ -214,8 +213,15 @@ export function useRealtimeConnection({
     }
   }, [code, shouldJoinLobbyRoom, topic])
 
+  // Clients may only send the peer events (lib/shared/realtime-envelope.ts).
+  // Anything else would be dropped by every receiver as unsigned, so refusing
+  // it here turns a silent no-op into a visible mistake in development.
   const emitWhenConnected = useCallback(
     (event: string, data: unknown) => {
+      if (!LOBBY_PEER_EVENTS.has(event)) {
+        clientLogger.warn(`⚠️ "${event}" is a server event; clients cannot send it on the lobby topic`)
+        return
+      }
       const channel = broadcastChannelRef.current
       if (!channel) return
       void channel.send({
