@@ -125,6 +125,10 @@ this change; it only makes the decision possible to make with data instead of a 
 ### Optional and conditional
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
+- `REALTIME_SIGNING_SECRET`: seeds the key realtime broadcasts are signed with and the per-user topic
+  tags. Falls back to `NEXTAUTH_SECRET`; rotating either rotates the key, which clients pick up on
+  the next message (they refetch `GET /api/realtime/key` for an unknown key id) and changes every
+  user topic, which clients re-read on their next page load.
 - `BOARDLY_INTERNAL_SECRET`: server-to-server bot-turn triggers. The state route forwards
   the caller's own session either way and adds this header on top when it is set, so
   leaving it unset means the bot turn runs on the player's identity – acceptable locally
@@ -153,10 +157,28 @@ this change; it only makes the decision possible to make with data instead of a 
 
 - Server remains authoritative for turn completion and auto-actions.
 - Prevent duplicate auto-actions with server guards/debouncing.
-- On reconnect or action error, clients reconcile with server snapshots. Known gap (audit 2026-09-24,
-  advisory GHSA-g868-9224-wr3p): four game pages apply a broadcast `state-change` payload directly, and
-  the lobby topic is a public channel any holder can send on, so reconciliation is the target state,
-  not the current one.
+- On reconnect or action error, clients reconcile with server snapshots.
+- **Only the server's broadcasts are believed** (advisory GHSA-g868-9224-wr3p, audit S3-04/S3-05/S3-07).
+  Supabase broadcast channels let anyone who knows a topic send on it, and every player and admitted
+  spectator knows the lobby topic, so the channel cannot be what tells a server event from a forged
+  one. The server signs every broadcast (ECDSA P-256, key derived from `REALTIME_SIGNING_SECRET` or
+  `NEXTAUTH_SECRET`), and `lib/lobby-channel-registry.ts` hands a handler nothing whose signature does
+  not verify for that topic and event, whose nonce it has seen, or that was stamped before the page
+  joined. Game pages that apply a broadcast `state-change` directly therefore apply only server state.
+  Details and the two peer events that remain unsigned by design: docs/ARCHITECTURE.md, "Signed
+  broadcasts".
+- **Per-user topics are not guessable.** Invites, rematch requests and notification pokes go to
+  `user:{userId}:{tag}`, the tag an HMAC under a server key, handed only to that user by
+  `GET /api/realtime/user-topic`. User ids are public, so `user:{userId}` was readable and writable by
+  anyone. The spectator topic carries the lobby secret for the same reason.
+- **A snapshot from the future cannot freeze a board.** `decideFreshness` still applies a snapshot
+  stamped more than a minute ahead of the client clock but no longer lets it raise the watermark, so
+  the next real move is not rejected as stale.
+- **Residual.** Holding a topic still lets a client send frames; receivers drop them, but a flood costs
+  each receiver a signature check. Peer events (`sketch-live`, `spectator-count-update`, spectator chat
+  and presence) are peers' claims by design and are validated, not authenticated. Stopping the sends
+  themselves needs Supabase Realtime Authorization (private channels plus a Supabase JWT per client,
+  guests included), which is not in place.
 
 ## Operational checks
 
@@ -166,4 +188,6 @@ Before production deploy:
 - Validate CSRF behavior on key mutating API routes (same-origin pass, cross-origin reject).
 - Confirm migrations run from their own job, not from the app build (`.github/workflows/migrate.yml`).
 - Confirm auth and guest flows, and that a non-member cannot read a lobby's realtime topic.
+- Confirm `GET /api/realtime/key` answers 200 (a 503 means no signing secret, and every client would
+  drop every broadcast).
 - Run lint/tests and smoke test create/join/play/finish cycle.

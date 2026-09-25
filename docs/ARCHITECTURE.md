@@ -17,8 +17,9 @@ Boardly uses a single-server model:
    `lobby:<code>:<realtimeSecret>` – both sides build it in `lib/lobby-realtime-topic.ts`,
    and the secret is handed out by `GET /api/lobby/[code]/realtime-topic` to players and, inside the
    topic string, by the spectate route to admitted spectators. It is not readable through PostgREST or
-   Postgres Changes since migration `20260924141000` (no grant on the column).
-5. Clients reconcile local UI with server snapshot.
+   Postgres Changes since migration `20260924141000` (no grant on the column). Every message the server
+   sends is signed (see "Signed broadcasts" below).
+5. Clients verify the signature, then reconcile local UI with the server snapshot.
 
 Client optimism is allowed for responsiveness, but server state is final.
 
@@ -89,30 +90,72 @@ Architecture: Supabase Realtime — no separate server process.
 
 ### Server-side broadcast
 
-- Entry point: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)`
-- Mechanism: stateless REST POST to Supabase `/realtime/v1/api/broadcast`
+- Entry point: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)` and `broadcastToUser(userId, event, payload)`
+- Mechanism: stateless REST POST to Supabase `/realtime/v1/api/broadcast`, the payload sealed in a signed
+  envelope (`lib/server/realtime-signing.ts`)
 - **Must be `await`ed before returning an API response** — Vercel kills pending promises after `NextResponse.json()` returns
 
 ### Client-side subscription
 
 - `app/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
-  - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events)
+  - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events), through `lib/lobby-channel-registry.ts`
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
 - `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
 - `app/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
-- `components/ReactionOverlay.tsx` – `reactions:{code}` Broadcast channel (no sender in the repo, #1107)
-- `components/SocialLoopListener.tsx` – `user:{userId}` Broadcast channel (invites, rematches)
-- `components/Header/NotificationsMenu.tsx` – `user-notifications:{userId}` Broadcast channel
-- `app/lobby/[code]/spectate/page.tsx` – `spectators:{code}` Broadcast channel with presence
+- `components/SocialLoopListener.tsx` and `components/Header/NotificationsMenu.tsx` – the user's own
+  `user:{userId}:{tag}` Broadcast channel (invites, rematch requests, `notification-created` pokes),
+  through the registry. The tag is an HMAC of the id under a server key (`buildUserTopic`); the user
+  fetches the name from `GET /api/realtime/user-topic`, which hands out only the caller's own.
+- `app/lobby/[code]/spectate/page.tsx` – the lobby topic through the registry, plus
+  `spectators:{code}:{realtimeSecret}` (`spectatorTopicFor`), Presence and spectator chat, client to client
 
 All Postgres Changes subscribers run as `anon` and receive only the columns that role may select
 (never `password` or `realtimeSecret`); the `supabase_realtime` publication must contain `Lobbies`
-(console state, see docs/OPERATIONS.md). The per-user and spectator channels are public and keyed by
-id or code alone (advisory GHSA-g868-9224-wr3p tracks the redesign).
+(console state, see docs/OPERATIONS.md). There is no `reactions:{code}` channel any more: it had a
+listener and no sender, and rendered any payload anyone put on it (#1107).
+
+### Signed broadcasts (GHSA-g868-9224-wr3p)
+
+The broadcast channels are public Supabase channels: whoever knows a topic's name can send on it as
+well as listen, and Supabase marks nothing that tells the server's REST broadcast from a peer's frame.
+Every seated player and admitted spectator knows the lobby topic, so before this any of them could
+make every other client apply a forged `game-update`, leave on a forged `game-abandoned`, or show a
+`chat-message` in someone else's name. What stops it now is that receivers only believe the server:
+
+- **The server signs.** `broadcastToChannel` seals each message into
+  `{ __rt: 1, kid, iat, n, sig, p }` (`lib/shared/realtime-envelope.ts`): ECDSA P-256 over the
+  canonical JSON of topic, event, key id, server time, nonce and payload. The key is derived with HKDF
+  from `REALTIME_SIGNING_SECRET`, falling back to `NEXTAUTH_SECRET`, so every instance has the same key
+  and nothing new is required to deploy. Without a secret nothing is sent, since nothing would be
+  accepted. Canonical JSON rather than the bytes on the wire, because Supabase re-encodes the payload
+  and reorders its keys.
+- **The client verifies before any handler runs.** `lib/lobby-channel-registry.ts` is the only place
+  a broadcast becomes a handler call, and it passes each frame through `openRealtimeMessage`
+  (`lib/client/realtime-verify.ts`) in arrival order. The public key and the server clock come from
+  `GET /api/realtime/key`; a message naming an unknown key id refetches it (a rotated secret), at most
+  once a minute. A frame is dropped when it is unsigned, signed for another topic or event, signed by
+  another key, a nonce this page has already seen, stamped more than 30 seconds before the page last
+  (re)joined the topic, or stamped more than two minutes before the newest message it has accepted
+  there – the last two are a genuine message recorded and played back later.
+- **Peer events are the exception, and are named.** `LOBBY_PEER_EVENTS` – `sketch-live` (the drawer's
+  canvas while drawing, non-authoritative and checked by `parseSketchLiveMessage`) and
+  `spectator-count-update` (clamped by `readSpectatorCount`) – are the only unsigned frames a lobby
+  topic delivers, and `emitWhenConnected` refuses to send anything else. Chat is not a peer event:
+  Alias guesses, which used to be, go through `POST /api/lobby/[code]/alias-guess`.
+- **What it does not do.** A topic holder can still send frames; they are dropped, not prevented, so a
+  flood costs receivers a signature check each. The spectator topic is client to client by design,
+  so spectator chat and presence are peers' claims, validated for shape and size
+  (`lib/spectator-chat.ts`) and reachable only with the lobby secret. Supabase Realtime Authorization
+  (private channels with `realtime.messages` policies) would stop the sending itself; it needs a
+  Supabase JWT for every client, guests included, and is not in place.
+- **Development over plain http.** WebCrypto exists only in a secure context, so `next dev` opened
+  from a phone on the LAN cannot verify. A non-production build then accepts server envelopes
+  unchecked, with a console warning; unsigned frames are still dropped. A production build has no such
+  branch.
 
 ### When to use Broadcast vs Postgres Changes
 
-- **Broadcast**: events that need immediate delivery or carry computed/sanitized payloads (game moves, reactions, `player-joined` with username)
+- **Broadcast**: events that need immediate delivery or carry computed/sanitized payloads (game moves, chat, `player-joined` with username)
 - **Postgres Changes**: structural state sync where the raw DB row is sufficient (lobby status, settings changes)
 
 ## Lobby lifecycle redirect rules
