@@ -30,6 +30,44 @@ const TYPE_EMOJI: Record<string, string> = {
   other:   '💬',
 }
 
+// Hosts a pageUrl is trusted to name (#1122). Anything else — a body field a
+// caller can set to whatever they like — is dropped rather than shown, since
+// the point of the field is "which of our own pages this came from".
+const ALLOWED_PAGE_URL_HOSTS = new Set(['boardly.online', 'www.boardly.online', 'localhost', '127.0.0.1'])
+
+/**
+ * Discord renders `[label](url)` as a clickable masked link and `@everyone`/`@here`
+ * as a mention, so an unescaped `pageUrl` let a feedback submission plant an
+ * arbitrary phishing link — or, in principle, other markdown — in #feedback under
+ * a "New feedback" title (#1122). Two independent guards: only a same-origin
+ * relative path or a URL whose host is genuinely one of Boardly's own is passed
+ * along at all, and whatever does pass is wrapped in backticks (with any literal
+ * backtick stripped first, so nothing can break out of the code span) so it
+ * always renders as plain text, never as markdown.
+ */
+function sanitizedPageUrlForDiscord(raw: string | undefined): string | null {
+  if (!raw) return null
+
+  const asLiteral = (value: string) => `\`${value.replace(/`/g, '').slice(0, 200)}\``
+
+  // A same-origin relative path, e.g. '/suspended' (app/suspended/page.tsx) — no
+  // scheme+host for Discord to treat as a link destination either way.
+  if (raw.startsWith('/') && !raw.startsWith('//')) {
+    return asLiteral(raw)
+  }
+
+  try {
+    const parsed = new URL(raw)
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
+    if (!ALLOWED_PAGE_URL_HOSTS.has(parsed.hostname)) return null
+    return asLiteral(parsed.toString())
+  } catch {
+    // Not a valid absolute URL either — includes a markdown link disguised as a
+    // pageUrl, e.g. '[x](https://evil)', which is exactly what this guards against.
+    return null
+  }
+}
+
 function notifyDiscord(
   feedbackId: string,
   type: string,
@@ -48,7 +86,8 @@ function notifyDiscord(
     { name: 'User', value: userLabel, inline: true },
     { name: 'Type', value: `${emoji} ${type}`, inline: true },
   ]
-  if (pageUrl) fields.push({ name: 'Page', value: pageUrl.slice(0, 200), inline: false })
+  const safePageUrl = sanitizedPageUrlForDiscord(pageUrl)
+  if (safePageUrl) fields.push({ name: 'Page', value: safePageUrl, inline: false })
 
   const payload = {
     embeds: [{
@@ -109,7 +148,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const userLabel = (requestUser ? `${requestUser.username} (id: ${requestUser.id})` : null) ?? email ?? 'anonymous'
+    // An anonymous submission's `email` is an unverified body field, not a claim we can
+    // stand behind — `notifyDiscord` puts this label under "User", and without the
+    // prefix it read as if a real, signed-in account had sent it (#1122).
+    const userLabel = requestUser
+      ? `${requestUser.username} (id: ${requestUser.id})`
+      : `unverified: ${email || 'anonymous'}`
     notifyDiscord(feedback.id, type, message, userLabel, pageUrl)
 
     return NextResponse.json({ success: true }, { status: 201 })
