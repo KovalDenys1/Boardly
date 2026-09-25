@@ -291,51 +291,31 @@ describe('rateLimit store backends', () => {
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
-    // register, forgot-password, resend-verification and feedback: refused outright.
-    for (const preset of [failClosedAuthPreset, { windowMs: 60_000, maxRequests: 5, failClosed: true }]) {
+    // register, guest-session, forgot-password, resend-verification, join-guest (both
+    // budgets), lobby create and rematch, and feedback: refused outright, from the first
+    // request. Nothing is minted from per-instance memory while the store is down.
+    for (const preset of [
+      failClosedAuthPreset,
+      rateLimitPresets.lobbyJoinGuest,
+      rateLimitPresets.lobbyJoinNewGuest,
+      rateLimitPresets.lobbyCreation,
+      rateLimitPresets.lobbyCreationPremium,
+      { windowMs: 60_000, maxRequests: 5, failClosed: true },
+    ]) {
       const result = await rateLimit(preset)(makeRequest())
       expect(result?.status).toBe(503)
       expect(result?.headers.get('Retry-After')).toBe('30')
+    }
+    // Serving those from memory instead is an unmade security decision (#1156).
+    for (const preset of [failClosedAuthPreset, ...Object.values(rateLimitPresets)]) {
+      expect(preset).not.toHaveProperty('degraded')
     }
 
     // Game actions stay fail-open on the memory store.
     expect(await rateLimit(rateLimitPresets.game)(makeRequest())).toBeNull()
   })
 
-  it('keeps guest entry and lobby creation open while the store is down, under degraded limits (#1156)', async () => {
-    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
-    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
-
-    const { rateLimit, __rateLimitTestUtils, guestSessionPreset, rateLimitPresets } =
-      await loadRateLimitModule(failingStore())
-    __rateLimitTestUtils.clearInMemoryStore()
-    __rateLimitTestUtils.resetSharedClient()
-
-    const cases = [
-      { preset: guestSessionPreset, path: '/api/auth/guest-session' },
-      { preset: rateLimitPresets.lobbyJoinGuest, path: '/api/lobby/1234/join-guest' },
-      { preset: rateLimitPresets.lobbyJoinNewGuest, path: '/api/lobby/1234/join-guest' },
-      { preset: rateLimitPresets.lobbyCreation, path: '/api/lobby' },
-      { preset: rateLimitPresets.lobbyCreationPremium, path: '/api/lobby' },
-    ]
-    for (const [index, { preset, path }] of cases.entries()) {
-      const degraded = preset.degraded!
-      // Tighter than the shared limit: memory is per instance.
-      expect(degraded.maxRequests).toBeLessThan(preset.maxRequests)
-      expect(degraded.maxRequests).toBeGreaterThanOrEqual(1)
-
-      const limiter = rateLimit(preset)
-      const ip = `203.0.113.${100 + index}`
-      for (let i = 0; i < degraded.maxRequests; i += 1) {
-        expect(await limiter(requestFrom(ip, path))).toBeNull()
-      }
-      const refused = await limiter(requestFrom(ip, path))
-      expect(refused?.status).toBe(429)
-      expect(refused?.headers.get('X-RateLimit-Limit')).toBe(String(degraded.maxRequests))
-    }
-  })
-
-  it('caps every address together per instance while degraded, and one address cannot spend it (#1156)', async () => {
+  it('degraded mode, if a route ever sets it, caps every address together per instance, and one address cannot spend it (#1156)', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 

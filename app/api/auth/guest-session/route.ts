@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { apiLogger } from '@/lib/logger'
-import { guestSessionPreset, rateLimit } from '@/lib/rate-limit'
+import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import {
   createGuestId,
   createGuestToken,
@@ -15,8 +15,7 @@ import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { handleApiError } from '@/lib/error-handler'
 import { Prisma } from '@/prisma/client'
 
-// Guest entry keeps working, under tighter per-instance limits, while Upstash is down (#1156).
-const limiter = rateLimit(guestSessionPreset)
+const limiter = rateLimit(failClosedAuthPreset)
 
 const guestSessionSchema = z.object({
   guestName: z.string().trim().min(2).max(20).regex(/^[\w\s-]+$/u, 'Invalid characters'),
