@@ -105,7 +105,6 @@ import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
@@ -2663,9 +2662,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         icon={<LeaveIcon size={28} />}
       />
 
-      {isGameStarted && (
-        <ReactionOverlay lobbyCode={code} />
-      )}
 
       <PlayerProfileCard
         userId={profileUserId}

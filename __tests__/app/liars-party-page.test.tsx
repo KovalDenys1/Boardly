@@ -83,11 +83,6 @@ jest.mock('@/components/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner" />,
 }))
 
-jest.mock('@/components/ReactionOverlay', () => ({
-  __esModule: true,
-  ReactionOverlay: () => null,
-}))
-
 // The realtime topic carries a per-lobby secret and is fetched from the server
 // (#845). Supabase itself is mocked below, so the name only has to be stable.
 jest.mock('@/lib/lobby-realtime-topic-client', () => ({

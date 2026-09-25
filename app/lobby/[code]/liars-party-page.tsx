@@ -27,7 +27,6 @@ import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
@@ -1346,8 +1345,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     </section>
   )
 
-  const showReactions = !isSpectator && resolvedStatus === 'playing'
-
   return (
     <div className="game-screen liars-screen" style={getThemePageStyle(lobby?.theme)} data-testid={phaseTestId}>
 
@@ -1423,7 +1420,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       </div>
 
       {/* ── MODALS ──────────────────────────────────────────────────── */}
-      {showReactions && <ReactionOverlay lobbyCode={code} />}
       {!isSpectator && (
         <ConfirmModal
           isOpen={showLeaveConfirmModal}

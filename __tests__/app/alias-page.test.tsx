@@ -87,14 +87,6 @@ jest.mock('@/components/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner" />,
 }))
 
-jest.mock('@/components/ReactionOverlay', () => ({
-  __esModule: true,
-  default: () => null,
-  // alias-page imports the named export, and only renders it once the game is
-  // active — the waiting-room tests never hit it, the #770 test does.
-  ReactionOverlay: () => null,
-}))
-
 // The realtime topic carries a per-lobby secret and is fetched from the server
 // (#845). Supabase itself is mocked below, so the name only has to be stable.
 jest.mock('@/lib/lobby-realtime-topic-client', () => ({

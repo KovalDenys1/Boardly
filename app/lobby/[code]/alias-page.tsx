@@ -19,7 +19,6 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -1500,7 +1499,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           {renderHeader(t('alias.phaseTurnKicker'))}
           <div className="alias-status-slot">
@@ -1678,7 +1676,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const describerName = describerDisplayName
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           {renderHeader(t('alias.phaseTurnKicker'))}
           <div className="alias-status-slot">
@@ -1823,7 +1820,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           {renderHeader(t('alias.turnCompleteTitle'))}
           <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">

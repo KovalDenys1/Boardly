@@ -37,7 +37,6 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
@@ -1230,9 +1229,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     variant="danger"
                     icon={<LeaveIcon size={28} />}
                 />
-            )}
-            {!isSpectator && resolvedStatus === 'playing' && (
-                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

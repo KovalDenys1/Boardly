@@ -39,7 +39,6 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
@@ -1286,7 +1285,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     icon={<LeaveIcon size={28} />}
                 />
             )}
-            {!isSpectator && game.status === 'playing' && <ReactionOverlay lobbyCode={code} />}
         </div>
     )
 }

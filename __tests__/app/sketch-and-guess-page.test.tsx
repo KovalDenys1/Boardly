@@ -143,10 +143,6 @@ jest.mock('@/components/ConfirmModal', () => ({
   default: () => null,
 }))
 
-jest.mock('@/components/ReactionOverlay', () => ({
-  ReactionOverlay: () => null,
-}))
-
 jest.mock('@/lib/lobby-realtime-topic-client', () => ({
   fetchLobbyTopic: jest.fn(async (code: string) => `lobby:${code}:test-secret`),
 }))
