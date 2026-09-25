@@ -3,7 +3,7 @@ import { Prisma } from '@/prisma/client'
 import { findUserByFriendCode } from '@/lib/friend-code'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { rateLimit, rateLimitPresets, consumeKeyedRateLimit } from '@/lib/rate-limit'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
 import { requireSessionUser } from '@/lib/session-user'
@@ -59,6 +59,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // #1120 (audit S2-05): a 5-digit code is only 100,000 values, and the shared 60/min IP
+    // limiter above does nothing once guesses spread across addresses. This caps guesses
+    // per account, whatever IP they come from — every guess counts, not only wrong ones,
+    // since a normal user sending several correct codes an hour is already an edge case.
+    const attemptLimit = await consumeKeyedRateLimit(
+      `friend-code-attempt:${session.user.id}`,
+      rateLimitPresets.friendCodeAttempt
+    )
+    if (attemptLimit.limited) {
+      log.warn('Friend code attempt limit exceeded', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Too many friend code attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': attemptLimit.retryAfterSeconds.toString() },
+        }
+      )
+    }
+
     // Get current user
     const currentUser = await prisma.users.findUnique({
       where: { id: session.user.id },
@@ -83,9 +102,12 @@ export async function POST(req: NextRequest) {
     const targetUser = await findUserByFriendCode(cleanCode)
     
     if (!targetUser) {
+      // 400, not 404 (#1120, audit S2-05): an unassigned code used to answer 404 while a
+      // self/already-friends/pending code answers 400, which lets an attacker tell "this
+      // code belongs to someone" from "this code belongs to nobody" purely from the status.
       return NextResponse.json(
         { error: 'User not found with this friend code' },
-        { status: 404 }
+        { status: 400 }
       )
     }
 
@@ -129,6 +151,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'A friend request is already pending with this user' },
         { status: 400 }
+      )
+    }
+
+    // A separate, longer-window cap on requests that actually go out (#1120, audit S2-05):
+    // the 10/hour attempt limiter above bounds guessing, but a slow drip of correct guesses
+    // spread across many hours would not trip it, and could still spam every user found.
+    const dailyOutgoingLimit = await consumeKeyedRateLimit(
+      `friend-code-outgoing:${currentUser.id}`,
+      rateLimitPresets.friendCodeDailyOutgoing
+    )
+    if (dailyOutgoingLimit.limited) {
+      log.warn('Friend code daily outgoing limit exceeded', { userId: currentUser.id })
+      return NextResponse.json(
+        { error: 'Too many friend requests sent today. Please try again tomorrow.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': dailyOutgoingLimit.retryAfterSeconds.toString() },
+        }
       )
     }
 

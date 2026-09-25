@@ -348,6 +348,50 @@ export function rateLimit(config: RateLimitConfig) {
   }
 }
 
+export interface KeyedRateLimitResult {
+  limited: boolean
+  retryAfterSeconds: number
+}
+
+/**
+ * Same shared/in-memory backend as `rateLimit()`, but keyed by an explicit string instead
+ * of the caller's IP. `rateLimit()` always keys on the request's address, which does
+ * nothing for a limit that must hold per *account* regardless of network — e.g. one user
+ * guessing friend codes from many IPs (#1120, audit S2-05). The scope passed to the shared
+ * store's error reporting is the key itself, since there is no separate route/IP split here.
+ */
+export async function consumeKeyedRateLimit(
+  key: string,
+  config: { windowMs: number; maxRequests: number }
+): Promise<KeyedRateLimitResult> {
+  const { windowMs, maxRequests } = config
+  const blockKey = `${key}:${windowMs}:${maxRequests}`
+  const now = Date.now()
+
+  const knownBlockedUntil = blockedUntil.get(blockKey)
+  if (knownBlockedUntil !== undefined) {
+    if (knownBlockedUntil > now) {
+      return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil((knownBlockedUntil - now) / 1000)) }
+    }
+    blockedUntil.delete(blockKey)
+  }
+
+  const shared = await consumeSharedRateLimit(key, windowMs, now, key)
+
+  const record: { count: number; resetTime: number } =
+    shared.kind === 'ok' ? shared : consumeInMemoryRateLimit(key, windowMs, now)
+
+  if (record.count > maxRequests) {
+    if (shared.kind === 'ok') {
+      if (blockedUntil.size >= BLOCKED_CACHE_MAX_ENTRIES) blockedUntil.clear()
+      blockedUntil.set(blockKey, record.resetTime)
+    }
+    return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil((record.resetTime - now) / 1000)) }
+  }
+
+  return { limited: false, retryAfterSeconds: 0 }
+}
+
 /**
  * Preset rate limit configurations
  */
@@ -445,7 +489,23 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 15,
     message: 'Too many friend requests. Please try again later.'
-  }
+  },
+
+  // Per-account limits for guessing a friend code (#1120, audit S2-05): a 5-digit code is
+  // only 100,000 values, and the route's IP limiter (60/min) does nothing once the guesses
+  // come from many addresses. Used with consumeKeyedRateLimit, keyed on the caller's own
+  // user id, not their IP — `rateLimit()`'s own keying is IP-only.
+  friendCodeAttempt: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 10,
+  },
+  // A separate, longer-window cap on requests that actually go out, so a slow drip spread
+  // across many hours (which the 10/hour attempt cap would not catch on its own) still
+  // cannot spam every registered user found by guesswork.
+  friendCodeDailyOutgoing: {
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
+    maxRequests: 20,
+  },
 }
 
 /**
