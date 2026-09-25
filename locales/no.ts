@@ -3597,7 +3597,7 @@ const no = {
         title: 'Kontoen din',
         data: 'Brukernavn, e-postadresse, passordet ditt lagret bare som en enveis bcrypt-hash, profilbilde, bio, aksentfarge og innstillinger, innloggingstjenestene du har koblet til, tidspunktet for siste tilbakestilling av passord eller endring av e-post (brukes bare til å logge ut eldre økter), og nettstedet eller kampanjen du kom fra da du registrerte deg.',
         basis: 'Avtale: vi trenger dette for å drive kontoen din. Registreringskilden: vår berettigede interesse i å vite hvilke kanaler som bringer nye spillere.',
-        retention: 'Til du sletter kontoen. En konto der e-postadressen aldri blir bekreftet, slettes etter {{unverifiedDays}} dager.',
+        retention: 'Til du sletter kontoen. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
         extra: 'Profilen din (brukernavn, bilde, bio og spillstatistikk) er offentlig som standard. Du kan begrense den til venner eller gjøre den privat i profilinnstillingene.',
       },
       guest: {

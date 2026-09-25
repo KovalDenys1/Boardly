@@ -3609,7 +3609,7 @@ const en = {
         title: 'Your account',
         data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), and the site or campaign you arrived from when you signed up.',
         basis: 'Contract: we need this to run your account. The sign-up source: our legitimate interest in knowing which channels bring new players.',
-        retention: 'Until you delete the account. An account whose email address is never verified is deleted after {{unverifiedDays}} days.',
+        retention: 'Until you delete the account. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
         extra: 'Your profile (username, picture, bio and game statistics) is public by default. You can limit it to friends or make it private in your profile settings.',
       },
       guest: {
