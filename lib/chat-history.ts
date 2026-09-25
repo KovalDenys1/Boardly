@@ -6,7 +6,11 @@
 
 import { logger } from './logger'
 import { CHAT_RETENTION_HOURS } from './retention-periods'
-import { getRedisRestCredentials, REDIS_CREDENTIALS_MISSING_MESSAGE } from './redis-credentials'
+import {
+  getRedisRestCredentials,
+  REDIS_CREDENTIALS_MISSING_MESSAGE,
+  upstashClientOptions,
+} from './redis-credentials'
 
 const CHAT_KEY_PREFIX = 'chat:lobby:'
 const MAX_MESSAGES = 50
@@ -22,7 +26,9 @@ interface ChatRedisClient {
 }
 
 interface UpstashRedisModule {
-  Redis: new (config: { url: string; token: string }) => ChatRedisClient
+  Redis: new (
+    config: { url: string; token: string } & ReturnType<typeof upstashClientOptions>
+  ) => ChatRedisClient
 }
 
 let _client: ChatRedisClient | null | undefined = undefined
@@ -47,7 +53,9 @@ async function getChatRedisClient(): Promise<ChatRedisClient | null> {
     _clientPromise = import('@upstash/redis')
       .then((mod) => {
         const RedisConstructor = (mod as UpstashRedisModule).Redis
-        _client = new RedisConstructor({ url, token })
+        // Fail fast (#1156): with the client's defaults a store that is down held every
+        // chat post and history read for seconds before this module's fallback ran.
+        _client = new RedisConstructor({ url, token, ...upstashClientOptions() })
         return _client
       })
       .catch((err) => {

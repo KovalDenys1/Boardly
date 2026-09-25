@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRedisRestCredentials, REDIS_CREDENTIALS_MISSING_MESSAGE } from './redis-credentials'
+import {
+  getRedisRestCredentials,
+  RATE_LIMIT_WINDOW_KEY_PREFIX,
+  REDIS_CREDENTIALS_MISSING_MESSAGE,
+  upstashClientOptions,
+} from './redis-credentials'
 import { logger } from './logger'
+
+/**
+ * What a fail-closed route admits while the shared store is failing, instead of answering
+ * 503 (#1156). Both limits are counted in this instance's memory, so they are set well
+ * below the shared ones: see "Degraded limits" above the presets for how they were chosen.
+ */
+interface DegradedRateLimit {
+  /** Per address and window, in this instance. */
+  maxRequests: number
+  /**
+   * Every address together, per window, in this instance - what bounds a flood spread
+   * across many addresses, which the per-address limit alone does not. Past it the route
+   * answers 503, as it would with no degraded mode at all.
+   */
+  instanceMaxRequests: number
+}
 
 interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
@@ -22,6 +43,12 @@ interface RateLimitConfig {
    * An unconfigured store (local dev, tests) is not a failure and still uses memory.
    */
   failClosed?: boolean
+  /**
+   * With `failClosed`: keep serving on this instance's memory under these tighter limits
+   * while the shared store fails, rather than refusing everyone. For the routes where a
+   * refusal costs a visitor the game itself - guest entry and lobby creation.
+   */
+  degraded?: DegradedRateLimit
 }
 
 interface InMemoryRateLimitStore {
@@ -32,12 +59,14 @@ interface InMemoryRateLimitStore {
 }
 
 interface SharedRateLimitStoreClient {
-  incr(key: string): Promise<unknown>
+  hincrby(key: string, field: string, increment: number): Promise<unknown>
   expire(key: string, ttlSeconds: number): Promise<unknown>
 }
 
 interface UpstashRedisModule {
-  Redis: new (config: { url: string; token: string }) => SharedRateLimitStoreClient
+  Redis: new (
+    config: { url: string; token: string } & ReturnType<typeof upstashClientOptions>
+  ) => SharedRateLimitStoreClient
 }
 
 type SharedConsumeResult =
@@ -45,8 +74,8 @@ type SharedConsumeResult =
   | { kind: 'unconfigured' }
   | { kind: 'failed'; error: unknown }
 
-// In-memory store: the fallback for an unconfigured shared store, and for fail-open routes
-// when the shared store errors.
+// In-memory store: the fallback for an unconfigured shared store, for fail-open routes
+// when the shared store errors, and for the `degraded` limits of fail-closed ones.
 const inMemoryStore: InMemoryRateLimitStore = {}
 /**
  * Per-instance memory of keys the shared store has already reported over the limit, with
@@ -59,6 +88,29 @@ const blockedUntil = new Map<string, number>()
 const BLOCKED_CACHE_MAX_ENTRIES = 10_000
 const REDIS_ERROR_LOG_INTERVAL_MS = 60 * 1000
 const RATE_LIMITED_EVENT_INTERVAL_MS = 60 * 1000
+
+/**
+ * The shared counters live in one hash per window length and window (#1156), the field
+ * being `<ip>:<scope>`. One key per counter meant a first request in a window cost two
+ * commands, INCR and then EXPIRE, and a flood from rotating addresses - one request per
+ * address, the case the per-address limit cannot touch - spent both on every request.
+ * With a hash the TTL belongs to the window, so each instance sets it once per window
+ * and every counted request costs exactly one command.
+ *
+ * This map holds the windows (hash keys) this instance has already given a TTL, with
+ * their end.
+ */
+const windowExpirySet = new Map<string, number>()
+
+/**
+ * After this many shared-store failures in a row, stop asking it for SHARED_STORE_PAUSE_MS
+ * and go straight to the fallback (#1156). An outage then costs one probe per pause per
+ * instance instead of a timed-out call on every request; a success resets both.
+ */
+const SHARED_STORE_FAILURES_BEFORE_PAUSE = 3
+const SHARED_STORE_PAUSE_MS = 15 * 1000
+let consecutiveSharedFailures = 0
+let sharedStorePausedUntil = 0
 
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 let lastCleanupAt = 0
@@ -109,7 +161,9 @@ async function getUpstashRedisClient(): Promise<SharedRateLimitStoreClient | nul
           throw new Error('Upstash Redis module did not expose Redis constructor')
         }
 
-        upstashRedisClient = new RedisConstructor({ url, token })
+        // Fail fast: with the client's defaults an unreachable store held each request for
+        // seconds of retries before the fallback below could run (#1156).
+        upstashRedisClient = new RedisConstructor({ url, token, ...upstashClientOptions() })
         return upstashRedisClient
       })
       .catch((error) => {
@@ -190,6 +244,10 @@ function cleanupExpiredEntries(now: number) {
     if (until <= now) blockedUntil.delete(key)
   }
 
+  for (const [windowKey, windowEnd] of windowExpirySet) {
+    if (windowEnd <= now) windowExpirySet.delete(windowKey)
+  }
+
   lastCleanupAt = now
 }
 
@@ -222,21 +280,23 @@ async function consumeSharedRateLimit(
     return { kind: 'unconfigured' }
   }
 
+  // Paused after repeated failures: no command, no wait, straight to the fallback.
+  if (now < sharedStorePausedUntil) {
+    return { kind: 'failed', error: new Error('Shared rate limiter paused after repeated failures') }
+  }
+
   const redis = await getUpstashRedisClient()
   if (!redis) {
     return { kind: 'failed', error: new Error('Shared rate limiter client unavailable') }
   }
 
+  cleanupExpiredEntries(now)
   const windowBucket = Math.floor(now / windowMs)
   const resetTime = (windowBucket + 1) * windowMs
-  const redisKey = `rate_limit:${key}:${windowMs}:${windowBucket}`
-  const ttlSeconds = Math.max(1, Math.ceil((resetTime - now) / 1000))
+  const windowKey = `${RATE_LIMIT_WINDOW_KEY_PREFIX}${windowMs}:${windowBucket}`
 
   try {
-    const currentCount = await redis.incr(redisKey)
-    if (currentCount === 1) {
-      await redis.expire(redisKey, ttlSeconds)
-    }
+    const currentCount = await redis.hincrby(windowKey, key, 1)
 
     const count = isSafeInteger(currentCount)
       ? currentCount
@@ -246,12 +306,26 @@ async function consumeSharedRateLimit(
       throw new Error('Unexpected shared rate limiter count response')
     }
 
+    // Once per window per instance. Every instance sets the same end, so a repeat from
+    // another instance changes nothing; a failed EXPIRE is not remembered and is retried.
+    if (!windowExpirySet.has(windowKey)) {
+      const ttlSeconds = Math.max(1, Math.ceil((resetTime - Date.now()) / 1000))
+      await redis.expire(windowKey, ttlSeconds)
+      windowExpirySet.set(windowKey, resetTime)
+    }
+
+    consecutiveSharedFailures = 0
+    sharedStorePausedUntil = 0
     return {
       kind: 'ok',
       count,
       resetTime,
     }
   } catch (error) {
+    consecutiveSharedFailures += 1
+    if (consecutiveSharedFailures >= SHARED_STORE_FAILURES_BEFORE_PAUSE) {
+      sharedStorePausedUntil = Date.now() + SHARED_STORE_PAUSE_MS
+    }
     await reportSharedStoreDegraded(error, scope)
     return { kind: 'failed', error }
   }
@@ -276,9 +350,26 @@ function tooManyRequests(message: string, maxRequests: number, resetTime: number
 
 const LIMITER_UNAVAILABLE_RETRY_AFTER_SECONDS = 30
 
+function limiterUnavailable() {
+  return NextResponse.json(
+    {
+      error: 'This is temporarily unavailable. Please try again in a minute.',
+      retryAfter: LIMITER_UNAVAILABLE_RETRY_AFTER_SECONDS,
+    },
+    {
+      status: 503,
+      headers: { 'Retry-After': LIMITER_UNAVAILABLE_RETRY_AFTER_SECONDS.toString() },
+    }
+  )
+}
+
 /**
  * Rate limiter for Next.js API routes. Counts in the shared Upstash store when it is
- * configured; see `failClosed` for what happens when it fails.
+ * configured; see `failClosed` and `degraded` for what happens when it fails.
+ *
+ * Upstash commands per call (#1156): one HINCRBY per counted request, plus one EXPIRE per
+ * window per instance; none for a key this instance already knows is over its limit, and
+ * none while the store is paused after repeated failures.
  */
 export function rateLimit(config: RateLimitConfig) {
   const {
@@ -287,6 +378,7 @@ export function rateLimit(config: RateLimitConfig) {
     message = 'Too many requests, please try again later.',
     keyScope,
     failClosed = false,
+    degraded,
   } = config
 
   return async (request: NextRequest): Promise<NextResponse | null> => {
@@ -319,16 +411,25 @@ export function rateLimit(config: RateLimitConfig) {
     if (shared.kind === 'ok') {
       record = shared
     } else if (shared.kind === 'failed' && failClosed) {
-      return NextResponse.json(
-        {
-          error: 'This is temporarily unavailable. Please try again in a minute.',
-          retryAfter: LIMITER_UNAVAILABLE_RETRY_AFTER_SECONDS,
-        },
-        {
-          status: 503,
-          headers: { 'Retry-After': LIMITER_UNAVAILABLE_RETRY_AFTER_SECONDS.toString() },
+      if (!degraded) return limiterUnavailable()
+
+      // Degraded (#1156): this instance's memory, under limits set for exactly that.
+      const perAddress = consumeInMemoryRateLimit(`degraded:${key}`, windowMs, now)
+      if (perAddress.count > degraded.maxRequests) {
+        if (perAddress.count === degraded.maxRequests + 1) {
+          await reportRateLimited(scope, now)
         }
+        return tooManyRequests(message, degraded.maxRequests, perAddress.resetTime, now)
+      }
+      // Counted only for requests the per-address limit let through, so one address
+      // cannot spend everybody else's share of the instance.
+      const everyAddress = consumeInMemoryRateLimit(
+        `degraded-instance:${scope}:${windowMs}`,
+        windowMs,
+        now
       )
+      if (everyAddress.count > degraded.instanceMaxRequests) return limiterUnavailable()
+      return null
     } else {
       record = consumeInMemoryRateLimit(key, windowMs, now)
     }
@@ -349,7 +450,23 @@ export function rateLimit(config: RateLimitConfig) {
 }
 
 /**
- * Preset rate limit configurations
+ * Degraded limits (#1156). While the shared store fails, a route with `degraded` keeps
+ * serving from this instance's memory instead of answering 503 to everyone. That memory
+ * is per instance, which is why a plain memory fallback was not acceptable: the real limit
+ * becomes the configured one times however many instances are warm. So:
+ *
+ * - per address, about a third of the shared limit, so three warm instances together
+ *   admit roughly what the shared counter would have;
+ * - per instance, a ceiling for every address together, several times the busiest window
+ *   production has seen. From 2026-09-09 to 2026-09-25 that was 5 new guests in a
+ *   15-minute window and 5 lobbies in an hour, site-wide (AnalyticsUserFacts, Lobbies).
+ *
+ * Only guest entry and lobby creation have it, where a 503 costs a visitor the game they
+ * came for. Register, forgot-password, resend-verification and feedback keep the plain
+ * 503: a sign-up, a reset mail or a feedback note can wait a minute for the store, and
+ * those create accounts or send mail. The Vercel Firewall's per-IP rules (#1144,
+ * docs/OPERATIONS.md#firewall-vercel-waf) sit in front of all of them either way and do
+ * not depend on Upstash.
  */
 export const rateLimitPresets = {
   // Strict limit for authentication endpoints
@@ -392,6 +509,7 @@ export const rateLimitPresets = {
     maxRequests: 120,
     keyScope: 'lobby-join-guest',
     failClosed: true,
+    degraded: { maxRequests: 40, instanceMaxRequests: 400 },
     message: 'Too many join attempts. Please slow down.'
   },
 
@@ -403,6 +521,7 @@ export const rateLimitPresets = {
     maxRequests: 10,
     keyScope: 'lobby-join-new-guest',
     failClosed: true,
+    degraded: { maxRequests: 4, instanceMaxRequests: 20 },
     message: 'Too many new guests from this network. Please try again in 15 minutes.'
   },
 
@@ -414,11 +533,13 @@ export const rateLimitPresets = {
     message: 'Too many messages. Please slow down.'
   },
 
-  // Strict limit for lobby creation
+  // Strict limit for lobby creation. The two lobby-creation presets share one path and
+  // window, so while degraded they also share one per-instance ceiling.
   lobbyCreation: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 10,
     failClosed: true,
+    degraded: { maxRequests: 4, instanceMaxRequests: 30 },
     message: 'Too many lobbies created. Please try again later.'
   },
 
@@ -427,6 +548,7 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 30,
     failClosed: true,
+    degraded: { maxRequests: 10, instanceMaxRequests: 30 },
     message: 'Too many lobbies created. Please try again later.'
   },
 
@@ -459,10 +581,21 @@ export const rateLimitPresets = {
 }
 
 /**
- * `auth` for the routes that mint an account or a guest, or send mail: register,
- * guest-session, forgot-password, resend-verification (#1156).
+ * `auth` for the routes that mint an account or send mail: register, forgot-password,
+ * resend-verification (#1156).
  */
 export const failClosedAuthPreset = { ...rateLimitPresets.auth, failClosed: true }
+
+/**
+ * `auth` for /api/auth/guest-session, which mints a guest: fail-closed like the others,
+ * but degraded rather than refused while the shared store is down (#1156). The route is
+ * also every returning guest's token refresh on page load, which is what the per-instance
+ * ceiling leaves room for; a refused refresh keeps the stored identity (GuestContext).
+ */
+export const guestSessionPreset = {
+  ...failClosedAuthPreset,
+  degraded: { maxRequests: 2, instanceMaxRequests: 30 },
+}
 
 /**
  * Helper to apply rate limiting to a route handler
@@ -488,9 +621,12 @@ export const __rateLimitTestUtils = {
       delete inMemoryStore[key]
     }
     blockedUntil.clear()
+    windowExpirySet.clear()
     lastRateLimitedEventAt.clear()
     lastCleanupAt = 0
     lastRedisErrorLogAt = 0
+    consecutiveSharedFailures = 0
+    sharedStorePausedUntil = 0
   },
   resetSharedClient() {
     upstashRedisClient = undefined

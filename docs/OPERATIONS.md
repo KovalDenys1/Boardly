@@ -407,19 +407,35 @@ When it fires:
 ### Runbook: rate_limiter_degraded
 
 Any `rate_limiter_degraded` event in the window (#1156). `lib/rate-limit.ts` writes one, at most
-once a minute per instance, whenever the shared Upstash store fails. While it fails, register,
-guest-session, forgot-password, resend-verification, join-guest, lobby create and feedback answer
-**503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
-history reads come back empty.
+once a minute per instance, whenever the shared Upstash store fails. While it fails:
+
+- **Guest entry and lobby creation stay open, under degraded limits** counted in each instance's
+  memory: guest-session, join-guest (both budgets) and lobby create. Per address about a third of
+  the normal limit; per instance a ceiling for every address together, after which they answer
+  **503**. The numbers and why they were chosen are in `lib/rate-limit.ts` ("Degraded limits").
+- **Register, forgot-password, resend-verification and feedback answer 503** (fail closed).
+- Game actions and chat fall back to the per-instance memory store at their normal limits, and
+  chat history reads come back empty.
+
+Every Upstash call gives up after one retry or 1.5 s (`upstashClientOptions` in
+`lib/redis-credentials.ts`), and after three failures in a row an instance stops calling the store
+for 15 s and goes straight to the fallback, probing again after that. So an outage costs a
+visitor milliseconds, not the seconds of retries the client defaults to.
+
+Upstash commands the limiter spends: one `HINCRBY` per counted request (the counters are fields in
+one hash per window, `rate_limit_window:<windowMs>:<window>`), one `EXPIRE` per window per
+instance, and none for an address that instance has already seen refused this window, or while
+it is paused.
 
 When it fires:
 
 1. `reason` on the event is the Upstash error. `fetch failed` on credentials that look right
    usually means the store was archived after inactivity or the monthly command quota (500K on
    Free) is spent: open the Upstash console for `boardly-cache` (Vercel -> Storage).
-2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter no
-   longer spends a command on a key it has already refused, and the WAF rules below answer most
-   floods before they reach a function, so a spent quota means a very large or distributed flood.
+2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter spends
+   at most one command per counted request and none on a key it has already refused, and the WAF
+   rules below answer most floods before they reach a function, so a spent quota means a very
+   large or distributed flood.
 3. Credentials changed: check `KV_REST_API_URL` / `KV_REST_API_TOKEN` in Vercel production env.
 
 The alert resolves on the first window without a degraded event.
