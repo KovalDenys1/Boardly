@@ -3,17 +3,27 @@ import { z } from 'zod'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { prisma } from '@/lib/db'
 import { requireSessionUser } from '@/lib/session-user'
+import { isAllowedPushEndpoint, PUSH_ENDPOINT_LIMITS } from '@/lib/push-endpoint'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
+// #1117 (audit S2-02): `.url()` alone accepts any https URL, which `lib/push-send.ts` then
+// POSTs to verbatim — a blind SSRF from any signed-in user. The allowlist and length caps
+// live in lib/push-endpoint.ts, shared with its own unit tests.
+const endpointSchema = z
+  .string()
+  .max(PUSH_ENDPOINT_LIMITS.endpoint)
+  .url()
+  .refine(isAllowedPushEndpoint, { message: 'Unsupported push endpoint' })
+
 const subscribeSchema = z.object({
-  endpoint: z.string().url(),
-  p256dh: z.string().min(1),
-  auth: z.string().min(1),
+  endpoint: endpointSchema,
+  p256dh: z.string().min(1).max(PUSH_ENDPOINT_LIMITS.p256dh),
+  auth: z.string().min(1).max(PUSH_ENDPOINT_LIMITS.auth),
 })
 
 const unsubscribeSchema = z.object({
-  endpoint: z.string().url(),
+  endpoint: endpointSchema,
 })
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
