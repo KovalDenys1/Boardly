@@ -15,6 +15,22 @@ import {
 } from './auth-session-policy'
 import { loginSchema } from './validation/auth'
 import { insensitiveEquals } from './username-match'
+import {
+  providerAssertsEmailVerified,
+  providerVerifiesAccountEmail,
+  readProviderEmailVerified,
+  withGitHubEmailVerification,
+  withProviderEmailVerified,
+} from './oauth-email-verification'
+
+/**
+ * Compared against when the address has no password account, so an unknown address
+ * costs the same bcrypt work as a known one and the response time does not say which
+ * addresses are registered (#1142). A cost-10 hash of a random string nobody kept, the
+ * same cost lib/auth.ts hashes with; its preimage does not matter, because the result
+ * of this comparison is never used to let anyone in.
+ */
+const DUMMY_PASSWORD_HASH = '$2b$10$K4DZPLBLP0uLKTaylETfXenJBZxZNPHOZ7axelxEiGt97UVNHQz5O'
 
 /**
  * True when a token signed in before the account's session cutoff. A null
@@ -93,32 +109,57 @@ export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
   providers: [
     // Include providers only when configured to avoid build-time errors
+    // Each OAuth provider keeps its default profile() and adds whether it vouched for
+    // the email it returned (lib/oauth-email-verification.ts, #1142); events.linkAccount
+    // reads that instead of marking every OAuth address verified.
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
       ? [
-        GitHubProvider({
-          clientId: process.env.GITHUB_CLIENT_ID,
-          clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        }),
+        (() => {
+          const credentials = {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          }
+          const defaults = GitHubProvider(credentials)
+          return GitHubProvider({
+            ...credentials,
+            // GitHub's /user carries no verification flag; this asks /user/emails.
+            userinfo: withGitHubEmailVerification(defaults.userinfo),
+            profile: withProviderEmailVerified('github', defaults.profile),
+          })
+        })(),
       ]
       : []),
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
-        GoogleProvider({
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        }),
+        (() => {
+          const credentials = {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }
+          return GoogleProvider({
+            ...credentials,
+            profile: withProviderEmailVerified('google', GoogleProvider(credentials).profile),
+          })
+        })(),
       ]
       : []),
     ...(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
       ? [
-        DiscordProvider({
-          clientId: process.env.DISCORD_CLIENT_ID,
-          clientSecret: process.env.DISCORD_CLIENT_SECRET,
-          // The scope is replaced as a whole string, not merged with the provider default
-          // (`identify email`). `role_connections.write` lets lib/discord/role-connection.ts
-          // write Linked Roles metadata with the user's own token (#939).
-          authorization: { params: { scope: 'identify email role_connections.write' } },
-        }),
+        (() => {
+          const credentials = {
+            clientId: process.env.DISCORD_CLIENT_ID,
+            clientSecret: process.env.DISCORD_CLIENT_SECRET,
+          }
+          return DiscordProvider({
+            ...credentials,
+            // The scope is replaced as a whole string, not merged with the provider default
+            // (`identify email`). `role_connections.write` lets lib/discord/role-connection.ts
+            // write Linked Roles metadata with the user's own token (#939). `email` is also
+            // what makes Discord return `verified`.
+            authorization: { params: { scope: 'identify email role_connections.write' } },
+            profile: withProviderEmailVerified('discord', DiscordProvider(credentials).profile),
+          })
+        })(),
       ]
       : []),
     CredentialsProvider({
@@ -162,17 +203,17 @@ export const authOptions: NextAuthOptions = {
           },
         })
 
-        if (!user || !user.passwordHash) {
+        // One bcrypt comparison on every path, the dummy hash standing in when there is
+        // no password to check, so an unknown address, an OAuth-only account and a
+        // suspended one all take as long as a wrong password (#1142). Who may sign in
+        // is unchanged: the same three refusals, only after the comparison.
+        const isValid = await comparePassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH)
+
+        if (!user || !user.passwordHash || !isValid) {
           return null
         }
 
         if (user.suspended) {
-          return null
-        }
-
-        const isValid = await comparePassword(password, user.passwordHash)
-
-        if (!isValid) {
           return null
         }
 
@@ -267,9 +308,17 @@ export const authOptions: NextAuthOptions = {
               })
             }
 
-            // Account already exists - allow sign in
-            // Auto-verify email if not already verified
-            if (!existingAccount.user.emailVerified) {
+            // Account already exists - allow sign in. Its address is marked verified
+            // only when the provider vouches for the address it returned and that is
+            // the account's own (#1142); it used to be marked verified unconditionally.
+            if (
+              !existingAccount.user.emailVerified &&
+              providerVerifiesAccountEmail({
+                providerVerified: providerAssertsEmailVerified(account.provider, profile),
+                providerEmail: (profile as { email?: unknown } | undefined)?.email,
+                accountEmail: existingAccount.user.email,
+              })
+            ) {
               await prisma.users.update({
                 where: { id: existingAccount.userId },
                 data: { emailVerified: new Date() }
@@ -523,17 +572,31 @@ export const authOptions: NextAuthOptions = {
       log.info('New user created', { userId: user.id })
     },
     async linkAccount({ user, account, profile }) {
-      // Auto-verify email when OAuth account is linked
-      // This event fires when PrismaAdapter successfully links an OAuth account
-      // Important: This works even if OAuth email differs from user's primary email
+      // Fires when the adapter links an OAuth account: to a user it has just created,
+      // or to the signed-in user linking another provider.
+      //
+      // The address is marked verified only when the provider vouched for the one it
+      // returned and that is the account's own address (#1142). Discord hands out
+      // unverified addresses, and a provider verifying a different address says
+      // nothing about this one; the account's own verification email covers the rest.
+      //
+      // No username write any more: createUser already chose one, and the old
+      // `email.split('@')[0]` overwrote a name the person had picked every time they
+      // linked a provider, and collided on the unique index for two addresses with
+      // the same local part (#1142).
+      const verifies =
+        !user.emailVerified &&
+        providerVerifiesAccountEmail({
+          providerVerified: readProviderEmailVerified(profile),
+          providerEmail: profile?.email,
+          accountEmail: user.email,
+        })
 
       await prisma.users.update({
         where: { id: user.id },
         data: {
-          emailVerified: new Date(),
           image: null,
-          // Only set username if user doesn't have one yet
-          username: (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
+          ...(verifies ? { emailVerified: new Date() } : {}),
         }
       })
 
