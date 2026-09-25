@@ -458,8 +458,14 @@ before a function runs:
 | RL forgot-password | `/api/auth/forgot-password` | 25 | 5 / 15 min |
 | RL guest-session | `/api/auth/guest-session` | 25 | 5 / 15 min |
 | RL sign-in credentials | `/api/auth/callback/credentials` | 50 | 10 / 15 min |
-| RL sign-in login | `/api/auth/login` | 25 | 5 / 15 min |
 | RL lobby join-guest | `^/api/lobby/[^/]+/join-guest$` | 600 | 120 / min across codes |
+
+**"RL sign-in login" (`/api/auth/login`, 25/60s) needs removing from the WAF config** (#1138,
+2026-09-25): the route it protected was a dead second password-check endpoint with no caller
+anywhere in the app and has been deleted, so the path now 404s before this rule would ever fire.
+Nothing to fix in the app — `vercel firewall rules disable "RL sign-in login"` then
+`vercel firewall publish --yes` on `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2` is the only remaining step,
+and it touches production Vercel Firewall config rather than the codebase.
 
 The managed `bot_protection` and `ai_bots` rulesets are active in **log** mode only (staged by
 Denys on 2026-01-27, published with the rules above). Nothing challenges or denies a page.
