@@ -24,8 +24,12 @@ export const TERMS_VERSION = '2026-09-25'
  */
 export const PRIVACY_UPDATED = '2026-09-27'
 
-/** When the current withdrawal information on /premium and /withdrawal took effect. */
-export const WITHDRAWAL_INFO_VERSION = '2026-09-25'
+/**
+ * When the current withdrawal information on /premium and /withdrawal took effect.
+ * 2026-09-27: the consent box also carries the age and capacity rule of Terms
+ * section 3 (#1169, vergemålsloven § 12).
+ */
+export const WITHDRAWAL_INFO_VERSION = '2026-09-27'
 
 /**
  * A version date as /terms and /privacy have always shown it: "September 24,

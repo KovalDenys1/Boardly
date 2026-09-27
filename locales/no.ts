@@ -3795,7 +3795,7 @@ const no = {
     withdrawalHow: 'For å angre sender du en e-post til support@boardly.online, eller bruker angreskjemaet på siden om angrerett.',
     withdrawalFormLink: 'Angreskjema',
     withdrawalStartNow: 'Premium starter så snart betalingen er bekreftet, fordi du ber oss om det. Angreretten gjelder likevel i 14 dager og gir full tilbakebetaling.',
-    consentLabel: 'Jeg ber Boardly om å starte Premium nå. Jeg har lest informasjonen om angrerett og vilkårene, og jeg vet at jeg kan angre innen 14 dager og få full tilbakebetaling.',
+    consentLabel: 'Jeg ber Boardly om å starte Premium nå. Jeg har lest informasjonen om angrerett og vilkårene, og jeg vet at jeg kan angre innen 14 dager og få full tilbakebetaling. Jeg er voksen, eller jeg har fylt 15 år og betaler med penger jeg selv har rett til å bruke.',
     priceNoteTax: 'Premium selges gjennom Link, et selskap i Stripe-konsernet. Prisen over er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen.',
     priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Links vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
     yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',

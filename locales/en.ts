@@ -3807,7 +3807,7 @@ const en = {
     withdrawalHow: 'To withdraw, send an email to support@boardly.online or use the withdrawal form on our withdrawal page.',
     withdrawalFormLink: 'Withdrawal form',
     withdrawalStartNow: 'Premium starts as soon as the payment is confirmed, because you ask us to. Your right of withdrawal still applies for 14 days and gives a full refund.',
-    consentLabel: 'I ask Boardly to start Premium now. I have read the withdrawal information and the terms, and I know that I can withdraw within 14 days for a full refund.',
+    consentLabel: 'I ask Boardly to start Premium now. I have read the withdrawal information and the terms, and I know that I can withdraw within 14 days for a full refund. I am an adult, or I am 15 or older and pay with money I am entitled to spend myself.',
     priceNoteTax: 'Premium is sold through Link, a Stripe company. The price above is the full price: any VAT or sales tax due in your country is included, and Link collects it at checkout.',
     priceNoteConversion: 'If you pay in your own currency, Link\'s exchange rate includes a conversion fee of 2 to 4%. You can choose to pay in US dollars on the payment page without it.',
     yearlyRefundNote: 'If you cancel a yearly plan early, we refund the unused whole months.',
