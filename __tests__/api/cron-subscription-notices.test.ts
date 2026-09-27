@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GET } from '@/app/api/cron/subscription-notices/route'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { recordCronRun } from '@/lib/cron-heartbeat'
+import { recordServerReliabilityEvent } from '@/lib/server-operational-events'
 import { sendDueSubscriptionNotices } from '@/lib/subscription-notice'
 
 jest.mock('@/lib/subscription-notice', () => ({
@@ -15,6 +16,10 @@ jest.mock('@/lib/subscription-notice', () => ({
 
 jest.mock('@/lib/cron-heartbeat', () => ({
   recordCronRun: jest.fn(),
+}))
+
+jest.mock('@/lib/server-operational-events', () => ({
+  recordServerReliabilityEvent: jest.fn(),
 }))
 
 jest.mock('@/lib/cron-auth', () => ({
@@ -28,6 +33,7 @@ jest.mock('@/lib/logger', () => ({
 const mockAuthorize = authorizeCronRequest as jest.MockedFunction<typeof authorizeCronRequest>
 const mockSendDue = sendDueSubscriptionNotices as jest.MockedFunction<typeof sendDueSubscriptionNotices>
 const mockRecordCronRun = recordCronRun as jest.MockedFunction<typeof recordCronRun>
+const mockReliabilityEvent = recordServerReliabilityEvent as jest.MockedFunction<typeof recordServerReliabilityEvent>
 
 const url = 'http://localhost:3000/api/cron/subscription-notices'
 
@@ -47,7 +53,7 @@ describe('GET /api/cron/subscription-notices (#1165)', () => {
   })
 
   it('runs the notices and leaves the summary in the heartbeat', async () => {
-    const summary = { candidates: 2, sent: 1, notDue: 1, notRunning: 0, failed: 0 }
+    const summary = { candidates: 2, sent: 1, notDue: 1, notRunning: 0, missing: 0, failed: 0 }
     mockSendDue.mockResolvedValue(summary)
 
     const response = await GET(new NextRequest(url))
@@ -58,6 +64,24 @@ describe('GET /api/cron/subscription-notices (#1165)', () => {
     expect(mockRecordCronRun).toHaveBeenCalledWith(
       expect.objectContaining({ cron: 'subscription-notices', success: true, payload: summary })
     )
+    expect(mockReliabilityEvent).not.toHaveBeenCalled()
+  })
+
+  it('raises subscription_notice_failed when a notice was left unsent, so the alerts see it', async () => {
+    const summary = { candidates: 3, sent: 1, notDue: 0, notRunning: 0, missing: 1, failed: 1 }
+    mockSendDue.mockResolvedValue(summary)
+
+    const response = await GET(new NextRequest(url))
+
+    expect(response.status).toBe(200)
+    expect(mockReliabilityEvent).toHaveBeenCalledTimes(1)
+    expect(mockReliabilityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'subscription_notice_failed',
+        source: 'subscription-notices',
+        reason: '1 of 3 notices not sent; retried tomorrow',
+      })
+    )
   })
 
   it('records a failed run', async () => {
@@ -66,6 +90,9 @@ describe('GET /api/cron/subscription-notices (#1165)', () => {
     const response = await GET(new NextRequest(url))
 
     expect(response.status).toBe(500)
+    expect(mockReliabilityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'subscription_notice_failed', reason: 'run failed: database down' })
+    )
     expect(mockRecordCronRun).toHaveBeenCalledWith(
       expect.objectContaining({ cron: 'subscription-notices', success: false, reason: 'database down' })
     )

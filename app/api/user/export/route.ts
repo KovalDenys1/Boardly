@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
           premiumCancelAtPeriod: true,
           premiumFirstGrantedAt: true,
           lastSubscriptionNoticeAt: true,
+          missingStripeSubscriptionId: true,
           totpEnabled: true,
           isGuest: true,
           signupSource: true,

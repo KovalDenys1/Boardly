@@ -368,7 +368,11 @@ stay as it is; turning it on only adds Link's own reminder before each monthly c
 **What runs.** `/api/cron/subscription-notices`, daily at 05:00 UTC (`vercel.json`), calls
 `sendDueSubscriptionNotices` in `lib/subscription-notice.ts`. Every user with a `stripeSubscriptionId` that
 the webhook has not marked `premiumCancelAtPeriod` is a candidate; Stripe is asked whether the subscription is
-still `active`, `trialing` or `past_due` and when it started. A notice is due 170 days after the later of the
+still `active`, `trialing` or `past_due` and when it started. One that is ending (`cancel_at_period_end`, or a
+cancellation scheduled with `cancel_at`) gets no notice: its last charge has been made. One Stripe no longer has
+(`resource_missing`) is written to `Users.missingStripeSubscriptionId`, logged once and skipped from then on
+without a Stripe call, until the webhook stores another subscription id; a test/live mode mix-up (the message
+says "a similar object exists in test mode") is not written off that way but counted as a failure. A notice is due 170 days after the later of the
 start and `Users.lastSubscriptionNoticeAt`: six calendar months are at least 181 days, so a job that fails for
 eleven days running still lands inside the window. The column is also the claim: it is moved with a
 compare-and-set before the send and put back if the send fails, so two runs cannot both send and a failure is
@@ -380,9 +384,9 @@ read-only), so the job touched nobody when it shipped. The first notice for a su
 X goes out on day X + 170.
 
 **When something looks wrong.** The heartbeat is a `cron_run` row with `source = 'subscription-notices'`
-and `{candidates, sent, notDue, notRunning, failed}` in its payload. `failed` above zero is a Stripe read or a
-Resend send that did not work (the latter also writes `email_send_failed`); it is released and tried again
-the next day, so it needs attention only if it repeats. To see who is due or overdue:
+and `{candidates, sent, notDue, notRunning, missing, failed}` in its payload. `failed` above zero, or a run that
+threw, also writes a `subscription_notice_failed` event, which raises the alert below. To see who is due or
+overdue:
 
 ```sql
 select id, "stripeSubscriptionId", "lastSubscriptionNoticeAt"
@@ -394,6 +398,22 @@ where "stripeSubscriptionId" is not null and "premiumCancelAtPeriod" = false
 **If a notice was ever missed** (a subscriber went more than six months without one), § 33 lets that
 subscriber cancel free of charge with effect from the day the notice should have gone out. Honour such a
 cancellation: cancel in the Dashboard and refund what was charged after that day.
+
+### Runbook: subscription_notice_failed
+
+A `subscription_notice_failed` event in the last 24 hours (#1165), severity warning. The daily
+`/api/cron/subscription-notices` run writes one when it left a notice unsent (`failed` above zero) or threw.
+The rule looks back a day rather than the usual window because the job runs once a day; it resolves with the
+next run that sends everything.
+
+1. `reason` says which: "N of M notices not sent; retried tomorrow", or "run failed: <error>".
+2. A Stripe read that failed: the Vercel logs for the route name the user id. A `resource_missing` whose message
+   mentions test or live mode means `STRIPE_SECRET_KEY` and the stored ids are from different modes; fix the
+   key, not the data.
+3. A send that failed: see "Runbook: email_send_failed" below; Resend's quota or key is the usual cause.
+4. A failed notice is released and tried at the next run. Eleven failed days in a row still land inside the
+   six months (170-day interval); after that, use the SQL above to see who is overdue and the paragraph on a
+   missed notice.
 
 ### Runbook: a user is under 13
 

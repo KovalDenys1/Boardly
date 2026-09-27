@@ -116,6 +116,9 @@ describe('sendSubscriptionNoticeEmail (#1165)', () => {
     expect(text).toContain('open https://boardly.test/profile?tab=premium, go to the Premium tab and press Cancel.')
     expect(text).toContain('takes effect at the end of the period you have paid for')
     expect(text).toContain('write to support@boardly.online and we cancel it for you')
+    // The early yearly refund is on request, never automatic.
+    expect(text).toContain('If you cancel a yearly plan early, write to us and we refund the unused whole months.')
+    expect(text).toContain('Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.')
     expect(text).toContain('Du kan si opp når som helst: åpne https://boardly.test/profile?tab=premium')
     expect(mail.html).toContain('<a href="https://boardly.test/profile?tab=premium"')
   })

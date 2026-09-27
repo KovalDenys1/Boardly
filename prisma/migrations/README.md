@@ -150,7 +150,7 @@ Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts re
 
 ### `20260927200000_users_last_subscription_notice`
 
-Nullable `Users.lastSubscriptionNoticeAt` (#1165): when the last running-subscription notice was sent (digitalytelsesloven § 33 fourth paragraph), and the compare-and-set claim that makes the daily `/api/cron/subscription-notices` job send each notice once (`lib/subscription-notice.ts`). Existing rows stay NULL.
+Nullable `Users.lastSubscriptionNoticeAt` (#1165): when the last running-subscription notice was sent (digitalytelsesloven § 33 fourth paragraph), and the compare-and-set claim that makes the daily `/api/cron/subscription-notices` job send each notice once (`lib/subscription-notice.ts`). Nullable `Users.missingStripeSubscriptionId`: a subscription id Stripe no longer has, which the job then skips quietly. Existing rows stay NULL.
 
 ## Row Level Security
 

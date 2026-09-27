@@ -13,6 +13,7 @@ type Row = {
   stripeSubscriptionId: string | null
   premiumCancelAtPeriod: boolean
   lastSubscriptionNoticeAt: Date | null
+  missingStripeSubscriptionId: string | null
   purchaseConsents: { stripeSubscriptionId: string | null; consentReceivedAt: Date }[]
 }
 
@@ -47,11 +48,11 @@ jest.mock('@/lib/db', () => ({
           .filter((row) => row.lastSubscriptionNoticeAt === null || row.lastSubscriptionNoticeAt <= cutoff)
           .map((row) => ({ ...row }))
       }),
-      updateMany: jest.fn(async ({ where, data }: { where: Where; data: { lastSubscriptionNoticeAt: Date | null } }) => {
+      updateMany: jest.fn(async ({ where, data }: { where: Where; data: Partial<Row> }) => {
         let count = 0
         for (const row of table) {
           if (matches(row, where)) {
-            row.lastSubscriptionNoticeAt = data.lastSubscriptionNoticeAt
+            Object.assign(row, data)
             count += 1
           }
         }
@@ -85,6 +86,7 @@ function subscription(overrides: Partial<Stripe.Subscription> & { startDaysAgo: 
     id: 'sub_1',
     status: 'active',
     cancel_at_period_end: false,
+    cancel_at: null,
     start_date: Math.floor(daysBefore(startDaysAgo).getTime() / 1000),
     items: {
       data: [
@@ -106,6 +108,7 @@ function addRow(overrides: Partial<Row> = {}): Row {
     stripeSubscriptionId: 'sub_1',
     premiumCancelAtPeriod: false,
     lastSubscriptionNoticeAt: null,
+    missingStripeSubscriptionId: null,
     purchaseConsents: [],
     ...overrides,
   }
@@ -199,6 +202,61 @@ describe('running-subscription notice (#1165)', () => {
     expect(sendOk).not.toHaveBeenCalled()
     expect(cancelling.lastSubscriptionNoticeAt).toBeNull()
     expect(canceled.lastSubscriptionNoticeAt).toBeNull()
+  })
+
+  it('treats a cancellation scheduled with cancel_at as ending', async () => {
+    const row = addRow()
+    const summary = await sendDueSubscriptionNotices({
+      now: NOW,
+      retrieveSubscription: async () =>
+        subscription({ startDaysAgo: 200, cancel_at: Math.floor(new Date('2027-04-01T00:00:00Z').getTime() / 1000) }),
+      sendEmail: sendOk,
+    })
+    expect(summary).toMatchObject({ notRunning: 1, sent: 0 })
+    expect(row.lastSubscriptionNoticeAt).toBeNull()
+  })
+
+  it('skips a subscription Stripe no longer has, remembers it, and never asks again', async () => {
+    const row = addRow()
+    const gone = Object.assign(new Error("No such subscription: 'sub_1'"), { code: 'resource_missing', statusCode: 404 })
+    const retrieve = jest.fn(async () => {
+      throw gone
+    })
+
+    const first = await sendDueSubscriptionNotices({ now: NOW, retrieveSubscription: retrieve, sendEmail: sendOk })
+    expect(first).toMatchObject({ missing: 1, failed: 0, sent: 0 })
+    expect(row.missingStripeSubscriptionId).toBe('sub_1')
+    expect(row.lastSubscriptionNoticeAt).toBeNull()
+
+    const second = await sendDueSubscriptionNotices({ now: NOW, retrieveSubscription: retrieve, sendEmail: sendOk })
+    expect(second).toMatchObject({ missing: 1, failed: 0 })
+    expect(retrieve).toHaveBeenCalledTimes(1)
+
+    // A new subscription stored by the webhook is noticed as usual.
+    row.stripeSubscriptionId = 'sub_2'
+    const third = await sendDueSubscriptionNotices({
+      now: NOW,
+      retrieveSubscription: async () => subscription({ id: 'sub_2', startDaysAgo: 200 }),
+      sendEmail: sendOk,
+    })
+    expect(third).toMatchObject({ sent: 1, missing: 0 })
+  })
+
+  it('keeps a test/live mode mix-up a failure, so the alert fires instead of the id being written off', async () => {
+    const row = addRow()
+    const mixup = Object.assign(
+      new Error("No such subscription: 'sub_1'; a similar object exists in test mode, but a live mode key was used to make this request."),
+      { code: 'resource_missing' }
+    )
+    const summary = await sendDueSubscriptionNotices({
+      now: NOW,
+      retrieveSubscription: async () => {
+        throw mixup
+      },
+      sendEmail: sendOk,
+    })
+    expect(summary).toMatchObject({ failed: 1, missing: 0 })
+    expect(row.missingStripeSubscriptionId).toBeNull()
   })
 
   it('still notifies a past_due subscription: the contract has not ended', async () => {

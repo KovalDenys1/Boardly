@@ -6,13 +6,16 @@
 --   once every six months the supplier of a running digital service sends the
 --   consumer a notice that the contract runs and how to end it. Link's renewal
 --   emails do not meet that (docs/OPERATIONS.md), so a daily cron sends our
---   own (lib/subscription-notice.ts). This column records the last one sent
---   and is the send's claim.
+--   own (lib/subscription-notice.ts). lastSubscriptionNoticeAt records the
+--   last one sent and is the send's claim; missingStripeSubscriptionId holds a
+--   subscription id Stripe no longer has, so the job skips it quietly instead
+--   of failing on it every day.
 --
---   One nullable column with no default: every existing row gets NULL, which
+--   Two nullable columns with no default: every existing row gets NULL, which
 --   is the truth, since no notice was ever sent. Additive only; the Control
---   Panel's read-only schema copy ignores it.
+--   Panel's read-only schema copy ignores them.
 -- ============================================================================
 
 ALTER TABLE "Users"
-  ADD COLUMN IF NOT EXISTS "lastSubscriptionNoticeAt" TIMESTAMPTZ(3);
+  ADD COLUMN IF NOT EXISTS "lastSubscriptionNoticeAt" TIMESTAMPTZ(3),
+  ADD COLUMN IF NOT EXISTS "missingStripeSubscriptionId" TEXT;

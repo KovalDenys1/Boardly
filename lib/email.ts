@@ -936,7 +936,7 @@ function englishNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLink
       {
         heading: 'How to cancel',
         paragraphs: [
-          `You can cancel at any time: open ${links.profile}, go to the Premium tab and press Cancel. The cancellation takes effect at the end of the period you have paid for; you keep Premium until then, and nothing more is charged. If you cancel a yearly plan early, we refund the unused whole months.`,
+          `You can cancel at any time: open ${links.profile}, go to the Premium tab and press Cancel. The cancellation takes effect at the end of the period you have paid for; you keep Premium until then, and nothing more is charged. If you cancel a yearly plan early, write to us and we refund the unused whole months.`,
           `You can also write to ${SUPPORT_EMAIL} and we cancel it for you, or cancel it in your Link account at link.com, which follows Link's terms.`,
         ],
       },
@@ -972,7 +972,7 @@ function norwegianNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLi
       {
         heading: 'Slik sier du opp',
         paragraphs: [
-          `Du kan si opp når som helst: åpne ${links.profile}, gå til Premium-fanen og trykk på Avbryt. Oppsigelsen gjelder fra utløpet av perioden du har betalt for; du beholder Premium til da, og ingenting mer blir trukket. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
+          `Du kan si opp når som helst: åpne ${links.profile}, gå til Premium-fanen og trykk på Avbryt. Oppsigelsen gjelder fra utløpet av perioden du har betalt for; du beholder Premium til da, og ingenting mer blir trukket. Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.`,
           `Du kan også skrive til ${SUPPORT_EMAIL}, så sier vi opp abonnementet for deg, eller si det opp i Link-kontoen din på link.com; da gjelder Links vilkår.`,
         ],
       },

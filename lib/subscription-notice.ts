@@ -45,8 +45,25 @@ export type SubscriptionNoticeSummary = {
   candidates: number
   sent: number
   notDue: number
+  /** Ended, ending (cancel_at_period_end or cancel_at set), or not a running status. */
   notRunning: number
+  /** Stripe answered "no such subscription": skipped quietly, see markMissing. */
+  missing: number
+  /** A Stripe read or an email that did not work; retried the next day. */
   failed: number
+}
+
+/**
+ * Stripe's answer for an id it does not have. A test-mode id read with a live
+ * key (or the reverse) gets the same code with "a similar object exists in test
+ * mode" in the message; that is a key or data mix-up to fix, not a subscription
+ * that ended, so it stays a failure and raises the alert.
+ */
+function isMissingSubscription(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const { code, message } = error as { code?: unknown; message?: unknown }
+  if (code !== 'resource_missing') return false
+  return !(typeof message === 'string' && /exists in (test|live) mode/i.test(message))
 }
 
 type Candidate = {
@@ -55,6 +72,7 @@ type Candidate = {
   username: string | null
   stripeSubscriptionId: string | null
   lastSubscriptionNoticeAt: Date | null
+  missingStripeSubscriptionId: string | null
   purchaseConsents: { stripeSubscriptionId: string | null; consentReceivedAt: Date }[]
 }
 
@@ -134,16 +152,31 @@ export async function sendDueSubscriptionNotices(deps: SubscriptionNoticeDeps = 
       username: true,
       stripeSubscriptionId: true,
       lastSubscriptionNoticeAt: true,
+      missingStripeSubscriptionId: true,
       purchaseConsents: { select: { stripeSubscriptionId: true, consentReceivedAt: true } },
     },
     orderBy: { id: 'asc' },
   })
 
-  const summary: SubscriptionNoticeSummary = { candidates: candidates.length, sent: 0, notDue: 0, notRunning: 0, failed: 0 }
+  const summary: SubscriptionNoticeSummary = {
+    candidates: candidates.length,
+    sent: 0,
+    notDue: 0,
+    notRunning: 0,
+    missing: 0,
+    failed: 0,
+  }
 
   for (const candidate of candidates) {
     if (deps.deadlineMs !== undefined && Date.now() - startedAt > deps.deadlineMs) break
     if (!candidate.email || !candidate.stripeSubscriptionId) continue
+
+    // Already known to be gone from Stripe: no call, no log, until the webhook
+    // stores another subscription id for this user.
+    if (candidate.missingStripeSubscriptionId === candidate.stripeSubscriptionId) {
+      summary.missing += 1
+      continue
+    }
 
     // Our own record of the start answers most "not yet" cases without asking Stripe.
     const known = recordedStart(candidate)
@@ -156,6 +189,20 @@ export async function sendDueSubscriptionNotices(deps: SubscriptionNoticeDeps = 
     try {
       subscription = await retrieveSubscription(candidate.stripeSubscriptionId)
     } catch (error) {
+      if (isMissingSubscription(error)) {
+        // Nothing runs, so nothing is owed; remember the id so this is logged
+        // once and not read, or counted as a failure, every day after.
+        summary.missing += 1
+        await prisma.users.updateMany({
+          where: { id: candidate.id, stripeSubscriptionId: candidate.stripeSubscriptionId },
+          data: { missingStripeSubscriptionId: candidate.stripeSubscriptionId },
+        })
+        log.warn('Subscription no longer exists in Stripe; skipping its notices from now on', {
+          userId: candidate.id,
+          subscriptionId: candidate.stripeSubscriptionId,
+        })
+        continue
+      }
       summary.failed += 1
       log.warn('Could not read a subscription for its notice; retrying tomorrow', {
         userId: candidate.id,
@@ -164,7 +211,13 @@ export async function sendDueSubscriptionNotices(deps: SubscriptionNoticeDeps = 
       continue
     }
 
-    if (!RUNNING_STATUSES.has(subscription.status) || subscription.cancel_at_period_end) {
+    // Ending counts as not running: cancel_at_period_end, or a cancellation
+    // scheduled for a date with cancel_at. Its last charge has been made.
+    if (
+      !RUNNING_STATUSES.has(subscription.status) ||
+      subscription.cancel_at_period_end ||
+      subscription.cancel_at !== null
+    ) {
       summary.notRunning += 1
       continue
     }

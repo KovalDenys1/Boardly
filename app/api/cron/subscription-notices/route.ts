@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { recordCronRun } from '@/lib/cron-heartbeat'
+import { recordServerReliabilityEvent } from '@/lib/server-operational-events'
 import { apiLogger } from '@/lib/logger'
 import { sendDueSubscriptionNotices } from '@/lib/subscription-notice'
 
@@ -23,7 +24,16 @@ async function handleCronRequest(request: NextRequest) {
     log.info('Subscription notices finished', summary)
 
     // A notice that failed is released for tomorrow, so the run itself still
-    // succeeded; `failed` in the payload is what to watch.
+    // succeeded; the reliability event is what raises the alert.
+    if (summary.failed > 0) {
+      await recordServerReliabilityEvent({
+        eventName: 'subscription_notice_failed',
+        source: 'subscription-notices',
+        reason: `${summary.failed} of ${summary.candidates} notices not sent; retried tomorrow`,
+        payload: summary,
+      })
+    }
+
     await recordCronRun({
       cron: 'subscription-notices',
       success: true,
@@ -34,11 +44,17 @@ async function handleCronRequest(request: NextRequest) {
     return NextResponse.json({ success: true, ...summary, timestamp: new Date().toISOString() })
   } catch (error) {
     log.error('Subscription notices failed', error as Error)
+    const reason = error instanceof Error ? error.message.slice(0, 200) : 'unknown'
+    await recordServerReliabilityEvent({
+      eventName: 'subscription_notice_failed',
+      source: 'subscription-notices',
+      reason: `run failed: ${reason}`,
+    })
     await recordCronRun({
       cron: 'subscription-notices',
       success: false,
       latencyMs: Date.now() - startedAt,
-      reason: error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+      reason,
     })
     return NextResponse.json(
       { error: 'Subscription notices failed', message: error instanceof Error ? error.message : 'Unknown error' },
