@@ -14,7 +14,7 @@ set. Nothing in this repo holds the bot token.
 | Site | staff ops channel | `OPS_ALERT_WEBHOOK_URL`, reliability alerts as embeds | `lib/reliability-alerts.ts` |
 | Visitor | Discord | `/discord` 302s to `NEXT_PUBLIC_DISCORD_INVITE` | `app/discord/route.ts`, `lib/discord.ts` (#938) |
 | Discord | Site | OAuth sign-in with `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | `lib/next-auth.ts` |
-| Discord | Site | Linked Roles link from `/discord/link`: `POST /api/discord/link` signs a state bound to the session, and Discord returns on the sign-in redirect URI with a `bdlink.` state, which the auth route hands to the linker instead of next-auth. It links to the signed-in user only and never issues a session (#1218) | `lib/discord/account-link.ts` |
+| Discord | Site | Linked Roles link from `/discord/link`: `POST /api/discord/link` asks for a sign-in within the last ten minutes and signs a state bound to the session, and Discord returns on the sign-in redirect URI with a `bdlink.` state, which the auth route hands to the linker instead of next-auth. It links to the signed-in user only and never issues a session (#1218) | `lib/discord/account-link.ts` |
 | Bot (Pi) | Site | `GET /api/internal/discord/members/{snowflake}`, `Authorization: Bearer DISCORD_INTERNAL_SECRET` | `app/api/internal/discord/members/[snowflake]/route.ts` (#940) |
 | Bot (Pi) | Site | `POST /api/internal/discord/heartbeat` every 5 minutes, same bearer | `app/api/internal/discord/heartbeat/route.ts` (#940) |
 | Bot (Pi) | Site | `GET /api/lobby?status=all` every 30 s for the looking-for-players feed, plus Supabase Realtime | none - the public lobby list, no secret |

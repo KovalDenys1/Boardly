@@ -4229,6 +4229,9 @@ const no = {
     doneHint: 'Rollene følger kontoen din fra nå av: Premium samme dag, fullførte spill hver natt.',
     failed: 'Discord svarte ikke. Prøv igjen om litt.',
     retry: 'Prøv igjen',
+    reauthTitle: 'Logg inn på nytt for å fortsette',
+    reauthBody: 'Av sikkerhetshensyn krever kobling av Discord en innlogging fra de siste 10 minuttene. Logg ut og inn igjen, så kommer du rett tilbake hit.',
+    signInAgain: 'Logg inn på nytt',
     linkErrorTitle: 'Discord ble ikke koblet til',
     linkErrors: {
       denied: 'Du avbrøt på Discords side. Ingenting ble endret.',

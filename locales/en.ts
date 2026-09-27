@@ -4241,6 +4241,9 @@ const en = {
     doneHint: 'Roles follow your account from here on: Premium changes the same day, games played every night.',
     failed: 'Discord did not answer. Try again in a moment.',
     retry: 'Try again',
+    reauthTitle: 'Sign in again to continue',
+    reauthBody: 'For your security, linking Discord needs a sign-in from the last 10 minutes. Sign out and sign in again, and you will come straight back here.',
+    signInAgain: 'Sign in again',
     linkErrorTitle: 'Discord was not linked',
     linkErrors: {
       denied: 'You cancelled on Discord\'s page. Nothing was changed.',

@@ -11,7 +11,13 @@ import { POST as startLink } from '@/app/api/discord/link/route'
 import { GET as authGet } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/db'
 import { claimOnce } from '@/lib/webhook-dedupe'
-import { DISCORD_LINK_COOKIE } from '@/lib/discord/account-link'
+import {
+  createDiscordLinkStart,
+  DISCORD_FETCH_TIMEOUT_MS,
+  DISCORD_LINK_COOKIE,
+  DISCORD_LINK_TTL_SECONDS,
+} from '@/lib/discord/account-link'
+import { RECENT_SIGN_IN_WINDOW_MS } from '@/lib/auth-session-policy'
 
 /**
  * #1218: /discord/link used to call signIn('discord'), so next-auth's OAuth callback did the
@@ -56,9 +62,14 @@ const ORIGIN = 'http://localhost:3000'
 const REDIRECT_URI = `${ORIGIN}/api/auth/callback/discord`
 const SESSION_COOKIE = 'next-auth.session-token=session-of-user-a'
 
-function signedInAs(userId: string | null) {
+// A sign-in a minute ago unless a test says otherwise: the start asks for one within ten.
+function signedInAs(
+  userId: string | null,
+  extra: { authenticatedAt?: number | null; suspended?: boolean } = {}
+) {
+  const { authenticatedAt = Date.now() - 60 * 1000, suspended = false } = extra
   mockGetServerSession.mockResolvedValue(
-    userId ? { user: { id: userId, email: `${userId}@boardly.test`, suspended: false } } : null
+    userId ? { user: { id: userId, email: `${userId}@boardly.test`, suspended, authenticatedAt } } : null
   )
 }
 
@@ -283,6 +294,135 @@ describe('Discord Linked Roles linking is server-side and keeps the session (#12
     const res = await startLink(new NextRequest(`${ORIGIN}/api/discord/link`, { method: 'POST' }))
     expect(res.status).toBe(401)
     expect(res.cookies.get(DISCORD_LINK_COOKIE)).toBeUndefined()
+  })
+
+  // The same ten minutes an email change without a password asks for (#1136): a Discord
+  // account linked here becomes a way to sign in, so a session cookie alone must not add one.
+  it.each([
+    ['signed in eleven minutes ago', () => Date.now() - RECENT_SIGN_IN_WINDOW_MS - 60 * 1000],
+    ['a token from before the claim existed', () => null],
+  ])('the start asks for a recent sign-in: %s', async (_label, authenticatedAt) => {
+    signedInAs('user-a', { authenticatedAt: authenticatedAt() })
+
+    const res = await startLink(new NextRequest(`${ORIGIN}/api/discord/link`, { method: 'POST' }))
+
+    expect(res.status).toBe(403)
+    expect((await res.json()).code).toBe('RECENT_SIGN_IN_REQUIRED')
+    expect(res.cookies.get(DISCORD_LINK_COOKIE)).toBeUndefined()
+  })
+
+  it('a sign-in just inside the window may start', async () => {
+    signedInAs('user-a', { authenticatedAt: Date.now() - RECENT_SIGN_IN_WINDOW_MS + 5_000 })
+    await start()
+  })
+
+  it('links nothing when the link cookie is missing', async () => {
+    const { state } = await start()
+
+    const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, undefined)
+
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/discord/link?linkError=expired`)
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(mockPrisma.accounts.create).not.toHaveBeenCalled()
+    expect(mockNextAuthHandler).not.toHaveBeenCalled()
+  })
+
+  it('links nothing with a cookie past its expiry', async () => {
+    const issuedLongAgo = Date.now() - (DISCORD_LINK_TTL_SECONDS + 60) * 1000
+    const { cookieValue, state } = createDiscordLinkStart({
+      userId: 'user-a',
+      redirectUri: REDIRECT_URI,
+      clientId: 'discord-client',
+      now: issuedLongAgo,
+    })
+
+    const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookieValue)
+
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/discord/link?linkError=expired`)
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(mockPrisma.accounts.create).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['the token already says so', true],
+    ['only the database knows so far', false],
+  ])('a suspended account at the callback goes to /suspended and links nothing: %s', async (_label, tokenSuspended) => {
+    const { cookie, state } = await start()
+    signedInAs('user-a', { suspended: tokenSuspended })
+    mockPrisma.users.findUnique.mockResolvedValue({ suspended: true })
+
+    const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookie)
+
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/suspended`)
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(mockPrisma.accounts.create).not.toHaveBeenCalled()
+    expect(setCookies(res).some((c) => c.startsWith(`${DISCORD_LINK_COOKIE}=;`) && /Max-Age=0/i.test(c))).toBe(true)
+  })
+
+  it('without Redis the single-use claim fails open, as every Redis-backed check does, and the link still happens', async () => {
+    const { cookie, state } = await start()
+    mockClaimOnce.mockResolvedValue('unavailable')
+
+    const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookie)
+
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/discord/link?linked=1`)
+    expect(mockPrisma.accounts.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'user-a', providerAccountId: 'discord-999' }),
+    })
+  })
+
+  it('a failed token exchange answers as a failed link', async () => {
+    global.fetch = jest.fn(async () =>
+      new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    ) as unknown as typeof fetch
+    const { cookie, state } = await start()
+
+    const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookie)
+
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/discord/link?linkError=failed`)
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.accounts.create).not.toHaveBeenCalled()
+    expect(mockPrisma.accounts.update).not.toHaveBeenCalled()
+  })
+
+  it('a Discord call that hangs is cut off by the timeout and answers as a failed link', async () => {
+    const timer = new AbortController()
+    const timeoutSpy = jest.spyOn(AbortSignal, 'timeout').mockReturnValue(timer.signal)
+    // Hangs until its signal fires, which here is "the five seconds are up".
+    global.fetch = jest.fn(
+      (_input: string | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal!.reason))
+          queueMicrotask(() => timer.abort(new DOMException('The operation timed out.', 'TimeoutError')))
+        })
+    ) as unknown as typeof fetch
+    try {
+      const { cookie, state } = await start()
+
+      const res = await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookie)
+
+      expect(timeoutSpy).toHaveBeenCalledWith(DISCORD_FETCH_TIMEOUT_MS)
+      expect((global.fetch as jest.Mock).mock.calls[0][1].signal).toBe(timer.signal)
+      expect(res.headers.get('location')).toBe(`${ORIGIN}/discord/link?linkError=failed`)
+      expect(mockPrisma.accounts.create).not.toHaveBeenCalled()
+    } finally {
+      timeoutSpy.mockRestore()
+    }
+  })
+
+  it('both Discord calls carry a timeout', async () => {
+    const timeoutSpy = jest.spyOn(AbortSignal, 'timeout')
+    try {
+      const { cookie, state } = await start()
+      await callback(`code=discord-code&state=${encodeURIComponent(state)}`, cookie)
+
+      const calls = (global.fetch as jest.Mock).mock.calls
+      expect(calls).toHaveLength(2)
+      for (const [, init] of calls) expect(init.signal).toBeInstanceOf(AbortSignal)
+      expect(timeoutSpy.mock.calls.filter(([ms]) => ms === DISCORD_FETCH_TIMEOUT_MS)).toHaveLength(2)
+    } finally {
+      timeoutSpy.mockRestore()
+    }
   })
 
   it('a Discord sign-in callback without the link prefix is still next-auth\'s', async () => {

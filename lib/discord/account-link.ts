@@ -26,7 +26,8 @@ import {
  * reads as a recent sign-in.
  *
  * So the link no longer goes through next-auth at all:
- * - POST /api/discord/link requires the session and answers with Discord's authorize URL. Its
+ * - POST /api/discord/link requires the session, signed in within the last ten minutes
+ *   (isRecentSignIn, lib/auth-session-policy.ts), and answers with Discord's authorize URL. Its
  *   `state` is `bdlink.<nonce>`, and an httpOnly cookie carries the same nonce, the session's
  *   user id and an expiry, HMAC-signed with a key derived from NEXTAUTH_SECRET.
  * - Discord sends the browser back to the redirect URI already registered for sign-in,
@@ -51,6 +52,11 @@ export const DISCORD_LINK_TTL_SECONDS = 10 * 60
 // `identify` for the Discord user id the row is keyed on, the role scope for Linked Roles.
 // No `email`: the link does not read the Discord address, so it does not ask for it.
 export const DISCORD_LINK_SCOPE = `identify ${DISCORD_ROLE_CONNECTION_SCOPE}`
+
+// Each call to Discord gets this long. The callback holds a browser on a blank redirect while
+// it waits, and a hung Discord must end as a failed link the person can retry, not as a
+// function timeout.
+export const DISCORD_FETCH_TIMEOUT_MS = 5_000
 
 const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize'
 const NONCE_BYTES = 32
@@ -193,6 +199,8 @@ async function exchangeCode(code: string, redirectUri: string): Promise<DiscordT
       Accept: 'application/json',
     },
     body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri }).toString(),
+    // Covers reading the body too; an abort rejects, and the callback answers linkError=failed.
+    signal: AbortSignal.timeout(DISCORD_FETCH_TIMEOUT_MS),
   })
   if (!response.ok) {
     throw new Error(`Discord code exchange failed with ${response.status}`)
@@ -214,6 +222,7 @@ async function exchangeCode(code: string, redirectUri: string): Promise<DiscordT
 async function fetchDiscordUserId(accessToken: string): Promise<string> {
   const response = await fetch(`${DISCORD_API_BASE}/users/@me`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    signal: AbortSignal.timeout(DISCORD_FETCH_TIMEOUT_MS),
   })
   if (!response.ok) {
     throw new Error(`Discord /users/@me failed with ${response.status}`)

@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { buildAuthUrl } from '@/lib/auth-redirect'
@@ -53,6 +53,9 @@ function DiscordLinkContent() {
   const [view, setView] = useState<View>('checking')
   const [linkStatus, setLinkStatus] = useState<LinkStatus | null>(null)
   const [connecting, setConnecting] = useState(false)
+  // The start answered RECENT_SIGN_IN_REQUIRED: linking needs a sign-in from the last ten
+  // minutes (lib/auth-session-policy.ts), so the page offers one instead of the link.
+  const [reauthRequired, setReauthRequired] = useState(false)
   const started = useRef(false)
 
   const pushMetadata = useCallback(async () => {
@@ -114,7 +117,12 @@ function DiscordLinkContent() {
       // URL; the callback links (or re-links with the new scope) to this account only and
       // lands back here without touching the session.
       const res = await fetch('/api/discord/link', { method: 'POST' })
-      const body = (await res.json().catch(() => null)) as { url?: unknown } | null
+      const body = (await res.json().catch(() => null)) as { url?: unknown; code?: unknown } | null
+      if (res.status === 403 && body?.code === 'RECENT_SIGN_IN_REQUIRED') {
+        setReauthRequired(true)
+        setConnecting(false)
+        return
+      }
       if (!res.ok || typeof body?.url !== 'string') {
         throw new Error('link start failed')
       }
@@ -125,7 +133,18 @@ function DiscordLinkContent() {
     }
   }
 
+  // Sign out and back in, then straight back here with a fresh sign-in.
+  const handleSignInAgain = async () => {
+    setConnecting(true)
+    await signOut({ redirect: false })
+    router.replace(buildAuthUrl('login', '/discord/link'))
+  }
+
   const needsRelink = Boolean(linkStatus?.linked && !linkStatus.ready)
+  let primaryLabel = t('discordLink.connect')
+  if (reauthRequired) primaryLabel = t('discordLink.signInAgain')
+  else if (connecting) primaryLabel = t('discordLink.connecting')
+  else if (needsRelink) primaryLabel = t('discordLink.relink')
 
   if (sessionStatus === 'loading' || view === 'checking' || view === 'pushing') {
     return (
@@ -207,7 +226,14 @@ function DiscordLinkContent() {
 
         <p className="mb-4 text-sm leading-6 text-bd-ink-soft">{t('discordLink.intro')}</p>
 
-        {linkError && (
+        {reauthRequired && (
+          <div role="alert" className="mb-4 rounded-xl border border-bd-sun/50 bg-bd-sun/10 p-4">
+            <p className="text-sm font-semibold text-bd-ink">{t('discordLink.reauthTitle')}</p>
+            <p className="mt-1 text-xs leading-5 text-bd-ink-soft">{t('discordLink.reauthBody')}</p>
+          </div>
+        )}
+
+        {linkError && !reauthRequired && (
           <div role="alert" className="mb-4 rounded-xl border border-bd-danger-border bg-bd-danger-bg p-4">
             <p className="text-sm font-semibold text-bd-danger-text">{t('discordLink.linkErrorTitle')}</p>
             <p className="mt-1 text-xs leading-5 text-bd-danger-text">{t(`discordLink.linkErrors.${linkError}`)}</p>
@@ -235,15 +261,11 @@ function DiscordLinkContent() {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={handleConnect}
+            onClick={reauthRequired ? handleSignInAgain : handleConnect}
             disabled={connecting}
             className="bd-btn bd-btn-primary flex-1 justify-center disabled:opacity-60"
           >
-            {connecting
-              ? t('discordLink.connecting')
-              : needsRelink
-                ? t('discordLink.relink')
-                : t('discordLink.connect')}
+            {primaryLabel}
           </button>
           <button type="button" onClick={() => router.push('/')} className="bd-btn bd-btn-ghost justify-center px-5">
             {t('discordLink.cancel')}

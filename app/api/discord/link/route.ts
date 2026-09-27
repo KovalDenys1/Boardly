@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUserOrThrow } from '@/lib/session-user'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { AppError, withErrorHandler } from '@/lib/error-handler'
+import { isRecentSignIn } from '@/lib/auth-session-policy'
 import { getDiscordConfig } from '@/lib/discord/role-connection'
 import {
   createDiscordLinkStart,
@@ -20,6 +21,12 @@ async function startHandler(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult
 
   const { user } = await getSessionUserOrThrow(req)
+  // A Discord account linked here becomes a way to sign in to this one, so a session cookie
+  // alone is not enough: the same recent sign-in an email change without a password asks for
+  // (#1136). The page answers the code with a "sign in again" prompt.
+  if (!isRecentSignIn(user.authenticatedAt)) {
+    throw new AppError('Sign in again to link Discord', 403, 'RECENT_SIGN_IN_REQUIRED')
+  }
   const config = getDiscordConfig()
   if (!config) {
     throw new AppError('Discord is not configured', 503, 'DISCORD_NOT_CONFIGURED')
