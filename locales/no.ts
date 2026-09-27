@@ -2181,7 +2181,7 @@ const no = {
     startConversation: 'Start samtalen!',
     sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
     rules: 'Regler',
-    rulesNewTab: 'Fellesskapsregler (åpnes i en ny fane)',
+    rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
   },
   auth: {
     inAppBrowser: {

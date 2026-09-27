@@ -12,6 +12,18 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
+// A plain anchor that shows what `prefetch` next/link was given; the rules link is the only
+// Link in the panel.
+jest.mock('next/link', () => {
+  const React = require('react')
+  const MockLink = React.forwardRef(
+    ({ prefetch, children, ...rest }: { prefetch?: boolean; children?: React.ReactNode }, ref: unknown) =>
+      React.createElement('a', { ...rest, ref, 'data-prefetch': String(prefetch) }, children)
+  )
+  MockLink.displayName = 'MockLink'
+  return { __esModule: true, default: MockLink }
+})
+
 beforeAll(() => {
   // jsdom doesn't implement scrollIntoView, which Chat's auto-scroll effect calls
   Element.prototype.scrollIntoView = jest.fn()
@@ -168,6 +180,18 @@ describe('Chat community rules link (#1173)', () => {
     expect(link.getAttribute('rel')).toContain('noopener')
     expect(link.textContent).toBe('chat.rules')
     expect(link.closest('.chat-titlebar')).toBe(container.querySelector('.chat-titlebar'))
+    // Rarely opened, so it does not prefetch /rules on every game screen.
+    expect(link.getAttribute('data-prefetch')).toBe('false')
+  })
+
+  // WCAG 2.5.3 Label in Name: a voice-control user says what they see, so the accessible name
+  // must contain the visible label; here it starts with it, in every locale.
+  it.each(['en', 'no', 'ru', 'uk'])('%s: the accessible name starts with the visible label', (locale) => {
+    const bundle = require(`@/locales/${locale}`).default as { chat: { rules: string; rulesNewTab: string } }
+    const visible = bundle.chat.rules.toLocaleLowerCase()
+    const name = bundle.chat.rulesNewTab.toLocaleLowerCase()
+    const firstWords = name.split(/[\s(),.:;]+/).slice(0, visible.split(/\s+/).length).join(' ')
+    expect(firstWords).toBe(visible)
   })
 
   it('is there for spectators and in the floating panel too', () => {

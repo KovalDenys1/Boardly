@@ -226,11 +226,14 @@ export default function Chat({
           {/* The community rules (#1173), in the title strip's right-hand side, which
               is empty in the game dock (fullScreen has no controls): no new row on a
               game screen. A short visible label, so the strip keeps the title on one
-              line in a 320px phone and the 316px desktop column; the full name is the
-              accessible name. A new tab, so opening them never leaves a game. Hidden
-              with the rest of the strip in the phone-landscape side column (#902). */}
+              line in a 320px phone and the 316px desktop column. The accessible name
+              starts with that label (WCAG 2.5.3) and says the link opens a new tab, so
+              opening them never leaves a game. Hidden with the rest of the strip in the
+              phone-landscape side column (#902). */}
           <Link
             href="/rules"
+            // Opened in a new tab by a few players, so not worth a prefetch on every game screen.
+            prefetch={false}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t('chat.rulesNewTab')}
