@@ -150,7 +150,7 @@ export default function HeroDemoConnectFour() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 600, fontSize: 11,
-        color: 'var(--bd-ink-muted)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
+        color: 'var(--bd-ink-soft)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
       }}>
         {statusText}
       </div>
@@ -249,7 +249,7 @@ export default function HeroDemoConnectFour() {
         href="/games/connect-four"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-soft)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         {t('home.demo.playFullGame')}

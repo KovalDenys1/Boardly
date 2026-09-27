@@ -23,6 +23,7 @@ jest.mock('@/lib/db', () => {
       lobbyInvites: list(),
       notifications: list(),
       feedback: list(),
+      reports: list(),
       userAchievements: list(),
       pushSubscriptions: list(),
     },
@@ -46,6 +47,7 @@ const LIST_DELEGATES = [
   'lobbyInvites',
   'notifications',
   'feedback',
+  'reports',
   'userAchievements',
   'pushSubscriptions',
 ]
@@ -146,6 +148,23 @@ describe('GET /api/user/export (#1127)', () => {
     const pushSelect = prisma.pushSubscriptions.findMany.mock.calls[0][0].select
     expect(pushSelect.p256dh).toBeUndefined()
     expect(pushSelect.auth).toBeUndefined()
+  })
+
+  // #1172: the reports a user filed are theirs to download; the other player and the
+  // copy of the other player's content are not.
+  it('includes the reports the user filed, without the other player or their content', async () => {
+    prisma.reports.findMany.mockResolvedValue([
+      { targetType: 'chat_message', reason: 'harassment', note: 'my note', lobbyCode: '4821', round: null, status: 'open', createdAt: new Date() },
+    ])
+
+    const body = await (await GET(request())).json()
+
+    expect(body.reportsFiled).toEqual([expect.objectContaining({ targetType: 'chat_message', note: 'my note' })])
+    const [args] = prisma.reports.findMany.mock.calls[0]
+    expect(args.where).toEqual({ reporterId: 'u1' })
+    expect(args.select.contentSnapshot).toBeUndefined()
+    expect(args.select.reportedUserId).toBeUndefined()
+    expect(args.select.targetId).toBeUndefined()
   })
 
   it('names other people by username only, and drops other players from game results', async () => {

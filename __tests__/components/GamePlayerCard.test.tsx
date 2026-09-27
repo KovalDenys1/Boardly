@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 
 jest.mock('@/lib/i18n-helpers', () => ({
@@ -6,6 +6,18 @@ jest.mock('@/lib/i18n-helpers', () => ({
     t: (key: string) => key,
   }),
 }))
+
+// The player card is loaded with next/dynamic; stand in for it with what it was handed.
+jest.mock('next/dynamic', () => () => {
+  const { createElement } = jest.requireActual<typeof import('react')>('react')
+  return function MockPlayerProfileCard(props: { userId: string; reportContext?: unknown; onClose: () => void }) {
+    return createElement('div', {
+      'data-testid': 'player-profile-card',
+      'data-user-id': props.userId,
+      'data-report-context': JSON.stringify(props.reportContext),
+    })
+  }
+})
 
 describe('GamePlayerCard (#736 phase 3)', () => {
   const base = {
@@ -74,6 +86,70 @@ describe('GamePlayerCard (#736 phase 3)', () => {
     const avatar = container.querySelector('.game-player-avatar') as HTMLElement
     expect(avatar.style.width).toBe('')
     expect(avatar.style.height).toBe('')
+  })
+})
+
+// #1172: another player's avatar opens their player card, which carries Report.
+describe('GamePlayerCard player card and report (#1172)', () => {
+  const base = {
+    name: 'Bob',
+    isActive: false,
+    isMe: false,
+    isWinner: false,
+    side: 'right' as const,
+    accentColor: 'var(--bd-lav)',
+  }
+
+  it("makes another player's avatar a button that opens their card, with where it was opened", () => {
+    render(<GamePlayerCard {...base} userId="u2" lobbyCode="4821" />)
+    expect(screen.queryByTestId('player-profile-card')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'report.openPlayerCard' }))
+
+    const card = screen.getByTestId('player-profile-card')
+    expect(card.getAttribute('data-user-id')).toBe('u2')
+    expect(JSON.parse(card.getAttribute('data-report-context') as string)).toEqual({ lobbyCode: '4821', drawing: null })
+  })
+
+  it("hands the drawer's round to the card, so the drawing can be reported", () => {
+    render(<GamePlayerCard {...base} userId="u2" lobbyCode="4821" reportDrawing={{ gameId: 'g1', round: 2 }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'report.openPlayerCard' }))
+    expect(JSON.parse(screen.getByTestId('player-profile-card').getAttribute('data-report-context') as string)).toEqual({
+      lobbyCode: '4821',
+      drawing: { gameId: 'g1', round: 2 },
+    })
+  })
+
+  it('keeps the open card on the player it was opened for when the seat changes hands', () => {
+    const { rerender } = render(
+      <GamePlayerCard {...base} userId="drawer_1" lobbyCode="4821" reportDrawing={{ gameId: 'g1', round: 1 }} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'report.openPlayerCard' }))
+
+    // Next round: the drawer's seat now belongs to someone else.
+    rerender(<GamePlayerCard {...base} userId="drawer_2" lobbyCode="4821" reportDrawing={{ gameId: 'g1', round: 2 }} />)
+
+    const card = screen.getByTestId('player-profile-card')
+    expect(card.getAttribute('data-user-id')).toBe('drawer_1')
+    expect(JSON.parse(card.getAttribute('data-report-context') as string).drawing).toEqual({ gameId: 'g1', round: 1 })
+  })
+
+  it('leaves your own avatar a plain picture', () => {
+    render(<GamePlayerCard {...base} isMe userId="u1" lobbyCode="4821" />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('leaves a seat with no user behind it (a bot, an empty seat) a plain picture', () => {
+    render(<GamePlayerCard {...base} userId={null} lobbyCode="4821" />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('adds no row to the card: the avatar itself is the button', () => {
+    const { container } = render(<GamePlayerCard {...base} userId="u2" lobbyCode="4821" subline="3W" />)
+    const card = container.querySelector('.game-player-card') as HTMLElement
+    expect(card.children).toHaveLength(2)
+    expect(card.firstElementChild?.classList.contains('game-player-avatar-wrap')).toBe(true)
+    expect(card.firstElementChild?.tagName).toBe('BUTTON')
   })
 })
 

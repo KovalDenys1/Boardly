@@ -188,7 +188,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
       <div className="mx-auto w-full max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
         <nav
           className="mb-6 flex items-center gap-2 text-sm"
-          style={{ color: 'var(--bd-ink-muted)' }}
+          style={{ color: 'var(--bd-ink-soft)' }}
           aria-label={t('breadcrumbs.label')}
         >
           <Link href="/" className="transition-colors hover:text-bd-ink">
@@ -229,7 +229,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                     style={
                       plan === option
                         ? { background: 'var(--bd-ink)', color: 'var(--bd-bg)' }
-                        : { color: 'var(--bd-ink-muted)' }
+                        : { color: 'var(--bd-ink-soft)' }
                     }
                   >
                     {option === 'yearly' ? t('premium.planYearly') : t('premium.planMonthly')}
@@ -249,21 +249,21 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
               >
                 {amount}
               </span>
-              <span className="text-sm font-semibold" style={{ color: 'var(--bd-ink-muted)' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}>
                 {period}
               </span>
             </p>
             <p className="mt-1 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
               {billingNote}
             </p>
-            <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+            <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               {yearly ? t('premium.currencyNote') : `${t('premium.monthlyOnlyNote')} ${t('premium.currencyNote')}`}
             </p>
-            <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('premium.priceNoteTax')} {t('premium.priceNoteConversion')}
             </p>
             {selectedPlan === 'yearly' && (
-              <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+              <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('premium.yearlyRefundNote')}
               </p>
             )}
@@ -288,9 +288,12 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
               </p>
               <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('premium.withdrawalHow')}{' '}
+                {/* bd-coral-deep was 3.79:1 here, below the 4.5:1 AA minimum
+                    (#1171 axe pass) — bd-ink keeps it readable without
+                    touching the brand palette. */}
                 <Link
                   href="/withdrawal"
-                  style={{ color: 'var(--bd-coral-deep)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                  style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
                 >
                   {t('premium.withdrawalFormLink')}
                 </Link>
@@ -301,12 +304,15 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
               {cta(HERO_CTA)}
-              <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+              <span className="text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('premium.ctaNote')}
               </span>
             </div>
+            {/* bd-coral-deep was 3.79:1 on this card, below the 4.5:1 AA
+                minimum (#1171 axe pass) — bd-ink keeps both readable
+                without touching the brand palette. */}
             {failure !== 'none' && (
-              <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--bd-coral-deep)' }} role="alert">
+              <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }} role="alert">
                 {failure === 'consent' ? t('premium.consentRequired') : t('premium.ctaError')}
               </p>
             )}
@@ -314,7 +320,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
               <p className="mt-3 text-xs">
                 <Link
                   href="/profile"
-                  style={{ color: 'var(--bd-coral-deep)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                  style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
                 >
                   {t('premium.ctaManage')}
                 </Link>
@@ -347,7 +353,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                     <span className="block text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
                       {t(`premium.features.${key}.label` as TranslationKeys)}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+                    <span className="mt-0.5 block text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
                       {t(`premium.features.${key}.desc` as TranslationKeys)}
                     </span>
                   </span>
@@ -371,7 +377,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                     <span className="block text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
                       {t(`premium.free.${key}.label` as TranslationKeys)}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>
+                    <span className="mt-0.5 block text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
                       {t(`premium.free.${key}.desc` as TranslationKeys)}
                     </span>
                   </span>

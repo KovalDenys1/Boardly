@@ -359,7 +359,10 @@ export default function LoginForm() {
               <>
                 {oauthProviderIds.includes('google') && <InAppBrowserNotice />}
                 {renderProviderButtons()}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-muted)', fontSize: 13 }}>
+                {/* bd-ink-muted was 3.93:1 here — AA large-text only
+                    (DESIGN.md "Contrast"), and this "or" divider is
+                    normal-size (#1171). */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-soft)', fontSize: 13 }}>
                   <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
                   {t('common.or')}
                   <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
@@ -409,7 +412,10 @@ export default function LoginForm() {
                 </Label>
                 <Link
                   href={returnUrl === '/' ? '/auth/forgot-password' : `/auth/forgot-password?returnUrl=${encodeURIComponent(returnUrl)}`}
-                  style={{ fontSize: 14, fontWeight: 500, color: 'var(--bd-coral)', textDecoration: 'underline' }}
+                  // bd-coral text was 2.64:1 here, below the 4.5:1 AA minimum
+                  // (#1171 axe pass) — bd-ink keeps it readable without
+                  // touching the brand palette.
+                  style={{ fontSize: 14, fontWeight: 500, color: 'var(--bd-ink)', textDecoration: 'underline' }}
                 >
                   {t('auth.login.forgotPassword')}
                 </Link>

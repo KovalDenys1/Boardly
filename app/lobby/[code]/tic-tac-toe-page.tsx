@@ -36,6 +36,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
@@ -134,7 +135,14 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId, lastMove,
                             disabled={disabled || !!cell}
                             aria-label={`cell ${tttCoord(ri, ci)}`}
                         >
-                            {!cell && <span className="ttt-cell-coord">{tttCoord(ri, ci)}</span>}
+                            {/* Decorative only — the cell already carries
+                                aria-label="cell A1" etc., and at 0.5 opacity
+                                this watermark measured 1.81:1, far below the
+                                4.5:1 AA minimum (#1171 axe pass). Hiding it
+                                from the accessibility tree rather than
+                                brightening it keeps the intentionally subtle
+                                look. */}
+                            {!cell && <span className="ttt-cell-coord" aria-hidden="true">{tttCoord(ri, ci)}</span>}
                             {cell && (isLast(ri, ci) && popLastMove
                                 ? <span className="ttt-mark-pop-host" onAnimationEnd={onLastMovePopped}><TttMark mark={cell} responsive pop /></span>
                                 : <TttMark mark={cell} responsive />)}
@@ -930,7 +938,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 <TttBgGrid />
             </div>
             <GameScoreboardHeader
-                leftCard={<GamePlayerCard name={xName} isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline="X" cornerBadge={<TttCornerMark mark="X" />} />}
+                leftCard={<GamePlayerCard name={xName} isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} userId={reportablePlayerId(players, state.players[0]?.id)} lobbyCode={code} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline="X" cornerBadge={<TttCornerMark mark="X" />} />}
                 center={
                     <>
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
@@ -949,7 +957,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{oWins}
                     </ScorePop>
                 }
-                rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
+                rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} userId={reportablePlayerId(players, state.players[1]?.id)} lobbyCode={code} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
             />
         </div>
     )
@@ -1170,11 +1178,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 </span>
             </div>
             <div className="ttt-history-list">
+                {/* bd-ink-muted was 4.15:1 / 3.93:1 here — AA large-text
+                    only (DESIGN.md "Contrast"), and this list is
+                    normal-size (#1171 axe pass). */}
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-soft)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
                     : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} className={index === 0 && lastMoveFresh ? 'ttt-history-row-in' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
-                            <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+                            <span style={{ color: 'var(--bd-ink-soft)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <TttMark mark={m.symbol} size={16} />
@@ -1205,6 +1216,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const chatSection = showChat ? (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

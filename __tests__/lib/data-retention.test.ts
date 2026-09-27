@@ -14,6 +14,7 @@ const DELEGATES = {
   lobbyParticipations: 'lobbyParticipations',
   operationalEvents: 'operationalEvents',
   feedback: 'feedback',
+  reports: 'reports',
   notifications: 'notifications',
   adminAuditLogs: 'adminAuditLogs',
 }
@@ -27,6 +28,8 @@ jest.mock('@/lib/db', () => {
       lobbyParticipations: delegate(),
       operationalEvents: delegate(),
       feedback: delegate(),
+      reports: delegate(),
+      reportedDrawings: { deleteMany: jest.fn(async () => ({ count: 0 })) },
       notifications: delegate(),
       adminAuditLogs: delegate(),
     },
@@ -41,6 +44,10 @@ jest.mock('@/lib/feedback-discord', () => ({
   deleteFeedbackDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
 }))
 
+jest.mock('@/lib/report-discord', () => ({
+  deleteReportDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
+}))
+
 const NOW = new Date('2026-09-24T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
 
@@ -49,8 +56,8 @@ describe('retention periods (#1130)', () => {
     expect(RETENTION_RULE_KEYS.sort()).toEqual(Object.keys(DELEGATES).sort())
   })
 
-  it('keeps game history, lobbies, feedback and notifications at least 12 months', () => {
-    for (const key of ['games', 'lobbies', 'feedback', 'notifications']) {
+  it('keeps game history, lobbies, feedback, reports and notifications at least 12 months', () => {
+    for (const key of ['games', 'lobbies', 'feedback', 'reports', 'notifications']) {
       expect(RETENTION_RULES[key].days).toBeGreaterThanOrEqual(365)
     }
   })
@@ -138,6 +145,30 @@ describe('enforceRetention', () => {
     })
     expect(deleteFeedbackDiscordCopies.mock.invocationCallOrder[0]).toBeLessThan(
       prisma.feedback.deleteMany.mock.invocationCallOrder[0]
+    )
+  })
+
+  // #1172: a report's Discord notification quotes the reported content, so it goes with
+  // the row, and a reported drawing goes once no report points at it any more.
+  it('deletes the Discord copy with the report row, then the drawings no report needs', async () => {
+    const { deleteReportDiscordCopies } = jest.requireMock('@/lib/report-discord')
+    deleteReportDiscordCopies.mockResolvedValueOnce({ cleared: ['r1'], failed: ['r2'] })
+
+    await enforceRetention({ now: NOW, override: 'enforce' })
+
+    const cutoff = new Date(NOW.getTime() - 365 * DAY)
+    expect(deleteReportDiscordCopies).toHaveBeenCalledWith({ createdAt: { lt: cutoff } })
+    expect(prisma.reports.deleteMany).toHaveBeenCalledWith({
+      where: { createdAt: { lt: cutoff }, id: { notIn: ['r2'] } },
+    })
+    expect(prisma.reportedDrawings.deleteMany).toHaveBeenCalledWith({
+      where: { createdAt: { lt: cutoff }, reports: { none: {} } },
+    })
+    expect(deleteReportDiscordCopies.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.reports.deleteMany.mock.invocationCallOrder[0]
+    )
+    expect(prisma.reports.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.reportedDrawings.deleteMany.mock.invocationCallOrder[0]
     )
   })
 

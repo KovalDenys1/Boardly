@@ -36,6 +36,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
@@ -977,7 +978,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <GameScoreboardHeader
-                leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentDisc === 1} isMe={myDisc === 1} isWinner={!isDraw && winnerDisc === 1} side="left" avatarSrc={p1Avatar} isPremium={p1IsPremium} accentColor={DISC_RED} subline={`${p1Wins}W`} cornerBadge={<C4DiscBadge disc={1} />} />}
+                leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentDisc === 1} isMe={myDisc === 1} isWinner={!isDraw && winnerDisc === 1} side="left" avatarSrc={p1Avatar} isPremium={p1IsPremium} userId={reportablePlayerId(players, state.players[0]?.id)} lobbyCode={code} accentColor={DISC_RED} subline={`${p1Wins}W`} cornerBadge={<C4DiscBadge disc={1} />} />}
                 center={
                     <>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
@@ -996,7 +997,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{p2Wins}
                     </ScorePop>
                 }
-                rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
+                rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} userId={reportablePlayerId(players, state.players[1]?.id)} lobbyCode={code} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
             />
         </div>
     )
@@ -1181,6 +1182,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const chatSection = showChat ? (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

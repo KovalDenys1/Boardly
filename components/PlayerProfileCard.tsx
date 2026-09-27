@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Modal from './Modal'
 import GameIcon from '@/components/GameIcon'
+import { ReportForm } from '@/components/ReportDialog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameMetadata } from '@/lib/game-catalog'
+import { getGuestData } from '@/lib/client/fetch-with-guest'
+import type { ReportTarget } from '@/lib/content-reports'
 
 interface PlayerCardData {
   userId: string
@@ -24,23 +27,47 @@ interface PlayerCardData {
   relation: 'self' | 'friends' | 'request_sent' | 'request_received' | 'can_send' | 'login_required'
 }
 
+/** Where the card was opened, for the Report action (#1172). */
+export interface PlayerReportContext {
+  lobbyCode?: string
+  /** Sketch & Guess: the round this player is drawing, offered as a report target. */
+  drawing?: { gameId: string; round: number } | null
+}
+
 interface PlayerProfileCardProps {
   userId: string | null
   onClose: () => void
+  reportContext?: PlayerReportContext
 }
 
 
-export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCardProps) {
+export default function PlayerProfileCard({ userId, onClose, reportContext }: PlayerProfileCardProps) {
   const { t } = useTranslation()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const [data, setData] = useState<PlayerCardData | null>(null)
   const [loading, setLoading] = useState(false)
   const [friendState, setFriendState] = useState<'idle' | 'loading' | 'done'>('idle')
+  const [view, setView] = useState<'card' | 'report'>('card')
+  // Back from the report form, focus returns to the card's heading: the Report
+  // button that had it was unmounted with the card view.
+  const nameRef = useRef<HTMLHeadingElement>(null)
+  const returningFromReport = useRef(false)
+  useEffect(() => {
+    if (view === 'card' && returningFromReport.current) {
+      returningFromReport.current = false
+      nameRef.current?.focus()
+    }
+  }, [view])
+  const backToCard = useCallback(() => {
+    returningFromReport.current = true
+    setView('card')
+  }, [])
 
   const fetchCard = useCallback(async (id: string) => {
     setLoading(true)
     setData(null)
     setFriendState('idle')
+    setView('card')
     try {
       const res = await fetch(`/api/users/${id}/card`)
       if (res.ok) setData(await res.json())
@@ -73,6 +100,22 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
     }
   }
 
+  // The viewer, signed in or guest. Guests get `relation: 'login_required'` even on
+  // their own card, so the id is compared as well; the server refuses a self-report
+  // whatever this says.
+  const viewerId = session?.user?.id ?? (status === 'authenticated' ? null : getGuestData()?.guestId ?? null)
+  const reportTargets = useMemo<ReportTarget[]>(() => {
+    if (!data || !viewerId || data.userId === viewerId || data.relation === 'self') return []
+    const lobbyCode = reportContext?.lobbyCode
+    const targets: ReportTarget[] = []
+    if (reportContext?.drawing) {
+      targets.push({ targetType: 'drawing', targetId: reportContext.drawing.gameId, round: reportContext.drawing.round, lobbyCode })
+    }
+    if (data.username) targets.push({ targetType: 'username', targetId: data.userId, lobbyCode })
+    if (data.image || data.avatarUrl) targets.push({ targetType: 'avatar', targetId: data.userId, lobbyCode })
+    return targets
+  }, [data, viewerId, reportContext?.lobbyCode, reportContext?.drawing])
+
   const initials = data?.username?.slice(0, 2).toUpperCase() ?? '?'
   const favouriteMeta = data?.favouriteGame ? getGameMetadata(data.favouriteGame) : null
   const gameLabel = favouriteMeta
@@ -91,7 +134,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
         >
           ×
         </button>
-        {loading ? (
+        {view === 'report' && reportTargets.length > 0 ? (
+          <ReportForm targets={reportTargets} onDone={onClose} onBack={backToCard} focusHeadingOnMount />
+        ) : loading ? (
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-full shrink-0" style={{ background: 'var(--bd-line)' }} />
@@ -131,9 +176,14 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`font-bold text-base truncate ${data.isPremium ? 'text-amber-500' : ''}`} style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}>
+                  <h2
+                    ref={nameRef}
+                    tabIndex={-1}
+                    className={`font-bold text-base truncate focus:outline-none ${data.isPremium ? 'text-amber-500' : ''}`}
+                    style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}
+                  >
                     {data.username ?? t('game.ui.playerFallback')}
-                  </span>
+                  </h2>
                   {data.isPremium && (
                     <Icon name="crown" size={16} tone="premium" label="Premium" />
                   )}
@@ -215,6 +265,21 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     {friendState === 'loading' ? t('profile.sending') : `+ ${t('profile.friends.addFriend')}`}
                   </button>
                 ) : null}
+              </div>
+            )}
+
+            {/* Report (#1172): quiet, at the foot of the card, never the first thing. */}
+            {reportTargets.length > 0 && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setView('report')}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-[var(--bd-bg2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  style={{ color: 'var(--bd-ink-muted)' }}
+                >
+                  <Icon name="flag" size={13} />
+                  {t('report.reportPlayer')}
+                </button>
               </div>
             )}
           </>

@@ -28,7 +28,9 @@ DECLARE
     'GameStateSnapshots',
     'AdminAuditLogs',
     'StripeWebhookEvents',
-    'UserAchievements'
+    'UserAchievements',
+    'Reports',
+    'ReportedDrawings'
   ];
   tables_requiring_policy TEXT[] := ARRAY[
     '_prisma_migrations',
@@ -51,7 +53,9 @@ DECLARE
     'GameStateSnapshots',
     'AdminAuditLogs',
     'StripeWebhookEvents',
-    'UserAchievements'
+    'UserAchievements',
+    'Reports',
+    'ReportedDrawings'
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
@@ -150,7 +154,9 @@ BEGIN
       ('AdminAuditLogs', 'Admins can view audit logs'),
       ('AdminAuditLogs', 'Service role can manage admin audit logs'),
       ('StripeWebhookEvents', 'Service role can manage stripe webhook events'),
-      ('UserAchievements', 'Service role can manage user achievements')
+      ('UserAchievements', 'Service role can manage user achievements'),
+      ('Reports', 'Service role can manage content reports'),
+      ('ReportedDrawings', 'Service role can manage reported drawings')
   )
   SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
   INTO missing_policies

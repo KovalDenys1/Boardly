@@ -1313,10 +1313,14 @@ input[type="range"].slider-thumb::-moz-range-track {
   border: 1.5px solid var(--bd-line);
   white-space: nowrap;
 }
-.bd-chip-coral { background: rgba(255,107,91,0.14); color: var(--bd-coral-deep); border-color: rgba(255,107,91,0.2); }
-.bd-chip-mint  { background: rgba(79,201,166,0.18); color: var(--bd-mint-deep);  border-color: rgba(79,201,166,0.25); }
-.bd-chip-sun   { background: rgba(255,196,77,0.22);  color: var(--bd-sun-deep);   border-color: rgba(255,196,77,0.3); }
-.bd-chip-lav   { background: rgba(155,140,255,0.18); color: var(--bd-lav-deep);   border-color: rgba(155,140,255,0.25); }
+/* Text is bd-ink, not the tinted "-deep" tone, on all four: at this chip's
+   12px/600 size none of the deep tones reach the tinted background's 4.5:1
+   AA minimum (bd-mint-deep measured 2.5-2.6:1 — #1171 axe pass); the tint +
+   border still carry the colour-coding. */
+.bd-chip-coral { background: rgba(255,107,91,0.14); color: var(--bd-ink); border-color: rgba(255,107,91,0.2); }
+.bd-chip-mint  { background: rgba(79,201,166,0.18); color: var(--bd-ink);  border-color: rgba(79,201,166,0.25); }
+.bd-chip-sun   { background: rgba(255,196,77,0.22);  color: var(--bd-ink);   border-color: rgba(255,196,77,0.3); }
+.bd-chip-lav   { background: rgba(155,140,255,0.18); color: var(--bd-ink);   border-color: rgba(155,140,255,0.25); }
 
 /* Sticker badge */
 .bd-sticker {
@@ -1497,7 +1501,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 3px 8px;
   border-radius: 999px;
   border: 1px dashed var(--bd-line);
-  color: var(--bd-ink-muted);
+  /* bd-ink-muted was 3.86:1 here — AA large-text only (DESIGN.md
+     "Contrast"), and this chip text is normal-size (#1171 axe pass). */
+  color: var(--bd-ink-soft);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -1905,6 +1911,25 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-weight: 700;
   font-size: 18px;
   color: #fff;
+}
+/* Another player's avatar opens their player card (#1172). A bare button: the same
+   box as the plain wrap, so the card neither moves nor grows. */
+.game-player-avatar-button {
+  appearance: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.game-player-avatar-button:focus-visible {
+  outline: 3px solid var(--bd-coral);
+  outline-offset: 3px;
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
@@ -2662,8 +2687,13 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   top: 6px;
   left: 8px;
   font-size: 9px;
-  color: var(--bd-ink-muted);
-  opacity: 0.5;
+  /* bd-ink-muted at 0.5 opacity measured 1.81:1 on the board background,
+     far below the 4.5:1 AA minimum (#1171 axe pass) — aria-hidden does not
+     exempt it (axe still checks visually-rendered contrast for anyone with
+     low vision, hidden from AT or not). bd-ink-soft at full opacity clears
+     4.5:1; the cell already carries aria-label="cell A1" etc. for the
+     accessible name, so this stays a purely visual hint either way. */
+  color: var(--bd-ink-soft);
   font-family: ui-monospace, monospace;
   pointer-events: none;
   user-select: none;
@@ -2913,7 +2943,13 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   border-radius: 14px;
   border: 1.5px solid rgba(224,75,59,0.35);
   background: rgba(255,107,91,0.12);
-  color: var(--bd-coral-deep);
+  /* Ink text at rest, not bd-coral-deep — 3.31:1 on this tint, below the
+     4.5:1 AA text minimum (#1171 axe pass, appears on every game's shared
+     GameScoreboardHeader trailing slot). The coral border still marks it as
+     the leave action; the coral *fill* on hover/focus below is the
+     brand-button pattern DESIGN.md documents as Denys's call, so that one
+     keeps white text. */
+  color: var(--bd-ink);
   font-size: 13px;
   font-weight: 800;
   padding: 8px 11px;

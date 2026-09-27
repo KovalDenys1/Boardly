@@ -338,7 +338,10 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
           >
             {/* i18n-allow: brand name, identical in all four locales */}
             Boardly.<br />
-            <span style={{ color: 'var(--bd-coral)' }}>{t('home.heroTagline')}</span>
+            {/* bd-coral was 2.6:1 here — this text is large (extrabold,
+                ≥48px) so it only needs the 3:1 large-text AA minimum, and
+                bd-coral-deep clears that at 3.73:1 (#1171 axe pass). */}
+            <span style={{ color: 'var(--bd-coral-deep)' }}>{t('home.heroTagline')}</span>
           </h1>
 
           <p

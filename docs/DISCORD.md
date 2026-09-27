@@ -10,6 +10,7 @@ set. Nothing in this repo holds the bot token.
 | From | To | How | Code here |
 | --- | --- | --- | --- |
 | Site | staff feedback channel | `FEEDBACK_DISCORD_WEBHOOK_URL`, one embed per submission | `app/api/feedback/route.ts` |
+| Site | staff feedback channel | same webhook, one embed per player report: target type, reason, report id, a short preview; never the reporter (#1172) | `app/api/reports/route.ts`, `lib/content-report-notification.ts` |
 | Site | staff ops channel | `OPS_ALERT_WEBHOOK_URL`, reliability alerts as embeds | `lib/reliability-alerts.ts` |
 | Visitor | Discord | `/discord` 302s to `NEXT_PUBLIC_DISCORD_INVITE` | `app/discord/route.ts`, `lib/discord.ts` (#938) |
 | Discord | Site | OAuth sign-in with `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | `lib/next-auth.ts` |

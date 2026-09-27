@@ -124,15 +124,21 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
           <span title={lobby.name} className="truncate" style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 17, color: 'var(--bd-ink)', maxWidth: '100%' }}>{lobby.name}</span>
-          <span style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--bd-bg2)', color: 'var(--bd-ink-muted)', padding: '3px 8px', borderRadius: 8 }}>{lobby.code}</span>
+          {/* bd-ink-muted was 3.44:1 here — AA large-text only (DESIGN.md
+              "Contrast"), and this code is normal-size (#1171). */}
+          <span style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)', padding: '3px 8px', borderRadius: 8 }}>{lobby.code}</span>
         </div>
-        <div style={{ fontSize: 13, color: 'var(--bd-ink-muted)', marginBottom: 10 }}>{creatorName} · {game.label}</div>
+        <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginBottom: 10 }}>{creatorName} · {game.label}</div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: isPlaying ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.22)', color: isPlaying ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)', borderColor: isPlaying ? 'rgba(79,201,166,0.3)' : 'rgba(255,196,77,0.3)' }}>
+          {/* Text is bd-ink, not the tinted "-deep" tone, on both chips: at
+              this size neither bd-mint-deep (2.52:1) nor bd-sun-deep reaches
+              the tint's 4.5:1 AA minimum (#1171) — the tint + border still
+              carry the colour-coding. */}
+          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: isPlaying ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.22)', color: 'var(--bd-ink)', borderColor: isPlaying ? 'rgba(79,201,166,0.3)' : 'rgba(255,196,77,0.3)' }}>
             {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
           </span>
-          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: lobby.isPrivate ? 'rgba(255,107,91,0.12)' : 'rgba(79,201,166,0.12)', color: lobby.isPrivate ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', borderColor: lobby.isPrivate ? 'rgba(255,107,91,0.2)' : 'rgba(79,201,166,0.2)' }}>
+          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: lobby.isPrivate ? 'rgba(255,107,91,0.12)' : 'rgba(79,201,166,0.12)', color: 'var(--bd-ink)', borderColor: lobby.isPrivate ? 'rgba(255,107,91,0.2)' : 'rgba(79,201,166,0.2)' }}>
             {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
           </span>
           {lobby.allowSpectators && (
@@ -153,19 +159,22 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions. This used to be a <button> nested inside the article's own
+          role="button" — axe's nested-interactive rule (#1171) flags that
+          because assistive tech gets two overlapping activation targets
+          bound to the same handler. The article is already the single
+          keyboard/click target (tabIndex, onClick, onKeyDown above), so this
+          is a visual restatement of that action, not a second control: a
+          span with no handler of its own, whose click bubbles to the
+          article exactly as the button's stopPropagation + identical
+          handler did before. */}
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handlePrimaryAction()
-          }}
+        <span
           className="bd-btn bd-btn-coral"
           style={{ padding: '10px 16px', fontSize: 13, minWidth: 172, justifyContent: 'center' }}
         >
           {primaryLabel} →
-        </button>
+        </span>
       </div>
     </article>
     </>

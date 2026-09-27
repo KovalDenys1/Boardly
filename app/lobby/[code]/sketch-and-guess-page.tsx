@@ -1021,6 +1021,14 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             side={side}
             avatarSrc={id ? playerById.get(id)?.avatarUrl ?? null : null}
             isPremium={id ? !!playerById.get(id)?.isPremium : false}
+            userId={id || null}
+            lobbyCode={code}
+            // The drawer's card offers this round's drawing as a report target (#1172).
+            reportDrawing={
+                id && gameIdForDrawing && currentRound && currentRound.drawerId === id && phase !== 'choosing'
+                    ? { gameId: gameIdForDrawing, round: currentRound.round }
+                    : null
+            }
             accentColor={side === 'left' ? SKETCH_ACCENT : 'var(--bd-lav)'}
             turnDotColor={SKETCH_ACCENT_DEEP}
             subline={
@@ -1189,6 +1197,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const chatSection = (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

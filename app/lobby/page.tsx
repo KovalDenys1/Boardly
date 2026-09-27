@@ -136,7 +136,10 @@ function LobbyListPageContent() {
               >
                 {t('lobby.activeLobbies')}
               </h2>
-              <p className="mt-0.5 text-[13px] text-bd-ink-muted">
+              {/* bd-ink-muted was 3.93:1 here — AA large-text only
+                  (DESIGN.md "Contrast"), and this count is normal-size
+                  (#1171). */}
+              <p className="mt-0.5 text-[13px] text-bd-ink-soft">
                 {t('lobby.lobbiesCount', { count: lobbies.length })}
               </p>
             </div>
@@ -185,7 +188,11 @@ function LobbyListPageContent() {
               >
                 {hasActiveFilters ? t('lobby.noFilterMatches') : t('lobby.noLobbies')}
               </h3>
-              <p className="mx-auto mb-6 max-w-[400px] text-[15px] text-bd-ink-muted">
+              {/* bd-ink-muted was 3.86:1 here — AA large-text only
+                  (DESIGN.md "Contrast"), and this empty-state copy is
+                  normal-size (#1171 axe pass — only visible when
+                  boardly-dev genuinely has no open lobbies). */}
+              <p className="mx-auto mb-6 max-w-[400px] text-[15px] text-bd-ink-soft">
                 {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
               </p>
               <button

@@ -15,7 +15,10 @@ import {
   type WithdrawalFormStrings,
 } from '@/lib/withdrawal-form'
 
-const linkStyle = { color: 'var(--bd-coral-deep)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
+// bd-coral-deep was 3.79:1 on this page's card background, below the 4.5:1
+// AA minimum (#1171 axe pass) — bd-ink keeps every link here readable
+// without touching the brand palette.
+const linkStyle = { color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
 
 type CopyState = 'idle' | 'copied' | 'failed'
 
@@ -76,7 +79,7 @@ export default function WithdrawalContent() {
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
+        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label={t('breadcrumbs.label')}>
           <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--bd-ink)' }}>{t('withdrawal.breadcrumb')}</span>
@@ -149,9 +152,9 @@ export default function WithdrawalContent() {
                 style={{ background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)' }}
                 data-testid="withdrawal-form"
               >
-                <p className="mb-4 text-xs italic" style={{ color: 'var(--bd-ink-muted)' }}>{t('withdrawal.formHint')}</p>
+                <p className="mb-4 text-xs italic" style={{ color: 'var(--bd-ink-soft)' }}>{t('withdrawal.formHint')}</p>
 
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--bd-ink-muted)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--bd-ink-soft)' }}>
                   {strings.toLabel}
                 </p>
                 <p className="mt-0.5" style={{ color: 'var(--bd-ink)' }}>{WITHDRAWAL_RECIPIENT}</p>
@@ -177,12 +180,16 @@ export default function WithdrawalContent() {
                     {t('withdrawal.emailButton')}
                   </a>
                 </div>
-                <p className="mt-3 min-h-[1.25rem] text-xs" role="status" aria-live="polite" style={{ color: copyState === 'failed' ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}>
+                {/* bd-coral-deep/bd-mint-deep were 3.79:1 / 2.84:1 here, both
+                    below the 4.5:1 AA minimum (#1171) — bd-ink for both,
+                    the "status" role plus the message text itself still
+                    carries the copied/failed meaning. */}
+                <p className="mt-3 min-h-[1.25rem] text-xs" role="status" aria-live="polite" style={{ color: 'var(--bd-ink)' }}>
                   {copyState === 'copied' && t('withdrawal.copied', { email: SUPPORT_EMAIL })}
                   {copyState === 'failed' && t('withdrawal.copyFailed')}
                 </p>
               </div>
-              <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{t('withdrawal.formSource')}</p>
+              <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-soft)' }}>{t('withdrawal.formSource')}</p>
             </section>
 
             <p className="pt-4" style={{ borderTop: '1px solid var(--bd-line)' }}>

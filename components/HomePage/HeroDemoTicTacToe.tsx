@@ -82,7 +82,7 @@ export default function HeroDemoTicTacToe() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
-        color: 'var(--bd-ink-muted)', minHeight: 22,
+        color: 'var(--bd-ink-soft)', minHeight: 22,
       }}>
         {statusText}
       </div>
@@ -92,6 +92,10 @@ export default function HeroDemoTicTacToe() {
           <button
             key={i}
             onClick={() => handleClick(i)}
+            // Empty cells rendered {cell} as their only content, which is
+            // '' — a focusable button with no accessible name (WCAG 4.1.2,
+            // axe "button-name", #1171 audit:a11y).
+            aria-label={cell ?? t('home.demo.tttCellEmpty')}
             style={{
               width: 64, height: 64,
               background: 'var(--bd-input-bg)',
@@ -117,7 +121,7 @@ export default function HeroDemoTicTacToe() {
         href="/games/tic-tac-toe"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-soft)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         {t('home.demo.playFullGame')}

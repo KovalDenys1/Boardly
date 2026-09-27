@@ -249,10 +249,13 @@ export default function QuickPlayButton({ className, autoOpen = false }: QuickPl
                     >
                       {game.label}
                     </p>
+                    {/* bd-ink-muted was 3.9:1 here — AA large-text only
+                        (DESIGN.md "Contrast"), and this player-count line is
+                        normal-size (#1171). */}
                     <p
                       style={{
                         fontSize: 12,
-                        color: 'var(--bd-ink-muted)',
+                        color: 'var(--bd-ink-soft)',
                         marginBottom: isNarrow && !isTiny ? 0 : 10,
                       }}
                     >
