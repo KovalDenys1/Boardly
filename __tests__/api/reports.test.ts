@@ -465,18 +465,44 @@ describe('POST /api/reports (#1172)', () => {
       expect(db.reports.create).not.toHaveBeenCalled()
     })
 
-    it('lets a friend, and only a friend, report a friends-only profile', async () => {
+    it("lets a friend, and only a friend, report a friends-only profile's picture and bio", async () => {
       db.users.findUnique.mockResolvedValue({
-        id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bot: null, bio: 'a bio',
+        id: 'offender_1', username: 'Someone', avatarUrl: 'https://cdn.example/a.png', image: null, bot: null, bio: 'a bio',
         isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility: 'friends' },
       })
 
-      db.friendships.findFirst.mockResolvedValueOnce(null)
-      expect((await submit({ targetType: 'username', publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(404)
+      for (const targetType of ['avatar', 'bio'] as const) {
+        db.friendships.findFirst.mockResolvedValueOnce(null)
+        expect((await submit({ targetType, publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(404)
 
-      db.friendships.findFirst.mockResolvedValueOnce({ id: 'friendship_1' })
-      expect((await submit({ targetType: 'username', publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(201)
+        db.friendships.findFirst.mockResolvedValueOnce({ id: 'friendship_1' })
+        expect((await submit({ targetType, publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(201)
+      }
     })
+
+    // #1226: a hidden profile's page still shows its username, so that much can be reported.
+    it.each(['friends', 'private'] as const)(
+      'lets anyone report the username of a %s profile reached by its public id, and nothing else',
+      async (profileVisibility) => {
+        db.users.findUnique.mockResolvedValue({
+          id: 'offender_1', username: 'RudeName', avatarUrl: 'https://cdn.example/a.png', image: null, bot: null,
+          bio: 'a hidden bio', isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility },
+        })
+        db.friendships.findFirst.mockResolvedValue(null)
+
+        const res = await submit({ targetType: 'username', publicProfileId: 'pub_42', reason: 'hate' })
+        expect(res.status).toBe(201)
+        expect(db.reports.create.mock.calls[0][0].data).toMatchObject({
+          targetId: 'offender_1', contentSnapshot: 'RudeName', snapshotSource: 'server',
+        })
+
+        for (const targetType of ['avatar', 'bio'] as const) {
+          const hidden = await submit({ targetType, publicProfileId: 'pub_42', reason: 'hate' })
+          expect(hidden.status).toBe(404)
+        }
+        expect(db.reports.create).toHaveBeenCalledTimes(1)
+      }
+    )
 
     it('refuses to report a bot', async () => {
       db.users.findUnique.mockResolvedValue({

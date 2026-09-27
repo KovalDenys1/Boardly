@@ -207,9 +207,28 @@ export default function PublicProfileView({
   if (relation !== 'self' && !isEmbeddedPreview && canReport) {
     const publicProfileId = profile.publicProfileId
     if (profile.username) reportTargets.push({ targetType: 'username', publicProfileId })
-    if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
-    if (profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
+    // A hidden profile shows its username and nothing else, so that is all it offers (#1226).
+    if (accessState === 'available') {
+      if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
+      if (profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
+    }
   }
+
+  const renderReportButton = (className: string) =>
+    reportTargets.length > 0 ? (
+      <>
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          aria-haspopup="dialog"
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${className}`}
+        >
+          <Icon name="flag" size={13} />
+          {t('report.reportProfile')}
+        </button>
+        <ReportDialog isOpen={reportOpen} onClose={() => setReportOpen(false)} targets={reportTargets} />
+      </>
+    ) : null
   const unlockedAchievementsByKey = new Map(
     (profile.unlockedAchievements ?? []).map((a) => [a.key, a.unlockedAt])
   )
@@ -474,6 +493,7 @@ export default function PublicProfileView({
           </Link>
         )}
       </div>
+      {renderReportButton('mt-5 text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200')}
     </div>
   )
 
@@ -685,18 +705,9 @@ export default function PublicProfileView({
                           </>
                         )}
                       </button>
-                      {reportTargets.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setReportOpen(true)}
-                          aria-haspopup="dialog"
-                          className={`mt-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`}
-                        >
-                          <Icon name="flag" size={13} />
-                          {t('report.reportProfile')}
-                        </button>
+                      {renderReportButton(
+                        `mt-4 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`
                       )}
-                      <ReportDialog isOpen={reportOpen} onClose={() => setReportOpen(false)} targets={reportTargets} />
                     </div>
                   </div>
                 )

@@ -133,6 +133,34 @@ describe('PublicProfileView', () => {
     expect(screen.getByRole('link', { name: 'Go to Home' })).toBeTruthy()
   })
 
+  // #1226: the username is on the page, so it can be reported; nothing else can.
+  it.each(['private', 'friends_only'] as const)(
+    'a %s profile offers Report for the username alone',
+    async (accessState) => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, duplicate: false }), { status: 201 })
+      )
+      render(
+        <PublicProfileView
+          profile={{ ...profile, avatarUrl: 'https://cdn.example/hidden.png', bio: 'hidden bio' }}
+          initialRelation="can_send"
+          accessState={accessState}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'report.reportProfile' }))
+      // One target, so the form asks no "what are you reporting" question.
+      expect(await screen.findByText('report.title')).toBeTruthy()
+      expect(screen.queryByText('report.targetLabel')).toBeNull()
+      fireEvent.click(screen.getByLabelText('report.reasons.hate'))
+      fireEvent.click(screen.getByRole('button', { name: 'report.submit' }))
+      await screen.findByText('report.successTitle')
+
+      const [, init] = (fetchWithGuest as jest.Mock).mock.calls.at(-1)
+      expect(JSON.parse(init.body)).toEqual({ targetType: 'username', publicProfileId: 'AbC123xYz890', reason: 'hate' })
+    }
+  )
+
   it('tells the owner of a private profile who else can see it, with a link to the setting', () => {
     render(<PublicProfileView profile={profile} initialRelation="self" ownerVisibility="private" />)
 
