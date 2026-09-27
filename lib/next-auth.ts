@@ -575,6 +575,18 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
+    async signIn({ user }) {
+      // A sign-in is activity (#1130). The jwt callback below writes lastActiveAt at most
+      // every five minutes and not on the sign-in itself, so a short visit – the one the
+      // inactive-account warning asks for – would otherwise leave the account marked
+      // inactive and still due for deletion. Never blocks the sign-in.
+      if (!user?.id) return
+      try {
+        await prisma.users.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } })
+      } catch {
+        // A stale lastActiveAt must not block auth.
+      }
+    },
     async createUser({ user }) {
       // Auto-verify email for new OAuth users
       // Note: This event fires BEFORE accounts are linked by PrismaAdapter

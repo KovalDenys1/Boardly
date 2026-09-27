@@ -4,6 +4,7 @@ import { apiLogger as log } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { Prisma, GameStatus, GameType } from '@/prisma/client'
 import { requireSessionUser } from '@/lib/session-user'
+import { isRetiredLobbyCode } from '@/lib/lobby'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -142,7 +143,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       games: games.map((game) => ({
         id: game.id,
-        lobbyCode: game.lobby.code,
+        // A retired code (#1130) is `~<lobby id>`: nothing to show or join.
+        lobbyCode: isRetiredLobbyCode(game.lobby.code) ? null : game.lobby.code,
         lobbyName: game.lobby.name,
         gameType: game.gameType,
         status: game.status,

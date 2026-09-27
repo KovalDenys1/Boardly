@@ -11,6 +11,7 @@ import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/li
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { enforceRetention } from '@/lib/data-retention'
+import { enforceInactiveAccounts } from '@/lib/inactive-accounts'
 import { recordCronRun } from '@/lib/cron-heartbeat'
 
 jest.mock('@/lib/cleanup-unverified', () => ({
@@ -33,6 +34,10 @@ jest.mock('@/lib/lobby-health', () => ({
 
 jest.mock('@/lib/data-retention', () => ({
   enforceRetention: jest.fn(),
+}))
+
+jest.mock('@/lib/inactive-accounts', () => ({
+  enforceInactiveAccounts: jest.fn(),
 }))
 
 jest.mock('@/lib/cron-heartbeat', () => ({
@@ -101,6 +106,19 @@ describe('GET /api/cron/maintenance', () => {
     enforceRetention.mockResolvedValue({
       feedback: { days: 365, cutoff: 'c', enforced: true, matched: 2, deleted: 2 },
       operationalEvents: { days: 180, cutoff: 'c', enforced: false, matched: 9, deleted: 0 },
+      games: { days: 365, cutoff: 'c', enforced: true, matched: 5, deleted: 0, pseudonymised: 5 },
+    })
+    enforceInactiveAccounts.mockResolvedValue({
+      termsAllow: true,
+      enforced: true,
+      warnCutoff: 'w',
+      deleteCutoff: 'd',
+      warnDue: 3,
+      warned: 2,
+      warnFailed: 1,
+      deleteDue: 1,
+      deleted: 1,
+      deleteFailed: 0,
     })
     mockCleanupStaleLobbiesAndGames.mockResolvedValue({
       deactivatedLobbies: 6,
@@ -139,5 +157,76 @@ describe('GET /api/cron/maintenance', () => {
     expect(heartbeat.retention_feedback_deleted).toBe(2)
     expect(heartbeat.retention_operationalEvents_enforced).toBe(false)
     expect(heartbeat.retention_operationalEvents_matched).toBe(9)
+    // Games are pseudonymised, not deleted (#1130, 2026-09-27).
+    expect(heartbeat.retention_games_deleted).toBe(0)
+    expect(heartbeat.retention_games_pseudonymised).toBe(5)
+    expect(heartbeat.retention_feedback_pseudonymised).toBeUndefined()
+
+    // Inactive accounts: warnings and deletions, and the failures, in the heartbeat.
+    expect(enforceInactiveAccounts).toHaveBeenCalledTimes(1)
+    expect(payload.inactiveAccounts.deleted).toBe(1)
+    expect(heartbeat.inactive_accounts_warned).toBe(2)
+    expect(heartbeat.inactive_accounts_warn_failed).toBe(1)
+    expect(heartbeat.inactive_accounts_deleted).toBe(1)
+  })
+
+  it('reports a failed inactive-account run without failing the other cleanups', async () => {
+    mockWarnUnverifiedAccounts.mockResolvedValue({ warned: 0 })
+    mockCleanupUnverifiedAccounts.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldGuests.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldReplaySnapshots.mockResolvedValue({ deleted: 0, retentionDays: 90, cutoffDate: 'c' })
+    mockCleanupOversizedReplaySnapshots.mockResolvedValue({ deletedSnapshots: 0, affectedGames: 0 })
+    mockCleanupStaleLobbiesAndGames.mockResolvedValue({
+      deactivatedLobbies: 0,
+      cancelledWaitingGames: 0,
+      abandonedPlayingGames: 0,
+    })
+    enforceRetention.mockResolvedValue({})
+    enforceInactiveAccounts.mockRejectedValue(new Error('db down'))
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/cron/maintenance'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.inactiveAccounts).toEqual({ error: 'db down' })
+    const heartbeat = recordCronRun.mock.calls[0][0].payload
+    expect(heartbeat.inactive_accounts_deleted).toBe(-1)
+  })
+
+  it('shows in the heartbeat that the Terms hold the inactive-account rule back, with what it would do', async () => {
+    mockWarnUnverifiedAccounts.mockResolvedValue({ warned: 0 })
+    mockCleanupUnverifiedAccounts.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldGuests.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldReplaySnapshots.mockResolvedValue({ deleted: 0, retentionDays: 90, cutoffDate: 'c' })
+    mockCleanupOversizedReplaySnapshots.mockResolvedValue({ deletedSnapshots: 0, affectedGames: 0 })
+    mockCleanupStaleLobbiesAndGames.mockResolvedValue({
+      deactivatedLobbies: 0,
+      cancelledWaitingGames: 0,
+      abandonedPlayingGames: 0,
+    })
+    enforceRetention.mockResolvedValue({})
+    enforceInactiveAccounts.mockResolvedValue({
+      termsAllow: false,
+      enforced: false,
+      warnCutoff: 'w',
+      deleteCutoff: 'd',
+      warnDue: 2,
+      warned: 0,
+      warnFailed: 0,
+      deleteDue: 0,
+      deleted: 0,
+      deleteFailed: 0,
+    })
+
+    await GET(new NextRequest('http://localhost:3000/api/cron/maintenance'))
+
+    const heartbeat = recordCronRun.mock.calls[0][0].payload
+    expect(heartbeat).toMatchObject({
+      inactive_accounts_enforced: false,
+      inactive_accounts_terms_allow: false,
+      inactive_accounts_warn_due: 2,
+      inactive_accounts_delete_due: 0,
+    })
+    expect(heartbeat.inactive_accounts_deleted).toBeUndefined()
   })
 })

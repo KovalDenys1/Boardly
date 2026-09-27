@@ -7,6 +7,19 @@ const ALPHANUMERIC_LOBBY_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 const numericLobbyCodeGenerator = customAlphabet(NUMERIC_LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH)
 const alphanumericLobbyCodeGenerator = customAlphabet(ALPHANUMERIC_LOBBY_CODE_ALPHABET, LOBBY_CODE_LENGTH)
 
+/**
+ * What a lobby's code becomes when the retention rule retires it (#1130): the prefix and
+ * the lobby's own id. Unique because the id is, and never mistaken for a live code: the
+ * generator below only ever makes four characters from [0-9A-Z], so a code starting with
+ * `~` can never collide with one it hands out, and the four-digit code goes back into the
+ * pool.
+ */
+export const RETIRED_LOBBY_CODE_PREFIX = '~'
+
+export function isRetiredLobbyCode(code: string): boolean {
+  return code.startsWith(RETIRED_LOBBY_CODE_PREFIX)
+}
+
 export function generateLobbyCode(options?: { fallbackToAlphanumeric?: boolean }): string {
   if (options?.fallbackToAlphanumeric) {
     return alphanumericLobbyCodeGenerator()

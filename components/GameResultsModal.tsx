@@ -45,7 +45,8 @@ interface Player {
 
 interface GameResult {
   id: string
-  lobbyCode: string
+  /** Null once the lobby's code has been retired by the retention rule (#1130). */
+  lobbyCode: string | null
   lobbyName: string
   gameType: string
   status: string

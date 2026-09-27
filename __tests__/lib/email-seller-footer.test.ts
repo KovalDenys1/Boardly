@@ -56,6 +56,11 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
       currency: 'usd',
       renewsAt: new Date('2027-09-03T00:00:00Z'),
     }),
+  sendInactiveAccountWarningEmail: (m) =>
+    m.sendInactiveAccountWarningEmail('player@example.com', {
+      username: 'Ola',
+      deleteOn: new Date('2027-12-19T03:00:00Z'),
+    }),
 }
 
 function loadEmailModule(): EmailModule {

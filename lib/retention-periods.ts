@@ -10,9 +10,16 @@
  * PRIVACY_UPDATED in lib/terms-version.ts: the notice's text changed.
  */
 export const RETENTION_DAYS = {
-  /** Finished, abandoned and cancelled games, from the end of the game. */
+  /**
+   * Finished, abandoned and cancelled games, from the end of the game. Then pseudonymised,
+   * not deleted: names, messages and drawings go, scores and results stay (#1130).
+   */
   games: 365,
-  /** Inactive lobbies with no game left in them, from creation. */
+  /**
+   * Inactive lobbies, from creation: one in which no game started (all cancelled) is
+   * deleted with those games, one that held a real game gets a neutral name and a retired
+   * code once its games have been pseudonymised.
+   */
   lobbies: 365,
   /** Pseudonymous lobby-join records (salted hash), from joining. */
   lobbyParticipations: 730,
@@ -30,6 +37,15 @@ export const RETENTION_DAYS = {
   replays: 90,
   /** Accounts whose email was never verified, from sign-up. */
   unverifiedAccounts: 7,
+  /**
+   * Registered accounts, from their last activity (#1130). Never one that has a
+   * subscription or ever went to checkout, never a bot, an admin or a suspended account.
+   * Not enforced, and not printed on /privacy, until the Terms allow it
+   * (TERMS_ALLOW_INACTIVITY_DELETION in lib/inactive-accounts.ts).
+   */
+  inactiveAccounts: 730,
+  /** How long before that deletion the warning email goes out. */
+  inactiveAccountWarning: 30,
   /** Guests who never played, from their last activity. */
   guestIdle: 3,
   /** Guests who played at least once, from their last activity. */

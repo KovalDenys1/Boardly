@@ -63,7 +63,8 @@ interface Player {
 
 interface GameHistoryItem {
   id: string
-  lobbyCode: string
+  /** Null once the lobby's code has been retired by the retention rule (#1130). */
+  lobbyCode: string | null
   lobbyName: string
   gameType: string
   status: string
@@ -415,9 +416,11 @@ export default function GameHistory() {
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClassName(game.status)}`}>
                           {formatStatusLabel(game.status)}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
-                          {game.lobbyCode}
-                        </span>
+                        {game.lobbyCode && (
+                          <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
+                            {game.lobbyCode}
+                          </span>
+                        )}
                       </div>
                     </div>
 

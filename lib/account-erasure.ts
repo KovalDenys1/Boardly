@@ -15,6 +15,12 @@ export const DELETED_PLAYER_NAME = 'Deleted player'
 export interface ErasedIdentity {
   id: string
   username: string | null
+  /**
+   * What the name becomes. DELETED_PLAYER_NAME when absent; the retention rule's
+   * pseudonymisation passes a seat label instead ("Player 2", #1130), so a year-old
+   * game still tells its players apart without naming them.
+   */
+  label?: string
 }
 
 /** Keys that identify the person an object describes. */
@@ -31,15 +37,17 @@ function scrubObject(
   identities: ErasedIdentity[]
 ): Record<string, unknown> | null {
   let next: Record<string, unknown> | null = null
+  let label = DELETED_PLAYER_NAME
   const set = (key: string) => {
-    if (typeof node[key] !== 'string' || node[key] === DELETED_PLAYER_NAME) return
+    if (typeof node[key] !== 'string' || node[key] === label) return
     next ??= { ...node }
-    next[key] = DELETED_PLAYER_NAME
+    next[key] = label
   }
 
   const ownId = OWN_ID_KEYS.map((key) => node[key]).find((value) => typeof value === 'string')
 
   for (const identity of identities) {
+    label = identity.label ?? DELETED_PLAYER_NAME
     // { id: 'team-2', name: 'Denys', playerIds: ['<their id>'] } – an object
     // whose only member is this player is theirs even though its own id is not:
     // Alias names each solo team after its one player (lib/games/alias.ts).

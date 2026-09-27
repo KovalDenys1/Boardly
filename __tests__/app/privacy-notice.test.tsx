@@ -85,10 +85,42 @@ describe('privacy notice (#1126)', () => {
     expect(text).toContain(`after ${RETENTION_DAYS.guestIdle} days without activity`)
     expect(text).toContain(`Replays: ${RETENTION_DAYS.replays} days`)
     expect(text).toContain(`Lobby chat: ${CHAT_RETENTION_HOURS} hours`)
-    expect(text).toContain(`Games: 12 months after the game ends`)
+    expect(text).toContain(`Games: 12 months after the game ends, we remove the names`)
     expect(text).toContain(`blocked-content reports: ${RETENTION_DAYS.operationalEvents} days`)
     expect(text).toContain(`Administrator log: 24 months`)
     expect(text).toContain(`${RETENTION_DAYS.guestIdentityToken} days from your last visit`)
+  })
+
+  // #1130, decision 2026-09-27: games are pseudonymised, not deleted; a lobby in which no
+  // game started goes with its games. Inactive accounts are NOT deleted while the Terms do
+  // not allow it (TERMS_ALLOW_INACTIVITY_DELETION), so the notice must not say they are.
+  it('says games lose their names but keep their results, and that unused accounts are kept', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('the scores and results stay, tied to a player id instead of a name')
+    expect(text).toContain('an inactive lobby in which no game ever started is deleted together with those games')
+    expect(text).toContain('its code is released for new lobbies')
+    expect(text).toContain('We do not delete an account because it has not been used')
+    expect(text).toContain('at least 30 days before it applies')
+    expect(text).toContain('is kept until you delete it')
+    expect(text).not.toMatch(/inactivity|24 months: we then delete/)
+
+    const locales = {
+      en: require('@/locales/en').default,
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const { account, games } = locale.privacyPolicy.purposes
+      for (const [field, value, needle] of [
+        ['account.retention', account.retention, '30'],
+        ['games.retention', games.retention, '{{gamesMonths}}'],
+        ['games.retention', games.retention, '{{lobbiesMonths}}'],
+      ]) {
+        expect({ name, field, ok: value.includes(needle) }).toEqual({ name, field, ok: true })
+      }
+    }
   })
 
   // #1172: player reports keep a copy of what was reported, past the chat TTL and past

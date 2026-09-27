@@ -48,6 +48,14 @@ jest.mock('@/lib/report-discord', () => ({
   deleteReportDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
 }))
 
+jest.mock('@/lib/game-pseudonymisation', () => ({
+  abandonedLobbiesWhere: jest.requireActual('@/lib/game-pseudonymisation').abandonedLobbiesWhere,
+  countGamesToPseudonymise: jest.fn(async () => 6),
+  countLobbiesToPseudonymise: jest.fn(async () => 2),
+  pseudonymiseGames: jest.fn(async () => ({ pseudonymised: 5, snapshotsDeleted: 0 })),
+  pseudonymiseLobbies: jest.fn(async () => 1),
+}))
+
 const NOW = new Date('2026-09-24T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
 
@@ -108,27 +116,50 @@ describe('enforceRetention', () => {
     }
   })
 
-  it('never deletes a game that is still running, and never a lobby that still holds a game', async () => {
-    await enforceRetention({ now: NOW, override: 'enforce' })
+  // Decision 2026-09-27: a finished game past its period is pseudonymised, never deleted,
+  // so the statistics, leaderboard and achievements built on it survive.
+  it('pseudonymises games instead of deleting them, and deletes only a lobby in which no game started', async () => {
+    const { pseudonymiseGames, pseudonymiseLobbies } = jest.requireMock('@/lib/game-pseudonymisation')
 
-    const gamesWhere = prisma.games.deleteMany.mock.calls[0][0].where
-    expect(gamesWhere.status.in.sort()).toEqual(['abandoned', 'cancelled', 'finished'])
+    const result = await enforceRetention({ now: NOW, override: 'enforce' })
 
+    expect(prisma.games.deleteMany).not.toHaveBeenCalled()
+    const cutoff = new Date(NOW.getTime() - 365 * DAY)
+    expect(pseudonymiseGames).toHaveBeenCalledWith(expect.objectContaining({ cutoff, now: NOW }))
+    expect(result.games).toMatchObject({ enforced: true, deleted: 0, pseudonymised: 5, matched: 5 })
+
+    // Every lobby is created with a game, so the delete branch is the one whose games were
+    // all cancelled while waiting; they go with it.
     const lobbiesWhere = prisma.lobbies.deleteMany.mock.calls[0][0].where
-    expect(lobbiesWhere).toMatchObject({ isActive: false, games: { none: {} } })
+    expect(lobbiesWhere).toEqual({
+      isActive: false,
+      createdAt: { lt: cutoff },
+      games: { every: { status: 'cancelled' } },
+    })
+    expect(pseudonymiseLobbies).toHaveBeenCalledWith(cutoff, NOW)
+    expect(result.lobbies).toMatchObject({ deleted: 3, pseudonymised: 1, matched: 4 })
 
-    // Games go first so a lobby emptied this run can follow in the same run.
-    const gamesOrder = prisma.games.deleteMany.mock.invocationCallOrder[0]
-    const lobbiesOrder = prisma.lobbies.deleteMany.mock.invocationCallOrder[0]
-    expect(gamesOrder).toBeLessThan(lobbiesOrder)
+    // Games go first, so a lobby whose last game was pseudonymised this run can follow.
+    expect(pseudonymiseGames.mock.invocationCallOrder[0]).toBeLessThan(
+      pseudonymiseLobbies.mock.invocationCallOrder[0]
+    )
+    // A rule that only deletes carries no pseudonymised count.
+    expect(result.feedback.pseudonymised).toBeUndefined()
   })
 
   it('in report mode only counts', async () => {
+    const { pseudonymiseGames, pseudonymiseLobbies } = jest.requireMock('@/lib/game-pseudonymisation')
+
     const result = await enforceRetention({ now: NOW, override: 'report' })
 
     for (const name of Object.values(DELEGATES)) {
       expect(prisma[name].deleteMany).not.toHaveBeenCalled()
     }
+    expect(pseudonymiseGames).not.toHaveBeenCalled()
+    expect(pseudonymiseLobbies).not.toHaveBeenCalled()
+    expect(result.games).toMatchObject({ enforced: false, matched: 6, deleted: 0, pseudonymised: 0 })
+    // Lobbies to delete (4) plus lobbies to rename (2).
+    expect(result.lobbies).toMatchObject({ enforced: false, matched: 6 })
     expect(result.notifications).toMatchObject({ enforced: false, matched: 4, deleted: 0 })
   })
 
@@ -173,7 +204,7 @@ describe('enforceRetention', () => {
   })
 
   it('keeps going when one rule fails', async () => {
-    prisma.games.deleteMany.mockRejectedValue(new Error('boom'))
+    jest.requireMock('@/lib/game-pseudonymisation').pseudonymiseGames.mockRejectedValueOnce(new Error('boom'))
 
     const result = await enforceRetention({ now: NOW, override: 'enforce' })
 

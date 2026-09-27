@@ -4,6 +4,7 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
+import { isRetiredLobbyCode } from '@/lib/lobby'
 
 export async function GET(
   request: NextRequest,
@@ -107,7 +108,8 @@ export async function GET(
     // Format response
     const formattedGame = {
       id: game.id,
-      lobbyCode: game.lobby.code,
+      // A retired code (#1130) is `~<lobby id>`: nothing to show or join.
+      lobbyCode: isRetiredLobbyCode(game.lobby.code) ? null : game.lobby.code,
       lobbyName: game.lobby.name,
       gameType: resolvedGameType,
       status: game.status,
