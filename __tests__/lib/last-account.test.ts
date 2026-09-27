@@ -1,4 +1,10 @@
-import { clearLastAccount, getLastAccount, rememberLastAccount, saveLastAccount } from '@/lib/last-account'
+import {
+  clearLastAccount,
+  getLastAccount,
+  pruneUnrememberedLastAccount,
+  rememberLastAccount,
+  saveLastAccount,
+} from '@/lib/last-account'
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -55,6 +61,33 @@ describe('last-account', () => {
     it('removes an address an earlier sign-in stored when the box is unticked', () => {
       rememberLastAccount(true, { email: 'old@test.com', name: null, image: null })
       rememberLastAccount(false, { email: 'new@test.com', name: null, image: null })
+      expect(localStorage.getItem('boardly_last_account')).toBeNull()
+    })
+
+    it('marks what it stores as remembered', () => {
+      rememberLastAccount(true, { email: 'user@test.com', name: null, image: null })
+      expect(JSON.parse(localStorage.getItem('boardly_last_account')!)).toMatchObject({ rememberMe: true })
+    })
+  })
+
+  describe('entries written before the rule (#1133)', () => {
+    const legacy = JSON.stringify({ email: 'legacy@test.com', name: null, image: null })
+
+    it('removes an unmarked entry on app start', () => {
+      localStorage.setItem('boardly_last_account', legacy)
+      pruneUnrememberedLastAccount()
+      expect(localStorage.getItem('boardly_last_account')).toBeNull()
+    })
+
+    it('keeps a marked entry on app start', () => {
+      saveLastAccount({ email: 'user@test.com', name: null, image: null })
+      pruneUnrememberedLastAccount()
+      expect(getLastAccount()?.email).toBe('user@test.com')
+    })
+
+    it('never offers an unmarked entry on the login page, and removes it', () => {
+      localStorage.setItem('boardly_last_account', legacy)
+      expect(getLastAccount()).toBeNull()
       expect(localStorage.getItem('boardly_last_account')).toBeNull()
     })
   })

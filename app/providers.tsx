@@ -12,6 +12,7 @@ import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
 import { getStoredAppearanceLocale, normalizeAppearanceLocale } from '@/lib/appearance-preferences'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
+import { pruneUnrememberedLastAccount } from '@/lib/last-account'
 
 const OnboardingModal = dynamic(
   () => import('@/components/Onboarding/OnboardingModal').then((mod) => mod.OnboardingModal),
@@ -33,6 +34,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     if (i18n.language !== nextLanguage) {
       void changeLanguageLazy(nextLanguage)
     }
+  }, [])
+
+  // A last-account email saved before "Remember me" decided it (#1133) is removed on
+  // the first page load, whether or not the person ever opens the login page again.
+  useEffect(() => {
+    pruneUnrememberedLastAccount()
   }, [])
 
   /**
