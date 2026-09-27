@@ -311,6 +311,62 @@ Yearly plan cancelled outside the 14 days: cancel at period end is the default; 
 the refund of unused months, refund `(remaining whole months / 12) x amount paid` from the Dashboard and
 cancel immediately.
 
+### Runbook: running-subscription notice (digitalytelsesloven § 33)
+
+**The duty** (#1165). digitalytelsesloven (LOV-2022-06-17-56) § 33 fourth paragraph, fetched from
+https://lovdata.no/dokument/NL/lov/2022-06-17-56 on 2026-09-27: "Ved løpende levering av digitale
+ytelser skal leverandøren minst en gang hver sjette måned sende forbrukeren et varsel om at avtalen
+løper, og opplyse forbrukeren om adgangen til å si opp avtalen etter første til tredje ledd. Unnlater
+leverandøren å sende slikt varsel, kan forbrukeren kostnadsfritt si opp avtalen med virkning fra det
+tidspunktet varselet senest skulle ha vært sendt." The first to third paragraphs are the right to cancel
+with effect from the next payment period, by the channel the contract was made on, "på en enkel måte".
+
+**Why Link's emails do not cover it.** Premium is sold through Stripe Managed Payments, and Link sends
+the subscription emails. https://docs.stripe.com/payments/managed-payments/how-it-works.md, "Subscription-related
+email notifications", fetched 2026-09-27: "If you enable **Upcoming renewals**, Stripe sends an email before
+every subscription renewal. If you disable this setting, Stripe still sends an upcoming renewal email as
+follows: Before the subscription's 6-month and 12-month anniversary to customers in Australia and the United
+Kingdom; Before the subscription's 12-month anniversary for customers in all other countries." Measured
+against § 33:
+
+- Setting off: a Norwegian (or any non-AU/UK) subscriber hears once a year. Twelve months, not six.
+- Setting on: an email before every renewal, so a monthly plan is covered on frequency, but the yearly plan
+  (the default in `lib/premium-plans.ts`) still hears once a year.
+- Either way the page says nothing about the email telling the customer how to cancel, which § 33 requires.
+
+So we send our own, and **no Dashboard setting has to change** for Boardly to comply. "Upcoming renewals" can
+stay as it is; turning it on only adds Link's own reminder before each monthly charge.
+
+**What runs.** `/api/cron/subscription-notices`, daily at 05:00 UTC (`vercel.json`), calls
+`sendDueSubscriptionNotices` in `lib/subscription-notice.ts`. Every user with a `stripeSubscriptionId` that
+the webhook has not marked `premiumCancelAtPeriod` is a candidate; Stripe is asked whether the subscription is
+still `active`, `trialing` or `past_due` and when it started. A notice is due 170 days after the later of the
+start and `Users.lastSubscriptionNoticeAt`: six calendar months are at least 181 days, so a job that fails for
+eleven days running still lands inside the window. The column is also the claim: it is moved with a
+compare-and-set before the send and put back if the send fails, so two runs cannot both send and a failure is
+retried the next day. The email (`sendSubscriptionNoticeEmail` in `lib/email.ts`) is English then Norwegian,
+in company voice with the operator imprint, and names the plan, the price, the next renewal date, the
+one-click cancel on `/profile?tab=premium`, cancelling by writing to support@, and Link. No flag: on
+2026-09-27 production had no user with a `stripeSubscriptionId` and no `PurchaseConsents` row (supabase-prod,
+read-only), so the job touched nobody when it shipped. The first notice for a subscription that starts on day
+X goes out on day X + 170.
+
+**When something looks wrong.** The heartbeat is a `cron_run` row with `source = 'subscription-notices'`
+and `{candidates, sent, notDue, notRunning, failed}` in its payload. `failed` above zero is a Stripe read or a
+Resend send that did not work (the latter also writes `email_send_failed`); it is released and tried again
+the next day, so it needs attention only if it repeats. To see who is due or overdue:
+
+```sql
+select id, "stripeSubscriptionId", "lastSubscriptionNoticeAt"
+from "Users"
+where "stripeSubscriptionId" is not null and "premiumCancelAtPeriod" = false
+  and ("lastSubscriptionNoticeAt" is null or "lastSubscriptionNoticeAt" < now() - interval '170 days');
+```
+
+**If a notice was ever missed** (a subscriber went more than six months without one), § 33 lets that
+subscriber cancel free of charge with effect from the day the notice should have gone out. Honour such a
+cancellation: cancel in the Dashboard and refund what was charged after that day.
+
 ### Runbook: discord_bot_stale
 
 The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts

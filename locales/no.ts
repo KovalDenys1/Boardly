@@ -3608,8 +3608,8 @@ const no = {
       },
       email: {
         title: 'E-post vi sender deg',
-        data: 'E-postadressen din og meldingen: lenker for bekreftelse og tilbakestilling av passord, sikkerhetsvarsler, spillinvitasjoner fra venner, varslene du velger, og kjøpsbekreftelser. Når noen ber om å endre e-postadressen på en konto, sender vi et sikkerhetsvarsel til den gamle adressen med den nye delvis skjult. For å stoppe flom av bekreftelses- og tilbakestillings-e-post lagrer vi en forkortet enveis hash av adressen i 10 minutter og en daglig teller i 26 timer.',
-        basis: 'Avtale. Sikkerhetsvarsler og e-postbegrensningene: vår berettigede interesse i å beskytte kontoer og hindre misbruk.',
+        data: 'E-postadressen din og meldingen: lenker for bekreftelse og tilbakestilling av passord, sikkerhetsvarsler, spillinvitasjoner fra venner, varslene du velger, kjøpsbekreftelser og, så lenge et Premium-abonnement løper, en påminnelse minst hver sjette måned om at det løper, og om hvordan du sier det opp. Når noen ber om å endre e-postadressen på en konto, sender vi et sikkerhetsvarsel til den gamle adressen med den nye delvis skjult. For å stoppe flom av bekreftelses- og tilbakestillings-e-post lagrer vi en forkortet enveis hash av adressen i 10 minutter og en daglig teller i 26 timer.',
+        basis: 'Avtale. Abonnementspåminnelsen: en rettslig forpliktelse (digitalytelsesloven § 33). Sikkerhetsvarsler og e-postbegrensningene: vår berettigede interesse i å beskytte kontoer og hindre misbruk.',
         retention: 'Varselposter: {{notificationsMonths}} måneder. Resend, som leverer e-posten, har sin egen leveringslogg så lenge tjenesten deres fastsetter.',
       },
       marketing: {

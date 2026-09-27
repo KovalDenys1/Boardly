@@ -3620,8 +3620,8 @@ const en = {
       },
       email: {
         title: 'Emails we send you',
-        data: 'Your email address and the message: verification and password-reset links, security notices, game invites from friends, the notifications you choose, and purchase confirmations. When someone asks to change an account\'s email address, we send a security notice to the old address with the new one partly hidden. To stop floods of verification and reset emails we keep a shortened one-way hash of the address for 10 minutes and a daily counter for 26 hours.',
-        basis: 'Contract. Security notices and the email limits: our legitimate interest in protecting accounts and preventing abuse.',
+        data: 'Your email address and the message: verification and password-reset links, security notices, game invites from friends, the notifications you choose, purchase confirmations and, while a Premium subscription runs, a reminder at least every six months that it is running and how to end it. When someone asks to change an account\'s email address, we send a security notice to the old address with the new one partly hidden. To stop floods of verification and reset emails we keep a shortened one-way hash of the address for 10 minutes and a daily counter for 26 hours.',
+        basis: 'Contract. The subscription reminder: a legal obligation (the Norwegian act on digital services, digitalytelsesloven § 33). Security notices and the email limits: our legitimate interest in protecting accounts and preventing abuse.',
         retention: 'Notification records: {{notificationsMonths}} months. Resend, which delivers the emails, keeps its own delivery log for the period its service sets.',
       },
       marketing: {
