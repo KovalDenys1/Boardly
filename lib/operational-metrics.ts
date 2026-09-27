@@ -38,6 +38,7 @@ const ALERT_EVENT_NAMES = [
   'email_send_budget_reached',
   'botid_unavailable',
   'botid_flagged',
+  'subscription_notice_failed',
   ...HUMAN_ACTIVITY_EVENT_NAMES,
 ] as const
 
@@ -110,6 +111,13 @@ export const EMAIL_SEND_FAILED_ALERT_THRESHOLD = 3
  * through unchecked (#1157). Written at most once a minute per instance.
  */
 export const BOTID_UNAVAILABLE_ALERT_THRESHOLD = 1
+/**
+ * The running-subscription notice job runs once a day (#1165), so a ten-minute window
+ * would show its failure for one evaluation at most, or none if the schedules drift.
+ * It is read over the last day instead: breached while the latest run left a notice
+ * unsent, resolved by the next run that does not.
+ */
+export const SUBSCRIPTION_NOTICE_FAILED_LOOKBACK_MINUTES = 24 * 60
 
 export const DISCORD_BOT_HEARTBEAT_SOURCE = 'discord-bot'
 export const DISCORD_BOT_STALE_WARNING_MINUTES = 20
@@ -182,6 +190,7 @@ export type ReliabilityAlertKey =
   | 'rate_limiter_degraded'
   | 'email_send_failed'
   | 'botid_unavailable'
+  | 'subscription_notice_failed'
 
 export interface ReliabilityAlertRuleStatus {
   alertKey: ReliabilityAlertKey
@@ -633,6 +642,12 @@ export async function evaluateReliabilityAlerts(
     currentEmailFailed >= EMAIL_SEND_FAILED_ALERT_THRESHOLD || currentEmailBudgetReached > 0
 
   const currentBotIdUnavailable = current.filter((event) => event.eventName === 'botid_unavailable').length
+
+  const noticeLookbackStart = now.getTime() - SUBSCRIPTION_NOTICE_FAILED_LOOKBACK_MINUTES * 60 * 1000
+  const recentNoticeFailures = events.filter(
+    (event) =>
+      event.eventName === 'subscription_notice_failed' && new Date(event.occurredAt).getTime() >= noticeLookbackStart
+  ).length
   const botIdUnavailableBreached = currentBotIdUnavailable >= BOTID_UNAVAILABLE_ALERT_THRESHOLD
 
   const currentRejoinTimeout = current.filter((event) => event.eventName === 'rejoin_timeout').length
@@ -813,6 +828,21 @@ export async function evaluateReliabilityAlerts(
           : `botid_unavailable count=0 in the last ${windowMinutes}m`,
         windowMinutes,
         runbookPath: 'docs/OPERATIONS.md#runbook-botid_unavailable',
+      },
+      {
+        alertKey: 'subscription_notice_failed',
+        breached: recentNoticeFailures > 0,
+        severity: 'warning',
+        currentValue: recentNoticeFailures,
+        thresholdValue: 1,
+        baselineValue: null,
+        unit: 'count',
+        summary:
+          recentNoticeFailures > 0
+            ? `subscription_notice_failed count=${recentNoticeFailures} in the last 24h: a running-subscription notice (digitalytelsesloven § 33) was not sent; it is retried at the next daily run`
+            : 'subscription_notice_failed count=0 in the last 24h',
+        windowMinutes: SUBSCRIPTION_NOTICE_FAILED_LOOKBACK_MINUTES,
+        runbookPath: 'docs/OPERATIONS.md#runbook-subscription_notice_failed',
       },
     ],
   }

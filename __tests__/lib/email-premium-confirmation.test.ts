@@ -198,15 +198,15 @@ describe('sendPremiumConfirmationEmail', () => {
     expect(mail.text).toContain('https://support.link.com/topics/sold-through-link')
   })
 
-  it('explains cancellation: one click in the profile, end of the paid period, yearly refunds whole months', async () => {
+  it('explains cancellation: one click in the profile, end of the paid period, yearly refunds whole months on request', async () => {
     const mail = await send()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
-      'You can cancel at any time with one click from your profile at https://boardly.test/profile. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.'
+      'You can cancel at any time with one click from your profile at https://boardly.test/profile. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, write to us and we refund the unused whole months.'
     )
     expect(text).toContain(
-      'Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.'
+      'Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.'
     )
     expect(mail.html).toContain('<a href="https://boardly.test/profile"')
   })

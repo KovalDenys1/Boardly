@@ -119,6 +119,7 @@ describe('evaluateReliabilityAlerts – discord_bot_stale', () => {
       'rate_limiter_degraded',
       'email_send_failed',
       'botid_unavailable',
+      'subscription_notice_failed',
     ])
   })
 })
@@ -354,6 +355,22 @@ describe('evaluateReliabilityAlerts – abuse rules (#1150)', () => {
     expect((await rule('botid_unavailable')).breached).toBe(false)
   })
 
+  it('subscription_notice_failed stays breached for a day after the daily job failed (#1165)', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('subscription_notice_failed', 20 * 60)])
+
+    const found = await rule('subscription_notice_failed')
+
+    expect(found.breached).toBe(true)
+    expect(found.severity).toBe('warning')
+    expect(found.runbookPath).toBe('docs/OPERATIONS.md#runbook-subscription_notice_failed')
+  })
+
+  it('subscription_notice_failed resolves once the failure is more than a day old', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('subscription_notice_failed', 25 * 60)])
+
+    expect((await rule('subscription_notice_failed')).breached).toBe(false)
+  })
+
   it('asks the database for the server-only events', async () => {
     await evaluateReliabilityAlerts()
 
@@ -364,6 +381,7 @@ describe('evaluateReliabilityAlerts – abuse rules (#1150)', () => {
         'email_send_failed',
         'email_send_budget_reached',
         'botid_unavailable',
+        'subscription_notice_failed',
       ])
     )
   })

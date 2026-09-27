@@ -68,4 +68,11 @@ describe('Footer legal links', () => {
     expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms')
     expect(screen.getByRole('link', { name: 'Right of withdrawal' })).toHaveAttribute('href', '/withdrawal')
   })
+
+  // #1173: the community rules are part of the Terms and sit beside them.
+  it('lists the community rules', () => {
+    render(<Footer />)
+
+    expect(screen.getByRole('link', { name: 'Community rules' })).toHaveAttribute('href', '/rules')
+  })
 })

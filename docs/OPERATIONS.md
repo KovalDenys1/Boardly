@@ -339,6 +339,195 @@ Yearly plan cancelled outside the 14 days: cancel at period end is the default; 
 the refund of unused months, refund `(remaining whole months / 12) x amount paid` from the Dashboard and
 cancel immediately.
 
+### Runbook: running-subscription notice (digitalytelsesloven § 33)
+
+**The duty** (#1165). digitalytelsesloven (LOV-2022-06-17-56) § 33 fourth paragraph, fetched from
+https://lovdata.no/dokument/NL/lov/2022-06-17-56 on 2026-09-27: "Ved løpende levering av digitale
+ytelser skal leverandøren minst en gang hver sjette måned sende forbrukeren et varsel om at avtalen
+løper, og opplyse forbrukeren om adgangen til å si opp avtalen etter første til tredje ledd. Unnlater
+leverandøren å sende slikt varsel, kan forbrukeren kostnadsfritt si opp avtalen med virkning fra det
+tidspunktet varselet senest skulle ha vært sendt." The first to third paragraphs are the right to cancel
+with effect from the next payment period, by the channel the contract was made on, "på en enkel måte".
+
+**Why Link's emails do not cover it.** Premium is sold through Stripe Managed Payments, and Link sends
+the subscription emails. https://docs.stripe.com/payments/managed-payments/how-it-works.md, "Subscription-related
+email notifications", fetched 2026-09-27: "If you enable **Upcoming renewals**, Stripe sends an email before
+every subscription renewal. If you disable this setting, Stripe still sends an upcoming renewal email as
+follows: Before the subscription's 6-month and 12-month anniversary to customers in Australia and the United
+Kingdom; Before the subscription's 12-month anniversary for customers in all other countries." Measured
+against § 33:
+
+- Setting off: a Norwegian (or any non-AU/UK) subscriber hears once a year. Twelve months, not six.
+- Setting on: an email before every renewal, so a monthly plan is covered on frequency, but the yearly plan
+  (the default in `lib/premium-plans.ts`) still hears once a year.
+- Either way the page says nothing about the email telling the customer how to cancel, which § 33 requires.
+
+So we send our own, and **no Dashboard setting has to change** for Boardly to comply. "Upcoming renewals" can
+stay as it is; turning it on only adds Link's own reminder before each monthly charge.
+
+**What runs.** `/api/cron/subscription-notices`, daily at 05:00 UTC (`vercel.json`), calls
+`sendDueSubscriptionNotices` in `lib/subscription-notice.ts`. Every user with a `stripeSubscriptionId` that
+the webhook has not marked `premiumCancelAtPeriod` is a candidate; Stripe is asked whether the subscription is
+still `active`, `trialing` or `past_due` and when it started. One that is ending (`cancel_at_period_end`, or a
+cancellation scheduled with `cancel_at`) gets no notice: its last charge has been made. One Stripe no longer has
+(`resource_missing`) is written to `Users.missingStripeSubscriptionId`, logged once and skipped from then on
+without a Stripe call, until the webhook stores another subscription id; a test/live mode mix-up (the message
+says "a similar object exists in test mode") is not written off that way but counted as a failure. A notice is due 170 days after the later of the
+start and `Users.lastSubscriptionNoticeAt`: six calendar months are at least 181 days, so a job that fails for
+eleven days running still lands inside the window. The column is also the claim: it is moved with a
+compare-and-set before the send and put back if the send fails, so two runs cannot both send and a failure is
+retried the next day. The email (`sendSubscriptionNoticeEmail` in `lib/email.ts`) is English then Norwegian,
+in company voice with the operator imprint, and names the plan, the price, the next renewal date, the
+one-click cancel on `/profile?tab=premium`, cancelling by writing to support@, and Link. No flag: on
+2026-09-27 production had no user with a `stripeSubscriptionId` and no `PurchaseConsents` row (supabase-prod,
+read-only), so the job touched nobody when it shipped. The first notice for a subscription that starts on day
+X goes out on day X + 170.
+
+**When something looks wrong.** The heartbeat is a `cron_run` row with `source = 'subscription-notices'`
+and `{candidates, sent, notDue, notRunning, missing, failed}` in its payload. `failed` above zero, or a run that
+threw, also writes a `subscription_notice_failed` event, which raises the alert below. To see who is due or
+overdue:
+
+```sql
+select id, "stripeSubscriptionId", "lastSubscriptionNoticeAt"
+from "Users"
+where "stripeSubscriptionId" is not null and "premiumCancelAtPeriod" = false
+  and ("lastSubscriptionNoticeAt" is null or "lastSubscriptionNoticeAt" < now() - interval '170 days');
+```
+
+**If a notice was ever missed** (a subscriber went more than six months without one), § 33 lets that
+subscriber cancel free of charge with effect from the day the notice should have gone out. Honour such a
+cancellation: cancel in the Dashboard and refund what was charged after that day.
+
+### Runbook: subscription_notice_failed
+
+A `subscription_notice_failed` event in the last 24 hours (#1165), severity warning. The daily
+`/api/cron/subscription-notices` run writes one when it left a notice unsent (`failed` above zero) or threw.
+The rule looks back a day rather than the usual window because the job runs once a day; it resolves with the
+next run that sends everything.
+
+1. `reason` says which: "N of M notices not sent; retried tomorrow", or "run failed: <error>".
+2. A Stripe read that failed: the Vercel logs for the route name the user id. A `resource_missing` whose message
+   mentions test or live mode means `STRIPE_SECRET_KEY` and the stored ids are from different modes; fix the
+   key, not the data.
+3. A send that failed: see "Runbook: email_send_failed" below; Resend's quota or key is the usual cause.
+4. A failed notice is released and tried at the next run. Eleven failed days in a row still land inside the
+   six months (170-day interval); after that, use the SQL above to see who is overdue and the paragraph on a
+   missed notice.
+
+### Runbook: a user is under 13
+
+**The policy this carries out** (#1174). Boardly is for people aged 13 and over, guests included: Terms of
+Service section 2, and Denys's decision of 2026-09-27 on #1135. Accounts confirm it and guests are not asked.
+An email sign-up ticks "I am 13 or older" on the register form; a Google, GitHub or Discord account ticks it
+in the onboarding modal on its first visit, which keeps coming back until it has (`lib/age-confirmation.ts`).
+The time lands in `Users.ageConfirmedAt`, for accounts created from 2026-09-27.
+
+Premium has a stricter rule of its own in Terms section 3: adults, or from 15 with money the buyer may spend
+(#1169). That 15 is our policy, not the statute's. It is based on vergemålsloven § 12 (Lovdata,
+LOV-2010-03-26-9, fetched 2026-09-27): "En mindreårig råder selv over midler som han eller hun har tjent ved
+eget arbeid eller virksomhet etter fylte 15 år, eller som vergen eller andre har latt den mindreårige få til
+egen rådighet". The act ties 15 only to money earned by one's own work; money given to a minor for their own
+use has no age floor there. We drew the line at 15 for both.
+
+The privacy notice (section 10) promises that if a child under 13 has given us personal data and someone
+writes to support@, we delete it; Terms section 2 says we close an account or a guest profile that belongs to
+someone under 13, and section 10 lists it as a reason. Under the US rule the audit read (16 CFR § 312.3, eCFR
+issue date 2026-09-22) the trigger is "actual knowledge"; the ticket quotes it.
+
+**What counts as knowing.** Someone says so: a report or a chat message that states an age under 13, a bio
+that does, a message from a parent or guardian, a support email. A guess from how someone writes is not
+knowledge. Never ask for an ID document or a birth date to settle it; that collects more of exactly the data
+this runbook exists to remove.
+
+1. **Find the account and read what it confirmed.** From the username, the profile link or the report row,
+   on production (supabase-prod MCP or the SQL editor), checking two columns so a wrong row cannot match:
+
+   ```sql
+   select id, username, "isGuest", "createdAt", "ageConfirmedAt", "termsAcceptedAt",
+          "stripeSubscriptionId", "premiumUntil", "avatarUrl" is not null as has_avatar, suspended
+   from "Users"
+   where username = '<username>' and id = '<id from the report or profile>';
+   ```
+
+   - `ageConfirmedAt` is set: the person confirmed being 13 or older at that time. The confirmation does not
+     outweigh knowledge; carry on.
+   - `ageConfirmedAt` is null, `createdAt` is on or after 2026-09-27 and `isGuest` is false: a Google, GitHub
+     or Discord account that has not finished onboarding. Carry on.
+   - `ageConfirmedAt` is null and `createdAt` is before 2026-09-27: made before the confirmation existed.
+     Carry on.
+   - `isGuest` is true: the age limit applies to guests too; they are just never asked to confirm it. Skip
+     step 2, because a suspension does not stop a guest (`lib/request-auth.ts` checks `suspended` only for a
+     signed-in session), and step 3, because a guest cannot buy Premium. Write the audit entry the panel
+     would have written by hand, then delete through step 4:
+
+     ```sql
+     insert into "AdminAuditLogs" (id, "adminId", action, "targetType", "targetId", details)
+     values ('age-' || gen_random_uuid(), '<your admin user id>', 'delete_user', 'user', '<guest id>',
+             '{"reason": "age"}');
+     ```
+2. **Suspend it at once, reason `age`.** Control Panel, the user's page, SUSPEND, reason `age`, duration
+   permanent. Sign-in stops, and the panel writes `suspend_user` to `AdminAuditLogs` with the reason: that
+   entry is the record of the decision and outlives the account (730 days). The reason field is optional in
+   the panel today, so type it every time.
+3. **Premium, if `stripeSubscriptionId` is set.** Stripe Dashboard: cancel the subscription immediately and
+   refund every Premium payment in full. A child under 13 is below both the 13+ rule and section 3's 15+
+   policy, so nothing is kept. Do this before step 4, which deletes the Stripe customer.
+4. **Delete it through the existing deletion path**, `POST /api/user/delete-account`: it removes the avatar
+   from the bucket, cancels any subscription, deletes the Stripe customer, clears the Discord Linked Roles,
+   replaces the name in other players' games and replays with "Deleted player", detaches feedback, then
+   deletes the row and everything that cascades from it. Do **not** use the Control Panel's DELETE ALL DATA
+   for this: it deletes the `Users` row only and leaves the avatar, the Stripe customer, the Discord roles and
+   the name in other players' records behind.
+
+   The route takes a one-hour deletion token for that user, stored as its SHA-256 (`lib/auth-tokens.ts`).
+   Mint one:
+
+   ```bash
+   TOKEN=$(openssl rand -hex 32)
+   printf %s "$TOKEN" | shasum -a 256 | cut -d' ' -f1   # the hash
+   ```
+
+   ```sql
+   insert into "PasswordResetTokens" (id, "userId", "tokenHash", purpose, expires)
+   values ('age-' || gen_random_uuid(), '<id>', '<the hash>', 'delete', now() + interval '1 hour');
+   ```
+
+   Open `https://boardly.online/auth/delete-account?token=<TOKEN>` in a private window. Signed in as anyone
+   else the route answers 403, and it deletes a suspended account like any other. Type DELETE and confirm,
+   then check that `select count(*) from "Users" where id = '<id>'` is 0.
+5. **Close the reports.** Mark every `Reports` row about the account `actioned` (`status`, `reviewedAt`,
+   `reviewedBy` = your admin id). The deletion has already set their `reportedUserId` to null; the reported
+   content stays for the reports retention like any other report.
+6. **Answer whoever told us**, from support@, the same day, in company voice. Send nothing of the account's
+   data or content to them, a parent included: deleting it is the answer, and a request to see the data is a
+   separate access request from the account holder. A report from the in-game Report action has no one to
+   answer. For a parent:
+
+   > Hello,
+   >
+   > Thank you for telling us. Boardly is for people aged 13 and over, so we have closed the account you
+   > wrote about and deleted it, with its profile picture, its friends list and its name in other players'
+   > game history. [Its Premium payments have been refunded in full to the card they came from.]
+   >
+   > If you have any questions, reply to this email.
+   >
+   > The Boardly team
+
+   Norwegian, when they wrote in Norwegian:
+
+   > Hei,
+   >
+   > Takk for at du sa fra. Boardly er for personer som er 13 år eller eldre, så vi har stengt og slettet
+   > kontoen du skrev om, med profilbildet, vennelisten og navnet i andre spilleres spillhistorikk.
+   > [Premium-betalingene er betalt tilbake i sin helhet til kortet de kom fra.]
+   >
+   > Har du spørsmål, kan du svare på denne e-posten.
+   >
+   > Hilsen Boardly-teamet
+7. **Log it** in the vault's Boardly log: the date, what arrived and "account deleted, age". No username, no
+   email address.
+
 ### Runbook: discord_bot_stale
 
 The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts

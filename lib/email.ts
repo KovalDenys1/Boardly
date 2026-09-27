@@ -688,7 +688,7 @@ function englishConfirmationCopy(d: PremiumConfirmationDetails, links: Confirmat
       {
         heading: 'How to cancel',
         paragraphs: [
-          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.`,
+          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, write to us and we refund the unused whole months.`,
           // What happens to access after a cancellation made in Link is Link's
           // to decide, so the end-of-period promise above covers the profile only.
           "You can also cancel the subscription, or delete your Link account, at link.com; that follows Link's terms, and deleting your Link account cancels the subscription.",
@@ -753,7 +753,7 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
       {
         heading: 'Slik sier du opp',
         paragraphs: [
-          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
+          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.`,
           'Du kan også si opp abonnementet eller slette Link-kontoen din på link.com; da gjelder Links vilkår, og sletter du Link-kontoen, sies abonnementet opp.',
         ],
       },
@@ -895,6 +895,183 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
   } catch (error) {
     await noteEmailSendFailure('sendPremiumConfirmationEmail', error)
     logger.error('Failed to send premium confirmation email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export type SubscriptionNoticeDetails = {
+  /** Resend idempotency key; one per notice, so a retried send cannot double-deliver. */
+  idempotencyKey?: string
+  username?: string | null
+  plan: PremiumPlan
+  /** The Stripe Price's `unit_amount`: minor units of `currency`. Null when Stripe gave none. */
+  unitAmount: number | null
+  /** The Stripe Price's `currency`: lower-case ISO 4217. */
+  currency: string | null
+  /** The end of the current period, when the next renewal is charged. */
+  renewsAt: Date | null
+}
+
+function englishNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLinks): ConfirmationCopy {
+  const locale = 'en-US'
+  const yearly = d.plan === 'yearly'
+  const period = yearly ? 'year' : 'month'
+  const price =
+    d.unitAmount !== null && d.currency
+      ? ` Price: ${formatChargedAmount(d.unitAmount, d.currency, locale)} per ${period}. If you pay in another currency, Link converts the price at the rate of the day each renewal is charged.`
+      : ''
+  const renewal = d.renewsAt
+    ? `It renews automatically on ${formatDay(d.renewsAt, locale)}, and every ${period} after that, until you cancel.`
+    : `It renews automatically every ${period} until you cancel.`
+
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro:
+      'Your Boardly Premium subscription is still running. While it runs, we send you this reminder at least every six months, so you always know what you are paying for and how to stop it.',
+    sections: [
+      {
+        heading: 'Your subscription',
+        paragraphs: [`Boardly Premium, ${yearly ? 'yearly' : 'monthly'} plan.${price}`, renewal],
+      },
+      {
+        heading: 'How to cancel',
+        paragraphs: [
+          `You can cancel at any time: open ${links.profile}, go to the Premium tab and press Cancel. The cancellation takes effect at the end of the period you have paid for; you keep Premium until then, and nothing more is charged. If you cancel a yearly plan early, write to us and we refund the unused whole months.`,
+          `You can also write to ${SUPPORT_EMAIL} and we cancel it for you, or cancel it in your Link account at link.com, which follows Link's terms.`,
+        ],
+      },
+      {
+        heading: 'Terms',
+        paragraphs: [`The Boardly Terms of Service apply to the subscription: ${links.terms}.`],
+      },
+    ],
+  }
+}
+
+function norwegianNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLinks): ConfirmationCopy {
+  const locale = 'nb-NO'
+  const yearly = d.plan === 'yearly'
+  const price =
+    d.unitAmount !== null && d.currency
+      ? ` Pris: ${formatChargedAmount(d.unitAmount, d.currency, locale)} per ${yearly ? 'år' : 'måned'}. Betaler du i en annen valuta, regner Link om prisen etter kursen den dagen hver fornyelse trekkes.`
+      : ''
+  const every = yearly ? 'hvert år' : 'hver måned'
+  const renewal = d.renewsAt
+    ? `Abonnementet fornyes automatisk ${formatDay(d.renewsAt, locale)} og deretter ${every}, til du sier det opp.`
+    : `Abonnementet fornyes automatisk ${every} til du sier det opp.`
+
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro:
+      'Boardly Premium-abonnementet ditt løper fortsatt. Så lenge det løper, sender vi deg denne påminnelsen minst hver sjette måned, slik at du alltid vet hva du betaler for, og hvordan du stopper det.',
+    sections: [
+      {
+        heading: 'Abonnementet ditt',
+        paragraphs: [`Boardly Premium, ${yearly ? 'årsabonnement' : 'månedsabonnement'}.${price}`, renewal],
+      },
+      {
+        heading: 'Slik sier du opp',
+        paragraphs: [
+          `Du kan si opp når som helst: åpne ${links.profile}, gå til Premium-fanen og trykk på Avbryt. Oppsigelsen gjelder fra utløpet av perioden du har betalt for; du beholder Premium til da, og ingenting mer blir trukket. Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.`,
+          `Du kan også skrive til ${SUPPORT_EMAIL}, så sier vi opp abonnementet for deg, eller si det opp i Link-kontoen din på link.com; da gjelder Links vilkår.`,
+        ],
+      },
+      {
+        heading: 'Vilkår',
+        paragraphs: [`Boardlys vilkår for bruk gjelder for abonnementet: ${links.terms}.`],
+      },
+    ],
+  }
+}
+
+/**
+ * The running-subscription notice (#1165). digitalytelsesloven § 33 fourth
+ * paragraph: "Ved løpende levering av digitale ytelser skal leverandøren minst en
+ * gang hver sjette måned sende forbrukeren et varsel om at avtalen løper, og
+ * opplyse forbrukeren om adgangen til å si opp avtalen etter første til tredje
+ * ledd." So it says the subscription runs and how to end it: on the channel it
+ * was bought through (the profile), simply, with effect from the end of the
+ * paid period (§ 33 first and third paragraphs).
+ *
+ * Link's own renewal emails do not cover it: outside Australia and the UK they
+ * come only before the 12-month anniversary unless "Upcoming renewals" is on, and
+ * even then a yearly plan hears once a year (docs/OPERATIONS.md, "Runbook:
+ * running-subscription notice"). English first, then Norwegian bokmål, in one
+ * message, like the purchase confirmation: no language is stored per user.
+ * lib/subscription-notice.ts decides who is due and guarantees one send per
+ * notice; this only renders and sends.
+ */
+export async function sendSubscriptionNoticeEmail(email: string, details: SubscriptionNoticeDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ConfirmationLinks = {
+    profile: `${base}/profile?tab=premium`,
+    withdrawal: `${base}/withdrawal`,
+    terms: `${base}/terms`,
+  }
+  const english = englishNoticeCopy(details, links)
+  const norwegian = norwegianNoticeCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+  const signature = 'The Boardly team'
+  const footerText = emailFooterText()
+
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}\n${signature}`,
+    footerText,
+  ]
+    .filter((part) => part.length > 0)
+    .join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: 'Your Boardly Premium subscription is still running / Boardly Premium-abonnementet ditt løper fortsatt',
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}<br>
+                ${signature}
+              </p>
+              ${emailFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    await noteEmailSendFailure('sendSubscriptionNoticeEmail', error)
+    logger.error('Failed to send subscription notice email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

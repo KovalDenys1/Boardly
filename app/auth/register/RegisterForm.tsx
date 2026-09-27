@@ -378,6 +378,14 @@ export default function RegisterForm() {
                     <Link href="/privacy" target="_blank" style={{ color: 'var(--bd-ink)', fontWeight: 600, textDecoration: 'underline' }}>{t('auth.register.privacyPolicy')}</Link>
                   </span>
                 </Label>
+                {/* #1173: the community rules are part of the Terms being accepted above.
+                    Outside the label so following the link does not tick the box; a new
+                    tab so the half-filled form survives. Indented to the label text. */}
+                <p style={{ margin: 0, marginTop: -4, paddingLeft: 24, fontSize: 13, color: 'var(--bd-ink-soft)' }}>
+                  <Link href="/rules" target="_blank" style={{ color: 'var(--bd-ink)', textDecoration: 'underline' }}>
+                    {t('auth.register.rulesLink')}
+                  </Link>
+                </p>
                 <Label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
                   <Checkbox
                     checked={ageConfirmed}
