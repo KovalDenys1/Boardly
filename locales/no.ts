@@ -3601,7 +3601,7 @@ const no = {
         title: 'Kontoen din',
         data: 'Brukernavn, e-postadresse, passordet ditt lagret bare som en enveis bcrypt-hash, profilbilde, bio, aksentfarge og innstillinger, innloggingstjenestene du har koblet til, tidspunktet for siste tilbakestilling av passord eller endring av e-post (brukes bare til å logge ut eldre økter), nettstedet eller kampanjen du kom fra da du registrerte deg, og når du godtok vilkårene og bekreftet at du er 13 år eller eldre.',
         basis: 'Avtale: kontoen din bygger på vilkårene du godtar når du oppretter den, ikke på samtykke, og vi trenger dette for å drive den. Registreringskilden: vår berettigede interesse i å vite hvilke kanaler som bringer nye spillere.',
-        retention: 'Til du sletter kontoen. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
+        retention: 'Til du sletter kontoen. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har et Premium-abonnement eller Premium-tid igjen. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
         extra: 'Profilen til en ny konto (brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine, og påloggingsstatusen din er skjult. Første gang du logger inn, tilbyr vi å gjøre profilen offentlig, og du kan endre begge deler når som helst i profilinnstillingene. Kontoer opprettet før 27. september 2026 beholder innstillingene de hadde: offentlig profil og synlig påloggingsstatus, med mindre de er endret. Brukernavnet, bildet og spillresultatene dine vises på den offentlige topplisten, med mindre profilen er privat.',
       },
       guest: {
@@ -3801,6 +3801,11 @@ const no = {
     yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
     ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
     consentRequired: 'Kryss av i boksen for å bekrefte at du ber oss om å starte Premium nå. Kassen kan ikke åpnes uten.',
+    verifyEmailRequired: 'Premium krever en bekreftet e-postadresse. Send deg selv en bekreftelseslenke, åpne den og prøv igjen.',
+    verifyEmailResend: 'Send bekreftelses-e-posten',
+    verifyEmailSending: 'Sender...',
+    verifyEmailSent: 'Se etter bekreftelseslenken i innboksen din. Når du har åpnet den, kan du prøve igjen.',
+    verifyEmailResendFailed: 'Vi kunne ikke sende e-posten. Prøv igjen om noen minutter.',
     includedTitle: 'Dette låser Premium opp',
     freeTitle: 'Gratis for alltid, med eller uten Premium',
     features: {

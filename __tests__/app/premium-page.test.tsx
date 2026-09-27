@@ -152,6 +152,28 @@ describe('/premium checkout', () => {
     expect(trackPremiumCta).toHaveBeenCalledWith('premium_page_closing', 'monthly')
   })
 
+  it('asks for a verified email and resends the link when checkout answers 403 (#1139)', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'Verify your email address before buying Premium.', code: 'email_unverified' }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) })
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/verified email address/)
+    fireEvent.click(screen.getByRole('button', { name: /Send the verification email/ }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith('/api/auth/resend-verification', expect.objectContaining({ method: 'POST' }))
+    )
+    expect(await screen.findByText(/Check your inbox for the verification link/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Send the verification email/ })).toBeDisabled()
+  })
+
   it('says so instead of hanging when checkout cannot be opened', async () => {
     fetchMock.mockResolvedValue({ json: async () => ({ error: 'nope' }) })
     render(<PremiumContent pricing={BOTH_PLANS} />)

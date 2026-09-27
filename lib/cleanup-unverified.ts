@@ -1,3 +1,4 @@
+import type { Prisma } from '@/prisma/client'
 import { apiLogger } from './logger'
 import { prisma } from './db'
 import { sendUnverifiedAccountWarningEmail } from './email'
@@ -5,6 +6,28 @@ import { issueVerificationToken } from './auth-tokens'
 import { RETENTION_DAYS } from './retention-periods'
 
 const log = apiLogger('/cleanup/unverified-accounts')
+
+/**
+ * The accounts the unverified-email purge may warn and delete: never verified, not a
+ * bot, no Google, GitHub or Discord sign-in (those need no email verification), and no
+ * subscription (#1139). A customer is never deleted for an unverified address:
+ * `stripeSubscriptionId` covers a subscription Stripe still holds, and a `premiumUntil`
+ * still in the future covers paid time left after a cancellation and Premium given
+ * any other way. Checkout now needs a verified address, so this guards the accounts
+ * that bought before that rule.
+ *
+ * One definition for the warning, the deletion and scripts/cleanup-unverified.ts, so
+ * nobody is warned about a deletion that will not happen, or deleted without the warning.
+ */
+export function purgeableUnverifiedAccountsWhere(now: Date = new Date()): Prisma.UsersWhereInput {
+  return {
+    emailVerified: null,
+    bot: null,
+    accounts: { none: {} },
+    stripeSubscriptionId: null,
+    OR: [{ premiumUntil: null }, { premiumUntil: { lte: now } }],
+  }
+}
 
 function calculateDaysUntilDeletion(createdAt: Date, totalDaysBeforeDeletion: number): number {
   const accountAgeDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
@@ -26,18 +49,14 @@ export async function cleanupUnverifiedAccounts(daysOld: number = RETENTION_DAYS
       cutoffDate: cutoffDate.toISOString()
     })
 
-    // Find unverified accounts older than cutoff date
+    // Find unverified accounts older than cutoff date. No bots, no OAuth users and no
+    // customers: purgeableUnverifiedAccountsWhere.
     const unverifiedUsers = await prisma.users.findMany({
       where: {
-        emailVerified: null,
+        ...purgeableUnverifiedAccountsWhere(),
         createdAt: {
           lt: cutoffDate
         },
-        bot: null, // Don't delete bot accounts
-        // Don't delete OAuth users (they don't need email verification)
-        accounts: {
-          none: {}
-        }
       },
       select: {
         id: true,
@@ -75,9 +94,12 @@ export async function cleanupUnverifiedAccounts(daysOld: number = RETENTION_DAYS
       where: { userId: { in: userIds } }
     })
 
-    // Delete the users (this will cascade delete sessions, players, etc.)
+    // Delete the users (this will cascade delete sessions, players, etc.). The rule is
+    // checked again here, so an account that subscribed or verified since the lookup
+    // above is kept.
     const result = await prisma.users.deleteMany({
       where: {
+        ...purgeableUnverifiedAccountsWhere(),
         id: { in: userIds }
       }
     })
@@ -122,18 +144,15 @@ export async function warnUnverifiedAccounts(
       cutoffDate: cutoffDate.toISOString()
     })
 
-    // Find unverified accounts in warning window
+    // Find unverified accounts in warning window, under the same rule as the deletion:
+    // an account the purge will not delete gets no deletion warning.
     const usersToWarn = await prisma.users.findMany({
       where: {
-        emailVerified: null,
+        ...purgeableUnverifiedAccountsWhere(),
         createdAt: {
           lt: warnDate,
           gte: cutoffDate
         },
-        bot: null,  // Don't warn bot accounts
-        accounts: {
-          none: {}
-        }
       },
       select: {
         id: true,
