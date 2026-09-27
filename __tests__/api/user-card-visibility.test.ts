@@ -3,8 +3,10 @@
  */
 // @ts-nocheck - Prisma mocks are intentionally lightweight for route tests.
 // #1226: the player card follows the profile's visibility, so the user id every lobby
-// hands out is not a way round it. The one exception: someone who shared a lobby with
-// the player already saw their picture there, and still sees it on the card.
+// hands out is not a way round it. The username and picture are public (Denys,
+// 2026-09-27 20:32); statistics, favourite game and Premium status are not. The one
+// exception: the lobby's player list shows the Premium crown to everyone seated in it,
+// so someone who shared a lobby with the player still sees it on the card.
 
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
@@ -72,18 +74,19 @@ async function card() {
   return { body: JSON.parse(text), text }
 }
 
-function expectRestricted(result: { body: Record<string, unknown>; text: string }, picture: boolean) {
-  expect(result.body).toMatchObject({ username: 'Target', publicProfileId: 'TargetPP0001', restricted: true })
+function expectRestricted(result: { body: Record<string, unknown>; text: string }, premium: boolean) {
+  expect(result.body).toMatchObject({
+    username: 'Target',
+    publicProfileId: 'TargetPP0001',
+    image: AVATAR,
+    restricted: true,
+    isPremium: premium,
+  })
   expect(result.body.gamesPlayed).toBeUndefined()
   expect(result.body.wins).toBeUndefined()
   expect(result.body.winRate).toBeUndefined()
   expect(result.body.favouriteGame).toBeUndefined()
-  if (picture) {
-    expect(result.body).toMatchObject({ image: AVATAR, isPremium: true })
-  } else {
-    expect(result.body).toMatchObject({ image: null, isPremium: false })
-    expect(result.text).not.toContain(AVATAR)
-  }
+  expect(result.text).not.toContain('yahtzee')
 }
 
 describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
@@ -124,7 +127,7 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     expect(body).toMatchObject({ relation: 'friends', image: AVATAR, gamesPlayed: 2 })
   })
 
-  it('friends-only, seen by a non-friend who never shared a lobby: the username alone', async () => {
+  it('friends-only, seen by a non-friend who never shared a lobby: username and picture, no Premium or stats', async () => {
     mockPrisma.users.findUnique.mockResolvedValue(target('friends'))
     signedIn('stranger_1')
 
@@ -138,14 +141,14 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     })
   })
 
-  it('private, seen signed out with no guest token: the username alone, and no lobby lookup', async () => {
+  it('private, seen signed out with no guest token: username and picture, and no lobby lookup', async () => {
     mockPrisma.users.findUnique.mockResolvedValue(target('private'))
 
     expectRestricted(await card(), false)
     expect(mockPrisma.players.findFirst).not.toHaveBeenCalled()
   })
 
-  it('private, seen by a friend: still the username alone', async () => {
+  it('private, seen by a friend: still only the username and picture', async () => {
     mockPrisma.users.findUnique.mockResolvedValue(target('private'))
     mockPrisma.friendships.findFirst.mockResolvedValue({ id: 'friendship_1' })
     signedIn('friend_1')
@@ -153,7 +156,7 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     expectRestricted(await card(), false)
   })
 
-  it('private, seen by someone who shared a lobby with the player: the picture and badge, no statistics', async () => {
+  it('private, seen by someone who shared a lobby with the player: the Premium badge too, no statistics', async () => {
     mockPrisma.users.findUnique.mockResolvedValue(target('private'))
     mockPrisma.players.findFirst.mockResolvedValue({ id: 'seat_1' })
     signedIn('lobby_mate_1')
@@ -169,6 +172,14 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     )
 
     expectRestricted(await card(), true)
+  })
+
+  it('a hidden profile without Premium needs no lobby lookup', async () => {
+    mockPrisma.users.findUnique.mockResolvedValue({ ...target('private'), premiumUntil: null })
+    signedIn('stranger_1')
+
+    expectRestricted(await card(), false)
+    expect(mockPrisma.players.findFirst).not.toHaveBeenCalled()
   })
 
   it('private, seen by its owner: the full card', async () => {

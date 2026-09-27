@@ -2,7 +2,8 @@
  * @jest-environment node
  */
 // #1226: a profile the viewer may not see (private, or friends-only for a non-friend)
-// sends the page its username and nothing else; the owner always sees it in full.
+// sends the page its username and picture, which are public, and nothing else; the
+// owner always sees it in full.
 
 import { getServerSession } from 'next-auth'
 import PublicProfilePage from '@/app/u/[publicProfileId]/page'
@@ -77,9 +78,14 @@ async function render(viewer: { id: string } | null) {
 }
 
 function expectOnlyUsername(props: Awaited<ReturnType<typeof render>>) {
-  expect(props.profile).toEqual({ publicProfileId: PUBLIC_PROFILE_ID, username: 'Owner' })
+  expect(props.profile).toEqual({
+    publicProfileId: PUBLIC_PROFILE_ID,
+    username: 'Owner',
+    avatarUrl: AVATAR,
+    image: OAUTH_IMAGE,
+  })
   const serialized = JSON.stringify(props)
-  for (const leaked of [AVATAR, OAUTH_IMAGE, BIO, 'gold', 'yahtzee', '2026-01-01']) {
+  for (const leaked of [BIO, 'gold', 'yahtzee', '2026-01-01', '#ff0000', '2099']) {
     expect(serialized).not.toContain(leaked)
   }
   // Statistics and badges are not even read.

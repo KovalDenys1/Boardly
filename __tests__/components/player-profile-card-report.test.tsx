@@ -115,30 +115,29 @@ describe('PlayerProfileCard report action (#1172)', () => {
   })
 
   // #1226: a profile the viewer may not see comes back restricted.
-  it('shows a restricted card as private: the username, no statistics, and only the username to report', async () => {
+  it('shows a restricted card as private: username and picture, no statistics, and those two to report', async () => {
     mockCard({
       userId: 'u2',
       username: 'Bob',
-      image: null,
+      image: 'https://cdn.example/bob.png',
       publicProfileId: 'BobProfile01',
       isGuest: false,
       isPremium: false,
       restricted: true,
       relation: 'can_send',
     })
-    const { container } = render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
+    render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
 
     expect(await screen.findByText('Bob')).toBeTruthy()
     expect(screen.getByTestId('player-card-private').textContent).toContain('profile.publicProfile.privateTitle')
-    expect(container.querySelector('img')).toBeNull()
+    // The card is a portal-rendered modal, so look in the whole document.
+    expect(document.body.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/bob.png')
     expect(screen.queryByText('header.games')).toBeNull()
     expect(screen.queryByText('profile.playerCard.favourite')).toBeNull()
 
-    // One target, the username, so the form asks no "what are you reporting" question.
     fireEvent.click(screen.getByRole('button', { name: 'report.reportPlayer' }))
-    expect(screen.getByText('report.title')).toBeTruthy()
-    expect(screen.queryByText('report.targetLabel')).toBeNull()
-    expect(screen.queryByLabelText('report.targets.avatar')).toBeNull()
+    expect(screen.getByLabelText('report.targets.username')).toBeTruthy()
+    expect(screen.getByLabelText('report.targets.avatar')).toBeTruthy()
   })
 
   it('offers no Report to a visitor with no identity to report as', async () => {

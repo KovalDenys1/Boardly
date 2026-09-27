@@ -43,10 +43,10 @@ export const TERMS_FIGURES = {
  * 2026-09-27 (second change that day, #1130): finished games are pseudonymised rather than
  * deleted, a lobby in which no game started is deleted with its games, and accounts are
  * stated as kept until their owner deletes them.
- * 2026-09-27 (third change that day, #1226): the username and leaderboard results are
- * visible to everyone whatever the visibility setting, everything else on the profile
- * follows it, and players see the username and picture in lobbies and games they shared,
- * including the game results and the player card there.
+ * 2026-09-27 (third change that day, #1226): the username, picture and leaderboard results
+ * are visible to everyone whatever the visibility setting; bio, statistics, achievements,
+ * Premium status and online status follow it, except that players in lobbies and games
+ * you shared see the Premium badge and the game results there.
  */
 export const PRIVACY_UPDATED = '2026-09-27'
 

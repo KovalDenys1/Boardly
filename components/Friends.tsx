@@ -47,7 +47,7 @@ interface FriendRequest {
     avatar: string | null
   }
   receiver?: {
-    /** Absent, with `avatar: null`, when the receiver's profile is hidden from the sender (#1226). */
+    /** Absent when the receiver's profile is hidden from the sender (#1226); the name and picture are public. */
     id?: string
     username: string | null
     avatar: string | null

@@ -29,10 +29,10 @@ const SENDER_SELECT = {
 
 /**
  * A pending request is between two people who are not friends, so the one who sent it
- * may see the receiver's picture and internal id only when the receiver's profile is
- * public (#1226, presentProfileParty with relation 'other'). Otherwise the sender gets
- * the username they typed or clicked, the default avatar, and no `receiverId`. The
- * receiver always sees the sender who reached out to them.
+ * gets the receiver's internal id only when the receiver's profile is public (#1226,
+ * presentProfileParty with relation 'other'). Otherwise they get the username and the
+ * picture, which are public, and no `receiverId`. The receiver always sees the sender
+ * who reached out to them.
  */
 function presentRequest<
   T extends {

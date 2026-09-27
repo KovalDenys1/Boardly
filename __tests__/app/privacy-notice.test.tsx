@@ -123,25 +123,27 @@ describe('privacy notice (#1126)', () => {
     }
   })
 
-  // #1226: the leaderboard lists every account, private ones included. The notice says
-  // the username and leaderboard results are public whatever the setting, that the rest
-  // follows it, and no longer promises that a new profile's username is friends-only.
-  it('says the username and leaderboard results are public, and everything else follows the setting', () => {
+  // #1226 (Denys, 2026-09-27 20:32): username, picture and leaderboard results are public
+  // whatever the setting; bio, statistics, achievements, Premium status and online status
+  // follow it, except the Premium badge and game results in lobbies and games you shared.
+  it('says the username, picture and leaderboard results are public, and the rest follows the setting', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''
-    expect(text).toContain('Your username and your leaderboard results are visible to everyone, whatever your settings')
-    expect(text).toContain('Everything else on your profile (picture, bio, game statistics and achievements) follows its visibility setting')
+    expect(text).toContain('Your username, your picture and your leaderboard results are visible to everyone, whatever your settings')
     expect(text).toContain(
-      'Players you have played with see your username and picture in lobbies and games you shared, including the game results and your player card there'
+      'The rest of your profile (bio, game statistics, achievements, Premium status, and online status, which you can also switch off on its own) follows its visibility setting'
+    )
+    expect(text).toContain(
+      'In lobbies and games you shared, the other players also see your Premium badge and the game results, including on your player card there'
     )
     expect(text).not.toContain('(username, picture, bio and game statistics) is visible only to your friends')
     expect(text).not.toContain('appear on the public leaderboard unless your profile is private')
 
     // The same statements in every language, and none of the old ones.
     const expected = {
-      no: ['Brukernavnet ditt og resultatene dine på topplisten er synlige for alle', 'Alt annet på profilen', 'i lobbyer og spill dere har delt'],
-      ru: ['Ваше имя пользователя и ваши результаты в рейтинге видны всем', 'Всё остальное в профиле', 'в общих с вами лобби и играх'],
-      uk: ['Ваше ім’я користувача та ваші результати в рейтингу видно всім', 'Усе інше в профілі', 'в спільних із вами лобі та іграх'],
+      no: ['Brukernavnet ditt, bildet ditt og resultatene dine på topplisten er synlige for alle', 'Premium-status og påloggingsstatus', 'I lobbyer og spill dere har delt'],
+      ru: ['Ваше имя пользователя, фото и результаты в рейтинге видны всем', 'статус Premium и статус «в сети»', 'В общих с вами лобби и играх'],
+      uk: ['Ваше ім’я користувача, фото та результати в рейтингу видно всім', 'статус Premium і статус «у мережі»', 'У спільних із вами лобі та іграх'],
     }
     const stale = {
       no: ['(brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine', 'med mindre profilen er privat.'],

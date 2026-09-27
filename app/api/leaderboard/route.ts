@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
       { entries, hasMore },
       {
         headers: {
-          // The answer depends on who asks: a friends-only player's picture is in it for
-          // their friends and nobody else (#1226). A shared cache keyed on the URL alone
+          // The answer depends on who asks: a friends-only player's premium badge is in it
+          // for their friends and nobody else (#1226). A shared cache keyed on the URL alone
           // would hand one viewer's answer to the next, so the CDN must not keep it; it
           // was `public, s-maxage=20` before (#638). The aggregation behind it is still
           // cached for 20 s per filter combination in lib/server/leaderboard.ts.

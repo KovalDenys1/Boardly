@@ -90,14 +90,15 @@ export async function GET(req: NextRequest) {
     const friends = friendships.map(friendship => {
       const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
       const { accountPreferences, premiumUntil, image, avatarUrl, ...friendFields } = friend
-      // Private means nobody but the owner, friends included (#1226): a private friend is
-      // listed by name with the default avatar and no premium badge.
+      // The name and picture are public (#1226). Premium status and online status are
+      // profile content, and private means nobody but the owner, friends included, so a
+      // private friend is listed with no premium badge and as offline.
       const profileVisible = canViewProfile(accountPreferences?.profileVisibility, 'friend')
       return {
         ...friendFields,
-        avatar: profileVisible ? avatarUrl ?? image ?? null : null,
+        avatar: avatarUrl ?? image ?? null,
         isPremium: profileVisible && !!premiumUntil && premiumUntil > now,
-        showOnlineStatus: accountPreferences?.showOnlineStatus ?? true,
+        showOnlineStatus: profileVisible && (accountPreferences?.showOnlineStatus ?? true),
         friendshipId: friendship.id,
         friendsSince: friendship.createdAt,
       }

@@ -81,7 +81,7 @@ describe('/leaderboard server render (#922)', () => {
     expect(screen.getByText('Load more')).toBeInTheDocument()
   })
 
-  it('draws the default avatar for a row the server sent without a picture, and still links to the profile (#1226)', async () => {
+  it('draws the default avatar for a player with no picture, and links every row to the profile (#1226)', async () => {
     mockFetchLeaderboardPage.mockResolvedValue({
       entries: [
         { ...entry(1, 'Visible'), publicProfileId: 'VisiblePP001', avatarUrl: 'https://cdn.example/visible.png' },

@@ -157,10 +157,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     relation === 'self' ? 'self' : relation === 'friends' ? 'friend' : 'other'
   )
 
-  // A viewer who may not see the profile gets its username and nothing else (#1226).
-  // The rest is left out of the props, not just out of the markup: the RSC payload
-  // carries every prop to the browser whatever the component draws. Statistics and
-  // badges are not even queried.
+  // A viewer who may not see the profile gets its username and picture, which are public
+  // everywhere, and nothing else (#1226). The rest is left out of the props, not just out
+  // of the markup: the RSC payload carries every prop to the browser whatever the
+  // component draws. Statistics and badges are not even queried.
   if (!canView) {
     const accessState: PublicProfileAccessState =
       profileVisibility === 'private' ? 'private' : 'friends_only'
@@ -169,6 +169,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         profile={{
           publicProfileId: profile.publicProfileId,
           username: profile.username,
+          avatarUrl: profile.avatarUrl,
+          image: profile.image,
         }}
         initialRelation={relation}
         accessState={accessState}

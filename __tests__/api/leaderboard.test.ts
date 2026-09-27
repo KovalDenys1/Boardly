@@ -94,15 +94,15 @@ describe('GET /api/leaderboard', () => {
     expect(sql).toContain("result->>'isWinner' = 'true'")
   })
 
-  it('is never kept by a shared cache, because the pictures in it depend on who asks (#1226)', async () => {
+  it('is never kept by a shared cache, because the premium badges in it depend on who asks (#1226)', async () => {
     const response = await GET(buildRequest())
 
     // Was `public, s-maxage=20` (#638): a CDN keyed on the URL would hand a friend's
-    // view of a friends-only picture to the next visitor.
+    // view of a friends-only player's badge to the next visitor.
     expect(response.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
-  it("answers for the signed-in viewer, and a hidden profile's picture URL is not in the body", async () => {
+  it("answers for the signed-in viewer: a hidden profile keeps its picture, loses its badge, and no row carries the user id", async () => {
     mockViewerId.mockResolvedValue('viewer-1')
     mockPrisma.$queryRaw.mockResolvedValue([
       {
@@ -116,7 +116,7 @@ describe('GET /api/leaderboard', () => {
         avatarUrl: 'https://cdn.example/private-avatar.png',
         image: null,
         profileVisibility: 'private',
-        premiumUntil: null,
+        premiumUntil: new Date('2099-01-01T00:00:00Z'),
       },
     ] as any)
 
@@ -125,8 +125,13 @@ describe('GET /api/leaderboard', () => {
     const payload = JSON.parse(text)
 
     expect(mockViewerId).toHaveBeenCalled()
-    expect(payload.entries[0]).toMatchObject({ username: 'Hidden Player', wins: 9, losses: 3, avatarUrl: null })
-    expect(text).not.toContain('private-avatar.png')
+    expect(payload.entries[0]).toMatchObject({
+      username: 'Hidden Player',
+      wins: 9,
+      losses: 3,
+      avatarUrl: 'https://cdn.example/private-avatar.png',
+      isPremium: false,
+    })
     expect(text).not.toContain('profileVisibility')
     // The internal id opens the player card and reports by id; no row carries it.
     expect(text).not.toContain('user-private')

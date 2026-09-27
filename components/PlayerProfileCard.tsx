@@ -21,8 +21,8 @@ interface PlayerCardData {
   isGuest: boolean
   isPremium: boolean
   /**
-   * A profile the viewer may not see (#1226): the card has the username, the picture
-   * only for someone who shared a lobby with the player, and no statistics.
+   * A profile the viewer may not see (#1226): the card has the username and picture,
+   * which are public, and no statistics or favourite game.
    */
   restricted?: boolean
   gamesPlayed?: number

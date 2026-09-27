@@ -185,8 +185,9 @@ describe('GET /api/friends', () => {
     expect(payload.friends[0].avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
   })
 
-  // #1226: private means nobody but the owner, friends included, as the profile page and
-  // the privacy notice say. Public and friends-only profiles are visible to a friend.
+  // #1226: the name and picture are public (Denys, 2026-09-27 20:32). Premium status and
+  // online status are profile content, and private means nobody but the owner, friends
+  // included. Public and friends-only profiles are visible to a friend.
   describe('profile visibility (#1226)', () => {
     const AVATAR = 'https://cdn.example.com/friend-avatar.png'
 
@@ -198,7 +199,8 @@ describe('GET /api/friends', () => {
         ? { showOnlineStatus: true, profileVisibility }
         : null
       mockPrisma.friendships.findMany.mockResolvedValue([friendship] as any)
-      mockPrisma.games.findMany.mockResolvedValue([] as any)
+      // In a game right now, with online status switched on.
+      mockPrisma.games.findMany.mockResolvedValue([{ status: 'playing', players: [{ userId: 'friend-1' }] }] as any)
 
       const response = await GET(buildRequest())
       expect(response.status).toBe(200)
@@ -222,19 +224,18 @@ describe('GET /api/friends', () => {
       ['friends-only', 'friends'],
       ['legacy (no preferences row)', undefined],
     ] as const)(
-      'a %s friend is listed with their picture and premium badge',
+      'a %s friend is listed with their picture, premium badge and presence',
       async (_label, visibility) => {
         const { friend } = await friendWith(visibility)
 
-        expect(friend).toMatchObject({ username: 'friend-user', avatar: AVATAR, isPremium: true })
+        expect(friend).toMatchObject({ username: 'friend-user', avatar: AVATAR, isPremium: true, presence: 'in_game' })
       }
     )
 
-    it('a private friend is listed by name with the default avatar and no premium badge', async () => {
+    it('a private friend is listed with name and picture, but no premium badge and as offline', async () => {
       const { friend, text } = await friendWith('private')
 
-      expect(friend).toMatchObject({ username: 'friend-user', avatar: null, isPremium: false })
-      expect(text).not.toContain(AVATAR)
+      expect(friend).toMatchObject({ username: 'friend-user', avatar: AVATAR, isPremium: false, presence: 'offline' })
       expect(text).not.toContain('profileVisibility')
       expect(text).not.toContain('premiumUntil')
     })

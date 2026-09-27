@@ -25,8 +25,8 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'profile.publicProfile.friendsOnlySubtitle': 'Only this player\'s friends can see their profile. Once they accept your friend request, you can see it too.',
         'profile.publicProfile.privateTitle': 'This profile is private',
         'profile.publicProfile.privateSubtitle': 'This player is not sharing their public profile right now.',
-        'profile.publicProfile.ownerNote.private': 'Only you can see your profile. Your username and leaderboard results stay visible to everyone.',
-        'profile.publicProfile.ownerNote.friends': 'Only your friends can see your profile. Your username and leaderboard results stay visible to everyone.',
+        'profile.publicProfile.ownerNote.private': 'Only you can see your profile. Your username, picture and leaderboard results stay visible to everyone.',
+        'profile.publicProfile.ownerNote.friends': 'Only your friends can see your profile. Your username, picture and leaderboard results stay visible to everyone.',
         'profile.publicProfile.privacySettingsLink': 'Privacy settings',
         'profile.publicProfile.goToOwnProfile': 'Go to My Profile',
         'profile.friends.title': 'Friends',
@@ -89,9 +89,9 @@ describe('PublicProfileView', () => {
     expect(screen.getByRole('button', { name: 'Add Friend' })).toBeTruthy()
   })
 
-  // #1226, Steam-style: the username, the default avatar and the notice, nothing else.
+  // #1226, Steam-style: the username, the picture and the notice, nothing else.
   it.each(['private', 'friends_only'] as const)(
-    'a %s profile shows the username and the default avatar, and no picture, bio, stats or badges',
+    'a %s profile shows the username and the picture, and no bio, stats or badges',
     (accessState) => {
       const { container } = render(
         <PublicProfileView
@@ -109,10 +109,10 @@ describe('PublicProfileView', () => {
 
       expect(screen.getByRole('heading', { level: 1, name: 'Player One' })).toBeTruthy()
       expect(screen.getByText('This profile is private')).toBeTruthy()
-      // The default avatar: the initial, no <img>.
-      expect(container.querySelector('img')).toBeNull()
-      expect(screen.getByTestId('restricted-profile').textContent).toContain('P')
+      // The picture is public (Denys, 2026-09-27 20:32).
+      expect(screen.getByRole('img', { name: 'Player One' }).getAttribute('src')).toBe('https://cdn.example/hidden.png')
       expect(container.textContent).not.toContain('hidden bio')
+      expect(screen.queryByText('common.premium')).toBeNull()
       expect(screen.queryByText('First Win')).toBeNull()
       expect(screen.queryByText('Friends')).toBeNull()
       expect(screen.queryByText(/Lvl\./)).toBeNull()
@@ -135,7 +135,7 @@ describe('PublicProfileView', () => {
 
   // #1226: the username is on the page, so it can be reported; nothing else can.
   it.each(['private', 'friends_only'] as const)(
-    'a %s profile offers Report for the username alone',
+    'a %s profile offers Report for the username and picture, never the bio',
     async (accessState) => {
       ;(fetchWithGuest as jest.Mock).mockResolvedValue(
         new Response(JSON.stringify({ ok: true, duplicate: false }), { status: 201 })
@@ -149,9 +149,11 @@ describe('PublicProfileView', () => {
       )
 
       fireEvent.click(screen.getByRole('button', { name: 'report.reportProfile' }))
-      // One target, so the form asks no "what are you reporting" question.
       expect(await screen.findByText('report.title')).toBeTruthy()
-      expect(screen.queryByText('report.targetLabel')).toBeNull()
+      expect(screen.getByLabelText('report.targets.username')).toBeTruthy()
+      expect(screen.getByLabelText('report.targets.avatar')).toBeTruthy()
+      expect(screen.queryByLabelText('report.targets.bio')).toBeNull()
+      fireEvent.click(screen.getByLabelText('report.targets.username'))
       fireEvent.click(screen.getByLabelText('report.reasons.hate'))
       fireEvent.click(screen.getByRole('button', { name: 'report.submit' }))
       await screen.findByText('report.successTitle')
@@ -165,19 +167,19 @@ describe('PublicProfileView', () => {
     render(<PublicProfileView profile={profile} initialRelation="self" ownerVisibility="private" />)
 
     expect(screen.getByTestId('owner-visibility-note').textContent).toContain(
-      'Only you can see your profile. Your username and leaderboard results stay visible to everyone.'
+      'Only you can see your profile. Your username, picture and leaderboard results stay visible to everyone.'
     )
     expect(screen.getByRole('link', { name: 'Privacy settings' }).getAttribute('href')).toBe('/profile?tab=settings#privacy')
     // The owner still sees the full profile.
     expect(screen.getByText('First Win')).toBeTruthy()
   })
 
-  it('says in every language that the username and leaderboard results stay public when the profile is hidden', () => {
+  it('says in every language that the username, picture and leaderboard results stay public when the profile is hidden', () => {
     const public_ = {
-      en: 'Your username and leaderboard results stay visible to everyone.',
-      no: 'Brukernavnet og resultatene dine på topplisten er fortsatt synlige for alle.',
-      ru: 'Имя пользователя и результаты в рейтинге по-прежнему видны всем.',
-      uk: 'Ім’я користувача та результати в рейтингу й надалі видно всім.',
+      en: 'Your username, picture and leaderboard results stay visible to everyone.',
+      no: 'Brukernavnet, bildet og resultatene dine på topplisten er fortsatt synlige for alle.',
+      ru: 'Имя пользователя, фото и результаты в рейтинге по-прежнему видны всем.',
+      uk: 'Ім’я користувача, фото та результати в рейтингу й надалі видно всім.',
     }
     for (const [name, sentence] of Object.entries(public_)) {
       const { ownerNote } = require(`@/locales/${name}`).default.profile.publicProfile

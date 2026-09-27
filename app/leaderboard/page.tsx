@@ -33,8 +33,8 @@ export const metadata: Metadata = {
 // instead of an empty client shell (#922); the query behind them is cached
 // for 20 s in lib/server/leaderboard.ts, shared with /api/leaderboard. Filter
 // changes stay on the client, which fetches /api/leaderboard exactly as before.
-// Which pictures a row carries depends on the viewer (#1226), so the session is
-// read here as it is in the API route.
+// Which premium badges a row carries depends on the viewer (#1226), so the session
+// is read here as it is in the API route.
 export const dynamic = 'force-dynamic'
 
 const log = apiLogger('/leaderboard')

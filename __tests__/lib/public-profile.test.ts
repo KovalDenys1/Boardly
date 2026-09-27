@@ -42,7 +42,7 @@ describe('public profile helpers', () => {
     }
   })
 
-  it('presents a visible party in full and a hidden one as the username alone', () => {
+  it('presents a visible party in full and a hidden one as its username and picture', () => {
     const party = (profileVisibility: 'public' | 'private') => ({
       id: 'cuid_1',
       username: 'Ann',
@@ -57,7 +57,7 @@ describe('public profile helpers', () => {
     })
     expect(presentProfileParty(party('private'), 'other')).toEqual({
       visible: false,
-      party: { username: 'Ann', avatar: null },
+      party: { username: 'Ann', avatar: 'https://cdn.example/ann.png' },
     })
   })
 })

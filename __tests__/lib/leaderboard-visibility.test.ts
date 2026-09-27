@@ -1,9 +1,10 @@
 /**
  * @jest-environment node
  */
-// #1226: the leaderboard lists every player whatever their profile visibility, and
-// sends a player's picture and premium badge only to a viewer who may see their
-// profile. No row carries the internal user id.
+// #1226: the leaderboard lists every player whatever their profile visibility, with
+// their username, picture and results, which are public (Denys, 2026-09-27 20:32). The
+// premium badge is profile content: only a viewer who may see the profile gets it. No
+// row carries the internal user id.
 
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
 import LeaderboardPage from '@/app/leaderboard/page'
@@ -109,25 +110,20 @@ describe('leaderboard profile visibility (#1226)', () => {
     expect(sql).toContain('b.id IS NULL')
   })
 
-  it('a signed-out visitor gets the picture and badge of public profiles only', async () => {
+  it('a signed-out visitor gets every picture, and the badge of public profiles only', async () => {
     const { entries } = await fetchLeaderboardPage(QUERY, null)
 
-    expect(byName(entries, 'avatarUrl')).toEqual({ pub: PICTURES.pub, friends: null, priv: null, legacy: PICTURES.legacy })
+    expect(byName(entries, 'avatarUrl')).toEqual({ pub: PICTURES.pub, friends: PICTURES.friends, priv: PICTURES.priv, legacy: PICTURES.legacy })
     expect(byName(entries, 'isPremium')).toEqual({ pub: true, friends: false, priv: false, legacy: true })
     expect(mockFindFriendships).not.toHaveBeenCalled()
   })
 
-  it('a friend gets the friends-only picture and badge; a private one stays hidden', async () => {
+  it("a friend gets the friends-only badge; a private one's badge stays hidden", async () => {
     mockFindFriendships.mockResolvedValue([{ user1Id: IDS.friends, user2Id: 'viewer' }])
 
     const { entries } = await fetchLeaderboardPage(QUERY, 'viewer')
 
-    expect(byName(entries, 'avatarUrl')).toEqual({
-      pub: PICTURES.pub,
-      friends: PICTURES.friends,
-      priv: null,
-      legacy: PICTURES.legacy,
-    })
+    expect(byName(entries, 'avatarUrl')).toEqual({ pub: PICTURES.pub, friends: PICTURES.friends, priv: PICTURES.priv, legacy: PICTURES.legacy })
     expect(byName(entries, 'isPremium')).toEqual({ pub: true, friends: true, priv: false, legacy: true })
     // One lookup, for the friends-only players on the page only.
     expect(mockFindFriendships).toHaveBeenCalledTimes(1)
@@ -137,47 +133,42 @@ describe('leaderboard profile visibility (#1226)', () => {
     ])
   })
 
-  it('a signed-in non-friend gets no friends-only or private picture or badge', async () => {
+  it('a signed-in non-friend gets every picture, and no friends-only or private badge', async () => {
     const { entries } = await fetchLeaderboardPage(QUERY, 'stranger')
 
-    expect(byName(entries, 'avatarUrl')).toEqual({ pub: PICTURES.pub, friends: null, priv: null, legacy: PICTURES.legacy })
+    expect(byName(entries, 'avatarUrl')).toEqual({ pub: PICTURES.pub, friends: PICTURES.friends, priv: PICTURES.priv, legacy: PICTURES.legacy })
     expect(byName(entries, 'isPremium')).toEqual({ pub: true, friends: false, priv: false, legacy: true })
   })
 
-  it('the owner of a private profile sees their own picture and badge', async () => {
+  it('the owner of a private profile sees their own badge', async () => {
     const { entries } = await fetchLeaderboardPage(QUERY, IDS.priv)
 
-    expect(byName(entries, 'avatarUrl').priv).toBe(PICTURES.priv)
     expect(byName(entries, 'isPremium').priv).toBe(true)
-    expect(byName(entries, 'avatarUrl').friends).toBeNull()
+    expect(byName(entries, 'isPremium').friends).toBe(false)
   })
 
-  it('no hidden picture URL, no user id and no visibility field is anywhere in what a viewer receives', async () => {
+  it('no user id and no visibility field is anywhere in what a viewer receives', async () => {
     const page = await fetchLeaderboardPage(QUERY, 'stranger')
     const serialized = JSON.stringify(page)
 
-    expect(serialized).not.toContain(PICTURES.friends)
-    expect(serialized).not.toContain(PICTURES.priv)
     expect(serialized).not.toContain('profileVisibility')
     expect(serialized).not.toContain('userId')
     for (const id of Object.values(IDS)) expect(serialized).not.toContain(id)
   })
 
-  it('the server-rendered page hands the client no hidden user id or picture either', async () => {
+  it('the server-rendered page hands the client no user id either, and no hidden badge', async () => {
     mockViewerId.mockResolvedValue('stranger')
 
     const element = await LeaderboardPage({ searchParams: Promise.resolve({}) })
     const payload = JSON.stringify(element.props)
 
     expect(element.props.initial.entries).toHaveLength(4)
-    expect(payload).not.toContain(IDS.friends)
-    expect(payload).not.toContain(IDS.priv)
-    expect(payload).not.toContain(PICTURES.friends)
-    expect(payload).not.toContain(PICTURES.priv)
+    for (const id of Object.values(IDS)) expect(payload).not.toContain(id)
     expect(payload).not.toContain('userId')
+    expect(byName(element.props.initial.entries, 'isPremium')).toEqual({ pub: true, friends: false, priv: false, legacy: true })
   })
 
-  it('falls back to the connected-account image for a visible profile, and hides it for a hidden one', async () => {
+  it('falls back to the connected-account image, whatever the visibility', async () => {
     mockQueryRaw.mockResolvedValue([
       { ...row('pub', 'public'), avatarUrl: null, image: 'https://oauth.example/pub.jpg' },
       { ...row('priv', 'private'), avatarUrl: null, image: 'https://oauth.example/priv.jpg' },
@@ -185,7 +176,6 @@ describe('leaderboard profile visibility (#1226)', () => {
 
     const page = await fetchLeaderboardPage(QUERY, null)
 
-    expect(byName(page.entries, 'avatarUrl')).toEqual({ pub: 'https://oauth.example/pub.jpg', priv: null })
-    expect(JSON.stringify(page)).not.toContain('oauth.example/priv.jpg')
+    expect(byName(page.entries, 'avatarUrl')).toEqual({ pub: 'https://oauth.example/pub.jpg', priv: 'https://oauth.example/priv.jpg' })
   })
 })

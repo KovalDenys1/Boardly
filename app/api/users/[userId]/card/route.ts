@@ -102,8 +102,9 @@ export async function GET(
 
   // The card follows the profile's visibility (#1226), like /u/<publicProfileId> and the
   // leaderboard: a private profile, or a friends-only one for anyone but a friend, shows
-  // its username and nothing else. The id in this path is not a secret (every lobby
-  // hands it out), so without this the card was the way round the rule.
+  // its username and picture, which are public everywhere, and none of its content. The
+  // id in this path is not a secret (every lobby hands it out), so without this the card
+  // was the way round the rule.
   const viewerId = session?.user?.id ?? getGuestClaimsFromRequest(req)?.guestId ?? null
   const canView = canViewProfile(
     user.accountPreferences?.profileVisibility,
@@ -111,17 +112,18 @@ export async function GET(
   )
 
   if (!canView) {
-    // Someone who has sat in a lobby with this player already saw their picture and
-    // premium badge there, next to their name, so the card shows them those too. The
-    // statistics follow the visibility setting for everyone.
-    const lobbyMate = viewerId !== null && (await sharesALobby(viewerId, userId))
+    // Premium status is profile content, with one exception: the lobby's player list
+    // shows the crown to everyone seated in it, so someone who has sat in a lobby with
+    // this player already saw it, and the card repeats it for them. Statistics and the
+    // favourite game follow the visibility setting for everyone.
+    const lobbyMate = isPremium && viewerId !== null && (await sharesALobby(viewerId, userId))
     return NextResponse.json({
       userId: user.id,
       username: user.username,
-      image: lobbyMate ? user.avatarUrl ?? user.image : null,
+      image: user.avatarUrl ?? user.image,
       publicProfileId: user.publicProfileId,
       isGuest: user.isGuest,
-      isPremium: lobbyMate ? isPremium : false,
+      isPremium: lobbyMate,
       restricted: true,
       relation,
     })

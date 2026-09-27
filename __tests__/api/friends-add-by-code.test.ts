@@ -162,8 +162,8 @@ describe('POST /api/friends/add-by-code', () => {
   })
 
   // #1226: knowing someone's friend code is not permission to see their profile. The
-  // sender is not a friend yet (checked before the request is made), so the picture and
-  // internal id come back only for a public profile.
+  // sender is not a friend yet (checked before the request is made), so the internal id
+  // comes back only for a public profile. The username and picture are public.
   describe('profile visibility (#1226)', () => {
     const AVATAR = 'https://cdn.example.com/target-avatar.png'
 
@@ -205,16 +205,15 @@ describe('POST /api/friends/add-by-code', () => {
     })
 
     it.each(['friends', 'private'] as const)(
-      'a %s profile answers with the username alone: no picture, no internal id',
+      'a %s profile answers with the username and picture, not the internal id',
       async (visibility) => {
         target(visibility)
 
         const { payload, text } = await send()
 
-        expect(payload.request.receiver).toEqual({ username: 'target-user', avatar: null })
+        expect(payload.request.receiver).toEqual({ username: 'target-user', avatar: AVATAR })
         expect(payload.request.receiverId).toBeUndefined()
-        expect(payload.user).toEqual({ username: 'target-user', avatar: null })
-        expect(text).not.toContain(AVATAR)
+        expect(payload.user).toEqual({ username: 'target-user', avatar: AVATAR })
         expect(text).not.toContain('receiver-cuid-1')
         expect(text).not.toContain('profileVisibility')
         // The request itself still goes to the right person.

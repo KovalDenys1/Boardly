@@ -193,10 +193,10 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // The sender is not the receiver's friend (checked above), so the picture and the
-    // internal id go back only when the receiver's profile is public (#1226), by the same
-    // rule as POST /api/friends/request. A friend code proves you know someone's code,
-    // not that you may see their profile.
+    // The sender is not the receiver's friend (checked above), so the internal id goes
+    // back only when the receiver's profile is public (#1226), by the same rule as POST
+    // /api/friends/request; the username and picture are public and always go back. A
+    // friend code proves you know someone's code, not that you may see their profile.
     const { receiver, receiverId, ...friendRequestFields } = friendRequest
     const presentedReceiver = presentProfileParty(receiver, 'other')
     const friendRequestWithAvatar = {

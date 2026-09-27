@@ -170,10 +170,10 @@ describe('POST /api/friends/request', () => {
     )
   })
 
-  // #1226: the sender is not a friend yet, so a hidden receiver's picture and internal
-  // id stay out of the answer; the username the sender typed or clicked is all they get.
+  // #1226: the sender is not a friend yet, so a hidden receiver's internal id stays out
+  // of the answer. The username and picture are public (Denys, 2026-09-27 20:32).
   it.each(['private', 'friends'] as const)(
-    "does not answer with a %s receiver's picture or internal id",
+    "answers a %s receiver's username and picture, not their internal id",
     async (profileVisibility) => {
       mockPrisma.users.findUnique.mockResolvedValue({
         id: 'receiver-hidden-1',
@@ -201,10 +201,12 @@ describe('POST /api/friends/request', () => {
       const payload = JSON.parse(text)
 
       expect(response.status).toBe(200)
-      expect(payload.friendRequest.receiver).toEqual({ username: 'hidden-user', avatar: null })
+      expect(payload.friendRequest.receiver).toEqual({
+        username: 'hidden-user',
+        avatar: 'https://cdn.example.com/hidden-avatar.png',
+      })
       expect(payload.friendRequest.receiverId).toBeUndefined()
       expect(text).not.toContain('receiver-hidden-1')
-      expect(text).not.toContain('hidden-avatar.png')
       expect(text).not.toContain('profileVisibility')
       // The request itself still goes to the right person.
       expect(mockPrisma.friendRequests.create).toHaveBeenCalledWith(
@@ -263,8 +265,8 @@ describe('GET /api/friends/request', () => {
   })
 
   // #1226: in the requests you sent, a receiver whose profile you may not see keeps
-  // their picture and internal id to themselves.
-  it("keeps a hidden receiver's picture and internal id out of the requests you sent", async () => {
+  // their internal id to themselves; the username and picture are public.
+  it("keeps a hidden receiver's internal id out of the requests you sent", async () => {
     const sent = (id: string, profileVisibility: string | null) => ({
       id: `request-${id}`,
       senderId: 'user-1',
@@ -294,13 +296,12 @@ describe('GET /api/friends/request', () => {
     expect(requests.map((r: any) => r.receiver)).toEqual([
       { id: 'rcv-public', username: 'name-rcv-public', image: null, avatarUrl: 'https://cdn.example.com/rcv-public.png', avatar: 'https://cdn.example.com/rcv-public.png' },
       { id: 'rcv-legacy', username: 'name-rcv-legacy', image: null, avatarUrl: 'https://cdn.example.com/rcv-legacy.png', avatar: 'https://cdn.example.com/rcv-legacy.png' },
-      { username: 'name-rcv-friends', avatar: null },
-      { username: 'name-rcv-private', avatar: null },
+      { username: 'name-rcv-friends', avatar: 'https://cdn.example.com/rcv-friends.png' },
+      { username: 'name-rcv-private', avatar: 'https://cdn.example.com/rcv-private.png' },
     ])
     expect(requests.map((r: any) => r.receiverId)).toEqual(['rcv-public', 'rcv-legacy', undefined, undefined])
     for (const hidden of ['rcv-friends', 'rcv-private']) {
       expect(text).not.toContain(`"${hidden}"`)
-      expect(text).not.toContain(`${hidden}.png`)
     }
     expect(text).not.toContain('profileVisibility')
   })

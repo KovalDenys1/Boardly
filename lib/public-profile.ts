@@ -62,9 +62,11 @@ export function effectiveProfileVisibility(
 }
 
 /**
- * The one rule for who may see a profile (#1226): its owner always, everyone when it
- * is public, accepted friends when it is friends-only, nobody else when it is private.
- * The public profile page and the leaderboard's pictures both go through it.
+ * The one rule for who may see a profile's content (#1226): its owner always, everyone
+ * when it is public, accepted friends when it is friends-only, nobody else when it is
+ * private. The content is the bio, statistics, achievements, history, favourite game,
+ * online status and Premium status. The username and picture are not part of it: they
+ * are public everywhere (Denys, 2026-09-27 20:32).
  */
 export function canViewProfile(
   visibility: ProfileVisibilityValue | null | undefined,
@@ -88,14 +90,14 @@ export type ProfileParty = {
 
 export type PresentedProfileParty<T extends ProfileParty> =
   | { visible: true; party: Omit<T, 'accountPreferences'> & { avatar: string | null } }
-  | { visible: false; party: { username: string | null; avatar: null } }
+  | { visible: false; party: { username: string | null; avatar: string | null } }
 
 /**
- * What a friends route may tell the caller about another user (#1226), by the same rule
- * as the profile page: the whole selection plus a resolved `avatar` when the caller may
- * see the profile, and otherwise the username with the default avatar, without the
- * picture or the internal id. `visible` tells the caller whether to drop other fields
- * that name the person, such as a request's `receiverId`.
+ * What a friends route may tell the caller about another user (#1226). The username and
+ * the picture are public, so they are always there. The rest of the selection, the
+ * internal id included, only when the caller may see the profile (`canViewProfile`).
+ * `visible` tells the caller whether to drop other fields that name the person, such
+ * as a request's `receiverId`, or that follow the setting, such as Premium status.
  */
 export function presentProfileParty<T extends ProfileParty>(
   party: T,
@@ -105,7 +107,7 @@ export function presentProfileParty<T extends ProfileParty>(
   if (canViewProfile(accountPreferences?.profileVisibility, relation)) {
     return { visible: true, party: { ...fields, avatar: fields.avatarUrl ?? fields.image ?? null } }
   }
-  return { visible: false, party: { username: fields.username, avatar: null } }
+  return { visible: false, party: { username: fields.username, avatar: fields.avatarUrl ?? fields.image ?? null } }
 }
 
 /** Id of the Privacy section in the profile settings tab, and the hash that scrolls to it. */

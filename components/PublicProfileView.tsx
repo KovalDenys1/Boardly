@@ -29,8 +29,8 @@ export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
 
 
 /**
- * Everything but the id and the username is optional because a viewer who may not
- * see the profile is sent those two and nothing else (#1226, app/u/[publicProfileId]).
+ * Everything but the id, the username and the picture is optional because a viewer who
+ * may not see the profile is sent those and nothing else (#1226, app/u/[publicProfileId]).
  */
 export type PublicProfileViewData = {
   publicProfileId: string
@@ -207,11 +207,9 @@ export default function PublicProfileView({
   if (relation !== 'self' && !isEmbeddedPreview && canReport) {
     const publicProfileId = profile.publicProfileId
     if (profile.username) reportTargets.push({ targetType: 'username', publicProfileId })
-    // A hidden profile shows its username and nothing else, so that is all it offers (#1226).
-    if (accessState === 'available') {
-      if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
-      if (profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
-    }
+    // The picture is public, like the username; a hidden profile's bio is not (#1226).
+    if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
+    if (accessState === 'available' && profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
   }
 
   const renderReportButton = (className: string) =>
@@ -451,19 +449,21 @@ export default function PublicProfileView({
   )
 
   // What a viewer who may not see the profile gets (#1226), Steam's "This profile is
-  // private": the username, the default avatar and the notice, nothing else. The page
-  // is not even sent the rest (app/u/[publicProfileId]/page.tsx). A friends-only profile
-  // keeps the friend request, the one way to be let in.
+  // private": the username, the picture and the notice, nothing else. The page is not
+  // even sent the rest (app/u/[publicProfileId]/page.tsx). A friends-only profile keeps
+  // the friend request, the one way to be let in.
   const renderRestrictedState = () => (
     <div
       data-testid="restricted-profile"
       className="mx-auto flex w-full max-w-xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-5 py-8 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10 sm:py-10"
     >
-      <div
-        aria-hidden
-        className="flex h-28 w-28 items-center justify-center rounded-[1.75rem] border-[3px] border-bd-ink bg-bd-bg2 text-bd-ink-muted shadow-[5px_5px_0_var(--bd-ink)] sm:h-32 sm:w-32"
-      >
-        <span className="font-display text-6xl font-black uppercase">{displayName.charAt(0)}</span>
+      <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.75rem] border-[3px] border-bd-ink bg-bd-bg2 text-bd-ink-muted shadow-[5px_5px_0_var(--bd-ink)] sm:h-32 sm:w-32">
+        {(profile.avatarUrl || profile.image) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.avatarUrl ?? profile.image!} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          <span aria-hidden className="font-display text-6xl font-black uppercase">{displayName.charAt(0)}</span>
+        )}
       </div>
       <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
         {t('profile.publicProfile.eyebrow')}
