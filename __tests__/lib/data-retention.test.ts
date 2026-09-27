@@ -49,6 +49,7 @@ jest.mock('@/lib/report-discord', () => ({
 }))
 
 jest.mock('@/lib/game-pseudonymisation', () => ({
+  abandonedLobbiesWhere: jest.requireActual('@/lib/game-pseudonymisation').abandonedLobbiesWhere,
   countGamesToPseudonymise: jest.fn(async () => 6),
   countLobbiesToPseudonymise: jest.fn(async () => 2),
   pseudonymiseGames: jest.fn(async () => ({ pseudonymised: 5, snapshotsDeleted: 0 })),
@@ -117,7 +118,7 @@ describe('enforceRetention', () => {
 
   // Decision 2026-09-27: a finished game past its period is pseudonymised, never deleted,
   // so the statistics, leaderboard and achievements built on it survive.
-  it('pseudonymises games instead of deleting them, and deletes only a lobby that never held a game', async () => {
+  it('pseudonymises games instead of deleting them, and deletes only a lobby in which no game started', async () => {
     const { pseudonymiseGames, pseudonymiseLobbies } = jest.requireMock('@/lib/game-pseudonymisation')
 
     const result = await enforceRetention({ now: NOW, override: 'enforce' })
@@ -127,8 +128,14 @@ describe('enforceRetention', () => {
     expect(pseudonymiseGames).toHaveBeenCalledWith(expect.objectContaining({ cutoff, now: NOW }))
     expect(result.games).toMatchObject({ enforced: true, deleted: 0, pseudonymised: 5, matched: 5 })
 
+    // Every lobby is created with a game, so the delete branch is the one whose games were
+    // all cancelled while waiting; they go with it.
     const lobbiesWhere = prisma.lobbies.deleteMany.mock.calls[0][0].where
-    expect(lobbiesWhere).toMatchObject({ isActive: false, games: { none: {} } })
+    expect(lobbiesWhere).toEqual({
+      isActive: false,
+      createdAt: { lt: cutoff },
+      games: { every: { status: 'cancelled' } },
+    })
     expect(pseudonymiseLobbies).toHaveBeenCalledWith(cutoff, NOW)
     expect(result.lobbies).toMatchObject({ deleted: 3, pseudonymised: 1, matched: 4 })
 

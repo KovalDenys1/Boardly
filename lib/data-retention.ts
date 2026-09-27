@@ -4,6 +4,7 @@ import { RETENTION_DAYS } from '@/lib/retention-periods'
 import { deleteFeedbackDiscordCopies } from '@/lib/feedback-discord'
 import { deleteReportDiscordCopies } from '@/lib/report-discord'
 import {
+  abandonedLobbiesWhere,
   countGamesToPseudonymise,
   countLobbiesToPseudonymise,
   pseudonymiseGames,
@@ -32,8 +33,9 @@ import {
  *
  * Most rules delete. `games` does not (decision 2026-09-27): a finished game past its
  * period is pseudonymised, its names, messages and drawings replaced and its scores
- * kept for statistics (lib/game-pseudonymisation.ts). `lobbies` does both: a lobby with
- * no game in it is deleted, and one whose games are all pseudonymised loses its name.
+ * kept for statistics (lib/game-pseudonymisation.ts). `lobbies` does both: a lobby in
+ * which no game ever started (every game cancelled) is deleted with those games, and one
+ * that held a real game loses its name and its code once its games are pseudonymised.
  */
 
 export type RetentionRuleKey =
@@ -75,7 +77,7 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
     table: 'Lobbies',
     days: RETENTION_DAYS.lobbies,
     measuredFrom:
-      'creation; inactive lobbies only. One with no game in it is deleted; one whose games are all pseudonymised gets a neutral name',
+      'creation; inactive lobbies only. One in which no game ever started (all its games cancelled) is deleted with those games; one that held a real game gets a neutral name and a retired code once its games are pseudonymised',
     purpose: 'Lobby name, code and creator for the games played in it',
     enforceByDefault: true,
     pseudonymises: true,
@@ -185,10 +187,12 @@ function ruleOperations(key: RetentionRuleKey, cutoff: Date, now: Date): RuleOpe
       }
     }
     case 'lobbies': {
-      // A lobby cascades its games, and games are no longer deleted, so only a lobby that
-      // never held one is deleted. One that did keeps its code and loses its name once
-      // every game in it has been pseudonymised (games run first, so the same run can).
-      const where = { isActive: false, createdAt: { lt: cutoff }, games: { none: {} } }
+      // Every lobby is created with a game, so "a lobby with no game" never happens. A lobby
+      // in which no game ever started – all its games cancelled while waiting – is deleted
+      // with those games (they cascade). One that held a real game is kept for its games'
+      // statistics and loses its name and code once every game in it has been
+      // pseudonymised (games run first, so the same run can).
+      const where = abandonedLobbiesWhere(cutoff)
       return {
         count: async () =>
           (await prisma.lobbies.count({ where })) + (await countLobbiesToPseudonymise(cutoff)),

@@ -1,7 +1,11 @@
 import { GameStatus, Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 import { scrubErasedPlayers, type ErasedIdentity } from '@/lib/account-erasure'
+import { RETIRED_LOBBY_CODE_PREFIX } from '@/lib/lobby'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+
+const log = apiLogger('game-pseudonymisation')
 
 /**
  * What a finished game keeps once its retention period is over (#1130, decision
@@ -154,23 +158,30 @@ export interface PseudonymiseGameInput {
 export interface PseudonymisedGame {
   state: unknown
   changed: boolean
+  /**
+   * The state could not be read as an object, so nothing in it could be checked. The
+   * caller must not mark such a game done: it may still hold names.
+   */
+  unparseable: boolean
   /** Person id -> the label their name became. */
   labels: Map<string, string>
 }
 
 /**
  * The pure part: a finished game's state with its people unnamed and their words
- * gone. Returns the input unchanged (changed: false) when there was nothing to do.
+ * gone. Returns the input unchanged (changed: false) when there was nothing to do, and
+ * unparseable: true when the state could not be read at all.
  */
 export function pseudonymiseGameState(input: PseudonymiseGameInput): PseudonymisedGame {
   const original = input.state
+  const unreadable = { state: original, changed: false, unparseable: true, labels: new Map<string, string>() }
   let parsed: unknown
   try {
     parsed = parsePersistedGameState(original as Prisma.JsonValue)
   } catch {
-    return { state: original, changed: false, labels: new Map() }
+    return unreadable
   }
-  if (!isPlainObject(parsed)) return { state: original, changed: false, labels: new Map() }
+  if (!isPlainObject(parsed)) return unreadable
 
   // Seats first, in the order the game recorded them, so "Player 2" is the second seat.
   const seatIds: string[] = Array.isArray(parsed.players)
@@ -214,7 +225,7 @@ export function pseudonymiseGameState(input: PseudonymiseGameInput): Pseudonymis
 
   // `parsed` itself may have been mutated by the stripper, so compare against a fresh copy.
   const changed = JSON.stringify(next) !== JSON.stringify(parsePersistedGameState(original as Prisma.JsonValue))
-  return { state: changed ? next : original, changed, labels }
+  return { state: changed ? next : original, changed, unparseable: false, labels }
 }
 
 /** Finished, abandoned and cancelled games past the cutoff that still carry names. */
@@ -245,6 +256,11 @@ export interface PseudonymiseGamesResult {
   pseudonymised: number
   /** Replay snapshots that had outlived their own 90-day period and went with the names. */
   snapshotsDeleted: number
+  /**
+   * Games whose state could not be read: logged, left unmarked, and read again by the
+   * next run. Production had none on 2026-09-27 (every state was a JSON object).
+   */
+  skippedUnparseable: number
 }
 
 /**
@@ -261,6 +277,7 @@ export async function pseudonymiseGames(options: PseudonymiseGamesOptions): Prom
 
   let pseudonymised = 0
   let snapshotsDeleted = 0
+  let skippedUnparseable = 0
   let cursor: string | null = null
   let seen = 0
 
@@ -312,6 +329,13 @@ export async function pseudonymiseGames(options: PseudonymiseGamesOptions): Prom
         players: game.players.map((player) => ({ userId: player.userId, username: player.user?.username ?? null })),
         botIds,
       })
+      if (result.unparseable) {
+        // Never marked done: an unreadable state may still hold names, and a marker would
+        // hide it from every later run. The id only, never the state.
+        skippedUnparseable += 1
+        log.warn('Game state could not be read; left for a person to look at', { gameId: game.id })
+        continue
+      }
       const written = await prisma.games.updateMany({
         where: { id: game.id, updatedAt: game.updatedAt, pseudonymisedAt: null },
         data: {
@@ -332,7 +356,7 @@ export async function pseudonymiseGames(options: PseudonymiseGamesOptions): Prom
     }
   }
 
-  return { pseudonymised, snapshotsDeleted }
+  return { pseudonymised, snapshotsDeleted, skippedUnparseable }
 }
 
 function safeParse(value: Prisma.JsonValue): unknown {
@@ -344,17 +368,32 @@ function safeParse(value: Prisma.JsonValue): unknown {
 }
 
 /**
- * The lobbies the rule may rename: inactive, older than the cutoff, not yet done, and
- * holding at least one game, every one of them already pseudonymised. A lobby with no
- * game at all is the delete rule's (lib/data-retention.ts `lobbies`).
+ * The lobbies the rule may rename: inactive, older than the cutoff, not yet done, that
+ * held a real game (one that is not cancelled, so it started), and whose games are all
+ * pseudonymised already. A lobby whose games were all cancelled is the delete rule's
+ * (lib/data-retention.ts `lobbies`, abandonedLobbiesWhere).
  */
 const PSEUDONYMISABLE_LOBBIES_SQL = (cutoff: Date) => Prisma.sql`
   l."isActive" = false
   AND l."createdAt" < ${cutoff}
   AND l."pseudonymisedAt" IS NULL
-  AND EXISTS (SELECT 1 FROM "Games" g WHERE g."lobbyId" = l.id)
+  AND EXISTS (SELECT 1 FROM "Games" g WHERE g."lobbyId" = l.id AND g.status <> 'cancelled')
   AND NOT EXISTS (SELECT 1 FROM "Games" g WHERE g."lobbyId" = l.id AND g."pseudonymisedAt" IS NULL)
 `
+
+/**
+ * An inactive lobby past the cutoff in which no game ever started: every game in it was
+ * cancelled while waiting (or it has none). The rule deletes it with those games; the
+ * rows cascade (Games, Players, GameStateSnapshots, LobbyInvites). Nothing statistics,
+ * the leaderboard or achievements count as a result lives in a cancelled game.
+ */
+export function abandonedLobbiesWhere(cutoff: Date): Prisma.LobbiesWhereInput {
+  return {
+    isActive: false,
+    createdAt: { lt: cutoff },
+    games: { every: { status: GameStatus.cancelled } },
+  }
+}
 
 export async function countLobbiesToPseudonymise(cutoff: Date): Promise<number> {
   const rows = await prisma.$queryRaw<{ count: bigint | number }[]>(Prisma.sql`
@@ -365,13 +404,21 @@ export async function countLobbiesToPseudonymise(cutoff: Date): Promise<number> 
 
 /**
  * A lobby's name is whatever its creator typed, so it can name a person; it becomes the
- * name the create route gives an unnamed lobby. Quick Play's generated name names nobody
- * and stays. The kick list is who the host threw out, which nothing needs a year later.
+ * name the create route gives an unnamed lobby, built from the old code. Quick Play's
+ * generated name names nobody and stays. The kick list is who the host threw out, which
+ * nothing needs a year later.
+ *
+ * The code is retired: it becomes `~<lobby id>`, so the four-digit code (10,000 of them)
+ * goes back to the generator instead of being held by a lobby nobody can use. Postgres
+ * evaluates every SET expression against the row as it was, so the name is built from
+ * the old code even though the same statement replaces it. Only the history chip and the
+ * data export ever show a retired lobby's code; /api/user/games hides it.
  */
 export async function pseudonymiseLobbies(cutoff: Date, now: Date): Promise<number> {
   return prisma.$executeRaw(Prisma.sql`
     UPDATE "Lobbies" l
     SET name = CASE WHEN l.name = 'Quick Play ' || l.code THEN l.name ELSE 'Lobby ' || l.code END,
+        code = ${RETIRED_LOBBY_CODE_PREFIX}::text || l.id,
         "kickedUserIds" = ARRAY[]::text[],
         "pseudonymisedAt" = ${now}
     WHERE ${PSEUDONYMISABLE_LOBBIES_SQL(cutoff)}

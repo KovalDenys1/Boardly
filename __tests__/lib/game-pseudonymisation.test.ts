@@ -1,6 +1,7 @@
 // @ts-nocheck - prisma is a lightweight mock and the states are hand-built fixtures.
 import { prisma } from '@/lib/db'
 import {
+  abandonedLobbiesWhere,
   collectPlayerNames,
   pseudonymiseGameState,
   pseudonymiseGames,
@@ -8,6 +9,12 @@ import {
   pseudonymisableGamesWhere,
   seatLabel,
 } from '@/lib/game-pseudonymisation'
+import {
+  LOBBY_CODE_LENGTH,
+  RETIRED_LOBBY_CODE_PREFIX,
+  generateLobbyCode,
+  isRetiredLobbyCode,
+} from '@/lib/lobby'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { persistedGameStateSchema } from '@/lib/persisted-game-state'
 
@@ -25,8 +32,9 @@ jest.mock('@/lib/feedback-discord', () => ({
   deleteFeedbackDiscordCopies: jest.fn(async () => ({ cleared: [], failed: [] })),
 }))
 
+const mockLogWarn = jest.fn()
 jest.mock('@/lib/logger', () => ({
-  apiLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
+  apiLogger: () => ({ info: jest.fn(), warn: (...args: unknown[]) => mockLogWarn(...args), error: jest.fn(), debug: jest.fn() }),
 }))
 
 const ANN = 'user-ann'
@@ -238,7 +246,16 @@ describe('pseudonymiseGameState (#1130)', () => {
     const state = base([{ id: BOT, name: 'Tempo Rookie' }], {}, 'tic_tac_toe')
     const result = pseudonymiseGameState({ gameType: 'tic_tac_toe', state, players: [], botIds: new Set([BOT]) })
     expect(result.changed).toBe(false)
+    expect(result.unparseable).toBe(false)
     expect(result.state).toBe(state)
+  })
+
+  it('says so when a state cannot be read, instead of calling it clean', () => {
+    for (const state of ['{not json', '"just a string"', null, ['x']]) {
+      const result = pseudonymiseGameState({ gameType: 'tic_tac_toe', state, players: [], botIds: NO_BOTS })
+      expect(result).toMatchObject({ changed: false, unparseable: true })
+      expect(result.state).toBe(state)
+    }
   })
 
   it('reads a state stored as a JSON string', () => {
@@ -321,7 +338,7 @@ describe('pseudonymiseGames', () => {
 
     const result = await pseudonymiseGames({ cutoff: CUTOFF, now: NOW })
 
-    expect(result).toEqual({ pseudonymised: 2, snapshotsDeleted: 2 })
+    expect(result).toEqual({ pseudonymised: 2, snapshotsDeleted: 2, skippedUnparseable: 0 })
     const [call] = prisma.games.updateMany.mock.calls
     expect(call[0].where).toEqual({ id: 'g1', updatedAt, pseudonymisedAt: null })
     expect(call[0].data.pseudonymisedAt).toBe(NOW)
@@ -344,6 +361,21 @@ describe('pseudonymiseGames', () => {
     expect(prisma.gameStateSnapshots.deleteMany).not.toHaveBeenCalled()
   })
 
+  it('skips and logs a game whose state cannot be read, and never marks it done', async () => {
+    prisma.games.findMany
+      .mockResolvedValueOnce([row('g-bad', '{not json'), row('g-array', ['x']), row('g1', spyState())])
+      .mockResolvedValueOnce([])
+
+    const result = await pseudonymiseGames({ cutoff: CUTOFF, now: NOW })
+
+    expect(result).toMatchObject({ pseudonymised: 1, skippedUnparseable: 2 })
+    expect(prisma.games.updateMany).toHaveBeenCalledTimes(1)
+    expect(prisma.games.updateMany.mock.calls[0][0].where.id).toBe('g1')
+    expect(prisma.gameStateSnapshots.deleteMany).toHaveBeenCalledWith({ where: { gameId: { in: ['g1'] } } })
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.any(String), { gameId: 'g-bad' })
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.any(String), { gameId: 'g-array' })
+  })
+
   it('stops at the per-run cap', async () => {
     prisma.games.findMany.mockResolvedValue([row('g1', spyState())])
 
@@ -354,7 +386,7 @@ describe('pseudonymiseGames', () => {
 })
 
 describe('pseudonymiseLobbies', () => {
-  it('renames only inactive lobbies whose every game is already pseudonymised', async () => {
+  it('renames and retires only inactive lobbies that held a real game, once every game is done', async () => {
     prisma.$executeRaw.mockResolvedValue(4)
     const cutoff = new Date('2026-03-01T00:00:00.000Z')
     const now = new Date('2027-03-01T00:00:00.000Z')
@@ -363,11 +395,39 @@ describe('pseudonymiseLobbies', () => {
 
     const sql = prisma.$executeRaw.mock.calls[0][0]
     const text = sql.strings.join('?')
+    // One UPDATE: every SET reads the old row, so the name is built from the old code.
     expect(text).toContain(`'Lobby ' || l.code`)
     expect(text).toContain(`'Quick Play ' || l.code`)
+    expect(text).toContain('code = ?::text || l.id')
     expect(text).toContain('"kickedUserIds" = ARRAY[]::text[]')
     expect(text).toContain('l."isActive" = false')
+    expect(text).toContain(`g.status <> 'cancelled'`)
     expect(text).toContain('g."pseudonymisedAt" IS NULL')
-    expect(sql.values).toEqual([now, cutoff])
+    expect(sql.values).toEqual([RETIRED_LOBBY_CODE_PREFIX, now, cutoff])
+  })
+
+  // The retired code frees the four-digit one: it must never be a code the generator hands
+  // out, or a new lobby could collide with (or land on) a retired one.
+  it('retires to a code the generator can never produce', () => {
+    const retired = `${RETIRED_LOBBY_CODE_PREFIX}cmg1x2y3z0000abcdefghijk`
+    expect(isRetiredLobbyCode(retired)).toBe(true)
+    expect(retired).not.toHaveLength(LOBBY_CODE_LENGTH)
+    for (let i = 0; i < 200; i += 1) {
+      for (const code of [generateLobbyCode(), generateLobbyCode({ fallbackToAlphanumeric: true })]) {
+        expect(code).toMatch(/^[0-9A-Z]{4}$/)
+        expect(isRetiredLobbyCode(code)).toBe(false)
+      }
+    }
+  })
+})
+
+describe('abandonedLobbiesWhere', () => {
+  it('matches an inactive lobby past the cutoff whose games were all cancelled', () => {
+    const cutoff = new Date('2026-03-01T00:00:00.000Z')
+    expect(abandonedLobbiesWhere(cutoff)).toEqual({
+      isActive: false,
+      createdAt: { lt: cutoff },
+      games: { every: { status: 'cancelled' } },
+    })
   })
 })
