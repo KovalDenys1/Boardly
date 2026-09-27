@@ -146,7 +146,7 @@ Reset, deletion and verification tokens stored as `sha256(token)` in `tokenHash`
 
 ### `20260927171000_users_terms_and_age_confirmation`
 
-Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts rest on contract (GDPR Art. 6(1)(b)); the register route stamps both, and an OAuth account stamps `ageConfirmedAt` in onboarding (`lib/age-confirmation.ts`). Existing rows and guests stay NULL.
+Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts rest on contract (GDPR Art. 6(1)(b)); the register route stamps both, and an OAuth account stamps both in onboarding with one box (`lib/age-confirmation.ts`). Existing rows and guests stay NULL.
 
 ## Row Level Security
 

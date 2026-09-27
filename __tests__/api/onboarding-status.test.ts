@@ -25,7 +25,12 @@ function buildRequest() {
 }
 
 /** An account from before the age confirmation existed: never asked (#1135). */
-const OLDER_ACCOUNT = { ageConfirmedAt: null, createdAt: new Date('2026-01-01T00:00:00Z'), isGuest: false }
+const OLDER_ACCOUNT = {
+  ageConfirmedAt: null,
+  termsAcceptedAt: null,
+  createdAt: new Date('2026-01-01T00:00:00Z'),
+  isGuest: false,
+}
 
 describe('GET /api/onboarding/status', () => {
   beforeEach(() => {
@@ -39,7 +44,25 @@ describe('GET /api/onboarding/status', () => {
     it('asks a new OAuth account that has not confirmed, and keeps onboarding open after a skip', async () => {
       mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
       mockPrisma.accountPreferences.findUnique.mockResolvedValue({ ...DONE, onboardingCompletedAt: null, onboardingSkippedAt: new Date() } as any)
-      mockPrisma.users.findUnique.mockResolvedValue({ ageConfirmedAt: null, createdAt: new Date('2026-09-28T09:00:00Z'), isGuest: false })
+      mockPrisma.users.findUnique.mockResolvedValue({
+        ageConfirmedAt: null,
+        termsAcceptedAt: null,
+        createdAt: new Date('2026-09-28T09:00:00Z'),
+        isGuest: false,
+      })
+      const body = await (await GET(buildRequest())).json()
+      expect(body).toMatchObject({ needsOnboarding: true, needsAgeConfirmation: true })
+    })
+
+    it('keeps asking a new account whose Terms acceptance is missing, even with the age on record', async () => {
+      mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+      mockPrisma.accountPreferences.findUnique.mockResolvedValue(DONE as any)
+      mockPrisma.users.findUnique.mockResolvedValue({
+        ageConfirmedAt: new Date('2026-09-28T09:00:00Z'),
+        termsAcceptedAt: null,
+        createdAt: new Date('2026-09-28T09:00:00Z'),
+        isGuest: false,
+      })
       const body = await (await GET(buildRequest())).json()
       expect(body).toMatchObject({ needsOnboarding: true, needsAgeConfirmation: true })
     })
@@ -49,6 +72,7 @@ describe('GET /api/onboarding/status', () => {
       mockPrisma.accountPreferences.findUnique.mockResolvedValue(DONE as any)
       mockPrisma.users.findUnique.mockResolvedValue({
         ageConfirmedAt: new Date('2026-09-28T09:00:00Z'),
+        termsAcceptedAt: new Date('2026-09-28T09:00:00Z'),
         createdAt: new Date('2026-09-28T09:00:00Z'),
         isGuest: false,
       })

@@ -15,13 +15,15 @@ const GUEST_ONBOARDING_KEY = 'boardly_onboarding'
 export interface OnboardingAccountSetup {
   /**
    * An account created through Google, GitHub or Discord that has not yet confirmed
-   * being 13 or older (#1135). The step cannot be skipped while this is true.
+   * being 13 or older and accepted the Terms (#1135). The step cannot be skipped while
+   * this is true.
    */
   confirmAge: boolean
   /** The profile is not public, so the step offers to open it; unticked by default (#1131). */
   offerPublicProfile: boolean
 }
 
+/** `ageConfirmed` is the one box that also accepts the Terms and the Privacy Policy. */
 export type OnboardingAccountChoice = { ageConfirmed: boolean; profilePublic: boolean }
 
 const NO_ACCOUNT_SETUP: OnboardingAccountSetup = { confirmAge: false, offerPublicProfile: false }
@@ -135,6 +137,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({
         action: 'account',
         ageConfirmed: choice.ageConfirmed,
+        termsAccepted: choice.ageConfirmed,
         profilePublic: choice.profilePublic,
       }),
     })

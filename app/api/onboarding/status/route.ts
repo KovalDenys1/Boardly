@@ -18,12 +18,13 @@ export async function GET() {
     }),
     prisma.users.findUnique({
       where: { id: session.user.id },
-      select: { ageConfirmedAt: true, createdAt: true, isGuest: true },
+      select: { ageConfirmedAt: true, termsAcceptedAt: true, createdAt: true, isGuest: true },
     }),
   ])
 
-  // An OAuth account confirms its age in onboarding (#1135). Until it has, onboarding is
-  // not over, even after a skip, so the modal comes back on the next visit.
+  // An OAuth account confirms its age and accepts the Terms in onboarding (#1135). Until
+  // it has, onboarding is not over, even after a skip, so the modal comes back on the
+  // next visit.
   const ageConfirmationNeeded = user ? needsAgeConfirmation(user) : false
   const needsOnboarding =
     !prefs || (!prefs.onboardingCompletedAt && !prefs.onboardingSkippedAt) || ageConfirmationNeeded

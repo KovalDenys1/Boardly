@@ -6,7 +6,7 @@
 --   contract (GDPR Art. 6(1)(b)), so the Art. 8 / personopplysningsloven § 5
 --   consent age does not apply; registration asks for an "I am 13 or older"
 --   confirmation, and the time the Terms were accepted and the age was
---   confirmed is stored. An OAuth account confirms its age in onboarding.
+--   confirmed is stored. An OAuth account does both in onboarding.
 --
 --   Two nullable columns with no default: every existing row gets NULL,
 --   which is the truth, since nothing was recorded before. Guests keep NULL.

@@ -3747,7 +3747,7 @@ const no = {
     },
     children: {
       title: '10. Barn',
-      body: 'Boardly er ikke ment for barn under 13 år, og vi samler ikke bevisst inn opplysninger om dem. En konto bygger på avtalen du godtar når du oppretter den (personvernforordningen art. 6 nr. 1 bokstav b), ikke på samtykke, så aldersgrensen for samtykke i personvernforordningen art. 8 og personopplysningsloven § 5 gjelder ikke for den. Du må være 13 år eller eldre for å opprette en konto: du bekrefter det i registreringsskjemaet, eller første gang du er inne hvis du registrerer deg med Google, GitHub eller Discord, og vi tar vare på tidspunktet. Hvis du tror at et barn under 13 år har gitt oss personopplysninger, skriv til {{email}}, så sletter vi dem.',
+      body: 'Boardly er ikke ment for barn under 13 år, og vi samler ikke bevisst inn opplysninger om dem. En konto bygger på avtalen du godtar når du oppretter den (personvernforordningen art. 6 nr. 1 bokstav b), ikke på samtykke, så aldersgrensen for samtykke i personvernforordningen art. 8 og personopplysningsloven § 5 gjelder ikke for den. Du må være 13 år eller eldre for å opprette en konto: du bekrefter det og godtar vilkårene i registreringsskjemaet, eller første gang du er inne hvis du registrerer deg med Google, GitHub eller Discord, og vi tar vare på tidspunktet. Hvis du tror at et barn under 13 år har gitt oss personopplysninger, skriv til {{email}}, så sletter vi dem.',
     },
     changes: {
       title: '11. Endringer i denne erklæringen',
@@ -3929,7 +3929,10 @@ const no = {
     back: '← Tilbake',
     account: {
       subtitle: 'En rask sjekk før du spiller',
-      ageConfirm: 'Jeg er 13 år eller eldre',
+      ageTermsPrefix: 'Jeg er 13 år eller eldre og godtar',
+      termsLink: 'vilkårene for bruk',
+      ageTermsAnd: 'og',
+      privacyLink: 'personvernerklæringen',
       ageHint: 'Du må være 13 år eller eldre for å ha en Boardly-konto.',
       signOut: 'Logg ut',
       publicProfile: 'Gjør profilen min offentlig',

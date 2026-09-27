@@ -3759,7 +3759,7 @@ const en = {
     },
     children: {
       title: '10. Children',
-      body: 'Boardly is not intended for children under 13, and we do not knowingly collect their data. An account rests on the contract you accept when you create it (GDPR Art. 6(1)(b)), not on consent, so the age of consent in Art. 8 of the GDPR and section 5 of the Personal Data Act does not apply to it. You need to be 13 or older to create an account: you confirm it on the sign-up form, or on your first visit if you sign up with Google, GitHub or Discord, and we keep the time you did. If you believe a child under 13 has given us personal data, write to {{email}} and we will delete it.',
+      body: 'Boardly is not intended for children under 13, and we do not knowingly collect their data. An account rests on the contract you accept when you create it (GDPR Art. 6(1)(b)), not on consent, so the age of consent in Art. 8 of the GDPR and section 5 of the Personal Data Act does not apply to it. You need to be 13 or older to create an account: you confirm it, and accept the Terms, on the sign-up form, or on your first visit if you sign up with Google, GitHub or Discord, and we keep the time you did. If you believe a child under 13 has given us personal data, write to {{email}} and we will delete it.',
     },
     changes: {
       title: '11. Changes to this policy',
@@ -3941,7 +3941,10 @@ const en = {
     back: '← Back',
     account: {
       subtitle: 'A quick check before you play',
-      ageConfirm: 'I am 13 or older',
+      ageTermsPrefix: 'I am 13 or older and accept the',
+      termsLink: 'Terms of Service',
+      ageTermsAnd: 'and the',
+      privacyLink: 'Privacy Policy',
       ageHint: 'You need to be 13 or older to have a Boardly account.',
       signOut: 'Sign out',
       publicProfile: 'Make my profile public',

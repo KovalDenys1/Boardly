@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { needsAccountStep, useOnboarding } from '@/contexts/OnboardingContext'
@@ -230,8 +231,28 @@ export function OnboardingModal() {
                     style={{ marginTop: 2, width: 18, height: 18, flexShrink: 0, accentColor: 'var(--bd-coral)', cursor: 'pointer' }}
                   />
                   <span>
+                    {/* One box for both (#1135): an OAuth sign-up never sees the register
+                        form, so this is where it accepts the Terms. The links open in a
+                        new tab so the step stays where it is. */}
                     <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
-                      {t('onboarding.account.ageConfirm')}
+                      {t('onboarding.account.ageTermsPrefix')}{' '}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                      >
+                        {t('onboarding.account.termsLink')}
+                      </Link>{' '}
+                      {t('onboarding.account.ageTermsAnd')}{' '}
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                      >
+                        {t('onboarding.account.privacyLink')}
+                      </Link>
                     </span>
                     <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-soft)' }}>
                       {t('onboarding.account.ageHint')}

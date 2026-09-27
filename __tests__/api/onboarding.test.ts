@@ -100,6 +100,30 @@ describe('PATCH /api/onboarding', () => {
     expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
   })
 
+  it('stamps the Terms acceptance with the age confirmation, each only where empty (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    // The one onboarding box ("I am 13 or older and accept the Terms and the Privacy
+    // Policy") is how an OAuth sign-up accepts the Terms.
+    const res = await PATCH(buildRequest({ action: 'account', ageConfirmed: true, termsAccepted: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', ageConfirmedAt: null },
+      data: { ageConfirmedAt: expect.any(Date) },
+    })
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', termsAcceptedAt: null },
+      data: { termsAcceptedAt: expect.any(Date) },
+    })
+    const [age, terms] = mockPrisma.users.updateMany.mock.calls.map((call) => call[0].data)
+    expect(terms.termsAcceptedAt).toBe(age.ageConfirmedAt)
+  })
+
+  it('writes no Terms acceptance nobody gave (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    await PATCH(buildRequest({ action: 'account', profilePublic: true }))
+    expect(mockPrisma.users.updateMany).not.toHaveBeenCalled()
+  })
+
   it('upserts onboardingSkippedAt when action is skip', async () => {
     mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
     const res = await PATCH(buildRequest({ action: 'skip' }))
