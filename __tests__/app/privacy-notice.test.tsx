@@ -85,10 +85,41 @@ describe('privacy notice (#1126)', () => {
     expect(text).toContain(`after ${RETENTION_DAYS.guestIdle} days without activity`)
     expect(text).toContain(`Replays: ${RETENTION_DAYS.replays} days`)
     expect(text).toContain(`Lobby chat: ${CHAT_RETENTION_HOURS} hours`)
-    expect(text).toContain(`Games: 12 months after the game ends`)
+    expect(text).toContain(`Games: 12 months after the game ends, we remove the names`)
     expect(text).toContain(`blocked-content reports: ${RETENTION_DAYS.operationalEvents} days`)
     expect(text).toContain(`Administrator log: 24 months`)
     expect(text).toContain(`${RETENTION_DAYS.guestIdentityToken} days from your last visit`)
+  })
+
+  // #1130, decision 2026-09-27: games are pseudonymised, not deleted, and an account
+  // nobody uses for 24 months is deleted after a warning email – in every language.
+  it('says games lose their names but keep their results, and when an unused account goes', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('the scores and results stay, tied to a player id instead of a name')
+    expect(text).toContain('an inactive lobby is deleted if no game was played in it, and otherwise its name is replaced')
+    expect(text).toContain('or until nobody has used it for 24 months: we then delete it, and email you 30 days before')
+    expect(text).toContain('never deleted for inactivity')
+    expect(text).toContain('a warning 30 days before we delete an account nobody has used for 24 months')
+    expect(text).not.toContain('is kept until you delete it')
+
+    const locales = {
+      en: require('@/locales/en').default,
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const { account, games, email } = locale.privacyPolicy.purposes
+      for (const [field, value, placeholder] of [
+        ['account.retention', account.retention, '{{inactiveMonths}}'],
+        ['account.retention', account.retention, '{{inactiveWarningDays}}'],
+        ['email.data', email.data, '{{inactiveMonths}}'],
+        ['games.retention', games.retention, '{{gamesMonths}}'],
+      ]) {
+        expect({ name, field, ok: value.includes(placeholder) }).toEqual({ name, field, ok: true })
+      }
+    }
   })
 
   // #1172: player reports keep a copy of what was reported, past the chat TTL and past

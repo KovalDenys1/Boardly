@@ -90,6 +90,8 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
 
   const retention = {
     unverifiedDays: RETENTION_DAYS.unverifiedAccounts,
+    inactiveMonths: retentionMonths(RETENTION_DAYS.inactiveAccounts),
+    inactiveWarningDays: RETENTION_DAYS.inactiveAccountWarning,
     guestIdle: RETENTION_DAYS.guestIdle,
     guestPlayed: RETENTION_DAYS.guestPlayedIdle,
     gamesMonths: retentionMonths(RETENTION_DAYS.games),
@@ -151,7 +153,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
                   <h3 className="font-semibold" style={strong}>{t(`privacyPolicy.purposes.${id}.title`)}</h3>
                   <dl>
                     <Labelled label={t('privacyPolicy.purposes.dataLabel')}>
-                      {t(`privacyPolicy.purposes.${id}.data`)}
+                      {t(`privacyPolicy.purposes.${id}.data`, retention)}
                     </Labelled>
                     <Labelled label={t('privacyPolicy.purposes.basisLabel')}>
                       {t(`privacyPolicy.purposes.${id}.basis`)}
