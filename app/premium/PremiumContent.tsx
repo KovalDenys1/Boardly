@@ -141,7 +141,10 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
-      setResend(res.ok ? 'sent' : 'failed')
+      // "Sent" only on the route's own success answer; a rate limit (429), a server
+      // error or an unreadable body shows the error text and leaves the button usable.
+      const data: { success?: unknown } | null = await res.json().catch(() => null)
+      setResend(res.ok && data?.success === true ? 'sent' : 'failed')
     } catch {
       setResend('failed')
     }

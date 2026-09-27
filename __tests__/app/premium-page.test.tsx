@@ -174,6 +174,28 @@ describe('/premium checkout', () => {
     expect(screen.getByRole('button', { name: /Send the verification email/ })).toBeDisabled()
   })
 
+  it.each([
+    ['a rate limit', { ok: false, status: 429, json: async () => ({ error: 'Too many requests' }) }],
+    ['a server error', { ok: false, status: 500, json: async () => ({ error: 'Internal server error' }) }],
+    ['an answer without success', { ok: true, status: 200, json: async () => ({}) }],
+  ])('does not claim the email was sent after %s (#1139)', async (_label, resendResponse) => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'Verify your email address before buying Premium.', code: 'email_unverified' }),
+      })
+      .mockResolvedValueOnce(resendResponse)
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
+    fireEvent.click(await screen.findByRole('button', { name: /Send the verification email/ }))
+
+    expect(await screen.findByText(/We could not send the email/)).toBeInTheDocument()
+    expect(screen.queryByText(/Check your inbox for the verification link/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Send the verification email/ })).toBeEnabled()
+  })
+
   it('says so instead of hanging when checkout cannot be opened', async () => {
     fetchMock.mockResolvedValue({ json: async () => ({ error: 'nope' }) })
     render(<PremiumContent pricing={BOTH_PLANS} />)
