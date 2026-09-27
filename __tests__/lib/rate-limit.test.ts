@@ -346,7 +346,7 @@ describe('rateLimit store backends', () => {
     expect((await guestSession(requestFrom('198.51.100.8')))?.status).toBe(429)
   })
 
-  it('gives rematch one bucket per IP across every lobby code (#1156)', async () => {
+  it('gives rematch one bucket per IP across every lobby code while degraded (#1156)', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
@@ -354,8 +354,8 @@ describe('rateLimit store backends', () => {
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
-    // Keyed by its path, each code had its own allowance, and the degraded per-instance
-    // ceiling would have been per lobby. Three per address, whatever the code.
+    // Keyed by its path, each code would bring its own per-instance ceiling, which would then
+    // bound nothing. Three per address, whatever the code.
     const rematch = rateLimit(rateLimitPresets.lobbyRematch)
     const statuses: number[] = []
     for (const code of ['1111', '2222', '3333', '4444']) {
@@ -363,6 +363,31 @@ describe('rateLimit store backends', () => {
       statuses.push(result?.status ?? 200)
     }
     expect(statuses).toEqual([200, 200, 200, 429])
+  })
+
+  it('keeps rematch per lobby while the shared store works, as it always was', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://store.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    pinClock()
+    const store = countingStore()
+    const { rateLimit, __rateLimitTestUtils, rateLimitPresets } = await loadRateLimitModule(store)
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const rematch = rateLimit(rateLimitPresets.lobbyRematch)
+    const rematchIn = (code: string) => rematch(requestFrom('198.51.100.11', `/api/lobby/${code}/rematch`))
+
+    // Ten in one lobby, then that lobby is refused...
+    for (let i = 0; i < 10; i += 1) expect(await rematchIn('1111')).toBeNull()
+    expect((await rematchIn('1111'))?.status).toBe(429)
+    // ...while another lobby still has its own ten.
+    expect(await rematchIn('2222')).toBeNull()
+
+    const fields = store.hincrby.mock.calls.map(([, field]) => field)
+    expect(new Set(fields)).toEqual(
+      new Set(['198.51.100.11:/api/lobby/1111/rematch', '198.51.100.11:/api/lobby/2222/rematch'])
+    )
   })
 
   it('records rate_limiter_degraded while it serves from memory, as it does while it refuses (#1156)', async () => {

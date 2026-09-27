@@ -22,6 +22,13 @@ interface DegradedRateLimit {
    * answers 503, as it would with no degraded mode at all.
    */
   instanceMaxRequests: number
+  /**
+   * Buckets every path under one key while degraded, when normal mode keys per path. For a
+   * route whose normal limit is deliberately per resource (rematch, per lobby) but whose
+   * degraded limits must be per address and per instance: keyed per path, each lobby code
+   * would bring its own per-instance ceiling, which would then bound nothing.
+   */
+  keyScope?: string
 }
 
 interface RateLimitConfig {
@@ -428,17 +435,18 @@ export function rateLimit(config: RateLimitConfig) {
       if (!degraded) return limiterUnavailable()
 
       // Degraded (#1156): this instance's memory, under limits set for exactly that.
-      const perAddress = consumeInMemoryRateLimit(`degraded:${key}`, windowMs, now)
+      const degradedScope = degraded.keyScope ?? scope
+      const perAddress = consumeInMemoryRateLimit(`degraded:${caller}:${degradedScope}`, windowMs, now)
       if (perAddress.count > degraded.maxRequests) {
         if (perAddress.count === degraded.maxRequests + 1) {
-          await reportRateLimited(scope, now)
+          await reportRateLimited(degradedScope, now)
         }
         return tooManyRequests(message, degraded.maxRequests, perAddress.resetTime, now)
       }
       // Counted only for requests the per-address limit let through, so one address
       // cannot spend everybody else's share of the instance.
       const everyAddress = consumeInMemoryRateLimit(
-        `degraded-instance:${scope}:${windowMs}`,
+        `degraded-instance:${degradedScope}:${windowMs}`,
         windowMs,
         now
       )
@@ -635,15 +643,15 @@ export const rateLimitPresets = {
     message: 'Too many lobbies created. Please try again later.'
   },
 
-  // POST /api/lobby/<code>/rematch: lobby creation's budget, in one bucket per IP across
-  // every code (#1156). Keyed by its path, as it was, each code had its own allowance and
-  // its degraded per-instance ceiling would have been per lobby rather than per instance.
+  // POST /api/lobby/<code>/rematch: lobby creation's budget. Normally keyed by its path, as it
+  // always was, so the limit is per lobby. While degraded (#1156) it is one bucket per IP
+  // across every code: keyed per path, each code would bring its own per-instance ceiling,
+  // and the ceiling would bound nothing.
   lobbyRematch: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 10,
-    keyScope: 'lobby-rematch',
     failClosed: true,
-    degraded: LOBBY_CREATION_DEGRADED,
+    degraded: { ...LOBBY_CREATION_DEGRADED, keyScope: 'lobby-rematch-degraded' },
     message: 'Too many lobbies created. Please try again later.'
   },
 

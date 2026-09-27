@@ -448,7 +448,9 @@ ways:
   ceiling per instance for every address together, several times the busiest window production
   has seen. Past that ceiling they answer 503 as well. The limits are per instance, so a flood
   from rotating addresses is bounded by the ceilings times the number of warm instances, and by
-  the Firewall rules below - which is why this state still alerts.
+  the Firewall rules below - which is why this state still alerts. Rematch is limited per lobby
+  normally and per address across every lobby only while degraded, so a lobby code cannot
+  bring its own per-instance ceiling.
 - **Fail open**: game actions and chat fall back to the per-instance memory store at their usual
   limits, and chat history reads come back empty.
 
