@@ -57,10 +57,22 @@ const optionalVars = [
   // the footer and the emails then name no operator.
   'NEXT_PUBLIC_SELLER_LEGAL_NAME',
   'NEXT_PUBLIC_SELLER_ADDRESS',
+  // Both fall back to NEXTAUTH_SECRET when unset (lib/guest-auth.ts,
+  // lib/lobby-participation.ts), which works but reuses one secret for three
+  // purposes. #1149: required in production specifically, checked below -
+  // guest identity tokens are re-minted on expiry, so setting these is a safe,
+  // non-breaking rotation whenever it happens.
+  'GUEST_JWT_SECRET',
+  'PARTICIPATION_HASH_SALT',
 ]
 
 const vapidVars = ['NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT']
 const sellerIdentityVars = ['NEXT_PUBLIC_SELLER_LEGAL_NAME', 'NEXT_PUBLIC_SELLER_ADDRESS']
+// #1149: unset, these silently fall back to NEXTAUTH_SECRET (lib/guest-auth.ts:45,
+// lib/lobby-participation.ts:25) instead of failing, so production can run for months
+// on one secret doing three jobs before anyone notices. Required in production only -
+// local dev and preview are fine relying on the fallback.
+const productionRequiredVars = ['GUEST_JWT_SECRET', 'PARTICIPATION_HASH_SALT']
 
 // A webhook URL carries its own token in the path and the internal secret is a
 // secret, so these are reported as present without printing any of the value.
@@ -231,6 +243,21 @@ if (sellerIdentityMissing.length > 0 && sellerIdentityMissing.length < sellerIde
     `\nWARN Operator imprint is not configured in production; /terms, /privacy, the footer and the emails ` +
       `name no operator (#1163). Set: ${sellerIdentityMissing.join(', ')}`
   )
+}
+
+// #1149: in production, falling back to NEXTAUTH_SECRET is a silent downgrade, not a
+// usable default - it means one secret signs the session, guest JWTs and the
+// participation hash. Fails the check (not a WARN) so a production deploy missing
+// either one is caught here rather than found later in an audit.
+if (isProduction) {
+  const productionSecretsMissing = productionRequiredVars.filter((name) => !process.env[name])
+  if (productionSecretsMissing.length > 0) {
+    console.log(
+      `\nERR Required in production (#1149): ${productionSecretsMissing.join(', ')} — unset, these fall back ` +
+        `to NEXTAUTH_SECRET (lib/guest-auth.ts, lib/lobby-participation.ts), reusing one secret for three jobs.`
+    )
+    hasErrors = true
+  }
 }
 
 console.log('\nCross-project consistency:\n')

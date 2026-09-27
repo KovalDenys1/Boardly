@@ -1,0 +1,27 @@
+# #1147 — dependency updates for the two ecosystems this repo actually installs from:
+# npm packages and the GitHub Actions used in .github/workflows. Weekly, grouped so a
+# routine minor/patch bump opens one PR instead of a dozen; a major bump still gets its
+# own PR since it can be breaking.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
