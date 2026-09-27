@@ -3,7 +3,12 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/db'
 import { getStripe, PREMIUM_PRICE_ID, PREMIUM_PRICE_ID_YEARLY } from '@/lib/stripe'
 import { buildPremiumCheckoutSessionParams } from '@/lib/premium-checkout-session'
-import { CONSENT_REQUIRED_CODE, checkoutRequestSchema, type CheckoutRequest } from '@/lib/validation/stripe-checkout'
+import {
+  CONSENT_REQUIRED_CODE,
+  EMAIL_UNVERIFIED_CODE,
+  checkoutRequestSchema,
+  type CheckoutRequest,
+} from '@/lib/validation/stripe-checkout'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { requireSessionUser } from '@/lib/session-user'
@@ -91,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.users.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, stripeCustomerId: true, premiumUntil: true },
+    select: { id: true, email: true, emailVerified: true, stripeCustomerId: true, premiumUntil: true },
   })
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
@@ -116,6 +121,19 @@ export async function POST(req: NextRequest) {
       }
       return toCheckoutErrorResponse(err, log)
     }
+  }
+
+  // A purchase needs a verified email address (#1139): our purchase confirmation goes
+  // to it, and an account registered with somebody else's address could otherwise buy.
+  // After the portal branch above, so a subscriber can always reach billing.
+  if (!user.emailVerified) {
+    return NextResponse.json(
+      {
+        error: 'Verify your email address before buying Premium.',
+        code: EMAIL_UNVERIFIED_CODE,
+      },
+      { status: 403 }
+    )
   }
 
   const request = await readCheckoutRequest(req)

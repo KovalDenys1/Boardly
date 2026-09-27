@@ -29,6 +29,7 @@ import {
 import { changeLanguageLazy, type Locale } from '@/i18n'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
+import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
 import {
   getExistingPushSubscription,
   getPushPermissionState,
@@ -298,10 +299,13 @@ export default function ProfilePage() {
   })
   const [pushPermission, setPushPermission] = useState<'loading' | 'unsupported' | 'unavailable' | NotificationPermission>('loading')
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
+  // Placeholder values only: the controls stay disabled and show no choice until the
+  // stored preferences arrive, so nobody sees "public, online" that is not theirs (#1131).
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>({
-    profileVisibility: 'public',
-    showOnlineStatus: true,
+    profileVisibility: 'friends',
+    showOnlineStatus: false,
   })
+  const [accountPreferencesLoaded, setAccountPreferencesLoaded] = useState(false)
 
   const currentUsername = profileSummary?.username?.trim() || session?.user?.name || ''
   const currentEmail = profileSummary?.email?.trim() || session?.user?.email || ''
@@ -520,22 +524,11 @@ export default function ProfilePage() {
     }
   }, [fetchProfileSummary, status])
 
-  // Check if account was just linked
+  // Back from a completed Stripe checkout
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const currentUrl = new URL(window.location.href)
-    if (currentUrl.searchParams.get('linked') === 'true') {
-      showToast.success('toast.accountLinked')
-
-      currentUrl.searchParams.delete('linked')
-      window.history.replaceState(
-        {},
-        '',
-        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
-      )
-    }
-
     if (currentUrl.searchParams.get('premium') === 'success') {
       showToast.success('toast.success', 'Welcome to Boardly Premium!')
       currentUrl.searchParams.delete('premium')
@@ -624,6 +617,7 @@ export default function ProfilePage() {
               ...prev,
               ...data.preferences,
             }))
+            setAccountPreferencesLoaded(true)
           }
         })
         .catch(() => {})
@@ -1191,6 +1185,10 @@ export default function ProfilePage() {
       const data = await res.json()
 
       if (!res.ok) {
+        if (data?.code === LAST_SIGN_IN_METHOD_CODE) {
+          showToast.error('profile.linkedAccounts.lastSignInMethod')
+          return
+        }
         throw new Error(data.error || t('profile.errors.unlinkFailed'))
       }
 
@@ -1331,7 +1329,7 @@ export default function ProfilePage() {
 
   const updateAccountPreference = useCallback(
     async (key: keyof AccountPreferences, value: AccountPreferences[keyof AccountPreferences]) => {
-      if (accountPreferencesSaving) {
+      if (accountPreferencesSaving || !accountPreferencesLoaded) {
         return
       }
 
@@ -1363,16 +1361,20 @@ export default function ProfilePage() {
         setAccountPreferencesSaving(false)
       }
     },
-    [accountPreferences, accountPreferencesSaving]
+    [accountPreferences, accountPreferencesLoaded, accountPreferencesSaving]
   )
 
   const canPreviewPublicProfile = Boolean(profileSummary?.publicProfileId)
+  // Until the stored preferences arrive the placeholder is not the owner's setting, so the
+  // preview shows the profile itself rather than a friends-only notice that may be wrong.
   const publicProfilePreviewAccessState =
-    accountPreferences.profileVisibility === 'private'
-      ? 'private'
-      : accountPreferences.profileVisibility === 'friends'
-        ? 'friends_only'
-        : 'available'
+    !accountPreferencesLoaded
+      ? 'available'
+      : accountPreferences.profileVisibility === 'private'
+        ? 'private'
+        : accountPreferences.profileVisibility === 'friends'
+          ? 'friends_only'
+          : 'available'
 
   const handleBackNavigation = () => {
     navigateBackFromProfile(router)
@@ -2252,27 +2254,25 @@ export default function ProfilePage() {
                               </div>
                               <div>
                                 <p className="text-sm font-semibold text-bd-ink dark:text-white">{provider.name}</p>
-                                {isConnected && (
+                                {isConnected ? (
                                   <p className="text-xs font-medium text-bd-mint-deep dark:text-bd-mint">
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
+                                ) : (
+                                  <p className="text-xs font-medium text-bd-ink-soft dark:text-slate-400">
+                                    {t('profile.linkedAccounts.notConnected')}
+                                  </p>
                                 )}
                               </div>
-                              {isConnected ? (
+                              {/* Unlink only: the Connect action went with /auth/link
+                                  (#1140). Linking can come back as its own ticket. */}
+                              {isConnected && (
                                 <button
                                   type="button"
                                   onClick={() => handleUnlinkAccount(provider.id)}
                                   className={`${actionDangerButtonClassName} w-full px-3 py-2 text-xs`}
                                 >
                                   {t('profile.linkedAccounts.unlink')}
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => router.push(`/auth/link?provider=${provider.id}`)}
-                                  className={`${actionPrimaryButtonClassName} w-full px-3 py-2 text-xs`}
-                                >
-                                  {t('profile.linkedAccounts.connect')}
                                 </button>
                               )}
                             </div>
@@ -2651,6 +2651,11 @@ export default function ProfilePage() {
                         {t('profile.settings.syncing')}
                       </span>
                     )}
+                    {!accountPreferencesLoaded && !accountPreferencesSaving && (
+                      <span className={settingsSyncBadgeClassName} role="status">
+                        {t('common.loading')}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.settings.privacy.subtitle')}
@@ -2692,9 +2697,10 @@ export default function ProfilePage() {
                               onClick={() =>
                                 void updateAccountPreference('profileVisibility', option.value)
                               }
-                              disabled={accountPreferencesSaving}
-                              className={`rounded-2xl border px-4 py-3 text-left transition-all ${
-                                accountPreferences.profileVisibility === option.value
+                              disabled={accountPreferencesSaving || !accountPreferencesLoaded}
+                              aria-pressed={accountPreferencesLoaded && accountPreferences.profileVisibility === option.value}
+                              className={`rounded-2xl border px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
+                                accountPreferencesLoaded && accountPreferences.profileVisibility === option.value
                                   ? 'border-[#7867E8] bg-bd-lav/15 text-bd-lav-deep shadow-sm dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
                                   : 'border-bd-line bg-white text-bd-ink-soft hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800'
                               }`}
@@ -2715,11 +2721,11 @@ export default function ProfilePage() {
                       <div className="mt-4 border-t border-bd-line pt-4 dark:border-slate-700">
                         <Label className="flex cursor-pointer items-start gap-3">
                           <Checkbox
-                            checked={accountPreferences.showOnlineStatus}
+                            checked={accountPreferencesLoaded && accountPreferences.showOnlineStatus}
                             onCheckedChange={(checked) =>
                               void updateAccountPreference('showOnlineStatus', checked === true)
                             }
-                            disabled={accountPreferencesSaving}
+                            disabled={accountPreferencesSaving || !accountPreferencesLoaded}
                             className="mt-0.5 shrink-0"
                           />
                           <div className="min-w-0">

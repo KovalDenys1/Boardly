@@ -14,7 +14,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     accountPreferences: { upsert: jest.fn() },
     // lib/session-user re-reads `suspended` on a write (#1137).
-    users: { findUnique: jest.fn(async () => ({ suspended: false })) },
+    users: { findUnique: jest.fn(async () => ({ suspended: false })), updateMany: jest.fn() },
   },
 }))
 
@@ -57,6 +57,71 @@ describe('PATCH /api/onboarding', () => {
         update: expect.objectContaining({ onboardingCompletedAt: expect.any(Date) }),
       })
     )
+  })
+
+  it('creates a missing row with the values an older account always had (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    await PATCH(buildRequest({ action: 'complete' }))
+    expect(mockPrisma.accountPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ profileVisibility: 'public', showOnlineStatus: true }),
+      })
+    )
+  })
+
+  it('opens the profile only when the account step ticked it (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', profilePublic: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.accountPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'user-1' },
+        update: { profileVisibility: 'public' },
+      })
+    )
+  })
+
+  it('writes nothing for an account step left unticked (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', profilePublic: false }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
+    expect(mockPrisma.users.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('stamps the age confirmation once, never over an earlier one (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', ageConfirmed: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', ageConfirmedAt: null },
+      data: { ageConfirmedAt: expect.any(Date) },
+    })
+    expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
+  })
+
+  it('stamps the Terms acceptance with the age confirmation, each only where empty (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    // The one onboarding box ("I am 13 or older and accept the Terms and the Privacy
+    // Policy") is how an OAuth sign-up accepts the Terms.
+    const res = await PATCH(buildRequest({ action: 'account', ageConfirmed: true, termsAccepted: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', ageConfirmedAt: null },
+      data: { ageConfirmedAt: expect.any(Date) },
+    })
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', termsAcceptedAt: null },
+      data: { termsAcceptedAt: expect.any(Date) },
+    })
+    const [age, terms] = mockPrisma.users.updateMany.mock.calls.map((call) => call[0].data)
+    expect(terms.termsAcceptedAt).toBe(age.ageConfirmedAt)
+  })
+
+  it('writes no Terms acceptance nobody gave (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    await PATCH(buildRequest({ action: 'account', profilePublic: true }))
+    expect(mockPrisma.users.updateMany).not.toHaveBeenCalled()
   })
 
   it('upserts onboardingSkippedAt when action is skip', async () => {

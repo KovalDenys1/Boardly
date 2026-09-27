@@ -79,6 +79,12 @@ describe('CustomPrismaAdapter.createUser', () => {
     expect(data.emailVerified).toBeNull()
   })
 
+  it('creates the preferences row with the account, so it starts friends-only (#1131)', async () => {
+    const { adapter, users } = adapterWith([])
+    await adapter.createUser!({ id: '', name: 'John Doe', email: 'j@example.com', emailVerified: null } as never)
+    expect(users.create.mock.calls[0][0].data.accountPreferences).toEqual({ create: {} })
+  })
+
   it('suffixes a name someone already holds', async () => {
     const { adapter, users } = adapterWith(['JOHN_DOE'])
     await adapter.createUser!({ id: '', name: 'John Doe', email: 'j@example.com', emailVerified: null } as never)

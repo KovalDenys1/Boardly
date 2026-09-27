@@ -14,7 +14,10 @@ import { useAnnouncePresence } from '@/hooks/useFriendPresence'
 export function PresenceTracker() {
   const { data: session } = useSession()
   const userId = session?.user?.id
-  const [showOnlineStatus, setShowOnlineStatus] = useState(true)
+  // Off until the preference has been read: a new account's online status is
+  // hidden by default (#1131), and announcing it for the length of one fetch
+  // would show it anyway.
+  const [showOnlineStatus, setShowOnlineStatus] = useState(false)
 
   useEffect(() => {
     if (!userId) return

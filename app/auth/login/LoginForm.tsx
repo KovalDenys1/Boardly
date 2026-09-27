@@ -18,7 +18,7 @@ import {
   buildAuthUrl,
   resolveReturnUrlFromSearchParams,
 } from '@/lib/auth-redirect'
-import { getLastAccount, saveLastAccount, type LastAccount } from '@/lib/last-account'
+import { getLastAccount, rememberLastAccount, type LastAccount } from '@/lib/last-account'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import InAppBrowserNotice from '@/components/InAppBrowserNotice'
@@ -135,7 +135,8 @@ export default function LoginForm() {
           success: true,
         })
         
-        saveLastAccount({
+        // Only with "Remember me" ticked; unticked clears an earlier entry (#1133).
+        rememberLastAccount(rememberMe, {
           email: normalizedEmail,
           name: null,
           image: null,
