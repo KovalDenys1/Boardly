@@ -67,7 +67,10 @@ describe('account deletion erases what the cascade leaves behind (#1128)', () =>
     getStripe.mockReturnValue({ subscriptions: { cancel }, customers: { del: delCustomer } })
     isAvatarStorageConfigured.mockReturnValue(true)
     deleteAvatar.mockResolvedValue(undefined)
+    // A hashed deletion-purpose row, as request-deletion writes it since #1141.
     prisma.passwordResetTokens.findUnique.mockResolvedValue({
+      tokenHash: 'stored-hash',
+      purpose: 'delete',
       userId: 'u1',
       expires: new Date(Date.now() + 60_000),
     })

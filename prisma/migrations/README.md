@@ -136,6 +136,10 @@ Adds match timing metadata and removes old `chess`/`uno` enum values:
 
 `20260923093000_rls_stripe_webhook_events_user_achievements` puts `StripeWebhookEvents` and `UserAchievements` under RLS with a service_role-only policy (production had RLS on by hand, dev had none) and switches `get_current_user_id`, `is_authenticated` and `is_service_role` to `SECURITY INVOKER`.
 
+### `20260925120000_hash_auth_tokens`
+
+Reset, deletion and verification tokens stored as `sha256(token)` in `tokenHash`, and a `purpose` enum (`reset` | `delete`) on `PasswordResetTokens` so a deletion token can no longer reset a password (#1141, `lib/auth-tokens.ts`). `token` became nullable and is written by nothing; rows issued before the change keep working by their raw value until they expire, after which the column can be dropped.
+
 ## Row Level Security
 
 RLS is part of the database safety model:

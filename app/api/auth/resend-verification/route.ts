@@ -3,7 +3,7 @@ import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
-import { nanoid } from 'nanoid'
+import { issueVerificationToken } from '@/lib/auth-tokens'
 import { apiLogger } from '@/lib/logger'
 import { normalizeProfileEmail } from '@/lib/profile-email'
 import { insensitiveEquals } from '@/lib/username-match'
@@ -102,13 +102,14 @@ export async function POST(request: NextRequest) {
           where: { userId: user.id },
         })
 
-        const token = nanoid(32)
+        // Only the hash is stored (#1141).
+        const { token, tokenHash } = issueVerificationToken()
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
         await prisma.emailVerificationTokens.create({
           data: {
             userId: user.id,
-            token,
+            tokenHash,
             expires,
           },
         })

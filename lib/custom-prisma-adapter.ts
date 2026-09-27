@@ -1,4 +1,6 @@
 import type { Adapter, AdapterUser, AdapterAccount } from 'next-auth/adapters'
+import { pickOAuthUsername } from './oauth-username'
+import { insensitiveEquals, sameName } from './username-match'
 
 type AdapterPrismaClient = Pick<
   typeof import('./db').prisma,
@@ -13,22 +15,50 @@ type AdapterPrismaClient = Pick<
  * 
  * This adapter maps between NextAuth's expectations and our actual schema.
  */
+function isUsernameConflict(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const { code, meta } = error as { code?: unknown; meta?: { target?: unknown } }
+  if (code !== 'P2002') return false
+  const target = meta?.target
+  const fields = Array.isArray(target) ? target : typeof target === 'string' ? [target] : []
+  // Prisma can omit the target; a retry with a fresh name is harmless either way.
+  return fields.length === 0 || fields.some((field) => String(field).toLowerCase().includes('username'))
+}
+
 export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
   return {
     async createUser(user: AdapterUser) {
-      const username = user.name || (user.email ? user.email.split('@')[0] : null)
+      // The provider's display name, cut to the username rule and made unique; never
+      // the email's local part, which would publish part of the address (#1142). This
+      // is the name the account keeps: events.linkAccount no longer overwrites it.
+      const isTaken = async (candidate: string) => {
+        const holders = await prisma.users.findMany({
+          where: { username: insensitiveEquals(candidate) },
+          select: { username: true },
+        })
+        return holders.some((row) => sameName(row.username, candidate))
+      }
       // No attribution here any more. This runs on the OAuth callback request, which
       // carries nothing of ours — the header died with the page that redirected to the
       // provider, and the cookie that used to bridge the gap needed consent it never had.
       // POST /api/auth/attribution fills the column in once the browser lands back (#1067).
-      const created = await prisma.users.create({
-        data: {
-          email: user.email,
-          emailVerified: user.emailVerified ?? null,
-          image: null,
-          username: username ?? null,
-        },
-      })
+      const create = async () =>
+        prisma.users.create({
+          data: {
+            email: user.email,
+            emailVerified: user.emailVerified ?? null,
+            image: null,
+            username: await pickOAuthUsername(user.name, isTaken),
+          },
+        })
+      let created: Awaited<ReturnType<typeof create>>
+      try {
+        created = await create()
+      } catch (error) {
+        // Two sign-ups picking the same free name at once: the loser picks again.
+        if (!isUsernameConflict(error)) throw error
+        created = await create()
+      }
       return {
         id: created.id,
         name: created.username ?? null,

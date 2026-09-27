@@ -65,7 +65,8 @@ async function checkEmailHandler(req: NextRequest) {
     (row) => sameName(row.email, email) || sameName(row.pendingEmail, email)
   )
 
-  log.info('Email check completed', { email, available })
+  // The address itself stays out of the log (#1132); the answer is all it records.
+  log.info('Email check completed', { available })
 
   return NextResponse.json({
     available,
