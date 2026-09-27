@@ -5,7 +5,7 @@ import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
 import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
 import { upsertNotificationPreferences } from '@/lib/notification-preferences'
-import { nanoid } from 'nanoid'
+import { issueVerificationToken } from '@/lib/auth-tokens'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
@@ -138,14 +138,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate verification token
-    const verificationToken = nanoid(32)
+    // Generate verification token; only its hash is stored (#1141).
+    const { token: verificationToken, tokenHash: verificationTokenHash } = issueVerificationToken()
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
     await prisma.emailVerificationTokens.create({
       data: {
         userId: user.id,
-        token: verificationToken,
+        tokenHash: verificationTokenHash,
         expires: verificationExpiry,
       },
     })

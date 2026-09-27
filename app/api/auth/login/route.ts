@@ -26,7 +26,8 @@ async function loginHandler(request: NextRequest) {
   const body = await request.json()
   const { email, password } = loginSchema.parse(body)
 
-  log.info('Login attempt', { email })
+  // No address in any line below: the userId serves every purpose it would (#1132).
+  log.info('Login attempt')
 
   // Find user
   // `insensitiveEquals`, not a bare `equals` + `mode`: that pair compiles to an
@@ -40,23 +41,23 @@ async function loginHandler(request: NextRequest) {
   })
 
   if (!user || !user.passwordHash) {
-    log.warn('Login failed: Invalid credentials', { email })
+    log.warn('Login failed: Invalid credentials')
     throw new AuthenticationError('Invalid credentials')
   }
 
   // Verify password
   const isValid = await comparePassword(password, user.passwordHash)
   if (!isValid) {
-    log.warn('Login failed: Invalid password', { email })
+    log.warn('Login failed: Invalid password', { userId: user.id })
     throw new AuthenticationError('Invalid credentials')
   }
 
   if (user.suspended) {
-    log.warn('Login blocked: Account suspended', { email, userId: user.id })
+    log.warn('Login blocked: Account suspended', { userId: user.id })
     throw new AuthenticationError('Account suspended')
   }
 
-  log.info('Login successful', { userId: user.id, email })
+  log.info('Login successful', { userId: user.id })
 
   return NextResponse.json({
     user: {

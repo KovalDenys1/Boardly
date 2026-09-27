@@ -8,6 +8,7 @@ import { getStripe } from '@/lib/stripe'
 import { clearRoleConnection } from '@/lib/discord/role-connection'
 import { deleteAvatar, isAvatarStorageConfigured } from '@/lib/supabase-storage'
 import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '@/lib/account-erasure'
+import { findPasswordResetToken } from '@/lib/auth-tokens'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/delete-account')
@@ -32,10 +33,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
 
-    // Find deletion token (with DELETE_ prefix)
-    const deletionToken = await prisma.passwordResetTokens.findUnique({
-      where: { token: `DELETE_${token}` }
-    })
+    // By hash, and only a token issued for deletion: a password reset token posted
+    // here finds nothing (#1141).
+    const deletionToken = typeof token === 'string' ? await findPasswordResetToken(token, 'delete') : null
 
     if (!deletionToken) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     if (deletionToken.expires < new Date()) {
       await prisma.passwordResetTokens.delete({
-        where: { token: `DELETE_${token}` }
+        where: { id: deletionToken.id }
       })
       return NextResponse.json(
         { error: 'Deletion token has expired' },

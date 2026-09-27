@@ -660,20 +660,19 @@ export function useGameActions(props: UseGameActionsProps) {
         const durationMinutes = Math.round((endTime - startTime) / 60000)
 
         // Safety check: ensure game.players exists and is an array
-        const winnerPlayer = winner?.id && Array.isArray(game.players)
-          ? game.players.find((p: GamePlayer) => p.userId === winner.id)
-          : null
+        const winnerSeat = winner?.id && Array.isArray(game.players)
+          ? game.players.findIndex((p: GamePlayer) => p.userId === winner.id)
+          : -1
+        const winnerPlayer = winnerSeat >= 0 ? game.players[winnerSeat] : null
 
+        // Seat and scores only, never a player's name (#1133).
         trackGameCompleted({
           gameType: 'yahtzee',
           playerCount: game.players.length,
           duration: durationMinutes,
-          winner: winner?.name || 'Unknown',
+          winnerSeat: winnerSeat >= 0 ? winnerSeat : null,
           wasBot: !!(winnerPlayer?.user?.bot),
-          finalScores: game.players.map((p: GamePlayer) => ({
-            playerName: p.name,
-            score: p.score,
-          })),
+          finalScores: game.players.map((p: GamePlayer) => p.score),
         })
 
         if (winner) {

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import bcrypt from 'bcrypt'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { findPasswordResetToken } from '@/lib/auth-tokens'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
@@ -26,10 +27,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { token, password } = resetPasswordSchema.parse(body)
 
-    // Find valid reset token
-    const resetToken = await prisma.passwordResetTokens.findUnique({
-      where: { token },
-    })
+    // By hash, and only a token issued for a reset: an account deletion token posted
+    // here, with or without its old DELETE_ prefix, finds nothing (#1141).
+    const resetToken = await findPasswordResetToken(token, 'reset')
 
     if (!resetToken) {
       return NextResponse.json(

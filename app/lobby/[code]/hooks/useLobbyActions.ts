@@ -557,7 +557,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         event: 'login',
         method: 'guest',
         success: true,
-        userId: data.guestId || undefined,
       })
       trackFunnelStep('guest-join')
     } catch (err: unknown) {
