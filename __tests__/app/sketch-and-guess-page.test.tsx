@@ -78,6 +78,8 @@ jest.mock('@/lib/fetch-with-guest', () => ({
 jest.mock('@/lib/client-logger', () => ({
   clientLogger: {
     log: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
   },
