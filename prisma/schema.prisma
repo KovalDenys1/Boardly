@@ -196,6 +196,9 @@ model Lobbies {
   // Omitted globally in lib/db.ts — a route that needs it asks for it by name.
   kickedUserIds   String[]       @default([])
   createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  // When the retention rule gave the lobby a neutral name (#1130). NULL until then, and the
+  // rule's once-only marker: lib/game-pseudonymisation.ts
+  pseudonymisedAt DateTime?      @db.Timestamptz(3)
   creatorId       String?
   creator         Users?         @relation("LobbyCreator", fields: [creatorId], references: [id], onDelete: SetNull)
   games           Games[]
@@ -245,6 +248,7 @@ model Games {
   lastMoveAt       DateTime             @default(now()) @db.Timestamptz(3) // Track when last move was made for timer
   createdAt        DateTime             @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime             @default(now()) @updatedAt @db.Timestamptz(3)
+  pseudonymisedAt  DateTime?            @db.Timestamptz(3) // When the retention rule replaced the names, messages and drawings in state (#1130). NULL until then, and the rule's once-only marker: lib/game-pseudonymisation.ts
   players          Players[]
   snapshots        GameStateSnapshots[]
 

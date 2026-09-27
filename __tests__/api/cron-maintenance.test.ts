@@ -35,6 +35,7 @@ jest.mock('@/lib/data-retention', () => ({
   enforceRetention: jest.fn(),
 }))
 
+
 jest.mock('@/lib/cron-heartbeat', () => ({
   recordCronRun: jest.fn(),
 }))
@@ -101,6 +102,7 @@ describe('GET /api/cron/maintenance', () => {
     enforceRetention.mockResolvedValue({
       feedback: { days: 365, cutoff: 'c', enforced: true, matched: 2, deleted: 2 },
       operationalEvents: { days: 180, cutoff: 'c', enforced: false, matched: 9, deleted: 0 },
+      games: { days: 365, cutoff: 'c', enforced: true, matched: 5, deleted: 0, pseudonymised: 5 },
     })
     mockCleanupStaleLobbiesAndGames.mockResolvedValue({
       deactivatedLobbies: 6,
@@ -139,5 +141,9 @@ describe('GET /api/cron/maintenance', () => {
     expect(heartbeat.retention_feedback_deleted).toBe(2)
     expect(heartbeat.retention_operationalEvents_enforced).toBe(false)
     expect(heartbeat.retention_operationalEvents_matched).toBe(9)
+    // Games are pseudonymised, not deleted (#1130, 2026-09-27).
+    expect(heartbeat.retention_games_deleted).toBe(0)
+    expect(heartbeat.retention_games_pseudonymised).toBe(5)
+    expect(heartbeat.retention_feedback_pseudonymised).toBeUndefined()
   })
 })

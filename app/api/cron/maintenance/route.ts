@@ -27,12 +27,20 @@ async function handleCronRequest(request: NextRequest) {
     // Retention periods (#1130) run last, so a game the stale sweep has just closed is
     // judged by the endedAt it was given a moment ago.
     const retentionResult = await enforceRetention()
-    // The heartbeat payload is flat: per rule, what was deleted, or in report mode what
-    // would have been, so a report-only rule leaves its daily count in cron_run.
+    // The heartbeat payload is flat: per rule, what was deleted (and, for a rule that
+    // pseudonymises, rewritten), or in report mode what would have been, so a report-only
+    // rule leaves its daily count in cron_run.
     const retentionSummary: Record<string, number | boolean> = {}
     for (const [key, entry] of Object.entries(retentionResult)) {
       retentionSummary[`retention_${key}_enforced`] = entry.enforced
-      retentionSummary[`retention_${key}_${entry.enforced ? 'deleted' : 'matched'}`] = entry.error ? -1 : entry.matched
+      if (!entry.enforced) {
+        retentionSummary[`retention_${key}_matched`] = entry.error ? -1 : entry.matched
+        continue
+      }
+      retentionSummary[`retention_${key}_deleted`] = entry.error ? -1 : entry.deleted
+      if (entry.pseudonymised !== undefined) {
+        retentionSummary[`retention_${key}_pseudonymised`] = entry.error ? -1 : entry.pseudonymised
+      }
     }
 
     await recordCronRun({

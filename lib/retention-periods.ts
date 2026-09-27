@@ -10,9 +10,15 @@
  * PRIVACY_UPDATED in lib/terms-version.ts: the notice's text changed.
  */
 export const RETENTION_DAYS = {
-  /** Finished, abandoned and cancelled games, from the end of the game. */
+  /**
+   * Finished, abandoned and cancelled games, from the end of the game. Then pseudonymised,
+   * not deleted: names, messages and drawings go, scores and results stay (#1130).
+   */
   games: 365,
-  /** Inactive lobbies with no game left in them, from creation. */
+  /**
+   * Inactive lobbies, from creation: one with no game in it is deleted, one whose games
+   * have been pseudonymised gets a neutral name.
+   */
   lobbies: 365,
   /** Pseudonymous lobby-join records (salted hash), from joining. */
   lobbyParticipations: 730,
