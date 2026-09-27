@@ -73,7 +73,7 @@ Server state is always authoritative. Clients may apply optimistic updates for U
 ### 1. Install
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### 2. Configure environment
@@ -97,31 +97,31 @@ Fill required values in `.env.local`. Key variables:
 ### 3. Prepare database
 
 ```bash
-pnpm db:generate
-pnpm db:push
+npm run db:generate
+npm run db:push
 ```
 
 ### 4. Start development
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 ## Common scripts
 
 ```bash
-pnpm dev              # Start Next.js dev server
-pnpm build            # prisma generate + next build
-pnpm test             # Jest test suite
-pnpm lint             # ESLint
-pnpm typecheck        # tsc --noEmit
-pnpm ci:quick         # lint + typecheck + arch, responsive, emoji and docs audits
-pnpm check:locales    # Verify all 4 locale files have identical keys
-pnpm db:generate      # Regenerate Prisma client
-pnpm db:push          # Push schema changes (dev only)
-pnpm db:migrate       # Run pending migrations (production)
-pnpm db:audit         # compare live tables and RLS against the expected set
-pnpm audit:docs       # check these docs against the code they describe
+npm run dev              # Start Next.js dev server
+npm run build            # prisma generate + next build
+npm test                 # Jest test suite
+npm run lint             # ESLint
+npm run typecheck        # tsc --noEmit
+npm run ci:quick         # lint + typecheck + arch, responsive, emoji and docs audits
+npm run check:locales    # Verify all 4 locale files have identical keys
+npm run db:generate      # Regenerate Prisma client
+npm run db:push          # Push schema changes (dev only)
+npm run db:migrate       # Run pending migrations (production)
+npm run db:audit         # compare live tables and RLS against the expected set
+npm run audit:docs       # check these docs against the code they describe
 ```
 
 ## Branching
@@ -135,7 +135,7 @@ Commit format: `#<issue-number> feat/fix/chore: description`
 
 ## Localization
 
-All user-visible strings go through `t()`. Locale files: `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, and all four must have identical keys – that part is enforced by `pnpm check:locales`, which the pre-commit hook runs when a locale file is staged. Nothing checks mechanically that a string went through `t()` at all, so a hardcoded string is caught in review.
+All user-visible strings go through `t()`. Locale files: `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, and all four must have identical keys – that part is enforced by `npm run check:locales`, which the pre-commit hook runs when a locale file is staged. Nothing checks mechanically that a string went through `t()` at all, so a hardcoded string is caught in review.
 
 ## Documentation
 

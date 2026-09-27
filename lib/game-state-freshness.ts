@@ -45,6 +45,20 @@ export interface FreshnessDecision {
 }
 
 /**
+ * How far ahead of this client's clock an unsolicited snapshot's `lastMoveAt`
+ * may be and still move the watermark (GHSA-g868-9224-wr3p).
+ *
+ * The watermark only ever goes up, so one snapshot stamped far in the future
+ * would make every real one after it look "older" and be dropped until the
+ * player's own next move. Broadcasts are signed by the server now, so such a
+ * snapshot should not arrive at all; this keeps the damage bounded if one
+ * ever does. A snapshot beyond the lead is still applied – a device whose
+ * clock is minutes slow sees every genuine stamp as "future", and freezing its
+ * board would be worse – it just does not raise the bar for the next one.
+ */
+export const MAX_WATERMARK_LEAD_MS = 60 * 1000
+
+/**
  * `trusted` is the response to a move this client just submitted; it always wins.
  * `moveInFlight` is true between optimistic apply and that response — during
  * that window an unsolicited snapshot cannot have seen the move, so it is
@@ -53,7 +67,7 @@ export interface FreshnessDecision {
 export function decideFreshness(
   watermark: FreshnessWatermark,
   incoming: unknown,
-  options?: { trusted?: boolean; moveInFlight?: boolean }
+  options?: { trusted?: boolean; moveInFlight?: boolean; now?: number }
 ): FreshnessDecision {
   const incomingLastMoveAt = readLastMoveAt(incoming)
 
@@ -72,7 +86,10 @@ export function decideFreshness(
     return { accept: false, reason: 'older-than-applied' }
   }
 
-  watermark.current = incomingLastMoveAt
+  const now = options?.now ?? Date.now()
+  if (incomingLastMoveAt <= now + MAX_WATERMARK_LEAD_MS) {
+    watermark.current = incomingLastMoveAt
+  }
   return { accept: true }
 }
 

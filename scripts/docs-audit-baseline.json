@@ -122,24 +122,6 @@
   {
     "file": "docs/OPERATIONS.md",
     "check": "D4",
-    "value": "PROJECT_HYGIENE_OWNER",
-    "reason": "A GitHub repository variable for .github/workflows/project-hygiene.yml, not app env."
-  },
-  {
-    "file": "docs/OPERATIONS.md",
-    "check": "D4",
-    "value": "PROJECT_HYGIENE_PROJECT_NUMBER",
-    "reason": "A GitHub repository variable for .github/workflows/project-hygiene.yml, not app env."
-  },
-  {
-    "file": "docs/OPERATIONS.md",
-    "check": "D4",
-    "value": "PROJECT_HYGIENE_TOKEN",
-    "reason": "A GitHub Actions secret for .github/workflows/project-hygiene.yml, not app env."
-  },
-  {
-    "file": "docs/OPERATIONS.md",
-    "check": "D4",
     "value": "RELIABILITY_ALERTS_CRON_URL",
     "reason": "A GitHub Actions secret for .github/workflows/reliability-alerts-cron.yml, not app env."
   },

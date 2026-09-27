@@ -33,7 +33,6 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
@@ -393,7 +392,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -590,7 +588,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 
@@ -1291,9 +1288,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     variant="danger"
                     icon={<LeaveIcon size={28} />}
                 />
-            )}
-            {!isSpectator && resolvedStatus === 'playing' && (
-                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

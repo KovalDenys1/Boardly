@@ -3219,6 +3219,7 @@ const en = {
     guesses: 'Guesses',
     noGuessesYet: 'No guesses yet…',
     guessPlaceholder: 'Type your guess…',
+    guessRateLimited: 'Too many guesses at once – wait a moment and try again',
     describerWords: '{{name}} described',
     wordsThisTurn: 'Words this turn',
     allSetReady: 'All set — ready when host is.',

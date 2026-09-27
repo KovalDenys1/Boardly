@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react'
 import LeaveIcon from '@/components/LeaveIcon'
 import ConfirmModal from '@/components/ConfirmModal'
 import Chat from '@/components/Chat'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -208,7 +207,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -414,7 +412,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 
@@ -1015,9 +1012,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     variant="danger"
                     icon={<LeaveIcon size={28} />}
                 />
-            )}
-            {!isSpectator && game.status === 'playing' && (
-                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

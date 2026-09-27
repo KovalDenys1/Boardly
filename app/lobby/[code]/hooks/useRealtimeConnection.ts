@@ -6,7 +6,8 @@ import { getSupabaseClient } from '@/lib/supabase-client'
 import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
 import { fetchLobbyTopic } from '@/lib/lobby-realtime-topic-client'
 import { clientLogger } from '@/lib/client-logger'
-import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
+import { LOBBY_PEER_EVENTS, readSpectatorCount } from '@/lib/shared/realtime-envelope'
+import type { GameUpdatePayload, ChatMessagePayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
 import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/realtime-events'
 import type { BaseBotActionEvent } from '@/lib/bots'
 
@@ -24,7 +25,6 @@ interface UseRealtimeConnectionProps {
   shouldJoinLobbyRoom?: boolean
   onGameUpdate?: (data: GameUpdatePayload) => void
   onChatMessage?: (message: ChatMessagePayload) => void
-  onPlayerTyping?: (data: PlayerTypingPayload) => void
   onLobbyUpdate?: (data: LobbyUpdatePayload) => void
   onPlayerJoined?: (data: PlayerJoinedPayload) => void
   onGameStarted?: (data: GameStartedPayload) => void
@@ -43,7 +43,6 @@ export function useRealtimeConnection({
   shouldJoinLobbyRoom = true,
   onGameUpdate,
   onChatMessage,
-  onPlayerTyping,
   onLobbyUpdate,
   onPlayerJoined,
   onGameStarted,
@@ -67,7 +66,6 @@ export function useRealtimeConnection({
   // Refs for callbacks — prevents re-subscribing when handlers change
   const onGameUpdateRef = useRef(onGameUpdate)
   const onChatMessageRef = useRef(onChatMessage)
-  const onPlayerTypingRef = useRef(onPlayerTyping)
   const onLobbyUpdateRef = useRef(onLobbyUpdate)
   const onPlayerJoinedRef = useRef(onPlayerJoined)
   const onGameStartedRef = useRef(onGameStarted)
@@ -82,7 +80,6 @@ export function useRealtimeConnection({
   useEffect(() => {
     onGameUpdateRef.current = onGameUpdate
     onChatMessageRef.current = onChatMessage
-    onPlayerTypingRef.current = onPlayerTyping
     onLobbyUpdateRef.current = onLobbyUpdate
     onPlayerJoinedRef.current = onPlayerJoined
     onGameStartedRef.current = onGameStarted
@@ -93,7 +90,7 @@ export function useRealtimeConnection({
     onStateSyncRef.current = onStateSync
     onGameResetRef.current = onGameReset
     onSketchLiveRef.current = onSketchLive
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onSpectatorCountChange, onStateSync, onGameReset, onSketchLive])
+  }, [onGameUpdate, onChatMessage, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onSpectatorCountChange, onStateSync, onGameReset, onSketchLive])
 
   useEffect(() => {
     if (!code || !shouldJoinLobbyRoom) {
@@ -132,9 +129,6 @@ export function useRealtimeConnection({
         'chat-message': (payload) => {
           onChatMessageRef.current?.(payload as ChatMessagePayload)
         },
-        'player-typing': (payload) => {
-          onPlayerTypingRef.current?.(payload as PlayerTypingPayload)
-        },
         'player-joined': (payload) => {
           clientLogger.log('📡 player-joined via Supabase Broadcast')
           onPlayerJoinedRef.current?.(payload as PlayerJoinedPayload)
@@ -161,11 +155,9 @@ export function useRealtimeConnection({
         'sketch-live': (payload) => {
           onSketchLiveRef.current?.(payload)
         },
+        // Signed by PATCH /api/lobby/[code]/spectator-count; still clamped.
         'spectator-count-update': (payload) => {
-          const count = typeof (payload as Record<string, unknown>)?.count === 'number'
-            ? (payload as Record<string, unknown>).count as number
-            : 0
-          onSpectatorCountChangeRef.current?.(count)
+          onSpectatorCountChangeRef.current?.(readSpectatorCount(payload))
         },
       },
       onStatus: (status) => {
@@ -214,8 +206,15 @@ export function useRealtimeConnection({
     }
   }, [code, shouldJoinLobbyRoom, topic])
 
+  // Clients may only send the peer events (lib/shared/realtime-envelope.ts).
+  // Anything else would be dropped by every receiver as unsigned, so refusing
+  // it here turns a silent no-op into a visible mistake in development.
   const emitWhenConnected = useCallback(
     (event: string, data: unknown) => {
+      if (!LOBBY_PEER_EVENTS.has(event)) {
+        clientLogger.warn(`⚠️ "${event}" is a server event; clients cannot send it on the lobby topic`)
+        return
+      }
       const channel = broadcastChannelRef.current
       if (!channel) return
       void channel.send({

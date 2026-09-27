@@ -22,6 +22,7 @@ const envSchema = z.object({
   NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters').optional(),
   GUEST_JWT_SECRET: z.string().min(32, 'GUEST_JWT_SECRET must be at least 32 characters').optional(),
   GUEST_JWT_EXPIRES_IN: z.string().optional(),
+  REALTIME_SIGNING_SECRET: z.string().min(32, 'REALTIME_SIGNING_SECRET must be at least 32 characters').optional(),
   
   // OAuth Providers - Optional
   GITHUB_CLIENT_ID: z.string().optional(),
@@ -152,6 +153,10 @@ export function printEnvInfo(options: ValidateEnvOptions = {}): void {
   
   if (env.GUEST_JWT_SECRET) {
     console.log(`  - GUEST_JWT_SECRET: ${maskSecret(env.GUEST_JWT_SECRET)}`)
+  }
+
+  if (env.REALTIME_SIGNING_SECRET) {
+    console.log(`  - REALTIME_SIGNING_SECRET: ${maskSecret(env.REALTIME_SIGNING_SECRET)}`)
   }
   
   if (env.GITHUB_CLIENT_ID) {

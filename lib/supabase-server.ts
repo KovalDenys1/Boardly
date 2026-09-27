@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db'
 import { buildLobbyTopic } from '@/lib/lobby-realtime-topic'
+import { buildUserTopic, sealRealtimeMessage } from '@/lib/server/realtime-signing'
 
 const BROADCAST_TIMEOUT_MS = 3000
 
@@ -17,6 +18,18 @@ async function broadcastToChannel(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceKey) return false
 
+  // Every server broadcast is signed (GHSA-g868-9224-wr3p): receivers drop
+  // anything on these topics that the server did not seal, which is what stops
+  // a player who holds the topic from forging the server's events. With no key
+  // to sign with there is nothing a receiver would accept, so send nothing.
+  let envelope: ReturnType<typeof sealRealtimeMessage>
+  try {
+    envelope = sealRealtimeMessage(topic, event, payload)
+  } catch {
+    return false
+  }
+  if (!envelope) return false
+
   try {
     const res = await fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
       method: 'POST',
@@ -26,7 +39,7 @@ async function broadcastToChannel(
         Authorization: `Bearer ${serviceKey}`,
       },
       body: JSON.stringify({
-        messages: [{ topic, event, payload }],
+        messages: [{ topic, event, payload: envelope }],
       }),
       signal: AbortSignal.timeout(BROADCAST_TIMEOUT_MS),
     })
@@ -67,11 +80,22 @@ export async function broadcastToLobby(
   return broadcastToChannel(buildLobbyTopic(lobbyCode, lobby.realtimeSecret), event, payload)
 }
 
-/** Broadcast an event to a specific user's channel (`user:{userId}`). */
+/**
+ * Broadcast an event to one user's channel. The topic is `user:{userId}:{tag}`
+ * (`buildUserTopic`), not the guessable `user:{userId}` it used to be (audit
+ * S3-05); the user fetches it from GET /api/realtime/user-topic.
+ */
 export async function broadcastToUser(
   userId: string,
   event: string,
   payload: Record<string, unknown>
 ): Promise<boolean> {
-  return broadcastToChannel(`user:${userId}`, event, payload)
+  let topic: string | null
+  try {
+    topic = buildUserTopic(userId)
+  } catch {
+    return false
+  }
+  if (!topic) return false
+  return broadcastToChannel(topic, event, payload)
 }
