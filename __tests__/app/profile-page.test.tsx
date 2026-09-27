@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))
 
-const mockTranslate = (key: string) => key
+const mockTranslate = jest.fn((key: string, _options?: unknown) => key)
 const mockI18n = {
   language: 'en',
   changeLanguage: jest.fn().mockImplementation(async (nextLanguage: string) => {
@@ -478,6 +478,49 @@ describe('ProfilePage', () => {
       '/api/stripe/checkout',
       expect.objectContaining({ method: 'POST' })
     )
+  })
+
+  describe('the renewal line (#1167)', () => {
+    function withPurchases(purchases: Record<string, unknown>) {
+      const routeEverythingElse = mockFetch.getMockImplementation()!
+      mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : String(input)
+        if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
+        return routeEverythingElse(input, init)
+      })
+    }
+
+    const renewing = {
+      isPremium: true,
+      premiumUntil: '2026-10-27T00:00:00.000Z',
+      cancelAtPeriodEnd: false,
+      hasSubscriptionId: true,
+    }
+
+    beforeEach(() => {
+      window.history.replaceState({}, '', '/profile?tab=premium')
+    })
+
+    it.each([
+      ['monthly', '$2.99', 'profile.premiumTab.renewsOnMonthly'],
+      ['yearly', '$24.99', 'profile.premiumTab.renewsOnYearly'],
+    ])('names the %s price and that Link converts it on the day', async (plan, price, key) => {
+      withPurchases({ ...renewing, renewal: { plan, price } })
+
+      render(<ProfilePage />)
+
+      expect(await screen.findByText(key)).toBeTruthy()
+      expect(mockTranslate).toHaveBeenCalledWith(key, expect.objectContaining({ price }))
+    })
+
+    it('shows the date alone when the price could not be read', async () => {
+      withPurchases({ ...renewing, renewal: null })
+
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      expect(screen.queryByText('profile.premiumTab.renewsOnMonthly')).toBeNull()
+    })
   })
 
   it('does not force a session update when the page regains visibility', async () => {

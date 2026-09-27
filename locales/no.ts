@@ -2410,6 +2410,8 @@ const no = {
       active: 'Premium er aktivt',
       cancelsOn: 'Avsluttes {{date}}',
       renewsOn: 'Fornyes {{date}}',
+      renewsOnMonthly: 'Fornyes {{date}}: {{price}} per måned, belastet av Link i din valuta til kursen på betalingsdagen',
+      renewsOnYearly: 'Fornyes {{date}}: {{price}} per år, belastet av Link i din valuta til kursen på betalingsdagen',
       loseAccess: 'Du mister tilgang til Premium-funksjonene etter denne datoen.',
       reactivate: 'Aktiver på nytt',
       manageBilling: 'Administrer betaling',

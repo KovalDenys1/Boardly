@@ -2410,6 +2410,8 @@ const en = {
       active: 'Premium is active',
       cancelsOn: 'Cancels on {{date}}',
       renewsOn: 'Renews on {{date}}',
+      renewsOnMonthly: 'Renews on {{date}}: {{price}} per month, charged by Link in your currency at the rate on the payment day',
+      renewsOnYearly: 'Renews on {{date}}: {{price}} per year, charged by Link in your currency at the rate on the payment day',
       loseAccess: 'You will lose access to premium features after this date.',
       reactivate: 'Reactivate',
       manageBilling: 'Manage billing',

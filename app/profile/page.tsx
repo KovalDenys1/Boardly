@@ -30,6 +30,7 @@ import { changeLanguageLazy, type Locale } from '@/i18n'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
+import { parsePremiumRenewal, type PremiumRenewal } from '@/lib/premium-plans'
 import {
   getExistingPushSubscription,
   getPushPermissionState,
@@ -257,6 +258,7 @@ export default function ProfilePage() {
   const [premiumCancelAtPeriodEnd, setPremiumCancelAtPeriodEnd] = useState(false)
   const [premiumUntilDate, setPremiumUntilDate] = useState<Date | null>(null)
   const [hasSubscriptionId, setHasSubscriptionId] = useState(false)
+  const [premiumRenewal, setPremiumRenewal] = useState<PremiumRenewal | null>(null)
   const [premiumActionLoading, setPremiumActionLoading] = useState(false)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
@@ -392,6 +394,7 @@ export default function ProfilePage() {
       setPremiumCancelAtPeriodEnd(purchasesData.cancelAtPeriodEnd === true)
       setPremiumUntilDate(purchasesData.premiumUntil ? new Date(purchasesData.premiumUntil) : null)
       setHasSubscriptionId(purchasesData.hasSubscriptionId === true)
+      setPremiumRenewal(parsePremiumRenewal(purchasesData.renewal))
     }
     if (customizeRes.ok) {
       const customizeData = await customizeRes.json()
@@ -2774,7 +2777,16 @@ export default function ProfilePage() {
                         <p className="mt-0.5 text-sm text-amber-700/70 dark:text-amber-400/70">
                           {premiumCancelAtPeriodEnd
                             ? t('profile.premiumTab.loseAccess')
-                            : t('profile.premiumTab.renewsOn', { date: formatPremiumDate(premiumUntilDate) })}
+                            : premiumRenewal
+                              ? // The list price and who converts it (#1167, Denys 2026-09-27):
+                                // the amount in the subscriber's own currency is set on the day.
+                                t(
+                                  premiumRenewal.plan === 'yearly'
+                                    ? 'profile.premiumTab.renewsOnYearly'
+                                    : 'profile.premiumTab.renewsOnMonthly',
+                                  { date: formatPremiumDate(premiumUntilDate), price: premiumRenewal.price }
+                                )
+                              : t('profile.premiumTab.renewsOn', { date: formatPremiumDate(premiumUntilDate) })}
                         </p>
                       </div>
                     </div>

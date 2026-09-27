@@ -2505,6 +2505,8 @@ const ru = {
       active: 'Premium активен',
       cancelsOn: 'Отменяется {{date}}',
       renewsOn: 'Продлевается {{date}}',
+      renewsOnMonthly: 'Продлевается {{date}}: {{price}} в месяц, списывает Link в вашей валюте по курсу на день платежа',
+      renewsOnYearly: 'Продлевается {{date}}: {{price}} в год, списывает Link в вашей валюте по курсу на день платежа',
       loseAccess: 'После этой даты доступ к премиум-возможностям пропадёт.',
       reactivate: 'Возобновить',
       manageBilling: 'Управление оплатой',

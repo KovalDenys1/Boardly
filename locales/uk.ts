@@ -2507,6 +2507,8 @@ const uk: TranslationWithPlurals = {
       active: 'Premium активний',
       cancelsOn: 'Скасовується {{date}}',
       renewsOn: 'Поновлюється {{date}}',
+      renewsOnMonthly: 'Поновлюється {{date}}: {{price}} на місяць, списує Link у вашій валюті за курсом на день платежу',
+      renewsOnYearly: 'Поновлюється {{date}}: {{price}} на рік, списує Link у вашій валюті за курсом на день платежу',
       loseAccess: 'Після цієї дати доступ до преміум-можливостей зникне.',
       reactivate: 'Відновити',
       manageBilling: 'Керування оплатою',
