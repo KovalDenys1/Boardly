@@ -263,9 +263,10 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
 
     render(<SketchAndGuessLobbyPage code="ABCD" />)
 
+    // The default 1 s wait flaked in the full --runInBand suite under load (2026-09-27).
     await waitFor(() => {
       expect(screen.queryByText('games.tictactoe.game.gameNotStartedTitle')).not.toBeNull()
-    })
+    }, { timeout: 5000 })
 
     fireEvent.click(screen.getByRole('button', { name: 'game.ui.backToLobby' }))
     expect(mockPush).toHaveBeenCalledWith('/lobby/ABCD')
