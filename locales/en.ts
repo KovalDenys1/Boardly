@@ -2258,6 +2258,7 @@ const en = {
       termsOfService: 'Terms of Service',
       privacyPolicy: 'Privacy Policy',
       mustAgreeToTerms: 'You must agree to the Terms of Service and Privacy Policy',
+      rulesLink: 'Read the community rules',
       ageConfirm: 'I am 13 or older',
       mustConfirmAge: 'You must be 13 or older to create an account',
       marketingConsent: 'I’d like to receive occasional emails from the Boardly team about new games and features',

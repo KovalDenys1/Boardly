@@ -2258,6 +2258,7 @@ const no = {
       termsOfService: 'Vilkårene for bruk',
       privacyPolicy: 'Personvernerklæringen',
       mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen',
+      rulesLink: 'Les fellesskapsreglene',
       ageConfirm: 'Jeg er 13 år eller eldre',
       mustConfirmAge: 'Du må være 13 år eller eldre for å opprette en konto',
       marketingConsent: 'Jeg vil gjerne motta noen e-poster fra Boardly-teamet om nye spill og funksjoner'

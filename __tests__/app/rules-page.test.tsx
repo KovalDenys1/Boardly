@@ -112,6 +112,20 @@ describe('/rules page (#1173)', () => {
     expect(en.rules.actions.suspend).toContain('for a set time or for good')
   })
 
+  it('is linked from the register form, next to the Terms it is part of', () => {
+    const form = readFileSync(path.join(root, 'app/auth/register/RegisterForm.tsx'), 'utf8')
+    const termsCheckbox = form.indexOf("t('auth.register.termsOfService')")
+    const rulesLink = form.indexOf('<Link href="/rules"')
+    const ageCheckbox = form.indexOf("t('auth.register.ageConfirm')")
+    expect(termsCheckbox).toBeGreaterThan(-1)
+    expect(rulesLink).toBeGreaterThan(termsCheckbox)
+    expect(rulesLink).toBeLessThan(ageCheckbox)
+    expect(form).toContain("{t('auth.register.rulesLink')}")
+    for (const locale of [en, no, ru, uk]) {
+      expect(typeof locale.auth.register.rulesLink).toBe('string')
+    }
+  })
+
   it('uses no em dash', () => {
     for (const locale of [en, no, ru, uk]) {
       expect(JSON.stringify(locale.rules)).not.toContain('—')
