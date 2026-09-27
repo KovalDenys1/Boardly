@@ -3786,7 +3786,7 @@ const no = {
     consentLabel: 'Jeg ber Boardly om å starte Premium nå. Jeg har lest informasjonen om angrerett og vilkårene, og jeg vet at jeg kan angre innen 14 dager og få full tilbakebetaling. Jeg er voksen, eller jeg har fylt 15 år og betaler med penger jeg selv har rett til å bruke.',
     priceNoteTax: 'Premium selges gjennom Link, et selskap i Stripe-konsernet. Prisen over er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen.',
     priceNoteConversion: 'Betaler du i din egen valuta, inkluderer Links vekslingskurs et vekslingsgebyr på 2 til 4 %. På betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
-    yearlyRefundNote: 'Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene.',
+    yearlyRefundNote: 'Sier du opp en årsplan før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.',
     ctaError: 'Kunne ikke åpne kassen. Prøv igjen om noen minutter.',
     consentRequired: 'Kryss av i boksen for å bekrefte at du ber oss om å starte Premium nå. Kassen kan ikke åpnes uten.',
     verifyEmailRequired: 'Premium krever en bekreftet e-postadresse. Send deg selv en bekreftelseslenke, åpne den og prøv igjen.',
@@ -3925,9 +3925,9 @@ const no = {
     },
     accounts: {
       title: '2. Kontoer, gjester og alder',
-      guests: 'Du kan spille uten konto. En gjesteprofil slettes etter {{guestIdle}} dager uten aktivitet, eller etter {{guestPlayed}} dager hvis du har spilt et spill. Gjester trenger ikke å bekrefte alderen sin.',
-      age: 'Du må være 13 år eller eldre for å opprette en konto. Du bekrefter det når du registrerer deg, eller første gang du er inne hvis du registrerer deg med Google, GitHub eller Discord, og vi tar vare på tidspunktet du gjorde det.',
-      under13: 'Får vi vite at en konto tilhører noen under 13 år, stenger vi kontoen og sletter opplysningene i den.',
+      guests: 'Boardly er for personer som er 13 år eller eldre, med eller uten konto. Du kan spille uten konto, som gjest; gjester blir ikke bedt om å bekrefte alderen sin. En gjesteprofil slettes etter {{guestIdle}} dager uten aktivitet, eller etter {{guestPlayed}} dager hvis du har spilt et spill.',
+      age: 'For å opprette en konto bekrefter du at du er 13 år eller eldre: når du registrerer deg, eller første gang du er inne hvis du registrerer deg med Google, GitHub eller Discord. Vi tar vare på tidspunktet du gjorde det.',
+      under13: 'Får vi vite at en konto eller en gjesteprofil tilhører noen under 13 år, stenger vi den og sletter opplysningene i den.',
       premiumAge: 'Premium har egne aldersregler, som står i punkt 3.',
       dutiesLead: 'Har du en konto, skal du:',
       duties: {
@@ -3960,8 +3960,8 @@ const no = {
       body: 'Du beholder rettighetene til det du legger ut, for eksempel chatmeldinger, tegninger, brukernavn, profilbilde og bio. Du gir oss lov til å lagre det og vise det til andre spillere i den grad det trengs for å drive Boardly, så lenge vi tar vare på det etter personvernerklæringen. Du må selv ha rett til å legge det ut. Chatmeldinger slettes etter {{chatHours}} timer.',
     },
     ip: {
-      title: '7. Innholdet vårt',
-      body: 'Navnet Boardly, logoen, designet, tekstene og grafikken tilhører oss eller dem som har gitt oss lisens til dem. Du kan bruke dem når du spiller på Boardly, men ikke kopiere dem eller bruke dem andre steder uten tillatelse fra oss. Kildekoden er publisert på GitHub med MIT-lisensen og kan brukes på vilkårene i den lisensen.',
+      title: '7. Navnet og logoen vår',
+      body: 'Navnet Boardly og logoen vår viser at tjenesten er vår. Du kan ikke bruke dem på en måte som gir inntrykk av at vi anbefaler eller står bak noe vi ikke har noe med å gjøre.',
     },
     service: {
       title: '8. Endringer i tjenesten',
@@ -3979,11 +3979,11 @@ const no = {
       title: '10. Oppsigelse, suspensjon og stenging',
       yours: 'Du kan slutte å bruke Boardly når som helst og slette kontoen din fra profilsiden. Sletter du kontoen, avsluttes et løpende Premium-abonnement med en gang. Vil du beholde Premium ut perioden du har betalt for, sier du først opp abonnementet og sletter kontoen etterpå. Har du et årsabonnement, skriver du til oss før du sletter kontoen, så betaler vi tilbake de ubrukte hele månedene.',
       reminder: 'Så lenge et Premium-abonnement løper, sender vi deg en e-post minst hver sjette måned om at det løper, og om hvordan du sier det opp.',
-      oursLead: 'Vi suspenderer eller stenger en konto bare av en av disse grunnene:',
+      oursLead: 'Bortsett fra slettingene som er beskrevet i punkt 2, og en nedleggelse etter punkt 8, suspenderer eller stenger vi en konto bare av en av disse grunnene:',
       reasons: {
         breach: 'alvorlige eller gjentatte brudd på vilkårene eller fellesskapsreglene;',
         law: 'loven, eller en avgjørelse fra en domstol eller en offentlig myndighet, krever det;',
-        age: 'kontoen tilhører noen under 13 år;',
+        age: 'kontoen eller gjesteprofilen tilhører noen under 13 år;',
         security: 'noen andre har tatt over kontoen, eller den brukes til å angripe Boardly eller andre spillere.',
       },
       warning: 'Ved mindre alvorlige brudd advarer vi deg først, hvis vi kan nå deg. Vi griper inn uten forvarsel når bruddet er alvorlig, for eksempel ved trusler, hat eller seksuelt innhold, eller når vi må handle med en gang for å beskytte andre spillere eller Boardly. I punkt 5 står det hvordan du får vite grunnen, og hvordan du klager.',
@@ -4023,7 +4023,7 @@ const no = {
   rules: {
     breadcrumb: 'Fellesskapsregler',
     heading: 'Fellesskapsreglene på Boardly',
-    intro: 'Boardly er et sted for å spille med venner og nye folk, og noen av spillerne kan være helt ned i 13 år. Reglene skal gjøre det morsomt og trygt for alle. De gjelder i chatten, i tegninger, i brukernavn, profilbilder og bio og i måten du spiller på, enten du har konto eller spiller som gjest.',
+    intro: 'Boardly er et sted for å spille med venner og nye folk. Det er for personer som er 13 år eller eldre, enten de har konto eller spiller som gjest, så noen av spillerne du møter, er unge. Reglene skal gjøre det morsomt og trygt for alle. De gjelder i chatten, i tegninger, i brukernavn, profilbilder og bio og i måten du spiller på.',
     kindTitle: 'Spill rettferdig og vær grei',
     kind: {
       respect: 'Behandle andre spillere slik du selv vil bli behandlet, enten du vinner eller taper.',

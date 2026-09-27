@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto'
 import en from '@/locales/en'
+import no from '@/locales/no'
+import ru from '@/locales/ru'
+import uk from '@/locales/uk'
 import { TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
 
 /**
@@ -8,8 +11,11 @@ import { TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/ter
  * only protects a buyer if the constant actually moves when the text does. On
  * 2026-09-24 the text changed twice in one day under the same version (#1179),
  * so a tab opened in the morning could still consent to the old "no VAT is
- * added" wording. This test ties each version to a digest of the English text
- * it stands for.
+ * added" wording. This test ties each version to a digest of the text it
+ * stands for, in all four locales: a buyer agrees in the language the site is
+ * shown in, and a Norwegian consumer is owed the information in Norwegian
+ * (angrerettloven § 8 second paragraph), so a Norwegian-only edit is a change
+ * of terms too.
  *
  * When it fails, you changed text a buyer agrees to:
  *   1. set the constant in lib/terms-version.ts to the day the change ships;
@@ -24,6 +30,19 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16)
 }
 
+const LOCALES = { en, no, ru, uk }
+type Locale = typeof en
+
+/** The same slice of every locale, keyed by locale code. */
+function everyLocale<T>(pick: (locale: Locale) => T): Record<keyof typeof LOCALES, T> {
+  return {
+    en: pick(LOCALES.en),
+    no: pick(LOCALES.no as unknown as Locale),
+    ru: pick(LOCALES.ru as unknown as Locale),
+    uk: pick(LOCALES.uk as unknown as Locale),
+  }
+}
+
 /**
  * Everything /terms says, the tax note under the price on /premium, and the
  * community rules, which the Terms render in sections 4 and 5 and which /rules
@@ -31,16 +50,18 @@ function digest(value: unknown): string {
  * changed retention period changes what the Terms promise. Only the rules
  * page's breadcrumb is left out, being page chrome.
  *
- * Before 2026-09-27 this covered section 3 and the tax note only, while the
- * rest of /terms was hardcoded English; the 2026-09-25 digest below is that one.
+ * Before 2026-09-27 this covered section 3 and the tax note only, in English
+ * only, while the rest of /terms was hardcoded English; the 2026-09-25 digest
+ * below is that one.
  */
 function termsText() {
-  const rules = Object.fromEntries(Object.entries(en.rules).filter(([key]) => key !== 'breadcrumb'))
   return {
-    terms: en.terms,
-    rules,
+    locales: everyLocale((locale) => ({
+      terms: locale.terms,
+      rules: Object.fromEntries(Object.entries(locale.rules).filter(([key]) => key !== 'breadcrumb')),
+      priceNoteTax: locale.premium.priceNoteTax,
+    })),
     figures: TERMS_FIGURES,
-    priceNoteTax: en.premium.priceNoteTax,
   }
 }
 
@@ -51,17 +72,16 @@ function termsText() {
 const WITHDRAWAL_CHROME = new Set(['breadcrumb', 'copyButton', 'copied', 'copyFailed', 'emailButton', 'backToPremium'])
 
 function withdrawalText() {
-  const page = Object.fromEntries(Object.entries(en.withdrawal).filter(([key]) => !WITHDRAWAL_CHROME.has(key)))
-  return {
-    withdrawal: page,
+  return everyLocale((locale) => ({
+    withdrawal: Object.fromEntries(Object.entries(locale.withdrawal).filter(([key]) => !WITHDRAWAL_CHROME.has(key))),
     premium: {
-      withdrawalTitle: en.premium.withdrawalTitle,
-      withdrawalBody: en.premium.withdrawalBody,
-      withdrawalHow: en.premium.withdrawalHow,
-      withdrawalStartNow: en.premium.withdrawalStartNow,
-      consentLabel: en.premium.consentLabel,
+      withdrawalTitle: locale.premium.withdrawalTitle,
+      withdrawalBody: locale.premium.withdrawalBody,
+      withdrawalHow: locale.premium.withdrawalHow,
+      withdrawalStartNow: locale.premium.withdrawalStartNow,
+      consentLabel: locale.premium.consentLabel,
     },
-  }
+  }))
 }
 
 // Versions before 2026-09-25 predate this test; their text is in git history.
@@ -71,14 +91,19 @@ const TERMS_DIGESTS: Record<string, string> = {
   // 4440445ca75004c5, the tax-added-at-checkout wording.
   '2026-09-25': '680e4906ad82f7c3',
   // The whole of /terms translated and rewritten (#1166), the community rules and
-  // moderation (#1173), the content-notice address (#1172).
-  '2026-09-27': '916b5ebe941a7fd5',
+  // moderation (#1173), the content-notice address (#1172). The first digest over
+  // all four locales.
+  '2026-09-27': '0653967b2bfde28a',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {
   '2026-09-25': '25e83182503ef98f',
   // The consent box gains the age and capacity rule of Terms section 3 (#1169).
-  '2026-09-27': '7787163e81ddc1a4',
+  // Shipped in v1.46.0 with an English-only digest, 7787163e81ddc1a4. Recomputed
+  // over all four locales when the coverage widened (#1166 review): origin/main's
+  // four locale files give the same value, so no withdrawal or consent text has
+  // changed in any locale since it shipped.
+  '2026-09-27': '3a405553ea3088b9',
 }
 
 describe('legal text versions move with the text (#1179)', () => {

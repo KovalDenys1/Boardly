@@ -688,7 +688,7 @@ function englishConfirmationCopy(d: PremiumConfirmationDetails, links: Confirmat
       {
         heading: 'How to cancel',
         paragraphs: [
-          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, we refund the unused whole months.`,
+          `You can cancel at any time with one click from your profile at ${links.profile}. The cancellation takes effect at the end of the period you have paid for, and you keep Premium until then. If you cancel a yearly plan early, write to us and we refund the unused whole months.`,
           // What happens to access after a cancellation made in Link is Link's
           // to decide, so the end-of-period promise above covers the profile only.
           "You can also cancel the subscription, or delete your Link account, at link.com; that follows Link's terms, and deleting your Link account cancels the subscription.",
@@ -753,7 +753,7 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
       {
         heading: 'Slik sier du opp',
         paragraphs: [
-          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, betaler vi tilbake de ubrukte hele månedene.`,
+          `Du kan si opp når som helst med ett klikk fra profilen din på ${links.profile}. Oppsigelsen gjelder fra utløpet av perioden du har betalt for, og du beholder Premium til da. Sier du opp et årsabonnement før tiden, kan du skrive til oss, så betaler vi tilbake de ubrukte hele månedene.`,
           'Du kan også si opp abonnementet eller slette Link-kontoen din på link.com; da gjelder Links vilkår, og sletter du Link-kontoen, sies abonnementet opp.',
         ],
       },

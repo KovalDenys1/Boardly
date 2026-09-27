@@ -3798,7 +3798,7 @@ const en = {
     consentLabel: 'I ask Boardly to start Premium now. I have read the withdrawal information and the terms, and I know that I can withdraw within 14 days for a full refund. I am an adult, or I am 15 or older and pay with money I am entitled to spend myself.',
     priceNoteTax: 'Premium is sold through Link, a Stripe company. The price above is the full price: any VAT or sales tax due in your country is included, and Link collects it at checkout.',
     priceNoteConversion: 'If you pay in your own currency, Link\'s exchange rate includes a conversion fee of 2 to 4%. You can choose to pay in US dollars on the payment page without it.',
-    yearlyRefundNote: 'If you cancel a yearly plan early, we refund the unused whole months.',
+    yearlyRefundNote: 'If you cancel a yearly plan early, write to us and we refund the unused whole months.',
     ctaError: 'Could not open checkout. Please try again in a few minutes.',
     consentRequired: 'Tick the box to confirm that you ask us to start Premium now. Checkout cannot open without it.',
     verifyEmailRequired: 'Premium needs a verified email address. Send yourself a verification link, open it, then try again.',
@@ -3937,9 +3937,9 @@ const en = {
     },
     accounts: {
       title: '2. Accounts, guests and age',
-      guests: 'You can play without an account. A guest profile is deleted after {{guestIdle}} days without activity, or after {{guestPlayed}} days if you have played a game. Guests do not need to confirm their age.',
-      age: 'You must be 13 or older to create an account. You confirm this when you sign up, or on your first visit if you sign up with Google, GitHub or Discord, and we keep the time you did.',
-      under13: 'If we learn that an account belongs to someone under 13, we close the account and delete its data.',
+      guests: 'Boardly is for people aged 13 and over, with or without an account. You can play without an account, as a guest; guests are not asked to confirm their age. A guest profile is deleted after {{guestIdle}} days without activity, or after {{guestPlayed}} days if you have played a game.',
+      age: 'To create an account you confirm that you are 13 or older: when you sign up, or on your first visit if you sign up with Google, GitHub or Discord. We keep the time you did.',
+      under13: 'If we learn that an account or a guest profile belongs to someone under 13, we close it and delete its data.',
       premiumAge: 'Premium has its own age rule, set out in section 3.',
       dutiesLead: 'If you have an account, you must:',
       duties: {
@@ -3972,8 +3972,8 @@ const en = {
       body: 'You keep the rights to what you post, such as chat messages, drawings, your username, profile picture and bio. You allow us to store it and show it to other players as far as that is needed to run Boardly, for as long as we keep it under our privacy policy. You must have the right to post it. Chat messages are deleted after {{chatHours}} hours.',
     },
     ip: {
-      title: '7. Our content',
-      body: 'The Boardly name, logo, design, texts and graphics belong to us or to those who have licensed them to us. You may use them to play on Boardly, but not copy them or use them elsewhere without our permission. The source code is published on GitHub under the MIT License and may be used on the terms of that license.',
+      title: '7. Our name and logo',
+      body: 'The Boardly name and logo identify our service. You may not use them in a way that suggests we endorse or stand behind something we have nothing to do with.',
     },
     service: {
       title: '8. Changes to the service',
@@ -3991,11 +3991,11 @@ const en = {
       title: '10. Ending the agreement, suspension and closure',
       yours: 'You can stop using Boardly at any time and delete your account from your profile page. Deleting the account ends a running Premium subscription at once. To keep Premium to the end of the period you have paid for, cancel the subscription first and delete the account afterwards. If you have a yearly plan, write to us before you delete the account and we refund the unused whole months.',
       reminder: 'While a Premium subscription runs, we email you at least every six months to say that it is running and how to end it.',
-      oursLead: 'We suspend or close an account only for one of these reasons:',
+      oursLead: 'Apart from the deletions described in section 2 and a shutdown under section 8, we suspend or close an account only for one of these reasons:',
       reasons: {
         breach: 'a serious or repeated breach of these Terms or the community rules;',
         law: 'the law, or a decision by a court or a public authority, requires it;',
-        age: 'the account belongs to someone under 13;',
+        age: 'the account or guest profile belongs to someone under 13;',
         security: 'someone else has taken over the account, or it is used to attack Boardly or other players.',
       },
       warning: 'For a less serious breach we warn you first, if we can reach you. We act without warning when a breach is serious, such as threats, hate or sexual content, or when we must act at once to protect other players or Boardly. Section 5 explains how you learn the reason and how to appeal.',
@@ -4035,7 +4035,7 @@ const en = {
   rules: {
     breadcrumb: 'Community rules',
     heading: 'Boardly community rules',
-    intro: 'Boardly is a place to play with friends and new people, and some players can be as young as 13. These rules keep it fun and safe for everyone. They apply in chat, in drawings, in usernames, profile pictures and bios, and in how you play, whether you have an account or play as a guest.',
+    intro: 'Boardly is a place to play with friends and new people. It is for people aged 13 and over, whether they have an account or play as a guest, so some of the players you meet are young. These rules keep it fun and safe for everyone. They apply in chat, in drawings, in usernames, profile pictures and bios, and in how you play.',
     kindTitle: 'Play fair and be kind',
     kind: {
       respect: 'Treat other players the way you want to be treated, whether you win or lose.',

@@ -87,12 +87,15 @@ describe('/terms (#1166)', () => {
     expect(ids.indexOf('terms-premium')).toBeLessThan(ids.indexOf('terms-conduct'))
   })
 
-  it('states the age policy: accounts from 13, confirmed at sign-up; guests unasked; Premium in section 3', () => {
+  it('states the age policy: 13 and over, guests included; accounts confirm it, guests are not asked; Premium in section 3', () => {
     render(<TermsContent seller={null} />)
     const accounts = screen.getByTestId('terms-accounts')
     expect(accounts).toHaveTextContent(en.terms.accounts.age)
     expect(en.terms.accounts.age).toContain('13 or older')
-    expect(accounts).toHaveTextContent('Guests do not need to confirm their age.')
+    expect(en.terms.accounts.guests).toContain('Boardly is for people aged 13 and over, with or without an account.')
+    expect(accounts).toHaveTextContent('guests are not asked to confirm their age.')
+    expect(en.terms.accounts.under13).toContain('an account or a guest profile')
+    expect(en.rules.intro).toContain('It is for people aged 13 and over, whether they have an account or play as a guest')
     expect(accounts).toHaveTextContent(en.terms.accounts.premiumAge)
     // The figures come from the retention module the cleanup jobs read.
     expect(accounts).toHaveTextContent(
@@ -149,10 +152,27 @@ describe('/terms (#1166)', () => {
     expect(en.terms.changes.exit).toContain('free of charge')
     expect(JSON.stringify(en.terms)).not.toMatch(/for any other reason|Continued use of Boardly after changes constitutes/)
     expect(en.terms.termination.oursLead).toContain('only for one of these reasons')
+    // The unverified purge and the guest deletions (section 2) and a shutdown (section 8) are not suspensions.
+    expect(en.terms.termination.oursLead).toContain('Apart from the deletions described in section 2 and a shutdown under section 8')
     expect(Object.keys(en.terms.termination.reasons)).toEqual(['breach', 'law', 'age', 'security'])
     expect(en.terms.termination.premium).toContain('refund')
     // digitalytelsesloven § 33 fourth paragraph (#1165).
     expect(en.terms.termination.reminder).toContain('at least every six months')
+  })
+
+  it('claims only the name and logo, never copyright over what the MIT licence covers', () => {
+    for (const locale of [en, no, ru, uk]) {
+      expect(locale.terms.ip.body).not.toMatch(/MIT|GitHub|copy|kopier|копир|копію/i)
+    }
+    expect(en.terms.ip.title).toBe('7. Our name and logo')
+    expect(en.terms.ip.body).toBe(
+      'The Boardly name and logo identify our service. You may not use them in a way that suggests we endorse or stand behind something we have nothing to do with.'
+    )
+  })
+
+  it('makes the early yearly refund a request, never an automatic one', () => {
+    expect(en.terms.termination.yours).toContain('write to us before you delete the account and we refund the unused whole months')
+    expect(en.premium.yearlyRefundNote).toBe('If you cancel a yearly plan early, write to us and we refund the unused whole months.')
   })
 
   it('names governing law, the home court, Forbrukertilsynet and Forbrukerklageutvalget (L3-14)', () => {
