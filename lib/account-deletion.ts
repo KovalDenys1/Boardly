@@ -34,9 +34,19 @@ type Logger = ReturnType<typeof apiLogger>
 export interface AccountDeletionOptions {
   reason: AccountDeletionReason
   /**
-   * Conditions the account must still meet, checked when it is read and again on the
-   * final delete. The inactivity rule passes its own rule here, so an account that signed
-   * in or subscribed since the rule selected it is left alone.
+   * Conditions the account must still meet. They are checked twice, not continuously: when
+   * the row is read at the start, and in the final delete statement. The inactivity rule
+   * passes its own rule here, pinned to the lastActiveAt and warning it read.
+   *
+   * - An account that stops matching before the read (a sign-in, a subscription) is not
+   *   touched at all.
+   * - One that stops matching in the seconds between the read and the final delete keeps
+   *   its row and its sign-in, but not what the steps in between already removed: the
+   *   avatar, the Discord linked-role data, its name in other players' games and replays,
+   *   the link from its feedback, its password-reset and verification tokens, friend
+   *   requests and friendships. Stripe is not among them for the inactivity rule, which
+   *   never selects an account with a Stripe customer or subscription. The result is
+   *   `not_found` and the caller logs it; nothing puts the removed parts back.
    */
   guard?: Prisma.UsersWhereInput
   log?: Logger
@@ -171,7 +181,12 @@ export async function deleteUserAccount(
   if (guard) {
     const deleted = await prisma.users.deleteMany({ where: { AND: [{ id: user.id }, guard] } })
     if (deleted.count === 0) {
-      log.warn('Account no longer matched its deletion rule at the last step; kept', { userId: user.id, reason })
+      // See AccountDeletionOptions.guard: the row stays, what was removed above does not
+      // come back.
+      log.warn('Account stopped matching its deletion rule mid-deletion; row kept, partly erased', {
+        userId: user.id,
+        reason,
+      })
       return { status: 'not_found' }
     }
   } else {

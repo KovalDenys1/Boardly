@@ -91,17 +91,19 @@ describe('privacy notice (#1126)', () => {
     expect(text).toContain(`${RETENTION_DAYS.guestIdentityToken} days from your last visit`)
   })
 
-  // #1130, decision 2026-09-27: games are pseudonymised, not deleted, and an account
-  // nobody uses for 24 months is deleted after a warning email – in every language.
-  it('says games lose their names but keep their results, and when an unused account goes', () => {
+  // #1130, decision 2026-09-27: games are pseudonymised, not deleted; a lobby in which no
+  // game started goes with its games. Inactive accounts are NOT deleted while the Terms do
+  // not allow it (TERMS_ALLOW_INACTIVITY_DELETION), so the notice must not say they are.
+  it('says games lose their names but keep their results, and that unused accounts are kept', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''
     expect(text).toContain('the scores and results stay, tied to a player id instead of a name')
-    expect(text).toContain('an inactive lobby is deleted if no game was played in it, and otherwise its name is replaced')
-    expect(text).toContain('or until nobody has used it for 24 months: we then delete it, and email you 30 days before')
-    expect(text).toContain('never deleted for inactivity')
-    expect(text).toContain('a warning 30 days before we delete an account nobody has used for 24 months')
-    expect(text).not.toContain('is kept until you delete it')
+    expect(text).toContain('an inactive lobby in which no game ever started is deleted together with those games')
+    expect(text).toContain('its code is released for new lobbies')
+    expect(text).toContain('We do not delete an account because it has not been used')
+    expect(text).toContain('at least 30 days before it applies')
+    expect(text).toContain('is kept until you delete it')
+    expect(text).not.toMatch(/inactivity|24 months: we then delete/)
 
     const locales = {
       en: require('@/locales/en').default,
@@ -110,14 +112,13 @@ describe('privacy notice (#1126)', () => {
       uk: require('@/locales/uk').default,
     }
     for (const [name, locale] of Object.entries(locales)) {
-      const { account, games, email } = locale.privacyPolicy.purposes
-      for (const [field, value, placeholder] of [
-        ['account.retention', account.retention, '{{inactiveMonths}}'],
-        ['account.retention', account.retention, '{{inactiveWarningDays}}'],
-        ['email.data', email.data, '{{inactiveMonths}}'],
+      const { account, games } = locale.privacyPolicy.purposes
+      for (const [field, value, needle] of [
+        ['account.retention', account.retention, '30'],
         ['games.retention', games.retention, '{{gamesMonths}}'],
+        ['games.retention', games.retention, '{{lobbiesMonths}}'],
       ]) {
-        expect({ name, field, ok: value.includes(placeholder) }).toEqual({ name, field, ok: true })
+        expect({ name, field, ok: value.includes(needle) }).toEqual({ name, field, ok: true })
       }
     }
   })

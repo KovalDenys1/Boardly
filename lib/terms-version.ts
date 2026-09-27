@@ -40,10 +40,11 @@ export const TERMS_FIGURES = {
  * TERMS_VERSION on purpose: a privacy-notice edit must not invalidate the
  * consent a buyer recorded at checkout against the Terms. Bump by hand
  * whenever the text of /privacy or the retention numbers it prints change.
- * 2026-09-28: finished games are pseudonymised rather than deleted, and accounts unused
- * for 24 months are deleted after a warning email (#1130).
+ * 2026-09-27 (second change that day, #1130): finished games are pseudonymised rather than
+ * deleted, a lobby in which no game started is deleted with its games, and accounts are
+ * stated as kept until their owner deletes them.
  */
-export const PRIVACY_UPDATED = '2026-09-28'
+export const PRIVACY_UPDATED = '2026-09-27'
 
 /**
  * When the current withdrawal information on /premium and /withdrawal took effect.

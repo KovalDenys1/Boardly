@@ -10,44 +10,83 @@ import { resolveRetentionEnforceOverride, type RetentionEnforceOverride } from '
 const log = apiLogger('inactive-accounts')
 
 /**
+ * Whether the Terms of Service allow us to close an account for inactivity.
+ *
+ * They do not, yet. Terms section 10 lists the only reasons we close an account and section
+ * 2 names only idle guests and unverified accounts; inactivity is in neither. Until a Terms
+ * version with that clause is in force – published, and emailed to every account holder at
+ * least 30 days before it applies (Terms section 11) – this rule sends no warning and deletes
+ * nothing, whatever RETENTION_ENFORCE says. It still counts, so the cron heartbeat shows what
+ * it would do. The privacy notice says accounts are kept until their owner deletes them, and
+ * __tests__/lib/inactive-accounts.test.ts fails if a locale promises otherwise while this is
+ * false.
+ *
+ * Flip it in the same change that ships the Terms clause, the privacy-notice text (a draft in
+ * all four locales is in commit 5821d1e5, "the privacy notice and the retention table state
+ * pseudonymised games and the inactive-account rule") and a new TERMS_VERSION.
+ */
+export const TERMS_ALLOW_INACTIVITY_DELETION = false
+
+/**
  * Inactive registered accounts (#1130, decision 2026-09-27): an account nobody has used for
  * RETENTION_DAYS.inactiveAccounts (24 months) is deleted, and its owner is warned by email
  * RETENTION_DAYS.inactiveAccountWarning (30) days before. GDPR Art. 5(1)(e): an account
- * nobody uses has no purpose left to keep it for.
+ * nobody uses has no purpose left to keep it for. Off until the Terms allow it (above).
  *
  * Activity is `Users.lastActiveAt`: written on sign-in (lib/next-auth.ts events.signIn) and
  * at most every five minutes while a signed-in session is in use, so signing in once is
  * enough to keep an account, which is what the warning tells people.
  *
  * Never touched: guests (their own 3/90-day rule), bots, admins (their activity is in the
- * Control Panel, which does not write lastActiveAt), and any account that is or ever was a
- * customer – a running subscription, paid time left, a Stripe customer, a checkout record
- * or Premium ever granted – the same protection the unverified-account purge has
- * (neverCustomerWhere). An account without an email address cannot be warned, so it is
- * never deleted by this rule either; production had none on 2026-09-27.
+ * Control Panel, which does not write lastActiveAt), suspended accounts (a suspension is a
+ * moderation decision with its own route to an end, and deleting the account would end it
+ * another way), and any account that is or ever was a customer – a running subscription,
+ * paid time left, a Stripe customer, a checkout record or Premium ever granted – the same
+ * protection the unverified-account purge has (neverCustomerWhere). An account without an
+ * email address cannot be warned, so this rule never deletes one either; production had none
+ * on 2026-09-27.
  *
- * Idempotent the way the subscription notice is: a warning is claimed by moving
- * `inactivityWarningSentAt` from the value this run read to now in one conditional update,
- * and put back if the email fails. A deletion needs a warning sent after the last activity
- * and at least the warning period old, and the delete itself is guarded on lastActiveAt and
- * the warning being exactly what this run read, so a sign-in at any point keeps the account.
+ * Two markers make it safe to run twice and to crash at any point:
+ * - `inactivityWarningSentAt` is the claim. A run moves it from the value it read to now in
+ *   one conditional update before sending, and puts it back if Resend refuses the email. A
+ *   claim that is a day old with nothing delivered (the function died mid-send) is taken
+ *   again.
+ * - `inactivityWarningDeliveredAt` is written only after Resend has accepted the email, and
+ *   deletion requires it: later than the last activity and at least the warning period old.
+ *   So a crash between the claim and the send can delay a warning but can never delete an
+ *   account whose owner was not warned.
+ *
+ * The delete is guarded on lastActiveAt and the delivered warning being exactly what this run
+ * read, checked when the account is read and again in the final delete statement. A sign-in
+ * before the read keeps the account whole. One in the seconds between the read and the final
+ * delete keeps the row but not what the deletion had already removed (lib/account-deletion.ts
+ * lists it); nothing is billed either way, since a customer is never selected.
  *
  * Counted read-only on production on 2026-09-27: 0 accounts due a warning, 0 due deletion;
- * the oldest lastActiveAt of a registered human was 2025-12-18, so the first warning can
- * come on 2027-11-19 and the first deletion on 2027-12-19 at the earliest. Enforced by
- * default for that reason, and
- * RETENTION_ENFORCE=false puts it in report mode with the table rules.
+ * the oldest lastActiveAt of a registered human was 2025-12-18, so the first warning could
+ * come on 2027-11-19 at the earliest. RETENTION_ENFORCE=false puts it in report mode with
+ * the table rules.
  */
 
 export const INACTIVE_ACCOUNTS_ENFORCE_BY_DEFAULT = true
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
+/** A claim this old with no delivery behind it was left by a run that died mid-send. */
+const STALE_CLAIM_MS = DAY_MS
+
 /** Every account the rule may ever warn or delete, whatever its dates. */
 export function inactiveAccountRuleWhere(now: Date = new Date()): Prisma.UsersWhereInput {
   return {
     AND: [
-      { isGuest: false, bot: null, role: 'user', premiumFirstGrantedAt: null, email: { not: null } },
+      {
+        isGuest: false,
+        bot: null,
+        role: 'user',
+        suspended: false,
+        premiumFirstGrantedAt: null,
+        email: { not: null },
+      },
       neverCustomerWhere(now),
     ],
   }
@@ -75,6 +114,7 @@ type Candidate = {
   username: string | null
   lastActiveAt: Date
   inactivityWarningSentAt: Date | null
+  inactivityWarningDeliveredAt: Date | null
 }
 
 const CANDIDATE_SELECT = {
@@ -83,30 +123,41 @@ const CANDIDATE_SELECT = {
   username: true,
   lastActiveAt: true,
   inactivityWarningSentAt: true,
+  inactivityWarningDeliveredAt: true,
 } as const
 
-/** Not warned since the account was last active: no warning, or one older than the activity. */
-function notWarnedSinceActivity(candidate: Candidate): boolean {
-  return candidate.inactivityWarningSentAt === null || candidate.inactivityWarningSentAt < candidate.lastActiveAt
+/**
+ * Due a warning: none delivered since the account was last active, and no claim in flight
+ * (none since the activity, or one old enough to have been abandoned).
+ */
+function dueForWarning(candidate: Candidate, now: Date): boolean {
+  const delivered = candidate.inactivityWarningDeliveredAt
+  if (delivered && delivered >= candidate.lastActiveAt) return false
+  const claimed = candidate.inactivityWarningSentAt
+  if (!claimed || claimed < candidate.lastActiveAt) return true
+  return claimed.getTime() <= now.getTime() - STALE_CLAIM_MS
 }
 
-/** Warned after the last activity, and at least the warning period ago. */
+/** Due deletion: a warning delivered after the last activity, at least the warning period ago. */
 function warnedLongEnoughAgo(candidate: Candidate, now: Date): boolean {
-  const warnedAt = candidate.inactivityWarningSentAt
-  if (!warnedAt || warnedAt <= candidate.lastActiveAt) return false
-  return warnedAt.getTime() <= now.getTime() - RETENTION_DAYS.inactiveAccountWarning * DAY_MS
+  const delivered = candidate.inactivityWarningDeliveredAt
+  if (!delivered || delivered <= candidate.lastActiveAt) return false
+  return delivered.getTime() <= now.getTime() - RETENTION_DAYS.inactiveAccountWarning * DAY_MS
 }
 
 export interface InactiveAccountRunResult {
+  /** False while the Terms do not allow the rule (TERMS_ALLOW_INACTIVITY_DELETION). */
+  termsAllow: boolean
+  /** Whether this run sent and deleted. Never true while termsAllow is false. */
   enforced: boolean
   warnCutoff: string
   deleteCutoff: string
-  /** Accounts due a warning when the run began. In report mode none is sent. */
+  /** Accounts due a warning when the run began. When not enforced, none is sent. */
   warnDue: number
   warned: number
-  /** Warnings whose email did not go out; released for the next run. */
+  /** Warnings Resend did not accept; released for the next run. */
   warnFailed: number
-  /** Accounts due deletion when the run began. In report mode none is deleted. */
+  /** Accounts due deletion when the run began. When not enforced, none is deleted. */
   deleteDue: number
   deleted: number
   /** Deletions refused (avatar or subscription) or given up because the account changed. */
@@ -118,6 +169,11 @@ export interface InactiveAccountRunOptions {
   override?: RetentionEnforceOverride
   sendEmail?: typeof sendInactiveAccountWarningEmail
   deleteAccount?: typeof deleteUserAccount
+  /**
+   * For tests only, to exercise the rule as it will run once the Terms allow it. Production
+   * never passes it; the cron reads TERMS_ALLOW_INACTIVITY_DELETION.
+   */
+  termsAllowInactivityDeletion?: boolean
   /** Caps per run, so a backlog is worked off over several days inside the cron's time. */
   maxWarnings?: number
   maxDeletions?: number
@@ -129,7 +185,10 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
   const now = options.now ?? new Date()
   const override =
     options.override === undefined ? resolveRetentionEnforceOverride(process.env.RETENTION_ENFORCE) : options.override
-  const enforced = override === 'enforce' ? true : override === 'report' ? false : INACTIVE_ACCOUNTS_ENFORCE_BY_DEFAULT
+  const termsAllow = options.termsAllowInactivityDeletion ?? TERMS_ALLOW_INACTIVITY_DELETION
+  const wanted = override === 'enforce' ? true : override === 'report' ? false : INACTIVE_ACCOUNTS_ENFORCE_BY_DEFAULT
+  // The Terms gate beats every override: RETENTION_ENFORCE=true cannot switch it on.
+  const enforced = termsAllow && wanted
   const sendEmail = options.sendEmail ?? sendInactiveAccountWarningEmail
   const deleteAccount = options.deleteAccount ?? deleteUserAccount
   // Resend's plan allows 100 emails a day for the whole product (lib/email-send-guard.ts
@@ -144,6 +203,7 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
   const rule = inactiveAccountRuleWhere(now)
 
   const result: InactiveAccountRunResult = {
+    termsAllow,
     enforced,
     warnCutoff: warnCutoff.toISOString(),
     deleteCutoff: deleteCutoff.toISOString(),
@@ -157,7 +217,7 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
 
   // Deletions first: an account warned 30 days ago must not be read as due another warning.
   const deleteCandidates: Candidate[] = await prisma.users.findMany({
-    where: { AND: [rule, { lastActiveAt: { lt: deleteCutoff } }, { inactivityWarningSentAt: { not: null } }] },
+    where: { AND: [rule, { lastActiveAt: { lt: deleteCutoff } }, { inactivityWarningDeliveredAt: { not: null } }] },
     select: CANDIDATE_SELECT,
     orderBy: { lastActiveAt: 'asc' },
   })
@@ -167,14 +227,13 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
   if (enforced) {
     for (const candidate of dueForDeletion.slice(0, maxDeletions)) {
       if (pastDeadline()) break
-      // The same rule once more, pinned to what this run read: a sign-in moves
-      // lastActiveAt and a new warning moves inactivityWarningSentAt, and either keeps the
-      // account.
+      // The same rule once more, pinned to what this run read: a sign-in moves lastActiveAt
+      // and a newer warning moves inactivityWarningDeliveredAt, and either keeps the account.
       const guard: Prisma.UsersWhereInput = {
         AND: [
           rule,
           { lastActiveAt: candidate.lastActiveAt },
-          { inactivityWarningSentAt: candidate.inactivityWarningSentAt },
+          { inactivityWarningDeliveredAt: candidate.inactivityWarningDeliveredAt },
         ],
       }
       try {
@@ -196,21 +255,22 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
     select: CANDIDATE_SELECT,
     orderBy: { lastActiveAt: 'asc' },
   })
-  const dueForWarning = warnCandidates.filter(notWarnedSinceActivity)
-  result.warnDue = dueForWarning.length
+  const due = warnCandidates.filter((candidate) => dueForWarning(candidate, now))
+  result.warnDue = due.length
 
   if (!enforced) return result
 
-  for (const candidate of dueForWarning.slice(0, maxWarnings)) {
+  for (const candidate of due.slice(0, maxWarnings)) {
     if (pastDeadline()) break
     if (!candidate.email) continue
 
-    // The claim. Matching both values this run read makes it a compare-and-set.
+    // The claim. Matching every value this run read makes it a compare-and-set.
     const claimed = await prisma.users.updateMany({
       where: {
         id: candidate.id,
         lastActiveAt: candidate.lastActiveAt,
         inactivityWarningSentAt: candidate.inactivityWarningSentAt,
+        inactivityWarningDeliveredAt: candidate.inactivityWarningDeliveredAt,
       },
       data: { inactivityWarningSentAt: now },
     })
@@ -224,12 +284,23 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
 
     if (sent.success) {
       result.warned += 1
+      // Only now does the 30-day clock start. If this write fails the claim goes stale and a
+      // later run sends the warning again: a second email, never an unwarned deletion.
+      try {
+        await prisma.users.updateMany({
+          where: { id: candidate.id, inactivityWarningSentAt: now },
+          data: { inactivityWarningDeliveredAt: now },
+        })
+      } catch (error) {
+        log.error('Inactive account warning sent but not recorded; it will be sent again', error as Error, {
+          userId: candidate.id,
+        })
+      }
       continue
     }
 
     result.warnFailed += 1
-    // Release the claim, only if it is still ours, so the next run sends it. Deletion
-    // counts 30 days from a warning that went out, never from one that did not.
+    // Release the claim, only if it is still ours, so the next run sends it.
     await prisma.users.updateMany({
       where: { id: candidate.id, inactivityWarningSentAt: now },
       data: { inactivityWarningSentAt: candidate.inactivityWarningSentAt },

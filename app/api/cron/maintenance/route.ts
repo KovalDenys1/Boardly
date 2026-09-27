@@ -45,7 +45,8 @@ async function handleCronRequest(request: NextRequest) {
     }
 
     // Inactive registered accounts (#1130): warned 30 days before, deleted after 24 months
-    // without activity. A failure here is reported, not thrown, so it cannot stop the
+    // without activity, once the Terms allow it (TERMS_ALLOW_INACTIVITY_DELETION); until
+    // then it only counts. A failure here is reported, not thrown, so it cannot stop the
     // cleanups above from being recorded; -1 in the heartbeat marks it.
     let inactiveAccounts: InactiveAccountRunResult | { error: string }
     try {
@@ -67,6 +68,7 @@ async function handleCronRequest(request: NextRequest) {
             }
           : {
               inactive_accounts_enforced: false,
+              inactive_accounts_terms_allow: inactiveAccounts.termsAllow,
               inactive_accounts_warn_due: inactiveAccounts.warnDue,
               inactive_accounts_delete_due: inactiveAccounts.deleteDue,
             }

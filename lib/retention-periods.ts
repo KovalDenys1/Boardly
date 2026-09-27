@@ -16,8 +16,9 @@ export const RETENTION_DAYS = {
    */
   games: 365,
   /**
-   * Inactive lobbies, from creation: one with no game in it is deleted, one whose games
-   * have been pseudonymised gets a neutral name.
+   * Inactive lobbies, from creation: one in which no game started (all cancelled) is
+   * deleted with those games, one that held a real game gets a neutral name and a retired
+   * code once its games have been pseudonymised.
    */
   lobbies: 365,
   /** Pseudonymous lobby-join records (salted hash), from joining. */
@@ -38,7 +39,9 @@ export const RETENTION_DAYS = {
   unverifiedAccounts: 7,
   /**
    * Registered accounts, from their last activity (#1130). Never one that has a
-   * subscription or ever went to checkout, never a bot or an admin.
+   * subscription or ever went to checkout, never a bot, an admin or a suspended account.
+   * Not enforced, and not printed on /privacy, until the Terms allow it
+   * (TERMS_ALLOW_INACTIVITY_DELETION in lib/inactive-accounts.ts).
    */
   inactiveAccounts: 730,
   /** How long before that deletion the warning email goes out. */

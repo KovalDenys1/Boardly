@@ -1,6 +1,7 @@
 // @ts-nocheck - prisma is a lightweight mock.
 import { prisma } from '@/lib/db'
 import {
+  TERMS_ALLOW_INACTIVITY_DELETION,
   enforceInactiveAccounts,
   inactiveAccountRuleWhere,
   inactiveDeletionDate,
@@ -23,12 +24,17 @@ const DAY = 24 * 60 * 60 * 1000
 const NOW = new Date('2028-01-10T03:00:00.000Z')
 const daysAgo = (days: number) => new Date(NOW.getTime() - days * DAY)
 
-const account = (id: string, lastActiveDaysAgo: number, warnedDaysAgo: number | null = null) => ({
+const account = (
+  id: string,
+  lastActiveDaysAgo: number,
+  { claimed = null, delivered = null }: { claimed?: number | null; delivered?: number | null } = {}
+) => ({
   id,
   email: `${id}@example.com`,
   username: id,
   lastActiveAt: daysAgo(lastActiveDaysAgo),
-  inactivityWarningSentAt: warnedDaysAgo === null ? null : daysAgo(warnedDaysAgo),
+  inactivityWarningSentAt: claimed === null ? null : daysAgo(claimed),
+  inactivityWarningDeliveredAt: delivered === null ? null : daysAgo(delivered),
 })
 
 /** The two reads the run makes: deletion candidates first, then warning candidates. */
@@ -48,15 +54,54 @@ describe('inactive accounts (#1130)', () => {
     prisma.users.updateMany.mockResolvedValue({ count: 1 })
   })
 
+  // The rule as it will run once the Terms allow it; the gate itself is tested below.
   const run = (overrides = {}) =>
-    enforceInactiveAccounts({ now: NOW, override: null, sendEmail, deleteAccount, ...overrides })
+    enforceInactiveAccounts({ now: NOW, override: null, sendEmail, deleteAccount, termsAllowInactivityDeletion: true, ...overrides })
 
-  it('covers registered people only, never a bot, an admin, a customer or an address-less account', () => {
+  describe('while the Terms do not allow it', () => {
+    // Terms sections 2 and 10 list why we close an account, and inactivity is not there.
+    // Flipping this needs a Terms clause announced 30 days ahead (Terms section 11).
+    it('stays off until the Terms clause ships', () => {
+      expect(TERMS_ALLOW_INACTIVITY_DELETION).toBe(false)
+    })
+
+    it('warns nobody and deletes nobody, even with RETENTION_ENFORCE=true, and only counts', async () => {
+      for (const override of [null, 'enforce']) {
+        prisma.users.findMany.mockReset()
+        candidates([account('due', 740, { claimed: 31, delivered: 31 })], [account('fresh', 705)])
+
+        const result = await enforceInactiveAccounts({ now: NOW, override, sendEmail, deleteAccount })
+
+        expect(result).toMatchObject({ termsAllow: false, enforced: false, deleteDue: 1, warnDue: 1, warned: 0, deleted: 0 })
+      }
+      expect(sendEmail).not.toHaveBeenCalled()
+      expect(deleteAccount).not.toHaveBeenCalled()
+      expect(prisma.users.updateMany).not.toHaveBeenCalled()
+    })
+
+    it('leaves no locale of the privacy notice promising inactivity deletion', () => {
+      const locales = {
+        en: require('@/locales/en').default,
+        no: require('@/locales/no').default,
+        ru: require('@/locales/ru').default,
+        uk: require('@/locales/uk').default,
+      }
+      for (const [name, locale] of Object.entries(locales)) {
+        const text = JSON.stringify(locale.privacyPolicy)
+        for (const placeholder of ['{{inactiveMonths}}', '{{inactiveWarningDays}}']) {
+          expect({ name, placeholder, found: text.includes(placeholder) }).toEqual({ name, placeholder, found: false })
+        }
+      }
+    })
+  })
+
+  it('covers registered people only: never a bot, an admin, a suspended account, a customer or one without an address', () => {
     const where = inactiveAccountRuleWhere(NOW)
     expect(where.AND[0]).toEqual({
       isGuest: false,
       bot: null,
       role: 'user',
+      suspended: false,
       premiumFirstGrantedAt: null,
       email: { not: null },
     })
@@ -82,12 +127,14 @@ describe('inactive accounts (#1130)', () => {
     expect(inactiveDeletionDate(daysAgo(900), NOW)).toEqual(new Date(NOW.getTime() + 30 * DAY))
   })
 
-  it('claims, then sends one warning per inactive stretch', async () => {
+  it('claims, sends, then records the delivery, once per inactive stretch', async () => {
     candidates([], [
       account('fresh', 705),
-      account('warned', 710, 5),
+      account('delivered', 710, { claimed: 5, delivered: 5 }),
+      // A claim from yesterday's run that is still in flight: not taken again yet.
+      account('in-flight', 706, { claimed: 0.5 }),
       // Came back after an old warning, then went quiet again: a new stretch, a new warning.
-      account('returned', 702, 800),
+      account('returned', 702, { claimed: 800, delivered: 800 }),
     ])
 
     const result = await run()
@@ -98,12 +145,33 @@ describe('inactive accounts (#1130)', () => {
     expect(first.deleteOn).toEqual(new Date(NOW.getTime() + 30 * DAY))
     expect(first.idempotencyKey).toBe(`inactive-account-warning/fresh/${daysAgo(705).toISOString().slice(0, 10)}`)
 
-    // The claim is a compare-and-set on both values the run read.
-    expect(prisma.users.updateMany.mock.calls[0][0]).toEqual({
-      where: { id: 'fresh', lastActiveAt: daysAgo(705), inactivityWarningSentAt: null },
+    // The claim is a compare-and-set on every value the run read, and comes first.
+    const [claim, delivery] = prisma.users.updateMany.mock.calls
+    expect(claim[0]).toEqual({
+      where: {
+        id: 'fresh',
+        lastActiveAt: daysAgo(705),
+        inactivityWarningSentAt: null,
+        inactivityWarningDeliveredAt: null,
+      },
       data: { inactivityWarningSentAt: NOW },
     })
     expect(prisma.users.updateMany.mock.invocationCallOrder[0]).toBeLessThan(sendEmail.mock.invocationCallOrder[0])
+    // The delivery marker, which deletion counts from, is written only after Resend accepted.
+    expect(delivery[0]).toEqual({
+      where: { id: 'fresh', inactivityWarningSentAt: NOW },
+      data: { inactivityWarningDeliveredAt: NOW },
+    })
+    expect(sendEmail.mock.invocationCallOrder[0]).toBeLessThan(prisma.users.updateMany.mock.invocationCallOrder[1])
+  })
+
+  it('takes again a claim left a day ago by a run that died before delivering', async () => {
+    candidates([], [account('orphan', 706, { claimed: 1.5 })])
+
+    const result = await run()
+
+    expect(result.warned).toBe(1)
+    expect(prisma.users.updateMany.mock.calls[0][0].where.inactivityWarningSentAt).toEqual(daysAgo(1.5))
   })
 
   it('sends nothing when another run holds the claim', async () => {
@@ -116,26 +184,29 @@ describe('inactive accounts (#1130)', () => {
     expect(result.warned).toBe(0)
   })
 
-  it('puts the claim back when the email fails, so no deletion counts from a warning never sent', async () => {
+  it('puts the claim back and records no delivery when the email is refused', async () => {
     candidates([], [account('fresh', 705)])
     sendEmail.mockResolvedValueOnce({ success: false, error: 'quota' })
 
     const result = await run()
 
     expect(result).toMatchObject({ warned: 0, warnFailed: 1 })
+    expect(prisma.users.updateMany).toHaveBeenCalledTimes(2)
     expect(prisma.users.updateMany.mock.calls[1][0]).toEqual({
       where: { id: 'fresh', inactivityWarningSentAt: NOW },
       data: { inactivityWarningSentAt: null },
     })
   })
 
-  it('deletes only an account warned at least 30 days ago, after its last activity, through the shared path', async () => {
+  it('deletes only after a delivered warning at least 30 days old, later than the last activity', async () => {
     candidates(
       [
-        account('due', 740, 31),
-        account('too-soon', 740, 29),
+        account('due', 740, { claimed: 31, delivered: 31 }),
+        account('too-soon', 740, { claimed: 29, delivered: 29 }),
         // Warned, then signed in, then quiet: that warning no longer counts.
-        account('stale-warning', 735, 800),
+        account('stale-warning', 735, { claimed: 800, delivered: 800 }),
+        // Claimed long ago but never delivered (a crash mid-send): never deleted.
+        account('never-delivered', 745, { claimed: 60 }),
       ],
       []
     )
@@ -147,15 +218,20 @@ describe('inactive accounts (#1130)', () => {
     const [id, options] = deleteAccount.mock.calls[0]
     expect(id).toBe('due')
     expect(options.reason).toBe('inactivity')
-    // The delete is pinned to what this run read, so a sign-in in between keeps the account.
+    // Pinned to what this run read, so a sign-in before the delete keeps the account.
     expect(options.guard.AND).toEqual(
-      expect.arrayContaining([{ lastActiveAt: daysAgo(740) }, { inactivityWarningSentAt: daysAgo(31) }])
+      expect.arrayContaining([{ lastActiveAt: daysAgo(740) }, { inactivityWarningDeliveredAt: daysAgo(31) }])
     )
     expect(options.guard.AND[0]).toEqual(inactiveAccountRuleWhere(NOW))
+    // And the query itself only reads accounts with a delivered warning.
+    expect(prisma.users.findMany.mock.calls[0][0].where.AND).toContainEqual({
+      inactivityWarningDeliveredAt: { not: null },
+    })
   })
 
   it('counts a refused or failed deletion and carries on', async () => {
-    candidates([account('a', 740, 31), account('b', 741, 31), account('c', 742, 31)], [])
+    const warned = { claimed: 31, delivered: 31 }
+    candidates([account('a', 740, warned), account('b', 741, warned), account('c', 742, warned)], [])
     deleteAccount
       .mockResolvedValueOnce({ status: 'avatar_failed' })
       .mockRejectedValueOnce(new Error('db'))
@@ -167,7 +243,7 @@ describe('inactive accounts (#1130)', () => {
   })
 
   it('in report mode only counts: no email, no claim, no deletion', async () => {
-    candidates([account('due', 740, 31)], [account('fresh', 705)])
+    candidates([account('due', 740, { claimed: 31, delivered: 31 })], [account('fresh', 705)])
 
     const result = await run({ override: 'report' })
 
@@ -182,7 +258,7 @@ describe('inactive accounts (#1130)', () => {
     process.env.RETENTION_ENFORCE = 'false'
     try {
       candidates([], [account('fresh', 705)])
-      const result = await enforceInactiveAccounts({ now: NOW, sendEmail, deleteAccount })
+      const result = await enforceInactiveAccounts({ now: NOW, sendEmail, deleteAccount, termsAllowInactivityDeletion: true })
       expect(result.enforced).toBe(false)
       expect(sendEmail).not.toHaveBeenCalled()
     } finally {
@@ -192,8 +268,9 @@ describe('inactive accounts (#1130)', () => {
   })
 
   it('respects the per-run caps', async () => {
+    const warned = { claimed: 31, delivered: 31 }
     candidates(
-      [account('d1', 740, 31), account('d2', 740, 31)],
+      [account('d1', 740, warned), account('d2', 740, warned)],
       [account('w1', 705), account('w2', 705), account('w3', 705)]
     )
 
