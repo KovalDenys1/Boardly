@@ -48,6 +48,14 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
       consentAt: new Date('2026-09-24T14:00:00Z'),
       termsVersion: '2026-09-24',
     }),
+  sendSubscriptionNoticeEmail: (m) =>
+    m.sendSubscriptionNoticeEmail('player@example.com', {
+      username: 'Ola',
+      plan: 'yearly',
+      unitAmount: 2999,
+      currency: 'usd',
+      renewsAt: new Date('2027-09-03T00:00:00Z'),
+    }),
 }
 
 function loadEmailModule(): EmailModule {

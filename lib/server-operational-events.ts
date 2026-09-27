@@ -24,6 +24,9 @@ export const SERVER_RELIABILITY_EVENT_NAMES = [
   // BOTID_MODE=monitor: BotID said bot and the request went through anyway, so the verdicts
   // can be read before refusing anyone (lib/bot-protection.ts).
   'botid_flagged',
+  // The daily running-subscription notice job left notices unsent, or failed outright
+  // (#1165, app/api/cron/subscription-notices). Written at most once per run.
+  'subscription_notice_failed',
 ] as const
 
 export type ServerReliabilityEventName = (typeof SERVER_RELIABILITY_EVENT_NAMES)[number]

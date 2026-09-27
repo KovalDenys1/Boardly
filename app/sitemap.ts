@@ -60,5 +60,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/privacy', { changeFrequency: 'yearly', priority: 0.3 }),
     page('/terms', { changeFrequency: 'yearly', priority: 0.3 }),
     page('/withdrawal', { changeFrequency: 'yearly', priority: 0.3 }),
+    page('/rules', { changeFrequency: 'yearly', priority: 0.3 }),
   ]
 }

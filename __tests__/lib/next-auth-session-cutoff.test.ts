@@ -234,6 +234,60 @@ describe('OAuth callback with an existing session cookie', () => {
   })
 })
 
+// The Terms promise that a suspended account is told the reason and, for a
+// temporary suspension, the end date (#1166). Someone suspended while signed in
+// reaches /suspended through the 30-minute sync, so that sync has to carry both.
+describe('30-minute sync of a suspension', () => {
+  beforeEach(() => {
+    findUnique.mockReset()
+  })
+
+  it('writes the reason and the expiry to the token together with the flag', async () => {
+    findUnique.mockResolvedValue({
+      avatarUrl: null,
+      image: null,
+      username: 'Player',
+      emailVerified: null,
+      role: 'user',
+      suspended: true,
+      banReason: 'Harassment in chat',
+      banExpiresAt: new Date('2026-10-04T00:00:00.000Z'),
+    })
+
+    const token = await jwt({ token: liveToken({ avatarResolved: undefined }) })
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({ suspended: true, banReason: true, banExpiresAt: true }),
+      })
+    )
+    expect(token.suspended).toBe(true)
+    expect(token.banReason).toBe('Harassment in chat')
+    expect(token.banExpiresAt).toBe('2026-10-04T00:00:00.000Z')
+  })
+
+  it('clears them when the suspension is lifted', async () => {
+    findUnique.mockResolvedValue({
+      avatarUrl: null,
+      image: null,
+      username: 'Player',
+      emailVerified: null,
+      role: 'user',
+      suspended: false,
+      banReason: null,
+      banExpiresAt: null,
+    })
+
+    const token = await jwt({
+      token: liveToken({ avatarResolved: undefined, suspended: true, banReason: 'old', banExpiresAt: '2026-10-04T00:00:00.000Z' }),
+    })
+
+    expect(token.suspended).toBe(false)
+    expect(token.banReason).toBeNull()
+    expect(token.banExpiresAt).toBeNull()
+  })
+})
+
 describe('session callback', () => {
   it('exposes when the session signed in, for the email-change recent sign-in check', async () => {
     const session = await authOptions.callbacks!.session!({

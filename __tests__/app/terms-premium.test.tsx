@@ -32,7 +32,8 @@ jest.mock('@/lib/i18n-helpers', () => {
 
 const root = process.cwd()
 const source = readFileSync(path.join(root, 'app/terms/PremiumTerms.tsx'), 'utf8')
-const page = readFileSync(path.join(root, 'app/terms/page.tsx'), 'utf8')
+// The page is a thin server wrapper since #1166; the sections live in TermsContent.
+const page = readFileSync(path.join(root, 'app/terms/TermsContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key

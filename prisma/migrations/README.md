@@ -148,6 +148,10 @@ Reset, deletion and verification tokens stored as `sha256(token)` in `tokenHash`
 
 Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts rest on contract (GDPR Art. 6(1)(b)); the register route stamps both, and an OAuth account stamps both in onboarding with one box (`lib/age-confirmation.ts`). Existing rows and guests stay NULL.
 
+### `20260927200000_users_last_subscription_notice`
+
+Nullable `Users.lastSubscriptionNoticeAt` (#1165): when the last running-subscription notice was sent (digitalytelsesloven § 33 fourth paragraph), and the compare-and-set claim that makes the daily `/api/cron/subscription-notices` job send each notice once (`lib/subscription-notice.ts`). Nullable `Users.missingStripeSubscriptionId`: a subscription id Stripe no longer has, which the job then skips quietly. Existing rows stay NULL.
+
 ## Row Level Security
 
 RLS is part of the database safety model:

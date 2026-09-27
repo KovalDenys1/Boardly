@@ -24,7 +24,8 @@ import ts from 'typescript'
  *
  * Out of scope by directory, per the decision recorded in #889: `app/guides`
  * (SEO landing pages, 87 strings, may be English on purpose), `app/privacy`
- * and `app/terms` (legal copy), and `app/dev` (never shipped to a visitor).
+ * (legal copy), and `app/dev` (never shipped to a visitor). `app/terms` left
+ * that list when #1166 moved every section to t().
  *
  * Escapes, both deliberate:
  *   - `scripts/i18n-allowlist.json` for whole files that are not player-facing
@@ -49,7 +50,7 @@ const ignoredDirectories = new Set(['node_modules', '.next', '.git', 'coverage',
  * allowlist entries so a new file under `app/guides` is out of scope the day it
  * is written, instead of failing CI until someone remembers to list it.
  */
-const outOfScopePrefixes = ['app/guides/', 'app/privacy/', 'app/terms/', 'app/dev/']
+const outOfScopePrefixes = ['app/guides/', 'app/privacy/', 'app/dev/']
 
 /** Attributes a screen reader or a tooltip renders verbatim. */
 const userVisibleAttributes = new Set(['title', 'placeholder', 'aria-label', 'alt'])
