@@ -160,7 +160,8 @@ async function readSignedInUserId(): Promise<string | null> {
     // Outside a request there is no cookie for next-auth to link by either.
     return null
   }
-  const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET
+  // The secret authOptions.secret names, and so the one next-auth decodes the cookie with.
+  const secret = process.env.NEXTAUTH_SECRET
   if (!secret) {
     return null
   }
