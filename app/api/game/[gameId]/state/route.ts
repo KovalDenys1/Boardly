@@ -17,6 +17,7 @@ import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
+import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -116,7 +117,9 @@ function autoTriggerBotTurn(params: {
   authoritativeState: unknown
 }) {
   const { request, log, gameId, gameType, lobbyCode, botUserId, moveType, authoritativeState } = params
-  const botTurnApiUrl = `${request.nextUrl.origin}/api/game/${gameId}/bot-turn`
+  // The target is this app's own fixed origin, never the inbound request's — see
+  // getInternalAppOrigin (#1116, audit S2-01).
+  const botTurnApiUrl = `${getInternalAppOrigin()}/api/game/${gameId}/bot-turn`
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), BOT_TURN_TRIGGER_TIMEOUT_MS)
   const triggeredAt = Date.now()
@@ -128,27 +131,16 @@ function autoTriggerBotTurn(params: {
   // the same origin and authorises the caller the same way this route did, so
   // the cookie travels with the internal call – without it a logged-in player
   // in an environment with no BOARDLY_INTERNAL_SECRET (local dev) got a silent
-  // 401 and a bot that never moved.
+  // 401 and a bot that never moved. When a secret IS configured it is the call's
+  // only credential: buildBotTurnHeaders drops the cookie (and Authorization)
+  // rather than forwarding both (#1116, audit S2-01).
   const forwardedCookie = request.headers.get('cookie')
-  const botTurnHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
-
-  if (internalSecret) {
-    botTurnHeaders['X-Internal-Secret'] = internalSecret
-  }
-
-  if (forwardedAuthorization) {
-    botTurnHeaders.authorization = forwardedAuthorization
-  }
-
-  if (forwardedGuestToken) {
-    botTurnHeaders['X-Guest-Token'] = forwardedGuestToken
-  }
-
-  if (forwardedCookie) {
-    botTurnHeaders.cookie = forwardedCookie
-  }
+  const botTurnHeaders = buildBotTurnHeaders({
+    internalSecret,
+    authorization: forwardedAuthorization,
+    guestToken: forwardedGuestToken,
+    cookie: forwardedCookie,
+  })
 
   if (!internalSecret && !forwardedAuthorization && !forwardedGuestToken && !forwardedCookie) {
     log.warn('Bot turn trigger has no identity: set BOARDLY_INTERNAL_SECRET or call with a session', {

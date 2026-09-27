@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { constantTimeEqual } from '@/lib/secret-compare'
 import {
   getSecurityHeaders,
   isSignatureAuthenticatedWebhook,
@@ -75,13 +76,13 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
 function hasValidInternalSecret(request: NextRequest): boolean {
   const configuredSecret = process.env.BOARDLY_INTERNAL_SECRET
   if (!configuredSecret) return false
-  return request.headers.get('X-Internal-Secret') === configuredSecret
+  return constantTimeEqual(request.headers.get('X-Internal-Secret') ?? '', configuredSecret)
 }
 
 function hasValidCronAuthorization(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) return false
-  return request.headers.get('authorization') === `Bearer ${cronSecret}`
+  return constantTimeEqual(request.headers.get('authorization') ?? '', `Bearer ${cronSecret}`)
 }
 
 // The Discord bot's routes. Its secret opens these and nothing else, so a Pi env file
