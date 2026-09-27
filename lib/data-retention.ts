@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { RETENTION_DAYS } from '@/lib/retention-periods'
 import { deleteFeedbackDiscordCopies } from '@/lib/feedback-discord'
+import { deleteReportDiscordCopies } from '@/lib/report-discord'
 
 /**
  * Retention periods for the tables nothing else ever deleted (#1130, GDPR Art. 5(1)(e)).
@@ -29,6 +30,7 @@ export type RetentionRuleKey =
   | 'lobbyParticipations'
   | 'operationalEvents'
   | 'feedback'
+  | 'reports'
   | 'notifications'
   | 'adminAuditLogs'
 
@@ -82,6 +84,15 @@ export const RETENTION_RULES: Readonly<Record<RetentionRuleKey, RetentionRule>> 
     days: RETENTION_DAYS.feedback,
     measuredFrom: 'submission',
     purpose: 'Answering and acting on feedback and bug reports',
+    enforceByDefault: true,
+  },
+  reports: {
+    key: 'reports',
+    table: 'Reports',
+    days: RETENTION_DAYS.reports,
+    measuredFrom: 'the report; a reported drawing goes once no report points at it',
+    purpose: 'Handling reports of unlawful or harmful content (#1172)',
+    // A new table: it held no rows on the day the rule shipped.
     enforceByDefault: true,
   },
   notifications: {
@@ -179,6 +190,24 @@ function ruleOperations(key: RetentionRuleKey, cutoff: Date): RuleOperations {
           const { failed } = await deleteFeedbackDiscordCopies(where)
           const removable = failed.length > 0 ? { ...where, id: { notIn: failed } } : where
           return (await prisma.feedback.deleteMany({ where: removable })).count
+        },
+      }
+    }
+    case 'reports': {
+      const where = { createdAt: { lt: cutoff } }
+      return {
+        count: () => prisma.reports.count({ where }),
+        remove: async () => {
+          // As with feedback: the Discord notification goes with the row, and a row
+          // whose notification Discord refused to delete is kept for the next run.
+          const { failed } = await deleteReportDiscordCopies(where)
+          const removable = failed.length > 0 ? { ...where, id: { notIn: failed } } : where
+          const deleted = (await prisma.reports.deleteMany({ where: removable })).count
+          // A reported drawing is shared by its reports, so it goes once the last of
+          // them has. Only one older than the cutoff: a drawing is written just before
+          // its first report, and a fresh one must not be taken from under it.
+          await prisma.reportedDrawings.deleteMany({ where: { createdAt: { lt: cutoff }, reports: { none: {} } } })
+          return deleted
         },
       }
     }

@@ -3622,7 +3622,7 @@ const en = {
         title: 'Games, lobbies, chat and friends',
         data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, lobby invites, notifications and achievements.',
         basis: 'Contract: this is the service itself.',
-        retention: 'Games: {{gamesMonths}} months after the game ends. Lobbies: {{lobbiesMonths}} months after creation, once inactive and empty. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours. Notifications: {{notificationsMonths}} months. Friends and achievements: until you delete the account.',
+        retention: 'Games: {{gamesMonths}} months after the game ends. Lobbies: {{lobbiesMonths}} months after creation, once inactive and empty. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends and achievements: until you delete the account.',
       },
       signIn: {
         title: 'Signing in with Google, GitHub or Discord',
@@ -3659,6 +3659,12 @@ const en = {
         data: 'What you write in the feedback form, its type, the page you sent it from, an email address if you give one, and your account if you are signed in. A notification is posted to our team\'s feedback channel on our Discord server: the type, the first 200 characters of the message and the feedback\'s id. The email address you give, your username and the page are not posted. Emails to the support address reach us through Resend.',
         basis: 'Our legitimate interest in answering you and improving Boardly.',
         retention: 'Feedback, including its notification in our Discord feedback channel: {{feedbackMonths}} months. Support emails: as long as we need them to handle your request.',
+      },
+      reports: {
+        title: 'Reports of chat, drawings and profiles',
+        data: 'When a player reports a chat message, a Sketch & Guess drawing, or another player\'s username, profile picture or bio, we keep the report: who sent it, which player it is about, where it happened (the lobby, game and round), the reason and any note the reporter adds, and a copy of the reported content as it was at that moment – the message, the drawing, the name, the picture\'s address or the bio. Our staff read reports in our admin panel. A notification is posted to our team\'s feedback channel on our Discord server: the kind of content, the reason, the report\'s id and a short preview of the reported content – never who sent the report or their note. We never tell the reported player who reported them.',
+        basis: 'Our legitimate interest in keeping Boardly safe and in acting without undue delay on notices of unlawful or harmful content, as a service that stores what its users post (the Norwegian E-Commerce Act, ehandelsloven, section 18).',
+        retention: 'Reports, including their notification in our Discord feedback channel: {{reportsMonths}} months. The copy of the reported content is kept as long as the report, even when the original is gone sooner, and it stays if its author deletes their account; the report then loses its link to that account.',
       },
       security: {
         title: 'Keeping Boardly secure and running',
@@ -3749,9 +3755,9 @@ const en = {
     rights: {
       title: '7. Your rights',
       lead: 'You have the right to access your data, to have it corrected or erased, to restrict its processing, to receive it in a machine-readable format, and to object to processing based on our legitimate interest. Where we rely on consent, you can withdraw it at any time; that does not affect what we did before.',
-      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, invites, notifications, feedback, achievements and push subscriptions.',
+      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, invites, notifications, feedback, reports you filed, achievements and push subscriptions.',
       correct: 'Correct your data: edit your profile, including your email address, on your profile page.',
-      delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe.',
+      delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe. Reports you filed, and reports about you, lose their link to your account; the copy of reported content stays for the report\'s period.',
       forget: 'Guests: "Forget me" in the guest menu deletes your guest record and your seats in games, replaces your name with "Deleted player" in other players\' records, and clears the guest data on this device. If you are seated in a running game, finish or leave it first.',
       email: 'Anything else, including data the download does not contain, goes to {{email}}. We answer within one month and may ask you to confirm that the account is yours.',
       required: 'You need an email address and a password, or a sign-in provider, to create an account; you can play as a guest without either. We make no decisions about you based solely on automated processing.',

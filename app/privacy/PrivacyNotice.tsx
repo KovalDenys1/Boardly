@@ -31,6 +31,7 @@ const PURPOSES = [
   'push',
   'premium',
   'feedback',
+  'reports',
   'security',
   'analytics',
 ] as const
@@ -97,6 +98,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
     chatHours: CHAT_RETENTION_HOURS,
     notificationsMonths: retentionMonths(RETENTION_DAYS.notifications),
     feedbackMonths: retentionMonths(RETENTION_DAYS.feedback),
+    reportsMonths: retentionMonths(RETENTION_DAYS.reports),
     eventsDays: RETENTION_DAYS.operationalEvents,
     auditMonths: retentionMonths(RETENTION_DAYS.adminAuditLogs),
     participationsMonths: retentionMonths(RETENTION_DAYS.lobbyParticipations),

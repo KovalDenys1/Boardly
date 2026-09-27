@@ -19,6 +19,7 @@ enforces it. Change a period there and here together, and bump `PRIVACY_UPDATED`
 | `LobbyParticipations` | 24 months | joining the lobby | Pseudonymous join counts (salted hash, no id or name) for year-over-year analytics | `lobbyParticipations` |
 | `OperationalEvents` | 180 days | the event | Reliability monitoring and alerting (`site_silent` and the other rules read days, not months) | `operationalEvents` |
 | `Feedback` (message, optional email, page URL) | 12 months | submission | Answering and acting on feedback | `feedback` |
+| `Reports` (+ `ReportedDrawings` once no report points at one) | 12 months | the report | Handling reports of unlawful or harmful content (#1172); the Discord notification goes with the row | `reports` |
 | `Notifications` | 12 months | creation | Notification inbox and delivery de-duplication | `notifications` |
 | `AdminAuditLogs` | 24 months | the admin action | Accountability for Control Panel actions | `adminAuditLogs` |
 | `GameStateSnapshots` (replays) | 90 days | the snapshot | Game replays | `lib/cleanup-replays.ts`, `REPLAY_RETENTION_DAYS` |
@@ -31,6 +32,12 @@ matched **0** rows (oldest rows: Games and Lobbies 2026-02-06, Feedback 2026-04-
 AdminAuditLogs 2026-05-07, OperationalEvents 2026-06-22, Notifications 2026-06-23,
 LobbyParticipations 2026-09-04). So every rule is on by default. The first rows to age
 out are OperationalEvents around 2026-12-19; Games and Lobbies follow from 2027-02-06.
+The `reports` rule was added on 2026-09-27 with its table (#1172), so it too matched
+nothing when it shipped and is on by default.
+
+A reported chat message outlives the 24-hour chat TTL on purpose: the report keeps a
+copy of it for the report's own 12 months. When the author's account is deleted, the
+report loses its link to the account (`ON DELETE SET NULL`) and keeps the copy.
 
 ### Report mode and `RETENTION_ENFORCE`
 
@@ -67,7 +74,8 @@ one replaces them, or with the account; no expired row existed on 2026-09-24.
 `GET /api/user/export` (#1127) returns a signed-in user's own data as a JSON file:
 profile, preferences, linked sign-in providers, games, lobbies created, purchases and
 purchase consents, friends and friend requests, lobby invites, notifications, feedback,
-achievements and push subscriptions (without their keys). The profile page's Account tab
+the reports the user filed (what, why and when; not the other player or the copy of their
+content), achievements and push subscriptions (without their keys). The profile page's Account tab
 has the button. A guest, or a request covering data the export does not include
 (`AdminAuditLogs` about the user, `OperationalEvents`), is handled by email to
 support@boardly.online within one month (GDPR Art. 12(3)).

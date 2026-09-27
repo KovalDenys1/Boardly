@@ -3610,7 +3610,7 @@ const no = {
         title: 'Spill, lobbyer, chat og venner',
         data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, lobbyinvitasjoner, varsler og prestasjoner.',
         basis: 'Avtale: dette er selve tjenesten.',
-        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, når de er inaktive og tomme. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer. Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til du sletter kontoen.',
+        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, når de er inaktive og tomme. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til du sletter kontoen.',
       },
       signIn: {
         title: 'Innlogging med Google, GitHub eller Discord',
@@ -3647,6 +3647,12 @@ const no = {
         data: 'Det du skriver i tilbakemeldingsskjemaet, typen, siden du sendte det fra, en e-postadresse hvis du oppgir en, og kontoen din hvis du er innlogget. Et varsel legges ut i teamets tilbakemeldingskanal på Discord-serveren vår: typen, de første 200 tegnene i meldingen og tilbakemeldingens id. E-postadressen du oppgir, brukernavnet ditt og siden legges ikke ut. E-post til kundestøtteadressen når oss gjennom Resend.',
         basis: 'Vår berettigede interesse i å svare deg og forbedre Boardly.',
         retention: 'Tilbakemeldinger, også varselet i Discord-kanalen vår for tilbakemeldinger: {{feedbackMonths}} måneder. E-post til kundestøtte: så lenge vi trenger den for å behandle henvendelsen.',
+      },
+      reports: {
+        title: 'Rapporter om chat, tegninger og profiler',
+        data: 'Når en spiller rapporterer en chatmelding, en tegning i Sketch & Guess eller en annen spillers brukernavn, profilbilde eller profiltekst, tar vi vare på rapporten: hvem som sendte den, hvilken spiller den gjelder, hvor det skjedde (lobbyen, spillet og runden), grunnen og en eventuell merknad fra den som rapporterer, og en kopi av det rapporterte innholdet slik det var i øyeblikket – meldingen, tegningen, navnet, adressen til bildet eller profilteksten. Rapportene leses av oss i administrasjonspanelet vårt. Et varsel legges ut i teamets tilbakemeldingskanal på Discord-serveren vår: hva slags innhold det er, grunnen, rapportens id og et kort utdrag av det rapporterte innholdet – aldri hvem som rapporterte, eller merknaden deres. Vi forteller aldri spilleren som blir rapportert, hvem som rapporterte.',
+        basis: 'Vår berettigede interesse i å holde Boardly trygt og i å handle uten ugrunnet opphold på varsler om ulovlig eller skadelig innhold, som en tjeneste som lagrer det brukerne legger ut (ehandelsloven § 18).',
+        retention: 'Rapporter, med varselet i Discord-kanalen vår for tilbakemeldinger: {{reportsMonths}} måneder. Kopien av det rapporterte innholdet beholdes like lenge som rapporten, også når originalen forsvinner før, og den blir værende om forfatteren sletter kontoen sin; rapporten mister da koblingen til den kontoen.',
       },
       security: {
         title: 'Å holde Boardly sikkert og i drift',
@@ -3737,9 +3743,9 @@ const no = {
     rights: {
       title: '7. Rettighetene dine',
       lead: 'Du har rett til innsyn i opplysningene dine, til å få dem rettet eller slettet, til å begrense behandlingen, til å få dem i et maskinlesbart format, og til å protestere mot behandling som bygger på vår berettigede interesse. Der vi bygger på samtykke, kan du trekke det tilbake når som helst; det påvirker ikke det vi gjorde før.',
-      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, invitasjoner, varsler, tilbakemeldinger, prestasjoner og pushabonnementer.',
+      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
       correct: 'Rett opplysningene dine: rediger profilen, også e-postadressen, på profilsiden.',
-      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes.',
+      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres.',
       forget: 'Gjester: «Glem meg» i gjestemenyen sletter gjesteoppføringen og plassene dine i spill, erstatter navnet ditt med «Deleted player» i andre spilleres historikk, og fjerner gjestedataene på denne enheten. Hvis du sitter i et pågående spill, må du fullføre eller forlate det først.',
       email: 'Alt annet, også opplysninger nedlastingen ikke inneholder, sender du til {{email}}. Vi svarer innen én måned og kan be deg bekrefte at kontoen er din.',
       required: 'Du trenger en e-postadresse og et passord, eller en innloggingstjeneste, for å opprette en konto; som gjest kan du spille uten noen av delene. Vi tar ingen avgjørelser om deg som bare bygger på automatisert behandling.',
