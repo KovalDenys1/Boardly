@@ -29,6 +29,7 @@ import {
 import { changeLanguageLazy, type Locale } from '@/i18n'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
+import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
 import {
   getExistingPushSubscription,
   getPushPermissionState,
@@ -520,22 +521,11 @@ export default function ProfilePage() {
     }
   }, [fetchProfileSummary, status])
 
-  // Check if account was just linked
+  // Back from a completed Stripe checkout
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const currentUrl = new URL(window.location.href)
-    if (currentUrl.searchParams.get('linked') === 'true') {
-      showToast.success('toast.accountLinked')
-
-      currentUrl.searchParams.delete('linked')
-      window.history.replaceState(
-        {},
-        '',
-        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
-      )
-    }
-
     if (currentUrl.searchParams.get('premium') === 'success') {
       showToast.success('toast.success', 'Welcome to Boardly Premium!')
       currentUrl.searchParams.delete('premium')
@@ -1191,6 +1181,10 @@ export default function ProfilePage() {
       const data = await res.json()
 
       if (!res.ok) {
+        if (data?.code === LAST_SIGN_IN_METHOD_CODE) {
+          showToast.error('profile.linkedAccounts.lastSignInMethod')
+          return
+        }
         throw new Error(data.error || t('profile.errors.unlinkFailed'))
       }
 
@@ -2252,27 +2246,26 @@ export default function ProfilePage() {
                               </div>
                               <div>
                                 <p className="text-sm font-semibold text-bd-ink dark:text-white">{provider.name}</p>
-                                {isConnected && (
+                                {isConnected ? (
                                   <p className="text-xs font-medium text-bd-mint-deep dark:text-bd-mint">
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
+                                ) : (
+                                  <p className="text-xs font-medium text-bd-ink-muted dark:text-slate-400">
+                                    {t('profile.linkedAccounts.notConnected')}
+                                  </p>
                                 )}
                               </div>
-                              {isConnected ? (
+                              {/* Unlink only. Linking a provider to a signed-in account was
+                                  removed with /auth/link (#1140): it could sign the person
+                                  into a brand-new account instead. */}
+                              {isConnected && (
                                 <button
                                   type="button"
                                   onClick={() => handleUnlinkAccount(provider.id)}
                                   className={`${actionDangerButtonClassName} w-full px-3 py-2 text-xs`}
                                 >
                                   {t('profile.linkedAccounts.unlink')}
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => router.push(`/auth/link?provider=${provider.id}`)}
-                                  className={`${actionPrimaryButtonClassName} w-full px-3 py-2 text-xs`}
-                                >
-                                  {t('profile.linkedAccounts.connect')}
                                 </button>
                               )}
                             </div>

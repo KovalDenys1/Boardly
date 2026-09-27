@@ -387,8 +387,9 @@ export const authOptions: NextAuthOptions = {
           }
 
           // New user with new email - allow PrismaAdapter to create
-          // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user
-          // To link to existing user, use /auth/link page workflow
+          // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user.
+          // There is no way to link a provider to an existing account: /auth/link was
+          // removed because it did exactly this and swapped the session (#1140).
           const log = apiLogger('OAuth signIn')
           // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {

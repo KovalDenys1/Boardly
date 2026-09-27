@@ -11,6 +11,7 @@ import {
   withErrorHandler,
 } from '@/lib/error-handler'
 import { getSessionUserOrThrow } from '@/lib/session-user'
+import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/linked-accounts')
@@ -86,9 +87,17 @@ async function deleteLinkedAccountHandler(req: NextRequest) {
     throw new NotFoundError('User')
   }
 
-  // Prevent unlinking if it's the only auth method
+  // Prevent unlinking if it's the only auth method. There is no set-password page and,
+  // since #1140, no way to link another provider, so the message names the one path
+  // that exists: "Forgot password?" sets a password on an account that has none
+  // (app/api/auth/reset-password writes passwordHash either way). The profile shows
+  // its own translation of this, keyed on the code.
   if (!user.passwordHash && user.accounts.length === 1) {
-    throw new ValidationError('Cannot unlink the only authentication method. Set a password first.')
+    throw new AppError(
+      'This is the only way you sign in, so it cannot be removed. To add a password, sign out, choose "Forgot password?" on the sign-in page and enter your account\'s email address. Then you can remove this one.',
+      400,
+      LAST_SIGN_IN_METHOD_CODE
+    )
   }
 
   const account = user.accounts.find((a) => a.provider === provider)
