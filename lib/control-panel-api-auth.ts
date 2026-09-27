@@ -13,19 +13,25 @@ import { constantTimeEqual } from '@/lib/secret-compare'
  * unset, so a deployment that forgot it fails loudly rather than accepting nothing or
  * everything; 401 on a missing or wrong header.
  *
+ * It must be at least 32 characters (`openssl rand -base64 32` gives 44). A shorter value is
+ * treated as unset: this secret deletes accounts, and a short one set by hand is exactly the
+ * one worth refusing loudly rather than guessable quietly.
+ *
  * No `node:crypto` here: `proxy.ts` imports this file too, so it stays runtime-neutral.
  */
 
 export const CONTROL_PANEL_API_SECRET_ENV = 'CONTROL_PANEL_API_SECRET'
+export const CONTROL_PANEL_API_SECRET_MIN_LENGTH = 32
 export const CONTROL_PANEL_ADMIN_PATH_PREFIX = '/api/internal/admin/'
 
 export function isControlPanelAdminPath(pathname: string): boolean {
   return pathname.startsWith(CONTROL_PANEL_ADMIN_PATH_PREFIX)
 }
 
+/** The configured secret, or null when it is unset or shorter than the minimum. */
 export function getControlPanelApiSecret(): string | null {
   const secret = process.env[CONTROL_PANEL_API_SECRET_ENV]?.trim()
-  return secret ? secret : null
+  return secret && secret.length >= CONTROL_PANEL_API_SECRET_MIN_LENGTH ? secret : null
 }
 
 export function hasValidControlPanelSecret(request: Request): boolean {
@@ -41,7 +47,9 @@ export function hasValidControlPanelSecret(request: Request): boolean {
 export function authorizeControlPanelRequest(request: Request): NextResponse | null {
   if (!getControlPanelApiSecret()) {
     return NextResponse.json(
-      { error: `${CONTROL_PANEL_API_SECRET_ENV} is not configured` },
+      {
+        error: `${CONTROL_PANEL_API_SECRET_ENV} is not configured (unset or shorter than ${CONTROL_PANEL_API_SECRET_MIN_LENGTH} characters)`,
+      },
       { status: 503 }
     )
   }

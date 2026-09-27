@@ -37,8 +37,9 @@ const optionalVars = [
   'NEXT_PUBLIC_DISCORD_INVITE',
   'DISCORD_APPLICATION_ID',
   'DISCORD_INTERNAL_SECRET',
-  // The Control Panel's bearer secret for /api/internal/admin/* (#1231). Unset, those
-  // routes answer 503 and the panel cannot email a suspension or delete an account safely.
+  // The Control Panel's bearer secret for /api/internal/admin/* (#1231), at least 32
+  // characters. Unset or shorter, those routes answer 503 and the panel cannot email a
+  // suspension or delete an account safely.
   'CONTROL_PANEL_API_SECRET',
   // Web Push. All three or none — the public key is inlined into the client
   // bundle, so a deploy missing it hands every opt-in a permission prompt and
@@ -89,6 +90,15 @@ const neverPrintedVars = new Set([
   'CONTROL_PANEL_API_SECRET',
   'VAPID_PRIVATE_KEY',
 ])
+
+// Secrets the app refuses below a length, reported the way the app reads them: a value
+// that is too short counts as unset. CONTROL_PANEL_API_SECRET's floor is
+// CONTROL_PANEL_API_SECRET_MIN_LENGTH in lib/control-panel-api-auth.ts; the two are kept
+// equal by __tests__/lib/control-panel-api-auth.test.ts, which reads this file as text
+// (importing it would run the check and exit).
+const minimumLengthVars: Record<string, number> = {
+  CONTROL_PANEL_API_SECRET: 32,
+}
 
 function formatValue(value: string, visibleChars: number) {
   if (quiet) {
@@ -221,7 +231,13 @@ console.log('\nOptional environment variables:\n')
 
 for (const name of optionalVars) {
   const value = process.env[name]
-  if (value) {
+  const minimumLength = minimumLengthVars[name]
+  if (value && minimumLength !== undefined && value.trim().length < minimumLength) {
+    console.log(
+      `WARN ${name}: set but shorter than ${minimumLength} characters, so it is treated as unset ` +
+        `(generate one with: openssl rand -base64 32)`
+    )
+  } else if (value) {
     const shown = neverPrintedVars.has(name) ? '[set]' : formatValue(value, 30)
     console.log(`OK  ${name}: ${shown}`)
   } else {

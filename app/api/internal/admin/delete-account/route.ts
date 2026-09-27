@@ -16,15 +16,16 @@ const bodySchema = z.object({
 
 /**
  * Deletes an account for staff (Control Panel #120, #1231), by the path the owner's own
- * deletion takes (lib/account-deletion.ts): the Stripe subscription is cancelled and the
- * customer deleted first, then the avatar, the Discord linked-role data and the name in
- * other players' games go, then the row. The panel's own bare delete left billing running
- * on a deleted account.
+ * deletion takes (lib/account-deletion.ts), in its order: the avatar file, then the Stripe
+ * subscription is cancelled and the customer deleted, then the Discord linked-role data and
+ * the name in other players' games go, then the row. The panel's own bare delete left
+ * billing running on a deleted account.
  *
  * 200 `{ deleted: true, hadActiveSubscription }` · 404 `USER_NOT_FOUND`. Also, outside the
- * contract's happy paths: 409 `BOT_ACCOUNT` (bots are not deleted this way), and 502
- * `AVATAR_DELETE_FAILED` / `SUBSCRIPTION_CANCEL_FAILED`, where nothing was deleted and the
- * request is safe to retry.
+ * contract's happy paths: 409 `BOT_ACCOUNT` (bots are not deleted this way), 502
+ * `AVATAR_DELETE_FAILED`, where nothing was changed, and 502 `SUBSCRIPTION_CANCEL_FAILED`,
+ * where the account and its subscription are intact but the avatar file may already be
+ * gone. A retry is safe after either.
  */
 export async function POST(request: NextRequest) {
   const guardError = await guardControlPanelRequest(request)

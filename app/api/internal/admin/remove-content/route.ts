@@ -21,8 +21,9 @@ const bodySchema = z.object({
  * `Player` plus six digits. lib/server/profile-content-removal.ts has the details.
  *
  * 200 `{ removed: true, username? }`, `username` being the new name after a reset · 404
- * `USER_NOT_FOUND`. Also 502 `AVATAR_DELETE_FAILED` when storage refused the delete; the
- * row is then unchanged and the request safe to retry.
+ * `USER_NOT_FOUND`. Also 409 `BOT_ACCOUNT` (a bot is found by its username, so renaming
+ * one breaks every add-bot), and 502 `AVATAR_DELETE_FAILED` when storage refused the
+ * delete; the row is then unchanged and the request safe to retry.
  */
 export async function POST(request: NextRequest) {
   const guardError = await guardControlPanelRequest(request)
@@ -37,6 +38,8 @@ export async function POST(request: NextRequest) {
   switch (result.status) {
     case 'not_found':
       return controlPanelJson({ code: 'USER_NOT_FOUND' }, 404)
+    case 'bot':
+      return controlPanelJson({ code: 'BOT_ACCOUNT' }, 409)
     case 'avatar_failed':
       log.warn('Avatar could not be removed from storage', { userId })
       return controlPanelJson({ code: 'AVATAR_DELETE_FAILED' }, 502)

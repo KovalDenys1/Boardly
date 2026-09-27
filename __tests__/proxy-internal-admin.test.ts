@@ -23,6 +23,8 @@ const originalEnv = {
 }
 
 const ADMIN_URL = 'http://localhost:3000/api/internal/admin/suspension-notice'
+// At least 32 characters: a shorter secret counts as unset (lib/control-panel-api-auth.ts).
+const PANEL_SECRET = 'panel-secret-0123456789abcdefghijklmnop'
 
 function post(url: string, headers: Record<string, string>) {
   return new NextRequest(url, {
@@ -36,7 +38,7 @@ describe('proxy gate for /api/internal/admin/*', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetToken.mockResolvedValue(null as never)
-    process.env.CONTROL_PANEL_API_SECRET = 'panel-secret'
+    process.env.CONTROL_PANEL_API_SECRET = PANEL_SECRET
     process.env.DISCORD_INTERNAL_SECRET = 'discord-secret'
     process.env.CRON_SECRET = 'cron-secret'
   })
@@ -61,7 +63,15 @@ describe('proxy gate for /api/internal/admin/*', () => {
   it('answers 503 when the secret is not configured', async () => {
     delete process.env.CONTROL_PANEL_API_SECRET
 
-    const response = await proxy(post(ADMIN_URL, { authorization: 'Bearer panel-secret' }))
+    const response = await proxy(post(ADMIN_URL, { authorization: `Bearer ${PANEL_SECRET}` }))
+
+    expect(response.status).toBe(503)
+  })
+
+  it('answers 503 to a configured secret shorter than 32 characters, as if it were unset', async () => {
+    process.env.CONTROL_PANEL_API_SECRET = 'short-panel-secret'
+
+    const response = await proxy(post(ADMIN_URL, { authorization: 'Bearer short-panel-secret' }))
 
     expect(response.status).toBe(503)
   })
@@ -72,7 +82,7 @@ describe('proxy gate for /api/internal/admin/*', () => {
   })
 
   it('lets a POST with the secret and no Origin header through the CSRF check', async () => {
-    const response = await proxy(post(ADMIN_URL, { authorization: 'Bearer panel-secret' }))
+    const response = await proxy(post(ADMIN_URL, { authorization: `Bearer ${PANEL_SECRET}` }))
 
     expect(response.status).not.toBe(401)
     expect(response.status).not.toBe(403)
@@ -81,7 +91,7 @@ describe('proxy gate for /api/internal/admin/*', () => {
   it('does not make other API routes trusted for the panel secret', async () => {
     const response = await proxy(
       post('http://localhost:3000/api/friends/request', {
-        authorization: 'Bearer panel-secret',
+        authorization: `Bearer ${PANEL_SECRET}`,
         origin: 'https://evil.example',
       })
     )
@@ -92,7 +102,7 @@ describe('proxy gate for /api/internal/admin/*', () => {
   it('does not open the Discord bot routes with the panel secret', async () => {
     const response = await proxy(
       new NextRequest('http://localhost:3000/api/internal/discord/members/123456789012345678', {
-        headers: { authorization: 'Bearer panel-secret' },
+        headers: { authorization: `Bearer ${PANEL_SECRET}` },
       })
     )
 

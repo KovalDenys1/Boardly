@@ -26,7 +26,10 @@ const bodySchema = z.object({
  * 5); the panel suspends and then calls here, because the Resend key lives in this app.
  *
  * 200 `{ sent: true }` · 404 `USER_NOT_FOUND` · 409 `NO_EMAIL` for a guest or an account
- * without an address · 502 `SEND_FAILED` when Resend refused or is not configured.
+ * without an address · 502 `SEND_FAILED` when Resend refused or is not configured. Also
+ * 409 `BOT_ACCOUNT` (a bot's address is made up and bounces) and 409 `NOT_SUSPENDED` when
+ * the row is not suspended: the notice only ever describes a suspension that exists, so a
+ * panel bug or a leaked secret cannot mail anyone a false one.
  */
 export async function POST(request: NextRequest) {
   const guardError = await guardControlPanelRequest(request)
@@ -38,10 +41,24 @@ export async function POST(request: NextRequest) {
 
   const user = await prisma.users.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, username: true, isGuest: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      isGuest: true,
+      suspended: true,
+      bot: { select: { id: true } },
+    },
   })
   if (!user) {
     return controlPanelJson({ code: 'USER_NOT_FOUND' }, 404)
+  }
+  if (user.bot) {
+    return controlPanelJson({ code: 'BOT_ACCOUNT' }, 409)
+  }
+  if (!user.suspended) {
+    log.warn('Suspension notice refused: the account is not suspended', { userId: user.id })
+    return controlPanelJson({ code: 'NOT_SUSPENDED' }, 409)
   }
   if (user.isGuest || !user.email) {
     return controlPanelJson({ code: 'NO_EMAIL' }, 409)

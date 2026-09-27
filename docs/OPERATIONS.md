@@ -81,7 +81,7 @@ Recommended:
 - `FEEDBACK_DISCORD_WEBHOOK_URL` (optional Discord webhook that mirrors `/api/feedback` submissions into the staff feedback channel)
 - `NEXT_PUBLIC_DISCORD_INVITE` (optional; the invite `/discord` redirects to, inlined at build time, falling back to the invite compiled into `lib/discord.ts`)
 - `DISCORD_APPLICATION_ID` (optional; Linked Roles push) and `DISCORD_INTERNAL_SECRET` (optional; bearer for `/api/internal/discord/*`, same value in the Pi env file)
-- `CONTROL_PANEL_API_SECRET` (bearer for `/api/internal/admin/*`, same value in the Control Panel's environment; unset, the panel's suspension email, deletion and content removal answer 503; see "Control Panel API" below)
+- `CONTROL_PANEL_API_SECRET` (bearer for `/api/internal/admin/*`, at least 32 characters, same value in the Control Panel's environment; unset or shorter, the panel's suspension email, deletion and content removal answer 503; see "Control Panel API" below)
 - the full Discord map, including the bot's own variables, is `docs/DISCORD.md`
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
@@ -212,32 +212,40 @@ The dev project (`inmvbxfflqeblynpktay`) got the same bucket with the same limit
 `/api/internal/admin/*` (#1231, Control Panel #120) runs the moderation actions the panel cannot run
 itself: it shares the database but not the Resend key, Stripe, the avatar bucket or the Redis chat store.
 Every route is `POST` with JSON and `Authorization: Bearer $CONTROL_PANEL_API_SECRET`, set to the same
-value in both Vercel projects. `proxy.ts` checks the secret before the request reaches a function and lets
-these server-to-server calls past the CSRF origin check; unset it answers 503, wrong or missing 401. 30
-requests a minute, counted against the panel as one caller. A 400 carries `{ code: 'INVALID_BODY' }`.
+value in both Vercel projects (at least 32 characters, `openssl rand -base64 32`; a shorter value counts as
+unset). `proxy.ts` checks the secret before the request reaches a function and lets these server-to-server
+calls past the CSRF origin check; unset or too short it answers 503, wrong or missing 401. 30 requests a
+minute, counted against the panel as one caller. A 400 carries `{ code: 'INVALID_BODY' }`.
 
 | Route | Body | Answers |
 |---|---|---|
-| `/api/internal/admin/suspension-notice` | `userId`, `reason` (1-1000), `expiresAt` (ISO or `null`) | 200 `{ sent: true }` · 404 `USER_NOT_FOUND` · 409 `NO_EMAIL` · 502 `SEND_FAILED` |
+| `/api/internal/admin/suspension-notice` | `userId`, `reason` (1-1000), `expiresAt` (ISO or `null`) | 200 `{ sent: true }` · 404 `USER_NOT_FOUND` · 409 `NO_EMAIL` / `NOT_SUSPENDED` / `BOT_ACCOUNT` · 502 `SEND_FAILED` |
 | `/api/internal/admin/delete-account` | `userId` | 200 `{ deleted: true, hadActiveSubscription }` · 404 `USER_NOT_FOUND` · 409 `BOT_ACCOUNT` · 502 `AVATAR_DELETE_FAILED` / `SUBSCRIPTION_CANCEL_FAILED` |
-| `/api/internal/admin/remove-content` | `userId`, `field`: `bio` / `avatar` / `username` | 200 `{ removed: true, username? }` · 404 `USER_NOT_FOUND` · 502 `AVATAR_DELETE_FAILED` |
+| `/api/internal/admin/remove-content` | `userId`, `field`: `bio` / `avatar` / `username` | 200 `{ removed: true, username? }` · 404 `USER_NOT_FOUND` · 409 `BOT_ACCOUNT` · 502 `AVATAR_DELETE_FAILED` |
 | `/api/internal/admin/remove-chat-message` | `lobbyCode`, `messageId` | 200 `{ removed: true }` · 404 `NOT_FOUND` · 502 `CHAT_STORE_UNAVAILABLE` |
 
 - **The suspension email** is English then Norwegian, signed by the team, with the reason as staff wrote
   it, the end date in UTC or "until further notice", and the appeal form at
   `https://boardly.online/suspended`. It does not suspend anything: the panel writes `suspended`,
-  `banReason` and `banExpiresAt` and then calls this. A retry with the same reason and end date within a
+  `banReason` and `banExpiresAt` and then calls this, and the route answers 409 `NOT_SUSPENDED` unless the
+  row is already suspended, so a panel bug or a leaked secret cannot mail anyone a false suspension. A bot
+  is refused with `BOT_ACCOUNT`; its address is made up. A retry with the same reason and end date within a
   day is delivered once (Resend idempotency key).
-- **Delete** is `lib/account-deletion.ts`, the path an owner's own deletion takes: Stripe first, then the
-  avatar, Discord roles, the name in other players' records, the row. Every 502 means nothing was deleted
-  and a retry is safe. `hadActiveSubscription` is true when a running subscription was cancelled; it is
+- **Delete** is `lib/account-deletion.ts`, the path an owner's own deletion takes, in its order: the
+  avatar file, then Stripe (subscription cancelled, customer deleted), Discord roles, the name in other
+  players' records, the row. `AVATAR_DELETE_FAILED` means nothing changed. `SUBSCRIPTION_CANCEL_FAILED`
+  means the account and the subscription are intact, but the avatar file may already be gone. A retry is
+  safe after either. `hadActiveSubscription` is true when a running subscription was cancelled; it is
   cancelled, not refunded. The panel's DELETE ALL DATA calls this route.
 - **Closing an account for a breach** is two actions in this order: suspend permanently, which emails the
   reason, then delete. The under-13 runbook below is the worked case.
-- **Remove content:** `avatar` deletes the files in the bucket and clears both `avatarUrl` and the
-  provider's `image`, which the site would otherwise show instead. `username` becomes `Player` and six
-  random digits, checked free case-insensitively. The leaderboard cache keeps the old name or picture for
-  up to 20 seconds.
+- **Remove content:** bots are refused with `BOT_ACCOUNT` for every field (a bot is looked up by its
+  username, so a renamed one breaks add-bot). `avatar` deletes the files in the bucket and clears both
+  `avatarUrl` and the provider's `image`, which the site would otherwise show instead. `username` becomes
+  `Player` and six random digits, checked free case-insensitively, and the old name is replaced by the new
+  one in Games.state and the replays. It stays for up to 24 hours in the Redis chat history, which this
+  does not touch, and for up to 30 minutes in the user's session token, so a game they start in that
+  window can still record it. The leaderboard cache keeps the old name or picture for up to 20 seconds.
 - **Chat:** the message is removed from the Redis history, so nobody who opens the chat afterwards gets it.
   The chat has no realtime removal event, so a player who already has it on screen keeps it until reload.
 - The panel writes `AdminAuditLogs` itself; these routes log ids only, never an address.
@@ -512,7 +520,9 @@ reason"), then delete. Deleting first leaves no address to send the reason to.
    reason and the preset: that entry is the record of the decision and outlives the account (730 days). The
    panel then calls `POST /api/internal/admin/suspension-notice`, which emails the owner that reason, and shows
    the result: emailed, no email address (deliver it another way), or failed with the reason (see "Control
-   Panel API").
+   Panel API"). The panel has no wording of its own for `NOT_SUSPENDED` or `BOT_ACCOUNT` and shows them as an
+   unexpected 409 or a refusal: the first means the suspension was not saved (suspend again), the second
+   that the row is a bot, which this runbook never applies to.
 3. **Premium, if `stripeSubscriptionId` is set.** Stripe Dashboard: refund every Premium payment in full. A
    child under 13 is below both the 13+ rule and section 3's 15+ policy, so nothing is kept. Do it before step
    5: the deletion cancels the subscription itself but refunds nothing, and it deletes the Stripe customer the
@@ -523,12 +533,13 @@ reason"), then delete. Deleting first leaves no address to send the reason to.
    the reports retention like any other report.
 5. **Delete it with DELETE ALL DATA** on the user's page. The panel calls
    `POST /api/internal/admin/delete-account`, which is Boardly's own deletion path (`lib/account-deletion.ts`):
-   it cancels any subscription and deletes the Stripe customer, removes the avatar from the bucket, clears the
+   it removes the avatar from the bucket, cancels any subscription and deletes the Stripe customer, clears the
    Discord Linked Roles, replaces the name in other players' games and replays with "Deleted player",
    detaches feedback, then deletes the row and everything that cascades from it. The panel writes
-   `delete_user` only once Boardly confirms. An error answer from Boardly means nothing was deleted and the
-   button can be pressed again; after a network error, reload the page first, because the deletion may have
-   finished.
+   `delete_user` only once Boardly confirms. An error answer from Boardly means the account was not deleted
+   and the button can be pressed again; after a failed Stripe cancellation the avatar file may already be
+   gone, which a retry does not mind. After a network error, reload the page first, because the deletion may
+   have finished.
 6. **Answer whoever told us**, from support@, the same day, in company voice. Send nothing of the account's
    data or content to them, a parent included: deleting it is the answer, and a request to see the data is a
    separate access request from the account holder. A report from the in-game Report action has no one to

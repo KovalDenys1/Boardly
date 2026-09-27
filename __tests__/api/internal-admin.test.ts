@@ -17,6 +17,7 @@ import { sendSuspensionNoticeEmail } from '@/lib/email'
 import { deleteUserAccount } from '@/lib/account-deletion'
 import { removeChatMessage } from '@/lib/chat-history'
 import { deleteAvatar } from '@/lib/supabase-storage'
+import { scrubPlayersFromGameRecords } from '@/lib/account-erasure'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -26,6 +27,9 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/email', () => ({ sendSuspensionNoticeEmail: jest.fn() }))
 jest.mock('@/lib/account-deletion', () => ({ deleteUserAccount: jest.fn() }))
 jest.mock('@/lib/chat-history', () => ({ removeChatMessage: jest.fn() }))
+jest.mock('@/lib/account-erasure', () => ({
+  scrubPlayersFromGameRecords: jest.fn(async () => ({ games: 0, snapshots: 0 })),
+}))
 jest.mock('@/lib/supabase-storage', () => ({
   deleteAvatar: jest.fn(),
   isAvatarStorageConfigured: jest.fn(() => true),
@@ -103,6 +107,18 @@ describe('/api/internal/admin', () => {
       expect(response.status).toBe(503)
     })
 
+    it('answers 503 when the secret is shorter than 32 characters, even to that exact bearer', async () => {
+      const short = 'x'.repeat(31)
+      process.env.CONTROL_PANEL_API_SECRET = short
+
+      const response = await handler(request(route, body, { authorization: `Bearer ${short}` }))
+
+      expect(response.status).toBe(503)
+      expect(prisma.users.findUnique).not.toHaveBeenCalled()
+      expect(deleteUserAccount).not.toHaveBeenCalled()
+      expect(removeChatMessage).not.toHaveBeenCalled()
+    })
+
     it('answers 400 to a body that is not JSON or misses a field', async () => {
       const notJson = await handler(request(route, 'not json'))
       expect(notJson.status).toBe(400)
@@ -125,13 +141,41 @@ describe('/api/internal/admin', () => {
     const handler = postSuspensionNotice
 
     beforeEach(() => {
-      prisma.users.findUnique.mockResolvedValue({
+      prisma.users.findUnique.mockResolvedValue(suspendedUser())
+      sendSuspensionNoticeEmail.mockResolvedValue({ success: true })
+    })
+
+    function suspendedUser(overrides: Record<string, unknown> = {}) {
+      return {
         id: 'user-1',
         email: 'player@example.com',
         username: 'Ola',
         isGuest: false,
-      })
-      sendSuspensionNoticeEmail.mockResolvedValue({ success: true })
+        suspended: true,
+        bot: null,
+        ...overrides,
+      }
+    }
+
+    it('answers 409 NOT_SUSPENDED for an account that is not suspended, and mails nothing', async () => {
+      prisma.users.findUnique.mockResolvedValue(suspendedUser({ suspended: false }))
+
+      const response = await handler(request('suspension-notice', routes['suspension-notice'].body))
+
+      expect(response.status).toBe(409)
+      await expect(response.json()).resolves.toEqual({ code: 'NOT_SUSPENDED' })
+      expect(sendSuspensionNoticeEmail).not.toHaveBeenCalled()
+      expect(prisma.users.findUnique.mock.calls[0][0].select).toMatchObject({ suspended: true })
+    })
+
+    it('answers 409 BOT_ACCOUNT for a bot, whose address bounces', async () => {
+      prisma.users.findUnique.mockResolvedValue(suspendedUser({ bot: { id: 'bot-1' }, email: 'bot@boardly.local' }))
+
+      const response = await handler(request('suspension-notice', routes['suspension-notice'].body))
+
+      expect(response.status).toBe(409)
+      await expect(response.json()).resolves.toEqual({ code: 'BOT_ACCOUNT' })
+      expect(sendSuspensionNoticeEmail).not.toHaveBeenCalled()
     })
 
     it('emails the reason and the end date of a temporary suspension', async () => {
@@ -171,12 +215,14 @@ describe('/api/internal/admin', () => {
     })
 
     it('answers 409 NO_EMAIL for a guest or an account without an address', async () => {
-      prisma.users.findUnique.mockResolvedValueOnce({ id: 'g-1', email: null, username: 'Guest', isGuest: true })
+      prisma.users.findUnique.mockResolvedValueOnce(
+        suspendedUser({ id: 'g-1', email: null, username: 'Guest', isGuest: true })
+      )
       const guest = await handler(request('suspension-notice', routes['suspension-notice'].body))
       expect(guest.status).toBe(409)
       await expect(guest.json()).resolves.toEqual({ code: 'NO_EMAIL' })
 
-      prisma.users.findUnique.mockResolvedValueOnce({ id: 'u-2', email: null, username: 'NoMail', isGuest: false })
+      prisma.users.findUnique.mockResolvedValueOnce(suspendedUser({ id: 'u-2', email: null, username: 'NoMail' }))
       expect((await handler(request('suspension-notice', routes['suspension-notice'].body))).status).toBe(409)
       expect(sendSuspensionNoticeEmail).not.toHaveBeenCalled()
     })
@@ -250,9 +296,51 @@ describe('/api/internal/admin', () => {
     const handler = postRemoveContent
 
     beforeEach(() => {
-      prisma.users.findUnique.mockResolvedValue({ id: 'user-1' })
+      prisma.users.findUnique.mockResolvedValue({ id: 'user-1', username: 'Rude_Name', bot: null })
       prisma.users.findMany.mockResolvedValue([])
       prisma.users.update.mockResolvedValue({})
+    })
+
+    it('refuses a bot with 409 BOT_ACCOUNT for every field, and changes nothing', async () => {
+      // A bot is found by its username (getOrCreateBotUser); renamed, every add-bot 500s.
+      prisma.users.findUnique.mockResolvedValue({ id: 'bot-user', username: 'Yahtzee Bot', bot: { id: 'bot-1' } })
+
+      for (const field of ['bio', 'avatar', 'username']) {
+        const response = await handler(request('remove-content', { userId: 'bot-user', field }))
+        expect(response.status).toBe(409)
+        await expect(response.json()).resolves.toEqual({ code: 'BOT_ACCOUNT' })
+      }
+      expect(prisma.users.findUnique.mock.calls[0][0].select).toMatchObject({ bot: { select: { id: true } } })
+      expect(prisma.users.update).not.toHaveBeenCalled()
+      expect(deleteAvatar).not.toHaveBeenCalled()
+      expect(scrubPlayersFromGameRecords).not.toHaveBeenCalled()
+    })
+
+    it('replaces the old name with the new one in game records, before the row changes', async () => {
+      const order: string[] = []
+      scrubPlayersFromGameRecords.mockImplementationOnce(async () => {
+        order.push('scrub')
+        return { games: 2, snapshots: 5 }
+      })
+      prisma.users.update.mockImplementationOnce(async () => {
+        order.push('update')
+        return {}
+      })
+
+      const response = await handler(request('remove-content', { userId: 'user-1', field: 'username' }))
+
+      const { username } = await response.json()
+      expect(scrubPlayersFromGameRecords).toHaveBeenCalledWith([
+        { id: 'user-1', username: 'Rude_Name', label: username },
+      ])
+      expect(order).toEqual(['scrub', 'update'])
+    })
+
+    it('does not touch game records for a bio or an avatar', async () => {
+      await handler(request('remove-content', { userId: 'user-1', field: 'bio' }))
+      await handler(request('remove-content', { userId: 'user-1', field: 'avatar' }))
+
+      expect(scrubPlayersFromGameRecords).not.toHaveBeenCalled()
     })
 
     it('clears the bio', async () => {
@@ -308,13 +396,30 @@ describe('/api/internal/admin', () => {
       expect(prisma.users.update).toHaveBeenCalledTimes(1)
     })
 
-    it('draws again when the write collides on the unique index', async () => {
+    it('draws again when the write collides on the unique index, moving the records on too', async () => {
       prisma.users.update.mockRejectedValueOnce(Object.assign(new Error('Unique'), { code: 'P2002' }))
 
       const response = await handler(request('remove-content', { userId: 'user-1', field: 'username' }))
 
       expect(response.status).toBe(200)
       expect(prisma.users.update).toHaveBeenCalledTimes(2)
+      const lost = prisma.users.update.mock.calls[0][0].data.username
+      const won = prisma.users.update.mock.calls[1][0].data.username
+      expect((await response.json()).username).toBe(won)
+      // The records already moved to the name another account took are moved on as well.
+      expect(scrubPlayersFromGameRecords).toHaveBeenLastCalledWith([
+        { id: 'user-1', username: 'Rude_Name', label: won },
+        { id: 'user-1', username: lost, label: won },
+      ])
+    })
+
+    it('leaves the name as it was when rewriting the records fails, so a retry finds it', async () => {
+      scrubPlayersFromGameRecords.mockRejectedValueOnce(new Error('database blip'))
+
+      await expect(
+        handler(request('remove-content', { userId: 'user-1', field: 'username' }))
+      ).rejects.toThrow('database blip')
+      expect(prisma.users.update).not.toHaveBeenCalled()
     })
 
     it('answers 404 USER_NOT_FOUND for an unknown user, and changes nothing', async () => {
