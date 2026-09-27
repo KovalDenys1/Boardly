@@ -9,7 +9,6 @@
 
 # Mark generated files
 package-lock.json linguist-generated=true
-pnpm-lock.yaml linguist-generated=true
 yarn.lock linguist-generated=true
 
 # Vendored code
