@@ -70,7 +70,7 @@ Notes:
 Recommended:
 
 - `DIRECT_URL` (for migrations)
-- `GUEST_JWT_SECRET` (guest token signing isolation)
+- `GUEST_JWT_SECRET` (guest token signing isolation) and `PARTICIPATION_HASH_SALT` (participation hash); both required in production, see "Moving guest tokens and the participation hash off `NEXTAUTH_SECRET`" below
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase project credentials for Realtime)
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side Supabase client for `broadcastToLobby`)
@@ -122,6 +122,34 @@ Migration from deprecated aliases:
 5. Redeploy the Next.js app and verify `/api/cron/*` auth still succeeds.
 
 Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SERVER_URL` are decommissioned — remove them from all environments after the Supabase Realtime migration.
+
+### Moving guest tokens and the participation hash off `NEXTAUTH_SECRET` (#1142, #1149)
+
+`GUEST_JWT_SECRET` and `PARTICIPATION_HASH_SALT` fall back to `NEXTAUTH_SECRET`. Until
+**2026-12-27** (`NEXTAUTH_SECRET_FALLBACK_CUTOFF` in `lib/nextauth-secret-transition.ts`) the
+code still *reads* with `NEXTAUTH_SECRET` once the dedicated values are set: a guest token that
+fails `GUEST_JWT_SECRET` is tried against it, and a lobby join is deduplicated against the
+old-salt participant key as well as the new one. Everything new is signed and hashed with the
+dedicated values. From the cutoff on only the dedicated values are accepted.
+
+Order, once the release carrying that code is live on production:
+
+1. `GUEST_JWT_SECRET` in Vercel **Production**: a new random value of at least 32 characters,
+   different from `NEXTAUTH_SECRET`.
+2. `PARTICIPATION_HASH_SALT` in Vercel **Production**: another new random value of at least 32
+   characters, different from both.
+3. Redeploy production, so the functions read them. `npm run check:env` then stops reporting
+   either as missing.
+4. Remove the five variables nothing reads (#1149; plain text here because no code declares
+   them any more): ENABLE_LIARS_PARTY, ENABLE_ALIAS, STRIPE_PUBLISHABLE_KEY,
+   SUPABASE_JWT_SECRET, SUPABASE_SECRET_KEY.
+
+Setting them while production still runs the older code is exactly the breaking switch this
+transition exists to avoid - it would sign and verify with the new values and accept nothing
+older - so check `git log origin/main` for this change first. Setting them late costs less:
+guests whose identity token was issued on the old secret after 2026-09-28 lose it at the cutoff
+and come back as new guests; nothing else breaks. Never change either value once set - that
+would need a transition window of its own.
 
 ## Build and deploy
 
@@ -407,10 +435,24 @@ When it fires:
 ### Runbook: rate_limiter_degraded
 
 Any `rate_limiter_degraded` event in the window (#1156). `lib/rate-limit.ts` writes one, at most
-once a minute per instance, whenever the shared Upstash store fails. While it fails, register,
-guest-session, forgot-password, resend-verification, join-guest, lobby create and feedback answer
-**503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
-history reads come back empty.
+once a minute per instance, whenever the shared Upstash store fails - whether the request it
+failed on was then refused or served from memory. While the store fails, routes behave in three
+ways:
+
+- **Fail closed, 503** (`Retry-After: 30`): register, forgot-password and resend-verification
+  (`failClosedAuthPreset`), feedback and content reports. An account or an email is not handed
+  out on per-instance limits.
+- **Degraded, per-instance limits** (Denys, 2026-09-27): guest-session, join-guest (both budgets),
+  lobby create (free and premium) and rematch keep serving from each instance's own memory, under
+  the `degraded` limits on their presets: about a third of the shared per-address limit, plus a
+  ceiling per instance for every address together, several times the busiest window production
+  has seen. Past that ceiling they answer 503 as well. The limits are per instance, so a flood
+  from rotating addresses is bounded by the ceilings times the number of warm instances, and by
+  the Firewall rules below - which is why this state still alerts. Rematch is limited per lobby
+  normally and per address across every lobby only while degraded, so a lobby code cannot
+  bring its own per-instance ceiling.
+- **Fail open**: game actions and chat fall back to the per-instance memory store at their usual
+  limits, and chat history reads come back empty.
 
 Every Upstash call gives up after one retry or 1.5 s (`upstashClientOptions` in
 `lib/redis-credentials.ts`), and after three failures in a row an instance stops calling the store
@@ -497,6 +539,68 @@ Commands (from a directory linked to the project, `vercel link`):
 
 Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
 the managed bot rulesets from log to challenge.
+
+### BotID (#1157)
+
+Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
+token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
+Basic is free on every plan; Deep Analysis costs $1 per 1,000 `checkBotId()` calls on Pro
+(https://vercel.com/docs/botid, read 2026-09-27). The level is pinned per route in code
+(`lib/botid-routes.ts`, used by both halves), and a per-route level takes precedence over the
+project's dashboard setting, so switching Deep Analysis on in Firewall -> Rules does not bill
+these routes.
+
+- Browser half: `initBotId()` in `instrumentation-client.ts` attaches the challenge headers to
+  matching fetches; `withBotId()` in `next.config.js` serves the challenge script and proxy from
+  this origin (two rewrites under a fixed UUID path that `botid/next/config` defines), which the
+  CSP's `'self'` covers.
+- Server half: `refuseIfBot()` in `lib/bot-protection.ts`, after the rate limit, answers 403
+  `BOT_CHECK_FAILED` (the client shows `errors.botCheckFailed`). It runs only where `VERCEL_ENV`
+  is `production` or `preview`; locally, in CI and under `next start` nothing is checked. It
+  needs the project's OIDC token, which is enabled (`oidcTokenConfig.enabled: true`, checked
+  2026-09-27).
+- It fails open, and says so. When `checkBotId()` throws, takes longer than 2.5 s
+  (`BOTID_TIMEOUT_MS`; the library has no deadline of its own), or answers without a boolean
+  `isBot` - which is what `botid/server` returns when Vercel's classifier answers an error body
+  such as 401 `ERR_JWT_INVALID` - the request goes on to the rate limits, the error is logged
+  (`BotID gave no verdict`), and a `botid_unavailable` OperationalEvent is written, at most once
+  a minute per instance. See the runbook below.
+- Direct requests - curl, scripts, Playwright's `request` context - carry no challenge and are
+  refused on a deployment. That includes two of our own tools pointed at one:
+  `A11Y_BASE_URL=<deployment> npm run audit:a11y` (it mints its guest with
+  `context.request.post` to `/api/auth/guest-session`, so it cannot reach the bot game screen
+  and fails) and `npm run ops:load -- --base-url=<deployment>` (its guest session is a plain
+  `fetch`). Both still work against a local server. To let a known client through a
+  deployment, add a WAF bypass rule (https://vercel.com/docs/botid#bypassing-botid).
+- **Local dev needs api.vercel.com reachable.** The browser half runs everywhere, `next dev`
+  included: before each protected fetch it loads its challenge script, which the `withBotId`
+  rewrite fetches from api.vercel.com. Offline or behind a firewall that blocks it, that load
+  fails, and the patched `fetch` to register, guest-session and join-guest fails in the browser
+  with it - so guest entry and signup break locally although the server checks nothing there.
+- Where to look: Firewall tab -> traffic filter -> BotID shows each check.
+- If real visitors start getting `BOT_CHECK_FAILED`: check the browser console on
+  boardly.online for a CSP violation or a failed load of BotID's `c.js` challenge script,
+  then roll back by removing the `refuseIfBot` calls; the client half alone refuses nothing.
+
+### Runbook: botid_unavailable
+
+Any `botid_unavailable` event in the window (#1157), severity warning. `lib/bot-protection.ts`
+writes one, at most once a minute per instance, when Vercel BotID could not classify a request
+to register, guest-session or a token-less join-guest: `checkBotId()` threw, gave no answer
+within 2.5 s, or answered without a verdict. Those requests went through on the rate limits
+alone, so nothing is refused, but bots are not being filtered either.
+
+When it fires:
+
+1. `reason` on the event says which. "no answer within 2500 ms" is a slow classifier; "answered
+   without a verdict" is an error body from api.vercel.com, most often an invalid or missing
+   OIDC token; anything else is the thrown error's message.
+2. OIDC: Vercel project -> Settings -> Security -> OIDC must be enabled (it was on
+   2026-09-27). The token is per deployment, so a redeploy picks up a fixed setting.
+3. Check https://www.vercel-status.com for a Firewall or BotID incident.
+4. Meanwhile, `guests_minted_per_hour` and the Firewall's rate-limit rules still bound a flood.
+
+The alert resolves on the first window without the event.
 
 ### Dependency audit (`npm audit`) — production reachability, 2026-09-25 (#1148)
 
@@ -626,6 +730,10 @@ npm run ops:alerts:check
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
 
+`ops:load` defaults to `http://localhost:3000`. Against a Vercel deployment its first request,
+a plain `fetch` to `/api/auth/guest-session`, gets 403 `BOT_CHECK_FAILED` from BotID (#1157), so
+point it at a local server, or add a WAF bypass rule for the machine running it (see BotID).
+
 ## Accessibility audit (axe)
 
 forskrift om universell utforming av IKT-løsninger § 4 binds this private site to WCAG
@@ -641,6 +749,11 @@ each.
 npm run audit:a11y                                     # scans http://localhost:3000
 A11Y_BASE_URL=https://preview-x.vercel.app npm run audit:a11y
 ```
+
+Against a deployment (the second line) the run now fails on the bot game screen: it mints its
+guest with `context.request.post` to `/api/auth/guest-session`, which carries no BotID
+challenge and gets 403 `BOT_CHECK_FAILED` (#1157). The eight page scans still run. Scan a local
+server, or add a WAF bypass rule for the machine running it (see BotID).
 
 It fails (non-zero exit) on any `serious` or `critical` violation that is not in
 `scripts/a11y-allowlist.json`, and on failing to reach the bot game screen at all — that

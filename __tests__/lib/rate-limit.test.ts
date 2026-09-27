@@ -291,31 +291,123 @@ describe('rateLimit store backends', () => {
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
-    // register, guest-session, forgot-password, resend-verification, join-guest (both
-    // budgets), lobby create and rematch, and feedback: refused outright, from the first
-    // request. Nothing is minted from per-instance memory while the store is down.
+    // register, forgot-password, resend-verification (failClosedAuthPreset), feedback and
+    // reports: refused outright, from the first request. An account or an email is not
+    // handed out on per-instance limits (Denys, 2026-09-27).
     for (const preset of [
       failClosedAuthPreset,
-      rateLimitPresets.lobbyJoinGuest,
-      rateLimitPresets.lobbyJoinNewGuest,
-      rateLimitPresets.lobbyCreation,
-      rateLimitPresets.lobbyCreationPremium,
+      rateLimitPresets.contentReport,
       { windowMs: 60_000, maxRequests: 5, failClosed: true },
     ]) {
       const result = await rateLimit(preset)(makeRequest())
       expect(result?.status).toBe(503)
       expect(result?.headers.get('Retry-After')).toBe('30')
     }
-    // Serving those from memory instead is an unmade security decision (#1156).
-    for (const preset of [failClosedAuthPreset, ...Object.values(rateLimitPresets)]) {
-      expect(preset).not.toHaveProperty('degraded')
-    }
+    expect(failClosedAuthPreset).not.toHaveProperty('degraded')
+    expect(rateLimitPresets.contentReport).not.toHaveProperty('degraded')
 
     // Game actions stay fail-open on the memory store.
     expect(await rateLimit(rateLimitPresets.game)(makeRequest())).toBeNull()
   })
 
-  it('degraded mode, if a route ever sets it, caps every address together per instance, and one address cannot spend it (#1156)', async () => {
+  it('keeps guest entry and lobby creation up on per-instance limits while the store fails (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const { rateLimit, __rateLimitTestUtils, guestSessionPreset, rateLimitPresets } =
+      await loadRateLimitModule(failingStore())
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const degradedRoutes = {
+      'guest-session': guestSessionPreset,
+      'join-guest': rateLimitPresets.lobbyJoinGuest,
+      'join-guest, new guest': rateLimitPresets.lobbyJoinNewGuest,
+      'lobby create': rateLimitPresets.lobbyCreation,
+      'lobby create, premium': rateLimitPresets.lobbyCreationPremium,
+      rematch: rateLimitPresets.lobbyRematch,
+    }
+
+    for (const [route, preset] of Object.entries(degradedRoutes)) {
+      // Served, not refused: null is "let the request through".
+      expect([route, await rateLimit(preset)(requestFrom('198.51.100.7'))]).toEqual([route, null])
+
+      // Every limit is tighter than the shared one, because it is counted per instance,
+      // and a per-instance ceiling bounds a flood spread across addresses.
+      expect(preset.failClosed).toBe(true)
+      expect(preset.degraded.maxRequests).toBeLessThanOrEqual(Math.ceil(preset.maxRequests / 3))
+      expect(preset.degraded.instanceMaxRequests).toBeGreaterThan(preset.degraded.maxRequests)
+    }
+
+    // Past its per-address limit a guest-session caller is told to wait, as usual.
+    const guestSession = rateLimit(guestSessionPreset)
+    await guestSession(requestFrom('198.51.100.8'))
+    await guestSession(requestFrom('198.51.100.8'))
+    expect((await guestSession(requestFrom('198.51.100.8')))?.status).toBe(429)
+  })
+
+  it('gives rematch one bucket per IP across every lobby code while degraded (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const { rateLimit, __rateLimitTestUtils, rateLimitPresets } = await loadRateLimitModule(failingStore())
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    // Keyed by its path, each code would bring its own per-instance ceiling, which would then
+    // bound nothing. Three per address, whatever the code.
+    const rematch = rateLimit(rateLimitPresets.lobbyRematch)
+    const statuses: number[] = []
+    for (const code of ['1111', '2222', '3333', '4444']) {
+      const result = await rematch(requestFrom('198.51.100.9', `/api/lobby/${code}/rematch`))
+      statuses.push(result?.status ?? 200)
+    }
+    expect(statuses).toEqual([200, 200, 200, 429])
+  })
+
+  it('keeps rematch per lobby while the shared store works, as it always was', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://store.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    pinClock()
+    const store = countingStore()
+    const { rateLimit, __rateLimitTestUtils, rateLimitPresets } = await loadRateLimitModule(store)
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const rematch = rateLimit(rateLimitPresets.lobbyRematch)
+    const rematchIn = (code: string) => rematch(requestFrom('198.51.100.11', `/api/lobby/${code}/rematch`))
+
+    // Ten in one lobby, then that lobby is refused...
+    for (let i = 0; i < 10; i += 1) expect(await rematchIn('1111')).toBeNull()
+    expect((await rematchIn('1111'))?.status).toBe(429)
+    // ...while another lobby still has its own ten.
+    expect(await rematchIn('2222')).toBeNull()
+
+    const fields = store.hincrby.mock.calls.map(([, field]) => field)
+    expect(new Set(fields)).toEqual(
+      new Set(['198.51.100.11:/api/lobby/1111/rematch', '198.51.100.11:/api/lobby/2222/rematch'])
+    )
+  })
+
+  it('records rate_limiter_degraded while it serves from memory, as it does while it refuses (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const { rateLimit, __rateLimitTestUtils, guestSessionPreset } = await loadRateLimitModule(failingStore())
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    expect(await rateLimit(guestSessionPreset)(requestFrom('198.51.100.10', '/api/auth/guest-session'))).toBeNull()
+
+    const degraded = recordServerReliabilityEvent.mock.calls.filter(
+      ([event]) => event.eventName === 'rate_limiter_degraded'
+    )
+    expect(degraded).toHaveLength(1)
+    expect(degraded[0][0]).toMatchObject({ source: '/api/auth/guest-session', reason: 'fetch failed' })
+  })
+
+  it('degraded mode caps every address together per instance, and one address cannot spend it (#1156)', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 

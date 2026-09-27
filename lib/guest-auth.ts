@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import jwt, { SignOptions } from 'jsonwebtoken'
 import { RETENTION_DAYS } from './retention-periods'
+import { legacyNextAuthSecret } from './nextauth-secret-transition'
 
 const GUEST_TOKEN_ISSUER = 'boardly-guest'
 const DEFAULT_GUEST_TOKEN_TTL = '12h'
@@ -41,6 +42,7 @@ export interface GuestTokenClaims {
   expiresAt?: number
 }
 
+/** The secret every new guest token is signed with. */
 function getGuestJwtSecret(): string {
   const secret = process.env.GUEST_JWT_SECRET || process.env.NEXTAUTH_SECRET
 
@@ -49,6 +51,28 @@ function getGuestJwtSecret(): string {
   }
 
   return secret
+}
+
+/**
+ * Verifies against the signing secret, then - until NEXTAUTH_SECRET_FALLBACK_CUTOFF, and only
+ * when GUEST_JWT_SECRET is set to something else - against NEXTAUTH_SECRET, which signed every
+ * guest token before GUEST_JWT_SECRET existed in production (#1142, #1149). Without the second
+ * try, setting GUEST_JWT_SECRET would turn every returning guest into a new one. From the
+ * cutoff on only the signing secret verifies. Returns null for anything that fails both.
+ */
+function verifyGuestJwt(token: string): GuestJwtPayload | null {
+  const options: jwt.VerifyOptions = { issuer: GUEST_TOKEN_ISSUER }
+  try {
+    return jwt.verify(token, getGuestJwtSecret(), options) as GuestJwtPayload
+  } catch {
+    const legacySecret = legacyNextAuthSecret('GUEST_JWT_SECRET')
+    if (!legacySecret) return null
+    try {
+      return jwt.verify(token, legacySecret, options) as GuestJwtPayload
+    } catch {
+      return null
+    }
+  }
 }
 
 export function createGuestId(): string {
@@ -86,42 +110,32 @@ export function createGuestIdentityToken(guestId: string): string {
 
 /** Resolves the guest this identity token belongs to, or null. */
 export function verifyGuestIdentityToken(token: string): string | null {
-  try {
-    const decoded = jwt.verify(token, getGuestJwtSecret(), {
-      issuer: GUEST_TOKEN_ISSUER,
-    }) as GuestJwtPayload
+  const decoded = verifyGuestJwt(token)
+  if (!decoded) return null
 
-    // A session token must not be accepted here and vice versa.
-    if (decoded.type !== 'guest-identity') return null
+  // A session token must not be accepted here and vice versa.
+  if (decoded.type !== 'guest-identity') return null
 
-    return typeof decoded.sub === 'string' ? decoded.sub : null
-  } catch {
-    return null
-  }
+  return typeof decoded.sub === 'string' ? decoded.sub : null
 }
 
 export function verifyGuestToken(token: string): GuestTokenClaims | null {
-  try {
-    const decoded = jwt.verify(token, getGuestJwtSecret(), {
-      issuer: GUEST_TOKEN_ISSUER,
-    }) as GuestJwtPayload
+  const decoded = verifyGuestJwt(token)
+  if (!decoded) return null
 
-    if (decoded.type !== 'guest') return null
+  if (decoded.type !== 'guest') return null
 
-    const guestId = typeof decoded.sub === 'string' ? decoded.sub : null
-    const guestName = typeof decoded.guestName === 'string' ? decoded.guestName : null
+  const guestId = typeof decoded.sub === 'string' ? decoded.sub : null
+  const guestName = typeof decoded.guestName === 'string' ? decoded.guestName : null
 
-    if (!guestId || !guestName) {
-      return null
-    }
-
-    return {
-      guestId,
-      guestName,
-      expiresAt: typeof decoded.exp === 'number' ? decoded.exp * 1000 : undefined,
-    }
-  } catch {
+  if (!guestId || !guestName) {
     return null
+  }
+
+  return {
+    guestId,
+    guestName,
+    expiresAt: typeof decoded.exp === 'number' ? decoded.exp * 1000 : undefined,
   }
 }
 

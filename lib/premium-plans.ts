@@ -35,6 +35,17 @@ export type PremiumPricing = {
   yearly: PremiumPlanPrice | null
 }
 
+/** What a subscription renews at, as GET /api/user/purchases reports it (#1167). */
+export type PremiumRenewal = { plan: PremiumPlan; price: string }
+
+/** A `renewal` from GET /api/user/purchases, or null for anything not shaped like one. */
+export function parsePremiumRenewal(value: unknown): PremiumRenewal | null {
+  if (typeof value !== 'object' || value === null) return null
+  const { plan, price } = value as { plan?: unknown; price?: unknown }
+  if (!isPremiumPlan(plan) || typeof price !== 'string' || price.length === 0) return null
+  return { plan, price }
+}
+
 /**
  * The currency's minor-unit divisor, taken from Intl rather than a hand-kept
  * list: 100 for USD, 1 for the zero-decimal currencies such as JPY. Stripe
