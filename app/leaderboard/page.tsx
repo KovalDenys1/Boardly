@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { parseLeaderboardSearchParams, type LeaderboardPage as LeaderboardRows } from '@/lib/leaderboard'
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
 import { apiLogger } from '@/lib/logger'
+import { getOptionalViewerId } from '@/lib/session-user'
 import LeaderboardClient from './LeaderboardClient'
 import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 
@@ -32,6 +33,8 @@ export const metadata: Metadata = {
 // instead of an empty client shell (#922); the query behind them is cached
 // for 20 s in lib/server/leaderboard.ts, shared with /api/leaderboard. Filter
 // changes stay on the client, which fetches /api/leaderboard exactly as before.
+// Which pictures a row carries depends on the viewer (#1226), so the session is
+// read here as it is in the API route.
 export const dynamic = 'force-dynamic'
 
 const log = apiLogger('/leaderboard')
@@ -43,7 +46,8 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
   let initial: LeaderboardRows | null = null
   try {
-    initial = await fetchLeaderboardPage({ gameType: gameType || undefined, period, page: 0 })
+    const viewerId = await getOptionalViewerId()
+    initial = await fetchLeaderboardPage({ gameType: gameType || undefined, period, page: 0 }, viewerId)
   } catch (err) {
     // The client hook fetches on mount when there is nothing to hydrate from,
     // so a failed server query degrades to the previous behaviour – but it is

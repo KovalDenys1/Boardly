@@ -139,6 +139,22 @@ export async function optionalSessionUser(
 }
 
 /**
+ * For public reads that a session only personalises (the leaderboard's pictures,
+ * #1226): the signed-in user's id, or null for a visitor. A suspended account reads
+ * such a page as a visitor does rather than being refused it.
+ */
+export async function getOptionalViewerId(request?: MethodCarrier): Promise<string | null> {
+  try {
+    return (await getOptionalSessionUser(request))?.user.id ?? null
+  } catch (error) {
+    if (error instanceof AccountSuspendedError) {
+      return null
+    }
+    throw error
+  }
+}
+
+/**
  * For routes that answer with NextResponse rather than throwing into
  * withErrorHandler: `{ response }` to return as is, or the active session.
  */

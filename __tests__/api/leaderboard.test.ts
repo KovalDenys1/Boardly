@@ -6,11 +6,17 @@
 import { NextRequest } from 'next/server'
 import { GET } from '@/app/api/leaderboard/route'
 import { prisma } from '@/lib/db'
+import { getOptionalViewerId } from '@/lib/session-user'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     $queryRaw: jest.fn(),
+    friendships: { findMany: jest.fn() },
   },
+}))
+
+jest.mock('@/lib/session-user', () => ({
+  getOptionalViewerId: jest.fn(),
 }))
 
 // unstable_cache needs Next's incremental cache, which jest does not have;
@@ -32,6 +38,7 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockViewerId = getOptionalViewerId as jest.Mock
 
 function buildRequest(url = 'http://localhost:3000/api/leaderboard') {
   return new NextRequest(url)
@@ -40,6 +47,8 @@ function buildRequest(url = 'http://localhost:3000/api/leaderboard') {
 describe('GET /api/leaderboard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockViewerId.mockResolvedValue(null)
+    mockPrisma.friendships.findMany.mockResolvedValue([])
     mockPrisma.$queryRaw.mockResolvedValue([
       {
         rank: 1,
@@ -52,6 +61,7 @@ describe('GET /api/leaderboard', () => {
         winRate: 41.7,
         avatarUrl: null,
         image: null,
+        profileVisibility: 'public',
         premiumUntil: null,
       },
     ] as any)
@@ -85,11 +95,39 @@ describe('GET /api/leaderboard', () => {
     expect(sql).toContain("result->>'isWinner' = 'true'")
   })
 
-  it('caches for a short window only, so profile changes (username, etc.) show up quickly (#638)', async () => {
+  it('is never kept by a shared cache, because the pictures in it depend on who asks (#1226)', async () => {
     const response = await GET(buildRequest())
 
-    // Was s-maxage=300/stale-while-revalidate=600 — let a stale username/avatar
-    // linger on the leaderboard for up to ~15 minutes despite a live DB query.
-    expect(response.headers.get('Cache-Control')).toBe('public, s-maxage=20, stale-while-revalidate=60')
+    // Was `public, s-maxage=20` (#638): a CDN keyed on the URL would hand a friend's
+    // view of a friends-only picture to the next visitor.
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it("answers for the signed-in viewer, and a hidden profile's picture URL is not in the body", async () => {
+    mockViewerId.mockResolvedValue('viewer-1')
+    mockPrisma.$queryRaw.mockResolvedValue([
+      {
+        userId: 'user-private',
+        username: 'Hidden Player',
+        publicProfileId: 'public-2',
+        gamesPlayed: BigInt(12),
+        wins: BigInt(9),
+        losses: BigInt(3),
+        winRate: 75,
+        avatarUrl: 'https://cdn.example/private-avatar.png',
+        image: null,
+        profileVisibility: 'private',
+        premiumUntil: null,
+      },
+    ] as any)
+
+    const response = await GET(buildRequest())
+    const text = await response.text()
+    const payload = JSON.parse(text)
+
+    expect(mockViewerId).toHaveBeenCalled()
+    expect(payload.entries[0]).toMatchObject({ username: 'Hidden Player', wins: 9, losses: 3, avatarUrl: null })
+    expect(text).not.toContain('private-avatar.png')
+    expect(text).not.toContain('profileVisibility')
   })
 })

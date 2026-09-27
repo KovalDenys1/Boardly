@@ -3,9 +3,16 @@ import { Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import {
   LEADERBOARD_PAGE_SIZE,
+  type LeaderboardEntry,
   type LeaderboardPage,
   type LeaderboardPeriod,
 } from '@/lib/leaderboard'
+import {
+  canViewProfile,
+  effectiveProfileVisibility,
+  type ProfileViewerRelation,
+  type ProfileVisibilityValue,
+} from '@/lib/public-profile'
 
 // Require 10+ games on the combined leaderboard, but 1+ when filtering by
 // a specific game type — otherwise players with mixed portfolios appear in
@@ -13,7 +20,7 @@ import {
 const MIN_GAMES_ALL = 10
 const MIN_GAMES_FILTERED = 1
 
-// Matches the API's `s-maxage=20` – profile changes must not linger (#638).
+// Profile changes must not linger (#638).
 const LEADERBOARD_CACHE_SECONDS = 20
 
 type LeaderboardRow = {
@@ -22,12 +29,22 @@ type LeaderboardRow = {
   publicProfileId: string | null
   avatarUrl: string | null
   image: string | null
+  profileVisibility: ProfileVisibilityValue | null
   premiumUntil: Date | null
   gamesPlayed: bigint
   wins: bigint
   losses: bigint
   winRate: number
 }
+
+/**
+ * A row as the shared cache holds it: every player's picture, with the visibility
+ * that decides who may see it. It never leaves this module as is; `fetchLeaderboardPage`
+ * takes the picture off for each viewer who may not see the profile.
+ */
+type CachedLeaderboardEntry = LeaderboardEntry & { profileVisibility: ProfileVisibilityValue }
+
+type CachedLeaderboardPage = { entries: CachedLeaderboardEntry[]; hasMore: boolean }
 
 export interface LeaderboardQuery {
   /** A validated `GameType` value, or undefined for all games. */
@@ -39,20 +56,79 @@ export interface LeaderboardQuery {
 /**
  * The one leaderboard query. `/api/leaderboard` serves it over HTTP and
  * `app/leaderboard/page.tsx` renders its first page into the HTML (#922).
- * Both go through the same 20 s data-cache entry per filter combination, the
- * staleness the API already accepts with its `s-maxage=20`, so a crawler hit,
- * a visit and the RSC re-render after a filter change do not each run the
- * aggregation over every player and game.
+ *
+ * Every player with enough games is listed with their username and results,
+ * whatever their profile visibility (#1226). The picture is shown only to a
+ * viewer who may see the profile (`canViewProfile`): everyone for a public one,
+ * friends for a friends-only one, the owner alone for a private one. Anyone else
+ * gets `avatarUrl: null` and the UI draws the default avatar, so the URL of a
+ * hidden picture never reaches their browser.
+ *
+ * The aggregation goes through one 20 s data-cache entry per filter combination,
+ * shared by every viewer, so a crawler hit, a visit and a filter change do not each
+ * run it over every player and game. The per-viewer part runs after the cache, on
+ * the page it returns: at most one friendship lookup, and only for a signed-in
+ * viewer on a page that holds a friends-only profile.
  */
-export function fetchLeaderboardPage(query: LeaderboardQuery): Promise<LeaderboardPage> {
+export async function fetchLeaderboardPage(
+  query: LeaderboardQuery,
+  viewerId: string | null
+): Promise<LeaderboardPage> {
+  const cached = await fetchCachedLeaderboardPage(query)
+  return applyViewerVisibility(cached, viewerId)
+}
+
+function fetchCachedLeaderboardPage(query: LeaderboardQuery): Promise<CachedLeaderboardPage> {
   return unstable_cache(
     () => queryLeaderboardPage(query),
-    ['leaderboard', query.gameType ?? '', query.period, String(query.page)],
+    // v2 (#1226): entries carry `profileVisibility` and include private profiles.
+    // A new key, so an entry written by the old code is never read as the new shape.
+    ['leaderboard-v2', query.gameType ?? '', query.period, String(query.page)],
     { revalidate: LEADERBOARD_CACHE_SECONDS }
   )()
 }
 
-async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery): Promise<LeaderboardPage> {
+async function applyViewerVisibility(
+  page: CachedLeaderboardPage,
+  viewerId: string | null
+): Promise<LeaderboardPage> {
+  const friendIds = await findFriendIdsAmong(
+    viewerId,
+    page.entries
+      .filter((entry) => entry.profileVisibility === 'friends' && entry.userId !== viewerId)
+      .map((entry) => entry.userId)
+  )
+
+  const entries = page.entries.map(({ profileVisibility, ...entry }): LeaderboardEntry => {
+    const relation: ProfileViewerRelation =
+      viewerId !== null && entry.userId === viewerId
+        ? 'self'
+        : friendIds.has(entry.userId)
+          ? 'friend'
+          : 'other'
+    return canViewProfile(profileVisibility, relation) ? entry : { ...entry, avatarUrl: null }
+  })
+
+  return { entries, hasMore: page.hasMore }
+}
+
+async function findFriendIdsAmong(viewerId: string | null, userIds: string[]): Promise<Set<string>> {
+  if (!viewerId || userIds.length === 0) return new Set()
+
+  const friendships = await prisma.friendships.findMany({
+    where: {
+      OR: [
+        { user1Id: viewerId, user2Id: { in: userIds } },
+        { user2Id: viewerId, user1Id: { in: userIds } },
+      ],
+    },
+    select: { user1Id: true, user2Id: true },
+  })
+
+  return new Set(friendships.map((f) => (f.user1Id === viewerId ? f.user2Id : f.user1Id)))
+}
+
+async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery): Promise<CachedLeaderboardPage> {
   const since = period === '30d' ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : null
   const minGames = gameType ? MIN_GAMES_FILTERED : MIN_GAMES_ALL
 
@@ -85,6 +161,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
         u."avatarUrl",
         u.image,
         u."premiumUntil",
+        ap."profileVisibility"::text AS "profileVisibility",
         p.id AS "playerId",
         (
           p."isWinner" = true
@@ -104,7 +181,6 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
       LEFT JOIN "AccountPreferences" ap ON ap."userId" = u.id
       WHERE g.status = 'finished'
         AND b.id IS NULL
-        AND (ap."profileVisibility" IS NULL OR ap."profileVisibility" != 'private')
         ${gameTypeClause}
         ${sinceClause}
     )
@@ -114,6 +190,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
       "publicProfileId",
       "avatarUrl",
       image,
+      "profileVisibility",
       COUNT("playerId")                                                        AS "gamesPlayed",
       COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")      AS wins,
       COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw")        AS losses,
@@ -127,7 +204,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
         1
       )::float                                                                 AS "winRate"
     FROM leaderboard_rows
-    GROUP BY "userId", username, "publicProfileId", "avatarUrl", image, "premiumUntil"
+    GROUP BY "userId", username, "publicProfileId", "avatarUrl", image, "premiumUntil", "profileVisibility"
     HAVING COUNT("playerId") >= ${minGames}
     ORDER BY
       COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
@@ -142,7 +219,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
   `)
 
   const now = new Date()
-  const entries = rows.map((r, i) => ({
+  const entries = rows.map((r, i): CachedLeaderboardEntry => ({
     rank: page * LEADERBOARD_PAGE_SIZE + i + 1,
     userId: r.userId,
     username: r.username ?? 'Player',
@@ -153,6 +230,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
     wins: Number(r.wins),
     losses: Number(r.losses),
     winRate: r.winRate ?? 0,
+    profileVisibility: effectiveProfileVisibility(r.profileVisibility),
   }))
 
   return { entries, hasMore: entries.length === LEADERBOARD_PAGE_SIZE }
