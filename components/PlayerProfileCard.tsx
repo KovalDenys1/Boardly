@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -48,6 +48,20 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
   const [loading, setLoading] = useState(false)
   const [friendState, setFriendState] = useState<'idle' | 'loading' | 'done'>('idle')
   const [view, setView] = useState<'card' | 'report'>('card')
+  // Back from the report form, focus returns to the card's heading: the Report
+  // button that had it was unmounted with the card view.
+  const nameRef = useRef<HTMLHeadingElement>(null)
+  const returningFromReport = useRef(false)
+  useEffect(() => {
+    if (view === 'card' && returningFromReport.current) {
+      returningFromReport.current = false
+      nameRef.current?.focus()
+    }
+  }, [view])
+  const backToCard = useCallback(() => {
+    returningFromReport.current = true
+    setView('card')
+  }, [])
 
   const fetchCard = useCallback(async (id: string) => {
     setLoading(true)
@@ -121,7 +135,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
           ×
         </button>
         {view === 'report' && reportTargets.length > 0 ? (
-          <ReportForm targets={reportTargets} onDone={onClose} onBack={() => setView('card')} />
+          <ReportForm targets={reportTargets} onDone={onClose} onBack={backToCard} focusHeadingOnMount />
         ) : loading ? (
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-3">
@@ -162,9 +176,14 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`font-bold text-base truncate ${data.isPremium ? 'text-amber-500' : ''}`} style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}>
+                  <h2
+                    ref={nameRef}
+                    tabIndex={-1}
+                    className={`font-bold text-base truncate focus:outline-none ${data.isPremium ? 'text-amber-500' : ''}`}
+                    style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}
+                  >
                     {data.username ?? t('game.ui.playerFallback')}
-                  </span>
+                  </h2>
                   {data.isPremium && (
                     <Icon name="crown" size={16} tone="premium" label="Premium" />
                   )}

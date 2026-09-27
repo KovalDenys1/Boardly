@@ -66,10 +66,13 @@ describe('PlayerProfileCard report action (#1172)', () => {
     expect(screen.getByLabelText('report.targets.username')).toBeTruthy()
     expect(screen.getByLabelText('report.targets.avatar')).toBeTruthy()
     expect(screen.queryByLabelText('report.targets.drawing')).toBeNull()
+    // The button that had focus is gone with the card view: focus lands on the form's heading.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'report.title' }))
 
-    // Back to the card, not out of the menu.
+    // Back to the card, not out of the menu, with focus on the card's heading.
     fireEvent.click(screen.getByRole('button', { name: 'report.back' }))
     expect(screen.getByRole('button', { name: 'report.reportPlayer' })).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Bob' }))
   })
 
   it("offers the drawer's drawing first when the card was opened from their Sketch & Guess seat", async () => {

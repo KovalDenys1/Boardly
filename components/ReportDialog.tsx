@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Modal from '@/components/Modal'
 import { Icon } from '@/components/icons'
 import { fetchWithGuest } from '@/lib/client/fetch-with-guest'
@@ -37,6 +37,11 @@ export interface ReportFormProps {
   onDone: () => void
   /** Shown instead of Cancel when the form is a step inside another menu. */
   onBack?: () => void
+  /**
+   * Move focus to the form's heading when it appears. For a menu that swaps its own
+   * content for the form, where focus would otherwise stay on a button that is gone.
+   */
+  focusHeadingOnMount?: boolean
 }
 
 async function submitReport(target: ReportTarget, reason: ReportReason, note: string): Promise<SubmitState> {
@@ -55,9 +60,11 @@ async function submitReport(target: ReportTarget, reason: ReportReason, note: st
   return { kind: 'error', messageKey: 'report.errors.generic' }
 }
 
-export function ReportForm({ targets, quote, onDone, onBack }: ReportFormProps) {
+export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount = false }: ReportFormProps) {
   const { t } = useTranslation()
   const formId = useId()
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const resultRef = useRef<HTMLParagraphElement>(null)
   const [targetIndex, setTargetIndex] = useState(0)
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [note, setNote] = useState('')
@@ -65,6 +72,17 @@ export function ReportForm({ targets, quote, onDone, onBack }: ReportFormProps) 
 
   const target = targets[targetIndex] ?? targets[0]
   const submitting = state.kind === 'submitting'
+  const done = state.kind === 'sent' || state.kind === 'duplicate'
+
+  useEffect(() => {
+    if (focusHeadingOnMount) headingRef.current?.focus()
+  }, [focusHeadingOnMount])
+
+  // The submit button the reporter was on is gone once the report is in: focus the
+  // result, so a screen reader reads it and the keyboard lands on this dialog.
+  useEffect(() => {
+    if (done) resultRef.current?.focus()
+  }, [done])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -77,7 +95,7 @@ export function ReportForm({ targets, quote, onDone, onBack }: ReportFormProps) 
     }
   }
 
-  if (state.kind === 'sent' || state.kind === 'duplicate') {
+  if (done) {
     return (
       <div className="space-y-4 text-center" role="status" aria-live="polite">
         <div
@@ -86,7 +104,9 @@ export function ReportForm({ targets, quote, onDone, onBack }: ReportFormProps) 
         >
           <Icon name="check" size={24} tone="on-accent" />
         </div>
-        <p className="text-base font-bold text-bd-ink">{t('report.successTitle')}</p>
+        <p ref={resultRef} tabIndex={-1} className="text-base font-bold text-bd-ink focus:outline-none">
+          {t('report.successTitle')}
+        </p>
         <p className="text-sm text-bd-ink-soft">
           {state.kind === 'duplicate' ? t('report.duplicate') : t('report.successBody')}
         </p>
@@ -99,7 +119,12 @@ export function ReportForm({ targets, quote, onDone, onBack }: ReportFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby={`${formId}-title`}>
-      <h2 id={`${formId}-title`} className="flex items-center gap-2 text-base font-bold text-bd-ink">
+      <h2
+        ref={headingRef}
+        id={`${formId}-title`}
+        tabIndex={-1}
+        className="flex items-center gap-2 text-base font-bold text-bd-ink focus:outline-none"
+      >
         <Icon name="flag" size={18} tone="coral" />
         {t('report.title')}
       </h2>

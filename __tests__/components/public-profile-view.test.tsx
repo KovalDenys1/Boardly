@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import PublicProfileView from '@/components/PublicProfileView'
-import { fetchWithGuest } from '@/lib/client/fetch-with-guest'
+import { fetchWithGuest, getGuestData } from '@/lib/client/fetch-with-guest'
 
 jest.mock('@/lib/client/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(),
+  getGuestData: jest.fn(() => null),
 }))
 
 jest.mock('@/lib/i18n-toast', () => ({
@@ -175,19 +176,25 @@ describe('PublicProfileView', () => {
       expect(screen.queryByLabelText('report.targets.avatar')).toBeNull()
     })
 
-    it('sends the public profile id, never a user id', async () => {
+    it('sends the public profile id, never a user id, for a guest on this device', async () => {
+      ;(getGuestData as jest.Mock).mockReturnValueOnce({ guestId: 'g1', guestName: 'Guest', guestToken: 't' })
       ;(fetchWithGuest as jest.Mock).mockResolvedValue(
         new Response(JSON.stringify({ ok: true, duplicate: false }), { status: 201 })
       )
       render(<PublicProfileView profile={profile} initialRelation="login_required" />)
 
-      fireEvent.click(screen.getByRole('button', { name: 'report.reportProfile' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'report.reportProfile' }))
       fireEvent.click(await screen.findByLabelText('report.reasons.hate'))
       fireEvent.click(screen.getByRole('button', { name: 'report.submit' }))
       await screen.findByText('report.successTitle')
 
       const [, init] = (fetchWithGuest as jest.Mock).mock.calls[0]
       expect(JSON.parse(init.body)).toEqual({ targetType: 'username', publicProfileId: 'AbC123xYz890', reason: 'hate' })
+    })
+
+    it('offers no Report to a visitor who is neither signed in nor a guest here', () => {
+      render(<PublicProfileView profile={profile} initialRelation="login_required" />)
+      expect(screen.queryByRole('button', { name: 'report.reportProfile' })).toBeNull()
     })
 
     it('offers no Report on your own profile', () => {

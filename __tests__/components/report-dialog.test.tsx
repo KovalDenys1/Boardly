@@ -67,7 +67,14 @@ describe('ReportForm (#1172)', () => {
 
     expect(await screen.findByText('report.successTitle')).toBeTruthy()
     expect(screen.getByText('report.successBody')).toBeTruthy()
+    // The submit button is gone; focus goes to the result instead of the page behind.
+    expect(document.activeElement).toBe(screen.getByText('report.successTitle'))
     expect(sentBody()).toEqual({ ...chatTarget, reason: 'harassment', note: 'it keeps happening' })
+  })
+
+  it('takes focus to its heading when asked, as a step inside another menu', () => {
+    render(<ReportForm targets={[chatTarget]} onDone={jest.fn()} onBack={jest.fn()} focusHeadingOnMount />)
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'report.title' }))
   })
 
   it('leaves the note out when it is empty', async () => {
