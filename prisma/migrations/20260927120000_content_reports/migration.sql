@@ -14,6 +14,12 @@
 --   (reporterId, targetKey) is the deduplication: a second report of the same
 --   target by the same person is answered without a second row.
 --
+--   ReportedDrawings keeps a reported Sketch & Guess drawing once per game and
+--   round, shared by every report of it (a drawing can be 120 KB). A drawing
+--   report points at it through (gameId, round); ON DELETE RESTRICT keeps a
+--   drawing while any report still needs it, and the reports retention rule
+--   deletes it once none does. No FK to Games: the evidence outlives the game.
+--
 --   Both user references are ON DELETE SET NULL, not CASCADE: guests are purged
 --   after three idle days, and a report has to outlive the account it is about.
 --
@@ -48,12 +54,23 @@ CREATE TABLE IF NOT EXISTS "Reports" (
     CONSTRAINT "Reports_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE IF NOT EXISTS "ReportedDrawings" (
+    "gameId" TEXT NOT NULL,
+    "round" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReportedDrawings_pkey" PRIMARY KEY ("gameId","round")
+);
+
 CREATE INDEX IF NOT EXISTS "Reports_status_createdAt_idx" ON "Reports"("status", "createdAt");
 CREATE INDEX IF NOT EXISTS "Reports_reportedUserId_idx" ON "Reports"("reportedUserId");
 CREATE UNIQUE INDEX IF NOT EXISTS "Reports_reporterId_targetKey_key" ON "Reports"("reporterId", "targetKey");
+CREATE INDEX IF NOT EXISTS "ReportedDrawings_createdAt_idx" ON "ReportedDrawings"("createdAt");
 
 ALTER TABLE "Reports" ADD CONSTRAINT "Reports_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "Users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "Reports" ADD CONSTRAINT "Reports_reportedUserId_fkey" FOREIGN KEY ("reportedUserId") REFERENCES "Users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Reports" ADD CONSTRAINT "Reports_gameId_round_fkey" FOREIGN KEY ("gameId", "round") REFERENCES "ReportedDrawings"("gameId", "round") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 DO $$
 DECLARE
@@ -67,6 +84,17 @@ BEGIN
   EXECUTE format(
     'CREATE POLICY "Service role can manage content reports"
        ON public."Reports" FOR ALL
+       %s
+       USING ((SELECT public.is_service_role()))
+       WITH CHECK ((SELECT public.is_service_role()))',
+    service_clause
+  );
+
+  EXECUTE 'ALTER TABLE public."ReportedDrawings" ENABLE ROW LEVEL SECURITY';
+  EXECUTE 'DROP POLICY IF EXISTS "Service role can manage reported drawings" ON public."ReportedDrawings"';
+  EXECUTE format(
+    'CREATE POLICY "Service role can manage reported drawings"
+       ON public."ReportedDrawings" FOR ALL
        %s
        USING ((SELECT public.is_service_role()))
        WITH CHECK ((SELECT public.is_service_role()))',

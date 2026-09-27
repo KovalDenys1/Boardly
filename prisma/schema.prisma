@@ -615,34 +615,51 @@ model Feedback {
 /// Both people are SetNull, not Cascade: guests are purged after three idle days, and
 /// the report has to outlive the account it is about.
 model Reports {
-  id               String    @id @default(cuid())
+  id               String            @id @default(cuid())
   reporterId       String?
-  reporter         Users?    @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+  reporter         Users?            @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
   reportedUserId   String?
-  reportedUser     Users?    @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  reportedUser     Users?            @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: SetNull)
   targetType       String // 'chat_message' | 'drawing' | 'username' | 'avatar' | 'bio' (lib/content-reports.ts)
   targetId         String // the chat message id, the game id (drawing), or the reported user's id
   /// What "the same target" means for deduplication, together with reporterId (reportTargetKey in lib/content-reports.ts).
   targetKey        String
   lobbyCode        String?
+  /// Set only on a drawing report: together with `round` it names the ReportedDrawings row.
   gameId           String?
   round            Int? // the Sketch & Guess round, for a drawing
+  drawing          ReportedDrawings? @relation(fields: [gameId, round], references: [gameId, round], onDelete: Restrict)
   reason           String // REPORT_REASONS in lib/content-reports.ts
   note             String? // the reporter's own words, at most 500 characters
-  /// The reported text, avatar URL or drawing, as it was when reported.
+  /// The reported text or avatar URL, as it was when reported. Null for a drawing, which is in ReportedDrawings.
   contentSnapshot  String?
   /// 'server' when the route read the content itself; 'reporter' when only the reporter's copy was left to keep.
   snapshotSource   String
-  status           String    @default("open") // 'open' | 'actioned' | 'dismissed'
-  reviewedAt       DateTime? @db.Timestamptz(3)
+  status           String            @default("open") // 'open' | 'actioned' | 'dismissed'
+  reviewedAt       DateTime?         @db.Timestamptz(3)
   reviewedBy       String? // the admin's user id, written by the Control Panel
   /// Id of the notification posted to the Discord feedback channel, so a retention rule can delete that copy too.
   discordMessageId String?
-  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
 
   @@unique([reporterId, targetKey])
   @@index([status, createdAt])
   @@index([reportedUserId])
+}
+
+/// One copy of a reported Sketch & Guess drawing per game and round (#1172), shared by
+/// every report of it: a drawing can be 120 KB, and three players reporting the same
+/// round must not store it three times. Written with the first report and never
+/// rewritten; the retention rule for reports deletes it once no report points at it.
+model ReportedDrawings {
+  gameId    String
+  round     Int
+  content   String
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  reports   Reports[]
+
+  @@id([gameId, round])
+  @@index([createdAt])
 }
 
 /// Written by the control panel, read by the game on every render. Product state, so it

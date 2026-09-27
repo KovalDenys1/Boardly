@@ -635,12 +635,13 @@ export const rateLimitPresets = {
     maxRequests: 20,
   },
 
-  // POST /api/reports (#1172), per IP. Each report is a row and a Discord post, so it
-  // fails closed like feedback. Twenty an hour covers a player reporting a run of
-  // messages from one bad lobby.
+  // POST /api/reports (#1172), per IP. Each new report is a row and a post in the
+  // Discord feedback channel, so it fails closed and stays close to feedback's own
+  // 5 an hour: two players on one network can each report a few messages from one bad
+  // lobby, and nobody can flood the channel from one address.
   contentReport: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 20,
+    maxRequests: 10,
     failClosed: true,
     message: 'Too many reports. Please try again later.',
   },
@@ -648,7 +649,7 @@ export const rateLimitPresets = {
   // signed-in account can move between addresses, which the IP limit above cannot see.
   contentReportPerReporter: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 10,
+    maxRequests: 5,
   },
 }
 

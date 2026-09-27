@@ -60,7 +60,7 @@ export function buildContentReportDiscordPayload(report: ContentReportNotificati
           { name: 'Report id', value: report.reportId, inline: true },
           {
             name: 'Evidence',
-            value: report.snapshotSource === 'server' ? 'server copy' : "reporter's copy (the server no longer had it)",
+            value: report.snapshotSource === 'server' ? 'server copy' : "reporter's copy, unverified",
             inline: true,
           },
         ],

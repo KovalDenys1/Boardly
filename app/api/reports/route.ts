@@ -157,6 +157,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, duplicate: true }, { status: 200 })
     }
 
+    // A drawing is kept once per game and round, whoever reports it first; later
+    // reports point at the same copy. The first copy is never overwritten, so what
+    // the first reporter saw stays on record.
+    if (resolved.drawingSnapshot !== undefined && resolved.gameId && resolved.round !== null) {
+      await prisma.reportedDrawings.upsert({
+        where: { gameId_round: { gameId: resolved.gameId, round: resolved.round } },
+        create: { gameId: resolved.gameId, round: resolved.round, content: resolved.drawingSnapshot },
+        update: {},
+        select: { gameId: true },
+      })
+    }
+
     let reportId: string
     try {
       const created = await prisma.reports.create({

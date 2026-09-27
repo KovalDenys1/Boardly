@@ -39,7 +39,7 @@ describe('content report notification (#1172)', () => {
     expect(payload.allowed_mentions).toEqual({ parse: [] })
     const fields = payload.embeds[0].fields
     expect(fields.map((field) => field.name)).toEqual(['Target', 'Reason', 'Report id', 'Evidence'])
-    expect(fields[3].value).toContain("reporter's copy")
+    expect(fields[3].value).toBe("reporter's copy, unverified")
   })
 })
 

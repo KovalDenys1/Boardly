@@ -30,6 +30,8 @@ jest.mock('@/lib/db', () => ({
     players: { findFirst: jest.fn() },
     users: { findUnique: jest.fn() },
     games: { findUnique: jest.fn() },
+    friendships: { findFirst: jest.fn() },
+    reportedDrawings: { upsert: jest.fn() },
   },
 }))
 
@@ -37,8 +39,8 @@ jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(() => () => ipLimiter()),
   consumeKeyedRateLimit: jest.fn(),
   rateLimitPresets: {
-    contentReport: { windowMs: 3_600_000, maxRequests: 20, failClosed: true },
-    contentReportPerReporter: { windowMs: 3_600_000, maxRequests: 10 },
+    contentReport: { windowMs: 3_600_000, maxRequests: 10, failClosed: true },
+    contentReportPerReporter: { windowMs: 3_600_000, maxRequests: 5 },
   },
 }))
 
@@ -58,6 +60,8 @@ const db = prisma as unknown as {
   players: { findFirst: jest.Mock }
   users: { findUnique: jest.Mock }
   games: { findUnique: jest.Mock }
+  friendships: { findFirst: jest.Mock }
+  reportedDrawings: { upsert: jest.Mock }
 }
 const requestUser = getRequestAuthUser as jest.Mock
 const chatHistory = getChatHistory as jest.Mock
@@ -77,9 +81,14 @@ function submit(body: unknown) {
   )
 }
 
+// The chat route mints `${Date.now()}-${random}`: this one was sent a minute ago, in a
+// lobby created an hour ago.
+const MSG_ID = `${Date.now() - 60_000}-k3j9x2`
+const LOBBY_CREATED = new Date(Date.now() - 3_600_000)
+
 const chatReport = {
   targetType: 'chat_message',
-  targetId: 'msg_1',
+  targetId: MSG_ID,
   lobbyCode: '4821',
   reportedUserId: 'offender_1',
   quotedText: 'what the reporter saw',
@@ -99,14 +108,16 @@ describe('POST /api/reports (#1172)', () => {
     ipLimiter.mockResolvedValue(null)
     keyedLimit.mockResolvedValue({ limited: false, retryAfterSeconds: 0 })
     requestUser.mockResolvedValue(REPORTER)
-    db.lobbies.findUnique.mockResolvedValue({ id: 'lobby_1' })
+    db.lobbies.findUnique.mockResolvedValue({ id: 'lobby_1', createdAt: LOBBY_CREATED })
+    db.friendships.findFirst.mockResolvedValue(null)
+    db.reportedDrawings.upsert.mockResolvedValue({ gameId: 'game_1' })
     db.users.findUnique.mockResolvedValue({ id: 'offender_1', bot: null })
     db.players.findFirst.mockResolvedValue(null)
     db.reports.findUnique.mockResolvedValue(null)
     db.reports.create.mockResolvedValue({ id: 'report_1' })
     db.reports.update.mockResolvedValue({})
     chatHistory.mockResolvedValue([
-      { id: 'msg_1', userId: 'offender_1', username: 'Offender', message: 'the stored text', lobbyCode: '4821' },
+      { id: MSG_ID, userId: 'offender_1', username: 'Offender', message: 'the stored text', lobbyCode: '4821' },
     ])
     postMessage.mockResolvedValue('discord_msg_1')
   })
@@ -176,7 +187,7 @@ describe('POST /api/reports (#1172)', () => {
 
     it('refuses a chat message the server says the reporter wrote, whatever the request claims', async () => {
       chatHistory.mockResolvedValue([
-        { id: 'msg_1', userId: 'reporter_1', username: 'ReporterName', message: 'mine', lobbyCode: '4821' },
+        { id: MSG_ID, userId: 'reporter_1', username: 'ReporterName', message: 'mine', lobbyCode: '4821' },
       ])
       const res = await submit(chatReport)
       expect(res.status).toBe(400)
@@ -220,8 +231,8 @@ describe('POST /api/reports (#1172)', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             targetType: 'chat_message',
-            targetId: 'msg_1',
-            targetKey: 'chat_message:4821:msg_1',
+            targetId: MSG_ID,
+            targetKey: `chat_message:4821:${MSG_ID}`,
             reportedUserId: 'offender_1',
             lobbyCode: '4821',
             contentSnapshot: 'the stored text',
@@ -246,6 +257,46 @@ describe('POST /api/reports (#1172)', () => {
           data: expect.objectContaining({ contentSnapshot: 'what the reporter saw', snapshotSource: 'reporter' }),
         })
       )
+    })
+
+    // Adversarial review of #1172: the fallback ran for any unknown id, so a co-player
+    // could invent a message and pin it on someone. The id's own time now has to be
+    // one the history could have trimmed.
+    it('refuses a missing message the intact history would still hold', async () => {
+      const olderMessageTime = Date.now() - 120_000
+      chatHistory.mockResolvedValue([
+        { id: `${olderMessageTime}-aaa111`, userId: 'offender_1', username: 'Offender', message: 'older', lobbyCode: '4821', timestamp: olderMessageTime },
+        { id: `${Date.now() - 30_000}-bbb222`, userId: 'u3', username: 'Third', message: 'newer', lobbyCode: '4821', timestamp: Date.now() - 30_000 },
+      ])
+      db.players.findFirst.mockResolvedValue({ id: 'seat_1' })
+
+      const res = await submit(chatReport)
+
+      expect(res.status).toBe(404)
+      expect(db.reports.create).not.toHaveBeenCalled()
+      expect(db.players.findFirst).not.toHaveBeenCalled()
+    })
+
+    it("keeps the reporter's copy of a message older than everything the history still holds", async () => {
+      chatHistory.mockResolvedValue([
+        { id: `${Date.now() - 30_000}-bbb222`, userId: 'u3', username: 'Third', message: 'newer', lobbyCode: '4821', timestamp: Date.now() - 30_000 },
+      ])
+      db.players.findFirst.mockResolvedValue({ id: 'seat_1' })
+      const res = await submit(chatReport)
+      expect(res.status).toBe(201)
+      expect(db.reports.create.mock.calls[0][0].data).toMatchObject({ snapshotSource: 'reporter' })
+    })
+
+    it.each([
+      ['not minted by the chat route', 'msg_1'],
+      ['from the future', `${Date.now() + 3_600_000}-abc123`],
+      ['older than the lobby', `${Date.now() - 7_200_000}-abc123`],
+    ])('refuses a message id %s', async (_label, targetId) => {
+      chatHistory.mockResolvedValue([])
+      db.players.findFirst.mockResolvedValue({ id: 'seat_1' })
+      const res = await submit({ ...chatReport, targetId })
+      expect(res.status).toBe(404)
+      expect(db.reports.create).not.toHaveBeenCalled()
     })
 
     it('refuses to put words in the mouth of someone who never sat in the lobby', async () => {
@@ -292,11 +343,38 @@ describe('POST /api/reports (#1172)', () => {
             round: 3,
             lobbyCode: '4821',
             reportedUserId: 'offender_1',
-            contentSnapshot: '{"strokes":[[1,2]]}',
+            // Not on the report: one shared copy per game and round.
+            contentSnapshot: null,
             snapshotSource: 'server',
           }),
         })
       )
+    })
+
+    it('keeps one copy of a drawing per game and round, never overwriting the first', async () => {
+      db.games.findUnique.mockResolvedValue({
+        id: 'game_1',
+        gameType: 'sketch_and_guess',
+        lobby: { code: '4821' },
+        state: { data: { rounds: [{ round: 3, drawerId: 'offender_1', drawingContent: '{"strokes":[[1,2]]}' }] } },
+      })
+      await submit({ targetType: 'drawing', targetId: 'game_1', round: 3, reason: 'sexual' })
+
+      expect(db.reportedDrawings.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { gameId_round: { gameId: 'game_1', round: 3 } },
+          create: { gameId: 'game_1', round: 3, content: '{"strokes":[[1,2]]}' },
+          update: {},
+        })
+      )
+      expect(db.reportedDrawings.upsert.mock.invocationCallOrder[0]).toBeLessThan(
+        db.reports.create.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('writes no drawing copy for a chat report', async () => {
+      await submit(chatReport)
+      expect(db.reportedDrawings.upsert).not.toHaveBeenCalled()
     })
 
     it('answers 404 for a round with no drawing stored yet', async () => {
@@ -315,16 +393,30 @@ describe('POST /api/reports (#1172)', () => {
       db.users.findUnique.mockResolvedValue({
         id: 'offender_1', username: 'RudeName', avatarUrl: null, image: null, bio: null, bot: null,
       })
+      db.players.findFirst.mockResolvedValue({ id: 'seat_1' })
       const res = await submit({ targetType: 'username', targetId: 'offender_1', lobbyCode: '4821', reason: 'hate' })
       expect(res.status).toBe(201)
       const data = db.reports.create.mock.calls[0][0].data
-      expect(data).toMatchObject({ contentSnapshot: 'RudeName', reportedUserId: 'offender_1', snapshotSource: 'server' })
+      expect(data).toMatchObject({ contentSnapshot: 'RudeName', reportedUserId: 'offender_1', snapshotSource: 'server', lobbyCode: '4821' })
       expect(data.targetKey).toMatch(/^username:offender_1:[0-9a-f]{16}$/)
+    })
+
+    it('drops a lobby code from a profile report unless both people played in it', async () => {
+      db.users.findUnique.mockResolvedValue({
+        id: 'offender_1', username: 'RudeName', avatarUrl: null, image: null, bio: null, bot: null,
+      })
+      db.players.findFirst.mockImplementation(async ({ where }: { where: { userId: string } }) =>
+        where.userId === 'offender_1' ? { id: 'seat_offender' } : null
+      )
+      const res = await submit({ targetType: 'username', targetId: 'offender_1', lobbyCode: '4821', reason: 'hate' })
+      expect(res.status).toBe(201)
+      expect(db.reports.create.mock.calls[0][0].data.lobbyCode).toBeNull()
     })
 
     it('reaches a bio through the public profile id without the client knowing the user id', async () => {
       db.users.findUnique.mockResolvedValue({
         id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bio: 'a bad bio', bot: null,
+        isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility: 'public' },
       })
       const res = await submit({ targetType: 'bio', publicProfileId: 'pub_42', reason: 'hate' })
       expect(res.status).toBe(201)
@@ -335,9 +427,55 @@ describe('POST /api/reports (#1172)', () => {
     it('answers 404 for an empty bio', async () => {
       db.users.findUnique.mockResolvedValue({
         id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bio: '  ', bot: null,
+        isGuest: false, publicProfileId: 'pub_42', accountPreferences: null,
       })
       const res = await submit({ targetType: 'bio', targetId: 'offender_1', reason: 'hate' })
       expect(res.status).toBe(404)
+      expect(await res.json()).toMatchObject({ code: 'NOTHING_TO_REPORT' })
+    })
+
+    it('answers for a private profile exactly as for one that does not exist, bio or no bio', async () => {
+      const privateProfile = {
+        id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bot: null,
+        isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility: 'private' },
+      }
+      const answers: Array<{ status: number; body: unknown }> = []
+      for (const bio of ['a hidden bio', null]) {
+        db.users.findUnique.mockResolvedValueOnce({ ...privateProfile, bio })
+        const res = await submit({ targetType: 'bio', publicProfileId: 'pub_42', reason: 'hate' })
+        answers.push({ status: res.status, body: await res.json() })
+      }
+      db.users.findUnique.mockResolvedValueOnce(null)
+      const missing = await submit({ targetType: 'bio', publicProfileId: 'pub_missing', reason: 'hate' })
+      answers.push({ status: missing.status, body: await missing.json() })
+
+      expect(answers[0]).toEqual(answers[1])
+      expect(answers[0]).toEqual(answers[2])
+      expect(answers[0].status).toBe(404)
+      expect(db.reports.create).not.toHaveBeenCalled()
+    })
+
+    it("keeps a private profile's bio out of reach through the user id too", async () => {
+      db.users.findUnique.mockResolvedValue({
+        id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bot: null, bio: 'a hidden bio',
+        isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility: 'private' },
+      })
+      const res = await submit({ targetType: 'bio', targetId: 'offender_1', reason: 'hate' })
+      expect(res.status).toBe(404)
+      expect(db.reports.create).not.toHaveBeenCalled()
+    })
+
+    it('lets a friend, and only a friend, report a friends-only profile', async () => {
+      db.users.findUnique.mockResolvedValue({
+        id: 'offender_1', username: 'Someone', avatarUrl: null, image: null, bot: null, bio: 'a bio',
+        isGuest: false, publicProfileId: 'pub_42', accountPreferences: { profileVisibility: 'friends' },
+      })
+
+      db.friendships.findFirst.mockResolvedValueOnce(null)
+      expect((await submit({ targetType: 'username', publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(404)
+
+      db.friendships.findFirst.mockResolvedValueOnce({ id: 'friendship_1' })
+      expect((await submit({ targetType: 'username', publicProfileId: 'pub_42', reason: 'hate' })).status).toBe(201)
     })
 
     it('refuses to report a bot', async () => {
@@ -358,7 +496,7 @@ describe('POST /api/reports (#1172)', () => {
       expect(await res.json()).toEqual({ ok: true, duplicate: true })
       expect(db.reports.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { reporterId_targetKey: { reporterId: 'reporter_1', targetKey: 'chat_message:4821:msg_1' } },
+          where: { reporterId_targetKey: { reporterId: 'reporter_1', targetKey: `chat_message:4821:${MSG_ID}` } },
         })
       )
       expect(db.reports.create).not.toHaveBeenCalled()
@@ -388,7 +526,7 @@ describe('POST /api/reports (#1172)', () => {
       const res = await submit(chatReport)
       expect(res.status).toBe(429)
       expect(res.headers.get('Retry-After')).toBe('120')
-      expect(keyedLimit).toHaveBeenCalledWith('content-report:reporter_1', expect.objectContaining({ maxRequests: 10 }))
+      expect(keyedLimit).toHaveBeenCalledWith('content-report:reporter_1', expect.objectContaining({ maxRequests: 5 }))
       expect(db.reports.create).not.toHaveBeenCalled()
     })
   })
