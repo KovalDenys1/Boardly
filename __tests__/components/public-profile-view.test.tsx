@@ -22,11 +22,14 @@ jest.mock('@/lib/i18n-helpers', () => ({
     t: (key: string, options?: Record<string, unknown>) => {
       const dictionary: Record<string, string> = {
         'profile.publicProfile.eyebrow': 'Boardly Profile',
-        'profile.publicProfile.friendsOnlyTitle': 'This profile is visible to friends only',
-        'profile.publicProfile.friendsOnlySubtitle': 'Send a friend request to connect first. Once the request is accepted, you can open this profile again.',
-        'profile.publicProfile.friendsOnlyHint': 'This player only shares their profile with accepted friends.',
+        'profile.publicProfile.friendsOnlySubtitle': 'Only this player\'s friends can see their profile. Once they accept your friend request, you can see it too.',
         'profile.publicProfile.privateTitle': 'This profile is private',
         'profile.publicProfile.privateSubtitle': 'This player is not sharing their public profile right now.',
+        'profile.publicProfile.ownerNote.private': 'Your profile is private: only you can see it.',
+        'profile.publicProfile.ownerNote.friends': 'Your profile is private to others: only your friends can see it.',
+        'profile.publicProfile.privacySettingsLink': 'Privacy settings',
+        'profile.publicProfile.goToOwnProfile': 'Go to My Profile',
+        'profile.friends.title': 'Friends',
         'profile.publicProfile.addFriend': 'Add Friend',
         'profile.publicProfile.signInToAdd': 'Sign In to Add',
         'profile.publicProfile.reviewRequest': 'Review Request',
@@ -72,7 +75,7 @@ describe('PublicProfileView', () => {
     expect(root.getAttribute('style')).toContain('min-height: var(--game-h);')
   })
 
-  it('shows a friends-only gate with a request action', () => {
+  it('shows a friends-only gate as private, with a request action', () => {
     render(
       <PublicProfileView
         profile={profile}
@@ -81,9 +84,40 @@ describe('PublicProfileView', () => {
       />
     )
 
-    expect(screen.getByText('This profile is visible to friends only')).toBeTruthy()
+    expect(screen.getByText('This profile is private')).toBeTruthy()
+    expect(screen.getByText(/Only this player's friends can see their profile/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add Friend' })).toBeTruthy()
   })
+
+  // #1226, Steam-style: the username, the default avatar and the notice, nothing else.
+  it.each(['private', 'friends_only'] as const)(
+    'a %s profile shows the username and the default avatar, and no picture, bio, stats or badges',
+    (accessState) => {
+      const { container } = render(
+        <PublicProfileView
+          profile={{
+            ...profile,
+            avatarUrl: 'https://cdn.example/hidden.png',
+            bio: 'hidden bio',
+            isPremium: true,
+            unlockedAchievements: [{ key: 'first_win', unlockedAt: '2026-03-05T00:00:00.000Z' }],
+          }}
+          initialRelation="can_send"
+          accessState={accessState}
+        />
+      )
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Player One' })).toBeTruthy()
+      expect(screen.getByText('This profile is private')).toBeTruthy()
+      // The default avatar: the initial, no <img>.
+      expect(container.querySelector('img')).toBeNull()
+      expect(screen.getByTestId('restricted-profile').textContent).toContain('P')
+      expect(container.textContent).not.toContain('hidden bio')
+      expect(screen.queryByText('First Win')).toBeNull()
+      expect(screen.queryByText('Friends')).toBeNull()
+      expect(screen.queryByText(/Lvl\./)).toBeNull()
+    }
+  )
 
   it('shows a private gate without friend request actions', () => {
     render(
@@ -97,6 +131,22 @@ describe('PublicProfileView', () => {
     expect(screen.getByText('This profile is private')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Add Friend' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Go to Home' })).toBeTruthy()
+  })
+
+  it('tells the owner of a private profile who else can see it, with a link to the setting', () => {
+    render(<PublicProfileView profile={profile} initialRelation="self" ownerVisibility="private" />)
+
+    expect(screen.getByTestId('owner-visibility-note').textContent).toContain('Your profile is private: only you can see it.')
+    expect(screen.getByRole('link', { name: 'Privacy settings' }).getAttribute('href')).toBe('/profile?tab=settings#privacy')
+    // The owner still sees the full profile.
+    expect(screen.getByText('First Win')).toBeTruthy()
+  })
+
+  it('shows no owner note to anyone but the owner', () => {
+    render(<PublicProfileView profile={profile} initialRelation="friends" />)
+
+    expect(screen.queryByTestId('owner-visibility-note')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Privacy settings' })).toBeNull()
   })
 
   it('keeps the public profile as return url for sign in', () => {

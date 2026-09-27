@@ -7,7 +7,11 @@ import PublicProfileView, {
 } from '@/components/PublicProfileView'
 import { prisma } from '@/lib/db'
 import { authOptions } from '@/lib/next-auth'
-import { isValidPublicProfileId } from '@/lib/public-profile'
+import {
+  canViewProfile,
+  effectiveProfileVisibility,
+  isValidPublicProfileId,
+} from '@/lib/public-profile'
 
 type PublicProfilePageProps = {
   params: Promise<{ publicProfileId: string }>
@@ -40,7 +44,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
     return HIDDEN
   }
 
-  const isPublic = (profile.accountPreferences?.profileVisibility ?? 'public') === 'public'
+  const isPublic = effectiveProfileVisibility(profile.accountPreferences?.profileVisibility) === 'public'
   if (!isPublic) {
     return { title: `${profile.username}'s Profile`, ...HIDDEN }
   }
@@ -104,21 +108,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     notFound()
   }
 
-  const [session, completedGamesCount, unlockedAchievementRows] = await Promise.all([
-    getServerSession(authOptions),
-    prisma.players.count({
-      where: {
-        userId: profile.id,
-        game: {
-          status: 'finished',
-        },
-      },
-    }),
-    prisma.userAchievements.findMany({
-      where: { userId: profile.id },
-      select: { achievementKey: true, unlockedAt: true },
-    }),
-  ])
+  const session = await getServerSession(authOptions)
   let relation: PublicProfileRelation = 'login_required'
 
   if (session?.user?.id) {
@@ -161,17 +151,45 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     }
   }
 
-  const profileVisibility = profile.accountPreferences?.profileVisibility ?? 'public'
-  let accessState: PublicProfileAccessState = 'available'
-  if (profileVisibility === 'private' && relation !== 'self') {
-    accessState = 'private'
-  } else if (
-    profileVisibility === 'friends' &&
-    relation !== 'self' &&
-    relation !== 'friends'
-  ) {
-    accessState = 'friends_only'
+  const profileVisibility = effectiveProfileVisibility(profile.accountPreferences?.profileVisibility)
+  const canView = canViewProfile(
+    profileVisibility,
+    relation === 'self' ? 'self' : relation === 'friends' ? 'friend' : 'other'
+  )
+
+  // A viewer who may not see the profile gets its username and nothing else (#1226).
+  // The rest is left out of the props, not just out of the markup: the RSC payload
+  // carries every prop to the browser whatever the component draws. Statistics and
+  // badges are not even queried.
+  if (!canView) {
+    const accessState: PublicProfileAccessState =
+      profileVisibility === 'private' ? 'private' : 'friends_only'
+    return (
+      <PublicProfileView
+        profile={{
+          publicProfileId: profile.publicProfileId,
+          username: profile.username,
+        }}
+        initialRelation={relation}
+        accessState={accessState}
+      />
+    )
   }
+
+  const [completedGamesCount, unlockedAchievementRows] = await Promise.all([
+    prisma.players.count({
+      where: {
+        userId: profile.id,
+        game: {
+          status: 'finished',
+        },
+      },
+    }),
+    prisma.userAchievements.findMany({
+      where: { userId: profile.id },
+      select: { achievementKey: true, unlockedAt: true },
+    }),
+  ])
 
   return (
     <PublicProfileView
@@ -195,7 +213,8 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         })),
       }}
       initialRelation={relation}
-      accessState={accessState}
+      accessState="available"
+      ownerVisibility={relation === 'self' ? profileVisibility : undefined}
     />
   )
 }
