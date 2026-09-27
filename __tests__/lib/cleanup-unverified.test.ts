@@ -175,8 +175,12 @@ describe('cleanup-unverified', () => {
     function matches(where: Record<string, any>, row: Record<string, any>): boolean {
       return Object.entries(where).every(([field, condition]) => {
         if (field === 'OR') return condition.some((branch: Record<string, any>) => matches(branch, row))
-        if (field === 'createdAt' || field === 'accounts' || field === 'bot' || field === 'id') return true
+        if (field === 'createdAt' || field === 'bot' || field === 'id') return true
         if (condition === null) return row[field] === null
+        // A to-many relation filter: `{ none: {} }` holds when the row has no related rows.
+        if (condition && typeof condition === 'object' && 'none' in condition) {
+          return (row[field] ?? []).length === 0
+        }
         if (condition && typeof condition === 'object' && 'lte' in condition) {
           return row[field] !== null && row[field] <= condition.lte
         }
@@ -184,12 +188,26 @@ describe('cleanup-unverified', () => {
       })
     }
 
-    const unverified = { emailVerified: null, stripeSubscriptionId: null, premiumUntil: null }
+    const DAY = 24 * 60 * 60 * 1000
+    const unverified = {
+      emailVerified: null,
+      stripeSubscriptionId: null,
+      stripeCustomerId: null,
+      premiumUntil: null,
+      purchaseConsents: [],
+      accounts: [],
+    }
     const rows = {
       plain: unverified,
-      subscribed: { ...unverified, stripeSubscriptionId: 'sub_123' },
-      paidTimeLeft: { ...unverified, premiumUntil: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) },
-      premiumLapsed: { ...unverified, premiumUntil: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+      subscribed: { ...unverified, stripeCustomerId: 'cus_1', stripeSubscriptionId: 'sub_123' },
+      paidTimeLeft: { ...unverified, stripeCustomerId: 'cus_1', premiumUntil: new Date(Date.now() + 5 * DAY) },
+      // Premium given without a purchase (an admin grant) that has run out: no customer.
+      grantLapsed: { ...unverified, premiumUntil: new Date(Date.now() - 5 * DAY) },
+      // Ever paid, now cancelled and lapsed: the Stripe customer id stays behind.
+      paidOnceLapsed: { ...unverified, stripeCustomerId: 'cus_1', premiumUntil: new Date(Date.now() - 5 * DAY) },
+      // A recorded checkout consent, whatever the Stripe columns say.
+      consented: { ...unverified, purchaseConsents: [{ id: 'pc_1' }] },
+      oauth: { ...unverified, accounts: [{ provider: 'google' }] },
     }
 
     it('the deletion excludes a subscription and Premium time still to run', async () => {
@@ -197,9 +215,17 @@ describe('cleanup-unverified', () => {
       const { where } = mockPrisma.users.findMany.mock.calls[0][0]
 
       expect(matches(where, rows.plain)).toBe(true)
-      expect(matches(where, rows.premiumLapsed)).toBe(true)
+      expect(matches(where, rows.grantLapsed)).toBe(true)
       expect(matches(where, rows.subscribed)).toBe(false)
       expect(matches(where, rows.paidTimeLeft)).toBe(false)
+    })
+
+    it('the deletion spares an account that ever paid, so its purchase records survive', async () => {
+      await cleanupUnverifiedAccounts(7)
+      const { where } = mockPrisma.users.findMany.mock.calls[0][0]
+
+      expect(matches(where, rows.paidOnceLapsed)).toBe(false)
+      expect(matches(where, rows.consented)).toBe(false)
     })
 
     it('the warning uses the same rule, so a customer is never told the account will go', async () => {
@@ -209,9 +235,11 @@ describe('cleanup-unverified', () => {
       expect(matches(where, rows.plain)).toBe(true)
       expect(matches(where, rows.subscribed)).toBe(false)
       expect(matches(where, rows.paidTimeLeft)).toBe(false)
+      expect(matches(where, rows.paidOnceLapsed)).toBe(false)
+      expect(matches(where, rows.consented)).toBe(false)
     })
 
-    it('checks the rule again in the delete itself, in case the account subscribed meanwhile', async () => {
+    it('checks the rule again in the delete itself, in case the account paid meanwhile', async () => {
       mockPrisma.users.findMany.mockResolvedValue([
         { id: 'user-1', email: 'pending@example.com', username: 'pending-user', createdAt: new Date('2026-01-20T10:00:00.000Z') },
       ] as any)
@@ -221,8 +249,11 @@ describe('cleanup-unverified', () => {
       const { where } = mockPrisma.users.deleteMany.mock.calls[0][0]
 
       expect(where.id).toEqual({ in: ['user-1'] })
+      expect(matches(where, rows.plain)).toBe(true)
       expect(matches(where, rows.subscribed)).toBe(false)
       expect(matches(where, rows.paidTimeLeft)).toBe(false)
+      expect(matches(where, rows.paidOnceLapsed)).toBe(false)
+      expect(matches(where, rows.consented)).toBe(false)
     })
 
     it('still spares bots and accounts that sign in with a provider', async () => {
@@ -230,7 +261,7 @@ describe('cleanup-unverified', () => {
       const { where } = mockPrisma.users.findMany.mock.calls[0][0]
 
       expect(where.bot).toBeNull()
-      expect(where.accounts).toEqual({ none: {} })
+      expect(matches(where, rows.oauth)).toBe(false)
     })
   })
 })

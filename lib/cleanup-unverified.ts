@@ -9,12 +9,14 @@ const log = apiLogger('/cleanup/unverified-accounts')
 
 /**
  * The accounts the unverified-email purge may warn and delete: never verified, not a
- * bot, no Google, GitHub or Discord sign-in (those need no email verification), and no
- * subscription (#1139). A customer is never deleted for an unverified address:
- * `stripeSubscriptionId` covers a subscription Stripe still holds, and a `premiumUntil`
- * still in the future covers paid time left after a cancellation and Premium given
- * any other way. Checkout now needs a verified address, so this guards the accounts
- * that bought before that rule.
+ * bot, no Google, GitHub or Discord sign-in (those need no email verification), and
+ * never a customer (#1139). A customer is never deleted for an unverified address:
+ * `stripeSubscriptionId` covers a subscription Stripe still holds, a `premiumUntil`
+ * still in the future covers paid time left after a cancellation and Premium given any
+ * other way, and a `stripeCustomerId` or any `PurchaseConsents` row marks an account
+ * that ever went to checkout or paid, whose purchase records must survive (decision,
+ * 2026-09-27). Checkout now needs a verified address, so this guards the accounts that
+ * bought before that rule.
  *
  * One definition for the warning, the deletion and scripts/cleanup-unverified.ts, so
  * nobody is warned about a deletion that will not happen, or deleted without the warning.
@@ -25,6 +27,8 @@ export function purgeableUnverifiedAccountsWhere(now: Date = new Date()): Prisma
     bot: null,
     accounts: { none: {} },
     stripeSubscriptionId: null,
+    stripeCustomerId: null,
+    purchaseConsents: { none: {} },
     OR: [{ premiumUntil: null }, { premiumUntil: { lte: now } }],
   }
 }
