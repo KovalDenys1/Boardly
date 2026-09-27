@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { authorizeDiscordInternalRequest } from '@/lib/discord/internal-auth'
+import { LEGACY_ACCOUNT_PREFERENCES } from '@/lib/account-preferences'
 
 const log = apiLogger('GET /api/internal/discord/members/[snowflake]')
 
@@ -32,8 +33,10 @@ function unlinked(): NextResponse {
  * Reads `Accounts` with `provider = "discord"`; the snowflake is the `providerAccountId`
  * NextAuth stored at sign-in. Anyone whose `AccountPreferences.profileVisibility` is not
  * `public` reads exactly like someone who never linked, so the route leaks nothing the
- * public profile page would not show. The missing-preferences case is `public`, which is
- * the column default.
+ * public profile page would not show. A missing preferences row reads as public, exactly
+ * as it does on the profile page: since #1131 every new account gets its row at creation
+ * (friends-only), so no row means an account from before that change, which keeps the
+ * public profile it always had (LEGACY_ACCOUNT_PREFERENCES).
  */
 export async function GET(request: NextRequest, context: MemberLookupContext) {
   const authError = authorizeDiscordInternalRequest(request)
@@ -70,7 +73,8 @@ export async function GET(request: NextRequest, context: MemberLookupContext) {
     const user = account?.user
     if (!user || user.isGuest || user.suspended) return unlinked()
 
-    const visibility = user.accountPreferences?.profileVisibility ?? 'public'
+    const visibility =
+      user.accountPreferences?.profileVisibility ?? LEGACY_ACCOUNT_PREFERENCES.profileVisibility
     if (visibility !== 'public') return unlinked()
 
     const gamesPlayed = await prisma.players.count({

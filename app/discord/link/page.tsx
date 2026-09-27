@@ -96,8 +96,8 @@ function DiscordLinkContent() {
   const handleConnect = async () => {
     setConnecting(true)
     try {
-      // Same shape as app/auth/link/page.tsx: the OAuth round-trip links (or re-links with the
-      // new scope) through the adapter and the signIn callback, then lands back here.
+      // The OAuth round-trip links (or re-links with the new scope) through the adapter and
+      // the signIn callback, then lands back here.
       await signIn('discord', { callbackUrl: LINK_CALLBACK_URL, redirect: true })
     } catch {
       setConnecting(false)

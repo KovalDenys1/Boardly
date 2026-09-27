@@ -34,6 +34,16 @@ export const registerSchema = z.object({
   // (an older client build, a script) still gets the lawful default rather than a
   // validation error.
   marketingConsent: z.boolean().optional().default(false),
+  // #1135: an account rests on the contract the Terms set out (GDPR Art. 6(1)(b)), and
+  // the person confirms being 13 or older. Both boxes must be ticked; the route stores
+  // when. Literal true rather than a boolean, so a caller that omits them is refused
+  // instead of creating an account nobody agreed to.
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must agree to the Terms of Service and Privacy Policy' }),
+  }),
+  ageConfirmed: z.literal(true, {
+    errorMap: () => ({ message: 'You must be 13 or older to create an account' }),
+  }),
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>

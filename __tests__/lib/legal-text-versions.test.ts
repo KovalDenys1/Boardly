@@ -62,6 +62,8 @@ const TERMS_DIGESTS: Record<string, string> = {
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {
   '2026-09-25': '25e83182503ef98f',
+  // The consent box gains the age and capacity rule of Terms section 3 (#1169).
+  '2026-09-27': '7787163e81ddc1a4',
 }
 
 describe('legal text versions move with the text (#1179)', () => {

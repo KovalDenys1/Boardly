@@ -1,4 +1,8 @@
-import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '../lib/cleanup-unverified'
+import {
+  cleanupUnverifiedAccounts,
+  purgeableUnverifiedAccountsWhere,
+  warnUnverifiedAccounts,
+} from '../lib/cleanup-unverified'
 
 async function main() {
   const { prisma } = await import('../lib/db')
@@ -8,19 +12,14 @@ async function main() {
 
   try {
     // Check current status
+    // The purge's own rule, so the preview counts what the run would touch (#1139).
     const unverifiedCount = await prisma.users.count({
-      where: {
-        emailVerified: null,
-        bot: null,
-        accounts: { none: {} }
-      }
+      where: purgeableUnverifiedAccountsWhere(),
     })
 
     const oldUnverifiedCount = await prisma.users.count({
       where: {
-        emailVerified: null,
-        bot: null,
-        accounts: { none: {} },
+        ...purgeableUnverifiedAccountsWhere(),
         createdAt: {
           lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
         }
@@ -53,9 +52,7 @@ async function main() {
     if (oldUnverifiedCount > 0) {
       const accountsToDelete = await prisma.users.findMany({
         where: {
-          emailVerified: null,
-          bot: null,
-          accounts: { none: {} },
+          ...purgeableUnverifiedAccountsWhere(),
           createdAt: {
             lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }

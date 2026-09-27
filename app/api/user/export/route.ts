@@ -99,6 +99,8 @@ export async function GET(request: NextRequest) {
           totpEnabled: true,
           isGuest: true,
           signupSource: true,
+          termsAcceptedAt: true,
+          ageConfirmedAt: true,
           role: true,
           suspended: true,
           banReason: true,

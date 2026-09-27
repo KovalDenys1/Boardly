@@ -194,6 +194,8 @@ describe('/api/internal/discord', () => {
       })
     })
 
+    // An account with no row predates #1131 and keeps the public profile it always had;
+    // new accounts get a friends-only row at creation, covered by the 'friends' case above.
     it('treats a missing preferences row as public and an expired premium as not premium', async () => {
       mockPrisma.accounts.findUnique.mockResolvedValue(
         linkedAccount({

@@ -85,7 +85,15 @@ function uniqueConstraintError() {
   })
 }
 
-function buildRequest(body: unknown) {
+/**
+ * A registration as the form sends it: the Terms box and the 13-or-older box are
+ * required (#1135), so they are ticked unless a test says otherwise.
+ */
+function buildRequest(body: Record<string, unknown>) {
+  return buildRawRequest({ termsAccepted: true, ageConfirmed: true, ...body })
+}
+
+function buildRawRequest(body: unknown) {
   return new NextRequest('http://localhost:3000/api/auth/register', {
     method: 'POST',
     headers: {
@@ -537,8 +545,15 @@ describe('POST /api/auth/register', () => {
         username: 'new_user',
         passwordHash: 'hashed-password',
         signupSource: null,
+        // When the Terms were accepted and the age confirmed (#1135).
+        termsAcceptedAt: expect.any(Date),
+        ageConfirmedAt: expect.any(Date),
+        // The row from the start, with the private column defaults (#1131).
+        accountPreferences: { create: {} },
       },
     })
+    const created = mockPrisma.users.create.mock.calls[0][0].data
+    expect(created.ageConfirmedAt).toBe(created.termsAcceptedAt)
     // Only the hash is stored; the raw token goes into the email (#1141).
     expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalledWith({
       data: {
@@ -555,6 +570,25 @@ describe('POST /api/auth/register', () => {
       username: 'new_user',
       emailVerified: false,
     })
+  })
+
+  it.each([
+    ['the Terms box', { ageConfirmed: true }],
+    ['the 13-or-older box', { termsAccepted: true }],
+    ['the 13-or-older box ticked false', { termsAccepted: true, ageConfirmed: false }],
+  ])('refuses a registration without %s and creates nothing (#1135)', async (_label, boxes) => {
+    const response = await POST(
+      buildRawRequest({
+        email: 'new@example.com',
+        username: 'new_user',
+        password: 'ValidPass123',
+        ...boxes,
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(mockPrisma.users.findMany).not.toHaveBeenCalled()
+    expect(mockPrisma.users.create).not.toHaveBeenCalled()
   })
 
   it('does not record marketing consent when the checkbox was left unticked', async () => {

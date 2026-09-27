@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useOnboarding } from '@/contexts/OnboardingContext'
+import { signOut } from 'next-auth/react'
+import { needsAccountStep, useOnboarding } from '@/contexts/OnboardingContext'
 import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -12,16 +14,30 @@ import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 
-type OnboardingStep = 'choice' | 'quick-start'
+/**
+ * `account` comes first, and only for a signed-in account with something to settle: the
+ * 13-or-older confirmation an OAuth account gives here instead of on the register form
+ * (#1135), and the offer to make a friends-only profile public (#1131). Then the usual
+ * game choice.
+ */
+type OnboardingStep = 'account' | 'choice' | 'quick-start'
 
 export function OnboardingModal() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { showModal, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
+  const { showModal, accountSetup, saveAccountSetup, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
   const { isActive: isTourActive, startTour } = useTour()
   const [step, setStep] = useState<OnboardingStep>('choice')
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  // Unticked on purpose: a public profile is an opt-in (#1131, GDPR Art. 25(2)).
+  const [profilePublic, setProfilePublic] = useState(false)
+  const [savingAccount, setSavingAccount] = useState(false)
+  // The age confirmation cannot be skipped: no close button and no "Skip for now" on
+  // this step while it is asked. Someone under 13 signs out instead.
+  const ageRequired = step === 'account' && accountSetup.confirmAge
+  const accountContinueBlocked = savingAccount || (accountSetup.confirmAge && !ageConfirmed)
 
   const games = useMemo(
     () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
@@ -32,8 +48,10 @@ export function OnboardingModal() {
     if (!showModal) {
       setStep('choice')
       setSelectedGame(null)
+      return
     }
-  }, [showModal])
+    if (needsAccountStep(accountSetup)) setStep('account')
+  }, [showModal, accountSetup])
 
   useEffect(() => {
     if (!showModal || isTourActive) return
@@ -47,6 +65,25 @@ export function OnboardingModal() {
   const handleShowMeAround = () => {
     hideModal()
     startTour()
+  }
+
+  const handleSignOut = async () => {
+    hideModal()
+    await signOut({ redirect: false })
+    router.replace('/')
+  }
+
+  const handleAccountContinue = async () => {
+    if (accountContinueBlocked) return
+    setSavingAccount(true)
+    try {
+      await saveAccountSetup({ ageConfirmed: accountSetup.confirmAge && ageConfirmed, profilePublic })
+      setStep('choice')
+    } catch {
+      showToast.error('common.error')
+    } finally {
+      setSavingAccount(false)
+    }
   }
 
   const handleStart = async () => {
@@ -110,31 +147,33 @@ export function OnboardingModal() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
-          {/* X close button */}
-          <button
-            onClick={skipOnboarding}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: 32,
-              height: 32,
-              display: 'grid',
-              placeItems: 'center',
-              background: 'var(--bd-bg2)',
-              border: '2px solid var(--bd-ink)',
-              borderRadius: 8,
-              boxShadow: '2px 2px 0 var(--bd-ink)',
-              cursor: 'pointer',
-              fontSize: 14,
-              fontWeight: 700,
-              color: 'var(--bd-ink)',
-              lineHeight: 1,
-            }}
-            aria-label={t('common.close')}
-          >
-            <Icon name="close" size={16} />
-          </button>
+          {/* X close button, gone while the age confirmation is asked */}
+          {!ageRequired && (
+            <button
+              onClick={skipOnboarding}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 32,
+                height: 32,
+                display: 'grid',
+                placeItems: 'center',
+                background: 'var(--bd-bg2)',
+                border: '2px solid var(--bd-ink)',
+                borderRadius: 8,
+                boxShadow: '2px 2px 0 var(--bd-ink)',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--bd-ink)',
+                lineHeight: 1,
+              }}
+              aria-label={t('common.close')}
+            >
+              <Icon name="close" size={16} />
+            </button>
+          )}
 
           <div
             style={{
@@ -163,11 +202,135 @@ export function OnboardingModal() {
             {t('onboarding.title')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--bd-ink-muted)' }}>
-            {t('onboarding.subtitle')}
+            {step === 'account' ? t('onboarding.account.subtitle') : t('onboarding.subtitle')}
           </p>
         </div>
 
-        {step === 'choice' ? (
+        {step === 'account' ? (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {accountSetup.confirmAge && (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '14px 16px',
+                    background: 'var(--bd-bg)',
+                    border: '2px solid var(--bd-ink)',
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmed}
+                    onChange={(event) => setAgeConfirmed(event.target.checked)}
+                    disabled={savingAccount}
+                    required
+                    style={{ marginTop: 2, width: 18, height: 18, flexShrink: 0, accentColor: 'var(--bd-coral)', cursor: 'pointer' }}
+                  />
+                  <span>
+                    {/* One box for both (#1135): an OAuth sign-up never sees the register
+                        form, so this is where it accepts the Terms. The links open in a
+                        new tab so the step stays where it is. */}
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
+                      {t('onboarding.account.ageTermsPrefix')}{' '}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                      >
+                        {t('onboarding.account.termsLink')}
+                      </Link>{' '}
+                      {t('onboarding.account.ageTermsAnd')}{' '}
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                      >
+                        {t('onboarding.account.privacyLink')}
+                      </Link>
+                    </span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-soft)' }}>
+                      {t('onboarding.account.ageHint')}
+                    </span>
+                  </span>
+                </label>
+              )}
+              {accountSetup.offerPublicProfile && (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '14px 16px',
+                    background: 'var(--bd-bg)',
+                    border: '2px solid var(--bd-ink)',
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={profilePublic}
+                    onChange={(event) => setProfilePublic(event.target.checked)}
+                    disabled={savingAccount}
+                    style={{ marginTop: 2, width: 18, height: 18, flexShrink: 0, accentColor: 'var(--bd-coral)', cursor: 'pointer' }}
+                  />
+                  <span>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
+                      {t('onboarding.account.publicProfile')}
+                    </span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-soft)' }}>
+                      {t('onboarding.account.publicProfileHint')}
+                    </span>
+                  </span>
+                </label>
+              )}
+            </div>
+
+            <button
+              onClick={() => void handleAccountContinue()}
+              disabled={accountContinueBlocked}
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                background: 'var(--bd-coral)',
+                color: 'white',
+                border: '2px solid var(--bd-ink)',
+                borderRadius: 14,
+                boxShadow: '3px 3px 0 var(--bd-ink)',
+                fontFamily: 'var(--bd-font-display)',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: accountContinueBlocked ? 'not-allowed' : 'pointer',
+                opacity: accountContinueBlocked ? 0.45 : 1,
+                marginBottom: 12,
+              }}
+            >
+              {savingAccount ? t('onboarding.account.saving') : t('onboarding.account.continue')}
+            </button>
+
+            <button
+              onClick={ageRequired ? () => void handleSignOut() : skipOnboarding}
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                fontSize: 13,
+                color: 'var(--bd-ink-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              {ageRequired ? t('onboarding.account.signOut') : t('onboarding.skip')}
+            </button>
+          </>
+        ) : step === 'choice' ? (
           <>
             {/* Path choice */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>

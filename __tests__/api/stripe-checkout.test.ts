@@ -80,12 +80,16 @@ function buyRequest(plan?: string, consent: Record<string, unknown> = validConse
   return makeRequest({ ...(plan ? { plan } : {}), consent })
 }
 
+/** Checkout needs a verified email address (#1139); every buyer below has one. */
+const VERIFIED_AT = new Date('2026-09-01T10:00:00.000Z')
+
 function freeUser() {
   mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
   mockPrisma.users.findUnique.mockResolvedValue({
     id: 'user-1',
     email: 'user@example.com',
     stripeCustomerId: 'cus_existing',
+    emailVerified: VERIFIED_AT,
     premiumUntil: null,
   } as any)
 }
@@ -105,12 +109,57 @@ describe('POST /api/stripe/checkout', () => {
     expect(response.status).toBe(401)
   })
 
+  describe('email verification (#1139)', () => {
+    it('refuses an account whose email is not verified with 403 and a code, before Stripe', async () => {
+      mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+      mockPrisma.users.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'someone-else@example.com',
+        emailVerified: null,
+        stripeCustomerId: null,
+        premiumUntil: null,
+      } as any)
+      const create = jest.fn()
+      mockGetStripe.mockReturnValue({ checkout: { sessions: { create } }, customers: { create } } as any)
+
+      const response = await POST(buyRequest('monthly'))
+      const payload = await response.json()
+
+      expect(response.status).toBe(403)
+      expect(payload.code).toBe('email_unverified')
+      expect(create).not.toHaveBeenCalled()
+      expect(mockPrisma.users.update).not.toHaveBeenCalled()
+    })
+
+    it('still opens the billing portal for a subscriber whose email is not verified', async () => {
+      mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+      mockPrisma.users.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@example.com',
+        emailVerified: null,
+        stripeCustomerId: 'cus_existing',
+        premiumUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+      } as any)
+      mockGetStripe.mockReturnValue({
+        billingPortal: {
+          sessions: { create: jest.fn().mockResolvedValue({ url: 'https://billing.stripe.com/p' }) },
+        },
+      } as any)
+
+      const response = await POST(makeRequest())
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).url).toBe('https://billing.stripe.com/p')
+    })
+  })
+
   it('returns 502 with a clean message when Stripe rejects the configured price ID', async () => {
     mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
     mockPrisma.users.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'user@example.com',
       stripeCustomerId: 'cus_existing',
+      emailVerified: VERIFIED_AT,
       premiumUntil: null,
     } as any)
 
@@ -140,6 +189,7 @@ describe('POST /api/stripe/checkout', () => {
       id: 'user-1',
       email: 'user@example.com',
       stripeCustomerId: 'cus_existing',
+      emailVerified: VERIFIED_AT,
       premiumUntil: null,
     } as any)
     const createCheckoutSession = jest.fn()
@@ -161,6 +211,7 @@ describe('POST /api/stripe/checkout', () => {
       id: 'user-1',
       email: 'user@example.com',
       stripeCustomerId: 'cus_stale',
+      emailVerified: VERIFIED_AT,
       premiumUntil: null,
     } as any)
     mockPrisma.users.update.mockResolvedValue({} as any)
@@ -205,6 +256,7 @@ describe('POST /api/stripe/checkout', () => {
       id: 'user-1',
       email: 'user@example.com',
       stripeCustomerId: 'cus_stale',
+      emailVerified: VERIFIED_AT,
       premiumUntil: null,
     } as any)
     mockPrisma.users.update.mockResolvedValue({} as any)
@@ -243,6 +295,7 @@ describe('POST /api/stripe/checkout', () => {
       id: 'user-1',
       email: 'user@example.com',
       stripeCustomerId: 'cus_existing',
+      emailVerified: VERIFIED_AT,
       premiumUntil: null,
     } as any)
     mockGetStripe.mockReturnValue({

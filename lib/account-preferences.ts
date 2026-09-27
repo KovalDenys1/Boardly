@@ -6,6 +6,23 @@ export type AccountPreferenceSnapshot = {
   showOnlineStatus: boolean
 }
 
+/**
+ * What an account with no `AccountPreferences` row has always been: a public profile with
+ * online status shown, the column defaults before #1131.
+ *
+ * Since #1131 every new account gets its row when it is created (the register route and
+ * lib/custom-prisma-adapter.ts), with the new defaults: friends-only, online status off.
+ * So a missing row now always means an account that predates the change, and the decision
+ * was that existing accounts stay as they are. Reads fall back to these values, and a row
+ * created later for such an account (a settings change, onboarding) is written with them
+ * rather than the column defaults, which would silently hide a profile its owner never
+ * changed.
+ */
+export const LEGACY_ACCOUNT_PREFERENCES: AccountPreferenceSnapshot = {
+  profileVisibility: 'public',
+  showOnlineStatus: true,
+}
+
 export async function getAccountPreferences(
   userId: string
 ): Promise<AccountPreferenceSnapshot> {
@@ -17,12 +34,7 @@ export async function getAccountPreferences(
     },
   })
 
-  return (
-    prefs ?? {
-      profileVisibility: 'public',
-      showOnlineStatus: true,
-    }
-  )
+  return prefs ?? { ...LEGACY_ACCOUNT_PREFERENCES }
 }
 
 export async function upsertAccountPreferences(
@@ -33,6 +45,7 @@ export async function upsertAccountPreferences(
     where: { userId },
     create: {
       userId,
+      ...LEGACY_ACCOUNT_PREFERENCES,
       ...data,
     },
     update: data,

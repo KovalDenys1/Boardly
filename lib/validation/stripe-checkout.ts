@@ -28,6 +28,12 @@ export const CONSENT_CLOCK_SKEW_MS = 5 * 60 * 1000
 /** The `code` the route answers with; the client maps it to premium.consentRequired. */
 export const CONSENT_REQUIRED_CODE = 'consent_required'
 
+/**
+ * The route's 403 `code` for an account whose email address is not verified (#1139);
+ * the client maps it to premium.verifyEmailRequired and offers to resend the link.
+ */
+export const EMAIL_UNVERIFIED_CODE = 'email_unverified'
+
 export const checkoutConsentSchema = z.object({
   // Literal, not string: a consent given against text that has since changed is
   // no consent to the current text.

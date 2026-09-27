@@ -104,6 +104,8 @@ describe('withdrawal copy in the locale bundles (#1162)', () => {
     expect(locale.premium.withdrawalBody).toContain('14')
     expect(locale.premium.withdrawalStartNow).toContain('14')
     expect(locale.premium.consentLabel).toContain('14')
+    // The age and capacity rule of Terms section 3 is in the box the buyer ticks (#1169).
+    expect(locale.premium.consentLabel).toContain('15')
     expect(locale.withdrawal.intro).toContain('14')
     expect(locale.withdrawal.refund).toContain('14')
     expect(locale.premium.withdrawalHow).toContain(SUPPORT_EMAIL)

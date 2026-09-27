@@ -16,7 +16,7 @@ import {
   type PremiumPricing,
 } from '@/lib/premium-plans'
 import { TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
-import { CONSENT_REQUIRED_CODE } from '@/lib/validation/stripe-checkout'
+import { CONSENT_REQUIRED_CODE, EMAIL_UNVERIFIED_CODE } from '@/lib/validation/stripe-checkout'
 
 /**
  * The two CTAs this page fires, named so the funnel can tell the button beside
@@ -61,7 +61,9 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
   const yearly = pricing.yearly
   const [plan, setPlan] = useState<PremiumPlan>(yearly ? 'yearly' : 'monthly')
   const [loading, setLoading] = useState(false)
-  const [failure, setFailure] = useState<'none' | 'consent' | 'checkout'>('none')
+  const [failure, setFailure] = useState<'none' | 'consent' | 'unverified' | 'checkout'>('none')
+  // The checkout refuses an unverified email address (#1139); the page offers the link again.
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
   // The express request angrerettloven § 19 asks for before a digital service
   // starts inside the withdrawal period (#1162). Unticked on every visit: it is
   // a decision about this purchase, not a preference to remember.
@@ -114,7 +116,13 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
           window.location.href = data.url
           return
         }
-        setFailure(data.code === CONSENT_REQUIRED_CODE ? 'consent' : 'checkout')
+        setFailure(
+          data.code === CONSENT_REQUIRED_CODE
+            ? 'consent'
+            : data.code === EMAIL_UNVERIFIED_CODE
+              ? 'unverified'
+              : 'checkout'
+        )
       } catch {
         setFailure('checkout')
       } finally {
@@ -123,6 +131,24 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
     },
     [consented, selectedPlan]
   )
+
+  const resendVerification = useCallback(async () => {
+    setResend('sending')
+    try {
+      // Signed in, so the route reads the address from the session, not a body. It
+      // answers the same whether or not a mail went out.
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      // "Sent" only on the route's own success answer; a rate limit (429), a server
+      // error or an unreadable body shows the error text and leaves the button usable.
+      const data: { success?: unknown } | null = await res.json().catch(() => null)
+      setResend(res.ok && data?.success === true ? 'sent' : 'failed')
+    } catch {
+      setResend('failed')
+    }
+  }, [])
 
   const signedOut = status === 'unauthenticated' || !session?.user
 
@@ -311,10 +337,37 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             {/* bd-coral-deep was 3.79:1 on this card, below the 4.5:1 AA
                 minimum (#1171 axe pass) — bd-ink keeps both readable
                 without touching the brand palette. */}
-            {failure !== 'none' && (
-              <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }} role="alert">
-                {failure === 'consent' ? t('premium.consentRequired') : t('premium.ctaError')}
-              </p>
+            {failure === 'unverified' ? (
+              <div className="mt-3 max-w-xl" role="alert">
+                <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                  {t('premium.verifyEmailRequired')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void resendVerification()}
+                  disabled={resend === 'sending' || resend === 'sent'}
+                  className="bd-btn bd-btn-ghost mt-2 whitespace-normal text-left disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Icon name="mail" size={16} />
+                  {resend === 'sending' ? t('premium.verifyEmailSending') : t('premium.verifyEmailResend')}
+                </button>
+                {resend === 'sent' && (
+                  <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                    {t('premium.verifyEmailSent')}
+                  </p>
+                )}
+                {resend === 'failed' && (
+                  <p className="mt-2 text-xs font-semibold leading-relaxed" style={{ color: 'var(--bd-ink)' }}>
+                    {t('premium.verifyEmailResendFailed')}
+                  </p>
+                )}
+              </div>
+            ) : (
+              failure !== 'none' && (
+                <p className="mt-3 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }} role="alert">
+                  {failure === 'consent' ? t('premium.consentRequired') : t('premium.ctaError')}
+                </p>
+              )
             )}
             {!signedOut && (
               <p className="mt-3 text-xs">

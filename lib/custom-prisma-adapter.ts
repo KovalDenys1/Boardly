@@ -49,6 +49,10 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
             emailVerified: user.emailVerified ?? null,
             image: null,
             username: await pickOAuthUsername(user.name, isTaken),
+            // The preferences row from the start, so the account gets the column
+            // defaults, friends-only with online status off, instead of the
+            // no-row fallback kept for older accounts (#1131).
+            accountPreferences: { create: {} },
           },
         })
       let created: Awaited<ReturnType<typeof create>>

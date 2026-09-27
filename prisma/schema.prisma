@@ -37,6 +37,8 @@ model Users {
   banReason             String?
   banExpiresAt          DateTime? @db.Timestamptz(3)
   sessionsValidFrom     DateTime? @db.Timestamptz(3) // Session cutoff (#1136): a NextAuth JWT whose authenticatedAt is earlier is rejected. NULL = no cutoff. Set by a password reset and a completed email change
+  termsAcceptedAt       DateTime? @db.Timestamptz(3) // When the Terms were accepted (#1135): accounts rest on contract, GDPR Art. 6(1)(b). At sign-up, or in onboarding for an OAuth account. NULL for guests and accounts created before #1135 shipped
+  ageConfirmedAt        DateTime? @db.Timestamptz(3) // When the person confirmed being 13 or older (#1135): at sign-up, or in onboarding for an OAuth account, with the same box as the Terms. NULL for guests and accounts created before #1135 shipped
   lastActiveAt          DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
@@ -79,8 +81,12 @@ model AccountPreferences {
   id                    String            @id @default(cuid())
   userId                String            @unique
   user                  Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileVisibility     ProfileVisibility @default(public)
-  showOnlineStatus      Boolean           @default(true)
+  // Friends-only with online status off for rows created since migration 20260927170000 (#1131, GDPR
+  // Art. 25(2)): a public profile is an opt-in, offered in onboarding. Older rows keep
+  // what they had, and an account with no row at all predates the change
+  // (LEGACY_ACCOUNT_PREFERENCES in lib/account-preferences.ts).
+  profileVisibility     ProfileVisibility @default(friends)
+  showOnlineStatus      Boolean           @default(false)
   onboardingCompletedAt DateTime?         @db.Timestamptz(3)
   onboardingSkippedAt   DateTime?         @db.Timestamptz(3)
   createdAt             DateTime          @default(now()) @db.Timestamptz(3)
