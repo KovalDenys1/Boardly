@@ -97,6 +97,36 @@ async function reportUnavailable(route: string, reason: string): Promise<void> {
 }
 
 /**
+ * `BOTID_MODE=monitor` logs a bot verdict instead of refusing the request.
+ *
+ * Set in production on 2026-09-27, right after the first release: an extension-driven Chrome
+ * passed once and was then classified as a bot, and with no other guest traffic that Sunday
+ * there was no way to show real people pass. Guest entry is the whole funnel, so BotID
+ * records for a week first, the same decision Denys took for Vercel's Bot Protection
+ * (#1144). Remove the variable and redeploy to enforce.
+ */
+function botIdMonitorOnly(): boolean {
+  return process.env.BOTID_MODE === 'monitor'
+}
+
+/** A bot verdict in monitor mode: logged every time, recorded at most once a minute per instance. */
+let lastFlaggedReportAt: number | null = null
+async function reportFlagged(route: string, verifiedBot: boolean): Promise<void> {
+  log.warn('BotID classified a request as a bot; monitor mode lets it through', { route, verifiedBot })
+
+  const now = Date.now()
+  if (lastFlaggedReportAt !== null && now - lastFlaggedReportAt < UNAVAILABLE_EVENT_INTERVAL_MS) return
+  lastFlaggedReportAt = now
+
+  try {
+    const { recordServerReliabilityEvent } = await import('./server-operational-events')
+    await recordServerReliabilityEvent({ eventName: 'botid_flagged', source: route, reason: verifiedBot ? 'verified bot' : 'bot' })
+  } catch {
+    // Bookkeeping must never fail the request.
+  }
+}
+
+/**
  * Vercel BotID (Basic) for a route that mints an account or a guest (#1157). Returns a 403 to
  * send when Vercel classifies the request as a bot, or null to carry on.
  *
@@ -120,6 +150,11 @@ export async function refuseIfBot(route: string): Promise<NextResponse | null> {
   }
   if (!classification.isBot) return null
 
+  if (botIdMonitorOnly()) {
+    await reportFlagged(route, classification.isVerifiedBot)
+    return null
+  }
+
   log.warn('Refused a request BotID classified as a bot', {
     route,
     verifiedBot: classification.isVerifiedBot,
@@ -137,5 +172,6 @@ export async function refuseIfBot(route: string): Promise<NextResponse | null> {
 export const __botProtectionTestUtils = {
   reset() {
     lastUnavailableReportAt = null
+    lastFlaggedReportAt = null
   },
 }

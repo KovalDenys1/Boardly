@@ -542,6 +542,14 @@ the managed bot rulesets from log to challenge.
 
 ### BotID (#1157)
 
+**Monitor mode since 2026-09-27: `BOTID_MODE=monitor` is set in Vercel Production.** A bot verdict is
+logged ("monitor mode lets it through") and recorded as a `botid_flagged` OperationalEvent, and the
+request goes on to the route's rate limits. Why: right after the first release an extension-driven
+Chrome passed once and was then classified as a bot, and with no other guest traffic that Sunday there
+was no way to show that real people pass. After a week, compare `botid_flagged` with real guest
+sign-ups; if real players are not flagged, remove `BOTID_MODE` and redeploy to enforce.
+
+
 Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
 token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
 Basic is free on every plan; Deep Analysis costs $1 per 1,000 `checkBotId()` calls on Pro
