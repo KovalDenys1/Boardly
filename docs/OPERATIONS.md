@@ -462,8 +462,13 @@ before a function runs:
 
 **"RL sign-in login" (`/api/auth/login`, 25/60s) needs removing from the WAF config** (#1138,
 2026-09-25): the route it protected was a dead second password-check endpoint with no caller
-anywhere in the app and has been deleted, so the path now 404s before this rule would ever fire.
-Nothing to fix in the app — `vercel firewall rules disable "RL sign-in login"` then
+anywhere in the app and has been deleted. The path is not gone, though — with no `route.ts` left
+under `app/api/auth/login`, the request falls through to the catch-all
+`app/api/auth/[...nextauth]/route.ts`, and NextAuth 4.24.15 answers 400 ("This action with HTTP
+POST is not supported") because "login" is not one of its known actions. The password check itself
+is never reached either way, so the rule is now redundant rather than unreachable: traffic still
+hits the path and can still trip the rate limit, it is just guarding a route that already refuses
+on its own. Nothing to fix in the app — `vercel firewall rules disable "RL sign-in login"` then
 `vercel firewall publish --yes` on `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2` is the only remaining step,
 and it touches production Vercel Firewall config rather than the codebase.
 

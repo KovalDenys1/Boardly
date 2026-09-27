@@ -181,7 +181,7 @@ export function getSecurityHeaders() {
     'X-XSS-Protection': '0',
 
     // Prevent clickjacking. DENY, not SAMEORIGIN (#1146, S4-07): proxy.ts's CSP already
-    // sends `frame-ancestors 'none', so no framing is allowed at all — SAMEORIGIN here
+    // sends `frame-ancestors 'none'`, so no framing is allowed at all — SAMEORIGIN here
     // just left the two headers disagreeing about what a compliant browser should do.
     'X-Frame-Options': 'DENY',
 
