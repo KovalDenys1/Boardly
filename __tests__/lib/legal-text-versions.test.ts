@@ -72,7 +72,7 @@ const TERMS_DIGESTS: Record<string, string> = {
   '2026-09-25': '680e4906ad82f7c3',
   // The whole of /terms translated and rewritten (#1166), the community rules and
   // moderation (#1173), the content-notice address (#1172).
-  '2026-09-27': 'dd049e2d10a7de28',
+  '2026-09-27': '916b5ebe941a7fd5',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {

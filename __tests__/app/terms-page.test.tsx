@@ -124,6 +124,18 @@ describe('/terms (#1166)', () => {
     expect(moderation).toHaveTextContent(en.terms.moderation.appeal)
   })
 
+  it('promises the suspension reason by email, which is what we do, and names where to appeal', () => {
+    // /suspended shows the reason only to a session that was signed in when the
+    // suspension landed (lib/next-auth.ts's sync), so the Terms promise the email.
+    expect(en.terms.moderation.reasons).toBe(
+      'When we suspend or close an account, we email the owner the reason and, for a temporary suspension, the end date.'
+    )
+    for (const locale of [en, no, ru, uk]) {
+      expect(locale.terms.moderation.appeal).toContain('boardly.online/suspended')
+      expect(locale.rules.appeal).toContain('boardly.online/suspended')
+    }
+  })
+
   it('no longer excludes all liability, and keeps the statutory remedies (L3-04)', () => {
     const liability = Object.values(en.terms.liability).join(' ')
     expect(liability).not.toMatch(/as is|not liable for any damages/i)

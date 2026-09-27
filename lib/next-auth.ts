@@ -498,7 +498,10 @@ export const authOptions: NextAuthOptions = {
           // role and suspended are re-read here on purpose: proxy.ts decides
           // admin access and the suspension redirect from these claims, and a
           // 30-day session would otherwise keep asserting them long after the
-          // database changed (#803).
+          // database changed (#803). The reason and the expiry travel with the
+          // flag: someone suspended while signed in lands on /suspended through
+          // this sync, and the Terms promise that page states the reason and,
+          // for a temporary suspension, the end date (#1166).
           select: {
             avatarUrl: true,
             username: true,
@@ -506,6 +509,8 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
             role: true,
             suspended: true,
+            banReason: true,
+            banExpiresAt: true,
           },
         })
         token.picture = dbUser?.avatarUrl ?? dbUser?.image ?? null
@@ -514,6 +519,8 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.role = dbUser.role
           token.suspended = dbUser.suspended
+          token.banReason = dbUser.banReason
+          token.banExpiresAt = dbUser.banExpiresAt?.toISOString() ?? null
         }
         token.avatarResolved = Date.now()
       }
