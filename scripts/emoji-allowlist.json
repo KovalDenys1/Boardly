@@ -1,7 +1,6 @@
 {
   "files": {
     "components/Chat.tsx": "chat emoji picker and messages are user content",
-    "components/ReactionOverlay.tsx": "reactions are user content",
     "lib/celebrations.ts": "celebration bursts keep emoji by design (2026-09-06)",
     "components/CelebrationBanner.tsx": "renders lib/celebrations.ts events",
     "lib/games/memory-game.ts": "memory card faces are game content; own icon set is a separate ticket",
