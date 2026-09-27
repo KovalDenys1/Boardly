@@ -389,7 +389,8 @@ Counts `Users` rows with `isGuest = true` created in the last hour against the p
 (`lib/operational-metrics.ts`, #1150). It breaches at 60 an hour or ten times the baseline hourly
 rate, whichever is higher; a normal September 2026 day made 5-17 guests in total. A guest row is
 minted by `POST /api/auth/guest-session` and by a `POST /api/lobby/<code>/join-guest` without a
-valid guest token.
+valid guest token, or with one whose guest no longer exists (erased or purged; since #1157 that
+is a new guest under a new id, charged to the same new-guest budget, never the old id re-created).
 
 When it fires:
 
@@ -411,14 +412,25 @@ guest-session, forgot-password, resend-verification, join-guest, lobby create an
 **503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
 history reads come back empty.
 
+Every Upstash call gives up after one retry or 1.5 s (`upstashClientOptions` in
+`lib/redis-credentials.ts`), and after three failures in a row an instance stops calling the store
+for 15 s and goes straight to the fallback, probing again after that. So an outage costs a
+visitor milliseconds, not the seconds of retries the client defaults to.
+
+Upstash commands the limiter spends: one `HINCRBY` per counted request (the counters are fields in
+one hash per window, `rate_limit_window:<windowMs>:<window>`), one `EXPIRE` per window per
+instance, and none for an address that instance has already seen refused this window, or while
+it is paused.
+
 When it fires:
 
 1. `reason` on the event is the Upstash error. `fetch failed` on credentials that look right
    usually means the store was archived after inactivity or the monthly command quota (500K on
    Free) is spent: open the Upstash console for `boardly-cache` (Vercel -> Storage).
-2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter no
-   longer spends a command on a key it has already refused, and the WAF rules below answer most
-   floods before they reach a function, so a spent quota means a very large or distributed flood.
+2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter spends
+   at most one command per counted request and none on a key it has already refused, and the WAF
+   rules below answer most floods before they reach a function, so a spent quota means a very
+   large or distributed flood.
 3. Credentials changed: check `KV_REST_API_URL` / `KV_REST_API_TOKEN` in Vercel production env.
 
 The alert resolves on the first window without a degraded event.

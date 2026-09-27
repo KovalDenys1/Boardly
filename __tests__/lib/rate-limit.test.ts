@@ -30,20 +30,60 @@ async function loadRateLimitModule(redisImplementation?: Record<string, unknown>
     },
   }))
 
-  if (redisImplementation) {
-    jest.doMock('@upstash/redis', () => ({
-      Redis: jest.fn(() => redisImplementation),
-    }))
-  } else {
-    jest.doMock('@upstash/redis', () => ({
-      Redis: jest.fn(() => ({
-        incr: jest.fn(async () => 1),
+  RedisConstructor.mockReset()
+  RedisConstructor.mockImplementation(
+    () =>
+      redisImplementation ?? {
+        hincrby: jest.fn(async () => 1),
         expire: jest.fn(async () => 1),
-      })),
-    }))
-  }
+      }
+  )
+  jest.doMock('@upstash/redis', () => ({ Redis: RedisConstructor }))
 
   return import('@/lib/rate-limit')
+}
+
+const RedisConstructor = jest.fn()
+
+/** A shared store that counts per hash field, the way HINCRBY does. */
+function countingStore() {
+  const counts = new Map<string, number>()
+  const hincrby = jest.fn(async (key: string, field: string, increment: number) => {
+    const next = (counts.get(`${key}|${field}`) ?? 0) + increment
+    counts.set(`${key}|${field}`, next)
+    return next
+  })
+  const expire = jest.fn(async (_key: string, _ttlSeconds: number) => 1)
+  return { hincrby, expire }
+}
+
+function failingStore(message = 'fetch failed') {
+  return {
+    hincrby: jest.fn(async (_key: string, _field: string, _increment: number): Promise<number> => {
+      throw new Error(message)
+    }),
+    expire: jest.fn(async (_key: string, _ttlSeconds: number) => 1),
+  }
+}
+
+/**
+ * Thirty seconds into a minute and into a quarter-hour, so a test's requests cannot
+ * straddle a window boundary. Returns a setter for tests that move the clock.
+ */
+const PINNED_NOW = 1_800_000_030_000
+function pinClock(at = PINNED_NOW) {
+  let now = at
+  jest.spyOn(Date, 'now').mockImplementation(() => now)
+  return (next: number) => {
+    now = next
+  }
+}
+
+function requestFrom(ip: string, path = '/api/test-rate-limit') {
+  return new NextRequest(`http://localhost:3000${path}`, {
+    method: 'POST',
+    headers: { 'x-real-ip': ip },
+  })
 }
 
 describe('rateLimit store backends', () => {
@@ -51,6 +91,7 @@ describe('rateLimit store backends', () => {
   const originalUpstashToken = process.env.UPSTASH_REDIS_REST_TOKEN
 
   afterEach(() => {
+    jest.restoreAllMocks()
     if (typeof originalUpstashUrl === 'string') {
       process.env.UPSTASH_REDIS_REST_URL = originalUpstashUrl
     } else {
@@ -92,9 +133,8 @@ describe('rateLimit store backends', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-    const incr = jest.fn(async () => 1)
-    const expire = jest.fn(async () => 1)
-    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ incr, expire })
+    const { hincrby, expire } = countingStore()
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
@@ -108,19 +148,21 @@ describe('rateLimit store backends', () => {
     const result = await limiter(makeRequest())
 
     expect(result).toBeNull()
-    expect(incr).toHaveBeenCalledTimes(1)
+    expect(hincrby).toHaveBeenCalledTimes(1)
+    const [windowKey, field, increment] = hincrby.mock.calls[0]
+    expect(windowKey).toMatch(/^rate_limit_window:60000:\d+$/)
+    expect(field).toBe('203.0.113.10:/api/test-rate-limit')
+    expect(increment).toBe(1)
     expect(expire).toHaveBeenCalledTimes(1)
+    expect(expire.mock.calls[0][0]).toBe(windowKey)
   })
 
   it('falls back to in-memory backend when shared backend errors', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-    const incr = jest.fn(async () => {
-      throw new Error('redis unavailable')
-    })
-    const expire = jest.fn(async () => 1)
-    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ incr, expire })
+    const { hincrby, expire } = failingStore('redis unavailable')
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
@@ -134,8 +176,89 @@ describe('rateLimit store backends', () => {
 
     expect(first).toBeNull()
     expect(second?.status).toBe(429)
-    expect(incr).toHaveBeenCalled()
+    expect(hincrby).toHaveBeenCalled()
     expect(expire).not.toHaveBeenCalled()
+  })
+
+  it('builds its client to give up fast: one retry and a per-command deadline (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule(countingStore())
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    await rateLimit({ windowMs: 60_000, maxRequests: 10 })(makeRequest())
+
+    expect(RedisConstructor).toHaveBeenCalledTimes(1)
+    const config = RedisConstructor.mock.calls[0][0]
+    expect(config).toMatchObject({
+      url: 'https://example.upstash.io',
+      token: 'token',
+      retry: { retries: 1 },
+    })
+    // A function, so the client throws on the abort instead of returning "Aborted", and
+    // each command gets a fresh 1.5 s deadline.
+    expect(typeof config.signal).toBe('function')
+    const timeout = jest
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation(() => new AbortController().signal)
+    const first = config.signal()
+    const second = config.signal()
+    expect(timeout).toHaveBeenCalledTimes(2)
+    expect(timeout).toHaveBeenCalledWith(1_500)
+    expect(first.aborted).toBe(false)
+    expect(second).not.toBe(first)
+  })
+
+  it('spends one command per counted request and one EXPIRE per window per instance (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    pinClock()
+    const { hincrby, expire } = countingStore()
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    // A flood from rotating addresses, one request each: the case the per-address limit
+    // cannot stop, and the one that used to cost INCR + EXPIRE every time.
+    const limiter = rateLimit({ windowMs: 60_000, maxRequests: 5, keyScope: 'register' })
+    for (let i = 0; i < 20; i += 1) {
+      expect(await limiter(requestFrom(`198.51.100.${i}`))).toBeNull()
+    }
+    expect(hincrby).toHaveBeenCalledTimes(20)
+    expect(expire).toHaveBeenCalledTimes(1)
+
+    // Another window length is another hash, with its own TTL.
+    await rateLimit({ windowMs: 15 * 60_000, maxRequests: 5 })(requestFrom('198.51.100.1'))
+    expect(expire).toHaveBeenCalledTimes(2)
+    expect(expire.mock.calls[1][0]).toMatch(/^rate_limit_window:900000:\d+$/)
+    // The TTL runs to the end of the window: thirty seconds into a quarter-hour.
+    expect(expire.mock.calls[0][1]).toBe(30)
+    expect(expire.mock.calls[1][1]).toBe(870)
+  })
+
+  it('retries a failed EXPIRE on the next request instead of leaving the window without a TTL', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    pinClock()
+    const { hincrby } = countingStore()
+    const expire = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('fetch failed'))
+      .mockResolvedValue(1)
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const limiter = rateLimit({ windowMs: 60_000, maxRequests: 10 })
+    await limiter(makeRequest())
+    await limiter(makeRequest())
+    await limiter(makeRequest())
+
+    expect(expire).toHaveBeenCalledTimes(2)
   })
 
   it('keyScope buckets every path together, so varying the path buys no fresh allowance', async () => {
@@ -163,37 +286,99 @@ describe('rateLimit store backends', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-    const incr = jest.fn(async () => {
-      throw new Error('fetch failed')
-    })
     const { rateLimit, __rateLimitTestUtils, failClosedAuthPreset, rateLimitPresets } =
-      await loadRateLimitModule({ incr, expire: jest.fn() })
+      await loadRateLimitModule(failingStore())
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
+    // register, guest-session, forgot-password, resend-verification, join-guest (both
+    // budgets), lobby create and rematch, and feedback: refused outright, from the first
+    // request. Nothing is minted from per-instance memory while the store is down.
     for (const preset of [
       failClosedAuthPreset,
       rateLimitPresets.lobbyJoinGuest,
       rateLimitPresets.lobbyJoinNewGuest,
       rateLimitPresets.lobbyCreation,
+      rateLimitPresets.lobbyCreationPremium,
+      { windowMs: 60_000, maxRequests: 5, failClosed: true },
     ]) {
       const result = await rateLimit(preset)(makeRequest())
       expect(result?.status).toBe(503)
       expect(result?.headers.get('Retry-After')).toBe('30')
+    }
+    // Serving those from memory instead is an unmade security decision (#1156).
+    for (const preset of [failClosedAuthPreset, ...Object.values(rateLimitPresets)]) {
+      expect(preset).not.toHaveProperty('degraded')
     }
 
     // Game actions stay fail-open on the memory store.
     expect(await rateLimit(rateLimitPresets.game)(makeRequest())).toBeNull()
   })
 
+  it('degraded mode, if a route ever sets it, caps every address together per instance, and one address cannot spend it (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule(failingStore())
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const limiter = rateLimit({
+      windowMs: 15 * 60_000,
+      maxRequests: 5,
+      failClosed: true,
+      degraded: { maxRequests: 2, instanceMaxRequests: 6 },
+    })
+
+    // One address hammering: two admitted, the rest 429 - and none of those count
+    // against the instance ceiling.
+    for (let i = 0; i < 20; i += 1) await limiter(requestFrom('192.0.2.1'))
+
+    // Four more addresses share the remaining four of six.
+    const statuses: number[] = []
+    for (let i = 2; i <= 5; i += 1) {
+      statuses.push((await limiter(requestFrom(`192.0.2.${i}`)))?.status ?? 200)
+      statuses.push((await limiter(requestFrom(`192.0.2.${i}`)))?.status ?? 200)
+    }
+    expect(statuses.filter((status) => status === 200)).toHaveLength(4)
+    // Past the ceiling the route answers as it would with no degraded mode: 503.
+    expect(statuses.filter((status) => status === 503)).toHaveLength(4)
+  })
+
+  it('stops calling a failing store for a while after three failures in a row (#1156)', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+    const setNow = pinClock()
+    const store = failingStore()
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule(store)
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const limiter = rateLimit({ windowMs: 60_000, maxRequests: 100 })
+    for (let i = 0; i < 10; i += 1) await limiter(makeRequest())
+    expect(store.hincrby).toHaveBeenCalledTimes(3)
+
+    // After the pause, one probe; it fails, so the pause starts again.
+    setNow(PINNED_NOW + 15_001)
+    await limiter(makeRequest())
+    await limiter(makeRequest())
+    expect(store.hincrby).toHaveBeenCalledTimes(4)
+
+    // The store is back: the next probe succeeds and every request asks it again.
+    store.hincrby.mockImplementation(async () => 1)
+    setNow(PINNED_NOW + 30_002)
+    await limiter(makeRequest())
+    await limiter(makeRequest())
+    await limiter(makeRequest())
+    expect(store.hincrby).toHaveBeenCalledTimes(7)
+  })
+
   it('records rate_limiter_degraded once per minute, not once per request (#1156)', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://unreachable.example'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-    const incr = jest.fn(async () => {
-      throw new Error('fetch failed')
-    })
-    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ incr, expire: jest.fn() })
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule(failingStore())
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
@@ -211,12 +396,9 @@ describe('rateLimit store backends', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-    let count = 0
-    const incr = jest.fn(async () => {
-      count += 1
-      return count
-    })
-    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ incr, expire: jest.fn() })
+    pinClock()
+    const { hincrby, expire } = countingStore()
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
     __rateLimitTestUtils.clearInMemoryStore()
     __rateLimitTestUtils.resetSharedClient()
 
@@ -228,7 +410,7 @@ describe('rateLimit store backends', () => {
       expect((await limiter(makeRequest()))?.status).toBe(429)
     }
 
-    expect(incr).toHaveBeenCalledTimes(3)
+    expect(hincrby).toHaveBeenCalledTimes(3)
     // The first refusal is visible to the alert engine; the rest are not rows.
     const limited = recordServerReliabilityEvent.mock.calls.filter(
       ([event]) => event.eventName === 'rate_limited'

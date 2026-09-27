@@ -27,7 +27,8 @@ import type { LobbyJoinRefusalCode } from '@/lib/lobby-join-errors'
 // One bucket per IP across every lobby code (#1157): the code is in the path, so the
 // old per-path key gave each of the 10,000 codes a fresh allowance.
 const limiter = rateLimit(rateLimitPresets.lobbyJoinGuest)
-// A join without a valid token mints a Users row, so it gets guest-session's budget.
+// A join without a valid token for a guest that still exists mints a Users row, so it gets
+// guest-session's budget.
 const newGuestLimiter = rateLimit(rateLimitPresets.lobbyJoinNewGuest)
 const joinGuestSchema = z.object({
   guestName: z.string().trim().min(2).max(20),
@@ -53,8 +54,22 @@ export async function POST(
     }
 
     const providedToken = parsedBody.data.guestToken || getGuestTokenFromRequest(req)
-    const existingGuestClaims = providedToken ? verifyGuestToken(providedToken) : null
+    const verifiedGuestClaims = providedToken ? verifyGuestToken(providedToken) : null
     const requestedGuestName = parsedBody.data.guestName
+
+    // A validly signed token only counts if its guest still exists. One naming a guest that
+    // was erased with "Forget me" or purged used to re-create the row under the same id,
+    // undoing the erasure (#1129) and minting outside the new-guest budget below (#1157).
+    // guest-session answers such a token 404; this visitor is mid-join, so they are treated
+    // as arriving without one: a fresh guest, counted as one, whose token the client stores.
+    const existingGuestClaims =
+      verifiedGuestClaims &&
+      (await prisma.users.findFirst({
+        where: { id: verifiedGuestClaims.guestId, isGuest: true },
+        select: { id: true },
+      }))
+        ? verifiedGuestClaims
+        : null
 
     if (!existingGuestClaims) {
       const newGuestRateLimitResult = await newGuestLimiter(req)
@@ -121,11 +136,20 @@ export async function POST(
     const signupSource = getSignupSourceFromRequest(req)
     // Every check that can refuse the join runs before this is called, so a kicked guest, a
     // running game or a full lobby no longer mints a Users row per request (#1157).
+    // Only a freshly minted id creates a row; a token holder's row is found or, if it went
+    // since the check above, not re-created (null).
     const resolveGuestUser = async () => {
-      const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
+      const guestUser = existingGuestClaims
+        ? await getOrCreateGuestUser(guestId, requestedGuestName, signupSource, {
+            createIfMissing: false,
+          })
+        : await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
+      if (!guestUser) return null
       const guestName = guestUser.username || requestedGuestName
       return { guestUser, guestName, guestToken: createGuestToken(guestUser.id, guestName) }
     }
+    const guestGone = () =>
+      NextResponse.json({ error: 'Guest not found', code: 'GUEST_NOT_FOUND' }, { status: 404 })
 
     // The guest id is carried in the token and survives the redirect, so a kicked guest comes
     // back as the same user — and the lobby refuses them, exactly as it refuses a kicked
@@ -145,7 +169,9 @@ export async function POST(
         (p) => p.userId === guestId
       )
       if (existingPlayer) {
-        const { guestUser, guestName, guestToken } = await resolveGuestUser()
+        const resolved = await resolveGuestUser()
+        if (!resolved) return guestGone()
+        const { guestUser, guestName, guestToken } = resolved
         return NextResponse.json(
           {
             message: 'Already in lobby',
@@ -184,7 +210,7 @@ export async function POST(
 
     // Create or get the active game
     let game
-    let joined: Awaited<ReturnType<typeof resolveGuestUser>>
+    let joined: NonNullable<Awaited<ReturnType<typeof resolveGuestUser>>>
     if (!activeGame) {
       const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
       if (!isSupportedGameType(requestedGameType)) {
@@ -214,7 +240,9 @@ export async function POST(
       }
 
       // Minted only now that the join is going to happen: the Players rows below need it.
-      joined = await resolveGuestUser()
+      const minted = await resolveGuestUser()
+      if (!minted) return guestGone()
+      joined = minted
 
       game = await prisma.games.create({
         data: {
@@ -249,7 +277,9 @@ export async function POST(
       })
     } else {
       // Add guest player to existing game
-      joined = await resolveGuestUser()
+      const minted = await resolveGuestUser()
+      if (!minted) return guestGone()
+      joined = minted
       const nextPosition = activeGame.players.length
       await prisma.players.create({
         data: {

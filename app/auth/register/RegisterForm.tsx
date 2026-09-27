@@ -150,7 +150,6 @@ export default function RegisterForm() {
         event: 'register',
         method: 'email',
         success: true,
-        userId: sanitizedInput.email,
       })
       trackFunnelStep('register')
       // Auto-login after registration

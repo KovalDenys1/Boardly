@@ -8,7 +8,7 @@
     "components/HomePage/HeroDemoMemory.tsx": "demo of the memory card faces",
     "app/lobby/[code]/components/MemoryGameBoard.tsx": "renders the memory card faces",
     "lib/email.ts": "email bodies cannot use svg icons",
-    "app/api/feedback/route.ts": "server-side text",
+    "lib/feedback-notification.ts": "server-side Discord embed labels (moved from app/api/feedback/route.ts in #1133)",
     "lib/reliability-alerts.ts": "server-side alert text"
   }
 }

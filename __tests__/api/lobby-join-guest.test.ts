@@ -7,9 +7,22 @@ import { NextRequest } from 'next/server'
 import { POST as JOIN_GUEST } from '@/app/api/lobby/[code]/join-guest/route'
 import { prisma } from '@/lib/db'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { verifyGuestToken } from '@/lib/guest-auth'
+import { verifyLobbyPassword } from '@/lib/lobby-password'
+import { isSupportedGameType } from '@/lib/game-registry'
+import { rateLimit } from '@/lib/rate-limit'
+
+// The route builds its two limiters at import: the per-IP join budget, then the new-guest
+// one. Taken now, before any clearAllMocks empties mock.results.
+const [joinLimiter, newGuestLimiter] = (rateLimit as jest.Mock).mock.results.map(
+  (result) => result.value as jest.Mock
+)
 
 jest.mock('@/lib/db', () => ({
   prisma: {
+    users: {
+      findFirst: jest.fn(),
+    },
     lobbies: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -295,5 +308,133 @@ describe('POST /api/lobby/[code]/join-guest — no Users row before the join is 
     expect(mockGetOrCreateGuestUser.mock.invocationCallOrder[0]).toBeLessThan(
       mockPrisma.games.create.mock.invocationCallOrder[0]
     )
+  })
+
+  it('mints no guest behind a wrong lobby password', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({ ...baseLobby, password: 'hash' } as any)
+    ;(verifyLobbyPassword as jest.Mock).mockResolvedValueOnce(false)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(403)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('mints no guest for a lobby whose game type is not supported', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
+    ;(isSupportedGameType as jest.Mock).mockReturnValueOnce(false)
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(400)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/lobby/[code]/join-guest — which joins may mint a guest (#1157, #1129)', () => {
+  const lobby = {
+    id: 'lobby-1',
+    code: 'ABC123',
+    password: null,
+    maxPlayers: 4,
+    gameType: 'yahtzee',
+    allowSpectators: true,
+    kickedUserIds: [],
+    games: [],
+  }
+  const mockGetOrCreateGuestUser = getOrCreateGuestUser as jest.Mock
+  const mockVerifyGuestToken = verifyGuestToken as jest.Mock
+
+  function joinWithToken() {
+    return new NextRequest('http://localhost:3000/api/lobby/ABC123/join-guest', {
+      method: 'POST',
+      body: JSON.stringify({ guestName: 'Newcomer', guestToken: 'signed-token' }),
+    })
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobby as any)
+    mockPrisma.games.findFirst.mockResolvedValue(null)
+    mockPrisma.games.create.mockResolvedValue({ id: 'game-new', players: [] } as any)
+    mockPrisma.users.findFirst.mockResolvedValue(null)
+    mockVerifyGuestToken.mockReturnValue(null)
+  })
+
+  it('charges a token-less join to the new-guest budget before anything else', async () => {
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(joinLimiter).toHaveBeenCalledTimes(1)
+    expect(newGuestLimiter).toHaveBeenCalledTimes(1)
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-new', 'Newcomer', null)
+  })
+
+  it('mints nothing and looks nothing up once the new-guest budget is spent', async () => {
+    newGuestLimiter.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Too many new guests' }), { status: 429 })
+    )
+
+    const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(429)
+    expect(mockPrisma.lobbies.findUnique).not.toHaveBeenCalled()
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+  })
+
+  it('lets a guest whose row exists rejoin on their token, off the new-guest budget, never creating a row', async () => {
+    mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-old', guestName: 'Newcomer' })
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'guest-old' } as any)
+    mockGetOrCreateGuestUser.mockResolvedValueOnce({ id: 'guest-old', username: 'Newcomer', isGuest: true })
+
+    const response = await JOIN_GUEST(joinWithToken(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.users.findFirst).toHaveBeenCalledWith({
+      where: { id: 'guest-old', isGuest: true },
+      select: { id: true },
+    })
+    expect(newGuestLimiter).not.toHaveBeenCalled()
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-old', 'Newcomer', null, {
+      createIfMissing: false,
+    })
+    expect((await response.json()).guestId).toBe('guest-old')
+  })
+
+  it('does not bring an erased or purged guest back under the old id: a fresh guest, on the new-guest budget', async () => {
+    mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-erased', guestName: 'Newcomer' })
+    mockPrisma.users.findFirst.mockResolvedValue(null)
+
+    const response = await JOIN_GUEST(joinWithToken(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(200)
+    expect(newGuestLimiter).toHaveBeenCalledTimes(1)
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledTimes(1)
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-new', 'Newcomer', null)
+    expect(mockGetOrCreateGuestUser).not.toHaveBeenCalledWith(
+      'guest-erased',
+      expect.anything(),
+      expect.anything()
+    )
+    expect(mockPrisma.games.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          players: { create: [{ userId: 'guest-new', position: 0 }] },
+        }),
+      })
+    )
+  })
+
+  it('answers 404 and seats no one when the guest vanishes between the check and the join', async () => {
+    mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-old', guestName: 'Newcomer' })
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'guest-old' } as any)
+    mockGetOrCreateGuestUser.mockResolvedValueOnce(null)
+
+    const response = await JOIN_GUEST(joinWithToken(), { params: { code: 'ABC123' } as any })
+
+    expect(response.status).toBe(404)
+    expect((await response.json()).code).toBe('GUEST_NOT_FOUND')
+    expect(mockPrisma.games.create).not.toHaveBeenCalled()
+    expect(mockPrisma.players.create).not.toHaveBeenCalled()
   })
 })

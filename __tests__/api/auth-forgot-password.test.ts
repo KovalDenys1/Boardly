@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/auth/forgot-password/route'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { hashAuthToken, passwordResetTokensOf } from '@/lib/auth-tokens'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -38,6 +39,18 @@ jest.mock('@/lib/email', () => ({
   sendPasswordResetEmail: jest.fn(),
 }))
 
+// The work an existing account triggers runs after the response (#1142). Collect it so
+// a test can wait for it, and so it is visible that the response did not.
+const mockPendingAfterResponse: Promise<unknown>[] = []
+jest.mock('@/lib/after-response', () => ({
+  runAfterResponse: (work: Promise<unknown>) => {
+    mockPendingAfterResponse.push(work)
+  },
+}))
+async function flushAfterResponse() {
+  await Promise.all(mockPendingAfterResponse.splice(0))
+}
+
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     info: jest.fn(),
@@ -65,6 +78,7 @@ const genericSuccessMessage =
 describe('POST /api/auth/forgot-password', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPendingAfterResponse.splice(0)
     mockSendPasswordResetEmail.mockResolvedValue({ success: true })
   })
 
@@ -106,20 +120,28 @@ describe('POST /api/auth/forgot-password', () => {
 
     const response = await POST(buildRequest({ email: 'USER@example.com' }))
     const payload = await response.json()
+    await flushAfterResponse()
 
     expect(response.status).toBe(200)
     expect(payload.message).toBe(genericSuccessMessage)
+    // Only this user's reset tokens are replaced; a pending deletion link survives (#1141).
     expect(mockPrisma.passwordResetTokens.deleteMany).toHaveBeenCalledWith({
-      where: { userId: 'user-1' },
+      where: passwordResetTokensOf('user-1', 'reset'),
     })
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String))
+
+    // The row holds the hash of the emailed token and nothing that matches it (#1141).
+    const emailedToken = mockSendPasswordResetEmail.mock.calls[0][1]
+    expect(emailedToken).toMatch(/^[0-9a-f]{64}$/)
     expect(mockPrisma.passwordResetTokens.create).toHaveBeenCalledWith({
       data: {
         userId: 'user-1',
-        token: expect.any(String),
+        tokenHash: hashAuthToken(emailedToken),
+        purpose: 'reset',
         expires: expect.any(Date),
       },
     })
-    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String))
+    expect(JSON.stringify(mockPrisma.passwordResetTokens.create.mock.calls)).not.toContain(emailedToken)
   })
 
   it('still returns generic success when sending the reset email fails', async () => {
@@ -148,6 +170,7 @@ describe('POST /api/auth/forgot-password', () => {
 
     const response = await POST(buildRequest({ email: 'user@example.com' }))
     const payload = await response.json()
+    await flushAfterResponse()
 
     expect(response.status).toBe(200)
     expect(payload.message).toBe(genericSuccessMessage)
@@ -156,5 +179,45 @@ describe('POST /api/auth/forgot-password', () => {
     expect(mockPrisma.passwordResetTokens.deleteMany).not.toHaveBeenCalled()
     expect(mockPrisma.passwordResetTokens.create).not.toHaveBeenCalled()
     expect(mockSendPasswordResetEmail).not.toHaveBeenCalled()
+  })
+  // #1142: an existing address and an unknown one both answer right after the one
+  // lookup, so response time says nothing about which addresses have accounts.
+  describe('enumeration by timing (#1142)', () => {
+    it('answers before the reset mail is sent', async () => {
+      mockPrisma.users.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@example.com' } as any)
+      let releaseSend: (value: { success: boolean }) => void = () => {}
+      mockSendPasswordResetEmail.mockReturnValue(new Promise((resolve) => { releaseSend = resolve }) as any)
+
+      const response = await POST(buildRequest({ email: 'user@example.com' }))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).message).toBe(genericSuccessMessage)
+      expect(mockPendingAfterResponse).toHaveLength(1)
+
+      releaseSend({ success: true })
+      await flushAfterResponse()
+      expect(mockSendPasswordResetEmail).toHaveBeenCalledTimes(1)
+    })
+
+    it('answers 200, not 500, when writing the token fails for an existing account', async () => {
+      mockPrisma.users.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@example.com' } as any)
+      mockPrisma.passwordResetTokens.create.mockRejectedValueOnce(new Error('db write failed'))
+
+      const response = await POST(buildRequest({ email: 'user@example.com' }))
+      await flushAfterResponse()
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).message).toBe(genericSuccessMessage)
+      expect(mockSendPasswordResetEmail).not.toHaveBeenCalled()
+    })
+
+    it('does no work after the response for an unknown address', async () => {
+      mockPrisma.users.findFirst.mockResolvedValue(null)
+
+      await POST(buildRequest({ email: 'missing@example.com' }))
+
+      expect(mockPendingAfterResponse).toHaveLength(0)
+      expect(mockReserveMail).not.toHaveBeenCalled()
+    })
   })
 })

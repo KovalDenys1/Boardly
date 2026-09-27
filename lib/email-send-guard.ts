@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { getRedisRestCredentials } from './redis-credentials'
+import { getRedisRestCredentials, upstashClientOptions } from './redis-credentials'
 import { logger } from './logger'
 
 /**
@@ -73,7 +73,15 @@ async function getRedisClient(): Promise<GuardRedisClient | null> {
   if (!credentials) return null
   if (!redisClientPromise) {
     redisClientPromise = import('@upstash/redis')
-      .then(({ Redis }) => new Redis({ url: credentials.url, token: credentials.token }) as unknown as GuardRedisClient)
+      .then(
+        ({ Redis }) =>
+          new Redis({
+            url: credentials.url,
+            token: credentials.token,
+            // Fail fast rather than retry for seconds on a store that is down (#1156).
+            ...upstashClientOptions(),
+          }) as unknown as GuardRedisClient
+      )
       .catch((error) => {
         redisClientPromise = null
         logger.warn('email-send-guard: Upstash client unavailable', {

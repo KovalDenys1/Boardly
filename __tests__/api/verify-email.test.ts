@@ -8,6 +8,7 @@ import { POST } from '@/app/api/auth/verify-email/route'
 import { prisma } from '@/lib/db'
 import { sendWelcomeEmail } from '@/lib/email'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
+import { hashAuthToken } from '@/lib/auth-tokens'
 
 const mockTransactionClient = {
   users: {
@@ -58,11 +59,11 @@ describe('POST /api/auth/verify-email', () => {
   })
 
   it('moves pending email into the primary email on verification', async () => {
-    mockPrisma.emailVerificationTokens.findUnique.mockResolvedValue({
-      userId: 'user-1',
-      token: 'valid-token',
-      expires: new Date(Date.now() + 60_000),
-    } as any)
+    // A row as written since #1141: the hash of the emailed token, no raw value.
+    mockPrisma.emailVerificationTokens.findUnique.mockImplementation((async ({ where }: any) =>
+      where.tokenHash === hashAuthToken('valid-token')
+        ? { id: 'token-1', userId: 'user-1', token: null, tokenHash: where.tokenHash, expires: new Date(Date.now() + 60_000) }
+        : null) as any)
     mockPrisma.users.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'old@example.com',
@@ -99,8 +100,11 @@ describe('POST /api/auth/verify-email', () => {
         }),
       })
     )
+    expect(mockPrisma.emailVerificationTokens.findUnique.mock.calls[0][0]).toEqual({
+      where: { tokenHash: hashAuthToken('valid-token') },
+    })
     expect(mockTransactionClient.emailVerificationTokens.delete).toHaveBeenCalledWith({
-      where: { token: 'valid-token' },
+      where: { id: 'token-1' },
     })
     expect(mockEnsureUserHasFriendCode).toHaveBeenCalledWith('user-1')
     expect(mockSendWelcomeEmail).not.toHaveBeenCalled()

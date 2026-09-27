@@ -4,6 +4,7 @@ import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup
 import { prisma } from '@/lib/db'
 import { sendUnverifiedAccountWarningEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
+import { hashAuthToken } from '@/lib/auth-tokens'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -88,7 +89,7 @@ describe('cleanup-unverified', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userId: 'user-1',
-          token: 'warning-token-123',
+          tokenHash: hashAuthToken('warning-token-123'),
         }),
       })
     )
