@@ -155,7 +155,7 @@ export function useRealtimeConnection({
         'sketch-live': (payload) => {
           onSketchLiveRef.current?.(payload)
         },
-        // A peer event (the spectate page's presence count), so untrusted: clamped.
+        // Signed by PATCH /api/lobby/[code]/spectator-count; still clamped.
         'spectator-count-update': (payload) => {
           onSpectatorCountChangeRef.current?.(readSpectatorCount(payload))
         },

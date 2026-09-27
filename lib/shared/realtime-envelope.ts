@@ -136,22 +136,27 @@ export function realtimeSigningInput(
  *   scored is the one `submit-drawing` stores, and `parseSketchLiveMessage`
  *   drops anything that is not the current drawer's, for the current round,
  *   within the canvas' own size limits.
- * - `spectator-count-update`: the spectate page's presence count, a number
- *   the receiver clamps (`readSpectatorCount`).
  *
  * `chat-message` is not here on purpose: chat, Alias guesses included, goes
- * through a server route that knows who is speaking.
+ * through a server route that knows who is speaking. Nor is
+ * `spectator-count-update`: the spectate page reports its presence count to
+ * PATCH /api/lobby/[code]/spectator-count, which stores the clamped value and
+ * broadcasts it signed.
  */
-export const LOBBY_PEER_EVENTS: ReadonlySet<string> = new Set(['sketch-live', 'spectator-count-update'])
+export const LOBBY_PEER_EVENTS: ReadonlySet<string> = new Set(['sketch-live'])
 
 export function isLobbyPeerEvent(topic: string, event: string): boolean {
   return topic.startsWith('lobby:') && LOBBY_PEER_EVENTS.has(event)
 }
 
-/** Largest spectator count a peer message may claim; the spectate route's own limit is far below it. */
+/** Largest spectator count a message may carry; the spectate route's own limit is far below it. */
 export const MAX_REPORTED_SPECTATORS = 500
 
-/** A peer-sent spectator count, as a non-negative integer no larger than the cap. */
+/**
+ * A spectator count as a non-negative integer no larger than the cap. The
+ * server sends it signed now, so this is belt and braces against a bad value,
+ * not against a forger.
+ */
 export function readSpectatorCount(payload: unknown): number {
   const count = (payload as { count?: unknown } | null | undefined)?.count
   if (typeof count !== 'number' || !Number.isFinite(count)) return 0

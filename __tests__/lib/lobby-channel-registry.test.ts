@@ -299,5 +299,22 @@ describe('lobby channel registry', () => {
 
       expect(onSketch).toHaveBeenCalledWith({ kind: 'live', round: 1, drawerId: 'u1', live: null })
     })
+
+    it('believes only the server about the spectator count', async () => {
+      const onCount = jest.fn()
+      acquireLobbyChannel(TOPIC, { events: { 'spectator-count-update': onCount } })
+      const channel = fakeClient.channelsByTopic.get(TOPIC)
+
+      // Any topic holder could set the players' badge to anything while the
+      // spectate page sent the count itself.
+      channel._emit('spectator-count-update', { count: 499 })
+      await settle()
+      expect(onCount).not.toHaveBeenCalled()
+
+      channel._emit('spectator-count-update', signed('spectator-count-update', { count: 2 }))
+      await settle()
+      expect(onCount).toHaveBeenCalledTimes(1)
+      expect(onCount).toHaveBeenCalledWith({ count: 2 })
+    })
   })
 })

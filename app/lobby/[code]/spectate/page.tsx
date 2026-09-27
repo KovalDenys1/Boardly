@@ -250,7 +250,6 @@ export default function SpectatorLobbyPage() {
   const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const channelRef = useRef<RealtimeChannel | null>(null)
-  const gameChannelRef = useRef<RealtimeChannel | null>(null)
   const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPlayerInGame, setIsPlayerInGame] = useState(false)
   const [isLimitReached, setIsLimitReached] = useState(false)
@@ -344,10 +343,8 @@ export default function SpectatorLobbyPage() {
         'player-left': reload,
       },
     })
-    gameChannelRef.current = lobbyChannel.channel
     return () => {
       lobbyChannel.release()
-      gameChannelRef.current = null
     }
   }, [code, realtimeTopic, loadSnapshot])
 
@@ -379,16 +376,10 @@ export default function SpectatorLobbyPage() {
         setSpectators(all.map((s) => ({ userId: s.userId, username: s.username })))
         setSpectatorCount(newCount)
 
-        // Broadcast live count to lobby channel so players see it update in real time
-        if (gameChannelRef.current) {
-          void gameChannelRef.current.send({
-            type: 'broadcast',
-            event: 'spectator-count-update',
-            payload: { count: newCount },
-          })
-        }
-
-        // Debounced DB sync so lobby list shows accurate count
+        // Debounced report to the server, which stores it for the lobby list and
+        // broadcasts it, signed, to the players (GHSA-g868-9224-wr3p). A client
+        // can no longer put the count on the lobby topic itself: receivers
+        // drop every lobby frame the server did not sign.
         if (spectatorCountDebounceRef.current !== null) {
           clearTimeout(spectatorCountDebounceRef.current)
         }

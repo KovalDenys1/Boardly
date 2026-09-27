@@ -175,8 +175,10 @@ this change; it only makes the decision possible to make with data instead of a 
   stamped more than a minute ahead of the client clock but no longer lets it raise the watermark, so
   the next real move is not rejected as stale.
 - **Residual.** Holding a topic still lets a client send frames; receivers drop them, but a flood costs
-  each receiver a signature check. Peer events (`sketch-live`, `spectator-count-update`, spectator chat
-  and presence) are peers' claims by design and are validated, not authenticated. Stopping the sends
+  each receiver a signature check. Peer events (`sketch-live` on the lobby topic, spectator chat and
+  presence on the spectator topic) are peers' claims by design and are validated, not authenticated.
+  The players' spectator count is not one of them: the spectate page reports it to
+  `PATCH /api/lobby/[code]/spectator-count`, which broadcasts the clamped value signed. Stopping the sends
   themselves needs Supabase Realtime Authorization (private channels plus a Supabase JWT per client,
   guests included), which is not in place.
 

@@ -137,11 +137,12 @@ make every other client apply a forged `game-update`, leave on a forged `game-ab
   another key, a nonce this page has already seen, stamped more than 30 seconds before the page last
   (re)joined the topic, or stamped more than two minutes before the newest message it has accepted
   there – the last two are a genuine message recorded and played back later.
-- **Peer events are the exception, and are named.** `LOBBY_PEER_EVENTS` – `sketch-live` (the drawer's
-  canvas while drawing, non-authoritative and checked by `parseSketchLiveMessage`) and
-  `spectator-count-update` (clamped by `readSpectatorCount`) – are the only unsigned frames a lobby
-  topic delivers, and `emitWhenConnected` refuses to send anything else. Chat is not a peer event:
-  Alias guesses, which used to be, go through `POST /api/lobby/[code]/alias-guess`.
+- **Peer events are the exception, and are named.** `LOBBY_PEER_EVENTS` holds one: `sketch-live`, the
+  drawer's canvas while drawing, non-authoritative and checked by `parseSketchLiveMessage`. It is the
+  only unsigned frame a lobby topic delivers, and `emitWhenConnected` refuses to send anything else.
+  Chat is not a peer event: Alias guesses, which used to be, go through
+  `POST /api/lobby/[code]/alias-guess`. Nor is the players' spectator count, which the spectate page
+  reports to `PATCH /api/lobby/[code]/spectator-count` and the server broadcasts signed.
 - **What it does not do.** A topic holder can still send frames; they are dropped, not prevented, so a
   flood costs receivers a signature check each. The spectator topic is client to client by design,
   so spectator chat and presence are peers' claims, validated for shape and size
