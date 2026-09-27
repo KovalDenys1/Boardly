@@ -2184,6 +2184,7 @@ const no = {
     rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
   },
   auth: {
+    signedInProvidersHidden: 'Du er allerede logget inn. Logg ut først for å logge inn med Google, GitHub eller Discord.',
     inAppBrowser: {
       title: 'Du er i nettleseren inne i {{app}}',
       body: 'Google tillater ikke innlogging her. Åpne siden i Safari eller Chrome (trykk ⋯ og velg Åpne i nettleser), eller logg inn med Discord, GitHub eller e-post.',
@@ -2383,6 +2384,7 @@ const no = {
     loading: 'Laster profil...',
     playerFallback: 'Spiller',
     verified: 'Bekreftet',
+    oauthLinkRefused: 'Du var allerede logget inn, så vi koblet ikke {{provider}}-kontoen til denne kontoen. Logg ut først for å logge inn med {{provider}}.',
     chips: {
       games: '{{count}} spill',
       friends: '{{count}} venner',

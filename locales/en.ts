@@ -2184,6 +2184,7 @@ const en = {
     rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
   },
   auth: {
+    signedInProvidersHidden: 'You are already signed in. To sign in with Google, GitHub or Discord, sign out first.',
     inAppBrowser: {
       title: "You're in {{app}}'s built-in browser",
       body: 'Google does not allow sign-in here. Open this page in Safari or Chrome (tap ⋯ and choose Open in browser), or sign in with Discord, GitHub or email.',
@@ -2383,6 +2384,7 @@ const en = {
     loading: 'Loading profile...',
     playerFallback: 'Player',
     verified: 'Verified',
+    oauthLinkRefused: 'You were already signed in, so we did not connect that {{provider}} account to this one. To sign in with {{provider}}, sign out first.',
     chips: {
       games: '{{count}} games',
       friends: '{{count}} friends',

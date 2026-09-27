@@ -17,6 +17,7 @@ const serverOnlyImportPatterns = [
   /^@\/lib\/server(?:\/|$)/,
   /^@\/lib\/db$/,
   /^@\/lib\/auth$/,
+  /^@\/lib\/control-panel-api-auth$/,
   /^@\/lib\/cron-auth$/,
   /^@\/lib\/custom-prisma-adapter$/,
   /^@\/lib\/discord\/internal-auth$/,

@@ -2273,6 +2273,7 @@ const ru = {
     rulesNewTab: 'Правила сообщества (откроются в новой вкладке)',
   },
   auth: {
+    signedInProvidersHidden: 'Вы уже вошли в аккаунт. Чтобы войти через Google, GitHub или Discord, сначала выйдите из него.',
     inAppBrowser: {
       title: 'Вы во встроенном браузере {{app}}',
       body: 'Google не разрешает входить отсюда. Откройте страницу в Safari или Chrome (нажмите ⋯ и выберите «Открыть в браузере») или войдите через Discord, GitHub или e-mail.',
@@ -2472,6 +2473,7 @@ const ru = {
     loading: 'Загрузка профиля...',
     playerFallback: 'Игрок',
     verified: 'Подтверждено',
+    oauthLinkRefused: 'Вы уже были в своём аккаунте, поэтому мы не привязали к нему этот аккаунт {{provider}}. Чтобы войти через {{provider}}, сначала выйдите из аккаунта.',
     chips: {
       games: '{{count}} игр',
       games_one: '{{count}} игра',
