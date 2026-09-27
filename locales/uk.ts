@@ -519,6 +519,7 @@ const uk: TranslationWithPlurals = {
       allMatched: 'Усі пари знайдено!',
       pairsProgress: '{{count}} / {{total}} пар',
       playFullGame: 'Грати повну гру →',
+      tttCellEmpty: 'Порожня клітинка',
     },
   },
   games: {

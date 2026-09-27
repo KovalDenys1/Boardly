@@ -32,7 +32,7 @@ export default function GuidesSection() {
           >
             {t('home.guidesTitle')}
           </h2>
-          <p className="mt-1 text-sm" style={{ color: 'var(--bd-ink-muted)' }}>
+          <p className="mt-1 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
             {t('home.guidesSubtitle')}
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function GuidesSection() {
                 >
                   {guide.title}
                 </span>
-                <span className="mt-0.5 block text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+                <span className="mt-0.5 block text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
                   {guide.readTime}
                 </span>
               </span>

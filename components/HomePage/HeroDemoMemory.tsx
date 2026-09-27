@@ -73,7 +73,7 @@ export default function HeroDemoMemory() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: isMobile ? 12 : 14,
-        color: 'var(--bd-ink-muted)', minHeight: isMobile ? 18 : 22,
+        color: 'var(--bd-ink-soft)', minHeight: isMobile ? 18 : 22,
       }}>
         {allMatched ? t('home.demo.allMatched') : t('home.demo.pairsProgress', { count: matchedCount, total: PAIRS.length })}
       </div>
@@ -111,7 +111,7 @@ export default function HeroDemoMemory() {
         href="/games/memory"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-soft)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         {t('home.demo.playFullGame')}

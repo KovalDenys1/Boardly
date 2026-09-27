@@ -20,7 +20,7 @@ export default function TermsOfService() {
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label="Breadcrumb">
+        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label="Breadcrumb">
           <Link href="/" className="transition-colors hover:text-bd-ink">Home</Link>
           <span>/</span>
           <span style={{ color: 'var(--bd-ink)' }}>Terms of Service</span>
@@ -123,7 +123,7 @@ export default function TermsOfService() {
               </p>
             </section>
 
-            <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-muted)', borderTop: '1px solid var(--bd-line)' }}>
+            <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-soft)', borderTop: '1px solid var(--bd-line)' }}>
               {/* TERMS_VERSION is bumped by hand when this text changes; it never tracks the render date. */}
               Last updated: {formatLegalDate(TERMS_VERSION)}
             </p>

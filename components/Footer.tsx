@@ -64,7 +64,7 @@ export default function Footer() {
                 </span>
               </span>
             </div>
-            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('footer.tagline')}
             </p>
           </div>
@@ -73,7 +73,7 @@ export default function Footer() {
           <div>
             <h3
               className="font-semibold text-xs uppercase tracking-wider mb-4"
-              style={{ color: 'var(--bd-ink-muted)' }}
+              style={{ color: 'var(--bd-ink-soft)' }}
             >
               {t('footer.games')}
             </h3>
@@ -101,7 +101,7 @@ export default function Footer() {
           <div>
             <h3
               className="font-semibold text-xs uppercase tracking-wider mb-4"
-              style={{ color: 'var(--bd-ink-muted)' }}
+              style={{ color: 'var(--bd-ink-soft)' }}
             >
               {t('footer.play')}
             </h3>
@@ -134,7 +134,7 @@ export default function Footer() {
           <div>
             <h3
               className="font-semibold text-xs uppercase tracking-wider mb-4"
-              style={{ color: 'var(--bd-ink-muted)' }}
+              style={{ color: 'var(--bd-ink-soft)' }}
             >
               {t('footer.legal')}
             </h3>
@@ -177,7 +177,7 @@ export default function Footer() {
 
             <h3
               className="font-semibold text-xs uppercase tracking-wider mb-4 mt-6"
-              style={{ color: 'var(--bd-ink-muted)' }}
+              style={{ color: 'var(--bd-ink-soft)' }}
             >
               {t('footer.community')}
             </h3>
@@ -245,7 +245,13 @@ export default function Footer() {
                     padding: '6px 14px',
                     border: '1.5px solid var(--bd-coral)',
                     background: 'transparent',
-                    color: 'var(--bd-coral-deep)',
+                    // Ink text at rest, not bd-coral-deep — 3.3:1 on this
+                    // footer background, below the 4.5:1 AA text minimum
+                    // (#1171 axe pass). The coral border still marks it as
+                    // the feedback action; the coral *fill* on hover/focus is
+                    // the brand-button pattern DESIGN.md documents as
+                    // Denys's call, so that one keeps white text.
+                    color: 'var(--bd-ink)',
                     fontFamily: 'inherit',
                   }}
                   onMouseEnter={e => {
@@ -256,7 +262,7 @@ export default function Footer() {
                   onMouseLeave={e => {
                     const el = e.currentTarget
                     el.style.background = 'transparent'
-                    el.style.color = 'var(--bd-coral-deep)'
+                    el.style.color = 'var(--bd-ink)'
                   }}
                 >
                   {t('footer.sendFeedback')}
@@ -269,7 +275,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div
           className="mt-10 pt-6 text-xs"
-          style={{ borderTop: '1.5px solid var(--bd-line)', color: 'var(--bd-ink-muted)' }}
+          style={{ borderTop: '1.5px solid var(--bd-line)', color: 'var(--bd-ink-soft)' }}
         >
           {/* Imprint (#1163): the operator's name, address and email, on a row of
               its own so it wraps cleanly at 320 px. Renders nothing until both
