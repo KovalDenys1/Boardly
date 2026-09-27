@@ -11,6 +11,8 @@ import { getGameMetadata } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
+import ReportDialog from '@/components/ReportDialog'
+import type { ReportTarget } from '@/lib/content-reports'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -134,6 +136,7 @@ export default function PublicProfileView({
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
   const [submitting, setSubmitting] = useState(false)
   const [copiedProfileLink, setCopiedProfileLink] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   const pageTheme = profile.isPremium && profile.premiumCardStyle
     ? (PREMIUM_PAGE_THEMES[profile.premiumCardStyle] ?? null)
@@ -172,6 +175,15 @@ export default function PublicProfileView({
     day: 'numeric',
   })
   const publicProfilePath = `/u/${profile.publicProfileId}`
+  // Report (#1172) by public profile id: this page never learns the user id, and a
+  // report does not need it to. Only what the page shows can be reported.
+  const reportTargets: ReportTarget[] = []
+  if (relation !== 'self' && !isEmbeddedPreview) {
+    const publicProfileId = profile.publicProfileId
+    if (profile.username) reportTargets.push({ targetType: 'username', publicProfileId })
+    if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
+    if (profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
+  }
   const unlockedAchievementsByKey = new Map(
     (profile.unlockedAchievements ?? []).map((a) => [a.key, a.unlockedAt])
   )
@@ -642,6 +654,18 @@ export default function PublicProfileView({
                           </>
                         )}
                       </button>
+                      {reportTargets.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setReportOpen(true)}
+                          aria-haspopup="dialog"
+                          className={`mt-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`}
+                        >
+                          <Icon name="flag" size={13} />
+                          {t('report.reportProfile')}
+                        </button>
+                      )}
+                      <ReportDialog isOpen={reportOpen} onClose={() => setReportOpen(false)} targets={reportTargets} />
                     </div>
                   </div>
                 )

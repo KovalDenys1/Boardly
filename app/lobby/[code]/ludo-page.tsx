@@ -44,6 +44,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -991,6 +992,8 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                 side={side}
                 avatarSrc={getAvatar(playerId)}
                 isPremium={getIsPremium(playerId)}
+                userId={reportablePlayerId(lobbyPlayers, playerId)}
+                lobbyCode={code}
                 accentColor={COLOR_FILL[color]}
                 subline={sublineFor(playerId)}
                 cornerBadge={
@@ -1259,6 +1262,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const chatSection = showChat ? (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

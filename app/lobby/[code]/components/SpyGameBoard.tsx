@@ -530,6 +530,8 @@ export default function SpyGameBoard({
       side={side}
       avatarSrc={seat?.avatarSrc ?? null}
       isPremium={!!seat?.isPremium}
+      userId={seat?.id || null}
+      lobbyCode={lobbyCode}
       accentColor={side === 'left' ? 'var(--bd-lav)' : 'var(--bd-coral)'}
       turnDotColor="var(--bd-lav-deep)"
       subline={seat ? `${scores[seat.id] || 0}` : undefined}
@@ -750,6 +752,7 @@ export default function SpyGameBoard({
   const chatSection = onSendChatMessage ? (
     <section className="game-chat-panel">
       <Chat
+        lobbyCode={lobbyCode}
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
         currentUserId={currentUserId || null}

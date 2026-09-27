@@ -1,5 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import PublicProfileView from '@/components/PublicProfileView'
+import { fetchWithGuest } from '@/lib/client/fetch-with-guest'
+
+jest.mock('@/lib/client/fetch-with-guest', () => ({
+  fetchWithGuest: jest.fn(),
+}))
 
 jest.mock('@/lib/i18n-toast', () => ({
   showToast: {
@@ -150,5 +155,44 @@ describe('PublicProfileView', () => {
     const firstWinCard = firstWinLabel.closest('div')
     expect(firstWinCard?.className).toContain('grayscale')
     expect(firstWinCard?.querySelector('[data-icon="lock"]')).toBeTruthy()
+  })
+
+  // #1172: a visitor can report what the profile shows, by public profile id only.
+  describe('report action (#1172)', () => {
+    it('offers Report profile, with the username and the bio the page shows as targets', async () => {
+      render(
+        <PublicProfileView
+          profile={{ ...profile, bio: 'a bio worth reporting' }}
+          initialRelation="can_send"
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'report.reportProfile' }))
+
+      expect(await screen.findByLabelText('report.targets.username')).toBeTruthy()
+      expect(screen.getByLabelText('report.targets.bio')).toBeTruthy()
+      // No picture on this profile, so no avatar to report.
+      expect(screen.queryByLabelText('report.targets.avatar')).toBeNull()
+    })
+
+    it('sends the public profile id, never a user id', async () => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, duplicate: false }), { status: 201 })
+      )
+      render(<PublicProfileView profile={profile} initialRelation="login_required" />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'report.reportProfile' }))
+      fireEvent.click(await screen.findByLabelText('report.reasons.hate'))
+      fireEvent.click(screen.getByRole('button', { name: 'report.submit' }))
+      await screen.findByText('report.successTitle')
+
+      const [, init] = (fetchWithGuest as jest.Mock).mock.calls[0]
+      expect(JSON.parse(init.body)).toEqual({ targetType: 'username', publicProfileId: 'AbC123xYz890', reason: 'hate' })
+    })
+
+    it('offers no Report on your own profile', () => {
+      render(<PublicProfileView profile={profile} initialRelation="self" />)
+      expect(screen.queryByRole('button', { name: 'report.reportProfile' })).toBeNull()
+    })
   })
 })
