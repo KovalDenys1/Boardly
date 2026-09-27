@@ -25,8 +25,8 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'profile.publicProfile.friendsOnlySubtitle': 'Only this player\'s friends can see their profile. Once they accept your friend request, you can see it too.',
         'profile.publicProfile.privateTitle': 'This profile is private',
         'profile.publicProfile.privateSubtitle': 'This player is not sharing their public profile right now.',
-        'profile.publicProfile.ownerNote.private': 'Your profile is private: only you can see it.',
-        'profile.publicProfile.ownerNote.friends': 'Your profile is private to others: only your friends can see it.',
+        'profile.publicProfile.ownerNote.private': 'Only you can see your profile. Your username and leaderboard results stay visible to everyone.',
+        'profile.publicProfile.ownerNote.friends': 'Only your friends can see your profile. Your username and leaderboard results stay visible to everyone.',
         'profile.publicProfile.privacySettingsLink': 'Privacy settings',
         'profile.publicProfile.goToOwnProfile': 'Go to My Profile',
         'profile.friends.title': 'Friends',
@@ -136,10 +136,29 @@ describe('PublicProfileView', () => {
   it('tells the owner of a private profile who else can see it, with a link to the setting', () => {
     render(<PublicProfileView profile={profile} initialRelation="self" ownerVisibility="private" />)
 
-    expect(screen.getByTestId('owner-visibility-note').textContent).toContain('Your profile is private: only you can see it.')
+    expect(screen.getByTestId('owner-visibility-note').textContent).toContain(
+      'Only you can see your profile. Your username and leaderboard results stay visible to everyone.'
+    )
     expect(screen.getByRole('link', { name: 'Privacy settings' }).getAttribute('href')).toBe('/profile?tab=settings#privacy')
     // The owner still sees the full profile.
     expect(screen.getByText('First Win')).toBeTruthy()
+  })
+
+  it('says in every language that the username and leaderboard results stay public when the profile is hidden', () => {
+    const public_ = {
+      en: 'Your username and leaderboard results stay visible to everyone.',
+      no: 'Brukernavnet og resultatene dine på topplisten er fortsatt synlige for alle.',
+      ru: 'Имя пользователя и результаты в рейтинге по-прежнему видны всем.',
+      uk: 'Ім’я користувача та результати в рейтингу й надалі видно всім.',
+    }
+    for (const [name, sentence] of Object.entries(public_)) {
+      const { ownerNote } = require(`@/locales/${name}`).default.profile.publicProfile
+      expect({ name, friends: ownerNote.friends.endsWith(sentence), private: ownerNote.private.endsWith(sentence) }).toEqual({
+        name,
+        friends: true,
+        private: true,
+      })
+    }
   })
 
   it('shows no owner note to anyone but the owner', () => {

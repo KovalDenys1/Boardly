@@ -123,23 +123,33 @@ describe('privacy notice (#1126)', () => {
     }
   })
 
-  // #1226: the leaderboard lists every account, private ones included, and the notice
-  // must not still promise that a private profile keeps its name off it.
-  it('says the leaderboard shows every username and results, and the picture only where the profile can be seen', () => {
+  // #1226: the leaderboard lists every account, private ones included. The notice says
+  // the username and leaderboard results are public whatever the setting, that the rest
+  // follows it, and no longer promises that a new profile's username is friends-only.
+  it('says the username and leaderboard results are public, and everything else follows the setting', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''
-    expect(text).toContain('shows the username and game results of every account with enough finished games')
-    expect(text).toContain('Your picture appears on the leaderboard only to those who can see your profile')
+    expect(text).toContain('Your username and your leaderboard results are visible to everyone, whatever your settings')
+    expect(text).toContain('Everything else on your profile (picture, bio, game statistics and achievements) follows its visibility setting')
+    expect(text).toContain('Players you share a lobby with see your username and picture there whatever the setting')
+    expect(text).not.toContain('(username, picture, bio and game statistics) is visible only to your friends')
     expect(text).not.toContain('appear on the public leaderboard unless your profile is private')
 
-    const stale = {
-      no: 'med mindre profilen er privat.',
-      ru: 'видны в общем рейтинге, если профиль не закрыт.',
-      uk: 'видно в загальному рейтингу, якщо профіль не закритий.',
+    // The same statements in every language, and none of the old ones.
+    const expected = {
+      no: ['Brukernavnet ditt og resultatene dine på topplisten er synlige for alle', 'Alt annet på profilen'],
+      ru: ['Ваше имя пользователя и ваши результаты в рейтинге видны всем', 'Всё остальное в профиле'],
+      uk: ['Ваше ім’я користувача та ваші результати в рейтингу видно всім', 'Усе інше в профілі'],
     }
-    for (const [name, needle] of Object.entries(stale)) {
-      const { account } = require(`@/locales/${name}`).default.privacyPolicy.purposes
-      expect({ name, stale: account.extra.includes(needle) }).toEqual({ name, stale: false })
+    const stale = {
+      no: ['(brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine', 'med mindre profilen er privat.'],
+      ru: ['(имя пользователя, фото, описание и игровая статистика) видят только ваши друзья', 'если профиль не закрыт.'],
+      uk: ['(ім’я користувача, фото, опис та ігрову статистику) бачать лише ваші друзі', 'якщо профіль не закритий.'],
+    }
+    for (const name of ['no', 'ru', 'uk'] as const) {
+      const { extra } = require(`@/locales/${name}`).default.privacyPolicy.purposes.account
+      for (const needle of expected[name]) expect({ name, needle, found: extra.includes(needle) }).toEqual({ name, needle, found: true })
+      for (const needle of stale[name]) expect({ name, needle, found: extra.includes(needle) }).toEqual({ name, needle, found: false })
     }
   })
 

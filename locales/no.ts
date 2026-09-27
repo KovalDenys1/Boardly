@@ -2921,8 +2921,8 @@ const no = {
       privateSubtitle: 'Denne spilleren deler ikke den offentlige profilen sin akkurat nå.',
       ownerNote: {
         public: 'Profilen din er offentlig: alle som har lenken, kan se den.',
-        friends: 'Profilen din er privat for andre: bare vennene dine kan se den.',
-        private: 'Profilen din er privat: bare du kan se den.',
+        friends: 'Bare vennene dine kan se profilen din. Brukernavnet og resultatene dine på topplisten er fortsatt synlige for alle.',
+        private: 'Bare du kan se profilen din. Brukernavnet og resultatene dine på topplisten er fortsatt synlige for alle.',
       },
       privacySettingsLink: 'Personverninnstillinger',
       playerFallback: 'Spiller',
@@ -3595,7 +3595,7 @@ const no = {
         data: 'Brukernavn, e-postadresse, passordet ditt lagret bare som en enveis bcrypt-hash, profilbilde, bio, aksentfarge og innstillinger, innloggingstjenestene du har koblet til, tidspunktet for siste tilbakestilling av passord eller endring av e-post (brukes bare til å logge ut eldre økter), nettstedet eller kampanjen du kom fra da du registrerte deg, og når du godtok vilkårene og bekreftet at du er 13 år eller eldre.',
         basis: 'Avtale: kontoen din bygger på vilkårene du godtar når du oppretter den, ikke på samtykke, og vi trenger dette for å drive den. Registreringskilden: vår berettigede interesse i å vite hvilke kanaler som bringer nye spillere.',
         retention: 'Til du sletter kontoen. Vi sletter ikke en konto fordi den ikke er brukt; bestemmer vi oss for det, sier vi fra på e-post og på denne siden minst 30 dager før det gjelder. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har Premium eller noen gang har startet et Premium-kjøp. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
-        extra: 'Profilen til en ny konto (brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine, og påloggingsstatusen din er skjult. Første gang du logger inn, tilbyr vi å gjøre profilen offentlig, og du kan endre begge deler når som helst i profilinnstillingene. Kontoer opprettet før denne endringen beholder innstillingene de hadde: offentlig profil og synlig påloggingsstatus, med mindre de er endret. Uansett synlighet er brukernavnet ditt synlig for alle: på profilsiden, som da sier at profilen er privat, og på den offentlige topplisten, som viser brukernavnet og spillresultatene til alle kontoer med nok fullførte spill. Bildet ditt vises på topplisten bare for dem som kan se profilen din: alle hvis den er offentlig, vennene dine hvis den bare er for venner, og ingen andre hvis den er privat.',
+        extra: 'Brukernavnet ditt og resultatene dine på topplisten er synlige for alle, uansett innstillinger: den offentlige topplisten viser alle kontoer med nok fullførte spill, med brukernavn og spillresultater, og profilsiden din viser alltid brukernavnet ditt, med en merknad om at profilen er privat når den er det. Alt annet på profilen (bilde, bio, spillstatistikk og prestasjoner) følger synlighetsinnstillingen: alle kan se det hvis profilen er offentlig, bare vennene dine hvis den bare er for venner, og ingen andre enn deg hvis den er privat. Spillere du er i samme lobby som, ser brukernavnet og bildet ditt der uansett innstilling. En ny konto starter med profil bare for venner og skjult påloggingsstatus. Første gang du logger inn, tilbyr vi å gjøre profilen offentlig, og du kan endre begge deler når som helst i profilinnstillingene. Kontoer opprettet før denne endringen beholder innstillingene de hadde: offentlig profil og synlig påloggingsstatus, med mindre de er endret.',
       },
       guest: {
         title: 'Spille som gjest',

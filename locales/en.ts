@@ -2932,8 +2932,8 @@ const en = {
       privateSubtitle: 'This player is not sharing their public profile right now.',
       ownerNote: {
         public: 'Your profile is public: anyone with the link can see it.',
-        friends: 'Your profile is private to others: only your friends can see it.',
-        private: 'Your profile is private: only you can see it.',
+        friends: 'Only your friends can see your profile. Your username and leaderboard results stay visible to everyone.',
+        private: 'Only you can see your profile. Your username and leaderboard results stay visible to everyone.',
       },
       privacySettingsLink: 'Privacy settings',
       playerFallback: 'Player',
@@ -3607,7 +3607,7 @@ const en = {
         data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), the site or campaign you arrived from when you signed up, and when you accepted the Terms and confirmed that you are 13 or older.',
         basis: 'Contract: your account rests on the Terms you accept when you create it, not on consent, and we need this to run it. The sign-up source: our legitimate interest in knowing which channels bring new players.',
         retention: 'Until you delete the account. We do not delete an account because it has not been used; if we ever decide to, we will tell you by email and on this page at least 30 days before it applies. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it or it has Premium or has ever started a Premium purchase. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
-        extra: 'A new account\'s profile (username, picture, bio and game statistics) is visible only to your friends, and your online status is hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before this change keep the settings they had: a public profile and online status shown, unless changed. Whatever the visibility, your username stays visible to everyone: on your profile page, which then says the profile is private, and on the public leaderboard, which shows the username and game results of every account with enough finished games. Your picture appears on the leaderboard only to those who can see your profile: everyone if it is public, your friends if it is friends-only, and nobody else if it is private.',
+        extra: 'Your username and your leaderboard results are visible to everyone, whatever your settings: the public leaderboard lists the username and game results of every account with enough finished games, and your profile page always shows your username, with a note that the profile is private when it is. Everything else on your profile (picture, bio, game statistics and achievements) follows its visibility setting: everyone can see it if the profile is public, only your friends if it is friends-only, and nobody but you if it is private. Players you share a lobby with see your username and picture there whatever the setting. A new account starts friends-only, with online status hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before this change keep the settings they had: a public profile and online status shown, unless changed.',
       },
       guest: {
         title: 'Playing as a guest',
