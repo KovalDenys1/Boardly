@@ -36,7 +36,8 @@ interface Friend {
 interface FriendRequest {
   id: string
   senderId: string
-  receiverId: string
+  /** Absent when the receiver's profile is hidden from the sender (#1226). */
+  receiverId?: string
   status: string
   message: string | null
   createdAt: string
@@ -46,7 +47,8 @@ interface FriendRequest {
     avatar: string | null
   }
   receiver?: {
-    id: string
+    /** Absent, with `avatar: null`, when the receiver's profile is hidden from the sender (#1226). */
+    id?: string
     username: string | null
     avatar: string | null
   }

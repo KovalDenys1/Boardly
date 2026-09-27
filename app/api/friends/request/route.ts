@@ -3,13 +3,63 @@ import { prisma } from '@/lib/db'
 import { Prisma } from '@/prisma/client'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { extractPublicProfileId } from '@/lib/public-profile'
+import { canViewProfile, extractPublicProfileId, type ProfileVisibilityValue } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
 import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.friendRequest)
 const log = apiLogger('/api/friends/request')
+
+type RequestParty = {
+  id: string
+  username: string | null
+  image: string | null
+  avatarUrl: string | null
+}
+
+// The receiver is selected with its visibility so the answer can respect it (#1226).
+const RECEIVER_SELECT = {
+  id: true,
+  username: true,
+  image: true,
+  avatarUrl: true,
+  accountPreferences: { select: { profileVisibility: true } },
+} as const
+
+const SENDER_SELECT = {
+  id: true,
+  username: true,
+  image: true,
+  avatarUrl: true,
+} as const
+
+/**
+ * A pending request is between two people who are not friends, so the one who sent it
+ * may see the receiver's picture and internal id only when the receiver's profile is
+ * public (#1226). Otherwise the sender gets the username they typed or clicked, and the
+ * default avatar. The receiver always sees the sender who reached out to them.
+ */
+function presentRequest<
+  T extends {
+    receiverId: string
+    sender: RequestParty
+    receiver: RequestParty & { accountPreferences: { profileVisibility: ProfileVisibilityValue } | null }
+  },
+>(request: T, callerId: string) {
+  const { sender, receiver, receiverId, ...fields } = request
+  const { accountPreferences, ...receiverFields } = receiver
+  const receiverVisible =
+    receiver.id === callerId || canViewProfile(accountPreferences?.profileVisibility, 'other')
+  return {
+    ...fields,
+    ...(receiverVisible ? { receiverId } : {}),
+    sender: { ...sender, avatar: sender.avatarUrl ?? sender.image ?? null },
+    receiver: receiverVisible
+      ? { ...receiverFields, avatar: receiverFields.avatarUrl ?? receiverFields.image ?? null }
+      : { username: receiverFields.username, avatar: null },
+  }
+}
 
 // POST /api/friends/request - Send friend request
 export async function POST(req: NextRequest) {
@@ -135,22 +185,8 @@ export async function POST(req: NextRequest) {
         status: 'pending'
       },
       include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            image: true,
-            avatarUrl: true,
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            image: true,
-            avatarUrl: true,
-          }
-        }
+        sender: { select: SENDER_SELECT },
+        receiver: { select: RECEIVER_SELECT },
       }
     })
 
@@ -180,22 +216,9 @@ export async function POST(req: NextRequest) {
       requestId: friendRequest.id
     })
 
-    const { sender, receiver: requestReceiver, ...friendRequestFields } = friendRequest
-    const friendRequestWithAvatar = {
-      ...friendRequestFields,
-      sender: {
-        ...sender,
-        avatar: sender.avatarUrl ?? sender.image ?? null,
-      },
-      receiver: {
-        ...requestReceiver,
-        avatar: requestReceiver.avatarUrl ?? requestReceiver.image ?? null,
-      },
-    }
-
     return NextResponse.json({
       success: true,
-      friendRequest: friendRequestWithAvatar
+      friendRequest: presentRequest(friendRequest, senderId),
     })
 
   } catch (error) {
@@ -260,22 +283,8 @@ export async function GET(req: NextRequest) {
     const requests = await prisma.friendRequests.findMany({
       where: whereClause,
       include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            image: true,
-            avatarUrl: true,
-          }
-        },
-        receiver: {
-          select: {
-            id: true,
-            username: true,
-            image: true,
-            avatarUrl: true,
-          }
-        }
+        sender: { select: SENDER_SELECT },
+        receiver: { select: RECEIVER_SELECT },
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -286,19 +295,7 @@ export async function GET(req: NextRequest) {
       count: requests.length
     })
 
-    const requestsWithAvatar = requests.map(({ sender, receiver, ...request }) => ({
-      ...request,
-      sender: sender && {
-        ...sender,
-        avatar: sender.avatarUrl ?? sender.image ?? null,
-      },
-      receiver: receiver && {
-        ...receiver,
-        avatar: receiver.avatarUrl ?? receiver.image ?? null,
-      },
-    }))
-
-    return NextResponse.json({ requests: requestsWithAvatar })
+    return NextResponse.json({ requests: requests.map((request) => presentRequest(request, userId)) })
 
   } catch (error) {
     log.error('Error fetching friend requests', error as Error)
