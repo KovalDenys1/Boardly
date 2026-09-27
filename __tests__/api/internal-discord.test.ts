@@ -194,22 +194,14 @@ describe('/api/internal/discord', () => {
       })
     })
 
-    it('treats a missing preferences row as friends-only, like an unlinked member (#1131)', async () => {
-      mockPrisma.accounts.findUnique.mockResolvedValue(linkedAccount({ accountPreferences: null }))
-
-      const response = await getMember(
-        memberRequest({ authorization: `Bearer ${SECRET}` }),
-        memberContext()
-      )
-
-      expect(response.status).toBe(200)
-      await expect(response.json()).resolves.toEqual({ linked: false })
-      expect(mockPrisma.players.count).not.toHaveBeenCalled()
-    })
-
-    it('treats an expired premium as not premium', async () => {
+    // An account with no row predates #1131 and keeps the public profile it always had;
+    // new accounts get a friends-only row at creation, covered by the 'friends' case above.
+    it('treats a missing preferences row as public and an expired premium as not premium', async () => {
       mockPrisma.accounts.findUnique.mockResolvedValue(
-        linkedAccount({ premiumUntil: new Date(Date.now() - 1000) })
+        linkedAccount({
+          accountPreferences: null,
+          premiumUntil: new Date(Date.now() - 1000),
+        })
       )
 
       const response = await getMember(
