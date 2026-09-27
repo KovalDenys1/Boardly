@@ -4,6 +4,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import { requireSessionUser } from '@/lib/session-user'
+import { canViewProfile } from '@/lib/public-profile'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
             accountPreferences: {
               select: {
                 showOnlineStatus: true,
+                profileVisibility: true,
               },
             },
           }
@@ -74,6 +76,7 @@ export async function GET(req: NextRequest) {
             accountPreferences: {
               select: {
                 showOnlineStatus: true,
+                profileVisibility: true,
               },
             },
           }
@@ -87,11 +90,15 @@ export async function GET(req: NextRequest) {
     const friends = friendships.map(friendship => {
       const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
       const { accountPreferences, premiumUntil, image, avatarUrl, ...friendFields } = friend
+      // The name and picture are public (#1226). Premium status and online status are
+      // profile content, and private means nobody but the owner, friends included, so a
+      // private friend is listed with no premium badge and as offline.
+      const profileVisible = canViewProfile(accountPreferences?.profileVisibility, 'friend')
       return {
         ...friendFields,
         avatar: avatarUrl ?? image ?? null,
-        isPremium: !!premiumUntil && premiumUntil > now,
-        showOnlineStatus: accountPreferences?.showOnlineStatus ?? true,
+        isPremium: profileVisible && !!premiumUntil && premiumUntil > now,
+        showOnlineStatus: profileVisible && (accountPreferences?.showOnlineStatus ?? true),
         friendshipId: friendship.id,
         friendsSince: friendship.createdAt,
       }

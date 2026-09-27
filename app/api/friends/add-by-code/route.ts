@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets, consumeKeyedRateLimit } from '@/lib/rate-l
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
 import { requireSessionUser } from '@/lib/session-user'
+import { presentProfileParty } from '@/lib/public-profile'
 
 export const runtime = 'nodejs'
 
@@ -185,19 +186,23 @@ export async function POST(req: NextRequest) {
             id: true,
             username: true,
             image: true,
-            avatarUrl: true
+            avatarUrl: true,
+            accountPreferences: { select: { profileVisibility: true } },
           }
         }
       }
     })
 
-    const { image: receiverImage, avatarUrl: receiverAvatarUrl, ...receiverFields } = friendRequest.receiver
+    // The sender is not the receiver's friend (checked above), so the internal id goes
+    // back only when the receiver's profile is public (#1226), by the same rule as POST
+    // /api/friends/request; the username and picture are public and always go back. A
+    // friend code proves you know someone's code, not that you may see their profile.
+    const { receiver, receiverId, ...friendRequestFields } = friendRequest
+    const presentedReceiver = presentProfileParty(receiver, 'other')
     const friendRequestWithAvatar = {
-      ...friendRequest,
-      receiver: {
-        ...receiverFields,
-        avatar: receiverAvatarUrl ?? receiverImage ?? null,
-      },
+      ...friendRequestFields,
+      ...(presentedReceiver.visible ? { receiverId } : {}),
+      receiver: presentedReceiver.party,
     }
 
     await createInAppNotification({
@@ -226,14 +231,10 @@ export async function POST(req: NextRequest) {
       friendCode: cleanCode
     })
 
-    const { image: targetImage, avatarUrl: targetAvatarUrl, ...targetUserFields } = targetUser
     return NextResponse.json({
       success: true,
       request: friendRequestWithAvatar,
-      user: {
-        ...targetUserFields,
-        avatar: targetAvatarUrl ?? targetImage ?? null,
-      }
+      user: presentProfileParty(targetUser, 'other').party,
     })
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

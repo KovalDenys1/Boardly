@@ -302,7 +302,17 @@ async function resolveProfileField(
   // reporter answers as if it did not exist, whatever it holds, so the answer cannot
   // be used to learn whether a private profile has a bio. A username and an avatar
   // are shown on every game screen, so reached by user id they need no such check.
-  if (viaPublicProfile || target.targetType === 'bio') {
+  //
+  // The username and the picture are the exception on the public profile too (#1226):
+  // they are public everywhere, a hidden profile's page shows both, and the leaderboard
+  // lists both, so the reporter is reporting what they saw. The bio stays hidden. Only a
+  // real profile qualifies, never a guest's or one without a public id.
+  const publicFieldOfProfile =
+    viaPublicProfile &&
+    (target.targetType === 'username' || target.targetType === 'avatar') &&
+    !user.isGuest &&
+    !!user.publicProfileId
+  if ((viaPublicProfile || target.targetType === 'bio') && !publicFieldOfProfile) {
     if (!(await publicProfileVisibleTo(user, reporterId))) return notFound('Player not found')
   }
   if (user.bot) return notReportable()

@@ -9,7 +9,7 @@ import GameIcon from '@/components/GameIcon'
 import { ReportForm } from '@/components/ReportDialog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameMetadata } from '@/lib/game-catalog'
-import { getGuestData } from '@/lib/client/fetch-with-guest'
+import { fetchWithGuest, getGuestData } from '@/lib/client/fetch-with-guest'
 import type { ReportTarget } from '@/lib/content-reports'
 
 interface PlayerCardData {
@@ -20,10 +20,15 @@ interface PlayerCardData {
   publicProfileId: string | null
   isGuest: boolean
   isPremium: boolean
-  gamesPlayed: number
-  wins: number
-  winRate: number
-  favouriteGame: string | null
+  /**
+   * A profile the viewer may not see (#1226): the card has the username and picture,
+   * which are public, and no statistics or favourite game.
+   */
+  restricted?: boolean
+  gamesPlayed?: number
+  wins?: number
+  winRate?: number
+  favouriteGame?: string | null
   relation: 'self' | 'friends' | 'request_sent' | 'request_received' | 'can_send' | 'login_required'
 }
 
@@ -69,7 +74,8 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
     setFriendState('idle')
     setView('card')
     try {
-      const res = await fetch(`/api/users/${id}/card`)
+      // With the guest token, so a guest who shares a lobby with the player is known as one.
+      const res = await fetchWithGuest(`/api/users/${id}/card`)
       if (res.ok) setData(await res.json())
     } finally {
       setLoading(false)
@@ -211,13 +217,24 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
               </div>
             </div>
 
+            {data.restricted && (
+              <p
+                data-testid="player-card-private"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold"
+                style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
+              >
+                <Icon name="lock" size={14} />
+                {t('profile.publicProfile.privateTitle')}
+              </p>
+            )}
+
             {/* Stats */}
-            {!data.isGuest && (
+            {!data.isGuest && !data.restricted && (
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: t('header.games'), value: data.gamesPlayed },
-                  { label: t('profile.stats.dashboard.summary.wins'), value: data.wins },
-                  { label: t('profile.stats.dashboard.summary.winRate'), value: `${data.winRate}%` },
+                  { label: t('header.games'), value: data.gamesPlayed ?? 0 },
+                  { label: t('profile.stats.dashboard.summary.wins'), value: data.wins ?? 0 },
+                  { label: t('profile.stats.dashboard.summary.winRate'), value: `${data.winRate ?? 0}%` },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
@@ -234,7 +251,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
             )}
 
             {/* Favourite game */}
-            {!data.isGuest && gameLabel && (
+            {!data.isGuest && !data.restricted && gameLabel && (
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                 <span>{t('profile.playerCard.favourite')}</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--bd-ink)' }}>

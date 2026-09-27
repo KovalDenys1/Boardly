@@ -15,8 +15,9 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }))
 
+// The card is fetched with the guest token (#1226); here that is plain fetch.
 jest.mock('@/lib/client/fetch-with-guest', () => ({
-  fetchWithGuest: jest.fn(),
+  fetchWithGuest: jest.fn((input: RequestInfo | URL, init?: RequestInit) => global.fetch(input, init)),
   getGuestData: jest.fn(),
 }))
 
@@ -111,6 +112,32 @@ describe('PlayerProfileCard report action (#1172)', () => {
     mockCard(cardResponse())
     render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
     expect(await screen.findByRole('button', { name: 'report.reportPlayer' })).toBeTruthy()
+  })
+
+  // #1226: a profile the viewer may not see comes back restricted.
+  it('shows a restricted card as private: username and picture, no statistics, and those two to report', async () => {
+    mockCard({
+      userId: 'u2',
+      username: 'Bob',
+      image: 'https://cdn.example/bob.png',
+      publicProfileId: 'BobProfile01',
+      isGuest: false,
+      isPremium: false,
+      restricted: true,
+      relation: 'can_send',
+    })
+    render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
+
+    expect(await screen.findByText('Bob')).toBeTruthy()
+    expect(screen.getByTestId('player-card-private').textContent).toContain('profile.publicProfile.privateTitle')
+    // The card is a portal-rendered modal, so look in the whole document.
+    expect(document.body.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/bob.png')
+    expect(screen.queryByText('header.games')).toBeNull()
+    expect(screen.queryByText('profile.playerCard.favourite')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'report.reportPlayer' }))
+    expect(screen.getByLabelText('report.targets.username')).toBeTruthy()
+    expect(screen.getByLabelText('report.targets.avatar')).toBeTruthy()
   })
 
   it('offers no Report to a visitor with no identity to report as', async () => {

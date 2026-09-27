@@ -14,6 +14,7 @@ import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import ReportDialog from '@/components/ReportDialog'
 import { getGuestData } from '@/lib/client/fetch-with-guest'
 import type { ReportTarget } from '@/lib/content-reports'
+import { PRIVACY_SETTINGS_HREF, type ProfileVisibilityValue } from '@/lib/public-profile'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -27,18 +28,22 @@ export type PublicProfileRelation =
 export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
 
 
+/**
+ * Everything but the id, the username and the picture is optional because a viewer who
+ * may not see the profile is sent those and nothing else (#1226, app/u/[publicProfileId]).
+ */
 export type PublicProfileViewData = {
   publicProfileId: string
   username: string | null
-  image: string | null
+  image?: string | null
   avatarUrl?: string | null
   bio?: string | null
   premiumCardStyle?: string | null
   accentColor?: string | null
   featuredGame?: string | null
-  createdAt: string
-  friendsCount: number
-  gamesPlayed: number
+  createdAt?: string
+  friendsCount?: number
+  gamesPlayed?: number
   completedGamesCount?: number
   isPremium?: boolean
   unlockedAchievements?: { key: string; unlockedAt: string }[]
@@ -50,7 +55,15 @@ type PublicProfileViewProps = {
   accessState?: PublicProfileAccessState
   mode?: 'page' | 'embedded-preview'
   onBack?: () => void
+  /** The owner's own setting, passed only when the owner is the one looking. */
+  ownerVisibility?: ProfileVisibilityValue
 }
+
+const OWNER_VISIBILITY_NOTE = {
+  public: { icon: 'globe', key: 'profile.publicProfile.ownerNote.public' },
+  friends: { icon: 'users', key: 'profile.publicProfile.ownerNote.friends' },
+  private: { icon: 'lock', key: 'profile.publicProfile.ownerNote.private' },
+} as const satisfies Record<ProfileVisibilityValue, { icon: string; key: TranslationKeys }>
 
 function getPremiumPanelStyle(cardStyle: string): React.CSSProperties {
   switch (cardStyle) {
@@ -132,6 +145,7 @@ export default function PublicProfileView({
   accessState = 'available',
   mode = 'page',
   onBack,
+  ownerVisibility,
 }: PublicProfileViewProps) {
   const { t, i18n } = useTranslation()
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
@@ -174,13 +188,15 @@ export default function PublicProfileView({
 
   const displayName = profile.username?.trim() || t('profile.publicProfile.playerFallback')
   const handle = displayName.replace(/\s+/g, '').toLowerCase()
-  const levelSourceGames = profile.completedGamesCount ?? profile.gamesPlayed
+  const levelSourceGames = profile.completedGamesCount ?? profile.gamesPlayed ?? 0
   const level = Math.max(1, Math.floor(levelSourceGames / 10) + 1)
-  const memberSince = new Date(profile.createdAt).toLocaleDateString(i18n.language || undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  const memberSince = profile.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString(i18n.language || undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : ''
   const publicProfilePath = `/u/${profile.publicProfileId}`
   // Report (#1172) by public profile id: this page never learns the user id, and a
   // report does not need it to. Only what the page shows can be reported, and only by
@@ -191,9 +207,26 @@ export default function PublicProfileView({
   if (relation !== 'self' && !isEmbeddedPreview && canReport) {
     const publicProfileId = profile.publicProfileId
     if (profile.username) reportTargets.push({ targetType: 'username', publicProfileId })
+    // The picture is public, like the username; a hidden profile's bio is not (#1226).
     if (profile.avatarUrl || profile.image) reportTargets.push({ targetType: 'avatar', publicProfileId })
-    if (profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
+    if (accessState === 'available' && profile.bio) reportTargets.push({ targetType: 'bio', publicProfileId })
   }
+
+  const renderReportButton = (className: string) =>
+    reportTargets.length > 0 ? (
+      <>
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          aria-haspopup="dialog"
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${className}`}
+        >
+          <Icon name="flag" size={13} />
+          {t('report.reportProfile')}
+        </button>
+        <ReportDialog isOpen={reportOpen} onClose={() => setReportOpen(false)} targets={reportTargets} />
+      </>
+    ) : null
   const unlockedAchievementsByKey = new Map(
     (profile.unlockedAchievements ?? []).map((a) => [a.key, a.unlockedAt])
   )
@@ -365,6 +398,28 @@ export default function PublicProfileView({
     )
   }
 
+  // The owner always sees their own profile (#1226), so the top of it says who else
+  // does, with a link straight to the setting that changes it.
+  const renderOwnerNote = () => {
+    if (relation !== 'self' || !ownerVisibility) return null
+    const note = OWNER_VISIBILITY_NOTE[ownerVisibility]
+    return (
+      <p
+        data-testid="owner-visibility-note"
+        className={`mt-4 flex w-fit max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border px-3.5 py-2 text-sm ${tc.badge}`}
+      >
+        <Icon name={note.icon} size={15} className="shrink-0" />
+        <span>{t(note.key)}</span>
+        <Link
+          href={PRIVACY_SETTINGS_HREF}
+          className={`font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-deep hover:text-bd-ink dark:text-bd-lav'}`}
+        >
+          {t('profile.publicProfile.privacySettingsLink')}
+        </Link>
+      </p>
+    )
+  }
+
   const renderAvatar = (sizeClassName = 'h-48 w-48 sm:h-56 sm:w-56') => (
     <div className="relative">
       <div
@@ -393,70 +448,54 @@ export default function PublicProfileView({
     </div>
   )
 
-  const renderRestrictedState = () => {
-    if (accessState === 'private') {
-      return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-6 py-10 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10">
-          <div className="grid h-20 w-20 place-items-center rounded-[1.4rem] border-2 border-bd-ink bg-bd-sun font-display text-sm font-black uppercase tracking-[0.12em] text-bd-ink shadow-[4px_4px_0_var(--bd-ink)]">
-            {t('profile.publicProfile.lockBadge')}
-          </div>
-          <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
-            {t('profile.publicProfile.eyebrow')}
-          </p>
-          <h1 className="mt-3 font-display text-3xl font-black leading-tight text-bd-ink dark:text-white sm:text-4xl">
-            {t('profile.publicProfile.privateTitle')}
-          </h1>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
-            {t('profile.publicProfile.privateSubtitle')}
-          </p>
-          <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button type="button" onClick={handleBack} className={quietActionClassName}>
-              {t('common.back')}
-            </button>
-            {!isEmbeddedPreview && (
-              <Link href="/" className={primaryActionClassName}>
-                {t('common.goHome')}
-              </Link>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[1.15fr_0.85fr]">
-        <div className="px-6 py-8 sm:px-8 sm:py-10">
-          <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
-            {t('profile.publicProfile.eyebrow')}
-          </p>
-          <h1 className="mt-3 font-display text-3xl font-black leading-tight text-bd-ink dark:text-white sm:text-4xl">
-            {t('profile.publicProfile.friendsOnlyTitle')}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
-            {t('profile.publicProfile.friendsOnlySubtitle')}
-          </p>
-          {isEmbeddedPreview && (
-            <div className="mt-8">
-              <button type="button" onClick={handleBack} className={quietActionClassName}>
-                {t('common.back')}
-              </button>
-            </div>
-          )}
-          {shouldShowAction && <div className="mt-8">{renderAction()}</div>}
-        </div>
-        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 md:border-l md:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
-          <div className="w-full rounded-3xl border border-dashed border-bd-line bg-white p-5 text-left dark:border-slate-700 dark:bg-slate-900/70">
-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
-              {t('profile.settings.privacy.friendsOnly')}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-bd-ink-soft dark:text-slate-300">
-              {t('profile.publicProfile.friendsOnlyHint')}
-            </p>
-          </div>
-        </div>
+  // What a viewer who may not see the profile gets (#1226), Steam's "This profile is
+  // private": the username, the picture and the notice, nothing else. The page is not
+  // even sent the rest (app/u/[publicProfileId]/page.tsx). A friends-only profile keeps
+  // the friend request, the one way to be let in.
+  const renderRestrictedState = () => (
+    <div
+      data-testid="restricted-profile"
+      className="mx-auto flex w-full max-w-xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-5 py-8 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10 sm:py-10"
+    >
+      <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.75rem] border-[3px] border-bd-ink bg-bd-bg2 text-bd-ink-muted shadow-[5px_5px_0_var(--bd-ink)] sm:h-32 sm:w-32">
+        {(profile.avatarUrl || profile.image) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.avatarUrl ?? profile.image!} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          <span aria-hidden className="font-display text-6xl font-black uppercase">{displayName.charAt(0)}</span>
+        )}
       </div>
-    )
-  }
+      <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
+        {t('profile.publicProfile.eyebrow')}
+      </p>
+      <h1 className="mt-2 max-w-full break-words font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink dark:text-white">
+        {displayName}
+      </h1>
+      <p className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-bd-ink bg-bd-sun px-4 py-1.5 text-sm font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
+      >
+        <Icon name="lock" size={15} />
+        {t('profile.publicProfile.privateTitle')}
+      </p>
+      <p className="mt-4 max-w-md text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
+        {accessState === 'friends_only'
+          ? t('profile.publicProfile.friendsOnlySubtitle')
+          : t('profile.publicProfile.privateSubtitle')}
+      </p>
+      <div className={`mt-7 grid w-full gap-3 sm:w-auto sm:min-w-[20rem] ${isEmbeddedPreview ? '' : 'sm:grid-cols-2'}`}>
+        <button type="button" onClick={handleBack} className={quietActionClassName}>
+          {t('common.back')}
+        </button>
+        {isEmbeddedPreview ? null : accessState === 'friends_only' ? (
+          renderAction()
+        ) : (
+          <Link href="/" className={primaryActionClassName}>
+            {t('common.goHome')}
+          </Link>
+        )}
+      </div>
+      {renderReportButton('mt-5 text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200')}
+    </div>
+  )
 
   return (
     <div
@@ -510,6 +549,8 @@ export default function PublicProfileView({
                   {t('common.back')}
                 </button>
 
+                {renderOwnerNote()}
+
                 <div className="mt-8 max-w-2xl">
                   <p className={`font-mono text-xs font-semibold uppercase tracking-[0.32em] ${tc.eyebrow}`}>
                     {t('profile.publicProfile.eyebrow')}
@@ -559,7 +600,7 @@ export default function PublicProfileView({
                       {t('profile.friends.title')}
                     </p>
                     <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-deep dark:text-white'}`}>
-                      {profile.friendsCount}
+                      {profile.friendsCount ?? 0}
                     </p>
                   </div>
                   <div className={`relative overflow-hidden rounded-2xl border p-4 ${tc.statCard}`}>
@@ -664,18 +705,9 @@ export default function PublicProfileView({
                           </>
                         )}
                       </button>
-                      {reportTargets.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setReportOpen(true)}
-                          aria-haspopup="dialog"
-                          className={`mt-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`}
-                        >
-                          <Icon name="flag" size={13} />
-                          {t('report.reportProfile')}
-                        </button>
+                      {renderReportButton(
+                        `mt-4 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`
                       )}
-                      <ReportDialog isOpen={reportOpen} onClose={() => setReportOpen(false)} targets={reportTargets} />
                     </div>
                   </div>
                 )

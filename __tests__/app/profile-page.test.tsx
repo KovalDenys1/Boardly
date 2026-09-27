@@ -612,4 +612,58 @@ describe('ProfilePage', () => {
     expect(publicOption).toBeEnabled()
     expect(onlineBox).toBeChecked()
   })
+  describe('privacy setting one click from the profile (#1226)', () => {
+    let scrollIntoView: jest.Mock
+    const originalScrollIntoView = Element.prototype.scrollIntoView
+
+    beforeEach(() => {
+      scrollIntoView = jest.fn()
+      Element.prototype.scrollIntoView = scrollIntoView
+      const baseFetch = mockFetch.getMockImplementation()!
+      mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).includes('/api/user/account-preferences')) {
+          return mockJsonResponse({ preferences: { profileVisibility: 'private', showOnlineStatus: false } })
+        }
+        return baseFetch(input, init)
+      })
+    })
+
+    afterEach(() => {
+      Element.prototype.scrollIntoView = originalScrollIntoView
+    })
+
+    it('shows the current visibility on the profile, and the button opens the Privacy section', async () => {
+      render(<ProfilePage />)
+
+      expect(await screen.findByTestId('profile-visibility-summary')).toHaveTextContent('profile.settings.privacy.private')
+
+      fireEvent.click(screen.getByRole('button', { name: 'profile.publicProfile.privacySettingsLink' }))
+
+      const section = await screen.findByRole('region', { name: 'profile.settings.privacy.title' })
+      expect(section.id).toBe('privacy')
+      // The existing controls, not a copy of them.
+      expect(screen.getAllByRole('button', { name: /^profile\.settings\.privacy\.private/ })).toHaveLength(1)
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(scrollIntoView.mock.instances[0]).toBe(section)
+    })
+
+    it('opens the settings tab at the Privacy section from the link on your own public profile', async () => {
+      window.history.replaceState({}, '', '/profile?tab=settings#privacy')
+      // The link lands while the session is still loading and the page is a spinner;
+      // the scroll waits for the section instead of being lost.
+      const authenticated = mockUseSession.getMockImplementation()!()
+      mockUseSession.mockReturnValue({ status: 'loading', data: null, update: mockSessionUpdate } as any)
+
+      const { rerender } = render(<ProfilePage />)
+      expect(screen.queryByRole('region', { name: 'profile.settings.privacy.title' })).toBeNull()
+      expect(scrollIntoView).not.toHaveBeenCalled()
+
+      mockUseSession.mockReturnValue(authenticated as any)
+      rerender(<ProfilePage />)
+
+      const section = await screen.findByRole('region', { name: 'profile.settings.privacy.title' })
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(scrollIntoView.mock.instances[0]).toBe(section)
+    })
+  })
 })

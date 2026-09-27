@@ -1,9 +1,14 @@
 import { getAvailableGameTypes } from '@/lib/game-catalog'
 
-/** Shape shared by /api/leaderboard, the server-rendered /leaderboard page and its client hook. */
+/**
+ * Shape shared by /api/leaderboard, the server-rendered /leaderboard page and its client hook.
+ *
+ * No user id (#1226): the internal id opens other routes by id, and the leaderboard lists
+ * players whose profile the viewer may not see. A row is linked by `publicProfileId`, which
+ * answers with the visibility rule, and keyed by `rank`.
+ */
 export interface LeaderboardEntry {
   rank: number
-  userId: string
   username: string
   publicProfileId: string | null
   avatarUrl: string | null
