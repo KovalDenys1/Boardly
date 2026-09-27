@@ -503,4 +503,37 @@ describe('ProfilePage', () => {
     })
     expect(mockSessionUpdate).not.toHaveBeenCalled()
   })
+
+  it('shows no visibility or online choice until the stored preferences arrive (#1131)', async () => {
+    let releasePreferences: () => void = () => {}
+    const preferencesArrive = new Promise<void>((resolve) => {
+      releasePreferences = resolve
+    })
+    const baseFetch = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('/api/user/account-preferences')) {
+        await preferencesArrive
+        return mockJsonResponse({ preferences: { profileVisibility: 'public', showOnlineStatus: true } })
+      }
+      return baseFetch(input, init)
+    })
+    window.history.replaceState({}, '', '/profile?tab=settings')
+
+    render(<ProfilePage />)
+
+    const publicOption = await screen.findByRole('button', { name: /^profile\.settings\.privacy\.public/ })
+    const onlineBox = screen.getByRole('checkbox', { name: /profile\.settings\.privacy\.showOnline/ })
+    // Before the fetch answers: nothing chosen, nothing clickable, and a loading badge.
+    expect(publicOption).toBeDisabled()
+    expect(publicOption).toHaveAttribute('aria-pressed', 'false')
+    expect(onlineBox).toBeDisabled()
+    expect(onlineBox).not.toBeChecked()
+    expect(screen.getByRole('status')).toHaveTextContent('common.loading')
+
+    releasePreferences()
+
+    await waitFor(() => expect(publicOption).toHaveAttribute('aria-pressed', 'true'))
+    expect(publicOption).toBeEnabled()
+    expect(onlineBox).toBeChecked()
+  })
 })
