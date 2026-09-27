@@ -2256,9 +2256,8 @@ export default function ProfilePage() {
                                   </p>
                                 )}
                               </div>
-                              {/* Unlink only. Linking a provider to a signed-in account was
-                                  removed with /auth/link (#1140): it could sign the person
-                                  into a brand-new account instead. */}
+                              {/* Unlink only: the Connect action went with /auth/link
+                                  (#1140). Linking can come back as its own ticket. */}
                               {isConnected && (
                                 <button
                                   type="button"

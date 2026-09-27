@@ -88,10 +88,11 @@ async function deleteLinkedAccountHandler(req: NextRequest) {
   }
 
   // Prevent unlinking if it's the only auth method. There is no set-password page and,
-  // since #1140, no way to link another provider, so the message names the one path
-  // that exists: "Forgot password?" sets a password on an account that has none
-  // (app/api/auth/reset-password writes passwordHash either way). The profile shows
-  // its own translation of this, keyed on the code.
+  // since #1140, no page for linking another provider (next-auth still links one to a
+  // signed-in user who completes an OAuth sign-in, but nothing on the site offers it
+  // for this), so the message names the path that exists: "Forgot password?" sets a
+  // password on an account that has none (app/api/auth/reset-password writes
+  // passwordHash either way). The profile shows its own translation, keyed on the code.
   if (!user.passwordHash && user.accounts.length === 1) {
     throw new AppError(
       'This is the only way you sign in, so it cannot be removed. To add a password, sign out, choose "Forgot password?" on the sign-in page and enter your account\'s email address. Then you can remove this one.',

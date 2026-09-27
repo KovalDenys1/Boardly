@@ -386,10 +386,12 @@ export const authOptions: NextAuthOptions = {
             return true
           }
 
-          // New user with new email - allow PrismaAdapter to create
-          // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user.
-          // There is no way to link a provider to an existing account: /auth/link was
-          // removed because it did exactly this and swapped the session (#1140).
+          // New provider identity with a new email. Signed out, the adapter creates a
+          // SEPARATE user for it. Signed in, next-auth's OAuth callback links it to the
+          // signed-in user instead (the session cookie it decodes picks the account; see
+          // the #1136 note above isSessionRevoked). /auth/link, the profile's page for
+          // starting that on purpose, was removed in #1140; /discord/link still starts it
+          // for Discord (#1218).
           const log = apiLogger('OAuth signIn')
           // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {
