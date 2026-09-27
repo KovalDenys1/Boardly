@@ -77,7 +77,6 @@ describe('GET /api/leaderboard', () => {
       entries: [
         {
           rank: 1,
-          userId: 'user-1',
           username: 'Player One',
           publicProfileId: 'public-1',
           gamesPlayed: 12,
@@ -129,5 +128,7 @@ describe('GET /api/leaderboard', () => {
     expect(payload.entries[0]).toMatchObject({ username: 'Hidden Player', wins: 9, losses: 3, avatarUrl: null })
     expect(text).not.toContain('private-avatar.png')
     expect(text).not.toContain('profileVisibility')
+    // The internal id opens the player card and reports by id; no row carries it.
+    expect(text).not.toContain('user-private')
   })
 })

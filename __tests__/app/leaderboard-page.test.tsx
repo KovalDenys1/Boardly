@@ -34,7 +34,6 @@ const mockFetchLeaderboardPage = fetchLeaderboardPage as jest.MockedFunction<typ
 
 const entry = (rank: number, username: string): LeaderboardEntry => ({
   rank,
-  userId: `user-${rank}`,
   username,
   publicProfileId: null,
   avatarUrl: null,

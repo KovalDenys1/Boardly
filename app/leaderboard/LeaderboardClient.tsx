@@ -321,7 +321,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                 </div>
               ) : (
                 entries.map((entry, idx) => (
-                  <LeaderboardRow key={entry.userId} entry={entry} isLast={idx === entries.length - 1} t={t} />
+                  <LeaderboardRow key={entry.rank} entry={entry} isLast={idx === entries.length - 1} t={t} />
                 ))
               )}
 

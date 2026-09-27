@@ -38,11 +38,15 @@ type LeaderboardRow = {
 }
 
 /**
- * A row as the shared cache holds it: every player's picture, with the visibility
- * that decides who may see it. It never leaves this module as is; `fetchLeaderboardPage`
- * takes the picture off for each viewer who may not see the profile.
+ * A row as the shared cache holds it: the player's id, every player's picture and premium
+ * badge, and the visibility that decides who may see them. It never leaves this module as
+ * is; `fetchLeaderboardPage` drops the id from every row and takes the picture and badge
+ * off for each viewer who may not see the profile.
  */
-type CachedLeaderboardEntry = LeaderboardEntry & { profileVisibility: ProfileVisibilityValue }
+type CachedLeaderboardEntry = LeaderboardEntry & {
+  userId: string
+  profileVisibility: ProfileVisibilityValue
+}
 
 type CachedLeaderboardPage = { entries: CachedLeaderboardEntry[]; hasMore: boolean }
 
@@ -58,11 +62,13 @@ export interface LeaderboardQuery {
  * `app/leaderboard/page.tsx` renders its first page into the HTML (#922).
  *
  * Every player with enough games is listed with their username and results,
- * whatever their profile visibility (#1226). The picture is shown only to a
- * viewer who may see the profile (`canViewProfile`): everyone for a public one,
- * friends for a friends-only one, the owner alone for a private one. Anyone else
- * gets `avatarUrl: null` and the UI draws the default avatar, so the URL of a
- * hidden picture never reaches their browser.
+ * whatever their profile visibility (#1226). The picture and the premium badge are
+ * shown only to a viewer who may see the profile (`canViewProfile`): everyone for a
+ * public one, friends for a friends-only one, the owner alone for a private one.
+ * Anyone else gets `avatarUrl: null` and `isPremium: false`, and the UI draws the
+ * default avatar, so a hidden picture's URL never reaches their browser. No row
+ * carries the user id, which other routes accept (the player card, reports): the
+ * link goes through `publicProfileId`, whose page applies the same rule.
  *
  * The aggregation goes through one 20 s data-cache entry per filter combination,
  * shared by every viewer, so a crawler hit, a visit and a filter change do not each
@@ -99,14 +105,16 @@ async function applyViewerVisibility(
       .map((entry) => entry.userId)
   )
 
-  const entries = page.entries.map(({ profileVisibility, ...entry }): LeaderboardEntry => {
+  const entries = page.entries.map(({ userId, profileVisibility, ...entry }): LeaderboardEntry => {
     const relation: ProfileViewerRelation =
-      viewerId !== null && entry.userId === viewerId
+      viewerId !== null && userId === viewerId
         ? 'self'
-        : friendIds.has(entry.userId)
+        : friendIds.has(userId)
           ? 'friend'
           : 'other'
-    return canViewProfile(profileVisibility, relation) ? entry : { ...entry, avatarUrl: null }
+    return canViewProfile(profileVisibility, relation)
+      ? entry
+      : { ...entry, avatarUrl: null, isPremium: false }
   })
 
   return { entries, hasMore: page.hasMore }
