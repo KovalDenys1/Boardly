@@ -363,14 +363,6 @@ function limiterUnavailable() {
   )
 }
 
-/**
- * Rate limiter for Next.js API routes. Counts in the shared Upstash store when it is
- * configured; see `failClosed` and `degraded` for what happens when it fails.
- *
- * Upstash commands per call (#1156): one HINCRBY per counted request, plus one EXPIRE per
- * window per instance; none for a key this instance already knows is over its limit, and
- * none while the store is paused after repeated failures.
- */
 export interface RateLimitCallOptions {
   /**
    * Count against this identity (a user or guest id the route has already
@@ -382,6 +374,14 @@ export interface RateLimitCallOptions {
   identity?: string
 }
 
+/**
+ * Rate limiter for Next.js API routes. Counts in the shared Upstash store when it is
+ * configured; see `failClosed` and `degraded` for what happens when it fails.
+ *
+ * Upstash commands per call (#1156): one HINCRBY per counted request, plus one EXPIRE per
+ * window per instance; none for a key this instance already knows is over its limit, and
+ * none while the store is paused after repeated failures.
+ */
 export function rateLimit(config: RateLimitConfig) {
   const {
     windowMs,
