@@ -344,7 +344,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -535,7 +534,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 

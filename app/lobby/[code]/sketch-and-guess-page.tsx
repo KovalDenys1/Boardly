@@ -232,7 +232,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -464,7 +463,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         onPlayerLeft: handlePlayerLeft,
         onGameReset: handleGameReset,
         onChatMessage,
-        onPlayerTyping,
         onSketchLive: handleSketchLive,
     })
 

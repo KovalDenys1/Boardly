@@ -15,7 +15,7 @@ import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
-import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep, Lobby } from '@/types/game'
+import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, BotMoveStep, Lobby } from '@/types/game'
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
@@ -387,7 +387,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     resetUnread,
     someoneTyping,
     onChatMessage,
-    onPlayerTyping,
     mergeHistoryMessages,
     setChatMessages,
   } = useLobbyChat({
@@ -977,7 +976,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
-    onPlayerTyping,
     onLobbyUpdate,
     onPlayerJoined,
     onGameStarted,

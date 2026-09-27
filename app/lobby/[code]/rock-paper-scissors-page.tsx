@@ -207,7 +207,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -413,7 +412,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 

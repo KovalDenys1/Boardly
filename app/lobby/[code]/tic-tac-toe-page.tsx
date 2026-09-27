@@ -268,7 +268,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -464,7 +463,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
     onChatMessage,
-    onPlayerTyping,
     onGameReset: handleGameReset,
   })
 

@@ -392,7 +392,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -589,7 +588,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 

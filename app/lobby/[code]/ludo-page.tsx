@@ -421,7 +421,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -620,7 +619,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage,
-        onPlayerTyping,
         onGameReset: handleGameReset,
     })
 

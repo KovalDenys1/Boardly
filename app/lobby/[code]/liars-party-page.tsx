@@ -656,7 +656,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     resetUnread: resetChatUnread,
     someoneTyping,
     onChatMessage,
-    onPlayerTyping,
     mergeHistoryMessages,
   } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -808,7 +807,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     onPlayerJoined: () => { void loadLobby() },
     onGameReset: handleGameReset,
     onChatMessage,
-    onPlayerTyping,
   })
 
   useLobbyChatHistory({ code, isConnected: socketConnected, isReconnecting, mergeHistoryMessages })

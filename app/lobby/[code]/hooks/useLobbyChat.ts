@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import type { ChatMessagePayload, PlayerTypingPayload } from '@/types/game'
+import type { ChatMessagePayload } from '@/types/game'
 
 /**
  * Shared lobby chat state (#736 phase 1) — extracted from LobbyPageClient so
@@ -13,14 +13,13 @@ import type { ChatMessagePayload, PlayerTypingPayload } from '@/types/game'
  * broadcasts (which bypassed persistence/authz and sent id-less payloads).
  *
  * Split in two because of call-order: `useLobbyChat` produces the
- * `onChatMessage`/`onPlayerTyping` handlers that `useRealtimeConnection`
- * needs, while `useLobbyChatHistory` needs the `isConnected` flag that
+ * `onChatMessage` handler that `useRealtimeConnection` needs, while
+ * `useLobbyChatHistory` needs the `isConnected` flag that
  * `useRealtimeConnection` returns. Call them around it:
  *
  *   const chat = useLobbyChat({ code, isChatVisible })
  *   const { isConnected, isReconnecting } = useRealtimeConnection({
- *     onChatMessage: chat.onChatMessage,
- *     onPlayerTyping: chat.onPlayerTyping, ...
+ *     onChatMessage: chat.onChatMessage, ...
  *   })
  *   useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHistoryMessages: chat.mergeHistoryMessages })
  */
@@ -56,8 +55,6 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
 
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [someoneTyping, setSomeoneTyping] = useState(false)
-  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Read via refs so the realtime handlers stay referentially stable and
   // never force useRealtimeConnection to re-subscribe.
@@ -110,17 +107,6 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
     }
   }, [])
 
-  const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
-    if (data.userId === currentUserIdRef.current) return
-    setSomeoneTyping(true)
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-    typingTimeoutRef.current = setTimeout(() => setSomeoneTyping(false), 3000)
-  }, [])
-
-  useEffect(() => () => {
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-  }, [])
-
   const currentUserName = isGuest
     ? guestName
     : (session?.user as { username?: string } | undefined)?.username || session?.user?.name || 'You'
@@ -168,9 +154,14 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
     sendChatMessage,
     unreadCount,
     resetUnread,
-    someoneTyping,
+    /**
+     * Always false. The indicator listened for a `player-typing` broadcast that
+     * nothing has ever sent, and a client-sent one would now be dropped as
+     * unsigned (GHSA-g868-9224-wr3p). `Chat` keeps the prop for the day a
+     * server route sends it.
+     */
+    someoneTyping: false,
     onChatMessage,
-    onPlayerTyping,
     mergeHistoryMessages,
     /** Escape hatch for local-only system messages (bot joined, game started). */
     setChatMessages,
