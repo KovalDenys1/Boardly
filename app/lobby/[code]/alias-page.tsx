@@ -930,7 +930,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   // The guess goes through the server (GHSA-g868-9224-wr3p): the lobby topic no
   // longer carries client-sent chat, because a client could put any name on
-  // it. It shows here at once; a guess the server refuses is taken back.
+  // it. It shows here at once; a guess the server refuses is taken back, and a
+  // rate-limited one says so rather than vanishing without a word.
   const sendGuess = useCallback(() => {
     const text = guessInput.trim()
     if (!text) return
@@ -954,6 +955,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       .then((res) => {
         if (!res || res.ok) return
         setGuesses(prev => prev.filter(g => g.id !== localId))
+        if (res.status === 429) {
+          showToast.error('alias.guessRateLimited', undefined, undefined, { id: 'alias-guess-rate-limited' })
+        }
       })
       .catch(() => {
         setGuesses(prev => prev.filter(g => g.id !== localId))

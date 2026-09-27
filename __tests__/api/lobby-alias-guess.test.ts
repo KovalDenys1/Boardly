@@ -18,6 +18,7 @@ import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { canPostAliasGuess } from '@/lib/games/alias-guess'
+import { __rateLimitTestUtils, rateLimitPresets } from '@/lib/rate-limit'
 
 jest.mock('@/lib/db', () => ({
   prisma: { lobbies: { findUnique: jest.fn() } },
@@ -119,6 +120,31 @@ describe('POST /api/lobby/[code]/alias-guess', () => {
     seed({ state: aliasState('turn_results') })
     expect((await post({ message: 'banana' })).status).toBe(409)
     expect(mockBroadcast).not.toHaveBeenCalled()
+  })
+
+  it('gives each guesser their own budget, so one player on a shared network cannot cut the room off', async () => {
+    __rateLimitTestUtils.clearInMemoryStore()
+    seed()
+    const fromHomeNetwork = () =>
+      POST(
+        new NextRequest('http://localhost:3000/api/lobby/ABCD/alias-guess', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-real-ip': '198.51.100.7' },
+          body: JSON.stringify({ message: 'banana' }),
+        }),
+        { params: Promise.resolve({ code: 'ABCD' }) }
+      )
+
+    const limit = rateLimitPresets.aliasGuessPost.maxRequests
+    for (let i = 0; i < limit; i += 1) {
+      expect((await fromHomeNetwork()).status).toBe(200)
+    }
+    expect((await fromHomeNetwork()).status).toBe(429)
+
+    // Another seated guesser behind the same router still gets through.
+    mockAuth.mockResolvedValue({ id: OTHER_TEAM, username: 'Otto', isGuest: true })
+    expect((await fromHomeNetwork()).status).toBe(200)
+    __rateLimitTestUtils.clearInMemoryStore()
   })
 
   it('says so when the broadcast could not be sent', async () => {

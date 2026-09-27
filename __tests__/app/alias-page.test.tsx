@@ -565,6 +565,33 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     await waitFor(() => expect(screen.getByText('apple')).toBeTruthy())
   })
 
+  it('takes a rate-limited guess back and says why, instead of dropping it silently', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    const response = buildTurnResponse({ meDescribing: false })
+    mockFetchWithGuest.mockImplementation(async (url) => {
+      if (String(url).endsWith('/alias-guess')) {
+        return { ok: false, status: 429, json: async () => ({ error: 'Too many guesses' }) } as Response
+      }
+      return { ok: true, status: 200, json: async () => response } as Response
+    })
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+    const toast = showToast as jest.Mocked<typeof showToast>
+
+    fireEvent.change(screen.getByPlaceholderText('alias.guessPlaceholder'), { target: { value: 'banana' } })
+    fireEvent.keyDown(screen.getByPlaceholderText('alias.guessPlaceholder'), { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'alias.guessRateLimited',
+        undefined,
+        undefined,
+        expect.objectContaining({ id: 'alias-guess-rate-limited' })
+      )
+    })
+    expect(screen.queryByText('banana')).toBeNull()
+  })
+
   it('leaves the describer on the word card, with the feed one tap away', async () => {
     mountWith(buildTurnResponse({ meDescribing: true }))
     await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())

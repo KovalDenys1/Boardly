@@ -371,6 +371,17 @@ function limiterUnavailable() {
  * window per instance; none for a key this instance already knows is over its limit, and
  * none while the store is paused after repeated failures.
  */
+export interface RateLimitCallOptions {
+  /**
+   * Count against this identity (a user or guest id the route has already
+   * authenticated) instead of the caller's address. For actions where several
+   * legitimate players share one network and each needs their own budget - an
+   * Alias round is a room of guessers behind one home router. Only pass an id
+   * the server resolved itself, never one read from the request body.
+   */
+  identity?: string
+}
+
 export function rateLimit(config: RateLimitConfig) {
   const {
     windowMs,
@@ -381,7 +392,7 @@ export function rateLimit(config: RateLimitConfig) {
     degraded,
   } = config
 
-  return async (request: NextRequest): Promise<NextResponse | null> => {
+  return async (request: NextRequest, options?: RateLimitCallOptions): Promise<NextResponse | null> => {
     // Prefer x-real-ip (set by Vercel/proxy, not client-controllable).
     // Fall back to the rightmost value in x-forwarded-for (appended by Vercel).
     // Never use the leftmost value — clients can spoof it to bypass rate limits.
@@ -390,9 +401,11 @@ export function rateLimit(config: RateLimitConfig) {
       (request.headers.get('x-forwarded-for') ?? '').split(',').at(-1)?.trim() ||
       'unknown'
 
-    // Create unique key for this IP and endpoint
+    // Create unique key for this caller and endpoint: the authenticated
+    // identity when the route passes one, the address otherwise.
     const scope = keyScope ?? new URL(request.url).pathname
-    const key = `${ip}:${scope}`
+    const caller = options?.identity ? `id:${options.identity}` : ip
+    const key = `${caller}:${scope}`
     const blockKey = `${key}:${windowMs}:${maxRequests}`
 
     const now = Date.now()
@@ -534,8 +547,10 @@ export const rateLimitPresets = {
 
   // Alias guesses (GHSA-g868-9224-wr3p): they went client to client until the
   // lobby topic stopped trusting peer frames, and now pass through the server.
-  // Their own bucket, and a larger one than chat: guessing is rapid-fire, and a
-  // party round is several guessers behind one home network.
+  // Their own bucket, and a larger one than chat: guessing is rapid-fire. The
+  // route counts it per player (`identity`), not per address, because a party
+  // round is several guessers behind one home network and a shared per-IP
+  // bucket would start refusing the whole room's guesses at once.
   aliasGuessPost: {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 120,

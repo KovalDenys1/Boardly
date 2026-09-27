@@ -32,13 +32,16 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid lobby code' }, { status: 400 })
   }
 
-  const rateLimitResult = await guessLimiter(req)
-  if (rateLimitResult) return rateLimitResult
-
   const user = await getRequestAuthUser(req)
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // Counted per player, not per address: an Alias room is often several
+  // guessers on one home network, and one shared bucket would cut the whole
+  // room off mid-turn. An unauthenticated caller never gets this far.
+  const rateLimitResult = await guessLimiter(req, { identity: user.id })
+  if (rateLimitResult) return rateLimitResult
 
   const body = await req.json().catch(() => null)
   const message = typeof body?.message === 'string' ? body.message.trim() : ''

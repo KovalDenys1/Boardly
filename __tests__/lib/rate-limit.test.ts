@@ -419,6 +419,28 @@ describe('rateLimit store backends', () => {
     expect(limited[0][0]).toMatchObject({ source: '/api/test-rate-limit', statusCode: 429 })
   })
 
+  it('counts per identity when the route passes one, so players behind one address do not share a bucket', async () => {
+    delete process.env.UPSTASH_REDIS_REST_URL
+    delete process.env.UPSTASH_REDIS_REST_TOKEN
+
+    const { rateLimit, __rateLimitTestUtils } = await loadRateLimitModule()
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+
+    const sameNetwork = () => requestFrom('203.0.113.40', '/api/lobby/ABCD/alias-guess')
+    const limiter = rateLimit({ windowMs: 60_000, maxRequests: 2, keyScope: 'identity-test' })
+
+    expect(await limiter(sameNetwork(), { identity: 'player-a' })).toBeNull()
+    expect(await limiter(sameNetwork(), { identity: 'player-a' })).toBeNull()
+    expect((await limiter(sameNetwork(), { identity: 'player-a' }))?.status).toBe(429)
+
+    // Same address, another player: a fresh allowance.
+    expect(await limiter(sameNetwork(), { identity: 'player-b' })).toBeNull()
+
+    // Without an identity the address is the key, and it is untouched by the above.
+    expect(await limiter(sameNetwork())).toBeNull()
+  })
+
   it('gives join-guest one bucket per IP across every lobby code (#1157)', async () => {
     delete process.env.UPSTASH_REDIS_REST_URL
     delete process.env.UPSTASH_REDIS_REST_TOKEN
