@@ -2271,6 +2271,8 @@ const uk: TranslationWithPlurals = {
     noMessages: 'Поки немає повідомлень',
     startConversation: 'Почніть розмову!',
     sendHelp: 'Enter — надіслати • Shift+Enter — новий рядок',
+    rules: 'Правила',
+    rulesNewTab: 'Правила спільноти (відкриються в новій вкладці)',
   },
   auth: {
     inAppBrowser: {

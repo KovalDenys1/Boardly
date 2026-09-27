@@ -154,3 +154,38 @@ describe('Chat report action (#1172)', () => {
     expect(onToggleMinimize).not.toHaveBeenCalled()
   })
 })
+
+// #1173: the community rules are one tap from every chat, and reaching them costs a game
+// screen no room.
+describe('Chat community rules link (#1173)', () => {
+  it('links /rules from the title strip, in a new tab so a game is never left', () => {
+    const { container } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+    )
+    const link = screen.getByRole('link', { name: 'chat.rulesNewTab' })
+    expect(link.getAttribute('href')).toBe('/rules')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+    expect(link.textContent).toBe('chat.rules')
+    expect(link.closest('.chat-titlebar')).toBe(container.querySelector('.chat-titlebar'))
+  })
+
+  it('is there for spectators and in the floating panel too', () => {
+    const { unmount } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId={null} fullScreen readOnly />
+    )
+    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    unmount()
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
+    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    expect(screen.getByLabelText('chat.minimize')).toBeTruthy()
+  })
+
+  it('adds no block to the panel', () => {
+    const { container } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+    )
+    const panel = container.firstElementChild as HTMLElement
+    expect(panel.children).toHaveLength(3)
+  })
+})

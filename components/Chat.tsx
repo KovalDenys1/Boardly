@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import ReportDialog from '@/components/ReportDialog'
@@ -207,7 +208,9 @@ export default function Chat({
         <div className="flex min-w-0 items-center gap-3">
           <div className="bd-live-dot" aria-hidden="true" />
           <div className="min-w-0">
-            <div className="chat-titlebar-kicker bd-kicker">{t('chat.kicker')}</div>
+            {/* One line whatever the right-hand side takes: a kicker that wrapped made
+                the strip 13px taller and took it from the messages. */}
+            <div className="chat-titlebar-kicker bd-kicker max-w-full truncate align-top">{t('chat.kicker')}</div>
             <h3 className="truncate text-base font-bold text-bd-ink" id="chat-title">
               {t('chat.title')}
             </h3>
@@ -219,30 +222,49 @@ export default function Chat({
           )}
         </div>
 
-        {!fullScreen && (
-          <div className="flex items-center gap-1" role="group" aria-label={t('chat.controls')}>
-            {onClearChat && messages.length > 0 && (
+        <div className="flex shrink-0 items-center gap-1">
+          {/* The community rules (#1173), in the title strip's right-hand side, which
+              is empty in the game dock (fullScreen has no controls): no new row on a
+              game screen. A short visible label, so the strip keeps the title on one
+              line in a 320px phone and the 316px desktop column; the full name is the
+              accessible name. A new tab, so opening them never leaves a game. Hidden
+              with the rest of the strip in the phone-landscape side column (#902). */}
+          <Link
+            href="/rules"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('chat.rulesNewTab')}
+            title={t('chat.rulesNewTab')}
+            className="chat-rules-link inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink hover:underline focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          >
+            <Icon name="shield" size={14} />
+            <span>{t('chat.rules')}</span>
+          </Link>
+          {!fullScreen && (
+            <div className="flex items-center gap-1" role="group" aria-label={t('chat.controls')}>
+              {onClearChat && messages.length > 0 && (
+                <button
+                  onClick={onClearChat}
+                  aria-label={t('chat.clear')}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+                  style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                  title={t('chat.clear')}
+                >
+                  <span className="text-base" aria-hidden="true">🗑️</span>
+                </button>
+              )}
               <button
-                onClick={onClearChat}
-                aria-label={t('chat.clear')}
+                onClick={onToggleMinimize}
+                aria-label={t('chat.minimize')}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                 style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
-                title={t('chat.clear')}
+                title={t('chat.minimize')}
               >
-                <span className="text-base" aria-hidden="true">🗑️</span>
+                <span className="text-base" aria-hidden="true">−</span>
               </button>
-            )}
-            <button
-              onClick={onToggleMinimize}
-              aria-label={t('chat.minimize')}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-              style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
-              title={t('chat.minimize')}
-            >
-              <span className="text-base" aria-hidden="true">−</span>
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div

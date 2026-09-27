@@ -2268,7 +2268,9 @@ const ru = {
     send: 'Отправить',
     noMessages: 'Пока нет сообщений',
     startConversation: 'Начните разговор!',
-    sendHelp: 'Нажмите Enter для отправки • Shift+Enter для новой строки'
+    sendHelp: 'Нажмите Enter для отправки • Shift+Enter для новой строки',
+    rules: 'Правила',
+    rulesNewTab: 'Правила сообщества (откроются в новой вкладке)',
   },
   auth: {
     inAppBrowser: {

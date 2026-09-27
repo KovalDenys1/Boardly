@@ -2180,6 +2180,8 @@ const en = {
     noMessages: 'No messages yet',
     startConversation: 'Start the conversation!',
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
+    rules: 'Rules',
+    rulesNewTab: 'Community rules (opens in a new tab)',
   },
   auth: {
     inAppBrowser: {

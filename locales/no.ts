@@ -2179,7 +2179,9 @@ const no = {
     send: 'Send melding',
     noMessages: 'Ingen meldinger ennå',
     startConversation: 'Start samtalen!',
-    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje'
+    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
+    rules: 'Regler',
+    rulesNewTab: 'Fellesskapsregler (åpnes i en ny fane)',
   },
   auth: {
     inAppBrowser: {
