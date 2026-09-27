@@ -84,6 +84,19 @@ async function settle() {
   }
 }
 
+/**
+ * Waits in real time, not in ticks: WebCrypto's ECDSA verify runs on the libuv thread pool,
+ * so on a slow CI runner five chained verifications can outlast settle()'s 60 ticks
+ * (a CI run on 2026-09-27 saw only the first of five frames).
+ */
+async function settleUntil(done: () => boolean, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs
+  while (!done() && Date.now() < deadline) {
+    await new Promise((resolve) => realSetImmediate(resolve))
+  }
+  await settle()
+}
+
 const originalFetch = global.fetch
 
 describe('lobby channel registry', () => {
@@ -285,7 +298,7 @@ describe('lobby channel registry', () => {
       const channel = fakeClient.channelsByTopic.get(TOPIC)
 
       for (const move of [1, 2, 3, 4, 5]) channel._emit('game-update', signed('game-update', { move }))
-      await settle()
+      await settleUntil(() => seen.length >= 5)
 
       expect(seen).toEqual([1, 2, 3, 4, 5])
     })
