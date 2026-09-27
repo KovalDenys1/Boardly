@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { needsAccountStep, useOnboarding } from '@/contexts/OnboardingContext'
 import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -14,7 +15,9 @@ import GameIcon from '@/components/GameIcon'
 
 /**
  * `account` comes first, and only for a signed-in account with something to settle: the
- * offer to make a friends-only profile public (#1131). Then the usual game choice.
+ * 13-or-older confirmation an OAuth account gives here instead of on the register form
+ * (#1135), and the offer to make a friends-only profile public (#1131). Then the usual
+ * game choice.
  */
 type OnboardingStep = 'account' | 'choice' | 'quick-start'
 
@@ -26,9 +29,14 @@ export function OnboardingModal() {
   const [step, setStep] = useState<OnboardingStep>('choice')
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   // Unticked on purpose: a public profile is an opt-in (#1131, GDPR Art. 25(2)).
   const [profilePublic, setProfilePublic] = useState(false)
   const [savingAccount, setSavingAccount] = useState(false)
+  // The age confirmation cannot be skipped: no close button and no "Skip for now" on
+  // this step while it is asked. Someone under 13 signs out instead.
+  const ageRequired = step === 'account' && accountSetup.confirmAge
+  const accountContinueBlocked = savingAccount || (accountSetup.confirmAge && !ageConfirmed)
 
   const games = useMemo(
     () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
@@ -58,11 +66,17 @@ export function OnboardingModal() {
     startTour()
   }
 
+  const handleSignOut = async () => {
+    hideModal()
+    await signOut({ redirect: false })
+    router.replace('/')
+  }
+
   const handleAccountContinue = async () => {
-    if (savingAccount) return
+    if (accountContinueBlocked) return
     setSavingAccount(true)
     try {
-      await saveAccountSetup({ profilePublic })
+      await saveAccountSetup({ ageConfirmed: accountSetup.confirmAge && ageConfirmed, profilePublic })
       setStep('choice')
     } catch {
       showToast.error('common.error')
@@ -132,31 +146,33 @@ export function OnboardingModal() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
-          {/* X close button */}
-          <button
-            onClick={skipOnboarding}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: 32,
-              height: 32,
-              display: 'grid',
-              placeItems: 'center',
-              background: 'var(--bd-bg2)',
-              border: '2px solid var(--bd-ink)',
-              borderRadius: 8,
-              boxShadow: '2px 2px 0 var(--bd-ink)',
-              cursor: 'pointer',
-              fontSize: 14,
-              fontWeight: 700,
-              color: 'var(--bd-ink)',
-              lineHeight: 1,
-            }}
-            aria-label={t('common.close')}
-          >
-            <Icon name="close" size={16} />
-          </button>
+          {/* X close button, gone while the age confirmation is asked */}
+          {!ageRequired && (
+            <button
+              onClick={skipOnboarding}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 32,
+                height: 32,
+                display: 'grid',
+                placeItems: 'center',
+                background: 'var(--bd-bg2)',
+                border: '2px solid var(--bd-ink)',
+                borderRadius: 8,
+                boxShadow: '2px 2px 0 var(--bd-ink)',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--bd-ink)',
+                lineHeight: 1,
+              }}
+              aria-label={t('common.close')}
+            >
+              <Icon name="close" size={16} />
+            </button>
+          )}
 
           <div
             style={{
@@ -192,6 +208,37 @@ export function OnboardingModal() {
         {step === 'account' ? (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {accountSetup.confirmAge && (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '14px 16px',
+                    background: 'var(--bd-bg)',
+                    border: '2px solid var(--bd-ink)',
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmed}
+                    onChange={(event) => setAgeConfirmed(event.target.checked)}
+                    disabled={savingAccount}
+                    required
+                    style={{ marginTop: 2, width: 18, height: 18, flexShrink: 0, accentColor: 'var(--bd-coral)', cursor: 'pointer' }}
+                  />
+                  <span>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
+                      {t('onboarding.account.ageConfirm')}
+                    </span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-muted)' }}>
+                      {t('onboarding.account.ageHint')}
+                    </span>
+                  </span>
+                </label>
+              )}
               {accountSetup.offerPublicProfile && (
                 <label
                   style={{
@@ -226,7 +273,7 @@ export function OnboardingModal() {
 
             <button
               onClick={() => void handleAccountContinue()}
-              disabled={savingAccount}
+              disabled={accountContinueBlocked}
               style={{
                 width: '100%',
                 padding: '14px 20px',
@@ -238,8 +285,8 @@ export function OnboardingModal() {
                 fontFamily: 'var(--bd-font-display)',
                 fontSize: 15,
                 fontWeight: 700,
-                cursor: savingAccount ? 'not-allowed' : 'pointer',
-                opacity: savingAccount ? 0.45 : 1,
+                cursor: accountContinueBlocked ? 'not-allowed' : 'pointer',
+                opacity: accountContinueBlocked ? 0.45 : 1,
                 marginBottom: 12,
               }}
             >
@@ -247,7 +294,7 @@ export function OnboardingModal() {
             </button>
 
             <button
-              onClick={skipOnboarding}
+              onClick={ageRequired ? () => void handleSignOut() : skipOnboarding}
               style={{
                 width: '100%',
                 textAlign: 'center',
@@ -259,7 +306,7 @@ export function OnboardingModal() {
                 padding: '4px 0',
               }}
             >
-              {t('onboarding.skip')}
+              {ageRequired ? t('onboarding.account.signOut') : t('onboarding.skip')}
             </button>
           </>
         ) : step === 'choice' ? (

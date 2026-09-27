@@ -42,6 +42,9 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  // #1135: required, like the Terms box. Both travel to the route, which refuses a body
+  // without them and stores when they were given.
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const emailInputId = useId()
   const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
@@ -109,11 +112,19 @@ export default function RegisterForm() {
         showToast.error('auth.register.mustAgreeToTerms')
         throw new Error(t('auth.register.mustAgreeToTerms'))
       }
+      if (!ageConfirmed) {
+        showToast.error('auth.register.mustConfirmAge')
+        throw new Error(t('auth.register.mustConfirmAge'))
+      }
       if (formData.password !== formData.confirmPassword) {
         setFieldErrors({ confirmPassword: t('auth.register.passwordMismatch') })
         throw new Error(t('auth.register.passwordMismatch'))
       }
-      const parsed = registerSchema.safeParse(formData)
+      const parsed = registerSchema.safeParse({
+        ...formData,
+        termsAccepted: agreedToTerms,
+        ageConfirmed,
+      })
       if (!parsed.success) {
         const errs: Record<string, string> = {}
         parsed.error.issues.forEach((i) => {
@@ -362,6 +373,15 @@ export default function RegisterForm() {
                     {' '}{t('common.and')}{' '}
                     <Link href="/privacy" target="_blank" style={{ color: 'var(--bd-ink)', fontWeight: 600, textDecoration: 'underline' }}>{t('auth.register.privacyPolicy')}</Link>
                   </span>
+                </Label>
+                <Label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox
+                    checked={ageConfirmed}
+                    onCheckedChange={(checked) => setAgeConfirmed(checked === true)}
+                    disabled={loading}
+                    style={{ marginTop: 2, flexShrink: 0 }}
+                  />
+                  <span>{t('auth.register.ageConfirm')}</span>
                 </Label>
                 <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
                   <Checkbox checked={rememberMe} onCheckedChange={setRememberMe} disabled={loading} />

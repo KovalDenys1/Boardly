@@ -14,7 +14,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     accountPreferences: { upsert: jest.fn() },
     // lib/session-user re-reads `suspended` on a write (#1137).
-    users: { findUnique: jest.fn(async () => ({ suspended: false })) },
+    users: { findUnique: jest.fn(async () => ({ suspended: false })), updateMany: jest.fn() },
   },
 }))
 
@@ -85,6 +85,18 @@ describe('PATCH /api/onboarding', () => {
     mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
     const res = await PATCH(buildRequest({ action: 'account', profilePublic: false }))
     expect(res.status).toBe(204)
+    expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
+    expect(mockPrisma.users.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('stamps the age confirmation once, never over an earlier one (#1135)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', ageConfirmed: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.users.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', ageConfirmedAt: null },
+      data: { ageConfirmedAt: expect.any(Date) },
+    })
     expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
   })
 

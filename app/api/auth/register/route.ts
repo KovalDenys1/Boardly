@@ -85,6 +85,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // registerSchema refuses a body without both boxes ticked, so reaching this line is
+    // the acceptance of the Terms and the 13-or-older confirmation (#1135). Stamped once,
+    // here, by the server's clock.
+    const acceptedAt = new Date()
+
     // Hashed before the guest is renamed, not after: bcrypt is the slowest step
     // in this handler, and every millisecond of it spent with the name already
     // freed is a millisecond another signup can take the name out from under us.
@@ -104,6 +109,8 @@ export async function POST(request: NextRequest) {
             username,
             passwordHash,
             signupSource: getSignupSourceFromRequest(request),
+            termsAcceptedAt: acceptedAt,
+            ageConfirmedAt: acceptedAt,
             // emailVerified will be set when user clicks verification link
             // The preferences row from the start, so the account gets the column
             // defaults, friends-only with online status off, instead of the

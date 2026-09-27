@@ -2258,6 +2258,8 @@ const en = {
       termsOfService: 'Terms of Service',
       privacyPolicy: 'Privacy Policy',
       mustAgreeToTerms: 'You must agree to the Terms of Service and Privacy Policy',
+      ageConfirm: 'I am 13 or older',
+      mustConfirmAge: 'You must be 13 or older to create an account',
       marketingConsent: 'I’d like to receive occasional emails from the Boardly team about new games and features',
     },
     forgotPassword: {
@@ -3609,8 +3611,8 @@ const en = {
       retentionLabel: 'How long we keep it',
       account: {
         title: 'Your account',
-        data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), and the site or campaign you arrived from when you signed up.',
-        basis: 'Contract: we need this to run your account. The sign-up source: our legitimate interest in knowing which channels bring new players.',
+        data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), the site or campaign you arrived from when you signed up, and when you accepted the Terms and confirmed that you are 13 or older.',
+        basis: 'Contract: your account rests on the Terms you accept when you create it, not on consent, and we need this to run it. The sign-up source: our legitimate interest in knowing which channels bring new players.',
         retention: 'Until you delete the account. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
         extra: 'A new account\'s profile (username, picture, bio and game statistics) is visible only to your friends, and your online status is hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before 27 September 2026 keep the settings they had: a public profile and online status shown, unless changed. Your username, picture and game results appear on the public leaderboard unless your profile is private.',
       },
@@ -3774,7 +3776,7 @@ const en = {
     },
     children: {
       title: '10. Children',
-      body: 'Boardly is not intended for children under 13, and we do not knowingly collect their data. If you believe a child under 13 has given us personal data, write to {{email}} and we will delete it.',
+      body: 'Boardly is not intended for children under 13, and we do not knowingly collect their data. An account rests on the contract you accept when you create it (GDPR Art. 6(1)(b)), not on consent, so the age of consent in Art. 8 of the GDPR and section 5 of the Personal Data Act does not apply to it. You need to be 13 or older to create an account: you confirm it on the sign-up form, or on your first visit if you sign up with Google, GitHub or Discord, and we keep the time you did. If you believe a child under 13 has given us personal data, write to {{email}} and we will delete it.',
     },
     changes: {
       title: '11. Changes to this policy',
@@ -3951,6 +3953,9 @@ const en = {
     back: '← Back',
     account: {
       subtitle: 'A quick check before you play',
+      ageConfirm: 'I am 13 or older',
+      ageHint: 'You need to be 13 or older to have a Boardly account.',
+      signOut: 'Sign out',
       publicProfile: 'Make my profile public',
       publicProfileHint: 'Anyone can then see your profile: your username, picture, bio and game statistics. If you leave this unticked, only your friends can. You can change it at any time in your profile settings.',
       continue: 'Continue',

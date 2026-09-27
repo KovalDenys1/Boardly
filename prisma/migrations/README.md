@@ -144,6 +144,10 @@ Reset, deletion and verification tokens stored as `sha256(token)` in `tokenHash`
 
 `AccountPreferences.profileVisibility` defaults to `friends` and `showOnlineStatus` to `false` (#1131, GDPR Art. 25(2)). Column defaults only: existing rows keep their values. New accounts get their row at creation; an account with no row predates the change and reads as public (`LEGACY_ACCOUNT_PREFERENCES` in `lib/account-preferences.ts`).
 
+### `20260927121000_users_terms_and_age_confirmation`
+
+Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts rest on contract (GDPR Art. 6(1)(b)); the register route stamps both, and an OAuth account stamps `ageConfirmedAt` in onboarding (`lib/age-confirmation.ts`). Existing rows and guests stay NULL.
+
 ## Row Level Security
 
 RLS is part of the database safety model:

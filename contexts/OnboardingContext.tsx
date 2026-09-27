@@ -13,21 +13,28 @@ const GUEST_ONBOARDING_KEY = 'boardly_onboarding'
  * the game choice. Guests never see it.
  */
 export interface OnboardingAccountSetup {
+  /**
+   * An account created through Google, GitHub or Discord that has not yet confirmed
+   * being 13 or older (#1135). The step cannot be skipped while this is true.
+   */
+  confirmAge: boolean
   /** The profile is not public, so the step offers to open it; unticked by default (#1131). */
   offerPublicProfile: boolean
 }
 
-const NO_ACCOUNT_SETUP: OnboardingAccountSetup = { offerPublicProfile: false }
+export type OnboardingAccountChoice = { ageConfirmed: boolean; profilePublic: boolean }
+
+const NO_ACCOUNT_SETUP: OnboardingAccountSetup = { confirmAge: false, offerPublicProfile: false }
 
 export function needsAccountStep(setup: OnboardingAccountSetup): boolean {
-  return setup.offerPublicProfile
+  return setup.confirmAge || setup.offerPublicProfile
 }
 
 interface OnboardingContextType {
   showModal: boolean
   accountSetup: OnboardingAccountSetup
   /** Saves the account step. Throws when the server did not take it. */
-  saveAccountSetup: (choice: { profilePublic: boolean }) => Promise<void>
+  saveAccountSetup: (choice: OnboardingAccountChoice) => Promise<void>
   completeOnboarding: () => Promise<void>
   skipOnboarding: () => Promise<void>
   /** Hides the modal without marking onboarding complete/skipped — used when handing off to the guided tour. */
@@ -36,6 +43,7 @@ interface OnboardingContextType {
 
 type OnboardingStatus = {
   needsOnboarding: boolean
+  needsAgeConfirmation?: boolean
   profileVisibility?: 'public' | 'friends' | 'private'
 }
 
@@ -57,6 +65,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         .then((r) => r.json())
         .then((data: OnboardingStatus) => {
           setAccountSetup({
+            confirmAge: data.needsAgeConfirmation === true,
             offerPublicProfile: data.profileVisibility !== undefined && data.profileVisibility !== 'public',
           })
           if (data.needsOnboarding) setShowModal(true)
@@ -113,11 +122,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setShowModal(false)
   }, [])
 
-  const saveAccountSetup = useCallback(async (choice: { profilePublic: boolean }) => {
+  const saveAccountSetup = useCallback(async (choice: OnboardingAccountChoice) => {
     const res = await fetch('/api/onboarding', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'account', profilePublic: choice.profilePublic }),
+      body: JSON.stringify({
+        action: 'account',
+        ageConfirmed: choice.ageConfirmed,
+        profilePublic: choice.profilePublic,
+      }),
     })
     if (!res.ok) throw new Error(`Saving the onboarding account step failed: ${res.status}`)
     // Answered: the step is not asked again if the modal reopens in this visit.
