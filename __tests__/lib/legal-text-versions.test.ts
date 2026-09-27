@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import en from '@/locales/en'
-import { TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
+import { TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
 
 /**
  * TERMS_VERSION and WITHDRAWAL_INFO_VERSION are bumped by hand, and the
@@ -24,10 +24,22 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16)
 }
 
-/** /terms section 3 and the tax note under the price on /premium. */
+/**
+ * Everything /terms says, the tax note under the price on /premium, and the
+ * community rules, which the Terms render in sections 4 and 5 and which /rules
+ * repeats (#1166, #1173). The figures the Terms interpolate are text too: a
+ * changed retention period changes what the Terms promise. Only the rules
+ * page's breadcrumb is left out, being page chrome.
+ *
+ * Before 2026-09-27 this covered section 3 and the tax note only, while the
+ * rest of /terms was hardcoded English; the 2026-09-25 digest below is that one.
+ */
 function termsText() {
+  const rules = Object.fromEntries(Object.entries(en.rules).filter(([key]) => key !== 'breadcrumb'))
   return {
-    terms: en.terms.premium,
+    terms: en.terms,
+    rules,
+    figures: TERMS_FIGURES,
     priceNoteTax: en.premium.priceNoteTax,
   }
 }
@@ -58,6 +70,9 @@ const TERMS_DIGESTS: Record<string, string> = {
   // Inclusive" setting). Without that commit this version's digest was
   // 4440445ca75004c5, the tax-added-at-checkout wording.
   '2026-09-25': '680e4906ad82f7c3',
+  // The whole of /terms translated and rewritten (#1166), the community rules and
+  // moderation (#1173), the content-notice address (#1172).
+  '2026-09-27': 'dd049e2d10a7de28',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {
@@ -67,7 +82,7 @@ const WITHDRAWAL_DIGESTS: Record<string, string> = {
 }
 
 describe('legal text versions move with the text (#1179)', () => {
-  it('TERMS_VERSION matches /terms section 3 and premium.priceNoteTax', () => {
+  it('TERMS_VERSION matches /terms, the community rules and premium.priceNoteTax', () => {
     expect({ version: TERMS_VERSION, digest: digest(termsText()) }).toEqual({
       version: TERMS_VERSION,
       digest: TERMS_DIGESTS[TERMS_VERSION],

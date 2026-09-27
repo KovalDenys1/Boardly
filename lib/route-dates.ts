@@ -42,7 +42,8 @@ export const ROUTE_UPDATED = {
   '/games/ludo': '2026-09-24',
   '/guides': '2026-09-20',
   '/privacy': '2026-09-02',
-  '/terms': '2026-06-20',
+  // #1166: the whole page rewritten and translated.
+  '/terms': '2026-09-27',
   // #1162: the right-of-withdrawal page, dated the day it was written.
   '/withdrawal': '2026-09-24',
   // #1173: the community rules page, dated the day it was written.
