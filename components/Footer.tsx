@@ -143,6 +143,8 @@ export default function Footer() {
                 { labelKey: 'footer.privacy', href: '/privacy' },
                 { labelKey: 'footer.terms', href: '/terms' },
                 { labelKey: 'footer.withdrawal', href: '/withdrawal' },
+                // #1173: the community rules are part of the Terms, so they sit with them.
+                { labelKey: 'footer.rules', href: '/rules' },
               ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
                 <li key={link.href}>
                   <Link

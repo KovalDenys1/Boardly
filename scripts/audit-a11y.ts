@@ -73,6 +73,7 @@ const STATIC_ROUTES = [
   '/terms',
   '/privacy',
   '/withdrawal',
+  '/rules',
 ]
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa']
