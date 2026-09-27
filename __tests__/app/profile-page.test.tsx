@@ -481,10 +481,18 @@ describe('ProfilePage', () => {
   })
 
   describe('the renewal line (#1167)', () => {
-    function withPurchases(purchases: Record<string, unknown>) {
+    /** Purchases answers at once; the renewal route answers with `renewal`, or never. */
+    function withPurchases(
+      purchases: Record<string, unknown>,
+      renewal: { status: number; body: unknown } | 'never' = { status: 200, body: { renewal: null } }
+    ) {
       const routeEverythingElse = mockFetch.getMockImplementation()!
       mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === 'string' ? input : String(input)
+        if (url.includes('/api/user/purchases/renewal')) {
+          if (renewal === 'never') return new Promise(() => {})
+          return mockJsonResponse(renewal.body, renewal.status)
+        }
         if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
         return routeEverythingElse(input, init)
       })
@@ -504,8 +512,8 @@ describe('ProfilePage', () => {
     it.each([
       ['monthly', '$2.99', 'profile.premiumTab.renewsOnMonthly'],
       ['yearly', '$24.99', 'profile.premiumTab.renewsOnYearly'],
-    ])('names the %s price and that Link converts it on the day', async (plan, price, key) => {
-      withPurchases({ ...renewing, renewal: { plan, price } })
+    ])('names the %s price before any discount, charged by Link', async (plan, price, key) => {
+      withPurchases(renewing, { status: 200, body: { renewal: { plan, price } } })
 
       render(<ProfilePage />)
 
@@ -513,13 +521,38 @@ describe('ProfilePage', () => {
       expect(mockTranslate).toHaveBeenCalledWith(key, expect.objectContaining({ price }))
     })
 
-    it('shows the date alone when the price could not be read', async () => {
-      withPurchases({ ...renewing, renewal: null })
+    it('renders with the date alone while Stripe has not answered: the price is not on the critical path', async () => {
+      withPurchases(renewing, 'never')
 
       render(<ProfilePage />)
 
+      expect(await screen.findByRole('heading', { name: 'profile.title' })).toBeTruthy()
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      expect(mockFetch).toHaveBeenCalledWith('/api/user/purchases/renewal', { cache: 'no-store' })
+    })
+
+    it.each([
+      ['the price could not be read', { status: 200, body: { renewal: null } }],
+      ['the route failed', { status: 500, body: { error: 'Internal server error' } }],
+    ])('shows the date alone when %s', async (_label, renewal) => {
+      withPurchases(renewing, renewal)
+
+      render(<ProfilePage />)
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith('/api/user/purchases/renewal', { cache: 'no-store' })
+      })
       expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
       expect(screen.queryByText('profile.premiumTab.renewsOnMonthly')).toBeNull()
+    })
+
+    it('does not ask for a renewal price when the subscription is cancelling', async () => {
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
+      expect(mockFetch).not.toHaveBeenCalledWith('/api/user/purchases/renewal', expect.anything())
     })
   })
 

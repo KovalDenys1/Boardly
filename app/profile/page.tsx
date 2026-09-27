@@ -394,7 +394,22 @@ export default function ProfilePage() {
       setPremiumCancelAtPeriodEnd(purchasesData.cancelAtPeriodEnd === true)
       setPremiumUntilDate(purchasesData.premiumUntil ? new Date(purchasesData.premiumUntil) : null)
       setHasSubscriptionId(purchasesData.hasSubscriptionId === true)
-      setPremiumRenewal(parsePremiumRenewal(purchasesData.renewal))
+
+      // The renewal price needs Stripe, so it is asked for after this load and never awaited
+      // here: the page renders with the date alone and the price joins it when, and if, it
+      // arrives (#1167). A failure leaves the date alone.
+      const renews =
+        purchasesData.isPremium === true &&
+        purchasesData.cancelAtPeriodEnd !== true &&
+        purchasesData.hasSubscriptionId === true
+      if (renews) {
+        void fetch('/api/user/purchases/renewal', { cache: 'no-store' })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((body: { renewal?: unknown } | null) => setPremiumRenewal(parsePremiumRenewal(body?.renewal)))
+          .catch(() => setPremiumRenewal(null))
+      } else {
+        setPremiumRenewal(null)
+      }
     }
     if (customizeRes.ok) {
       const customizeData = await customizeRes.json()
