@@ -140,8 +140,9 @@ Order, once the release carrying that code is live on production:
    characters, different from both.
 3. Redeploy production, so the functions read them. `npm run check:env` then stops reporting
    either as missing.
-4. Remove the variables nothing reads: `ENABLE_LIARS_PARTY`, `ENABLE_ALIAS`,
-   `STRIPE_PUBLISHABLE_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_SECRET_KEY`.
+4. Remove the five variables nothing reads (#1149; plain text here because no code declares
+   them any more): ENABLE_LIARS_PARTY, ENABLE_ALIAS, STRIPE_PUBLISHABLE_KEY,
+   SUPABASE_JWT_SECRET, SUPABASE_SECRET_KEY.
 
 Setting them while production still runs the older code is exactly the breaking switch this
 transition exists to avoid - it would sign and verify with the new values and accept nothing
