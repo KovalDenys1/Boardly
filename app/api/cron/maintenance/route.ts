@@ -7,6 +7,7 @@ import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/li
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { enforceRetention } from '@/lib/data-retention'
+import { enforceInactiveAccounts, type InactiveAccountRunResult } from '@/lib/inactive-accounts'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
@@ -43,6 +44,33 @@ async function handleCronRequest(request: NextRequest) {
       }
     }
 
+    // Inactive registered accounts (#1130): warned 30 days before, deleted after 24 months
+    // without activity. A failure here is reported, not thrown, so it cannot stop the
+    // cleanups above from being recorded; -1 in the heartbeat marks it.
+    let inactiveAccounts: InactiveAccountRunResult | { error: string }
+    try {
+      inactiveAccounts = await enforceInactiveAccounts({ deadlineMs: 20_000 })
+    } catch (error) {
+      log.error('Inactive account rule failed', error as Error)
+      inactiveAccounts = { error: error instanceof Error ? error.message.slice(0, 200) : 'unknown' }
+    }
+    const inactiveSummary: Record<string, number | boolean> =
+      'error' in inactiveAccounts
+        ? { inactive_accounts_warned: -1, inactive_accounts_deleted: -1 }
+        : inactiveAccounts.enforced
+          ? {
+              inactive_accounts_enforced: true,
+              inactive_accounts_warned: inactiveAccounts.warned,
+              inactive_accounts_warn_failed: inactiveAccounts.warnFailed,
+              inactive_accounts_deleted: inactiveAccounts.deleted,
+              inactive_accounts_delete_failed: inactiveAccounts.deleteFailed,
+            }
+          : {
+              inactive_accounts_enforced: false,
+              inactive_accounts_warn_due: inactiveAccounts.warnDue,
+              inactive_accounts_delete_due: inactiveAccounts.deleteDue,
+            }
+
     await recordCronRun({
       cron: 'maintenance',
       success: true,
@@ -52,6 +80,7 @@ async function handleCronRequest(request: NextRequest) {
         deletedUnverified: cleanupUnverifiedResult.deleted,
         cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
         ...retentionSummary,
+        ...inactiveSummary,
       },
     })
 
@@ -71,6 +100,7 @@ async function handleCronRequest(request: NextRequest) {
       deletedOversizedReplaySnapshots: replayOverflowResult.deletedSnapshots,
       oversizedReplayGames: replayOverflowResult.affectedGames,
       retention: retentionResult,
+      inactiveAccounts,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

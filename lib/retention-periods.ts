@@ -36,6 +36,13 @@ export const RETENTION_DAYS = {
   replays: 90,
   /** Accounts whose email was never verified, from sign-up. */
   unverifiedAccounts: 7,
+  /**
+   * Registered accounts, from their last activity (#1130). Never one that has a
+   * subscription or ever went to checkout, never a bot or an admin.
+   */
+  inactiveAccounts: 730,
+  /** How long before that deletion the warning email goes out. */
+  inactiveAccountWarning: 30,
   /** Guests who never played, from their last activity. */
   guestIdle: 3,
   /** Guests who played at least once, from their last activity. */

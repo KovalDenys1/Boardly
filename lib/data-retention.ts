@@ -17,7 +17,8 @@ import {
  * module adds what each rule deletes and how. docs/PRIVACY-RETENTION.md restates them.
  *
  * Periods that already live elsewhere are not repeated here: unverified accounts
- * (7 days, lib/cleanup-unverified.ts), guests (3 / 90 days idle,
+ * (7 days, lib/cleanup-unverified.ts), inactive registered accounts (24 months,
+ * lib/inactive-accounts.ts), guests (3 / 90 days idle,
  * scripts/cleanup-old-guests.ts), replay snapshots (90 days, lib/cleanup-replays.ts)
  * and lobby chat (24 hours in Redis, lib/chat-history.ts).
  *

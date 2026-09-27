@@ -11,6 +11,7 @@ import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/li
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { enforceRetention } from '@/lib/data-retention'
+import { enforceInactiveAccounts } from '@/lib/inactive-accounts'
 import { recordCronRun } from '@/lib/cron-heartbeat'
 
 jest.mock('@/lib/cleanup-unverified', () => ({
@@ -35,6 +36,9 @@ jest.mock('@/lib/data-retention', () => ({
   enforceRetention: jest.fn(),
 }))
 
+jest.mock('@/lib/inactive-accounts', () => ({
+  enforceInactiveAccounts: jest.fn(),
+}))
 
 jest.mock('@/lib/cron-heartbeat', () => ({
   recordCronRun: jest.fn(),
@@ -104,6 +108,17 @@ describe('GET /api/cron/maintenance', () => {
       operationalEvents: { days: 180, cutoff: 'c', enforced: false, matched: 9, deleted: 0 },
       games: { days: 365, cutoff: 'c', enforced: true, matched: 5, deleted: 0, pseudonymised: 5 },
     })
+    enforceInactiveAccounts.mockResolvedValue({
+      enforced: true,
+      warnCutoff: 'w',
+      deleteCutoff: 'd',
+      warnDue: 3,
+      warned: 2,
+      warnFailed: 1,
+      deleteDue: 1,
+      deleted: 1,
+      deleteFailed: 0,
+    })
     mockCleanupStaleLobbiesAndGames.mockResolvedValue({
       deactivatedLobbies: 6,
       cancelledWaitingGames: 7,
@@ -145,5 +160,35 @@ describe('GET /api/cron/maintenance', () => {
     expect(heartbeat.retention_games_deleted).toBe(0)
     expect(heartbeat.retention_games_pseudonymised).toBe(5)
     expect(heartbeat.retention_feedback_pseudonymised).toBeUndefined()
+
+    // Inactive accounts: warnings and deletions, and the failures, in the heartbeat.
+    expect(enforceInactiveAccounts).toHaveBeenCalledTimes(1)
+    expect(payload.inactiveAccounts.deleted).toBe(1)
+    expect(heartbeat.inactive_accounts_warned).toBe(2)
+    expect(heartbeat.inactive_accounts_warn_failed).toBe(1)
+    expect(heartbeat.inactive_accounts_deleted).toBe(1)
+  })
+
+  it('reports a failed inactive-account run without failing the other cleanups', async () => {
+    mockWarnUnverifiedAccounts.mockResolvedValue({ warned: 0 })
+    mockCleanupUnverifiedAccounts.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldGuests.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldReplaySnapshots.mockResolvedValue({ deleted: 0, retentionDays: 90, cutoffDate: 'c' })
+    mockCleanupOversizedReplaySnapshots.mockResolvedValue({ deletedSnapshots: 0, affectedGames: 0 })
+    mockCleanupStaleLobbiesAndGames.mockResolvedValue({
+      deactivatedLobbies: 0,
+      cancelledWaitingGames: 0,
+      abandonedPlayingGames: 0,
+    })
+    enforceRetention.mockResolvedValue({})
+    enforceInactiveAccounts.mockRejectedValue(new Error('db down'))
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/cron/maintenance'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.inactiveAccounts).toEqual({ error: 'db down' })
+    const heartbeat = recordCronRun.mock.calls[0][0].payload
+    expect(heartbeat.inactive_accounts_deleted).toBe(-1)
   })
 })

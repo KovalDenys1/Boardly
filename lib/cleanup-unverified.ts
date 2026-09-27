@@ -26,6 +26,19 @@ export function purgeableUnverifiedAccountsWhere(now: Date = new Date()): Prisma
     emailVerified: null,
     bot: null,
     accounts: { none: {} },
+    ...neverCustomerWhere(now),
+  }
+}
+
+/**
+ * An account that is not, and never was, a customer: no subscription Stripe still holds,
+ * no paid time left, no Stripe customer and no checkout record. Every automatic account
+ * deletion requires it – this purge and the 24-month inactivity rule
+ * (lib/inactive-accounts.ts, #1130) – so the purchase records of anyone who ever went to
+ * checkout survive, and nobody with Premium is deleted by a job.
+ */
+export function neverCustomerWhere(now: Date = new Date()): Prisma.UsersWhereInput {
+  return {
     stripeSubscriptionId: null,
     stripeCustomerId: null,
     purchaseConsents: { none: {} },
