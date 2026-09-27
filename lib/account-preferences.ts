@@ -10,7 +10,7 @@ export type AccountPreferenceSnapshot = {
  * What an account with no `AccountPreferences` row has always been: a public profile with
  * online status shown, the column defaults before #1131.
  *
- * Since 2026-09-27 every account gets its row when it is created (the register route and
+ * Since #1131 every new account gets its row when it is created (the register route and
  * lib/custom-prisma-adapter.ts), with the new defaults: friends-only, online status off.
  * So a missing row now always means an account that predates the change, and the decision
  * was that existing accounts stay as they are. Reads fall back to these values, and a row
