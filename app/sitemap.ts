@@ -57,8 +57,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
 
     // Legal
-    page('/privacy', { changeFrequency: 'yearly', priority: 0.3 }),
-    page('/terms', { changeFrequency: 'yearly', priority: 0.3 }),
+    // /privacy and /terms are noindex (#1227): they carry the owner's name and home address,
+    // which the law requires on the site but not in search results.
     page('/withdrawal', { changeFrequency: 'yearly', priority: 0.3 }),
     page('/rules', { changeFrequency: 'yearly', priority: 0.3 }),
   ]

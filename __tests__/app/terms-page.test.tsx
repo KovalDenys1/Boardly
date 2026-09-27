@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen, within } from '@testing-library/react'
 import TermsContent from '@/app/terms/TermsContent'
+import { metadata } from '@/app/terms/page'
 import { COMMUNITY_RULES_BANNED, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_DAYS } from '@/lib/retention-periods'
@@ -224,5 +225,13 @@ describe('/terms (#1166)', () => {
     for (const locale of [en, no, ru, uk]) {
       expect(JSON.stringify(locale.terms)).not.toContain('—')
     }
+  })
+
+  // #1227: the "Who we are" section names the seller's home address, so the
+  // page stays out of search results while remaining reachable at its own
+  // canonical URL and one click from the footer.
+  it('is noindex, follow, and keeps its canonical URL', () => {
+    expect(metadata.robots).toEqual({ index: false, follow: true })
+    expect(metadata.alternates?.canonical).toBe('https://boardly.online/terms')
   })
 })

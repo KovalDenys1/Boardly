@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://boardly.online/privacy',
   },
+  // #1227: the "Who is responsible" section names the seller's home address,
+  // so this page stays out of search results while remaining one click from
+  // the footer and reachable at its canonical URL.
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 export default function PrivacyPolicy() {

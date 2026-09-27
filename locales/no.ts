@@ -3546,7 +3546,6 @@ const no = {
     withdrawal: 'Angrerett',
     rules: 'Fellesskapsregler',
     privacySettings: 'Innstillinger for personvern og informasjonskapsler',
-    operatedBy: 'Drives av {{name}}',
     community: 'Fellesskap',
     discord: 'Discord',
     sendFeedback: 'Send tilbakemelding',

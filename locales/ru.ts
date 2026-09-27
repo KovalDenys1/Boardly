@@ -3677,7 +3677,6 @@ const ru = {
     withdrawal: 'Право на отказ',
     rules: 'Правила сообщества',
     privacySettings: 'Настройки конфиденциальности и файлов cookie',
-    operatedBy: 'Оператор: {{name}}',
     community: 'Сообщество',
     discord: 'Discord',
     sendFeedback: 'Оставить отзыв',

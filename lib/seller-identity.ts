@@ -1,11 +1,18 @@
-// Who operates Boardly, for the imprint (#1163).
+// Who operates Boardly (#1163, narrowed by #1227).
 //
 // ehandelsloven section 8, angrerettloven section 8 d and GDPR Art. 13(1)(a)
-// all require the operator's name, geographic address and email on the site:
-// in the footer, in the Terms, in the privacy notice and in the emails. The
-// values are a private individual's, so they are set in Vercel's Production
-// environment and never committed. They are NEXT_PUBLIC_ because the footer
-// is a client component and, once published, the values are public by law.
+// require the operator's name, geographic address and email somewhere "easy
+// and direct" to reach, not on every page: /terms ("Who we are"), /privacy
+// ("Who is responsible"), the /withdrawal model form and the Premium purchase
+// confirmation email (angrerettloven section 18 repeats section 8 there). It
+// is deliberately gone from components/Footer.tsx and every other email
+// since #1227 - those keep the company sign-off and support@boardly.online,
+// never a private person's name or home address. The values are a private
+// individual's, so they are set in Vercel's Production environment and never
+// committed. They are NEXT_PUBLIC_ because /terms and /privacy read them from
+// a server component that still runs in the same Next.js build as the client
+// bundle those values are inlined into, and once published they are public
+// by law regardless.
 //
 // Nothing renders while they are unset: every reader checks for `null` and
 // draws no heading, no label and no half-filled line. The email is the one
