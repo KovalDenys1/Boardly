@@ -19,7 +19,6 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -78,7 +77,7 @@ interface Game {
 }
 
 interface GuessMessage {
-  id: number
+  id: string | number
   userId: string
   username: string
   text: string
@@ -744,12 +743,16 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     void loadLobby()
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
+  // Guesses arrive as server-signed `chat-message` broadcasts from
+  // POST /api/lobby/[code]/alias-guess, so the name on each is the sender's own.
   const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
     const uid = getCurrentUserId()
     if (msg.userId === uid) return
+    if (typeof msg.message !== 'string') return
     const rawId = (msg as unknown as Record<string, unknown>).id
-    setGuesses(prev => [...prev.slice(-99), {
-      id: typeof rawId === 'number' ? rawId : Date.now(),
+    const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : Date.now()
+    setGuesses(prev => prev.some(g => g.id === id) ? prev : [...prev.slice(-99), {
+      id,
       userId: msg.userId,
       username: msg.username ?? 'Player',
       text: msg.message ?? '',
@@ -761,7 +764,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
 
-  const { emitWhenConnected } = useRealtimeConnection({
+  useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
         // landed while the socket was down is gone. Without this the board
         // stayed frozen on pre-gap state and neither player could move.
@@ -925,29 +928,41 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     guessesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [guesses])
 
+  // The guess goes through the server (GHSA-g868-9224-wr3p): the lobby topic no
+  // longer carries client-sent chat, because a client could put any name on
+  // it. It shows here at once; a guess the server refuses is taken back, and a
+  // rate-limited one says so rather than vanishing without a word.
   const sendGuess = useCallback(() => {
-    if (!guessInput.trim()) return
+    const text = guessInput.trim()
+    if (!text) return
     const uid = getCurrentUserId()
     const username = isGuest
       ? (guestName ?? 'Guest')
       : (session?.user as any)?.username ?? session?.user?.name ?? 'Player'
-    const id = Date.now()
-    emitWhenConnected('chat-message', {
-      userId: uid,
-      username,
-      message: guessInput.trim(),
-      type: 'alias-guess',
-      id,
-      lobbyCode: code,
-    })
+    const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setGuesses(prev => [...prev.slice(-99), {
-      id,
+      id: localId,
       userId: uid ?? '',
       username,
-      text: guessInput.trim(),
+      text,
     }])
     setGuessInput('')
-  }, [emitWhenConnected, guessInput, getCurrentUserId, isGuest, session, code])
+    void Promise.resolve(fetchWithGuest(`/api/lobby/${code}/alias-guess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    }))
+      .then((res) => {
+        if (!res || res.ok) return
+        setGuesses(prev => prev.filter(g => g.id !== localId))
+        if (res.status === 429) {
+          showToast.error('alias.guessRateLimited', undefined, undefined, { id: 'alias-guess-rate-limited' })
+        }
+      })
+      .catch(() => {
+        setGuesses(prev => prev.filter(g => g.id !== localId))
+      })
+  }, [guessInput, getCurrentUserId, isGuest, guestName, session, code])
 
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1500,7 +1515,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           {renderHeader(t('alias.phaseTurnKicker'))}
           <div className="alias-status-slot">
@@ -1678,7 +1692,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const describerName = describerDisplayName
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           {renderHeader(t('alias.phaseTurnKicker'))}
           <div className="alias-status-slot">
@@ -1823,7 +1836,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <>
-        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           {renderHeader(t('alias.turnCompleteTitle'))}
           <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">

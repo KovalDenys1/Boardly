@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { broadcastToLobby } from '@/lib/supabase-server'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const schema = z.object({ count: z.number().int().min(0).max(500) })
@@ -37,7 +38,7 @@ export async function PATCH(
 
   const lobby = await prisma.lobbies.findUnique({
     where: { code },
-    select: { id: true, allowSpectators: true, maxSpectators: true },
+    select: { id: true, allowSpectators: true, maxSpectators: true, spectatorCount: true },
   })
 
   if (!lobby) {
@@ -60,6 +61,17 @@ export async function PATCH(
     where: { id: lobby.id },
     data: { spectatorCount: count },
   })
+
+  // The players' live count. The spectate page used to send it to the lobby
+  // topic itself, which made it the one number any topic holder could set for
+  // everyone (GHSA-g868-9224-wr3p); it is now the server's, signed like every
+  // other lobby event, and carries the clamped value just stored. Every
+  // spectator reports the same change, so only the first report of it is sent.
+  // Awaited because Vercel may freeze the function once the response is out;
+  // a failed broadcast only leaves the players' badge a change behind.
+  if (count !== lobby.spectatorCount) {
+    await broadcastToLobby(code, 'spectator-count-update', { count })
+  }
 
   return NextResponse.json({ success: true })
 }

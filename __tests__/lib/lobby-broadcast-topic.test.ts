@@ -4,7 +4,8 @@
  */
 
 import { prisma } from '@/lib/db'
-import { broadcastToLobby } from '@/lib/supabase-server'
+import { broadcastToLobby, broadcastToUser } from '@/lib/supabase-server'
+import { __resetRealtimeSigningForTests, buildUserTopic } from '@/lib/server/realtime-signing'
 
 jest.mock('@/lib/db', () => ({
   prisma: { lobbies: { findUnique: jest.fn() } },
@@ -21,6 +22,8 @@ describe('broadcastToLobby', () => {
     jest.clearAllMocks()
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://project.supabase.co'
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+    process.env.NEXTAUTH_SECRET = 'test-realtime-signing-secret-broadcast-00000'
+    __resetRealtimeSigningForTests()
     global.fetch = jest.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch
   })
 
@@ -38,6 +41,33 @@ describe('broadcastToLobby', () => {
     expect(body.messages[0].topic).toBe(`lobby:1234:${SECRET}`)
     // The bare name is what an outsider can guess, so nothing may go there.
     expect(body.messages[0].topic).not.toBe('lobby:1234')
+  })
+
+  it('sends the payload sealed in a signed envelope (GHSA-g868-9224-wr3p)', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({ realtimeSecret: SECRET })
+
+    await broadcastToLobby('1234', 'game-update', { action: 'state-change', payload: { state: { lastMoveAt: 1 } } })
+
+    const message = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).messages[0]
+    expect(message.event).toBe('game-update')
+    expect(message.payload).toEqual({
+      __rt: 1,
+      kid: expect.any(String),
+      iat: expect.any(Number),
+      n: expect.any(String),
+      sig: expect.stringMatching(/^[A-Za-z0-9_-]{86}$/),
+      p: { action: 'state-change', payload: { state: { lastMoveAt: 1 } } },
+    })
+  })
+
+  it('sends nothing when there is no key to sign with, since every receiver would drop it', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({ realtimeSecret: SECRET })
+    delete process.env.NEXTAUTH_SECRET
+    delete process.env.REALTIME_SIGNING_SECRET
+    __resetRealtimeSigningForTests()
+
+    await expect(broadcastToLobby('1234', 'game-update', {})).resolves.toBe(false)
+    expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('broadcasts nothing for a lobby that no longer exists', async () => {
@@ -70,5 +100,30 @@ describe('broadcastToLobby when the database is unhappy', () => {
     mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('connection lost'))
 
     await expect(broadcastToLobby('1234', 'game-update', {})).resolves.toBe(false)
+  })
+})
+
+describe('broadcastToUser', () => {
+  const originalFetch = global.fetch
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://project.supabase.co'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key'
+    process.env.NEXTAUTH_SECRET = 'test-realtime-signing-secret-broadcast-00000'
+    __resetRealtimeSigningForTests()
+    global.fetch = jest.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
+  it('sends to the tagged user topic, never to the guessable user:{id} (audit S3-05)', async () => {
+    await broadcastToUser('user-1', 'lobby-invite', { lobbyCode: '1234' })
+
+    const message = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body).messages[0]
+    expect(message.topic).toBe(buildUserTopic('user-1'))
+    expect(message.topic).not.toBe('user:user-1')
+    expect(message.payload.__rt).toBe(1)
   })
 })

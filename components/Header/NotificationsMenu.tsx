@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { acquireRealtimeChannel, type LobbyChannelHandle } from '@/lib/lobby-channel-registry'
+import { fetchUserTopic } from '@/lib/user-realtime-topic-client'
 import {
   buildNotificationDisplayItem,
   type NotificationTone,
@@ -177,28 +178,43 @@ export function NotificationsMenu() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [refreshUnreadCount])
 
-  // Real-time push via Supabase Broadcast on user:{userId} channel
+  // Real-time push on the user's own topic (GET /api/realtime/user-topic).
+  // This listened on `user-notifications:{userId}`, which nothing sends to –
+  // createInAppNotification pushes to the user topic – and which anyone could
+  // join by id (audit S3-05). The poke carries no content: the badge is
+  // re-read from the server rather than trusting a count off the wire.
+  const openRef = useRef(open)
+  openRef.current = open
+  const fetchListRef = useRef(fetchList)
+  fetchListRef.current = fetchList
+  const refreshUnreadCountRef = useRef(refreshUnreadCount)
+  refreshUnreadCountRef.current = refreshUnreadCount
+
   useEffect(() => {
     const userId = session?.user?.id
     if (!userId) return
 
-    const supabase = getSupabaseClient()
-    const channel = supabase
-      .channel(`user-notifications:${userId}`)
-      .on('broadcast', { event: 'notification-created' }, () => {
-        // Immediately bump the badge
-        setUnreadCount((prev) => prev + 1)
-        // If dropdown is open, refresh the full list to show the new item
-        if (open) {
-          void fetchList()
-        }
+    let cancelled = false
+    let handle: LobbyChannelHandle | null = null
+
+    void fetchUserTopic(userId).then((topic) => {
+      if (cancelled || !topic) return
+      handle = acquireRealtimeChannel(topic, {
+        events: {
+          'notification-created': () => {
+            refreshUnreadCountRef.current(true)
+            // If the dropdown is open, refresh the full list to show the new item.
+            if (openRef.current) void fetchListRef.current()
+          },
+        },
       })
-      .subscribe()
+    })
 
     return () => {
-      void supabase.removeChannel(channel)
+      cancelled = true
+      handle?.release()
     }
-  }, [session?.user?.id, open, fetchList])
+  }, [session?.user?.id])
 
   const handleMarkAllRead = async () => {
     await fetch('/api/notifications/read', {

@@ -3207,6 +3207,7 @@ const no = {
     guesses: 'Gjettinger',
     noGuessesYet: 'Ingen gjettinger ennå…',
     guessPlaceholder: 'Skriv svaret ditt…',
+    guessRateLimited: 'For mange svar på kort tid – vent litt og prøv igjen',
     describerWords: '{{name}} beskrev',
     wordsThisTurn: 'Ord denne runden',
     allSetReady: 'Klar — venter på verten.',

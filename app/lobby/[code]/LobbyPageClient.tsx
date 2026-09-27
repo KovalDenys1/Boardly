@@ -15,7 +15,7 @@ import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
-import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep, Lobby } from '@/types/game'
+import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, BotMoveStep, Lobby } from '@/types/game'
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
@@ -105,7 +105,6 @@ import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
@@ -388,7 +387,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     resetUnread,
     someoneTyping,
     onChatMessage,
-    onPlayerTyping,
     mergeHistoryMessages,
     setChatMessages,
   } = useLobbyChat({
@@ -978,7 +976,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
-    onPlayerTyping,
     onLobbyUpdate,
     onPlayerJoined,
     onGameStarted,
@@ -2663,9 +2660,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         icon={<LeaveIcon size={28} />}
       />
 
-      {isGameStarted && (
-        <ReactionOverlay lobbyCode={code} />
-      )}
 
       <PlayerProfileCard
         userId={profileUserId}

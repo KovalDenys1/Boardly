@@ -3319,6 +3319,7 @@ const uk: TranslationWithPlurals = {
     guesses: 'Відповіді',
     noGuessesYet: 'Ще немає відповідей…',
     guessPlaceholder: 'Введіть відповідь…',
+    guessRateLimited: 'Забагато відповідей поспіль – зачекайте трохи й спробуйте ще раз',
     describerWords: '{{name}} описував',
     wordsThisTurn: 'Слова цього ходу',
     allSetReady: 'Готово — чекаємо хоста.',

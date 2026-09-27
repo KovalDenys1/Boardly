@@ -3305,6 +3305,7 @@ const ru = {
     guesses: 'Угадывания',
     noGuessesYet: 'Пока нет угадываний…',
     guessPlaceholder: 'Введите ответ…',
+    guessRateLimited: 'Слишком много ответов подряд – подождите немного и попробуйте снова',
     describerWords: '{{name}} описывал',
     wordsThisTurn: 'Слова этого хода',
     allSetReady: 'Готово — ждём хоста.',

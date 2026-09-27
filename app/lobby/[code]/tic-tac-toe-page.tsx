@@ -33,7 +33,6 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
-import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
@@ -269,7 +268,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         resetUnread: resetChatUnread,
         someoneTyping,
         onChatMessage,
-        onPlayerTyping,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
@@ -465,7 +463,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
     onChatMessage,
-    onPlayerTyping,
     onGameReset: handleGameReset,
   })
 
@@ -1320,9 +1317,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     variant="danger"
                     icon={<LeaveIcon size={28} />}
                 />
-            )}
-            {!isSpectator && resolvedStatus === 'playing' && (
-                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

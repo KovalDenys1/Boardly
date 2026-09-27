@@ -38,7 +38,6 @@ jest.mock('@/lib/lobby-create-metrics', () => ({ finalizePendingLobbyCreateMetri
 jest.mock('@/lib/analytics', () => ({ trackLobbyLeaveRedirect: jest.fn(), trackMoveSubmitApplied: jest.fn() }))
 jest.mock('@/components/Chat', () => ({ __esModule: true, default: () => <div data-testid="chat" /> }))
 jest.mock('@/components/ConfirmModal', () => ({ __esModule: true, default: () => null }))
-jest.mock('@/components/ReactionOverlay', () => ({ ReactionOverlay: () => null }))
 jest.mock('@/lib/lobby-realtime-topic-client', () => ({
   fetchLobbyTopic: jest.fn(async (code: string) => `lobby:${code}:test-secret`),
 }))

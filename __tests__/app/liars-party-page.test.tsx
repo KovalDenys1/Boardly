@@ -4,16 +4,24 @@ import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { clientLogger } from '@/lib/client-logger'
+import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
 const mockPrefetch = jest.fn()
 
+installSignedRealtime()
+const REALTIME_TOPIC = 'lobby:ABCD:test-secret'
+
 const broadcastHandlers: Record<string, (data: { payload: unknown }) => void> = {}
 const mockChannel: any = {
   on: jest.fn((type: string, filter: { event?: string }, handler: (data: unknown) => void) => {
     if (type === 'broadcast' && filter.event) {
-      broadcastHandlers[filter.event] = handler as any
+      // Pages only act on what the server signed (GHSA-g868-9224-wr3p), so the
+      // payloads these tests feed in are sealed on their way to the registry.
+      const event = filter.event
+      broadcastHandlers[event] = ((data: { payload: unknown }) =>
+        handler({ payload: frameFor(REALTIME_TOPIC, event, data.payload) })) as any
     }
     return mockChannel
   }),
@@ -81,11 +89,6 @@ jest.mock('@/lib/analytics', () => ({
 jest.mock('@/components/LoadingSpinner', () => ({
   __esModule: true,
   default: () => <div data-testid="loading-spinner" />,
-}))
-
-jest.mock('@/components/ReactionOverlay', () => ({
-  __esModule: true,
-  ReactionOverlay: () => null,
 }))
 
 // The realtime topic carries a per-lobby secret and is fetched from the server

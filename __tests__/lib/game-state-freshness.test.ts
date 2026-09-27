@@ -1,6 +1,7 @@
 import {
   createFreshnessWatermark,
   decideFreshness,
+  MAX_WATERMARK_LEAD_MS,
   readGameStateId,
   isUpdateForAnotherGame,
   readLastMoveAt,
@@ -109,5 +110,30 @@ describe('advanceLifecycleStatus (#1183)', () => {
     expect(advanceLifecycleStatus('waiting', undefined)).toBe('waiting')
     expect(advanceLifecycleStatus('waiting', 'abandoned')).toBe('waiting')
     expect(advanceLifecycleStatus('waiting', 42)).toBe('waiting')
+  })
+})
+
+// GHSA-g868-9224-wr3p: the watermark only goes up, so a snapshot stamped far in
+// the future used to make every real move after it look stale until the
+// player's own next move.
+describe('decideFreshness and far-future stamps', () => {
+  const now = 1_000_000_000_000
+
+  it('applies a snapshot stamped beyond the lead but does not let it raise the bar', () => {
+    const w = createFreshnessWatermark()
+    expect(decideFreshness(w, { lastMoveAt: now - 5 }, { now }).accept).toBe(true)
+
+    expect(decideFreshness(w, { lastMoveAt: now + 10 ** 9 }, { now }).accept).toBe(true)
+    expect(w.current).toBe(now - 5)
+
+    // The next real move still lands.
+    expect(decideFreshness(w, { lastMoveAt: now + 1 }, { now }).accept).toBe(true)
+    expect(w.current).toBe(now + 1)
+  })
+
+  it('still moves the watermark for a stamp within the lead, so a slightly fast server clock is fine', () => {
+    const w = createFreshnessWatermark()
+    expect(decideFreshness(w, { lastMoveAt: now + MAX_WATERMARK_LEAD_MS }, { now }).accept).toBe(true)
+    expect(w.current).toBe(now + MAX_WATERMARK_LEAD_MS)
   })
 })
