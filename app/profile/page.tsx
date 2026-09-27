@@ -2251,7 +2251,7 @@ export default function ProfilePage() {
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
                                 ) : (
-                                  <p className="text-xs font-medium text-bd-ink-muted dark:text-slate-400">
+                                  <p className="text-xs font-medium text-bd-ink-soft dark:text-slate-400">
                                     {t('profile.linkedAccounts.notConnected')}
                                   </p>
                                 )}

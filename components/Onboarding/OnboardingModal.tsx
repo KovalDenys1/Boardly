@@ -233,7 +233,7 @@ export function OnboardingModal() {
                     <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
                       {t('onboarding.account.ageConfirm')}
                     </span>
-                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-muted)' }}>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-soft)' }}>
                       {t('onboarding.account.ageHint')}
                     </span>
                   </span>
@@ -263,7 +263,7 @@ export function OnboardingModal() {
                     <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
                       {t('onboarding.account.publicProfile')}
                     </span>
-                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-muted)' }}>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-soft)' }}>
                       {t('onboarding.account.publicProfileHint')}
                     </span>
                   </span>
