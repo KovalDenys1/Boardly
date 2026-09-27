@@ -22,7 +22,7 @@ export const TERMS_VERSION = '2026-09-25'
  * consent a buyer recorded at checkout against the Terms. Bump by hand
  * whenever the text of /privacy or the retention numbers it prints change.
  */
-export const PRIVACY_UPDATED = '2026-09-25'
+export const PRIVACY_UPDATED = '2026-09-27'
 
 /** When the current withdrawal information on /premium and /withdrawal took effect. */
 export const WITHDRAWAL_INFO_VERSION = '2026-09-25'
