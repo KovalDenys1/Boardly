@@ -123,6 +123,26 @@ describe('privacy notice (#1126)', () => {
     }
   })
 
+  // #1226: the leaderboard lists every account, private ones included, and the notice
+  // must not still promise that a private profile keeps its name off it.
+  it('says the leaderboard shows every username and results, and the picture only where the profile can be seen', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('shows the username and game results of every account with enough finished games')
+    expect(text).toContain('Your picture appears on the leaderboard only to those who can see your profile')
+    expect(text).not.toContain('appear on the public leaderboard unless your profile is private')
+
+    const stale = {
+      no: 'med mindre profilen er privat.',
+      ru: 'видны в общем рейтинге, если профиль не закрыт.',
+      uk: 'видно в загальному рейтингу, якщо профіль не закритий.',
+    }
+    for (const [name, needle] of Object.entries(stale)) {
+      const { account } = require(`@/locales/${name}`).default.privacyPolicy.purposes
+      expect({ name, stale: account.extra.includes(needle) }).toEqual({ name, stale: false })
+    }
+  })
+
   // #1172: player reports keep a copy of what was reported, past the chat TTL and past
   // its author's account, so the notice has to say so in every language.
   it('describes player reports: what is kept, why, who sees it and for how long', () => {

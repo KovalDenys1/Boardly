@@ -43,6 +43,9 @@ export const TERMS_FIGURES = {
  * 2026-09-27 (second change that day, #1130): finished games are pseudonymised rather than
  * deleted, a lobby in which no game started is deleted with its games, and accounts are
  * stated as kept until their owner deletes them.
+ * 2026-09-27 (third change that day, #1226): the leaderboard lists every account's username
+ * and results whatever its visibility, and shows the picture only to those who may see the
+ * profile; a hidden profile's page still shows its username.
  */
 export const PRIVACY_UPDATED = '2026-09-27'
 
