@@ -197,7 +197,6 @@ describe('BotID routes (#1157)', () => {
   })
 
   it('wraps next.config with withBotId, so the challenge is served from this origin', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const config = require(path.join(process.cwd(), 'next.config.js'))
     const rewrites = await config.rewrites()
     const list = Array.isArray(rewrites) ? rewrites : [...(rewrites.beforeFiles ?? []), ...(rewrites.afterFiles ?? [])]
