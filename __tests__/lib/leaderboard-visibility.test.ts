@@ -108,6 +108,9 @@ describe('leaderboard profile visibility (#1226)', () => {
     const sql = mockQueryRaw.mock.calls[0][0].strings.join('')
     expect(sql).not.toContain("!= 'private'")
     expect(sql).toContain('b.id IS NULL')
+    // #1229: the final SELECT must carry premiumUntil, or isPremium is false for everyone.
+    // The mocked rows above include it, which is how the missing column hid for months.
+    expect(sql).toMatch(/"premiumUntil",\s*"profileVisibility",\s*COUNT\("playerId"\)/)
   })
 
   it('a signed-out visitor gets every picture, and the badge of public profiles only', async () => {

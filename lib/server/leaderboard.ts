@@ -195,6 +195,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
       "publicProfileId",
       "avatarUrl",
       image,
+      "premiumUntil",
       "profileVisibility",
       COUNT("playerId")                                                        AS "gamesPlayed",
       COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")      AS wins,
