@@ -78,9 +78,17 @@ function signed(event: string, payload: Record<string, unknown>, topic: string =
 }
 
 /** Verification is async (WebCrypto); let it finish on the real event loop. */
-async function settle() {
-  for (let i = 0; i < 60; i += 1) {
+/**
+ * Signature checks run through WebCrypto on the libuv thread pool, so they finish in real
+ * time, not after a number of ticks: on a slow CI runner (2026-09-27) 60 ticks were not
+ * enough for even one ECDSA verify. Yield for at least 60 ticks and at least 300 ms.
+ */
+async function settle(minMs = 300) {
+  const start = Date.now()
+  let ticks = 0
+  while (ticks < 60 || Date.now() - start < minMs) {
     await new Promise((resolve) => realSetImmediate(resolve))
+    ticks += 1
   }
 }
 
