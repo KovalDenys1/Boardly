@@ -14,6 +14,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -628,6 +629,8 @@ export default function MemoryGameBoard({
               side="left"
               avatarSrc={avatarByUserId.get(player0.id) ?? null}
               isPremium={premiumByUserId.get(player0.id)}
+              userId={reportablePlayerId(players, player0.id)}
+              lobbyCode={lobbyCode}
               accentColor="var(--bd-mint)"
               turnDotColor="var(--bd-mint-deep)"
               subline={<ScorePop value={scoreByPlayerId[player0.id] ?? 0} style={{ display: 'inline-block' }}>{t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player0.id] ?? 0 })}</ScorePop>}
@@ -660,6 +663,8 @@ export default function MemoryGameBoard({
               side="right"
               avatarSrc={avatarByUserId.get(player1.id) ?? null}
               isPremium={premiumByUserId.get(player1.id)}
+              userId={reportablePlayerId(players, player1.id)}
+              lobbyCode={lobbyCode}
               accentColor="var(--bd-mint)"
               turnDotColor="var(--bd-mint-deep)"
               subline={<ScorePop value={scoreByPlayerId[player1.id] ?? 0} style={{ display: 'inline-block' }}>{t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player1.id] ?? 0 })}</ScorePop>}
@@ -793,6 +798,7 @@ export default function MemoryGameBoard({
   const chatSection = onSendChatMessage ? (
     <section className="game-chat-panel">
       <Chat
+        lobbyCode={lobbyCode}
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
         currentUserId={currentUserId || null}

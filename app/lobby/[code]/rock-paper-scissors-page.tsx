@@ -8,6 +8,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -760,7 +761,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
             <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}><Icon name="rock" size={96} /></div>
             <GameScoreboardHeader
-                leftCard={<GamePlayerCard name={leftName} isActive={!isFinished && !!leftId && !isLockedIn(leftId)} isMe={currentUserId === leftId} isWinner={winnerId === leftId} side="left" avatarSrc={leftId ? getAvatar(leftId) : null} isPremium={leftId ? getIsPremium(leftId) : false} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={leftScore} total={winsNeeded} color="var(--bd-coral)" />} cornerBadge={leftId ? cornerBadgeFor(leftId) : undefined} />}
+                leftCard={<GamePlayerCard name={leftName} isActive={!isFinished && !!leftId && !isLockedIn(leftId)} isMe={currentUserId === leftId} isWinner={winnerId === leftId} side="left" avatarSrc={leftId ? getAvatar(leftId) : null} isPremium={leftId ? getIsPremium(leftId) : false} userId={reportablePlayerId(lobbyPlayers, leftId)} lobbyCode={code} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={leftScore} total={winsNeeded} color="var(--bd-coral)" />} cornerBadge={leftId ? cornerBadgeFor(leftId) : undefined} />}
                 center={
                     <>
                         <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
@@ -779,7 +780,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         {leftScore}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{rightScore}
                     </ScorePop>
                 }
-                rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
+                rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} userId={reportablePlayerId(lobbyPlayers, rightId)} lobbyCode={code} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
             />
         </div>
     )
@@ -912,6 +913,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const chatSection = showChat ? (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

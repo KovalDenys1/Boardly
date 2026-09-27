@@ -192,6 +192,18 @@ export const EXPECTED_TABLES: ExpectedTable[] = [
     purpose: 'user feedback and issue reports',
     policyMode: 'blocked-direct',
   },
+  {
+    name: 'Reports',
+    domain: 'moderation',
+    purpose: 'player reports of chat, drawings and profiles, with the reported content kept as it was (#1172)',
+    policyMode: 'required',
+  },
+  {
+    name: 'ReportedDrawings',
+    domain: 'moderation',
+    purpose: 'one copy of a reported Sketch & Guess drawing per game and round, shared by its reports (#1172)',
+    policyMode: 'required',
+  },
 ]
 
 /**

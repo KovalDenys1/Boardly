@@ -2149,6 +2149,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {hasMultipleHumans && waitingRoomTab === 'chat' && (
                 <div className="h-full sm:hidden">
                   <Chat
+                    lobbyCode={code}
                     messages={chatMessages}
                     onSendMessage={(message) => {
                       sendChatMessage(message)
@@ -2443,6 +2444,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       }}
                     >
                       <Chat
+                        lobbyCode={code}
                         messages={chatMessages}
                         onSendMessage={(message) => {
                           sendChatMessage(message)
@@ -2482,6 +2484,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {hasMultipleHumans && (
               <div className="hidden desk:block">
                 <Chat
+                  lobbyCode={code}
                   messages={chatMessages}
                   onSendMessage={(message) => {
                     sendChatMessage(message)
@@ -2601,6 +2604,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       {!isGameStarted && isInGame && hasMultipleHumans && (
         <div className="hidden sm:block">
           <Chat
+            lobbyCode={code}
             messages={chatMessages}
             onSendMessage={(message) => {
               sendChatMessage(message)

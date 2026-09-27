@@ -1073,6 +1073,8 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       side={side}
       avatarSrc={id ? avatarOf(id) : null}
       isPremium={id ? premiumOf(id) : false}
+      userId={id || null}
+      lobbyCode={code}
       accentColor={side === 'left' ? LIARS_PARTY_ACCENT : 'var(--bd-coral)'}
       turnDotColor="var(--bd-mint-deep)"
       subline={t('liarsParty.points', { count: id ? (data?.scores[id] ?? 0) : 0 })}
@@ -1329,6 +1331,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const chatSection = (
     <section className="game-chat-panel">
       <Chat
+        lobbyCode={code}
         messages={chatMessages}
         onSendMessage={sendChatMessage}
         currentUserId={currentUserId || null}

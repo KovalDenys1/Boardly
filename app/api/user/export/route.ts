@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
       lobbyInvites,
       notifications,
       feedback,
+      reportsFiled,
       achievements,
       pushSubscriptions,
     ] = await Promise.all([
@@ -255,6 +256,23 @@ export async function GET(request: NextRequest) {
           createdAt: true,
         },
       }),
+      // Reports the user filed (#1172): what they reported, why and when, in their own
+      // words. Not the other player's id, and not the copy of the other player's
+      // content: that is someone else's data (GDPR Art. 15(4)).
+      prisma.reports.findMany({
+        where: { reporterId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_ROWS,
+        select: {
+          targetType: true,
+          reason: true,
+          note: true,
+          lobbyCode: true,
+          round: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
       prisma.userAchievements.findMany({
         where: { userId },
         orderBy: { unlockedAt: 'asc' },
@@ -283,6 +301,7 @@ export async function GET(request: NextRequest) {
       lobbyInvites,
       notifications,
       feedback,
+      reportsFiled,
       achievements,
       pushSubscriptions,
     }
@@ -344,6 +363,7 @@ export async function GET(request: NextRequest) {
       }),
       notifications,
       feedback,
+      reportsFiled,
       achievements,
       pushSubscriptions: pushSubscriptions.map((subscription) => ({
         service: endpointHost(subscription.endpoint),

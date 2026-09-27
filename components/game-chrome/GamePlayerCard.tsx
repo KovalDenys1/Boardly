@@ -1,8 +1,13 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import type { PlayerReportContext } from '@/components/PlayerProfileCard'
+
+// Loaded on the first tap, so the scoreboard does not carry the card's modal.
+const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'), { ssr: false })
 
 /**
  * Shared scoreboard player card (#736 phase 3) — one card for what used to
@@ -29,6 +34,16 @@ export interface GamePlayerCardProps {
   cornerBadge?: React.ReactNode
   /** Turn-indicator dot color; defaults to accentColor. */
   turnDotColor?: string
+  /**
+   * The player's user id. With it, another player's avatar opens their player card,
+   * which carries the Report action (#1172); without it, or on your own card, the
+   * avatar is not interactive.
+   */
+  userId?: string | null
+  /** Where the card is, kept with a report as context. */
+  lobbyCode?: string
+  /** Sketch & Guess: the round this player is drawing, which their card then offers to report. */
+  reportDrawing?: PlayerReportContext['drawing']
 }
 
 export default function GamePlayerCard({
@@ -43,8 +58,29 @@ export default function GamePlayerCard({
   subline,
   cornerBadge,
   turnDotColor,
+  userId,
+  lobbyCode,
+  reportDrawing,
 }: GamePlayerCardProps) {
   const { t } = useTranslation()
+  // Who the card was opened for, frozen at the tap: a seat can change hands while it
+  // is open (Sketch & Guess hands the drawer's seat on every round), and a report
+  // half-written about one player must not turn into a report about the next.
+  const [openedFor, setOpenedFor] = useState<{ userId: string; context: PlayerReportContext } | null>(null)
+  const opensCard = !!userId && !isMe
+  const avatar = (
+    <>
+      {avatarSrc ? (
+        // Inside the button the button's label names the player; the image would say it twice.
+        <img src={avatarSrc} alt={opensCard ? '' : name} className="game-player-avatar" />
+      ) : (
+        <div className="game-player-avatar game-player-avatar--initial" style={{ background: accentColor }}>
+          {name.charAt(0).toUpperCase()}
+        </div>
+      )}
+      {cornerBadge}
+    </>
+  )
   // Sizing lives in app/globals.css (.game-player-card): an inline style
   // outranks every stylesheet rule, so the phone-landscape breakpoint could not
   // shrink this card while the numbers were here (#901). The active plate is
@@ -55,16 +91,25 @@ export default function GamePlayerCard({
       className={`game-player-card game-player-card--${side}${isActive ? ' game-player-card--active' : ''}`}
       data-active={isActive ? 'true' : 'false'}
     >
-      <div className="game-player-avatar-wrap" style={{ position: 'relative', flexShrink: 0 }}>
-        {avatarSrc ? (
-          <img src={avatarSrc} alt={name} className="game-player-avatar" />
-        ) : (
-          <div className="game-player-avatar game-player-avatar--initial" style={{ background: accentColor }}>
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        {cornerBadge}
-      </div>
+      {/* A button only where it does something: your own card, and a seat with no
+          user behind it, stay a plain box. The avatar is the target, so the card
+          gains no new control and no new row (#1172). */}
+      {opensCard ? (
+        <button
+          type="button"
+          className="game-player-avatar-wrap game-player-avatar-button"
+          style={{ position: 'relative', flexShrink: 0 }}
+          onClick={() => userId && setOpenedFor({ userId, context: { lobbyCode, drawing: reportDrawing ?? null } })}
+          aria-label={t('report.openPlayerCard', { name })}
+          aria-haspopup="dialog"
+        >
+          {avatar}
+        </button>
+      ) : (
+        <div className="game-player-avatar-wrap" style={{ position: 'relative', flexShrink: 0 }}>
+          {avatar}
+        </div>
+      )}
       {/* Alignment, truncation and the narrow stacked form live in
           app/globals.css (.game-player-identity and friends): an inline
           text-align or justify-content here outranked the container query that
@@ -95,6 +140,13 @@ export default function GamePlayerCard({
           </div>
         )}
       </div>
+      {openedFor && (
+        <PlayerProfileCard
+          userId={openedFor.userId}
+          onClose={() => setOpenedFor(null)}
+          reportContext={openedFor.context}
+        />
+      )}
     </div>
   )
 }

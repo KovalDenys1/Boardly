@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
+import ReportDialog from '@/components/ReportDialog'
+import { REPORT_QUOTED_TEXT_MAX_CHARS } from '@/lib/content-reports'
 
 interface ChatMessage {
   id: string
@@ -31,6 +34,11 @@ interface ChatProps {
   onProfileClick?: (userId: string) => void
   /** Hides the composer — for viewers who can read but not write (spectators). */
   readOnly?: boolean
+  /**
+   * The lobby the messages belong to. With it (and a signed-in or guest viewer), every
+   * other player's message carries a Report action (#1172); without it there is none.
+   */
+  lobbyCode?: string
 }
 
 export default function Chat({
@@ -46,9 +54,11 @@ export default function Chat({
   fullScreen = false,
   onProfileClick,
   readOnly = false,
+  lobbyCode,
 }: ChatProps) {
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
+  const [reportedMessage, setReportedMessage] = useState<ChatMessage | null>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
@@ -95,7 +105,9 @@ export default function Chat({
   }, [isMinimized, fullScreen])
 
   useEffect(() => {
-    if (isMinimized || fullScreen) return
+    // The report dialog is portalled outside this panel, so a click inside it would
+    // otherwise read as a click outside the chat and minimize it under the dialog.
+    if (isMinimized || fullScreen || reportedMessage) return
 
     const handleClickOutside = (event: MouseEvent) => {
       if (chatRef.current && !chatRef.current.contains(event.target as Node)) {
@@ -107,7 +119,7 @@ export default function Chat({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [isMinimized, onToggleMinimize, fullScreen])
+  }, [isMinimized, onToggleMinimize, fullScreen, reportedMessage])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -255,6 +267,10 @@ export default function Chat({
           <>
             {messages.map((msg, index) => {
               const isCurrentUser = msg.userId === currentUserId
+              // Another player's message, seen by someone who can report: a guest or a
+              // signed-in player (both have a currentUserId), in a known lobby.
+              const canReport =
+                !!lobbyCode && !!currentUserId && !isCurrentUser && msg.type !== 'system' && msg.userId !== 'system'
               const showAvatar = msg.type !== 'system' && (index === 0 || messages[index - 1].userId !== msg.userId)
               const profile = playerProfiles?.get(msg.userId)
               const avatarUrl = profile?.avatarUrl
@@ -328,6 +344,20 @@ export default function Chat({
                         <div className={`mt-1.5 flex items-center gap-1 text-[10px] ${isCurrentUser ? 'justify-end opacity-60' : 'text-bd-ink-muted'}`}>
                           <span>{formatTime(msg.timestamp)}</span>
                           {isCurrentUser && <span className="opacity-75">✓</span>}
+                          {canReport && (
+                            // Inside the bubble's own time row: no new block on a game
+                            // screen. A 24px target, pulled back into the 10px row by
+                            // negative margins so the bubble does not grow.
+                            <button
+                              type="button"
+                              onClick={() => setReportedMessage(msg)}
+                              aria-label={t('report.reportMessage')}
+                              title={t('report.reportMessage')}
+                              className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                            >
+                              <Icon name="flag" size={12} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -365,6 +395,23 @@ export default function Chat({
             <span className="text-sm font-medium">{t('chat.typing')}</span>
           </div>
         </div>
+      )}
+
+      {reportedMessage && lobbyCode && (
+        <ReportDialog
+          isOpen
+          onClose={() => setReportedMessage(null)}
+          quote={reportedMessage.message}
+          targets={[
+            {
+              targetType: 'chat_message',
+              targetId: reportedMessage.id,
+              lobbyCode,
+              reportedUserId: reportedMessage.userId,
+              quotedText: reportedMessage.message.slice(0, REPORT_QUOTED_TEXT_MAX_CHARS),
+            },
+          ]}
+        />
       )}
 
       {!readOnly && (

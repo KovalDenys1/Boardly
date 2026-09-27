@@ -20,6 +20,8 @@ export const RETENTION_DAYS = {
   operationalEvents: 180,
   /** Feedback messages, from submission. */
   feedback: 365,
+  /** Player reports of chat, drawings and profiles, with the reported content, from the report (#1172). */
+  reports: 365,
   /** In-app, email and push notification records, from creation. */
   notifications: 365,
   /** Control Panel admin audit log, from the admin action. */

@@ -40,6 +40,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -966,7 +967,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,107,91,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <GameScoreboardHeader
-                leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentSide === 1} isMe={mySide === 1} isWinner={!isDraw && winnerSide === 1} side="left" avatarSrc={p1Id ? getPlayerAvatar(p1Id) : null} isPremium={p1Id ? getIsPremium(p1Id) : false} accentColor={SIDE_ACCENT[1]} subline={renderSubline(p1Id, 1)} cornerBadge={<SideBadge side={1} />} />}
+                leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentSide === 1} isMe={mySide === 1} isWinner={!isDraw && winnerSide === 1} side="left" avatarSrc={p1Id ? getPlayerAvatar(p1Id) : null} isPremium={p1Id ? getIsPremium(p1Id) : false} userId={reportablePlayerId(players, p1Id)} lobbyCode={code} accentColor={SIDE_ACCENT[1]} subline={renderSubline(p1Id, 1)} cornerBadge={<SideBadge side={1} />} />}
                 center={
                     <>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
@@ -985,7 +986,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>:</span>{p2Wins}
                     </div>
                 }
-                rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentSide === 2} isMe={mySide === 2} isWinner={!isDraw && winnerSide === 2} side="right" avatarSrc={p2Id ? getPlayerAvatar(p2Id) : null} isPremium={p2Id ? getIsPremium(p2Id) : false} accentColor={SIDE_ACCENT[2]} subline={renderSubline(p2Id, 2)} cornerBadge={<SideBadge side={2} />} />}
+                rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentSide === 2} isMe={mySide === 2} isWinner={!isDraw && winnerSide === 2} side="right" avatarSrc={p2Id ? getPlayerAvatar(p2Id) : null} isPremium={p2Id ? getIsPremium(p2Id) : false} userId={reportablePlayerId(players, p2Id)} lobbyCode={code} accentColor={SIDE_ACCENT[2]} subline={renderSubline(p2Id, 2)} cornerBadge={<SideBadge side={2} />} />}
             />
         </div>
     )
@@ -1124,6 +1125,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     const chatSection = showChat ? (
         <section className="game-chat-panel">
             <Chat
+                lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 currentUserId={currentUserId || null}

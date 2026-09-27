@@ -1906,6 +1906,25 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-size: 18px;
   color: #fff;
 }
+/* Another player's avatar opens their player card (#1172). A bare button: the same
+   box as the plain wrap, so the card neither moves nor grows. */
+.game-player-avatar-button {
+  appearance: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.game-player-avatar-button:focus-visible {
+  outline: 3px solid var(--bd-coral);
+  outline-offset: 3px;
+}
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
    and turn line disappeared entirely instead of truncating – a player card

@@ -91,6 +91,32 @@ describe('privacy notice (#1126)', () => {
     expect(text).toContain(`${RETENTION_DAYS.guestIdentityToken} days from your last visit`)
   })
 
+  // #1172: player reports keep a copy of what was reported, past the chat TTL and past
+  // its author's account, so the notice has to say so in every language.
+  it('describes player reports: what is kept, why, who sees it and for how long', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Reports of chat, drawings and profiles')
+    expect(text).toContain('Reports, including their notification in our Discord feedback channel: 12 months')
+    expect(text).toContain('We never tell the reported player who reported them')
+    expect(text).toContain('ehandelsloven, section 18')
+    expect(text).toContain('the report then loses its link to that account')
+    expect(text).toContain(`Lobby chat: ${CHAT_RETENTION_HOURS} hours, except a message someone reports`)
+
+    const locales = {
+      en: require('@/locales/en').default,
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const reports = locale.privacyPolicy.purposes.reports
+      expect({ name, ok: reports.retention.includes('{{reportsMonths}}') }).toEqual({ name, ok: true })
+      expect({ name, ok: reports.basis.includes('ehandelsloven') }).toEqual({ name, ok: true })
+      expect({ name, ok: reports.data.includes('Discord') }).toEqual({ name, ok: true })
+    }
+  })
+
   it('reads the same numbers the maintenance cron deletes by', () => {
     for (const rule of Object.values(RETENTION_RULES)) {
       expect(rule.days).toBe(RETENTION_DAYS[rule.key])
