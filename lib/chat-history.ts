@@ -23,6 +23,7 @@ interface ChatRedisClient {
   // Not string[]: the Upstash REST client deserializes JSON on the way out, so
   // what comes back is whatever was stored — see parseStoredMessage below.
   lrange(key: string, start: number, stop: number): Promise<unknown[]>
+  lrem(key: string, count: number, value: string): Promise<unknown>
 }
 
 interface UpstashRedisModule {
@@ -156,5 +157,48 @@ export async function getChatHistory(lobbyCode: string): Promise<StoredChatMessa
       error: err instanceof Error ? err.message : String(err),
     })
     return []
+  }
+}
+
+/** `unavailable`: no Redis, or it failed; nothing is known to have been removed. */
+export type ChatMessageRemoval = 'removed' | 'not_found' | 'unavailable'
+
+/**
+ * Remove one message from a lobby's history, by id (Control Panel content removal, #1231).
+ *
+ * By value with LREM, not by index: a message posted while this runs moves every index
+ * by one, and LSET on a stale index would overwrite a different message. LREM needs the
+ * exact stored string. persistChatMessage stored JSON.stringify output and the Upstash
+ * client handed back JSON.parse of it, so stringifying the object again gives the same
+ * string byte for byte; an entry that came back as a string is used as it is.
+ */
+export async function removeChatMessage(lobbyCode: string, messageId: string): Promise<ChatMessageRemoval> {
+  const redis = await getChatRedisClient()
+  if (!redis) return 'unavailable'
+
+  const key = lobbyKey(lobbyCode)
+  try {
+    const raw = await redis.lrange(key, 0, -1)
+    let matched = 0
+    let removed = 0
+    for (const entry of raw) {
+      if (parseStoredMessage(entry)?.id !== messageId) continue
+      matched += 1
+      const stored = typeof entry === 'string' ? entry : JSON.stringify(entry)
+      removed += Number(await redis.lrem(key, 0, stored)) || 0
+    }
+    if (matched > 0 && removed === 0) {
+      // Trimmed or expired between the read and the removal, or stored in a form the
+      // re-serialized string does not match. Said out loud, because the second would
+      // leave a message staff were told was gone.
+      logger.warn('chat-history: message matched by id but LREM removed nothing', { lobbyCode })
+    }
+    return removed > 0 ? 'removed' : 'not_found'
+  } catch (err) {
+    logger.warn('chat-history: failed to remove message', {
+      lobbyCode,
+      error: err instanceof Error ? err.message : String(err),
+    })
+    return 'unavailable'
   }
 }

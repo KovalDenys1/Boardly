@@ -51,7 +51,7 @@ describe('deleteUserAccount under a guard (#1130, the inactivity rule)', () => {
   it('reads and deletes the row only while it still matches the rule', async () => {
     const result = await deleteUserAccount('u1', { reason: 'inactivity', guard })
 
-    expect(result).toEqual({ status: 'deleted' })
+    expect(result).toEqual({ status: 'deleted', cancelledSubscription: false })
     expect(prisma.users.findFirst.mock.calls[0][0].where).toEqual({ AND: [{ id: 'u1' }, guard] })
     expect(prisma.users.deleteMany).toHaveBeenCalledWith({ where: { AND: [{ id: 'u1' }, guard] } })
     expect(prisma.users.delete).not.toHaveBeenCalled()

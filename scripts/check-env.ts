@@ -37,6 +37,9 @@ const optionalVars = [
   'NEXT_PUBLIC_DISCORD_INVITE',
   'DISCORD_APPLICATION_ID',
   'DISCORD_INTERNAL_SECRET',
+  // The Control Panel's bearer secret for /api/internal/admin/* (#1231). Unset, those
+  // routes answer 503 and the panel cannot email a suspension or delete an account safely.
+  'CONTROL_PANEL_API_SECRET',
   // Web Push. All three or none — the public key is inlined into the client
   // bundle, so a deploy missing it hands every opt-in a permission prompt and
   // no subscription (#983).
@@ -83,6 +86,7 @@ const neverPrintedVars = new Set([
   'FEEDBACK_DISCORD_WEBHOOK_URL',
   'OPS_ALERT_WEBHOOK_URL',
   'DISCORD_INTERNAL_SECRET',
+  'CONTROL_PANEL_API_SECRET',
   'VAPID_PRIVATE_KEY',
 ])
 
