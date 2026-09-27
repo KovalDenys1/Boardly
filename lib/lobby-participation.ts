@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto'
 import { prisma } from './db'
 import { apiLogger } from './logger'
+import { legacyNextAuthSecret } from './nextauth-secret-transition'
 import type { GameType } from '@/prisma/client'
 
 const log = apiLogger('lobby-participation')
@@ -17,6 +18,10 @@ const log = apiLogger('lobby-participation')
  * and "how many people were sitting in one" is exactly the question that could
  * not be answered.
  */
+function hashParticipant(salt: string, userId: string): string {
+  return createHmac('sha256', salt).update(userId).digest('hex').slice(0, 32)
+}
+
 function participantKey(userId: string): string {
   // Salted so the value cannot be reversed to a user id or joined back to a
   // deleted guest — the point is anonymised aggregates, not longer retention of
@@ -26,7 +31,20 @@ function participantKey(userId: string): string {
   if (!salt) {
     throw new Error('PARTICIPATION_HASH_SALT or NEXTAUTH_SECRET must be set')
   }
-  return createHmac('sha256', salt).update(userId).digest('hex').slice(0, 32)
+  return hashParticipant(salt, userId)
+}
+
+/**
+ * Every key this user may already be recorded under: the current one first, then - until
+ * NEXTAUTH_SECRET_FALLBACK_CUTOFF, and only once PARTICIPATION_HASH_SALT is set to something
+ * else - the one NEXTAUTH_SECRET produced, which is what every row written before the
+ * dedicated salt existed carries (#1142, #1149). Anything that looks a participant up must
+ * ask for all of them; writes use only the first.
+ */
+export function participantKeys(userId: string): string[] {
+  const current = participantKey(userId)
+  const legacySalt = legacyNextAuthSecret('PARTICIPATION_HASH_SALT')
+  return legacySalt ? [current, hashParticipant(legacySalt, userId)] : [current]
 }
 
 export async function recordLobbyParticipation(params: {
@@ -41,12 +59,26 @@ export async function recordLobbyParticipation(params: {
 }): Promise<boolean> {
   let created: { joinedAt: Date } | null = null
   try {
+    const [key, ...legacyKeys] = participantKeys(params.userId)
+
+    // The unique (lobbyId, participantKey) index only recognises a rejoin under the same
+    // key. Someone who joined this lobby before PARTICIPATION_HASH_SALT was set is recorded
+    // under the old one, so without this lookup their rejoin would be a second row - a
+    // second participant, and possibly a second `second_human_joined`.
+    if (legacyKeys.length > 0) {
+      const recordedBefore = await prisma.lobbyParticipations.findFirst({
+        where: { lobbyId: params.lobbyId, participantKey: { in: legacyKeys } },
+        select: { id: true },
+      })
+      if (recordedBefore) return false
+    }
+
     created = await prisma.lobbyParticipations.create({
       data: {
         lobbyId: params.lobbyId,
         lobbyCode: params.lobbyCode,
         gameType: params.gameType,
-        participantKey: participantKey(params.userId),
+        participantKey: key,
         isBot: params.isBot ?? false,
         isGuest: params.isGuest ?? false,
         signupSource: params.signupSource ?? null,

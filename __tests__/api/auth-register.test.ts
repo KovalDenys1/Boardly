@@ -11,8 +11,12 @@ import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
 import { hashAuthToken } from '@/lib/auth-tokens'
 import { upsertNotificationPreferences } from '@/lib/notification-preferences'
+import { checkBotId } from 'botid/server'
 
 let mockRateLimitResult: Response | null = null
+
+jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
+const mockCheckBotId = checkBotId as jest.MockedFunction<typeof checkBotId>
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -651,5 +655,49 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).toBe(200)
     expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalledTimes(1)
+  })
+
+  describe('Vercel BotID (#1157)', () => {
+    const originalVercelEnv = process.env.VERCEL_ENV
+    const body = { email: 'new@example.com', username: 'new_user', password: 'ValidPass123' }
+
+    beforeEach(() => {
+      process.env.VERCEL_ENV = 'production'
+    })
+
+    afterAll(() => {
+      if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = originalVercelEnv
+    })
+
+    it('refuses a request BotID classifies as a bot before touching the database', async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: true, isHuman: false, isVerifiedBot: false, bypassed: false })
+
+      const response = await POST(buildRequest(body))
+
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toMatchObject({ code: 'BOT_CHECK_FAILED' })
+      expect(mockCheckBotId).toHaveBeenCalledWith({ advancedOptions: { checkLevel: 'basic' } })
+      expect(mockPrisma.users.findMany).not.toHaveBeenCalled()
+      expect(mockPrisma.users.create).not.toHaveBeenCalled()
+    })
+
+    it('does not spend a BotID call on a request the rate limit already refused', async () => {
+      mockRateLimitResult = new Response(null, { status: 429 })
+
+      const response = await POST(buildRequest(body))
+
+      expect(response.status).toBe(429)
+      expect(mockCheckBotId).not.toHaveBeenCalled()
+    })
+
+    it('registers a browser BotID vouches for', async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: false, isHuman: true, isVerifiedBot: false, bypassed: false })
+
+      const response = await POST(buildRequest(body))
+
+      expect(response.status).toBe(200)
+      expect(mockPrisma.users.create).toHaveBeenCalledTimes(1)
+    })
   })
 })

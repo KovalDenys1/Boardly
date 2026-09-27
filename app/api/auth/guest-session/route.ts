@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { apiLogger } from '@/lib/logger'
-import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
+import { guestSessionPreset, rateLimit } from '@/lib/rate-limit'
+import { refuseIfBot } from '@/lib/bot-protection'
 import {
   createGuestId,
   createGuestToken,
@@ -15,7 +16,7 @@ import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { handleApiError } from '@/lib/error-handler'
 import { Prisma } from '@/prisma/client'
 
-const limiter = rateLimit(failClosedAuthPreset)
+const limiter = rateLimit(guestSessionPreset)
 
 const guestSessionSchema = z.object({
   guestName: z.string().trim().min(2).max(20).regex(/^[\w\s-]+$/u, 'Invalid characters'),
@@ -28,6 +29,10 @@ export async function POST(request: NextRequest) {
 
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
+
+  // After the rate limit, so a refused flood costs no BotID call (#1157).
+  const botRefusal = await refuseIfBot('POST /api/auth/guest-session')
+  if (botRefusal) return botRefusal
 
   try {
     const parsed = guestSessionSchema.safeParse(await request.json())

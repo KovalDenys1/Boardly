@@ -11,6 +11,10 @@ import { verifyGuestToken } from '@/lib/guest-auth'
 import { verifyLobbyPassword } from '@/lib/lobby-password'
 import { isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit } from '@/lib/rate-limit'
+import { checkBotId } from 'botid/server'
+
+jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
+const mockCheckBotId = checkBotId as jest.Mock
 
 // The route builds its two limiters at import: the per-IP join budget, then the new-guest
 // one. Taken now, before any clearAllMocks empties mock.results.
@@ -436,5 +440,54 @@ describe('POST /api/lobby/[code]/join-guest — which joins may mint a guest (#1
     expect((await response.json()).code).toBe('GUEST_NOT_FOUND')
     expect(mockPrisma.games.create).not.toHaveBeenCalled()
     expect(mockPrisma.players.create).not.toHaveBeenCalled()
+  })
+
+  describe('Vercel BotID (#1157)', () => {
+    const originalVercelEnv = process.env.VERCEL_ENV
+    const BOT = { isBot: true, isHuman: false, isVerifiedBot: false, bypassed: false }
+
+    beforeEach(() => {
+      process.env.VERCEL_ENV = 'production'
+    })
+
+    afterAll(() => {
+      if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = originalVercelEnv
+    })
+
+    it('refuses a token-less join BotID classifies as a bot before any guest is minted', async () => {
+      mockCheckBotId.mockResolvedValue(BOT)
+
+      const response = await JOIN_GUEST(joinRequest(), { params: { code: 'ABC123' } as any })
+
+      expect(response.status).toBe(403)
+      expect((await response.json()).code).toBe('BOT_CHECK_FAILED')
+      expect(mockCheckBotId).toHaveBeenCalledWith({ advancedOptions: { checkLevel: 'basic' } })
+      expect(mockPrisma.lobbies.findUnique).not.toHaveBeenCalled()
+      expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+    })
+
+    it('checks a join whose token names an erased guest, since it mints one', async () => {
+      mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-erased', guestName: 'Newcomer' })
+      mockPrisma.users.findFirst.mockResolvedValue(null)
+      mockCheckBotId.mockResolvedValue(BOT)
+
+      const response = await JOIN_GUEST(joinWithToken(), { params: { code: 'ABC123' } as any })
+
+      expect(response.status).toBe(403)
+      expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+    })
+
+    it('does not check a guest who already exists rejoining on their token', async () => {
+      mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-old', guestName: 'Newcomer' })
+      mockPrisma.users.findFirst.mockResolvedValue({ id: 'guest-old' } as any)
+      mockGetOrCreateGuestUser.mockResolvedValueOnce({ id: 'guest-old', username: 'Newcomer', isGuest: true })
+      mockCheckBotId.mockResolvedValue(BOT)
+
+      const response = await JOIN_GUEST(joinWithToken(), { params: { code: 'ABC123' } as any })
+
+      expect(response.status).toBe(200)
+      expect(mockCheckBotId).not.toHaveBeenCalled()
+    })
   })
 })

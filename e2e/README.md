@@ -186,3 +186,22 @@ creation allows ten per hour against a bucket that resets on the hour, and the
 suite makes seven. **So: one production run per hour.** Guest identities are
 cached, so repeat runs no longer spend the tighter five-per-fifteen-minutes
 auth budget.
+
+**Vercel BotID refuses the helpers that mint guests over plain HTTP (#1157).**
+`createGuest` (`/api/auth/guest-session`) and `joinAsGuest` (a token-less
+`/api/lobby/<code>/join-guest`) go through Playwright's `request` context, which
+carries no BotID challenge, so on any Vercel deployment - production and preview -
+they answer 403 `BOT_CHECK_FAILED`. Guests already cached in `e2e/.auth` keep
+working until their 12h token expires, because a join on a valid token of an
+existing guest is not checked. For a full run against a deployment, add a bypass
+rule for the runner to the Vercel WAF (https://vercel.com/docs/botid#bypassing-botid);
+against a local server nothing is checked. The same 403 meets two other tools pointed
+at a deployment: `A11Y_BASE_URL=<deployment> npm run audit:a11y`, which mints its
+guest with `context.request.post` and so fails to reach the bot game screen, and
+`npm run ops:load -- --base-url=<deployment>`, whose guest session is a plain `fetch`.
+
+Locally the suite needs api.vercel.com reachable. The browser half of BotID runs in
+`next dev` too: before a browser fetch to guest-session, register or join-guest it
+loads its challenge script through the `withBotId` rewrite from api.vercel.com, and
+if that load fails the fetch fails with it - so every test that enters as a guest
+through the UI fails offline or behind a firewall that blocks the host.

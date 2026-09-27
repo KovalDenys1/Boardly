@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { refuseIfBot } from '@/lib/bot-protection'
 import { z } from 'zod'
 import {
   createGuestId,
@@ -74,6 +75,11 @@ export async function POST(
     if (!existingGuestClaims) {
       const newGuestRateLimitResult = await newGuestLimiter(req)
       if (newGuestRateLimitResult) return newGuestRateLimitResult
+
+      // Only a join that mints a guest is checked (#1157): a guest who already exists has
+      // passed guest-session or an earlier join, and their rejoins are gameplay.
+      const botRefusal = await refuseIfBot('POST /api/lobby/[code]/join-guest')
+      if (botRefusal) return botRefusal
     }
 
     // The id the guest row has or will have (getOrCreateGuestUser creates it under exactly

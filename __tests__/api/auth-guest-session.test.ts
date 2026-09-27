@@ -11,6 +11,9 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { checkBotId } from 'botid/server'
+
+jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
@@ -54,6 +57,7 @@ const mockGetGuestTokenFromRequest =
   getGuestTokenFromRequest as jest.MockedFunction<typeof getGuestTokenFromRequest>
 const mockVerifyGuestToken = verifyGuestToken as jest.MockedFunction<typeof verifyGuestToken>
 const mockGetOrCreateGuestUser = getOrCreateGuestUser as jest.MockedFunction<typeof getOrCreateGuestUser>
+const mockCheckBotId = checkBotId as jest.MockedFunction<typeof checkBotId>
 
 function buildRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost:3000/api/auth/guest-session', {
@@ -135,5 +139,39 @@ describe('POST /api/auth/guest-session', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({ guestId: 'guest-back' })
+  })
+
+  describe('Vercel BotID (#1157)', () => {
+    const originalVercelEnv = process.env.VERCEL_ENV
+
+    beforeEach(() => {
+      process.env.VERCEL_ENV = 'production'
+    })
+
+    afterAll(() => {
+      if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV
+      else process.env.VERCEL_ENV = originalVercelEnv
+    })
+
+    it('refuses a request BotID classifies as a bot before any guest is minted', async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: true, isHuman: false, isVerifiedBot: false, bypassed: false })
+
+      const response = await POST(buildRequest({ guestName: 'Scripted' }))
+
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toMatchObject({ code: 'BOT_CHECK_FAILED' })
+      expect(mockCheckBotId).toHaveBeenCalledWith({ advancedOptions: { checkLevel: 'basic' } })
+      expect(mockCreateGuestId).not.toHaveBeenCalled()
+      expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+    })
+
+    it('lets a browser BotID vouches for through', async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: false, isHuman: true, isVerifiedBot: false, bypassed: false })
+      mockGetOrCreateGuestUser.mockResolvedValue({ id: 'guest-user-1', username: 'Person' } as never)
+
+      const response = await POST(buildRequest({ guestName: 'Person' }))
+
+      expect(response.status).toBe(200)
+    })
   })
 })

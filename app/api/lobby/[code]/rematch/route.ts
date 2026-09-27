@@ -6,7 +6,7 @@ import { apiLogger } from '@/lib/logger'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
-const limiter = rateLimit(rateLimitPresets.lobbyCreation)
+const limiter = rateLimit(rateLimitPresets.lobbyRematch)
 
 export async function POST(
   request: NextRequest,

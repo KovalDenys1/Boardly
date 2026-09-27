@@ -59,9 +59,10 @@ const optionalVars = [
   'NEXT_PUBLIC_SELLER_ADDRESS',
   // Both fall back to NEXTAUTH_SECRET when unset (lib/guest-auth.ts,
   // lib/lobby-participation.ts), which works but reuses one secret for three
-  // purposes. #1149: required in production specifically, checked below -
-  // guest identity tokens are re-minted on expiry, so setting these is a safe,
-  // non-breaking rotation whenever it happens.
+  // purposes. #1149: required in production specifically, checked below.
+  // Until 2026-12-27 what NEXTAUTH_SECRET signed or hashed before they were set is
+  // still accepted (lib/nextauth-secret-transition.ts), so setting them logs no
+  // guest out and double-counts no rejoin.
   'GUEST_JWT_SECRET',
   'PARTICIPATION_HASH_SALT',
 ]

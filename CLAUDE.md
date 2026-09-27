@@ -385,6 +385,14 @@ curl -s -X POST http://localhost:3000/api/lobby/<code>/join-guest \
 a slot is open. This is the same public API the app's own UI calls — not a DB hack and not
 hand-minted JWTs — so it is safe against the local dev server.
 
+**The curl filler works against local dev only (#1157).** A token-less join-guest, like
+`/api/auth/guest-session` and `/api/auth/register`, is checked by Vercel BotID on every Vercel
+deployment, production and preview: the browser attaches BotID's challenge headers
+(`instrumentation-client.ts`), curl does not, so a deployment answers it 403 `BOT_CHECK_FAILED`.
+Locally nothing is checked (`lib/bot-protection.ts` runs only when `VERCEL_ENV` is `production`
+or `preview`). The same goes for anything else that mints a guest over plain HTTP against a
+deployment, the e2e helpers included (`e2e/README.md`).
+
 Two things that cost a run on 2026-09-20. The host's identity travels in an `X-Guest-Token`
 header, not a cookie, so a curl cookie jar gets `Unauthorized`; take the token from the
 `/api/auth/guest-session` body and put it in the header, and into `boardly_guest_token` /
