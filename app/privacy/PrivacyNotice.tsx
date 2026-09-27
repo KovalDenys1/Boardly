@@ -116,7 +116,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-      <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label="Breadcrumb">
+      <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label="Breadcrumb">
         <Link href="/" className="transition-colors hover:text-bd-ink">{t('privacyPolicy.breadcrumbHome')}</Link>
         <span aria-hidden="true">/</span>
         <span style={strong}>{t('privacyPolicy.title')}</span>
@@ -271,7 +271,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p>{t('privacyPolicy.changes.body')}</p>
           </Section>
 
-          <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-muted)', borderTop: '1px solid var(--bd-line)' }}>
+          <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-soft)', borderTop: '1px solid var(--bd-line)' }}>
             {t('privacyPolicy.updated', { date: updated })}
           </p>
         </div>

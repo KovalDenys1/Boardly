@@ -517,6 +517,7 @@ const ru = {
       allMatched: 'Все пары найдены!',
       pairsProgress: '{{count}} / {{total}} пар',
       playFullGame: 'Играть полностью →',
+      tttCellEmpty: 'Пустая клетка',
     },
   },
   games: {

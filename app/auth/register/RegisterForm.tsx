@@ -284,7 +284,9 @@ export default function RegisterForm() {
             <InAppBrowserNotice />
             {renderProviderButtons()}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-muted)', fontSize: 13 }}>
+            {/* bd-ink-muted was 3.93:1 here — AA large-text only (DESIGN.md
+                "Contrast"), and this "or" divider is normal-size (#1171). */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-soft)', fontSize: 13 }}>
               <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
               {t('common.or')}
               <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
@@ -352,9 +354,13 @@ export default function RegisterForm() {
                   <Checkbox checked={agreedToTerms} onCheckedChange={setAgreedToTerms} disabled={loading} style={{ marginTop: 2, flexShrink: 0 }} />
                   <span>
                     {t('auth.register.agreeToTerms')}{' '}
-                    <Link href="/terms" target="_blank" style={{ color: 'var(--bd-coral)', fontWeight: 600 }}>{t('auth.register.termsOfService')}</Link>
+                    {/* bd-coral text was 2.64:1 on this card, below the 4.5:1 AA
+                        minimum (#1171 axe pass) — bd-ink plus underline keeps
+                        these identifiable as links without touching the
+                        brand palette. */}
+                    <Link href="/terms" target="_blank" style={{ color: 'var(--bd-ink)', fontWeight: 600, textDecoration: 'underline' }}>{t('auth.register.termsOfService')}</Link>
                     {' '}{t('common.and')}{' '}
-                    <Link href="/privacy" target="_blank" style={{ color: 'var(--bd-coral)', fontWeight: 600 }}>{t('auth.register.privacyPolicy')}</Link>
+                    <Link href="/privacy" target="_blank" style={{ color: 'var(--bd-ink)', fontWeight: 600, textDecoration: 'underline' }}>{t('auth.register.privacyPolicy')}</Link>
                   </span>
                 </Label>
                 <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>

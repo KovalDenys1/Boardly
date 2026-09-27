@@ -473,6 +473,7 @@ const no = {
       allMatched: 'Alle par funnet!',
       pairsProgress: '{{count}} / {{total}} par',
       playFullGame: 'Spill hele spillet →',
+      tttCellEmpty: 'Tom rute',
     },
   },
   games: {

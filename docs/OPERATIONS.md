@@ -626,6 +626,56 @@ npm run ops:alerts:check
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
 
+## Accessibility audit (axe)
+
+forskrift om universell utforming av IKT-løsninger § 4 binds this private site to WCAG
+2.0 A/AA today (#1171). `npm run audit:a11y` (`scripts/audit-a11y.ts`) is the automated
+check: it drives a headless, isolated Chromium — never a developer's own Chrome, see
+"Driving a browser on this Mac" in `CLAUDE.md` — through `/`, `/lobby`, `/auth/register`,
+`/auth/login`, `/premium`, `/terms`, `/privacy`, `/withdrawal`, and one bot game screen
+(Tic-Tac-Toe vs a bot, reached by minting a guest session and using Quick Play exactly as
+a real guest would), running `@axe-core/playwright` with the `wcag2a`/`wcag2aa` tags on
+each.
+
+```bash
+npm run audit:a11y                                     # scans http://localhost:3000
+A11Y_BASE_URL=https://preview-x.vercel.app npm run audit:a11y
+```
+
+It fails (non-zero exit) on any `serious` or `critical` violation that is not in
+`scripts/a11y-allowlist.json`, and on failing to reach the bot game screen at all — that
+route is named in #1171's acceptance criteria, so a skip is treated as a failure rather
+than a silently-passing scan of 8 routes instead of 9.
+
+**The allowlist holds brand-colour contrast items only, each with a reason** — the three
+gaps DESIGN.md's "Contrast" table documents as Denys's call, not a bug: white text on
+`bd-coral` (the primary CTA fill, `.bd-btn-coral`, and the same fill at reduced opacity),
+and white text on `bd-lav` (the feedback widget's floating button). Matching is by axe's
+own rule id plus the exact `fgColor`/`bgColor` pair it measured, not by CSS selector — the
+same two colour pairs recur across many components (every primary button, every page),
+and a selector-based allowlist would need one entry per instance and go stale the moment a
+new button uses the same fill. `bd-input`'s resting border (1.3:1, the third gap in
+DESIGN.md) never appears here: axe-core has no automated rule for WCAG 1.4.11 (non-text
+contrast), so it is a real gap that only a manual review catches, already recorded in
+DESIGN.md.
+
+**Never add anything else to the allowlist.** Every other violation this script finds must
+be fixed in the code, the same way the rest of #1171's cleanup was done: swap `bd-ink-muted`
+for `bd-ink-soft` on normal-size text (DESIGN.md's own table already says `bd-ink-muted` is
+AA-large-only), swap a "-deep" accent text colour for `bd-ink`/`bd-ink-soft` when even the
+deep variant does not clear 4.5:1 against its background, add a missing `aria-label`, or
+fix the underlying markup (e.g. a nested interactive control). None of those require
+touching a brand hex value.
+
+**The bot-game route shares a rate limit with everyone else on this machine.**
+`/api/auth/guest-session` allows 5 requests per 15 minutes per IP
+(`lib/rate-limit.ts` `auth` preset), and against `boardly-dev` that counter is shared
+Upstash state across every agent running locally (`CLAUDE.md`). The script retries a 429
+a couple of times with backoff before giving up; running it twice in quick succession
+against a local dev server can still exhaust the window. That is the rate limit working as
+designed, not a broken endpoint — wait for the window to reset (`retryAfter` in the 429
+body) rather than concluding the script is broken.
+
 ## Project board hygiene automation
 
 Workflow: `.github/workflows/project-hygiene.yml`

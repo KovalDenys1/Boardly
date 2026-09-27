@@ -135,7 +135,14 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId, lastMove,
                             disabled={disabled || !!cell}
                             aria-label={`cell ${tttCoord(ri, ci)}`}
                         >
-                            {!cell && <span className="ttt-cell-coord">{tttCoord(ri, ci)}</span>}
+                            {/* Decorative only — the cell already carries
+                                aria-label="cell A1" etc., and at 0.5 opacity
+                                this watermark measured 1.81:1, far below the
+                                4.5:1 AA minimum (#1171 axe pass). Hiding it
+                                from the accessibility tree rather than
+                                brightening it keeps the intentionally subtle
+                                look. */}
+                            {!cell && <span className="ttt-cell-coord" aria-hidden="true">{tttCoord(ri, ci)}</span>}
                             {cell && (isLast(ri, ci) && popLastMove
                                 ? <span className="ttt-mark-pop-host" onAnimationEnd={onLastMovePopped}><TttMark mark={cell} responsive pop /></span>
                                 : <TttMark mark={cell} responsive />)}
@@ -1171,11 +1178,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 </span>
             </div>
             <div className="ttt-history-list">
+                {/* bd-ink-muted was 4.15:1 / 3.93:1 here — AA large-text
+                    only (DESIGN.md "Contrast"), and this list is
+                    normal-size (#1171 axe pass). */}
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-soft)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
                     : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} className={index === 0 && lastMoveFresh ? 'ttt-history-row-in' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
-                            <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+                            <span style={{ color: 'var(--bd-ink-soft)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <TttMark mark={m.symbol} size={16} />

@@ -5,10 +5,15 @@ import { useTranslation } from '@/lib/i18n-helpers'
 export default function HowItWorksRedesign() {
   const { t } = useTranslation()
 
+  // The step number used to be tinted per-step (coral/mint/sun) — at 56px
+  // bold on bd-card-warm none of those, nor their -deep variants, reach the
+  // large-text 3:1 AA minimum (bd-mint measured 1.94:1, bd-sun 1.5:1;
+  // bd-mint-deep and bd-sun-deep still fall short at 2.84:1 / 1.99:1).
+  // bd-ink is the only token in the palette that clears it here (#1171).
   const steps = [
-    { n: '01', color: 'var(--bd-coral)', title: t('home.howItWorks.step1.title'), body: t('home.howItWorks.step1.description') },
-    { n: '02', color: 'var(--bd-mint)', title: t('home.howItWorks.step2.title'), body: t('home.howItWorks.step2.description') },
-    { n: '03', color: 'var(--bd-sun)', title: t('home.howItWorks.step3.title'), body: t('home.howItWorks.step3.description') },
+    { n: '01', color: 'var(--bd-ink)', title: t('home.howItWorks.step1.title'), body: t('home.howItWorks.step1.description') },
+    { n: '02', color: 'var(--bd-ink)', title: t('home.howItWorks.step2.title'), body: t('home.howItWorks.step2.description') },
+    { n: '03', color: 'var(--bd-ink)', title: t('home.howItWorks.step3.title'), body: t('home.howItWorks.step3.description') },
   ]
 
   return (
@@ -20,7 +25,9 @@ export default function HowItWorksRedesign() {
             fontSize: 12,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: 'var(--bd-ink-muted)',
+            // bd-ink-muted was 3.86:1 here — AA large-text only (DESIGN.md
+            // "Contrast"), and this kicker is normal-size (#1171).
+            color: 'var(--bd-ink-soft)',
           }}
         >
           {t('home.howItWorks.kicker')}

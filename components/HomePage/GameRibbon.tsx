@@ -25,10 +25,14 @@ interface GameCardProps {
 
 function GameCard({ name, tag, players, time, diff, desc, href, detailHref, status, accentBg, illustration }: GameCardProps) {
   const { t } = useTranslation()
+  // Text is bd-ink, not the tinted "-deep"/"-soft" tone, on all three: at
+  // this badge's size bd-mint-deep measured 2.5-2.8:1 on its tint and
+  // bd-lav-deep only reaches ~3.6-4.1:1, both below the 4.5:1 AA minimum
+  // (#1171 axe pass) — the tint still carries the colour-coding.
   const badge = {
-    available: { txt: t('games.playNow'), bg: 'rgba(79,201,166,0.18)', color: 'var(--bd-mint-deep)' },
-    'in-development': { txt: t('home.ribbonBadgeLater'), bg: 'rgba(255,196,77,0.22)', color: 'var(--bd-ink-soft)' },
-    planned: { txt: t('home.ribbonBadgePlanned'), bg: 'rgba(155,140,255,0.18)', color: 'var(--bd-lav-deep)' },
+    available: { txt: t('games.playNow'), bg: 'rgba(79,201,166,0.18)', color: 'var(--bd-ink)' },
+    'in-development': { txt: t('home.ribbonBadgeLater'), bg: 'rgba(255,196,77,0.22)', color: 'var(--bd-ink)' },
+    planned: { txt: t('home.ribbonBadgePlanned'), bg: 'rgba(155,140,255,0.18)', color: 'var(--bd-ink)' },
   }[status]
 
   return (
@@ -131,7 +135,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
               fontWeight: 600,
               fontSize: 15,
               background: 'var(--bd-bg2)',
-              color: 'var(--bd-ink-muted)',
+              color: 'var(--bd-ink-soft)',
               marginTop: 4,
             }}
           >
@@ -439,7 +443,7 @@ export default function GameRibbon() {
               fontSize: 12,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: 'var(--bd-ink-muted)',
+              color: 'var(--bd-ink-soft)',
             }}
           >
             {t('header.games')}

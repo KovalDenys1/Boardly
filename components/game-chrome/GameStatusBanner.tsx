@@ -117,8 +117,8 @@ export default function GameStatusBanner({
         <Icon name="eye" size={16} tone="muted" />
         {leadingIcon}
         <span key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</span>
-        {meta !== undefined && <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>{meta}</span>}
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
+        {meta !== undefined && <span style={{ fontSize: 11, color: 'var(--bd-ink-soft)', marginLeft: 2 }}>{meta}</span>}
+        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-soft)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
       </div>
     )
   }
@@ -141,7 +141,7 @@ export default function GameStatusBanner({
         <div key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {activeTitle}
           {meta !== undefined && (
-            <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{meta}</span>
+            <span style={{ color: 'var(--bd-ink-soft)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{meta}</span>
           )}
         </div>
         {showTimer && (

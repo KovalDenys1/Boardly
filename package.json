@@ -23,6 +23,7 @@
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "audit:emoji": "tsx scripts/check-emoji.ts",
     "audit:docs": "tsx scripts/audit-docs.ts",
+    "audit:a11y": "tsx scripts/audit-a11y.ts",
     "ci:quick": "npm run lint && npm run typecheck && npm run arch:audit && npm run audit:responsive && npm run audit:emoji && npm run audit:i18n && npm run audit:locale-health && npm run audit:docs",
     "ci:quality": "npm run ci:quick && npm test",
     "postinstall": "prisma generate",
@@ -102,6 +103,7 @@
     "zod": "3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@edge-runtime/jest-environment": "^4.0.0",
     "@modelcontextprotocol/server-filesystem": "^2026.1.14",
     "@modelcontextprotocol/server-github": "^2025.4.8",

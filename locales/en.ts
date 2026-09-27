@@ -473,6 +473,7 @@ const en = {
       allMatched: 'All matched!',
       pairsProgress: '{{count}} / {{total}} pairs',
       playFullGame: 'Play full game →',
+      tttCellEmpty: 'Empty cell',
     },
   },
   games: {
