@@ -2778,8 +2778,8 @@ export default function ProfilePage() {
                           {premiumCancelAtPeriodEnd
                             ? t('profile.premiumTab.loseAccess')
                             : premiumRenewal
-                              ? // The list price and who converts it (#1167, Denys 2026-09-27):
-                                // the amount in the subscriber's own currency is set on the day.
+                              ? // The list price before any discount, and who charges it in
+                                // which currency (#1167, Denys 2026-09-27).
                                 t(
                                   premiumRenewal.plan === 'yearly'
                                     ? 'profile.premiumTab.renewsOnYearly'
