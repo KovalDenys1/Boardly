@@ -15,8 +15,9 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }))
 
+// The card is fetched with the guest token (#1226); here that is plain fetch.
 jest.mock('@/lib/client/fetch-with-guest', () => ({
-  fetchWithGuest: jest.fn(),
+  fetchWithGuest: jest.fn((input: RequestInfo | URL, init?: RequestInit) => global.fetch(input, init)),
   getGuestData: jest.fn(),
 }))
 
@@ -111,6 +112,33 @@ describe('PlayerProfileCard report action (#1172)', () => {
     mockCard(cardResponse())
     render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
     expect(await screen.findByRole('button', { name: 'report.reportPlayer' })).toBeTruthy()
+  })
+
+  // #1226: a profile the viewer may not see comes back restricted.
+  it('shows a restricted card as private: the username, no statistics, and only the username to report', async () => {
+    mockCard({
+      userId: 'u2',
+      username: 'Bob',
+      image: null,
+      publicProfileId: 'BobProfile01',
+      isGuest: false,
+      isPremium: false,
+      restricted: true,
+      relation: 'can_send',
+    })
+    const { container } = render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
+
+    expect(await screen.findByText('Bob')).toBeTruthy()
+    expect(screen.getByTestId('player-card-private').textContent).toContain('profile.publicProfile.privateTitle')
+    expect(container.querySelector('img')).toBeNull()
+    expect(screen.queryByText('header.games')).toBeNull()
+    expect(screen.queryByText('profile.playerCard.favourite')).toBeNull()
+
+    // One target, the username, so the form asks no "what are you reporting" question.
+    fireEvent.click(screen.getByRole('button', { name: 'report.reportPlayer' }))
+    expect(screen.getByText('report.title')).toBeTruthy()
+    expect(screen.queryByText('report.targetLabel')).toBeNull()
+    expect(screen.queryByLabelText('report.targets.avatar')).toBeNull()
   })
 
   it('offers no Report to a visitor with no identity to report as', async () => {
