@@ -4227,6 +4227,14 @@ const no = {
     doneHint: 'Rollene følger kontoen din fra nå av: Premium samme dag, fullførte spill hver natt.',
     failed: 'Discord svarte ikke. Prøv igjen om litt.',
     retry: 'Prøv igjen',
+    linkErrorTitle: 'Discord ble ikke koblet til',
+    linkErrors: {
+      denied: 'Du avbrøt på Discords side. Ingenting ble endret.',
+      expired: 'Dette koblingsforsøket har utløpt, eller det ble startet i en annen fane eller mens du var logget inn på en annen konto. Start på nytt herfra.',
+      taken: 'Den Discord-kontoen er allerede koblet til en annen Boardly-konto. Logg inn på den kontoen for å bruke den, eller koble til en annen Discord-konto.',
+      otherDiscord: 'Boardly-kontoen din er allerede koblet til en annen Discord-konto. Koble til på nytt med den, eller fjern den i profilen din først.',
+      failed: 'Discord svarte ikke. Prøv igjen om litt.',
+    },
   },
 } as const
 

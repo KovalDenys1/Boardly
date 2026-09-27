@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { signIn, useSession } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { buildAuthUrl } from '@/lib/auth-redirect'
@@ -13,9 +13,14 @@ import { Icon } from '@/components/icons'
  * Boardly connection under a linked role. Three states:
  *   - not signed in            → login, then back here
  *   - no Discord row, a legacy-scope row, or a revoked grant
- *                              → consent block + signIn('discord'), which returns with ?linked=1
+ *                              → consent block + POST /api/discord/link, which sends the browser
+ *                                to Discord and returns with ?linked=1 or ?linkError=<reason>
  *   - linked with the scope    → push the metadata, then "Done"
  * The consent block lists exactly what is shared; the privacy page carries the same list.
+ *
+ * Linking is server-side and bound to this session (#1218, lib/discord/account-link.ts): it
+ * used to be signIn('discord'), which let next-auth replace the session, and create a new
+ * account when the session had lapsed on the way.
  */
 
 type LinkStatus = { linked: boolean; hasScope: boolean; hasToken: boolean; ready: boolean }
@@ -23,6 +28,14 @@ type LinkStatus = { linked: boolean; hasScope: boolean; hasToken: boolean; ready
 type View = 'checking' | 'consent' | 'pushing' | 'done' | 'failed'
 
 const LINK_CALLBACK_URL = '/discord/link?linked=1'
+
+// What came back from a callback that did not link (lib/discord/account-link.ts).
+const LINK_ERRORS = ['denied', 'expired', 'taken', 'otherDiscord', 'failed'] as const
+type LinkError = (typeof LINK_ERRORS)[number]
+
+function readLinkError(value: string | null | undefined): LinkError | null {
+  return LINK_ERRORS.find((code) => code === value) ?? null
+}
 
 const authBg: React.CSSProperties = {
   background:
@@ -35,6 +48,7 @@ function DiscordLinkContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const justLinked = searchParams?.get('linked') === '1'
+  const linkError = readLinkError(searchParams?.get('linkError'))
 
   const [view, setView] = useState<View>('checking')
   const [linkStatus, setLinkStatus] = useState<LinkStatus | null>(null)
@@ -96,9 +110,15 @@ function DiscordLinkContent() {
   const handleConnect = async () => {
     setConnecting(true)
     try {
-      // The OAuth round-trip links (or re-links with the new scope) through the adapter and
-      // the signIn callback, then lands back here.
-      await signIn('discord', { callbackUrl: LINK_CALLBACK_URL, redirect: true })
+      // The server signs a state bound to this session and answers with Discord's authorize
+      // URL; the callback links (or re-links with the new scope) to this account only and
+      // lands back here without touching the session.
+      const res = await fetch('/api/discord/link', { method: 'POST' })
+      const body = (await res.json().catch(() => null)) as { url?: unknown } | null
+      if (!res.ok || typeof body?.url !== 'string') {
+        throw new Error('link start failed')
+      }
+      window.location.assign(body.url)
     } catch {
       setConnecting(false)
       setView('failed')
@@ -186,6 +206,13 @@ function DiscordLinkContent() {
         </div>
 
         <p className="mb-4 text-sm leading-6 text-bd-ink-soft">{t('discordLink.intro')}</p>
+
+        {linkError && (
+          <div role="alert" className="mb-4 rounded-xl border border-bd-danger-border bg-bd-danger-bg p-4">
+            <p className="text-sm font-semibold text-bd-danger-text">{t('discordLink.linkErrorTitle')}</p>
+            <p className="mt-1 text-xs leading-5 text-bd-danger-text">{t(`discordLink.linkErrors.${linkError}`)}</p>
+          </div>
+        )}
 
         {needsRelink && (
           <div className="mb-4 rounded-xl border border-bd-sun/50 bg-bd-sun/10 p-4">

@@ -390,8 +390,9 @@ export const authOptions: NextAuthOptions = {
           // SEPARATE user for it. Signed in, next-auth's OAuth callback links it to the
           // signed-in user instead (the session cookie it decodes picks the account; see
           // the #1136 note above isSessionRevoked). /auth/link, the profile's page for
-          // starting that on purpose, was removed in #1140; /discord/link still starts it
-          // for Discord (#1218).
+          // starting that on purpose, was removed in #1140, and /discord/link no longer
+          // comes through here: it links server-side, bound to the session, and never
+          // issues a session (lib/discord/account-link.ts, #1218).
           const log = apiLogger('OAuth signIn')
           // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {

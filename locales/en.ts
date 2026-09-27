@@ -4239,6 +4239,14 @@ const en = {
     doneHint: 'Roles follow your account from here on: Premium changes the same day, games played every night.',
     failed: 'Discord did not answer. Try again in a moment.',
     retry: 'Try again',
+    linkErrorTitle: 'Discord was not linked',
+    linkErrors: {
+      denied: 'You cancelled on Discord\'s page. Nothing was changed.',
+      expired: 'This link attempt expired, or it was started in another tab or while signed in to another account. Start again from here.',
+      taken: 'That Discord account is already linked to a different Boardly account. Sign in to that account to use it, or link another Discord account.',
+      otherDiscord: 'Your Boardly account is already linked to a different Discord account. Link again with that one, or remove it in your profile first.',
+      failed: 'Discord did not answer. Try again in a moment.',
+    },
   },
 } as const
 

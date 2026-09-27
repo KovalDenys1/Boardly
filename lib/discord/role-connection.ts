@@ -10,11 +10,11 @@ import { apiLogger } from '@/lib/logger'
  * off the `Accounts` row NextAuth stores at sign-in.
  *
  * Two facts shape the code:
- * - `lib/custom-prisma-adapter.ts` `linkAccount` is the only writer of the OAuth tokens and
- *   fires once, when the row is created. `lib/next-auth.ts` `signIn` now refreshes the row on
- *   every OAuth sign-in, but a row linked before the scope was added still carries the legacy
- *   `identify email` scope until the user goes through /discord/link again. Such rows are
- *   skipped with a logged reason, never pushed.
+ * - The OAuth tokens are written in three places: `lib/custom-prisma-adapter.ts` `linkAccount`
+ *   when the row is created, `lib/next-auth.ts` `signIn` on every Discord sign-in, and
+ *   `lib/discord/account-link.ts` when /discord/link links or re-links (#1218). A row linked
+ *   before the scope was added still carries the legacy `identify email` scope until the user
+ *   goes through /discord/link again. Such rows are skipped with a logged reason, never pushed.
  * - Discord access tokens expire after 7 days and NextAuth does not refresh them. The refresh
  *   here happens lazily, one minute before expiry, and is written back to the row.
  *
@@ -27,8 +27,8 @@ const log = apiLogger('discord/role-connection')
 export const DISCORD_ROLE_CONNECTION_SCOPE = 'role_connections.write'
 export const DISCORD_PLATFORM_NAME = 'Boardly'
 
-const DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token'
-const DISCORD_API_BASE = 'https://discord.com/api/v10'
+export const DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token'
+export const DISCORD_API_BASE = 'https://discord.com/api/v10'
 const REFRESH_SKEW_MS = 60 * 1000
 const PLATFORM_USERNAME_MAX = 100
 
@@ -94,7 +94,7 @@ export function isRoleConnectionReady(row: {
   return hasRoleConnectionScope(row.scope) && Boolean(row.access_token || row.refresh_token)
 }
 
-function getDiscordConfig(): DiscordConfig | null {
+export function getDiscordConfig(): DiscordConfig | null {
   const clientId = process.env.DISCORD_CLIENT_ID?.trim()
   const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim()
   // The Linked Roles metadata and the OAuth grant must belong to the same application; the
