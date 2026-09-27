@@ -2180,6 +2180,8 @@ const en = {
     noMessages: 'No messages yet',
     startConversation: 'Start the conversation!',
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
+    rules: 'Rules',
+    rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
   },
   auth: {
     inAppBrowser: {
@@ -4239,6 +4241,17 @@ const en = {
     doneHint: 'Roles follow your account from here on: Premium changes the same day, games played every night.',
     failed: 'Discord did not answer. Try again in a moment.',
     retry: 'Try again',
+    reauthTitle: 'Sign in again to continue',
+    reauthBody: 'For your security, linking Discord needs a sign-in from the last 10 minutes. Sign out and sign in again, and you will come straight back here.',
+    signInAgain: 'Sign in again',
+    linkErrorTitle: 'Discord was not linked',
+    linkErrors: {
+      denied: 'You cancelled on Discord\'s page. Nothing was changed.',
+      expired: 'This link attempt expired, or it was started in another tab or while signed in to another account. Start again from here.',
+      taken: 'That Discord account is already linked to a different Boardly account. Sign in to that account to use it, or link another Discord account.',
+      otherDiscord: 'Your Boardly account is already linked to a different Discord account. Link again with that one, or remove it in your profile first.',
+      failed: 'Discord did not answer. Try again in a moment.',
+    },
   },
 } as const
 

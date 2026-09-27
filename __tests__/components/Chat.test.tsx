@@ -12,6 +12,18 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
+// A plain anchor that shows what `prefetch` next/link was given; the rules link is the only
+// Link in the panel.
+jest.mock('next/link', () => {
+  const React = require('react')
+  const MockLink = React.forwardRef(
+    ({ prefetch, children, ...rest }: { prefetch?: boolean; children?: React.ReactNode }, ref: unknown) =>
+      React.createElement('a', { ...rest, ref, 'data-prefetch': String(prefetch) }, children)
+  )
+  MockLink.displayName = 'MockLink'
+  return { __esModule: true, default: MockLink }
+})
+
 beforeAll(() => {
   // jsdom doesn't implement scrollIntoView, which Chat's auto-scroll effect calls
   Element.prototype.scrollIntoView = jest.fn()
@@ -152,5 +164,52 @@ describe('Chat report action (#1172)', () => {
     const title = await screen.findByText('report.title')
     fireEvent.mouseDown(title)
     expect(onToggleMinimize).not.toHaveBeenCalled()
+  })
+})
+
+// #1173: the community rules are one tap from every chat, and reaching them costs a game
+// screen no room.
+describe('Chat community rules link (#1173)', () => {
+  it('links /rules from the title strip, in a new tab so a game is never left', () => {
+    const { container } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+    )
+    const link = screen.getByRole('link', { name: 'chat.rulesNewTab' })
+    expect(link.getAttribute('href')).toBe('/rules')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+    expect(link.textContent).toBe('chat.rules')
+    expect(link.closest('.chat-titlebar')).toBe(container.querySelector('.chat-titlebar'))
+    // Rarely opened, so it does not prefetch /rules on every game screen.
+    expect(link.getAttribute('data-prefetch')).toBe('false')
+  })
+
+  // WCAG 2.5.3 Label in Name: a voice-control user says what they see, so the accessible name
+  // must contain the visible label; here it starts with it, in every locale.
+  it.each(['en', 'no', 'ru', 'uk'])('%s: the accessible name starts with the visible label', (locale) => {
+    const bundle = require(`@/locales/${locale}`).default as { chat: { rules: string; rulesNewTab: string } }
+    const visible = bundle.chat.rules.toLocaleLowerCase()
+    const name = bundle.chat.rulesNewTab.toLocaleLowerCase()
+    const firstWords = name.split(/[\s(),.:;]+/).slice(0, visible.split(/\s+/).length).join(' ')
+    expect(firstWords).toBe(visible)
+  })
+
+  it('is there for spectators and in the floating panel too', () => {
+    const { unmount } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId={null} fullScreen readOnly />
+    )
+    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    unmount()
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
+    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    expect(screen.getByLabelText('chat.minimize')).toBeTruthy()
+  })
+
+  it('adds no block to the panel', () => {
+    const { container } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+    )
+    const panel = container.firstElementChild as HTMLElement
+    expect(panel.children).toHaveLength(3)
   })
 })
