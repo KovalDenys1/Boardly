@@ -9,9 +9,11 @@ export const revalidate = 0
 
 const handler = NextAuth(authOptions)
 
-// Password sign-in actually happens here, not in /api/auth/login — the client
-// calls signIn('credentials'), which POSTs to this catch-all. Without this the
-// password check in authOptions.authorize() was completely unthrottled (#714).
+// Password sign-in happens here: the client calls signIn('credentials'), which
+// POSTs to this catch-all. Without this the password check in
+// authOptions.authorize() was completely unthrottled (#714). (A second, dead
+// password-check endpoint that never issued a session used to sit beside this
+// one with its own rate-limit budget — deleted in #1138.)
 //
 // Scoped to the credentials callback on purpose: this route also serves session,
 // csrf and OAuth endpoints that the app polls routinely, and throttling those

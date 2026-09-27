@@ -1,4 +1,4 @@
-import { isSignatureAuthenticatedWebhook, isTokenAuthenticatedEndpoint } from '@/lib/csrf'
+import { getSecurityHeaders, isSignatureAuthenticatedWebhook, isTokenAuthenticatedEndpoint } from '@/lib/csrf'
 
 // Note: verifyCsrfToken and the proxy middleware itself take a NextRequest, which
 // cannot be constructed under jsdom (whatwg-fetch's Request conflicts with it) and
@@ -37,5 +37,23 @@ describe('isTokenAuthenticatedEndpoint', () => {
     expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe-spoof')).toBe(false)
     expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe/')).toBe(false)
     expect(isTokenAuthenticatedEndpoint('/api/notifications/unsubscribe/extra')).toBe(false)
+  })
+})
+
+describe('getSecurityHeaders (#1146, S4-07)', () => {
+  it('sends DENY, consistent with proxy.ts\'s frame-ancestors \'none\'', () => {
+    expect(getSecurityHeaders()['X-Frame-Options']).toBe('DENY')
+  })
+
+  it('sends 0, the value OWASP now advises instead of the old \'1; mode=block\'', () => {
+    expect(getSecurityHeaders()['X-XSS-Protection']).toBe('0')
+  })
+
+  it('sends a Cross-Origin-Opener-Policy that still allows Google sign-in popups', () => {
+    expect(getSecurityHeaders()['Cross-Origin-Opener-Policy']).toBe('same-origin-allow-popups')
+  })
+
+  it('sends a same-site Cross-Origin-Resource-Policy', () => {
+    expect(getSecurityHeaders()['Cross-Origin-Resource-Policy']).toBe('same-site')
   })
 })

@@ -101,10 +101,12 @@ function isTrustedServerRequest(request: NextRequest): boolean {
 function buildCspHeaderValue() {
   const connectSrcCandidates = new Set<string>([
     "'self'",
-    'ws://localhost:*',
-    'ws://127.0.0.1:*',
-    'http://localhost:*',
-    'http://127.0.0.1:*',
+    // Local dev only (#1146, S4-06): these four used to ship unconditionally, so a
+    // script injected into production could probe a visitor's own local services
+    // over their browser's connect-src allowance.
+    ...(IS_DEVELOPMENT
+      ? ['ws://localhost:*', 'ws://127.0.0.1:*', 'http://localhost:*', 'http://127.0.0.1:*']
+      : []),
     'https://*.supabase.co',
     'wss://*.supabase.co',
     'https://vercel.live',
