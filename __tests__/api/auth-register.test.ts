@@ -537,6 +537,8 @@ describe('POST /api/auth/register', () => {
         username: 'new_user',
         passwordHash: 'hashed-password',
         signupSource: null,
+        // The row from the start, with the private column defaults (#1131).
+        accountPreferences: { create: {} },
       },
     })
     // Only the hash is stored; the raw token goes into the email (#1141).

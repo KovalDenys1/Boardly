@@ -105,6 +105,10 @@ export async function POST(request: NextRequest) {
             passwordHash,
             signupSource: getSignupSourceFromRequest(request),
             // emailVerified will be set when user clicks verification link
+            // The preferences row from the start, so the account gets the column
+            // defaults, friends-only with online status off, instead of the
+            // no-row fallback kept for older accounts (#1131).
+            accountPreferences: { create: {} },
           },
         })
       )

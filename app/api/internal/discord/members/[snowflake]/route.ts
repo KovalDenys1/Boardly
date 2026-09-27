@@ -32,8 +32,9 @@ function unlinked(): NextResponse {
  * Reads `Accounts` with `provider = "discord"`; the snowflake is the `providerAccountId`
  * NextAuth stored at sign-in. Anyone whose `AccountPreferences.profileVisibility` is not
  * `public` reads exactly like someone who never linked, so the route leaks nothing the
- * public profile page would not show. The missing-preferences case is `public`, which is
- * the column default.
+ * public profile page would not show. The missing-preferences case is `friends` (#1131):
+ * the bot answers only for a profile whose preferences row says `public`, so an account
+ * without a row reads as unlinked here.
  */
 export async function GET(request: NextRequest, context: MemberLookupContext) {
   const authError = authorizeDiscordInternalRequest(request)
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest, context: MemberLookupContext) {
     const user = account?.user
     if (!user || user.isGuest || user.suspended) return unlinked()
 
-    const visibility = user.accountPreferences?.profileVisibility ?? 'public'
+    const visibility = user.accountPreferences?.profileVisibility ?? 'friends'
     if (visibility !== 'public') return unlinked()
 
     const gamesPlayed = await prisma.players.count({

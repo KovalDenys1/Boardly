@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useOnboarding } from '@/contexts/OnboardingContext'
+import { needsAccountStep, useOnboarding } from '@/contexts/OnboardingContext'
 import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -12,16 +12,23 @@ import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 
-type OnboardingStep = 'choice' | 'quick-start'
+/**
+ * `account` comes first, and only for a signed-in account with something to settle: the
+ * offer to make a friends-only profile public (#1131). Then the usual game choice.
+ */
+type OnboardingStep = 'account' | 'choice' | 'quick-start'
 
 export function OnboardingModal() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { showModal, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
+  const { showModal, accountSetup, saveAccountSetup, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
   const { isActive: isTourActive, startTour } = useTour()
   const [step, setStep] = useState<OnboardingStep>('choice')
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Unticked on purpose: a public profile is an opt-in (#1131, GDPR Art. 25(2)).
+  const [profilePublic, setProfilePublic] = useState(false)
+  const [savingAccount, setSavingAccount] = useState(false)
 
   const games = useMemo(
     () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
@@ -32,8 +39,10 @@ export function OnboardingModal() {
     if (!showModal) {
       setStep('choice')
       setSelectedGame(null)
+      return
     }
-  }, [showModal])
+    if (needsAccountStep(accountSetup)) setStep('account')
+  }, [showModal, accountSetup])
 
   useEffect(() => {
     if (!showModal || isTourActive) return
@@ -47,6 +56,19 @@ export function OnboardingModal() {
   const handleShowMeAround = () => {
     hideModal()
     startTour()
+  }
+
+  const handleAccountContinue = async () => {
+    if (savingAccount) return
+    setSavingAccount(true)
+    try {
+      await saveAccountSetup({ profilePublic })
+      setStep('choice')
+    } catch {
+      showToast.error('common.error')
+    } finally {
+      setSavingAccount(false)
+    }
   }
 
   const handleStart = async () => {
@@ -163,11 +185,84 @@ export function OnboardingModal() {
             {t('onboarding.title')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--bd-ink-muted)' }}>
-            {t('onboarding.subtitle')}
+            {step === 'account' ? t('onboarding.account.subtitle') : t('onboarding.subtitle')}
           </p>
         </div>
 
-        {step === 'choice' ? (
+        {step === 'account' ? (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {accountSetup.offerPublicProfile && (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '14px 16px',
+                    background: 'var(--bd-bg)',
+                    border: '2px solid var(--bd-ink)',
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={profilePublic}
+                    onChange={(event) => setProfilePublic(event.target.checked)}
+                    disabled={savingAccount}
+                    style={{ marginTop: 2, width: 18, height: 18, flexShrink: 0, accentColor: 'var(--bd-coral)', cursor: 'pointer' }}
+                  />
+                  <span>
+                    <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)' }}>
+                      {t('onboarding.account.publicProfile')}
+                    </span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 12, lineHeight: 1.45, color: 'var(--bd-ink-muted)' }}>
+                      {t('onboarding.account.publicProfileHint')}
+                    </span>
+                  </span>
+                </label>
+              )}
+            </div>
+
+            <button
+              onClick={() => void handleAccountContinue()}
+              disabled={savingAccount}
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                background: 'var(--bd-coral)',
+                color: 'white',
+                border: '2px solid var(--bd-ink)',
+                borderRadius: 14,
+                boxShadow: '3px 3px 0 var(--bd-ink)',
+                fontFamily: 'var(--bd-font-display)',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: savingAccount ? 'not-allowed' : 'pointer',
+                opacity: savingAccount ? 0.45 : 1,
+                marginBottom: 12,
+              }}
+            >
+              {savingAccount ? t('onboarding.account.saving') : t('onboarding.account.continue')}
+            </button>
+
+            <button
+              onClick={skipOnboarding}
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                fontSize: 13,
+                color: 'var(--bd-ink-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              {t('onboarding.skip')}
+            </button>
+          </>
+        ) : step === 'choice' ? (
           <>
             {/* Path choice */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>

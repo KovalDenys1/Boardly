@@ -59,6 +59,35 @@ describe('PATCH /api/onboarding', () => {
     )
   })
 
+  it('creates a missing row with the values an older account always had (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    await PATCH(buildRequest({ action: 'complete' }))
+    expect(mockPrisma.accountPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ profileVisibility: 'public', showOnlineStatus: true }),
+      })
+    )
+  })
+
+  it('opens the profile only when the account step ticked it (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', profilePublic: true }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.accountPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'user-1' },
+        update: { profileVisibility: 'public' },
+      })
+    )
+  })
+
+  it('writes nothing for an account step left unticked (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    const res = await PATCH(buildRequest({ action: 'account', profilePublic: false }))
+    expect(res.status).toBe(204)
+    expect(mockPrisma.accountPreferences.upsert).not.toHaveBeenCalled()
+  })
+
   it('upserts onboardingSkippedAt when action is skip', async () => {
     mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
     const res = await PATCH(buildRequest({ action: 'skip' }))

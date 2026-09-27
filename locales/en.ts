@@ -3612,7 +3612,7 @@ const en = {
         data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), and the site or campaign you arrived from when you signed up.',
         basis: 'Contract: we need this to run your account. The sign-up source: our legitimate interest in knowing which channels bring new players.',
         retention: 'Until you delete the account. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
-        extra: 'Your profile (username, picture, bio and game statistics) is public by default. You can limit it to friends or make it private in your profile settings.',
+        extra: 'A new account\'s profile (username, picture, bio and game statistics) is visible only to your friends, and your online status is hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before 27 September 2026 keep the settings they had: a public profile and online status shown, unless changed. Your username, picture and game results appear on the public leaderboard unless your profile is private.',
       },
       guest: {
         title: 'Playing as a guest',
@@ -3949,6 +3949,13 @@ const en = {
     quickStart: 'Quick Start',
     showMeAround: 'Show me around',
     back: '← Back',
+    account: {
+      subtitle: 'A quick check before you play',
+      publicProfile: 'Make my profile public',
+      publicProfileHint: 'Anyone can then see your profile: your username, picture, bio and game statistics. If you leave this unticked, only your friends can. You can change it at any time in your profile settings.',
+      continue: 'Continue',
+      saving: 'Saving...',
+    },
   },
   tour: {
     stepOf: 'Step {{current}} of {{total}}',

@@ -65,6 +65,26 @@ describe('GET /api/onboarding/status', () => {
     expect(body.needsOnboarding).toBe(false)
   })
 
+  it('reports a new account\'s friends-only profile, which onboarding offers to open (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    mockPrisma.accountPreferences.findUnique.mockResolvedValue({
+      onboardingCompletedAt: null,
+      onboardingSkippedAt: null,
+      profileVisibility: 'friends',
+    } as any)
+    const res = await GET(buildRequest())
+    const body = await res.json()
+    expect(body).toEqual({ needsOnboarding: true, profileVisibility: 'friends' })
+  })
+
+  it('reports an account with no preferences row as public, as it always was (#1131)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+    mockPrisma.accountPreferences.findUnique.mockResolvedValue(null)
+    const res = await GET(buildRequest())
+    const body = await res.json()
+    expect(body.profileVisibility).toBe('public')
+  })
+
   it('returns needsOnboarding: false when onboardingSkippedAt is set', async () => {
     mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
     mockPrisma.accountPreferences.findUnique.mockResolvedValue({

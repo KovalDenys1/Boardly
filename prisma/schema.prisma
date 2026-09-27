@@ -79,8 +79,12 @@ model AccountPreferences {
   id                    String            @id @default(cuid())
   userId                String            @unique
   user                  Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileVisibility     ProfileVisibility @default(public)
-  showOnlineStatus      Boolean           @default(true)
+  // Friends-only with online status off for rows created from 2026-09-27 (#1131, GDPR
+  // Art. 25(2)): a public profile is an opt-in, offered in onboarding. Older rows keep
+  // what they had, and an account with no row at all predates the change
+  // (LEGACY_ACCOUNT_PREFERENCES in lib/account-preferences.ts).
+  profileVisibility     ProfileVisibility @default(friends)
+  showOnlineStatus      Boolean           @default(false)
   onboardingCompletedAt DateTime?         @db.Timestamptz(3)
   onboardingSkippedAt   DateTime?         @db.Timestamptz(3)
   createdAt             DateTime          @default(now()) @db.Timestamptz(3)

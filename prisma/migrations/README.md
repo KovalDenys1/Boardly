@@ -140,6 +140,10 @@ Adds match timing metadata and removes old `chess`/`uno` enum values:
 
 Reset, deletion and verification tokens stored as `sha256(token)` in `tokenHash`, and a `purpose` enum (`reset` | `delete`) on `PasswordResetTokens` so a deletion token can no longer reset a password (#1141, `lib/auth-tokens.ts`). `token` became nullable and is written by nothing; rows issued before the change keep working by their raw value until they expire, after which the column can be dropped.
 
+### `20260927120000_account_preferences_private_defaults`
+
+`AccountPreferences.profileVisibility` defaults to `friends` and `showOnlineStatus` to `false` (#1131, GDPR Art. 25(2)). Column defaults only: existing rows keep their values. New accounts get their row at creation; an account with no row predates the change and reads as public (`LEGACY_ACCOUNT_PREFERENCES` in `lib/account-preferences.ts`).
+
 ## Row Level Security
 
 RLS is part of the database safety model:
