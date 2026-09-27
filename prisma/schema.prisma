@@ -61,6 +61,8 @@ model Users {
   feedback                Feedback[]
   userAchievements        UserAchievements[]
   purchaseConsents        PurchaseConsents[]
+  reportsFiled            Reports[]                @relation("ReportsFiled")
+  reportsReceived         Reports[]                @relation("ReportsReceived")
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -599,6 +601,48 @@ model Feedback {
 
   @@index([type, createdAt])
   @@index([userId])
+}
+
+/// A player's report of something another player put on the site (#1172): a chat
+/// message, a Sketch & Guess drawing, or a username, avatar or bio. Written only by
+/// POST /api/reports; reviewed in the Control Panel.
+///
+/// ehandelsloven section 18 keeps the hosting safe harbour only while content is acted
+/// on "uten ugrunnet opphold" once we know of it, which needs a channel for that
+/// knowledge and a record to act on. Chat lives 24 hours in Redis and a profile can be
+/// edited, so `contentSnapshot` keeps what was reported as it was at the time.
+///
+/// Both people are SetNull, not Cascade: guests are purged after three idle days, and
+/// the report has to outlive the account it is about.
+model Reports {
+  id               String    @id @default(cuid())
+  reporterId       String?
+  reporter         Users?    @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+  reportedUserId   String?
+  reportedUser     Users?    @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  targetType       String // 'chat_message' | 'drawing' | 'username' | 'avatar' | 'bio' (lib/content-reports.ts)
+  targetId         String // the chat message id, the game id (drawing), or the reported user's id
+  /// What "the same target" means for deduplication, together with reporterId (reportTargetKey in lib/content-reports.ts).
+  targetKey        String
+  lobbyCode        String?
+  gameId           String?
+  round            Int? // the Sketch & Guess round, for a drawing
+  reason           String // REPORT_REASONS in lib/content-reports.ts
+  note             String? // the reporter's own words, at most 500 characters
+  /// The reported text, avatar URL or drawing, as it was when reported.
+  contentSnapshot  String?
+  /// 'server' when the route read the content itself; 'reporter' when only the reporter's copy was left to keep.
+  snapshotSource   String
+  status           String    @default("open") // 'open' | 'actioned' | 'dismissed'
+  reviewedAt       DateTime? @db.Timestamptz(3)
+  reviewedBy       String? // the admin's user id, written by the Control Panel
+  /// Id of the notification posted to the Discord feedback channel, so a retention rule can delete that copy too.
+  discordMessageId String?
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@unique([reporterId, targetKey])
+  @@index([status, createdAt])
+  @@index([reportedUserId])
 }
 
 /// Written by the control panel, read by the game on every render. Product state, so it

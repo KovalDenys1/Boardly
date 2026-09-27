@@ -192,6 +192,12 @@ export const EXPECTED_TABLES: ExpectedTable[] = [
     purpose: 'user feedback and issue reports',
     policyMode: 'blocked-direct',
   },
+  {
+    name: 'Reports',
+    domain: 'moderation',
+    purpose: 'player reports of chat, drawings and profiles, with the reported content kept as it was (#1172)',
+    policyMode: 'required',
+  },
 ]
 
 /**
