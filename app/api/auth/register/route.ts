@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
+import { refuseIfBot } from '@/lib/bot-protection'
 import { sendVerificationEmail } from '@/lib/email'
 import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
 import { upsertNotificationPreferences } from '@/lib/notification-preferences'
@@ -25,6 +26,10 @@ export async function POST(request: NextRequest) {
   if (rateLimitResult) {
     return rateLimitResult
   }
+
+  // After the rate limit, so a refused flood costs no BotID call (#1157).
+  const botRefusal = await refuseIfBot('POST /api/auth/register')
+  if (botRefusal) return botRefusal
 
   try {
     const body = await request.json()

@@ -3054,6 +3054,7 @@ const en = {
     authenticationFailed: 'Authentication failed. Please refresh the page.',
     lobbyAccessDenied: 'Access denied. You cannot join this lobby.',
     rateLimitExceeded: 'Too many requests. Please slow down.',
+    botCheckFailed: 'We could not verify your browser. Please reload the page and try again.',
     invalidLobbyCode: 'Invalid lobby code format',
     lobbyNotFound: 'Lobby not found',
     joinLobbyFailed: 'Failed to join lobby. Please try again.',

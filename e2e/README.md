@@ -186,3 +186,13 @@ creation allows ten per hour against a bucket that resets on the hour, and the
 suite makes seven. **So: one production run per hour.** Guest identities are
 cached, so repeat runs no longer spend the tighter five-per-fifteen-minutes
 auth budget.
+
+**Vercel BotID refuses the helpers that mint guests over plain HTTP (#1157).**
+`createGuest` (`/api/auth/guest-session`) and `joinAsGuest` (a token-less
+`/api/lobby/<code>/join-guest`) go through Playwright's `request` context, which
+carries no BotID challenge, so on any Vercel deployment - production and preview -
+they answer 403 `BOT_CHECK_FAILED`. Guests already cached in `e2e/.auth` keep
+working until their 12h token expires, because a join on a valid token of an
+existing guest is not checked. For a full run against a deployment, add a bypass
+rule for the runner to the Vercel WAF (https://vercel.com/docs/botid#bypassing-botid);
+against a local server nothing is checked.

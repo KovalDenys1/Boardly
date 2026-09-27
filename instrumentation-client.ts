@@ -3,6 +3,14 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { initBotId } from "botid/client/core";
+import { BOTID_PROTECTED_ROUTES } from "./lib/botid-routes";
+
+// Vercel BotID (#1157): attaches the invisible challenge to the fetches that mint an account
+// or a guest. Here rather than in a layout, as https://vercel.com/docs/botid/get-started
+// recommends for Next.js 15.3+, so no page - the statically prerendered guides included -
+// has to become dynamic to carry it. The server half is lib/bot-protection.ts.
+initBotId({ protect: BOTID_PROTECTED_ROUTES });
 
 const EXTENSION_SCHEMES = [
   /^chrome-extension:\/\//i,

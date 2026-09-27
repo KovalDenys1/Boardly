@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { apiLogger } from '@/lib/logger'
 import { guestSessionPreset, rateLimit } from '@/lib/rate-limit'
+import { refuseIfBot } from '@/lib/bot-protection'
 import {
   createGuestId,
   createGuestToken,
@@ -28,6 +29,10 @@ export async function POST(request: NextRequest) {
 
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
+
+  // After the rate limit, so a refused flood costs no BotID call (#1157).
+  const botRefusal = await refuseIfBot('POST /api/auth/guest-session')
+  if (botRefusal) return botRefusal
 
   try {
     const parsed = guestSessionSchema.safeParse(await request.json())

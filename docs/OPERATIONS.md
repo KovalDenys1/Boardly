@@ -538,6 +538,34 @@ Commands (from a directory linked to the project, `vercel link`):
 Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
 the managed bot rulesets from log to challenge.
 
+### BotID (#1157)
+
+Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
+token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
+Basic is free on every plan; Deep Analysis costs $1 per 1,000 `checkBotId()` calls on Pro
+(https://vercel.com/docs/botid, read 2026-09-27). The level is pinned per route in code
+(`lib/botid-routes.ts`, used by both halves), and a per-route level takes precedence over the
+project's dashboard setting, so switching Deep Analysis on in Firewall -> Rules does not bill
+these routes.
+
+- Browser half: `initBotId()` in `instrumentation-client.ts` attaches the challenge headers to
+  matching fetches; `withBotId()` in `next.config.js` serves the challenge script and proxy from
+  this origin (two rewrites under a fixed UUID path that `botid/next/config` defines), which the
+  CSP's `'self'` covers.
+- Server half: `refuseIfBot()` in `lib/bot-protection.ts`, after the rate limit, answers 403
+  `BOT_CHECK_FAILED` (the client shows `errors.botCheckFailed`). It runs only where `VERCEL_ENV`
+  is `production` or `preview`; locally, in CI and under `next start` nothing is checked. If
+  BotID itself errors it lets the request through and logs `BotID check failed`, because the
+  rate limits still apply. It needs the project's OIDC token, which is enabled
+  (`oidcTokenConfig.enabled: true`, checked 2026-09-27).
+- Direct requests - curl, scripts, Playwright's `request` context - carry no challenge and are
+  refused on a deployment. To let a known client through, add a WAF bypass rule
+  (https://vercel.com/docs/botid#bypassing-botid).
+- Where to look: Firewall tab -> traffic filter -> BotID shows each check.
+- If real visitors start getting `BOT_CHECK_FAILED`: check the browser console on
+  boardly.online for a CSP violation or a failed load of BotID's `c.js` challenge script,
+  then roll back by removing the `refuseIfBot` calls; the client half alone refuses nothing.
+
 ### Dependency audit (`npm audit`) — production reachability, 2026-09-25 (#1148)
 
 The 2026-09-24 security audit's `npm audit --omit=dev --json` run was truncated at 40 KB

@@ -113,6 +113,9 @@ this change; it only makes the decision possible to make with data instead of a 
 - Token transport header: `X-Guest-Token`.
 - Guest claims are verified server-side through `lib/guest-auth.ts`; the header is never trusted as sent.
 - Raw client-supplied guest IDs/names are not trusted as identity.
+- Minting a guest (`/api/auth/guest-session`, a token-less `/api/lobby/<code>/join-guest`) and
+  registering pass Vercel BotID at the Basic level on Vercel deployments, after the rate limit
+  (#1157, `lib/bot-protection.ts`; runbook in `docs/OPERATIONS.md#botid-1157`).
 
 ## Secret policy
 

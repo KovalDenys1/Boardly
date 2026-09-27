@@ -3042,6 +3042,7 @@ const no = {
     authenticationFailed: 'Autentisering mislyktes. Oppdater siden.',
     lobbyAccessDenied: 'Tilgang nektet. Du kan ikke bli med i denne lobbyen.',
     rateLimitExceeded: 'For mange forespørsler. Vennligst senk farten.',
+    botCheckFailed: 'Vi kunne ikke bekrefte nettleseren din. Last inn siden på nytt og prøv igjen.',
     invalidLobbyCode: 'Ugyldig lobbykodeformat',
     lobbyNotFound: 'Fant ikke lobbyen',
     joinLobbyFailed: 'Kunne ikke bli med i lobbyen. Prøv igjen.',
