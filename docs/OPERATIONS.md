@@ -397,16 +397,23 @@ cancellation: cancel in the Dashboard and refund what was charged after that day
 
 ### Runbook: a user is under 13
 
-**The policy this carries out** (#1174). Accounts are for people aged 13 and over: Terms of Service
-section 2, and Denys's decision of 2026-09-27 on #1135. An email sign-up ticks "I am 13 or older" on the
-register form; a Google, GitHub or Discord account ticks it in the onboarding modal on its first visit, which
-keeps coming back until it has (`lib/age-confirmation.ts`). The time lands in `Users.ageConfirmedAt`, for
-accounts created from 2026-09-27. Guests are never asked. Premium has its own rule in Terms section 3:
-adults, or from 15 with money the buyer may spend (vergemålsloven § 12, #1169). The privacy notice (section
-10) promises that if a child under 13 has given us personal data and someone writes to support@, we delete
-it; Terms section 10 lists "the account belongs to someone under 13" as a reason we close an account. Under
-the US rule the audit read (16 CFR § 312.3, eCFR issue date 2026-09-22) the trigger is "actual knowledge";
-the ticket quotes it.
+**The policy this carries out** (#1174). Boardly is for people aged 13 and over, guests included: Terms of
+Service section 2, and Denys's decision of 2026-09-27 on #1135. Accounts confirm it and guests are not asked.
+An email sign-up ticks "I am 13 or older" on the register form; a Google, GitHub or Discord account ticks it
+in the onboarding modal on its first visit, which keeps coming back until it has (`lib/age-confirmation.ts`).
+The time lands in `Users.ageConfirmedAt`, for accounts created from 2026-09-27.
+
+Premium has a stricter rule of its own in Terms section 3: adults, or from 15 with money the buyer may spend
+(#1169). That 15 is our policy, not the statute's. It is based on vergemålsloven § 12 (Lovdata,
+LOV-2010-03-26-9, fetched 2026-09-27): "En mindreårig råder selv over midler som han eller hun har tjent ved
+eget arbeid eller virksomhet etter fylte 15 år, eller som vergen eller andre har latt den mindreårige få til
+egen rådighet". The act ties 15 only to money earned by one's own work; money given to a minor for their own
+use has no age floor there. We drew the line at 15 for both.
+
+The privacy notice (section 10) promises that if a child under 13 has given us personal data and someone
+writes to support@, we delete it; Terms section 2 says we close an account or a guest profile that belongs to
+someone under 13, and section 10 lists it as a reason. Under the US rule the audit read (16 CFR § 312.3, eCFR
+issue date 2026-09-22) the trigger is "actual knowledge"; the ticket quotes it.
 
 **What counts as knowing.** Someone says so: a report or a chat message that states an age under 13, a bio
 that does, a message from a parent or guardian, a support email. A guess from how someone writes is not
@@ -429,14 +436,23 @@ this runbook exists to remove.
      or Discord account that has not finished onboarding. Carry on.
    - `ageConfirmedAt` is null and `createdAt` is before 2026-09-27: made before the confirmation existed.
      Carry on.
-   - `isGuest` is true: guests are not asked their age. The same steps apply, without Premium.
+   - `isGuest` is true: the age limit applies to guests too; they are just never asked to confirm it. Skip
+     step 2, because a suspension does not stop a guest (`lib/request-auth.ts` checks `suspended` only for a
+     signed-in session), and step 3, because a guest cannot buy Premium. Write the audit entry the panel
+     would have written by hand, then delete through step 4:
+
+     ```sql
+     insert into "AdminAuditLogs" (id, "adminId", action, "targetType", "targetId", details)
+     values ('age-' || gen_random_uuid(), '<your admin user id>', 'delete_user', 'user', '<guest id>',
+             '{"reason": "age"}');
+     ```
 2. **Suspend it at once, reason `age`.** Control Panel, the user's page, SUSPEND, reason `age`, duration
    permanent. Sign-in stops, and the panel writes `suspend_user` to `AdminAuditLogs` with the reason: that
    entry is the record of the decision and outlives the account (730 days). The reason field is optional in
    the panel today, so type it every time.
 3. **Premium, if `stripeSubscriptionId` is set.** Stripe Dashboard: cancel the subscription immediately and
-   refund every Premium payment in full. A child under 13 is outside Terms section 3's rule altogether, so
-   nothing is kept. Do this before step 4, which deletes the Stripe customer.
+   refund every Premium payment in full. A child under 13 is below both the 13+ rule and section 3's 15+
+   policy, so nothing is kept. Do this before step 4, which deletes the Stripe customer.
 4. **Delete it through the existing deletion path**, `POST /api/user/delete-account`: it removes the avatar
    from the bucket, cancels any subscription, deletes the Stripe customer, clears the Discord Linked Roles,
    replaces the name in other players' games and replays with "Deleted player", detaches feedback, then
@@ -470,9 +486,9 @@ this runbook exists to remove.
 
    > Hello,
    >
-   > Thank you for telling us. Boardly accounts are for people aged 13 and over, so we have closed the
-   > account you wrote about and deleted it, with its profile picture, its friends list and its name in other
-   > players' game history. [Its Premium payments have been refunded in full to the card they came from.]
+   > Thank you for telling us. Boardly is for people aged 13 and over, so we have closed the account you
+   > wrote about and deleted it, with its profile picture, its friends list and its name in other players'
+   > game history. [Its Premium payments have been refunded in full to the card they came from.]
    >
    > If you have any questions, reply to this email.
    >
@@ -482,8 +498,8 @@ this runbook exists to remove.
 
    > Hei,
    >
-   > Takk for at du sa fra. Boardly-kontoer er for personer som er 13 år eller eldre, så vi har stengt og
-   > slettet kontoen du skrev om, med profilbildet, vennelisten og navnet i andre spilleres spillhistorikk.
+   > Takk for at du sa fra. Boardly er for personer som er 13 år eller eldre, så vi har stengt og slettet
+   > kontoen du skrev om, med profilbildet, vennelisten og navnet i andre spilleres spillhistorikk.
    > [Premium-betalingene er betalt tilbake i sin helhet til kortet de kom fra.]
    >
    > Har du spørsmål, kan du svare på denne e-posten.
