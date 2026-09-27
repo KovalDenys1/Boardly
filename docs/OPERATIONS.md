@@ -367,6 +367,103 @@ where "stripeSubscriptionId" is not null and "premiumCancelAtPeriod" = false
 subscriber cancel free of charge with effect from the day the notice should have gone out. Honour such a
 cancellation: cancel in the Dashboard and refund what was charged after that day.
 
+### Runbook: a user is under 13
+
+**The policy this carries out** (#1174). Accounts are for people aged 13 and over: Terms of Service
+section 2, and Denys's decision of 2026-09-27 on #1135. An email sign-up ticks "I am 13 or older" on the
+register form; a Google, GitHub or Discord account ticks it in the onboarding modal on its first visit, which
+keeps coming back until it has (`lib/age-confirmation.ts`). The time lands in `Users.ageConfirmedAt`, for
+accounts created from 2026-09-27. Guests are never asked. Premium has its own rule in Terms section 3:
+adults, or from 15 with money the buyer may spend (vergemålsloven § 12, #1169). The privacy notice (section
+10) promises that if a child under 13 has given us personal data and someone writes to support@, we delete
+it; Terms section 10 lists "the account belongs to someone under 13" as a reason we close an account. Under
+the US rule the audit read (16 CFR § 312.3, eCFR issue date 2026-09-22) the trigger is "actual knowledge";
+the ticket quotes it.
+
+**What counts as knowing.** Someone says so: a report or a chat message that states an age under 13, a bio
+that does, a message from a parent or guardian, a support email. A guess from how someone writes is not
+knowledge. Never ask for an ID document or a birth date to settle it; that collects more of exactly the data
+this runbook exists to remove.
+
+1. **Find the account and read what it confirmed.** From the username, the profile link or the report row,
+   on production (supabase-prod MCP or the SQL editor), checking two columns so a wrong row cannot match:
+
+   ```sql
+   select id, username, "isGuest", "createdAt", "ageConfirmedAt", "termsAcceptedAt",
+          "stripeSubscriptionId", "premiumUntil", "avatarUrl" is not null as has_avatar, suspended
+   from "Users"
+   where username = '<username>' and id = '<id from the report or profile>';
+   ```
+
+   - `ageConfirmedAt` is set: the person confirmed being 13 or older at that time. The confirmation does not
+     outweigh knowledge; carry on.
+   - `ageConfirmedAt` is null, `createdAt` is on or after 2026-09-27 and `isGuest` is false: a Google, GitHub
+     or Discord account that has not finished onboarding. Carry on.
+   - `ageConfirmedAt` is null and `createdAt` is before 2026-09-27: made before the confirmation existed.
+     Carry on.
+   - `isGuest` is true: guests are not asked their age. The same steps apply, without Premium.
+2. **Suspend it at once, reason `age`.** Control Panel, the user's page, SUSPEND, reason `age`, duration
+   permanent. Sign-in stops, and the panel writes `suspend_user` to `AdminAuditLogs` with the reason: that
+   entry is the record of the decision and outlives the account (730 days). The reason field is optional in
+   the panel today, so type it every time.
+3. **Premium, if `stripeSubscriptionId` is set.** Stripe Dashboard: cancel the subscription immediately and
+   refund every Premium payment in full. A child under 13 is outside Terms section 3's rule altogether, so
+   nothing is kept. Do this before step 4, which deletes the Stripe customer.
+4. **Delete it through the existing deletion path**, `POST /api/user/delete-account`: it removes the avatar
+   from the bucket, cancels any subscription, deletes the Stripe customer, clears the Discord Linked Roles,
+   replaces the name in other players' games and replays with "Deleted player", detaches feedback, then
+   deletes the row and everything that cascades from it. Do **not** use the Control Panel's DELETE ALL DATA
+   for this: it deletes the `Users` row only and leaves the avatar, the Stripe customer, the Discord roles and
+   the name in other players' records behind.
+
+   The route takes a one-hour deletion token for that user, stored as its SHA-256 (`lib/auth-tokens.ts`).
+   Mint one:
+
+   ```bash
+   TOKEN=$(openssl rand -hex 32)
+   printf %s "$TOKEN" | shasum -a 256 | cut -d' ' -f1   # the hash
+   ```
+
+   ```sql
+   insert into "PasswordResetTokens" (id, "userId", "tokenHash", purpose, expires)
+   values ('age-' || gen_random_uuid(), '<id>', '<the hash>', 'delete', now() + interval '1 hour');
+   ```
+
+   Open `https://boardly.online/auth/delete-account?token=<TOKEN>` in a private window. Signed in as anyone
+   else the route answers 403, and it deletes a suspended account like any other. Type DELETE and confirm,
+   then check that `select count(*) from "Users" where id = '<id>'` is 0.
+5. **Close the reports.** Mark every `Reports` row about the account `actioned` (`status`, `reviewedAt`,
+   `reviewedBy` = your admin id). The deletion has already set their `reportedUserId` to null; the reported
+   content stays for the reports retention like any other report.
+6. **Answer whoever told us**, from support@, the same day, in company voice. Send nothing of the account's
+   data or content to them, a parent included: deleting it is the answer, and a request to see the data is a
+   separate access request from the account holder. A report from the in-game Report action has no one to
+   answer. For a parent:
+
+   > Hello,
+   >
+   > Thank you for telling us. Boardly accounts are for people aged 13 and over, so we have closed the
+   > account you wrote about and deleted it, with its profile picture, its friends list and its name in other
+   > players' game history. [Its Premium payments have been refunded in full to the card they came from.]
+   >
+   > If you have any questions, reply to this email.
+   >
+   > The Boardly team
+
+   Norwegian, when they wrote in Norwegian:
+
+   > Hei,
+   >
+   > Takk for at du sa fra. Boardly-kontoer er for personer som er 13 år eller eldre, så vi har stengt og
+   > slettet kontoen du skrev om, med profilbildet, vennelisten og navnet i andre spilleres spillhistorikk.
+   > [Premium-betalingene er betalt tilbake i sin helhet til kortet de kom fra.]
+   >
+   > Har du spørsmål, kan du svare på denne e-posten.
+   >
+   > Hilsen Boardly-teamet
+7. **Log it** in the vault's Boardly log: the date, what arrived and "account deleted, age". No username, no
+   email address.
+
 ### Runbook: discord_bot_stale
 
 The Discord bot on the Raspberry Pi (`KovalDenys1/boardly-discord`, see `docs/DISCORD.md`) posts
