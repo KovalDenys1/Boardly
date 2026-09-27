@@ -77,6 +77,37 @@ export function canViewProfile(
   return false
 }
 
+/** A user as a friends route selects them: enough to show a name and a picture. */
+export type ProfileParty = {
+  id: string
+  username: string | null
+  image?: string | null
+  avatarUrl?: string | null
+  accountPreferences?: { profileVisibility: ProfileVisibilityValue } | null
+}
+
+export type PresentedProfileParty<T extends ProfileParty> =
+  | { visible: true; party: Omit<T, 'accountPreferences'> & { avatar: string | null } }
+  | { visible: false; party: { username: string | null; avatar: null } }
+
+/**
+ * What a friends route may tell the caller about another user (#1226), by the same rule
+ * as the profile page: the whole selection plus a resolved `avatar` when the caller may
+ * see the profile, and otherwise the username with the default avatar, without the
+ * picture or the internal id. `visible` tells the caller whether to drop other fields
+ * that name the person, such as a request's `receiverId`.
+ */
+export function presentProfileParty<T extends ProfileParty>(
+  party: T,
+  relation: ProfileViewerRelation
+): PresentedProfileParty<T> {
+  const { accountPreferences, ...fields } = party
+  if (canViewProfile(accountPreferences?.profileVisibility, relation)) {
+    return { visible: true, party: { ...fields, avatar: fields.avatarUrl ?? fields.image ?? null } }
+  }
+  return { visible: false, party: { username: fields.username, avatar: null } }
+}
+
 /** Id of the Privacy section in the profile settings tab, and the hash that scrolls to it. */
 export const PRIVACY_SETTINGS_SECTION_ID = 'privacy'
 

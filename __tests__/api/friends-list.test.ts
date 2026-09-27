@@ -184,4 +184,59 @@ describe('GET /api/friends', () => {
 
     expect(payload.friends[0].avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
   })
+
+  // #1226: private means nobody but the owner, friends included, as the profile page and
+  // the privacy notice say. Public and friends-only profiles are visible to a friend.
+  describe('profile visibility (#1226)', () => {
+    const AVATAR = 'https://cdn.example.com/friend-avatar.png'
+
+    async function friendWith(profileVisibility: 'public' | 'friends' | 'private' | undefined) {
+      const friendship = createFriendship(true)
+      friendship.user2.avatarUrl = AVATAR
+      friendship.user2.premiumUntil = new Date('2099-01-01T00:00:00Z')
+      friendship.user2.accountPreferences = profileVisibility
+        ? { showOnlineStatus: true, profileVisibility }
+        : null
+      mockPrisma.friendships.findMany.mockResolvedValue([friendship] as any)
+      mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+      const response = await GET(buildRequest())
+      expect(response.status).toBe(200)
+      const text = await response.text()
+      return { friend: JSON.parse(text).friends[0], text }
+    }
+
+    it('asks for the visibility of both sides of the friendship', async () => {
+      mockPrisma.friendships.findMany.mockResolvedValue([] as any)
+      mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+      await GET(buildRequest())
+
+      const { include } = mockPrisma.friendships.findMany.mock.calls[0][0]
+      expect(include.user1.select.accountPreferences.select.profileVisibility).toBe(true)
+      expect(include.user2.select.accountPreferences.select.profileVisibility).toBe(true)
+    })
+
+    it.each([
+      ['public', 'public'],
+      ['friends-only', 'friends'],
+      ['legacy (no preferences row)', undefined],
+    ] as const)(
+      'a %s friend is listed with their picture and premium badge',
+      async (_label, visibility) => {
+        const { friend } = await friendWith(visibility)
+
+        expect(friend).toMatchObject({ username: 'friend-user', avatar: AVATAR, isPremium: true })
+      }
+    )
+
+    it('a private friend is listed by name with the default avatar and no premium badge', async () => {
+      const { friend, text } = await friendWith('private')
+
+      expect(friend).toMatchObject({ username: 'friend-user', avatar: null, isPremium: false })
+      expect(text).not.toContain(AVATAR)
+      expect(text).not.toContain('profileVisibility')
+      expect(text).not.toContain('premiumUntil')
+    })
+  })
 })

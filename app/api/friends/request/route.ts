@@ -3,20 +3,13 @@ import { prisma } from '@/lib/db'
 import { Prisma } from '@/prisma/client'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { canViewProfile, extractPublicProfileId, type ProfileVisibilityValue } from '@/lib/public-profile'
+import { extractPublicProfileId, presentProfileParty, type ProfileParty } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
 import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.friendRequest)
 const log = apiLogger('/api/friends/request')
-
-type RequestParty = {
-  id: string
-  username: string | null
-  image: string | null
-  avatarUrl: string | null
-}
 
 // The receiver is selected with its visibility so the answer can respect it (#1226).
 const RECEIVER_SELECT = {
@@ -37,27 +30,26 @@ const SENDER_SELECT = {
 /**
  * A pending request is between two people who are not friends, so the one who sent it
  * may see the receiver's picture and internal id only when the receiver's profile is
- * public (#1226). Otherwise the sender gets the username they typed or clicked, and the
- * default avatar. The receiver always sees the sender who reached out to them.
+ * public (#1226, presentProfileParty with relation 'other'). Otherwise the sender gets
+ * the username they typed or clicked, the default avatar, and no `receiverId`. The
+ * receiver always sees the sender who reached out to them.
  */
 function presentRequest<
   T extends {
     receiverId: string
-    sender: RequestParty
-    receiver: RequestParty & { accountPreferences: { profileVisibility: ProfileVisibilityValue } | null }
+    sender: ProfileParty
+    receiver: ProfileParty
   },
 >(request: T, callerId: string) {
   const { sender, receiver, receiverId, ...fields } = request
-  const { accountPreferences, ...receiverFields } = receiver
-  const receiverVisible =
-    receiver.id === callerId || canViewProfile(accountPreferences?.profileVisibility, 'other')
+  const presented =
+    receiver.id === callerId ? presentProfileParty(receiver, 'self') : presentProfileParty(receiver, 'other')
   return {
     ...fields,
-    ...(receiverVisible ? { receiverId } : {}),
+    ...(presented.visible ? { receiverId } : {}),
+    // Shown in full: to themselves, and to the receiver they reached out to.
     sender: { ...sender, avatar: sender.avatarUrl ?? sender.image ?? null },
-    receiver: receiverVisible
-      ? { ...receiverFields, avatar: receiverFields.avatarUrl ?? receiverFields.image ?? null }
-      : { username: receiverFields.username, avatar: null },
+    receiver: presented.party,
   }
 }
 
