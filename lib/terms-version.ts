@@ -45,7 +45,8 @@ export const TERMS_FIGURES = {
  * stated as kept until their owner deletes them.
  * 2026-09-27 (third change that day, #1226): the username and leaderboard results are
  * visible to everyone whatever the visibility setting, everything else on the profile
- * follows it, and players who share a lobby see the username and picture there.
+ * follows it, and players see the username and picture in lobbies and games they shared,
+ * including the game results and the player card there.
  */
 export const PRIVACY_UPDATED = '2026-09-27'
 

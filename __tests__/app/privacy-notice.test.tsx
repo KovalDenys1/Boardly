@@ -131,15 +131,17 @@ describe('privacy notice (#1126)', () => {
     const text = container.textContent ?? ''
     expect(text).toContain('Your username and your leaderboard results are visible to everyone, whatever your settings')
     expect(text).toContain('Everything else on your profile (picture, bio, game statistics and achievements) follows its visibility setting')
-    expect(text).toContain('Players you share a lobby with see your username and picture there whatever the setting')
+    expect(text).toContain(
+      'Players you have played with see your username and picture in lobbies and games you shared, including the game results and your player card there'
+    )
     expect(text).not.toContain('(username, picture, bio and game statistics) is visible only to your friends')
     expect(text).not.toContain('appear on the public leaderboard unless your profile is private')
 
     // The same statements in every language, and none of the old ones.
     const expected = {
-      no: ['Brukernavnet ditt og resultatene dine på topplisten er synlige for alle', 'Alt annet på profilen'],
-      ru: ['Ваше имя пользователя и ваши результаты в рейтинге видны всем', 'Всё остальное в профиле'],
-      uk: ['Ваше ім’я користувача та ваші результати в рейтингу видно всім', 'Усе інше в профілі'],
+      no: ['Brukernavnet ditt og resultatene dine på topplisten er synlige for alle', 'Alt annet på profilen', 'i lobbyer og spill dere har delt'],
+      ru: ['Ваше имя пользователя и ваши результаты в рейтинге видны всем', 'Всё остальное в профиле', 'в общих с вами лобби и играх'],
+      uk: ['Ваше ім’я користувача та ваші результати в рейтингу видно всім', 'Усе інше в профілі', 'в спільних із вами лобі та іграх'],
     }
     const stale = {
       no: ['(brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine', 'med mindre profilen er privat.'],
