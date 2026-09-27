@@ -1,9 +1,10 @@
-import { __participantKeyForTests, recordLobbyParticipation } from '@/lib/lobby-participation'
+import { createHmac } from 'node:crypto'
+import { __participantKeyForTests, participantKeys, recordLobbyParticipation } from '@/lib/lobby-participation'
 import { prisma } from '@/lib/db'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
-    lobbyParticipations: { create: jest.fn(), count: jest.fn() },
+    lobbyParticipations: { create: jest.fn(), count: jest.fn(), findFirst: jest.fn() },
     operationalEvents: { create: jest.fn() },
   },
 }))
@@ -136,5 +137,110 @@ describe('second_human_joined (#920)', () => {
     ;(prisma.operationalEvents.create as jest.Mock).mockRejectedValue(new Error('db down'))
 
     await expect(recordLobbyParticipation(base)).resolves.toBe(true)
+  })
+})
+
+describe('PARTICIPATION_HASH_SALT transition off NEXTAUTH_SECRET (#1142, #1149)', () => {
+  const originalEnv = process.env
+  const NEXTAUTH = 'test-nextauth-secret-at-least-32-characters'
+  const SALT = 'test-participation-salt-at-least-32-characters'
+  const DURING = new Date('2026-10-01T12:00:00.000Z')
+  const CUTOFF = new Date('2026-12-27T00:00:00.000Z')
+  const base = { lobbyId: 'lobby-1', lobbyCode: 'AB12', gameType: 'yahtzee' as const, userId: 'user-1' }
+
+  const hash = (salt: string, userId: string) =>
+    createHmac('sha256', salt).update(userId).digest('hex').slice(0, 32)
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env = { ...originalEnv, NEXTAUTH_SECRET: NEXTAUTH }
+    delete process.env.PARTICIPATION_HASH_SALT
+    ;(prisma.lobbyParticipations.create as jest.Mock).mockResolvedValue({ joinedAt: DURING })
+    ;(prisma.lobbyParticipations.count as jest.Mock).mockResolvedValue(1)
+    ;(prisma.lobbyParticipations.findFirst as jest.Mock).mockResolvedValue(null)
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  afterAll(() => {
+    process.env = originalEnv
+  })
+
+  describe('without PARTICIPATION_HASH_SALT', () => {
+    it.each([
+      ['during the transition', DURING],
+      ['after the cutoff', new Date('2027-02-01T00:00:00.000Z')],
+    ])('hashes with NEXTAUTH_SECRET alone %s and looks nothing else up', async (_label, now) => {
+      jest.useFakeTimers({ now })
+
+      expect(participantKeys('user-1')).toEqual([hash(NEXTAUTH, 'user-1')])
+      await expect(recordLobbyParticipation(base)).resolves.toBe(true)
+
+      expect(prisma.lobbyParticipations.findFirst).not.toHaveBeenCalled()
+      expect(prisma.lobbyParticipations.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ participantKey: hash(NEXTAUTH, 'user-1') }) })
+      )
+    })
+  })
+
+  describe('with PARTICIPATION_HASH_SALT', () => {
+    beforeEach(() => {
+      process.env.PARTICIPATION_HASH_SALT = SALT
+    })
+
+    it('writes the new-salt key, and looks up the old-salt one during the transition', async () => {
+      jest.useFakeTimers({ now: DURING })
+
+      expect(participantKeys('user-1')).toEqual([hash(SALT, 'user-1'), hash(NEXTAUTH, 'user-1')])
+      await expect(recordLobbyParticipation(base)).resolves.toBe(true)
+
+      expect(prisma.lobbyParticipations.findFirst).toHaveBeenCalledWith({
+        where: { lobbyId: 'lobby-1', participantKey: { in: [hash(NEXTAUTH, 'user-1')] } },
+        select: { id: true },
+      })
+      expect(prisma.lobbyParticipations.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ participantKey: hash(SALT, 'user-1') }) })
+      )
+    })
+
+    it('treats a rejoin recorded under the old salt as the duplicate it is', async () => {
+      // Joined before the salt was set; the unique index cannot see it under the new key.
+      jest.useFakeTimers({ now: DURING })
+      ;(prisma.lobbyParticipations.findFirst as jest.Mock).mockResolvedValue({ id: 'row-before-the-switch' })
+      ;(prisma.lobbyParticipations.count as jest.Mock).mockResolvedValue(2)
+
+      await expect(recordLobbyParticipation(base)).resolves.toBe(false)
+
+      expect(prisma.lobbyParticipations.create).not.toHaveBeenCalled()
+      expect(prisma.operationalEvents.create).not.toHaveBeenCalled()
+    })
+
+    it('still dedupes a rejoin under the new salt through the unique index', async () => {
+      jest.useFakeTimers({ now: DURING })
+      ;(prisma.lobbyParticipations.create as jest.Mock).mockRejectedValue({ code: 'P2002' })
+
+      await expect(recordLobbyParticipation(base)).resolves.toBe(false)
+    })
+
+    it('stops looking up the old-salt key from the cutoff on', async () => {
+      jest.useFakeTimers({ now: CUTOFF })
+
+      expect(participantKeys('user-1')).toEqual([hash(SALT, 'user-1')])
+      await expect(recordLobbyParticipation(base)).resolves.toBe(true)
+
+      expect(prisma.lobbyParticipations.findFirst).not.toHaveBeenCalled()
+      expect(prisma.lobbyParticipations.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ participantKey: hash(SALT, 'user-1') }) })
+      )
+    })
+
+    it('never throws when the old-salt lookup fails', async () => {
+      jest.useFakeTimers({ now: DURING })
+      ;(prisma.lobbyParticipations.findFirst as jest.Mock).mockRejectedValue(new Error('db down'))
+
+      await expect(recordLobbyParticipation(base)).resolves.toBe(false)
+    })
   })
 })

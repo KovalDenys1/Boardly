@@ -70,7 +70,7 @@ Notes:
 Recommended:
 
 - `DIRECT_URL` (for migrations)
-- `GUEST_JWT_SECRET` (guest token signing isolation)
+- `GUEST_JWT_SECRET` (guest token signing isolation) and `PARTICIPATION_HASH_SALT` (participation hash); both required in production, see "Moving guest tokens and the participation hash off `NEXTAUTH_SECRET`" below
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase project credentials for Realtime)
 - `SUPABASE_SERVICE_ROLE_KEY` (server-side Supabase client for `broadcastToLobby`)
@@ -122,6 +122,33 @@ Migration from deprecated aliases:
 5. Redeploy the Next.js app and verify `/api/cron/*` auth still succeeds.
 
 Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SERVER_URL` are decommissioned — remove them from all environments after the Supabase Realtime migration.
+
+### Moving guest tokens and the participation hash off `NEXTAUTH_SECRET` (#1142, #1149)
+
+`GUEST_JWT_SECRET` and `PARTICIPATION_HASH_SALT` fall back to `NEXTAUTH_SECRET`. Until
+**2026-12-27** (`NEXTAUTH_SECRET_FALLBACK_CUTOFF` in `lib/nextauth-secret-transition.ts`) the
+code still *reads* with `NEXTAUTH_SECRET` once the dedicated values are set: a guest token that
+fails `GUEST_JWT_SECRET` is tried against it, and a lobby join is deduplicated against the
+old-salt participant key as well as the new one. Everything new is signed and hashed with the
+dedicated values. From the cutoff on only the dedicated values are accepted.
+
+Order, once the release carrying that code is live on production:
+
+1. `GUEST_JWT_SECRET` in Vercel **Production**: a new random value of at least 32 characters,
+   different from `NEXTAUTH_SECRET`.
+2. `PARTICIPATION_HASH_SALT` in Vercel **Production**: another new random value of at least 32
+   characters, different from both.
+3. Redeploy production, so the functions read them. `npm run check:env` then stops reporting
+   either as missing.
+4. Remove the variables nothing reads: `ENABLE_LIARS_PARTY`, `ENABLE_ALIAS`,
+   `STRIPE_PUBLISHABLE_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_SECRET_KEY`.
+
+Setting them while production still runs the older code is exactly the breaking switch this
+transition exists to avoid - it would sign and verify with the new values and accept nothing
+older - so check `git log origin/main` for this change first. Setting them late costs less:
+guests whose identity token was issued on the old secret after 2026-09-28 lose it at the cutoff
+and come back as new guests; nothing else breaks. Never change either value once set - that
+would need a transition window of its own.
 
 ## Build and deploy
 

@@ -105,8 +105,11 @@ this change; it only makes the decision possible to make with data instead of a 
 
 ## Guest security model
 
-- Guests receive two signed HS256 tokens from server endpoints: a 12-hour session token and a 180-day
+- Guests receive two signed HS256 tokens from server endpoints: a 12-hour session token and a 90-day
   identity token (`lib/guest-auth.ts`), both on `GUEST_JWT_SECRET` with `NEXTAUTH_SECRET` as fallback.
+  Once `GUEST_JWT_SECRET` is set, tokens signed with `NEXTAUTH_SECRET` before it still verify until
+  2026-12-27 (`lib/nextauth-secret-transition.ts`, #1142/#1149), so the switch logs no guest out;
+  from that date only `GUEST_JWT_SECRET` verifies.
 - Token transport header: `X-Guest-Token`.
 - Guest claims are verified server-side through `lib/guest-auth.ts`; the header is never trusted as sent.
 - Raw client-supplied guest IDs/names are not trusted as identity.
@@ -124,7 +127,8 @@ this change; it only makes the decision possible to make with data instead of a 
 
 ### Optional and conditional
 
-- `GUEST_JWT_SECRET`: overrides guest token signing secret.
+- `GUEST_JWT_SECRET`: overrides guest token signing secret. Required in production by
+  `npm run check:env` (#1149), as is `PARTICIPATION_HASH_SALT`.
 - `REALTIME_SIGNING_SECRET`: seeds the key realtime broadcasts are signed with and the per-user topic
   tags. Falls back to `NEXTAUTH_SECRET`; rotating either rotates the key, which clients pick up on
   the next message (they refetch `GET /api/realtime/key` for an unknown key id) and changes every
