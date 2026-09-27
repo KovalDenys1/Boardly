@@ -250,7 +250,19 @@ describe('POST /api/reports (#1172)', () => {
 
     it('refuses to put words in the mouth of someone who never sat in the lobby', async () => {
       chatHistory.mockResolvedValue([])
-      db.players.findFirst.mockResolvedValue(null)
+      db.players.findFirst.mockImplementation(async ({ where }: { where: { userId: string } }) =>
+        where.userId === 'reporter_1' ? { id: 'seat_reporter' } : null
+      )
+      const res = await submit(chatReport)
+      expect(res.status).toBe(404)
+      expect(db.reports.create).not.toHaveBeenCalled()
+    })
+
+    it("refuses the reporter's copy from a reporter who never sat in the lobby", async () => {
+      chatHistory.mockResolvedValue([])
+      db.players.findFirst.mockImplementation(async ({ where }: { where: { userId: string } }) =>
+        where.userId === 'offender_1' ? { id: 'seat_offender' } : null
+      )
       const res = await submit(chatReport)
       expect(res.status).toBe(404)
       expect(db.reports.create).not.toHaveBeenCalled()

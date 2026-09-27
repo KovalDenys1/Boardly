@@ -13,8 +13,9 @@ import { reportTargetKey, type ReportTarget, type ReportTargetType } from '@/lib
  * history, a drawing in the game state and a profile field on the user row; the text
  * the client sent is kept only for a chat message the history no longer has (24-hour
  * TTL, 50 messages, or Redis down), and is then marked `snapshotSource: 'reporter'`
- * so staff know it is a claim, not a record. For that case the reported player must
- * at least have sat in the lobby, so a report cannot put words in a stranger's mouth.
+ * so staff know it is a claim, not a record. For that case both the reported player
+ * and the reporter must have sat in the lobby, so a report cannot put words in a
+ * stranger's mouth, and a stranger cannot file one.
  */
 
 export interface ResolvedReportTarget {
@@ -90,12 +91,20 @@ async function resolveChatMessage(
     snapshotSource = 'server'
   } else {
     // The history no longer has it. The reporter's copy is all that is left, so it
-    // is kept, but only against someone who really sat in this lobby.
-    const seat = await prisma.players.findFirst({
-      where: { userId: target.reportedUserId, game: { lobbyId: lobby.id } },
-      select: { id: true },
-    })
-    if (!seat) return notFound('Message not found')
+    // is kept, but only between two people who both sat in this lobby: the words
+    // are attributed to someone who could have written them, by someone who could
+    // have read them.
+    const [authorSeat, reporterSeat] = await Promise.all([
+      prisma.players.findFirst({
+        where: { userId: target.reportedUserId, game: { lobbyId: lobby.id } },
+        select: { id: true },
+      }),
+      prisma.players.findFirst({
+        where: { userId: reporterId, game: { lobbyId: lobby.id } },
+        select: { id: true },
+      }),
+    ])
+    if (!authorSeat || !reporterSeat) return notFound('Message not found')
     reportedUserId = target.reportedUserId
     contentSnapshot = target.quotedText
     snapshotSource = 'reporter'
