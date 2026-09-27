@@ -16,7 +16,9 @@ import path from 'node:path'
 
 const root = path.join(__dirname, '..', '..')
 
-const SCANNED_DIRS = ['app/api/auth', 'app/api/user']
+// app/api/internal/admin (#1231): the Control Panel writes AdminAuditLogs itself, so its
+// routes log ids only.
+const SCANNED_DIRS = ['app/api/auth', 'app/api/user', 'app/api/internal/admin']
 const SCANNED_FILES = [
   'lib/next-auth.ts',
   'lib/custom-prisma-adapter.ts',

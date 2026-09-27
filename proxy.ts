@@ -13,6 +13,11 @@ import {
   authorizeDiscordInternalRequest,
   hasValidDiscordInternalSecret,
 } from '@/lib/discord/internal-auth'
+import {
+  authorizeControlPanelRequest,
+  hasValidControlPanelSecret,
+  isControlPanelAdminPath,
+} from '@/lib/control-panel-api-auth'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const SECURITY_HEADERS = getSecurityHeaders()
@@ -95,7 +100,10 @@ function isDiscordInternalPath(pathname: string): boolean {
 
 function isTrustedServerRequest(request: NextRequest): boolean {
   if (hasValidInternalSecret(request) || hasValidCronAuthorization(request)) return true
-  return isDiscordInternalPath(request.nextUrl.pathname) && hasValidDiscordInternalSecret(request)
+  const { pathname } = request.nextUrl
+  if (isDiscordInternalPath(pathname) && hasValidDiscordInternalSecret(request)) return true
+  // The Control Panel's moderation routes (#1231): its secret, on its own paths only.
+  return isControlPanelAdminPath(pathname) && hasValidControlPanelSecret(request)
 }
 
 function buildCspHeaderValue() {
@@ -286,6 +294,12 @@ export async function proxy(request: NextRequest) {
     // token) is let through below only because the same secret marks it trusted.
     if (isDiscordInternalPath(pathname) && request.method !== 'OPTIONS') {
       const authError = authorizeDiscordInternalRequest(request)
+      if (authError) return authError
+    }
+    // The same gate for the Control Panel's routes (#1231): server-to-server POSTs with no
+    // Origin, let past the CSRF check below only because this secret marks them trusted.
+    if (isControlPanelAdminPath(pathname) && request.method !== 'OPTIONS') {
+      const authError = authorizeControlPanelRequest(request)
       if (authError) return authError
     }
 

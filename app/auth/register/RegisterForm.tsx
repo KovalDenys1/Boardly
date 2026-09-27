@@ -2,7 +2,7 @@
 
 import { useState, useId } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import Die from '@/components/ui/Die'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -26,6 +26,10 @@ export default function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
+  // A provider sign-in while signed in is refused by the server (#1223), so a signed-in
+  // visitor is not offered one.
+  const { status: sessionStatus } = useSession()
+  const isSignedIn = sessionStatus === 'authenticated'
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -296,16 +300,24 @@ export default function RegisterForm() {
           )}
 
           <div className="bd-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <InAppBrowserNotice />
-            {renderProviderButtons()}
+            {isSignedIn ? (
+              <p style={{ fontSize: 13, color: 'var(--bd-ink-soft)', margin: 0 }}>
+                {t('auth.signedInProvidersHidden')}
+              </p>
+            ) : (
+              <>
+                <InAppBrowserNotice />
+                {renderProviderButtons()}
 
-            {/* bd-ink-muted was 3.93:1 here — AA large-text only (DESIGN.md
-                "Contrast"), and this "or" divider is normal-size (#1171). */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-soft)', fontSize: 13 }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
-              {t('common.or')}
-              <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
-            </div>
+                {/* bd-ink-muted was 3.93:1 here — AA large-text only (DESIGN.md
+                    "Contrast"), and this "or" divider is normal-size (#1171). */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-soft)', fontSize: 13 }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+                  {t('common.or')}
+                  <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+                </div>
+              </>
+            )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>

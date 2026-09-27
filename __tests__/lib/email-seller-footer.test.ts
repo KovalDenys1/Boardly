@@ -66,6 +66,12 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
       username: 'Ola',
       deleteOn: new Date('2027-12-19T03:00:00Z'),
     }),
+  sendSuspensionNoticeEmail: (m) =>
+    m.sendSuspensionNoticeEmail('player@example.com', {
+      username: 'Ola',
+      reason: 'Spam in lobby chat',
+      expiresAt: new Date('2026-10-04T12:00:00Z'),
+    }),
 }
 
 const OTHER_SENDS = Object.keys(sends).filter((name) => name !== CONFIRMATION)

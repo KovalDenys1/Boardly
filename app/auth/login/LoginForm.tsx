@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useId } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getProviders, signIn } from 'next-auth/react'
+import { getProviders, signIn, useSession } from 'next-auth/react'
 import Die from '@/components/ui/Die'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -32,6 +32,10 @@ export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
+  // A provider sign-in while signed in is refused by the server (#1223), so a signed-in
+  // visitor is not offered one.
+  const { status: sessionStatus } = useSession()
+  const isSignedIn = sessionStatus === 'authenticated'
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -356,7 +360,11 @@ export default function LoginForm() {
               </div>
             )}
 
-            {oauthProviderIds.length > 0 && (
+            {isSignedIn ? (
+              <p style={{ fontSize: 13, color: 'var(--bd-ink-soft)', margin: 0 }}>
+                {t('auth.signedInProvidersHidden')}
+              </p>
+            ) : oauthProviderIds.length > 0 && (
               <>
                 {oauthProviderIds.includes('google') && <InAppBrowserNotice />}
                 {renderProviderButtons()}

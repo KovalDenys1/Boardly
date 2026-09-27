@@ -9,18 +9,20 @@ import { detachFeedbackFrom, scrubPlayersFromGameRecords } from '@/lib/account-e
 /**
  * Deleting a registered account, in one place (#1130).
  *
- * Two callers: the owner's own request (`/api/user/delete-account`, after the email
- * confirmation) and the 24-month inactivity rule (lib/inactive-accounts.ts). Both take the
- * same path, so an account the rule deletes loses exactly what one deleted by its owner
- * does: the avatar, the Stripe subscription and customer, the Discord linked-role data,
+ * Three callers: the owner's own request (`/api/user/delete-account`, after the email
+ * confirmation), the 24-month inactivity rule (lib/inactive-accounts.ts) and staff through
+ * the Control Panel (`/api/internal/admin/delete-account`). All take the same path, so an
+ * account the rule or staff delete loses exactly what one deleted by its owner does: the avatar, the Stripe subscription and customer, the Discord linked-role data,
  * its name in other players' games and replays, the link from its feedback, and then the
  * row with everything that cascades from it. Only ids are logged (#1128).
  */
 
-export type AccountDeletionReason = 'owner_request' | 'inactivity'
+/** `moderation`: staff deleting through the Control Panel (POST /api/internal/admin/delete-account). */
+export type AccountDeletionReason = 'owner_request' | 'inactivity' | 'moderation'
 
 export type AccountDeletionResult =
-  | { status: 'deleted' }
+  /** `cancelledSubscription`: a Stripe subscription was running and this deletion cancelled it. */
+  | { status: 'deleted'; cancelledSubscription: boolean }
   /** No such account, or it no longer matches the caller's guard. Nothing was changed. */
   | { status: 'not_found' }
   | { status: 'bot' }
@@ -108,9 +110,11 @@ export async function deleteUserAccount(
   // stays active: the person keeps being charged, cannot sign in to stop it,
   // and no query of ours can even find them afterwards (#827). A user who
   // stays deletable is recoverable; a silently billed ghost is not.
+  let cancelledSubscription = false
   if (user.stripeSubscriptionId) {
     try {
       await getStripe().subscriptions.cancel(user.stripeSubscriptionId)
+      cancelledSubscription = true
       log.info('Cancelled Stripe subscription before account deletion', {
         userId: user.id,
         subscriptionId: user.stripeSubscriptionId,
@@ -194,5 +198,5 @@ export async function deleteUserAccount(
   }
 
   log.info('Account deleted successfully', { userId: user.id, reason })
-  return { status: 'deleted' }
+  return { status: 'deleted', cancelledSubscription }
 }

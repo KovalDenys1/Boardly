@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { logger } from './logger'
-import { SUPPORT_EMAIL } from './organization-json-ld'
+import { BOARDLY_URL, SUPPORT_EMAIL } from './organization-json-ld'
 import { majorUnitAmount, type PremiumPlan } from './premium-plans'
 import { formatSellerAddress, getSellerIdentity } from './seller-identity'
 import { LINK_SUPPORT_URL } from './sold-through-link'
@@ -1222,6 +1222,152 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
   } catch (error) {
     await noteEmailSendFailure('sendInactiveAccountWarningEmail', error)
     logger.error('Failed to send inactive account warning email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export type SuspensionNoticeDetails = {
+  /** Resend idempotency key, so a retried request cannot deliver the same notice twice. */
+  idempotencyKey?: string
+  username?: string | null
+  /** Why the account was suspended, as staff wrote it in the Control Panel. */
+  reason: string
+  /** When a temporary suspension ends; null for one until further notice. */
+  expiresAt: Date | null
+}
+
+/**
+ * The production appeal form, whatever deployment sends the mail: the address the Terms
+ * name (section 5, "boardly.online/suspended") and the one that works while signed out.
+ */
+export const SUSPENSION_APPEAL_URL = `${BOARDLY_URL}/suspended`
+
+type SuspensionNoticeLinks = { appeal: string }
+
+// One paragraph per line staff wrote, so a reason set out in lines keeps them.
+function reasonParagraphs(reason: string): string[] {
+  const lines = reason.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0)
+  return lines.length > 0 ? lines : [reason.trim()]
+}
+
+function englishSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNoticeLinks): ConfirmationCopy {
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro: 'We have suspended your Boardly account. While it is suspended, you cannot sign in to it.',
+    sections: [
+      { heading: 'Reason', paragraphs: reasonParagraphs(d.reason) },
+      {
+        heading: 'How long',
+        paragraphs: [
+          d.expiresAt
+            ? `The suspension ends on ${formatMoment(d.expiresAt, 'en-US')}. After that you can sign in again.`
+            : 'The suspension lasts until further notice.',
+        ],
+      },
+      {
+        heading: 'Appeal',
+        paragraphs: [
+          `If you think we got this wrong, appeal with the form at ${links.appeal} or reply to this email. We answer every appeal in writing.`,
+        ],
+      },
+    ],
+  }
+}
+
+function norwegianSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNoticeLinks): ConfirmationCopy {
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro: 'Vi har suspendert Boardly-kontoen din. Så lenge den er suspendert, kan du ikke logge inn på den.',
+    sections: [
+      { heading: 'Begrunnelse', paragraphs: reasonParagraphs(d.reason) },
+      {
+        heading: 'Varighet',
+        paragraphs: [
+          d.expiresAt
+            ? `Suspensjonen varer til ${formatMoment(d.expiresAt, 'nb-NO')}. Etter det kan du logge inn igjen.`
+            : 'Suspensjonen gjelder inntil videre.',
+        ],
+      },
+      {
+        heading: 'Klage',
+        paragraphs: [
+          `Mener du at vi har tatt feil, kan du klage med skjemaet på ${links.appeal} eller svare på denne e-posten. Vi svarer skriftlig på alle klager.`,
+        ],
+      },
+    ],
+  }
+}
+
+/**
+ * The email a suspended account's owner gets (Control Panel #120). The Terms promise it
+ * (section 5): "When we suspend or close an account, we email the owner the reason and, for
+ * a temporary suspension, the end date." English first, then Norwegian bokmål, like the
+ * other notices: no language is stored per user. The reason is staff's own text and is
+ * shown as written, escaped, in both halves. POST /api/internal/admin/suspension-notice
+ * sends it; this only renders and sends.
+ */
+export async function sendSuspensionNoticeEmail(email: string, details: SuspensionNoticeDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const links: SuspensionNoticeLinks = { appeal: SUSPENSION_APPEAL_URL }
+  const english = englishSuspensionCopy(details, links)
+  const norwegian = norwegianSuspensionCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+
+  // The plain company footer (#1227), no seller address: it signs the mail as the team.
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}`,
+    `The Boardly team · ${SUPPORT_EMAIL}`,
+  ].join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: 'Your Boardly account has been suspended / Boardly-kontoen din er suspendert',
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}
+              </p>
+              ${companyFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    await noteEmailSendFailure('sendSuspensionNoticeEmail', error)
+    logger.error('Failed to send suspension notice email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
