@@ -14,6 +14,7 @@ jest.mock('@/lib/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
   })),
+  logger: { warn: jest.fn(), error: jest.fn() },
 }))
 
 const SECRET_BASE64 = Buffer.from('inbound-test-secret').toString('base64')
@@ -125,7 +126,63 @@ describe('POST /api/resend/inbound', () => {
     // Replying from the forwarded copy must reach the player, not ourselves.
     expect(sent.reply_to).toBe('player@example.com')
     expect(sent.subject).toBe('[support@boardly.online] Cannot join lobby')
-    expect(sent.html).toBe('<p>help</p>')
+    // The sender's HTML never becomes the rendered body (#1121) — it rides
+    // along as an attachment, and the message body is always plain text.
+    expect(sent.html).toBeUndefined()
+    expect(sent.text).toBe('help')
+    expect(sent.attachments).toEqual([
+      { filename: 'original-message.html', content: Buffer.from('<p>help</p>').toString('base64') },
+    ])
+  })
+
+  it('falls back to a stripped plain-text body when Resend gives no text part', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          from: 'player@example.com',
+          to: ['support@boardly.online'],
+          subject: 'No text part',
+          html: '<p>Hi <b>there</b></p><p>Second line</p>',
+          text: null,
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'sent_2' }) })
+
+    const res = await POST(signedRequest(receivedEvent))
+    expect(res.status).toBe(200)
+
+    const sent = JSON.parse(global.fetch.mock.calls[1][1].body)
+    expect(sent.html).toBeUndefined()
+    expect(sent.text).toBe('Hi there\n\nSecond line')
+    expect(sent.attachments).toHaveLength(1)
+  })
+
+  it('still delivers a repeated signed request when no Redis is configured (fail open)', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ from: 'p@example.com', to: ['support@boardly.online'], text: 'hi' }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'sent_1' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ from: 'p@example.com', to: ['support@boardly.online'], text: 'hi' }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'sent_2' }) })
+
+    // No KV_REST_API_URL/UPSTASH_REDIS_REST_URL in this test env, so replay
+    // dedupe degrades to "not a duplicate" (fail-open, lib/webhook-dedupe.ts).
+    // This only pins that an unconfigured store never blocks delivery; the
+    // Redis-backed dedupe itself is covered in resend-inbound-dedupe.test.ts.
+    const first = await POST(signedRequest(receivedEvent))
+    expect(first.status).toBe(200)
+
+    const second = await POST(signedRequest(receivedEvent))
+    expect(second.status).toBe(200)
+    expect(global.fetch).toHaveBeenCalledTimes(4)
   })
 
   it('returns 500 so Resend retries when fetching the email fails transiently', async () => {

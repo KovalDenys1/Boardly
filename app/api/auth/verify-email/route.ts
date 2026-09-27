@@ -1,18 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendWelcomeEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
 import { normalizeProfileEmail } from '@/lib/profile-email'
 import { findEmailVerificationToken } from '@/lib/auth-tokens'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+// Tokens are nanoid(32) (see register:124), so a wrong-shaped token is noise, not a
+// brute-force risk — 32+ random characters is infeasible to guess. The schema and limiter
+// are hygiene: an object or array token used to reach `findUnique` and come back as a
+// Prisma validation error (a 500) instead of a 400, and the route had no rate limit at all
+// (#1119, audit S2-04/S2-07).
+const verifyEmailSchema = z.object({
+  token: z.string().min(16).max(64),
+})
+
+const limiter = rateLimit(rateLimitPresets.api)
 
 export async function POST(request: NextRequest) {
-  try {
-    const { token } = await request.json()
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
 
-    if (!token || typeof token !== 'string') {
+  try {
+    const body = await request.json().catch(() => null)
+    const parsed = verifyEmailSchema.safeParse(body)
+
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
+
+    const { token } = parsed.data
 
     // By hash, with rows issued before #1141 still accepted by their raw value.
     const verificationToken = await findEmailVerificationToken(token)

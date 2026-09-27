@@ -455,5 +455,63 @@ describe('rateLimit store backends', () => {
     }
     expect(admitted).toBe(rateLimitPresets.lobbyJoinGuest.maxRequests)
   })
+
+  // #1120 (audit S2-05): the per-user friend-code limiter needs a key that is not the
+  // caller's IP, which is the one thing rateLimit() always derives itself.
+  describe('consumeKeyedRateLimit', () => {
+    it('limits by the given key regardless of the caller (no request involved at all)', async () => {
+      delete process.env.UPSTASH_REDIS_REST_URL
+      delete process.env.UPSTASH_REDIS_REST_TOKEN
+
+      const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule()
+      __rateLimitTestUtils.clearInMemoryStore()
+      __rateLimitTestUtils.resetSharedClient()
+
+      const config = { windowMs: 60_000, maxRequests: 2 }
+      const first = await consumeKeyedRateLimit('user-1', config)
+      const second = await consumeKeyedRateLimit('user-1', config)
+      const third = await consumeKeyedRateLimit('user-1', config)
+
+      expect(first.limited).toBe(false)
+      expect(second.limited).toBe(false)
+      expect(third.limited).toBe(true)
+      expect(third.retryAfterSeconds).toBeGreaterThan(0)
+    })
+
+    it('keeps separate counters for separate keys', async () => {
+      delete process.env.UPSTASH_REDIS_REST_URL
+      delete process.env.UPSTASH_REDIS_REST_TOKEN
+
+      const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule()
+      __rateLimitTestUtils.clearInMemoryStore()
+      __rateLimitTestUtils.resetSharedClient()
+
+      const config = { windowMs: 60_000, maxRequests: 1 }
+      expect((await consumeKeyedRateLimit('user-a', config)).limited).toBe(false)
+      expect((await consumeKeyedRateLimit('user-a', config)).limited).toBe(true)
+      // A different key gets its own fresh allowance — the "regardless of IP" property
+      // from the other direction: the same account is still capped, but two different
+      // accounts sharing an IP never see each other's counters.
+      expect((await consumeKeyedRateLimit('user-b', config)).limited).toBe(false)
+    })
+
+    it('uses the shared backend when configured', async () => {
+      process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
+      process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+
+      // One HINCRBY per counted request since #1156 (a hash per window, the key as the field).
+      const hincrby = jest.fn(async (_key: string, _field: string, _increment: number) => 1)
+      const expire = jest.fn(async () => 1)
+      const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
+      __rateLimitTestUtils.clearInMemoryStore()
+      __rateLimitTestUtils.resetSharedClient()
+
+      const result = await consumeKeyedRateLimit('user-1', { windowMs: 60_000, maxRequests: 10 })
+
+      expect(result.limited).toBe(false)
+      expect(hincrby).toHaveBeenCalledTimes(1)
+      expect(hincrby.mock.calls[0][1]).toBe('user-1')
+    })
+  })
 })
 
