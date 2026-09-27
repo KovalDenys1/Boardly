@@ -56,6 +56,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [showModal, setShowModal] = useState(false)
   const [accountSetup, setAccountSetup] = useState<OnboardingAccountSetup>(NO_ACCOUNT_SETUP)
 
+  // The account step belongs to a signed-in account. After a sign-out (the age step's own
+  // way out) a guest's onboarding must not inherit it.
+  useEffect(() => {
+    if (status !== 'authenticated') setAccountSetup(NO_ACCOUNT_SETUP)
+  }, [status])
+
   useEffect(() => {
     if (status === 'loading') return
     if (pathname.startsWith('/lobby/')) return
