@@ -554,17 +554,51 @@ these routes.
   CSP's `'self'` covers.
 - Server half: `refuseIfBot()` in `lib/bot-protection.ts`, after the rate limit, answers 403
   `BOT_CHECK_FAILED` (the client shows `errors.botCheckFailed`). It runs only where `VERCEL_ENV`
-  is `production` or `preview`; locally, in CI and under `next start` nothing is checked. If
-  BotID itself errors it lets the request through and logs `BotID check failed`, because the
-  rate limits still apply. It needs the project's OIDC token, which is enabled
-  (`oidcTokenConfig.enabled: true`, checked 2026-09-27).
+  is `production` or `preview`; locally, in CI and under `next start` nothing is checked. It
+  needs the project's OIDC token, which is enabled (`oidcTokenConfig.enabled: true`, checked
+  2026-09-27).
+- It fails open, and says so. When `checkBotId()` throws, takes longer than 2.5 s
+  (`BOTID_TIMEOUT_MS`; the library has no deadline of its own), or answers without a boolean
+  `isBot` - which is what `botid/server` returns when Vercel's classifier answers an error body
+  such as 401 `ERR_JWT_INVALID` - the request goes on to the rate limits, the error is logged
+  (`BotID gave no verdict`), and a `botid_unavailable` OperationalEvent is written, at most once
+  a minute per instance. See the runbook below.
 - Direct requests - curl, scripts, Playwright's `request` context - carry no challenge and are
-  refused on a deployment. To let a known client through, add a WAF bypass rule
-  (https://vercel.com/docs/botid#bypassing-botid).
+  refused on a deployment. That includes two of our own tools pointed at one:
+  `A11Y_BASE_URL=<deployment> npm run audit:a11y` (it mints its guest with
+  `context.request.post` to `/api/auth/guest-session`, so it cannot reach the bot game screen
+  and fails) and `npm run ops:load -- --base-url=<deployment>` (its guest session is a plain
+  `fetch`). Both still work against a local server. To let a known client through a
+  deployment, add a WAF bypass rule (https://vercel.com/docs/botid#bypassing-botid).
+- **Local dev needs api.vercel.com reachable.** The browser half runs everywhere, `next dev`
+  included: before each protected fetch it loads its challenge script, which the `withBotId`
+  rewrite fetches from api.vercel.com. Offline or behind a firewall that blocks it, that load
+  fails, and the patched `fetch` to register, guest-session and join-guest fails in the browser
+  with it - so guest entry and signup break locally although the server checks nothing there.
 - Where to look: Firewall tab -> traffic filter -> BotID shows each check.
 - If real visitors start getting `BOT_CHECK_FAILED`: check the browser console on
   boardly.online for a CSP violation or a failed load of BotID's `c.js` challenge script,
   then roll back by removing the `refuseIfBot` calls; the client half alone refuses nothing.
+
+### Runbook: botid_unavailable
+
+Any `botid_unavailable` event in the window (#1157), severity warning. `lib/bot-protection.ts`
+writes one, at most once a minute per instance, when Vercel BotID could not classify a request
+to register, guest-session or a token-less join-guest: `checkBotId()` threw, gave no answer
+within 2.5 s, or answered without a verdict. Those requests went through on the rate limits
+alone, so nothing is refused, but bots are not being filtered either.
+
+When it fires:
+
+1. `reason` on the event says which. "no answer within 2500 ms" is a slow classifier; "answered
+   without a verdict" is an error body from api.vercel.com, most often an invalid or missing
+   OIDC token; anything else is the thrown error's message.
+2. OIDC: Vercel project -> Settings -> Security -> OIDC must be enabled (it was on
+   2026-09-27). The token is per deployment, so a redeploy picks up a fixed setting.
+3. Check https://www.vercel-status.com for a Firewall or BotID incident.
+4. Meanwhile, `guests_minted_per_hour` and the Firewall's rate-limit rules still bound a flood.
+
+The alert resolves on the first window without the event.
 
 ### Dependency audit (`npm audit`) — production reachability, 2026-09-25 (#1148)
 
@@ -694,6 +728,10 @@ npm run ops:alerts:check
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
 
+`ops:load` defaults to `http://localhost:3000`. Against a Vercel deployment its first request,
+a plain `fetch` to `/api/auth/guest-session`, gets 403 `BOT_CHECK_FAILED` from BotID (#1157), so
+point it at a local server, or add a WAF bypass rule for the machine running it (see BotID).
+
 ## Accessibility audit (axe)
 
 forskrift om universell utforming av IKT-løsninger § 4 binds this private site to WCAG
@@ -709,6 +747,11 @@ each.
 npm run audit:a11y                                     # scans http://localhost:3000
 A11Y_BASE_URL=https://preview-x.vercel.app npm run audit:a11y
 ```
+
+Against a deployment (the second line) the run now fails on the bot game screen: it mints its
+guest with `context.request.post` to `/api/auth/guest-session`, which carries no BotID
+challenge and gets 403 `BOT_CHECK_FAILED` (#1157). The eight page scans still run. Scan a local
+server, or add a WAF bypass rule for the machine running it (see BotID).
 
 It fails (non-zero exit) on any `serious` or `critical` violation that is not in
 `scripts/a11y-allowlist.json`, and on failing to reach the bot game screen at all — that

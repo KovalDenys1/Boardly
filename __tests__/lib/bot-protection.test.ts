@@ -5,12 +5,21 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { checkBotId } from 'botid/server'
-import { refuseIfBot } from '@/lib/bot-protection'
+import { __botProtectionTestUtils, BOTID_TIMEOUT_MS, refuseIfBot } from '@/lib/bot-protection'
 import { BOTID_CHECK_LEVEL, BOTID_PROTECTED_ROUTES } from '@/lib/botid-routes'
+import { recordServerReliabilityEvent } from '@/lib/server-operational-events'
+
+const mockLogError = jest.fn()
+const mockLogWarn = jest.fn()
 
 jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
+jest.mock('@/lib/server-operational-events', () => ({ recordServerReliabilityEvent: jest.fn() }))
 jest.mock('@/lib/logger', () => ({
-  apiLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
+  apiLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: (...args: unknown[]) => mockLogWarn(...args),
+    error: (...args: unknown[]) => mockLogError(...args),
+  })),
 }))
 
 const mockCheckBotId = checkBotId as jest.MockedFunction<typeof checkBotId>
@@ -30,6 +39,7 @@ describe('refuseIfBot (#1157)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    __botProtectionTestUtils.reset()
     mockCheckBotId.mockResolvedValue(verdict(false))
   })
 
@@ -75,6 +85,84 @@ describe('refuseIfBot (#1157)', () => {
     mockCheckBotId.mockRejectedValue(new Error('VERCEL_OIDC_TOKEN is not set'))
 
     expect(await refuseIfBot('POST /api/auth/register')).toBeNull()
+    expect(mockLogError).toHaveBeenCalledTimes(1)
+    expect(recordServerReliabilityEvent).toHaveBeenCalledWith({
+      eventName: 'botid_unavailable',
+      source: 'POST /api/auth/register',
+      reason: 'VERCEL_OIDC_TOKEN is not set',
+    })
+  })
+
+  describe('when BotID gives no verdict', () => {
+    beforeEach(() => {
+      process.env.VERCEL_ENV = 'production'
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
+    it('reads an answer without a boolean isBot as no verdict, not as a person', async () => {
+      // What botid/server returns for an error body such as 401 {"error":"ERR_JWT_INVALID"}:
+      // it copies `isHuman: !s.isBot`, so isHuman is true and isBot is undefined.
+      mockCheckBotId.mockResolvedValue({ isHuman: true } as never)
+
+      expect(await refuseIfBot('POST /api/auth/guest-session')).toBeNull()
+
+      expect(mockLogError).toHaveBeenCalledTimes(1)
+      expect(recordServerReliabilityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'botid_unavailable',
+          source: 'POST /api/auth/guest-session',
+          reason: expect.stringContaining('without a verdict'),
+        })
+      )
+      expect(mockLogWarn).not.toHaveBeenCalled()
+    })
+
+    it('stops waiting after 2.5 s and lets the request through', async () => {
+      jest.useFakeTimers()
+      mockCheckBotId.mockReturnValue(new Promise(() => {}))
+
+      let settled: unknown = 'pending'
+      const pending = refuseIfBot('POST /api/auth/register').then((result) => {
+        settled = result
+      })
+
+      await jest.advanceTimersByTimeAsync(BOTID_TIMEOUT_MS - 1)
+      expect(settled).toBe('pending')
+
+      await jest.advanceTimersByTimeAsync(1)
+      await pending
+      expect(BOTID_TIMEOUT_MS).toBe(2_500)
+      expect(settled).toBeNull()
+      expect(recordServerReliabilityEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ eventName: 'botid_unavailable', reason: 'no answer within 2500 ms' })
+      )
+    })
+
+    it('handles a check that rejects after the deadline has already won', async () => {
+      jest.useFakeTimers()
+      let rejectLate: (error: Error) => void = () => {}
+      mockCheckBotId.mockReturnValue(new Promise((_resolve, reject) => { rejectLate = reject }))
+
+      const pending = refuseIfBot('POST /api/auth/register')
+      await jest.advanceTimersByTimeAsync(BOTID_TIMEOUT_MS)
+      expect(await pending).toBeNull()
+
+      // An unhandled rejection here would fail the test run.
+      rejectLate(new Error('late failure'))
+      await Promise.resolve()
+    })
+
+    it('logs every time but records the event at most once a minute per instance', async () => {
+      mockCheckBotId.mockResolvedValue({ isHuman: true } as never)
+
+      for (let i = 0; i < 5; i += 1) await refuseIfBot('POST /api/auth/register')
+
+      expect(mockLogError).toHaveBeenCalledTimes(5)
+      expect(recordServerReliabilityEvent).toHaveBeenCalledTimes(1)
+    })
   })
 })
 

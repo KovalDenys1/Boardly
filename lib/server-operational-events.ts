@@ -18,6 +18,9 @@ export const SERVER_RELIABILITY_EVENT_NAMES = [
   'rate_limited',
   'email_send_failed',
   'email_send_budget_reached',
+  // Vercel BotID threw, timed out or answered without a verdict, so a signup or a new guest
+  // went through unchecked (#1157, lib/bot-protection.ts).
+  'botid_unavailable',
 ] as const
 
 export type ServerReliabilityEventName = (typeof SERVER_RELIABILITY_EVENT_NAMES)[number]

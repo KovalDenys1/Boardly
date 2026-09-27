@@ -118,6 +118,7 @@ describe('evaluateReliabilityAlerts – discord_bot_stale', () => {
       'guests_minted_per_hour',
       'rate_limiter_degraded',
       'email_send_failed',
+      'botid_unavailable',
     ])
   })
 })
@@ -337,12 +338,33 @@ describe('evaluateReliabilityAlerts – abuse rules (#1150)', () => {
     expect(found.summary).toContain('daily transactional mail budget')
   })
 
+  it('botid_unavailable fires on the first event in the window: signups went through unchecked (#1157)', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('botid_unavailable', 3)])
+
+    const found = await rule('botid_unavailable')
+
+    expect(found.breached).toBe(true)
+    expect(found.severity).toBe('warning')
+    expect(found.runbookPath).toBe('docs/OPERATIONS.md#runbook-botid_unavailable')
+  })
+
+  it('botid_unavailable ignores a failure that ended before the window', async () => {
+    mockPrisma.operationalEvents.findMany.mockResolvedValue([serverEvent('botid_unavailable', 90)])
+
+    expect((await rule('botid_unavailable')).breached).toBe(false)
+  })
+
   it('asks the database for the server-only events', async () => {
     await evaluateReliabilityAlerts()
 
     const names = mockPrisma.operationalEvents.findMany.mock.calls[0][0].where.eventName.in
     expect(names).toEqual(
-      expect.arrayContaining(['rate_limiter_degraded', 'email_send_failed', 'email_send_budget_reached'])
+      expect.arrayContaining([
+        'rate_limiter_degraded',
+        'email_send_failed',
+        'email_send_budget_reached',
+        'botid_unavailable',
+      ])
     )
   })
 })
