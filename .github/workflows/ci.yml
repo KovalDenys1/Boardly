@@ -35,12 +35,12 @@ jobs:
       BOARDLY_INTERNAL_SECRET: test-boardly-internal-secret-key-placeholder
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -48,6 +48,12 @@ jobs:
 
       - name: Run lint and typecheck (ci:quick)
         run: npm run ci:quick
+
+      # Non-blocking for now (#1147): surfaces known-vulnerability counts in the
+      # job log without failing the build. Runs once, not per matrix OS.
+      - name: Dependency audit (non-blocking)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm audit --omit=dev --audit-level=high || true
 
       # Full suite on Linux (#758 — CI previously ran only 3 smoke files);
       # Windows keeps the fast smoke set as a cross-platform sanity check.
@@ -76,12 +82,12 @@ jobs:
       BOARDLY_INTERNAL_SECRET: test-boardly-internal-secret-key-placeholder
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
