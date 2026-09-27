@@ -3734,7 +3734,7 @@ const en = {
       session: 'A sign-in cookie that keeps you logged in.',
       guest: 'For guests: the guest id, name and identity token that keep you attached to your games. The token lasts {{guestTokenDays}} days from your last visit, and "Forget me" removes all of them.',
       preferences: 'Your language, theme, sound and similar choices, and which notices you have dismissed.',
-      lastAccount: 'After you sign in with an email address and password, that address, so the login page can offer it next time. It stays on the device after you sign out; clearing this site\'s data in your browser removes it.',
+      lastAccount: 'Only if you tick "Remember me" when you sign in with an email address and password: that address, so the login page can offer it next time. It stays on the device after you sign out; signing in with "Remember me" unticked, or clearing this site\'s data in your browser, removes it.',
       google: 'Google\'s consent cookie described in section 5.',
       serviceWorker: 'Our service worker, which receives push notifications and keeps a copy of the site\'s own files so pages load faster.',
       noTrackers: 'We set no advertising or analytics identifiers of our own. The site or campaign you arrived from travels with the request that creates your account and is never written to your browser.',

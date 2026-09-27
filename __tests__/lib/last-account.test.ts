@@ -1,4 +1,4 @@
-import { getLastAccount, saveLastAccount } from '@/lib/last-account'
+import { clearLastAccount, getLastAccount, rememberLastAccount, saveLastAccount } from '@/lib/last-account'
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -33,5 +33,29 @@ describe('last-account', () => {
   it('returns null when stored JSON is malformed', () => {
     localStorage.setItem('boardly_last_account', 'not-json')
     expect(getLastAccount()).toBeNull()
+  })
+
+  it('clears a stored account', () => {
+    saveLastAccount({ email: 'user@test.com', name: null, image: null })
+    clearLastAccount()
+    expect(localStorage.getItem('boardly_last_account')).toBeNull()
+  })
+
+  describe('only with "Remember me" (#1133, ekomloven § 3-15)', () => {
+    it('stores the address when the box is ticked', () => {
+      rememberLastAccount(true, { email: 'user@test.com', name: null, image: null })
+      expect(getLastAccount()?.email).toBe('user@test.com')
+    })
+
+    it('stores nothing when the box is unticked', () => {
+      rememberLastAccount(false, { email: 'user@test.com', name: null, image: null })
+      expect(localStorage.getItem('boardly_last_account')).toBeNull()
+    })
+
+    it('removes an address an earlier sign-in stored when the box is unticked', () => {
+      rememberLastAccount(true, { email: 'old@test.com', name: null, image: null })
+      rememberLastAccount(false, { email: 'new@test.com', name: null, image: null })
+      expect(localStorage.getItem('boardly_last_account')).toBeNull()
+    })
   })
 })

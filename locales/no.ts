@@ -3722,7 +3722,7 @@ const no = {
       session: 'En innloggingskapsel som holder deg innlogget.',
       guest: 'For gjester: gjeste-id-en, navnet og identitetsnøkkelen som holder deg knyttet til spillene dine. Nøkkelen varer i {{guestTokenDays}} dager fra siste besøk, og «Glem meg» fjerner alt sammen.',
       preferences: 'Språk, tema, lyd og lignende valg, og hvilke meldinger du har lukket.',
-      lastAccount: 'Etter at du har logget inn med e-postadresse og passord: den adressen, så innloggingssiden kan foreslå den neste gang. Den blir liggende på enheten etter at du logger ut; å slette dette nettstedets data i nettleseren fjerner den.',
+      lastAccount: 'Bare hvis du krysser av for «Husk meg» når du logger inn med e-postadresse og passord: den adressen, så innloggingssiden kan foreslå den neste gang. Den blir liggende på enheten etter at du logger ut; å logge inn uten «Husk meg», eller å slette dette nettstedets data i nettleseren, fjerner den.',
       google: 'Googles samtykkekapsel, beskrevet i punkt 5.',
       serviceWorker: 'Vår service worker, som tar imot pushvarsler og holder en kopi av nettstedets egne filer så sidene laster raskere.',
       noTrackers: 'Vi setter ingen egne annonse- eller analyseidentifikatorer. Nettstedet eller kampanjen du kom fra, følger med forespørselen som oppretter kontoen din, og skrives aldri til nettleseren din.',
