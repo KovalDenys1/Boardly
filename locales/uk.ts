@@ -2275,6 +2275,7 @@ const uk: TranslationWithPlurals = {
     rulesNewTab: 'Правила спільноти (відкриються в новій вкладці)',
   },
   auth: {
+    signedInProvidersHidden: 'Ви вже увійшли в акаунт. Щоб увійти через Google, GitHub або Discord, спершу вийдіть із нього.',
     inAppBrowser: {
       title: 'Ви у вбудованому браузері {{app}}',
       body: 'Google не дозволяє входити звідси. Відкрийте сторінку в Safari або Chrome (натисніть ⋯ і виберіть «Відкрити в браузері») або увійдіть через Discord, GitHub чи e-mail.',
@@ -2474,6 +2475,7 @@ const uk: TranslationWithPlurals = {
     loading: 'Завантаження профілю...',
     playerFallback: 'Гравець',
     verified: 'Підтверджено',
+    oauthLinkRefused: 'Ви вже були у своєму акаунті, тому ми не прив’язали до нього цей акаунт {{provider}}. Щоб увійти через {{provider}}, спершу вийдіть з акаунта.',
     chips: {
       games: '{{count}} ігор',
       games_one: '{{count}} гра',

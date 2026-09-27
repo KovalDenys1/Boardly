@@ -1,4 +1,5 @@
 import { NextAuthOptions } from 'next-auth'
+import { cookies } from 'next/headers'
 // Use custom adapter to map plural model names (Users) to NextAuth expectations (User)
 import { CustomPrismaAdapter } from './custom-prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
@@ -103,6 +104,82 @@ async function isSessionRevoked(payload: JWT): Promise<boolean> {
     return true
   }
   return false
+}
+
+/** Verifies a session cookie and applies the session cutoff; null when it is not a live session. */
+async function decodeSessionToken(params: Parameters<typeof defaultJwtDecode>[0]): Promise<JWT | null> {
+  const payload = await defaultJwtDecode(params)
+  if (payload && (await isSessionRevoked(payload))) {
+    return null
+  }
+  return payload
+}
+
+// The two names next-auth gives the session cookie: `__Secure-` when its URL is https,
+// the bare one otherwise (core/lib/cookie.js defaultCookies).
+const SESSION_COOKIE_NAMES = ['__Secure-next-auth.session-token', 'next-auth.session-token'] as const
+
+function sessionCookieChunkIndex(name: string): number {
+  return Number.parseInt(name.split('.').pop() ?? '0', 10) || 0
+}
+
+/**
+ * The session token under each cookie name, put back together the way next-auth's
+ * SessionStore does (core/lib/cookie.js): every cookie whose name starts with the name,
+ * in the order of its `.N` chunk suffix, joined. A large JWT is split across `name.0`,
+ * `name.1` and so on.
+ */
+export function sessionTokensFromCookies(all: ReadonlyArray<{ name: string; value: string }>): string[] {
+  return SESSION_COOKIE_NAMES.flatMap((cookieName) => {
+    const token = all
+      .filter((cookie) => cookie.name.startsWith(cookieName))
+      .sort((a, b) => sessionCookieChunkIndex(a.name) - sessionCookieChunkIndex(b.name))
+      .map((cookie) => cookie.value)
+      .join('')
+    return token ? [token] : []
+  })
+}
+
+/**
+ * The user this request's session cookie signs in, decided the way next-auth's OAuth
+ * callback decides whom to link a new provider account to (core/lib/callback-handler.js):
+ * the cookie decodes through the same jwt.decode, session cutoff included, and carries a
+ * `sub`. A revoked, expired or forged cookie is no session here, just as it is none there.
+ *
+ * The cookies come from `next/headers`, which is where next-auth's App Router handler reads
+ * them too (next-auth/next NextAuthRouteHandler), so the two cannot be looking at different
+ * requests. Both cookie names are checked. next-auth reads only the one its URL's scheme
+ * picks, so a cookie under the other name can make this refuse a link next-auth would not
+ * have made, and never allow one it would.
+ */
+async function readSignedInUserId(): Promise<string | null> {
+  let all: Array<{ name: string; value: string }>
+  try {
+    all = (await cookies()).getAll()
+  } catch {
+    // Outside a request there is no cookie for next-auth to link by either.
+    return null
+  }
+  const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET
+  if (!secret) {
+    return null
+  }
+  for (const token of sessionTokensFromCookies(all)) {
+    try {
+      const payload = await decodeSessionToken({ token, secret })
+      if (typeof payload?.sub === 'string' && payload.sub.length > 0) {
+        return payload.sub
+      }
+    } catch {
+      // Not a token this secret signed; next-auth treats it as no session as well.
+    }
+  }
+  return null
+}
+
+/** Where a refused link lands: the profile, which says why (#1223). */
+export function oauthLinkRefusedRedirect(provider: string): string {
+  return `/profile?oauthLinkRefused=${encodeURIComponent(provider)}`
 }
 
 export const authOptions: NextAuthOptions = {
@@ -245,13 +322,7 @@ export const authOptions: NextAuthOptions = {
         maxAge: getCredentialsSessionMaxAgeSeconds(rememberMe),
       })
     },
-    async decode(params) {
-      const payload = await defaultJwtDecode(params)
-      if (payload && (await isSessionRevoked(payload))) {
-        return null
-      }
-      return payload
-    },
+    decode: decodeSessionToken,
   },
   pages: {
     signIn: '/auth/login',
@@ -275,6 +346,24 @@ export const authOptions: NextAuthOptions = {
             },
             include: { user: true }
           })
+
+          // Already signed in, with a provider account that is not this user's (#1223).
+          // Past this callback next-auth links an unlinked provider account to whoever the
+          // session cookie names, with no confirmation and no notice, so on a shared device
+          // someone else's Google, GitHub or Discord could end up able to sign in as the
+          // signed-in account. Nothing is linked this way any more: the explicit flow is
+          // /discord/link (#1218), which never comes through next-auth. A provider account
+          // linked to a different user is refused the same way; next-auth would only have
+          // thrown OAuthAccountNotLinked after this callback had refreshed that user's tokens.
+          const signedInUserId = await readSignedInUserId()
+          if (signedInUserId && existingAccount?.userId !== signedInUserId) {
+            apiLogger('OAuth signIn').warn('OAuth sign-in refused: already signed in as another account', {
+              userId: signedInUserId,
+              provider: account.provider,
+              linkedToAnotherUser: Boolean(existingAccount),
+            })
+            return oauthLinkRefusedRedirect(account.provider)
+          }
 
           if (existingAccount) {
             if (existingAccount.user.suspended) {
@@ -386,13 +475,11 @@ export const authOptions: NextAuthOptions = {
             return true
           }
 
-          // New provider identity with a new email. Signed out, the adapter creates a
-          // SEPARATE user for it. Signed in, next-auth's OAuth callback links it to the
-          // signed-in user instead (the session cookie it decodes picks the account; see
-          // the #1136 note above isSessionRevoked). /auth/link, the profile's page for
-          // starting that on purpose, was removed in #1140, and /discord/link no longer
-          // comes through here: it links server-side, bound to the session, and never
-          // issues a session (lib/discord/account-link.ts, #1218).
+          // New provider identity with a new email, and nobody signed in (a signed-in
+          // request was refused above, #1223): the adapter creates a SEPARATE user for it.
+          // /auth/link, the profile's page for linking on purpose, was removed in #1140,
+          // and /discord/link does not come through here: it links server-side, bound to
+          // the session, and never issues a session (lib/discord/account-link.ts, #1218).
           const log = apiLogger('OAuth signIn')
           // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {

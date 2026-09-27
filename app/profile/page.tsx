@@ -56,6 +56,12 @@ interface LinkedAccounts {
 type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'premium' | 'settings'
 const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'premium', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
+// Brand names, spelled the same in every locale; the keys are next-auth provider ids.
+const OAUTH_PROVIDER_NAMES: Record<string, string> = {
+  google: 'Google',
+  github: 'GitHub',
+  discord: 'Discord',
+}
 
 /**
  * Everything below is copy rendered from a list, so it is held as translation
@@ -557,6 +563,27 @@ export default function ProfilePage() {
       currentUrl.searchParams.delete('premium')
       window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
     }
+  }, [])
+
+  // Back from an OAuth sign-in the server refused because this browser was already
+  // signed in and the provider account is not this one's (#1223, lib/next-auth.ts).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const currentUrl = new URL(window.location.href)
+    const refusedProvider = currentUrl.searchParams.get('oauthLinkRefused')
+    if (refusedProvider === null) return
+
+    // Only the three provider names: the parameter is in a URL anyone can send.
+    const providerName = OAUTH_PROVIDER_NAMES[refusedProvider]
+    if (providerName) {
+      showToast.error('profile.oauthLinkRefused', undefined, { provider: providerName }, {
+        id: 'oauth-link-refused',
+        duration: 10_000,
+      })
+    }
+    currentUrl.searchParams.delete('oauthLinkRefused')
+    window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
   }, [])
 
   useEffect(() => {
