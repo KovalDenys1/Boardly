@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import PrivacyNotice from '@/app/privacy/PrivacyNotice'
+import { metadata } from '@/app/privacy/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_RULES } from '@/lib/data-retention'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from '@/lib/retention-periods'
@@ -200,5 +201,17 @@ describe('privacy notice (#1126)', () => {
       expect(text).toContain(name)
     }
     expect(text).toContain('Linked Roles')
+  })
+})
+
+/**
+ * #1227: the "Who is responsible" section names the seller's home address,
+ * so the page stays out of search results while remaining reachable at its
+ * own canonical URL and one click from the footer.
+ */
+describe('/privacy metadata (#1227)', () => {
+  it('is noindex, follow, and keeps its canonical URL', () => {
+    expect(metadata.robots).toEqual({ index: false, follow: true })
+    expect(metadata.alternates?.canonical).toBe('https://boardly.online/privacy')
   })
 })

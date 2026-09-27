@@ -3558,7 +3558,6 @@ const en = {
     withdrawal: 'Right of withdrawal',
     rules: 'Community rules',
     privacySettings: 'Privacy and cookie settings',
-    operatedBy: 'Operated by {{name}}',
     community: 'Community',
     discord: 'Discord',
     sendFeedback: 'Send Feedback',

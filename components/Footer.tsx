@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
-import { formatSellerAddress, getSellerIdentity } from '@/lib/seller-identity'
 import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
 import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
@@ -12,7 +11,6 @@ import { isProductionDeployment } from '@/lib/feature-flags'
 export default function Footer() {
   const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
-  const seller = getSellerIdentity()
   // The adsbygoogle loader — which is also what delivers Google's consent
   // message — only runs in production (#1152), so the control that reopens
   // it would do nothing anywhere else. `NODE_ENV === 'production'` alone
@@ -279,23 +277,10 @@ export default function Footer() {
           className="mt-10 pt-6 text-xs"
           style={{ borderTop: '1.5px solid var(--bd-line)', color: 'var(--bd-ink-soft)' }}
         >
-          {/* Imprint (#1163): the operator's name, address and email, on a row of
-              its own so it wraps cleanly at 320 px. Renders nothing until both
-              NEXT_PUBLIC_SELLER_* variables are set - never a half-filled line. */}
-          {seller && (
-            <address className="mb-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 not-italic sm:justify-start">
-              <span>{t('footer.operatedBy', { name: seller.legalName })}</span>
-              <span aria-hidden="true">·</span>
-              <span>{formatSellerAddress(seller)}</span>
-              <span aria-hidden="true">·</span>
-              <a
-                href={`mailto:${seller.email}`}
-                className="underline underline-offset-2 transition-colors hover:text-bd-ink"
-              >
-                {seller.email}
-              </a>
-            </address>
-          )}
+          {/* No operator imprint here (#1227): the seller's name and home address
+              show only on /terms, /privacy, /withdrawal and the Premium purchase
+              confirmation email, where the law actually asks for them - not on a
+              row that every crawled page carries. */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <span>{t('footer.allRightsReserved', { year: currentYear })}</span>
             <span>{t('footer.builtWith')}</span>

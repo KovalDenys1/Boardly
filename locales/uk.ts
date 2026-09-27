@@ -3691,7 +3691,6 @@ const uk: TranslationWithPlurals = {
     withdrawal: 'Право на відмову',
     rules: 'Правила спільноти',
     privacySettings: 'Налаштування конфіденційності та файлів cookie',
-    operatedBy: 'Оператор: {{name}}',
     community: 'Спільнота',
     discord: 'Discord',
     sendFeedback: 'Залишити відгук',

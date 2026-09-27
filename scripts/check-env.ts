@@ -49,12 +49,14 @@ const optionalVars = [
   // Absent locally, which is exactly what makes the ENABLE_* flags usable there.
   'VERCEL_ENV',
   'NEXT_PUBLIC_VERCEL_ENV',
-  // Operator imprint (#1163): name and geographic address of whoever runs the
-  // site, which ehandelsloven section 8 and GDPR Art. 13(1)(a) require on it.
-  // Public values by law, hence NEXT_PUBLIC_, but personal ones, so they are set
-  // in Vercel's Production environment and never committed. Optional locally;
-  // missing in production they are reported below, because /terms, /privacy,
-  // the footer and the emails then name no operator.
+  // Operator imprint (#1163, narrowed to /terms, /privacy, /withdrawal and the
+  // Premium confirmation email by #1227): name and geographic address of
+  // whoever runs the site, which ehandelsloven section 8 and GDPR Art. 13(1)(a)
+  // require somewhere easy and direct to reach. Public values by law, hence
+  // NEXT_PUBLIC_, but personal ones, so they are set in Vercel's Production
+  // environment and never committed. Optional locally; missing in production
+  // they are reported below, because those pages and that one email then name
+  // no operator.
   'NEXT_PUBLIC_SELLER_LEGAL_NAME',
   'NEXT_PUBLIC_SELLER_ADDRESS',
   // Both fall back to NEXTAUTH_SECRET when unset (lib/guest-auth.ts,
@@ -241,8 +243,8 @@ if (sellerIdentityMissing.length > 0 && sellerIdentityMissing.length < sellerIde
   )
 } else if (sellerIdentityMissing.length === sellerIdentityVars.length && isProduction) {
   console.log(
-    `\nWARN Operator imprint is not configured in production; /terms, /privacy, the footer and the emails ` +
-      `name no operator (#1163). Set: ${sellerIdentityMissing.join(', ')}`
+    `\nWARN Operator imprint is not configured in production; /terms, /privacy, /withdrawal and the ` +
+      `Premium confirmation email name no operator (#1163, #1227). Set: ${sellerIdentityMissing.join(', ')}`
   )
 }
 
