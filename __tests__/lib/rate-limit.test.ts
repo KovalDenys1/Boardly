@@ -500,7 +500,7 @@ describe('rateLimit store backends', () => {
       process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
       // One HINCRBY per counted request since #1156 (a hash per window, the key as the field).
-      const hincrby = jest.fn(async () => 1)
+      const hincrby = jest.fn(async (_key: string, _field: string, _increment: number) => 1)
       const expire = jest.fn(async () => 1)
       const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
       __rateLimitTestUtils.clearInMemoryStore()
