@@ -37,6 +37,7 @@ const ALERT_EVENT_NAMES = [
   'email_send_failed',
   'email_send_budget_reached',
   'botid_unavailable',
+  'botid_flagged',
   ...HUMAN_ACTIVITY_EVENT_NAMES,
 ] as const
 

@@ -80,6 +80,17 @@ describe('refuseIfBot (#1157)', () => {
     })
   })
 
+  it('lets a bot verdict through in monitor mode (BOTID_MODE=monitor), and logs it', async () => {
+    process.env.VERCEL_ENV = 'production'
+    process.env.BOTID_MODE = 'monitor'
+    mockCheckBotId.mockResolvedValue(verdict(true))
+    try {
+      expect(await refuseIfBot('POST /api/auth/guest-session')).toBeNull()
+    } finally {
+      delete process.env.BOTID_MODE
+    }
+  })
+
   it('fails open when BotID itself errors: the rate limits still apply', async () => {
     process.env.VERCEL_ENV = 'production'
     mockCheckBotId.mockRejectedValue(new Error('VERCEL_OIDC_TOKEN is not set'))
