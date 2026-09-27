@@ -17,9 +17,11 @@ export interface FeedbackDiscordCleanup {
  * channel for the Feedback rows matching `where`.
  *
  * The privacy notice promises that feedback is kept for its retention period and that
- * deleting an account removes the sender from it. Each Discord copy carries the sender's
- * username and id or email, so both the retention rule (lib/data-retention.ts) and
- * detachFeedbackFrom (lib/account-erasure.ts) call this before touching the rows.
+ * deleting an account removes the sender from it. Copies posted before #1133 carry the
+ * sender's username and id or email (newer ones only the type, a preview and the
+ * feedback id, lib/feedback-notification.ts), so both the retention rule
+ * (lib/data-retention.ts) and detachFeedbackFrom (lib/account-erasure.ts) call this
+ * before touching the rows.
  *
  * Discord failures never throw: a row whose copy could not be deleted keeps its message
  * id and is reported in `failed`, so the next retention run tries again.

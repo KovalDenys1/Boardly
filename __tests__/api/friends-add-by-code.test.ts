@@ -37,12 +37,19 @@ jest.mock('@/lib/next-auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/rate-limit', () => ({
-  rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
-  rateLimitPresets: {
-    api: {},
-  },
-}))
+jest.mock('@/lib/rate-limit', () => {
+  const consumeKeyedRateLimit = jest.fn(() => Promise.resolve({ limited: false, retryAfterSeconds: 0 }))
+  return {
+    rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
+    rateLimitPresets: {
+      api: {},
+      friendCodeAttempt: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
+      friendCodeDailyOutgoing: { windowMs: 24 * 60 * 60 * 1000, maxRequests: 20 },
+    },
+    consumeKeyedRateLimit,
+    __consumeKeyedRateLimit: consumeKeyedRateLimit,
+  }
+})
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
@@ -65,6 +72,9 @@ const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockFindUserByFriendCode = findUserByFriendCode as jest.MockedFunction<typeof findUserByFriendCode>
 const mockCreateInAppNotification =
   createInAppNotification as jest.MockedFunction<typeof createInAppNotification>
+const mockConsumeKeyedRateLimit = (
+  jest.requireMock('@/lib/rate-limit') as { __consumeKeyedRateLimit: jest.Mock }
+).__consumeKeyedRateLimit
 
 function buildRequest(body: unknown) {
   return new NextRequest('http://localhost:3000/api/friends/add-by-code', {
@@ -92,6 +102,7 @@ describe('POST /api/friends/add-by-code', () => {
     mockPrisma.friendships.findFirst.mockResolvedValue(null as any)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null as any)
     mockCreateInAppNotification.mockResolvedValue(undefined)
+    mockConsumeKeyedRateLimit.mockResolvedValue({ limited: false, retryAfterSeconds: 0 })
   })
 
   it('resolves both the request.receiver and top-level user avatar (avatarUrl over image)', async () => {
@@ -148,5 +159,56 @@ describe('POST /api/friends/add-by-code', () => {
 
     expect(payload.request.receiver.avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
     expect(payload.user.avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
+  })
+
+  // #1120 (audit S2-05)
+  it('returns 400, not 404, for a well-formed code assigned to nobody', async () => {
+    mockFindUserByFriendCode.mockResolvedValue(null as any)
+
+    const response = await POST(buildRequest({ friendCode: '99999' }))
+
+    expect(response.status).toBe(400)
+  })
+
+  it('returns 429 when the per-user attempt limit is exceeded, keyed on the sender', async () => {
+    mockConsumeKeyedRateLimit.mockImplementation((key: string) =>
+      Promise.resolve(
+        key.startsWith('friend-code-attempt:')
+          ? { limited: true, retryAfterSeconds: 1800 }
+          : { limited: false, retryAfterSeconds: 0 }
+      )
+    )
+
+    const response = await POST(buildRequest({ friendCode: '12345' }))
+
+    expect(response.status).toBe(429)
+    expect(mockFindUserByFriendCode).not.toHaveBeenCalled()
+    expect(mockConsumeKeyedRateLimit).toHaveBeenCalledWith(
+      'friend-code-attempt:sender-1',
+      expect.anything()
+    )
+  })
+
+  it('returns 429 when the daily outgoing cap is exceeded, without creating the request', async () => {
+    mockFindUserByFriendCode.mockResolvedValue({
+      id: 'receiver-1',
+      username: 'target-user',
+      email: 'target@example.com',
+      image: null,
+      avatarUrl: null,
+      friendCode: '12345',
+    } as any)
+    mockConsumeKeyedRateLimit.mockImplementation((key: string) =>
+      Promise.resolve(
+        key.startsWith('friend-code-outgoing:')
+          ? { limited: true, retryAfterSeconds: 3600 }
+          : { limited: false, retryAfterSeconds: 0 }
+      )
+    )
+
+    const response = await POST(buildRequest({ friendCode: '12345' }))
+
+    expect(response.status).toBe(429)
+    expect(mockPrisma.friendRequests.create).not.toHaveBeenCalled()
   })
 })

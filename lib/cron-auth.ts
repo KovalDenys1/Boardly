@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { constantTimeEqual } from '@/lib/secret-compare'
 
 export function authorizeCronRequest(request: Request): NextResponse | null {
   const cronSecret = process.env.CRON_SECRET?.trim()
@@ -10,7 +11,7 @@ export function authorizeCronRequest(request: Request): NextResponse | null {
   }
 
   const authHeader = request.headers.get('authorization')
-  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+  if (!authHeader || !constantTimeEqual(authHeader, `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

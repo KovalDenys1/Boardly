@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { nanoid } from 'nanoid'
+import { issueVerificationToken } from '@/lib/auth-tokens'
 import { prisma } from '@/lib/db'
 import { comparePassword } from '@/lib/auth'
 import { sendEmailChangeNoticeEmail, sendVerificationEmail } from '@/lib/email'
@@ -402,11 +402,13 @@ async function patchProfileHandler(req: NextRequest) {
 
     let verificationToken: string | null = null
     if (verificationEmailTarget) {
-      verificationToken = nanoid(32)
+      // Only the hash is stored (#1141).
+      const issued = issueVerificationToken()
+      verificationToken = issued.token
       await tx.emailVerificationTokens.create({
         data: {
           userId: session.user.id,
-          token: verificationToken,
+          tokenHash: issued.tokenHash,
           expires: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
         },
       })

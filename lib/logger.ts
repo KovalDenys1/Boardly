@@ -4,7 +4,12 @@
  * Provides structured logging with different log levels.
  * In development: logs to console with colors
  * In production: logs as JSON for easy parsing by logging services
+ *
+ * Every entry is redacted before it is written: email addresses in the message, the
+ * context and the error are masked (lib/redact.ts, #1132). Log the userId instead.
  */
+
+import { redactEmailsInText, redactLogValue } from './redact'
 
 export enum LogLevel {
   DEBUG = 'debug',
@@ -84,29 +89,31 @@ class Logger {
       return
     }
 
+    // Redacted copies, never the caller's objects: a context is often a row the
+    // caller goes on to use.
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
-      message,
-      context,
+      message: redactEmailsInText(message),
+      context: context ? redactLogValue(context) : context,
     }
 
     if (error) {
       const err = error instanceof Error ? error : undefined
       if (err) {
-        entry.stack = err.stack
+        entry.stack = err.stack ? redactEmailsInText(err.stack) : err.stack
         if (!entry.context) {
           entry.context = {}
         }
         entry.context.error = {
           name: err.name,
-          message: err.message,
+          message: redactEmailsInText(err.message),
         }
       } else {
         if (!entry.context) {
           entry.context = {}
         }
-        entry.context.error = String(error)
+        entry.context.error = redactEmailsInText(String(error))
       }
     }
 

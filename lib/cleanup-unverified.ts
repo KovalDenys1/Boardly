@@ -1,7 +1,7 @@
 import { apiLogger } from './logger'
 import { prisma } from './db'
 import { sendUnverifiedAccountWarningEmail } from './email'
-import { nanoid } from 'nanoid'
+import { issueVerificationToken } from './auth-tokens'
 import { RETENTION_DAYS } from './retention-periods'
 
 const log = apiLogger('/cleanup/unverified-accounts')
@@ -55,13 +55,11 @@ export async function cleanupUnverifiedAccounts(daysOld: number = RETENTION_DAYS
       }
     }
 
+    // Ids only: the addresses and names are exactly what this run deletes, and a log
+    // line would keep them after the rows are gone (#1132).
     log.info('Found unverified accounts to delete', {
       count: unverifiedUsers.length,
-      users: unverifiedUsers.map(u => ({
-        email: u.email,
-        username: u.username,
-        createdAt: u.createdAt
-      }))
+      userIds: unverifiedUsers.map(u => u.id),
     })
 
     // Delete related records first (due to cascade, this should happen automatically, but being explicit)
@@ -168,7 +166,6 @@ export async function warnUnverifiedAccounts(
         if (!user.email) {
           log.warn('Skipping warning email for user without email', {
             userId: user.id,
-            username: user.username,
           })
 
           return {
@@ -186,13 +183,14 @@ export async function warnUnverifiedAccounts(
             where: { userId: user.id },
           })
 
-          const token = nanoid(32)
+          // Only the hash is stored (#1141).
+          const { token, tokenHash } = issueVerificationToken()
           const expires = new Date(Date.now() + tokenTtlHours * 60 * 60 * 1000)
 
           await prisma.emailVerificationTokens.create({
             data: {
               userId: user.id,
-              token,
+              tokenHash,
               expires,
             },
           })
@@ -215,7 +213,6 @@ export async function warnUnverifiedAccounts(
         } catch (emailError) {
           log.error('Failed to send unverified account warning email', emailError as Error, {
             userId: user.id,
-            email: user.email,
           })
 
           return {

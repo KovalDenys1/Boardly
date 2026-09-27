@@ -118,7 +118,6 @@ export default function LoginForm() {
           event: 'login',
           method: 'email',
           success: false,
-          userId: undefined,
         })
         trackError({
           errorType: 'auth',
@@ -134,7 +133,6 @@ export default function LoginForm() {
           event: 'login',
           method: 'email',
           success: true,
-          userId: normalizedEmail, // Will be replaced with actual userId by session
         })
         
         saveLastAccount({
@@ -161,7 +159,6 @@ export default function LoginForm() {
         event: 'login',
         method: provider === 'google' ? 'google' : 'email', // Type-safe provider
         success: true, // We track attempt here, actual success is on callback
-        userId: undefined,
       })
       
       await signIn(provider, { callbackUrl: withSignupSourceParam(returnUrl) })

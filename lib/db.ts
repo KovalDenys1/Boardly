@@ -59,6 +59,10 @@ function createPrismaClient() {
       // lobby row spreads it into a response, and the list of people a host threw out is
       // not something to hand back to the room — the join paths ask for it by name.
       lobbies: { realtimeSecret: true, kickedUserIds: true },
+      // The admin second factor (#1142). Only the Control Panel enforces TOTP, with its
+      // own client; nothing in this app reads the seed, so no query here returns it and
+      // a leak through any of this app's routes cannot carry it.
+      users: { totpSecret: true, totpPendingSecret: true },
     },
   })
     .$extends(resilienceExtension)

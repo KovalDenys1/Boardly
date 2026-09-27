@@ -389,7 +389,8 @@ Counts `Users` rows with `isGuest = true` created in the last hour against the p
 (`lib/operational-metrics.ts`, #1150). It breaches at 60 an hour or ten times the baseline hourly
 rate, whichever is higher; a normal September 2026 day made 5-17 guests in total. A guest row is
 minted by `POST /api/auth/guest-session` and by a `POST /api/lobby/<code>/join-guest` without a
-valid guest token.
+valid guest token, or with one whose guest no longer exists (erased or purged; since #1157 that
+is a new guest under a new id, charged to the same new-guest budget, never the old id re-created).
 
 When it fires:
 
@@ -411,14 +412,25 @@ guest-session, forgot-password, resend-verification, join-guest, lobby create an
 **503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
 history reads come back empty.
 
+Every Upstash call gives up after one retry or 1.5 s (`upstashClientOptions` in
+`lib/redis-credentials.ts`), and after three failures in a row an instance stops calling the store
+for 15 s and goes straight to the fallback, probing again after that. So an outage costs a
+visitor milliseconds, not the seconds of retries the client defaults to.
+
+Upstash commands the limiter spends: one `HINCRBY` per counted request (the counters are fields in
+one hash per window, `rate_limit_window:<windowMs>:<window>`), one `EXPIRE` per window per
+instance, and none for an address that instance has already seen refused this window, or while
+it is paused.
+
 When it fires:
 
 1. `reason` on the event is the Upstash error. `fetch failed` on credentials that look right
    usually means the store was archived after inactivity or the monthly command quota (500K on
    Free) is spent: open the Upstash console for `boardly-cache` (Vercel -> Storage).
-2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter no
-   longer spends a command on a key it has already refused, and the WAF rules below answer most
-   floods before they reach a function, so a spent quota means a very large or distributed flood.
+2. Quota spent: move the store to pay-as-you-go, or wait for the billing month. The limiter spends
+   at most one command per counted request and none on a key it has already refused, and the WAF
+   rules below answer most floods before they reach a function, so a spent quota means a very
+   large or distributed flood.
 3. Credentials changed: check `KV_REST_API_URL` / `KV_REST_API_TOKEN` in Vercel production env.
 
 The alert resolves on the first window without a degraded event.
@@ -458,8 +470,19 @@ before a function runs:
 | RL forgot-password | `/api/auth/forgot-password` | 25 | 5 / 15 min |
 | RL guest-session | `/api/auth/guest-session` | 25 | 5 / 15 min |
 | RL sign-in credentials | `/api/auth/callback/credentials` | 50 | 10 / 15 min |
-| RL sign-in login | `/api/auth/login` | 25 | 5 / 15 min |
 | RL lobby join-guest | `^/api/lobby/[^/]+/join-guest$` | 600 | 120 / min across codes |
+
+**"RL sign-in login" (`/api/auth/login`, 25/60s) needs removing from the WAF config** (#1138,
+2026-09-25): the route it protected was a dead second password-check endpoint with no caller
+anywhere in the app and has been deleted. The path is not gone, though — with no `route.ts` left
+under `app/api/auth/login`, the request falls through to the catch-all
+`app/api/auth/[...nextauth]/route.ts`, and NextAuth 4.24.15 answers 400 ("This action with HTTP
+POST is not supported") because "login" is not one of its known actions. The password check itself
+is never reached either way, so the rule is now redundant rather than unreachable: traffic still
+hits the path and can still trip the rate limit, it is just guarding a route that already refuses
+on its own. Nothing to fix in the app — `vercel firewall rules disable "RL sign-in login"` then
+`vercel firewall publish --yes` on `prj_MfQkf6bs9B5Qhf1x8MLX4fYRlnS2` is the only remaining step,
+and it touches production Vercel Firewall config rather than the codebase.
 
 The managed `bot_protection` and `ai_bots` rulesets are active in **log** mode only (staged by
 Denys on 2026-01-27, published with the rules above). Nothing challenges or denies a page.
@@ -474,6 +497,56 @@ Commands (from a directory linked to the project, `vercel link`):
 
 Not configured, and Denys's to decide: a Spend Management cap with a webhook (billing), and moving
 the managed bot rulesets from log to challenge.
+
+### Dependency audit (`npm audit`) — production reachability, 2026-09-25 (#1148)
+
+The 2026-09-24 security audit's `npm audit --omit=dev --json` run was truncated at 40 KB
+(after the package `hono`, alphabetically), so packages `l`-`z` and the totals were never
+seen. This is the untruncated run, with every remaining advisory labelled build-time or
+runtime. It also corrects one thing the audit got wrong: `prisma` (the CLI) was already a
+`devDependency` (`package.json`, `devDependencies` block) at audit time, not a `dependency` —
+`npm ls prisma --omit=dev` returns empty. `--omit=dev` still surfaces prisma-chain packages
+in `npm audit`/`npm ls` output regardless (confirmed by tracing `npm ls mysql2 --omit=dev
+--all`, which attributes `mysql2` to `@prisma/client → prisma → mysql2`, an edge that does
+not exist in `@prisma/client`'s own `package.json` — an `npm audit`/`ls` display quirk with
+hoisted packages, not a manifest problem). Nothing to move.
+
+**Fixed in this pass:**
+- `@sentry/nextjs` `^10.42.0` → `^10.75.3`: removes the only advisory the ticket named,
+  `@opentelemetry/core < 2.8.0` (GHSA-8988-4f7v-96qf, unbounded memory allocation parsing a
+  `baggage` header) — reachable on every function via `@sentry/node`'s HTTP instrumentation.
+  `npm audit --omit=dev` now shows nothing under `@sentry/*` or `@opentelemetry/*`.
+- `next` and `next-auth` bumped to `16.3.6` / `4.24.15` — both already inside the existing
+  `^16.1.6` / `^4.24.7` ranges in `package.json`, so this needed no manifest change, only a
+  lockfile update. Found while running this audit, not named in the ticket or in the
+  2026-09-24 report (which never got past `hono`): the installed versions carried **two
+  critical, unauthenticated advisories** — `next` (Image Optimization API RCE with AVIF
+  files, GHSA-2xp9-vwfh-vxw4, and a Windows-hosted RCE, GHSA-p293-qw3h-jr36, both fixed
+  `<16.3.3`) and `next-auth` (email-normalizer homoglyph `@`-bypass, GHSA-7rqj-j65f-68wh,
+  fixed `<4.24.15`). Both are runtime, in-range, and no other version bump depended on them,
+  so fixing them here rather than opening a separate ticket for a change `npm update` already
+  covered. Full auth/session/proxy suites (22 files, 141 tests) pass on the new versions.
+
+**`npm audit --omit=dev` totals: 38 → 28** (2 critical → 0, 15 high → 14, 19 moderate → 12,
+2 low → 2 unchanged). Everything left, labelled:
+
+| Package | Sev. | Root cause | Build-time or runtime |
+| --- | --- | --- | --- |
+| `next` | — (fixed) | — | runtime — the framework |
+| `nanoid` | high | direct dependency, own advisory (negative-size loop / overflow) | **runtime** — used for lobby/ID generation; fix is in-range (`^5.1.6` already allows the patched 5.1.16, just needs `npm update nanoid`) |
+| `resend` | moderate | direct dependency, own advisory | **runtime** — the email-sending client; installed `6.9.3` is inside the vulnerable `6.2.0-canary.0 - 6.12.2` range, fix is in-range |
+| `svix` | moderate | via `resend` | shipped in the runtime bundle (webhook-verification helper `resend` carries but this repo never calls — see #1121, which verifies Resend's HMAC by hand) |
+| `uuid` | moderate | via `next-auth`, `resend` | runtime, in-range fix (`<11.1.1` buffer bounds check) |
+| `sharp` | high | via `next`'s optional image-processing dependency (also separately pinned in this repo's own `devDependencies` for `scripts/discord/render-assets.tsx`) | build-time for this repo's own script; `next`'s copy is not exercised on Vercel, which does image optimization on its own infrastructure |
+| `postcss`, `postcss-selector-parser`, `browserslist`, `baseline-browser-mapping` | high/moderate/low | Tailwind/autoprefixer's CSS build pipeline | **build-time only** — runs during `next build`, never in a deployed function |
+| `@babel/core`, `brace-expansion`, `picomatch`, `fast-uri` | low/high | `@sentry/nextjs`'s own bundler/source-map-upload plugins (webpack, rollup, glob) | **build-time only** — the Sentry CLI step that runs during `next build`, not the SDK code that ships |
+| `prisma`, `@prisma/config`, `@prisma/dev`, `mysql2`, `defu`, `effect`, `deepmerge-ts`, `lodash`, `hono`, `@hono/node-server`, `chevrotain`, `@chevrotain/*`, `@mrleebo/prisma-ast`, `valibot` | high/moderate | Prisma CLI's own toolchain (`prisma generate`/`migrate`/`db push`, its schema parser, its local dev server) | **build/dev-time only** — none of this ships into a Vercel function; only `@prisma/client-runtime-utils` does, and it carries no advisory |
+| `yaml` | moderate | Tailwind's `postcss-load-config` | **build-time only** |
+
+`nanoid`, `resend`, `svix` and `uuid` are genuine runtime fixes and are in-range
+(`npm update` would take them), but bumping a payments-adjacent send path (`resend`) without
+its own review is out of scope here — that is the supply-chain ticket's job, along with
+labelling anything this list gets wrong.
 
 ### Ads-day checklist: flipping `NEXT_PUBLIC_ADS_ENABLED` on
 
@@ -521,11 +594,17 @@ Check response headers for representative routes (for example `/games`, `/lobby`
 - `Content-Security-Policy` `script-src` includes `'self'` and trusted script origins
 - `Content-Security-Policy` `script-src` includes `'unsafe-inline'` (required by current Next.js App Router bootstrap output)
 - `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
+- `Content-Security-Policy` `connect-src` has no `localhost`/`127.0.0.1` entry in production (#1146)
+- `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Cross-Origin-Opener-Policy:
+  same-origin-allow-popups`, `Cross-Origin-Resource-Policy: same-site` (#1146)
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains` (`vercel.json`, #1146) —
+  only visible on an HTTPS response, since HSTS itself is what tells a browser to always use
+  HTTPS for this host next time
 
 Example:
 
 ```bash
-curl -I https://boardly.online/games | grep -i content-security-policy
+curl -I https://boardly.online/games | grep -iE 'content-security-policy|x-frame-options|x-xss-protection|cross-origin-|strict-transport-security'
 ```
 
 ### Replay storage grows over time

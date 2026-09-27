@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { constantTimeEqual } from '@/lib/secret-compare'
 import {
   getSecurityHeaders,
   isSignatureAuthenticatedWebhook,
@@ -75,13 +76,13 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
 function hasValidInternalSecret(request: NextRequest): boolean {
   const configuredSecret = process.env.BOARDLY_INTERNAL_SECRET
   if (!configuredSecret) return false
-  return request.headers.get('X-Internal-Secret') === configuredSecret
+  return constantTimeEqual(request.headers.get('X-Internal-Secret') ?? '', configuredSecret)
 }
 
 function hasValidCronAuthorization(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) return false
-  return request.headers.get('authorization') === `Bearer ${cronSecret}`
+  return constantTimeEqual(request.headers.get('authorization') ?? '', `Bearer ${cronSecret}`)
 }
 
 // The Discord bot's routes. Its secret opens these and nothing else, so a Pi env file
@@ -100,10 +101,12 @@ function isTrustedServerRequest(request: NextRequest): boolean {
 function buildCspHeaderValue() {
   const connectSrcCandidates = new Set<string>([
     "'self'",
-    'ws://localhost:*',
-    'ws://127.0.0.1:*',
-    'http://localhost:*',
-    'http://127.0.0.1:*',
+    // Local dev only (#1146, S4-06): these four used to ship unconditionally, so a
+    // script injected into production could probe a visitor's own local services
+    // over their browser's connect-src allowance.
+    ...(IS_DEVELOPMENT
+      ? ['ws://localhost:*', 'ws://127.0.0.1:*', 'http://localhost:*', 'http://127.0.0.1:*']
+      : []),
     'https://*.supabase.co',
     'wss://*.supabase.co',
     'https://vercel.live',

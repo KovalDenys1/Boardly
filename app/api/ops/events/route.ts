@@ -18,8 +18,25 @@ const limiter = rateLimit({
   message: 'Too many telemetry events',
 })
 
-const payloadValueSchema = z.union([z.string(), z.number().finite(), z.boolean(), z.null()])
-const payloadSchema = z.record(z.string(), payloadValueSchema)
+// #1118 (audit S2-03): `payload` had no key count, key length or value length limit, at
+// 240 requests/min from anonymous clients, and it is stored as-is — the only ceiling was
+// the platform's own request-body limit, which is not visible from this repo.
+const MAX_PAYLOAD_KEYS = 20
+const MAX_PAYLOAD_KEY_LENGTH = 64
+const MAX_PAYLOAD_STRING_VALUE_LENGTH = 256
+export const MAX_OPS_EVENT_BODY_BYTES = 4096
+
+const payloadValueSchema = z.union([
+  z.string().max(MAX_PAYLOAD_STRING_VALUE_LENGTH),
+  z.number().finite(),
+  z.boolean(),
+  z.null(),
+])
+const payloadSchema = z
+  .record(z.string().max(MAX_PAYLOAD_KEY_LENGTH), payloadValueSchema)
+  .refine((payload) => Object.keys(payload).length <= MAX_PAYLOAD_KEYS, {
+    message: `payload may not have more than ${MAX_PAYLOAD_KEYS} keys`,
+  })
 const requestSchema = z.object({
   eventName: z.enum(OPERATIONAL_EVENT_NAMES),
   payload: payloadSchema.default({}),
@@ -64,9 +81,29 @@ export async function POST(request: NextRequest) {
       return rateLimitResult
     }
 
+    // Reject an oversized body before it is ever parsed as JSON (same pattern as
+    // /api/security/csp-report): a declared Content-Length is the cheap check, the actual
+    // byte length is the one that cannot be spoofed by a missing/wrong header.
+    const contentLengthHeader = request.headers.get('content-length')
+    const declaredLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : null
+    if (declaredLength !== null && Number.isFinite(declaredLength) && declaredLength > MAX_OPS_EVENT_BODY_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 400 })
+    }
+
+    let rawBody: string
+    try {
+      rawBody = await request.text()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    if (Buffer.byteLength(rawBody, 'utf8') > MAX_OPS_EVENT_BODY_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 400 })
+    }
+
     let requestBody: unknown
     try {
-      requestBody = await request.json()
+      requestBody = JSON.parse(rawBody)
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
