@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { apiLogger } from '@/lib/logger'
-import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
+import { guestSessionPreset, rateLimit } from '@/lib/rate-limit'
 import {
   createGuestId,
   createGuestToken,
@@ -15,7 +15,7 @@ import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { handleApiError } from '@/lib/error-handler'
 import { Prisma } from '@/prisma/client'
 
-const limiter = rateLimit(failClosedAuthPreset)
+const limiter = rateLimit(guestSessionPreset)
 
 const guestSessionSchema = z.object({
   guestName: z.string().trim().min(2).max(20).regex(/^[\w\s-]+$/u, 'Invalid characters'),

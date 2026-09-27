@@ -434,10 +434,22 @@ When it fires:
 ### Runbook: rate_limiter_degraded
 
 Any `rate_limiter_degraded` event in the window (#1156). `lib/rate-limit.ts` writes one, at most
-once a minute per instance, whenever the shared Upstash store fails. While it fails, register,
-guest-session, forgot-password, resend-verification, join-guest, lobby create and feedback answer
-**503** (fail closed); game actions and chat fall back to the per-instance memory store, and chat
-history reads come back empty.
+once a minute per instance, whenever the shared Upstash store fails - whether the request it
+failed on was then refused or served from memory. While the store fails, routes behave in three
+ways:
+
+- **Fail closed, 503** (`Retry-After: 30`): register, forgot-password and resend-verification
+  (`failClosedAuthPreset`), feedback and content reports. An account or an email is not handed
+  out on per-instance limits.
+- **Degraded, per-instance limits** (Denys, 2026-09-27): guest-session, join-guest (both budgets),
+  lobby create (free and premium) and rematch keep serving from each instance's own memory, under
+  the `degraded` limits on their presets: about a third of the shared per-address limit, plus a
+  ceiling per instance for every address together, several times the busiest window production
+  has seen. Past that ceiling they answer 503 as well. The limits are per instance, so a flood
+  from rotating addresses is bounded by the ceilings times the number of warm instances, and by
+  the Firewall rules below - which is why this state still alerts.
+- **Fail open**: game actions and chat fall back to the per-instance memory store at their usual
+  limits, and chat history reads come back empty.
 
 Every Upstash call gives up after one retry or 1.5 s (`upstashClientOptions` in
 `lib/redis-credentials.ts`), and after three failures in a row an instance stops calling the store

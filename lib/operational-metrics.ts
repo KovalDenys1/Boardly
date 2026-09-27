@@ -769,7 +769,7 @@ export async function evaluateReliabilityAlerts(
         baselineValue: null,
         unit: 'count',
         summary: limiterDegradedBreached
-          ? `rate_limiter_degraded count=${currentLimiterDegraded} in the last ${windowMinutes}m: the shared limiter store is failing; account, guest, lobby and mail routes answer 503`
+          ? `rate_limiter_degraded count=${currentLimiterDegraded} in the last ${windowMinutes}m: the shared limiter store is failing; register and mail routes answer 503, guest entry and lobby creation run on per-instance limits`
           : `rate_limiter_degraded count=0 in the last ${windowMinutes}m`,
         windowMinutes,
         runbookPath: 'docs/OPERATIONS.md#runbook-rate_limiter_degraded',
