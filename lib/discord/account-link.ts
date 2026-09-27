@@ -69,7 +69,7 @@ export type DiscordLinkError = 'denied' | 'expired' | 'taken' | 'otherDiscord' |
 type LinkCookiePayload = { n: string; u: string; e: number }
 
 function readSecret(): string | null {
-  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
+  const secret = process.env.NEXTAUTH_SECRET
   return secret && secret.length > 0 ? secret : null
 }
 
