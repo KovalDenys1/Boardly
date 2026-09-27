@@ -161,6 +161,69 @@ describe('POST /api/friends/add-by-code', () => {
     expect(payload.user.avatar).toBe('https://lh3.googleusercontent.com/oauth-photo.jpg')
   })
 
+  // #1226: knowing someone's friend code is not permission to see their profile. The
+  // sender is not a friend yet (checked before the request is made), so the internal id
+  // comes back only for a public profile. The username and picture are public.
+  describe('profile visibility (#1226)', () => {
+    const AVATAR = 'https://cdn.example.com/target-avatar.png'
+
+    function target(profileVisibility: 'public' | 'friends' | 'private' | null) {
+      const accountPreferences = profileVisibility ? { profileVisibility } : null
+      mockFindUserByFriendCode.mockResolvedValue({
+        id: 'receiver-cuid-1',
+        username: 'target-user',
+        image: null,
+        avatarUrl: AVATAR,
+        friendCode: '12345',
+        accountPreferences,
+      } as any)
+      mockPrisma.friendRequests.create.mockResolvedValue({
+        id: 'request-1',
+        senderId: 'sender-1',
+        receiverId: 'receiver-cuid-1',
+        status: 'pending',
+        receiver: { id: 'receiver-cuid-1', username: 'target-user', image: null, avatarUrl: AVATAR, accountPreferences },
+      } as any)
+    }
+
+    async function send() {
+      const response = await POST(buildRequest({ friendCode: '12345' }))
+      expect(response.status).toBe(200)
+      const text = await response.text()
+      return { payload: JSON.parse(text), text }
+    }
+
+    it.each(['public', null] as const)('a %s profile answers with its picture and id', async (visibility) => {
+      target(visibility)
+
+      const { payload, text } = await send()
+
+      expect(payload.request.receiver).toMatchObject({ id: 'receiver-cuid-1', username: 'target-user', avatar: AVATAR })
+      expect(payload.request.receiverId).toBe('receiver-cuid-1')
+      expect(payload.user).toMatchObject({ id: 'receiver-cuid-1', username: 'target-user', avatar: AVATAR })
+      expect(text).not.toContain('profileVisibility')
+    })
+
+    it.each(['friends', 'private'] as const)(
+      'a %s profile answers with the username and picture, not the internal id',
+      async (visibility) => {
+        target(visibility)
+
+        const { payload, text } = await send()
+
+        expect(payload.request.receiver).toEqual({ username: 'target-user', avatar: AVATAR })
+        expect(payload.request.receiverId).toBeUndefined()
+        expect(payload.user).toEqual({ username: 'target-user', avatar: AVATAR })
+        expect(text).not.toContain('receiver-cuid-1')
+        expect(text).not.toContain('profileVisibility')
+        // The request itself still goes to the right person.
+        expect(mockPrisma.friendRequests.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { senderId: 'sender-1', receiverId: 'receiver-cuid-1', status: 'pending' } })
+        )
+      }
+    )
+  })
+
   // #1120 (audit S2-05)
   it('returns 400, not 404, for a well-formed code assigned to nobody', async () => {
     mockFindUserByFriendCode.mockResolvedValue(null as any)

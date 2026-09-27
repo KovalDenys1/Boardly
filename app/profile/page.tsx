@@ -21,6 +21,8 @@ import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
 import PublicProfileView from '@/components/PublicProfileView'
+import { PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
+import { prefersReducedMotion } from '@/lib/motion'
 import {
   getStoredAppearancePreferences,
   normalizeAppearanceLocale,
@@ -240,6 +242,9 @@ export default function ProfilePage() {
   const { data: session, update, status } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
+  // Bumped to ask for a scroll to the Privacy section once the settings tab is on
+  // screen (#1226): from the hero's Privacy settings button, or a link to #privacy.
+  const [privacyScrollRequest, setPrivacyScrollRequest] = useState(0)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -559,10 +564,29 @@ export default function ProfilePage() {
 
     const currentUrl = new URL(window.location.href)
     const tabFromQuery = currentUrl.searchParams.get('tab')
-    if (isTabType(tabFromQuery)) {
+    if (currentUrl.hash === `#${PRIVACY_SETTINGS_SECTION_ID}`) {
+      // /profile?tab=settings#privacy, the link on your own public profile (#1226)
+      setActiveTab('settings')
+      setPrivacyScrollRequest((request) => request + 1)
+    } else if (isTabType(tabFromQuery)) {
       setActiveTab(tabFromQuery)
     }
   }, [])
+
+  // A request stays pending until the section is on the page: a deep link arrives
+  // while the session is still loading, when the page is only a spinner.
+  const handledPrivacyScrollRequestRef = useRef(0)
+  useEffect(() => {
+    if (privacyScrollRequest === handledPrivacyScrollRequestRef.current) return
+    if (activeTab !== 'settings' || status !== 'authenticated') return
+    const section = document.getElementById(PRIVACY_SETTINGS_SECTION_ID)
+    if (!section) return
+    handledPrivacyScrollRequestRef.current = privacyScrollRequest
+    section.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }, [activeTab, privacyScrollRequest, status])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1512,6 +1536,19 @@ export default function ProfilePage() {
     setActiveTab(tab)
   }
 
+  const openPrivacySettings = () => {
+    handleTabChange('settings')
+    setPrivacyScrollRequest((request) => request + 1)
+  }
+
+  const profileVisibilitySummary = accountPreferencesLoaded
+    ? {
+        public: { icon: 'globe' as const, label: t('profile.settings.privacy.public') },
+        friends: { icon: 'users' as const, label: t('profile.settings.privacy.friendsOnly') },
+        private: { icon: 'lock' as const, label: t('profile.settings.privacy.private') },
+      }[accountPreferences.profileVisibility]
+    : null
+
   const updateActiveTabIndicator = useCallback(() => {
     const tabListElement = tabListRef.current
     const activeTabButton = tabButtonRefs.current[activeTab]
@@ -1947,6 +1984,35 @@ export default function ProfilePage() {
                             </span>
                           </button>
                         )}
+                        {/* Who can see the profile, one click from the setting that changes it (#1226). */}
+                        <div
+                          className={`flex flex-col items-center gap-1.5 ${
+                            canPreviewPublicProfile ? 'border-t border-bd-line pt-3 dark:border-slate-700' : ''
+                          }`}
+                        >
+                          <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-muted dark:text-slate-400">
+                            {t('profile.settings.privacy.profileVisibility')}
+                          </span>
+                          {profileVisibilitySummary ? (
+                            <span
+                              data-testid="profile-visibility-summary"
+                              className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink dark:text-white"
+                            >
+                              <Icon name={profileVisibilitySummary.icon} size={14} />
+                              {profileVisibilitySummary.label}
+                            </span>
+                          ) : (
+                            <span className="h-5 w-20 animate-pulse rounded-lg bg-bd-bg2 dark:bg-slate-700" aria-hidden="true" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={openPrivacySettings}
+                            className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-white px-3 py-2 text-xs font-bold text-bd-ink transition-colors hover:bg-bd-bg2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <Icon name="shield" size={14} />
+                            {t('profile.publicProfile.privacySettingsLink')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2654,10 +2720,18 @@ export default function ProfilePage() {
                   </div>
                 </section>
 
-                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
+                <section
+                  id={PRIVACY_SETTINGS_SECTION_ID}
+                  aria-labelledby="profile-settings-privacy-title"
+                  className={`scroll-mt-4 xl:col-span-12 ${settingsSectionClassName}`}
+                >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-bold text-bd-ink dark:text-white">
+                      <h3
+                        id="profile-settings-privacy-title"
+                        className="inline-flex items-center gap-2 text-lg font-bold text-bd-ink dark:text-white"
+                      >
+                        <Icon name="shield" size={18} />
                         {t('profile.settings.privacy.title')}
                       </h3>
                       <span className={settingsScopeBadgeClassName}>

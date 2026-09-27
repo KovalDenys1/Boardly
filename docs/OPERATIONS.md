@@ -95,16 +95,20 @@ Recommended:
 - repo variable `PROJECT_HYGIENE_PROJECT_NUMBER` (target GitHub Project v2 number, for example `1`)
 - optional repo variable `PROJECT_HYGIENE_OWNER` (user/org login; defaults to repository owner)
 
-Operator imprint (#1163): `NEXT_PUBLIC_SELLER_LEGAL_NAME` and `NEXT_PUBLIC_SELLER_ADDRESS` hold the
-name and geographic address of whoever operates Boardly, which ehandelsloven section 8,
-angrerettloven section 8 d and GDPR Art. 13(1)(a) require on the site. They are public values
-by law (hence the prefix, so the client-side footer can read them) but personal ones, so they are
-set in Vercel's Production environment only and never committed; address lines are separated by
-`|`. With both set, the footer shows "Operated by <name>", the address and the support email on
-every page, the Terms of Service page opens with a "Who we are" section naming the seller of
-Boardly Premium, the Privacy Policy page opens with "Who is responsible for your data", and every
-email ends with the same name, address and email. With either unset, all four render nothing,
-and `npm run check:env` warns when that is the case in production.
+Operator imprint (#1163, narrowed by #1227): `NEXT_PUBLIC_SELLER_LEGAL_NAME` and
+`NEXT_PUBLIC_SELLER_ADDRESS` hold the name and geographic address of whoever operates Boardly,
+which ehandelsloven section 8, angrerettloven section 8 d and GDPR Art. 13(1)(a) require
+somewhere easy and direct to reach - not on every page. They are public values by law (hence the
+prefix) but personal ones, so they are set in Vercel's Production environment only and never
+committed; address lines are separated by `|`. With both set, the Terms of Service page opens
+with a "Who we are" section naming the seller of Boardly Premium, the Privacy Policy page opens
+with "Who is responsible for your data", and the Premium purchase confirmation email (only that
+one - angrerettloven section 18 repeats the section 8 information there) ends with the same name,
+address and email. `/terms` and `/privacy` are `noindex, follow` so the address does not surface
+in search results, and both stay one click from the footer and reachable at their own canonical
+URL. `components/Footer.tsx` and every other email keep only the company sign-off and
+support@boardly.online, never the seller's name or home address. With either variable unset, all
+three render nothing, and `npm run check:env` warns when that is the case in production.
 
 ## Secret migration notes
 
@@ -377,7 +381,8 @@ start and `Users.lastSubscriptionNoticeAt`: six calendar months are at least 181
 eleven days running still lands inside the window. The column is also the claim: it is moved with a
 compare-and-set before the send and put back if the send fails, so two runs cannot both send and a failure is
 retried the next day. The email (`sendSubscriptionNoticeEmail` in `lib/email.ts`) is English then Norwegian,
-in company voice with the operator imprint, and names the plan, the price, the next renewal date, the
+in company voice - never the operator imprint, which #1227 keeps off every email but the Premium purchase
+confirmation - and names the plan, the price, the next renewal date, the
 one-click cancel on `/profile?tab=premium`, cancelling by writing to support@, and Link. No flag: on
 2026-09-27 production had no user with a `stripeSubscriptionId` and no `PurchaseConsents` row (supabase-prod,
 read-only), so the job touched nobody when it shipped. The first notice for a subscription that starts on day

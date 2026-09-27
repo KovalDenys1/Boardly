@@ -46,12 +46,12 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// The operator's name, address and email under every email (#1163): the
-// same imprint the footer and the Terms carry, because a purchase
-// confirmation has to name the seller too. An empty string until both
-// NEXT_PUBLIC_SELLER_* variables are set, so no template ever ends in a
-// line with the name missing. Sits below each template's own closing note.
-function emailFooterHtml(): string {
+// The seller's name and geographic address (#1227, decision 2026-09-27): only the
+// Premium purchase confirmation carries them, because angrerettloven section 18 is
+// the one place a Boardly email has to repeat the section 8 information on a
+// durable medium. An empty string until both NEXT_PUBLIC_SELLER_* variables are
+// set, so the confirmation never ends in a line with the name missing.
+function sellerFooterHtml(): string {
   const seller = getSellerIdentity()
   if (!seller) {
     return ''
@@ -60,15 +60,21 @@ function emailFooterHtml(): string {
   return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">${escapeHtml(seller.legalName)}, ${escapeHtml(formatSellerAddress(seller))}, Norway. Email: <a href="mailto:${email}" style="color: #999;">${email}</a></p>`
 }
 
-// The same imprint for a plain-text part. Only the purchase confirmation has
-// one so far; it must name the seller there as well, since a text-only client
-// never sees emailFooterHtml().
-function emailFooterText(): string {
+// The plain-text counterpart, for the purchase confirmation's text part; a
+// text-only client never sees sellerFooterHtml().
+function sellerFooterText(): string {
   const seller = getSellerIdentity()
   if (!seller) {
     return ''
   }
   return `${seller.legalName}, ${formatSellerAddress(seller)}, Norway. Email: ${seller.email}`
+}
+
+// The sign-off under every other email (#1227): the company voice and the one
+// support address, never a private person's name or home address. Unlike the
+// seller footer this needs no configuration, so it never renders empty.
+function companyFooterHtml(): string {
+  return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">The Boardly team &middot; <a href="mailto:${SUPPORT_EMAIL}" style="color: #999;">${SUPPORT_EMAIL}</a></p>`
 }
 
 export async function sendVerificationEmail(email: string, token: string, username?: string) {
@@ -110,7 +116,7 @@ export async function sendVerificationEmail(email: string, token: string, userna
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -176,7 +182,7 @@ export async function sendUnverifiedAccountWarningEmail(
               </div>
               <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
               <p style="color: #dc2626; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -232,7 +238,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -298,7 +304,7 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
                 Questions? Just reply to this email.<br>
                 The Boardly team
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -374,7 +380,7 @@ export async function sendEmailChangeNoticeEmail(
                 Questions? Just reply to this email.<br>
                 The Boardly team
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -431,7 +437,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
               <p style="color: #999; font-size: 12px; margin: 0;">
                 Need help? Check out our <a href="${process.env.NEXTAUTH_URL}" style="color: #FF6B5B;">website</a> or reply to this email.
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -497,7 +503,7 @@ export async function sendGameInviteEmail(
               <p style="color: #999; font-size: 12px; margin: 0;">
                 You received this email because ${safeSender} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -570,7 +576,7 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 1 hour. If you didn't request account deletion, please ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.
               </p>
-              ${emailFooterHtml()}
+              ${companyFooterHtml()}
             </div>
           </body>
         </html>
@@ -841,7 +847,7 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
   const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
   const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
   const signature = 'The Boardly team'
-  const footerText = emailFooterText()
+  const footerText = sellerFooterText()
 
   const text = [
     confirmationCopyText(english),
@@ -882,7 +888,7 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
                 ${linkify(escapeHtml(closingNo), links)}<br>
                 ${signature}
               </p>
-              ${emailFooterHtml()}
+              ${sellerFooterHtml()}
             </div>
           </body>
         </html>
@@ -1018,15 +1024,16 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
   const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
   const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
   const signature = 'The Boardly team'
-  const footerText = emailFooterText()
 
+  // No seller footer here (#1227): the closing lines above already carry the
+  // company sign-off and a linkified support@boardly.online, in both the text
+  // and the HTML part, so nothing more needs to be appended below it.
   const text = [
     confirmationCopyText(english),
     '----',
     confirmationCopyText(norwegian),
     '----',
     `${closingEn}\n${closingNo}\n${signature}`,
-    footerText,
   ]
     .filter((part) => part.length > 0)
     .join('\n\n')
@@ -1059,7 +1066,6 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
                 ${linkify(escapeHtml(closingNo), links)}<br>
                 ${signature}
               </p>
-              ${emailFooterHtml()}
             </div>
           </body>
         </html>
@@ -1162,15 +1168,16 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
   const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
   const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
   const signature = 'The Boardly team'
-  const footerText = emailFooterText()
 
+  // No seller footer here (#1227): the closing lines above already carry the
+  // company sign-off and a linkified support@boardly.online, in both the text
+  // and the HTML part, so nothing more needs to be appended below it.
   const text = [
     confirmationCopyText(english),
     '----',
     confirmationCopyText(norwegian),
     '----',
     `${closingEn}\n${closingNo}\n${signature}`,
-    footerText,
   ]
     .filter((part) => part.length > 0)
     .join('\n\n')
@@ -1203,7 +1210,6 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
                 ${linkify(escapeHtml(closingNo), links)}<br>
                 ${signature}
               </p>
-              ${emailFooterHtml()}
             </div>
           </body>
         </html>

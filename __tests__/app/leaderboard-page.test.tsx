@@ -9,6 +9,10 @@ jest.mock('@/lib/server/leaderboard', () => ({
   fetchLeaderboardPage: jest.fn(),
 }))
 
+jest.mock('@/lib/session-user', () => ({
+  getOptionalViewerId: jest.fn(async () => 'viewer-1'),
+}))
+
 jest.mock('@/lib/logger', () => {
   const log = { info: jest.fn(), error: jest.fn() }
   return { apiLogger: () => log }
@@ -30,7 +34,6 @@ const mockFetchLeaderboardPage = fetchLeaderboardPage as jest.MockedFunction<typ
 
 const entry = (rank: number, username: string): LeaderboardEntry => ({
   rank,
-  userId: `user-${rank}`,
   username,
   publicProfileId: null,
   avatarUrl: null,
@@ -60,7 +63,8 @@ describe('/leaderboard server render (#922)', () => {
 
     await renderPage()
 
-    expect(mockFetchLeaderboardPage).toHaveBeenCalledWith({ gameType: undefined, period: 'all', page: 0 })
+    // The viewer is passed on: which pictures a row carries depends on who looks (#1226).
+    expect(mockFetchLeaderboardPage).toHaveBeenCalledWith({ gameType: undefined, period: 'all', page: 0 }, 'viewer-1')
     expect(screen.getAllByText('Alice').length).toBeGreaterThan(0)
     expect(screen.getByText('Bob')).toBeInTheDocument()
     expect(screen.queryByText('Loading leaderboard…')).not.toBeInTheDocument()
@@ -72,9 +76,29 @@ describe('/leaderboard server render (#922)', () => {
 
     await renderPage({ period: '30d', gameType: 'yahtzee' })
 
-    expect(mockFetchLeaderboardPage).toHaveBeenCalledWith({ gameType: 'yahtzee', period: '30d', page: 0 })
+    expect(mockFetchLeaderboardPage).toHaveBeenCalledWith({ gameType: 'yahtzee', period: '30d', page: 0 }, 'viewer-1')
     expect(screen.getAllByText('Carol').length).toBeGreaterThan(0)
     expect(screen.getByText('Load more')).toBeInTheDocument()
+  })
+
+  it('draws the default avatar for a player with no picture, and links every row to the profile (#1226)', async () => {
+    mockFetchLeaderboardPage.mockResolvedValue({
+      entries: [
+        { ...entry(1, 'Visible'), publicProfileId: 'VisiblePP001', avatarUrl: 'https://cdn.example/visible.png' },
+        { ...entry(2, 'Hidden'), publicProfileId: 'HiddenPP0001', avatarUrl: null },
+      ],
+      hasMore: false,
+    })
+
+    const { container } = await renderPage()
+
+    const images = Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'))
+    expect(images).toContain('https://cdn.example/visible.png')
+    expect(images).toHaveLength(1)
+    const hiddenRow = container.querySelector('a[href="/u/HiddenPP0001"]')
+    expect(hiddenRow).not.toBeNull()
+    expect(hiddenRow!.querySelector('img')).toBeNull()
+    expect(hiddenRow!.textContent).toContain('H')
   })
 
   it('falls back to the client fetch when the server query fails', async () => {

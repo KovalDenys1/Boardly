@@ -169,6 +169,51 @@ describe('POST /api/friends/request', () => {
       })
     )
   })
+
+  // #1226: the sender is not a friend yet, so a hidden receiver's internal id stays out
+  // of the answer. The username and picture are public (Denys, 2026-09-27 20:32).
+  it.each(['private', 'friends'] as const)(
+    "answers a %s receiver's username and picture, not their internal id",
+    async (profileVisibility) => {
+      mockPrisma.users.findUnique.mockResolvedValue({
+        id: 'receiver-hidden-1',
+        username: 'hidden-user',
+        bot: null,
+        isGuest: false,
+      } as any)
+      mockPrisma.friendRequests.create.mockResolvedValue({
+        id: 'request-2',
+        senderId: 'sender-1',
+        receiverId: 'receiver-hidden-1',
+        status: 'pending',
+        sender: { id: 'sender-1', username: 'sender-user', image: null, avatarUrl: null },
+        receiver: {
+          id: 'receiver-hidden-1',
+          username: 'hidden-user',
+          image: null,
+          avatarUrl: 'https://cdn.example.com/hidden-avatar.png',
+          accountPreferences: { profileVisibility },
+        },
+      } as any)
+
+      const response = await POST(buildRequest({ receiverUsername: 'hidden-user' }))
+      const text = await response.text()
+      const payload = JSON.parse(text)
+
+      expect(response.status).toBe(200)
+      expect(payload.friendRequest.receiver).toEqual({
+        username: 'hidden-user',
+        avatar: 'https://cdn.example.com/hidden-avatar.png',
+      })
+      expect(payload.friendRequest.receiverId).toBeUndefined()
+      expect(text).not.toContain('receiver-hidden-1')
+      expect(text).not.toContain('profileVisibility')
+      // The request itself still goes to the right person.
+      expect(mockPrisma.friendRequests.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { senderId: 'sender-1', receiverId: 'receiver-hidden-1', status: 'pending' } })
+      )
+    }
+  )
 })
 
 function buildGetRequest(type: string) {
@@ -217,5 +262,47 @@ describe('GET /api/friends/request', () => {
     expect(response.status).toBe(200)
     expect(payload.requests[0].sender.avatar).toBe('https://cdn.example.com/custom-avatar.png')
     expect(payload.requests[0].receiver.avatar).toBeNull()
+  })
+
+  // #1226: in the requests you sent, a receiver whose profile you may not see keeps
+  // their internal id to themselves; the username and picture are public.
+  it("keeps a hidden receiver's internal id out of the requests you sent", async () => {
+    const sent = (id: string, profileVisibility: string | null) => ({
+      id: `request-${id}`,
+      senderId: 'user-1',
+      receiverId: id,
+      status: 'pending',
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
+      sender: { id: 'user-1', username: 'me', image: null, avatarUrl: null },
+      receiver: {
+        id,
+        username: `name-${id}`,
+        image: null,
+        avatarUrl: `https://cdn.example.com/${id}.png`,
+        accountPreferences: profileVisibility ? { profileVisibility } : null,
+      },
+    })
+    mockPrisma.friendRequests.findMany.mockResolvedValue([
+      sent('rcv-public', 'public'),
+      sent('rcv-legacy', null),
+      sent('rcv-friends', 'friends'),
+      sent('rcv-private', 'private'),
+    ] as any)
+
+    const response = await GET(buildGetRequest('sent'))
+    const text = await response.text()
+    const { requests } = JSON.parse(text)
+
+    expect(requests.map((r: any) => r.receiver)).toEqual([
+      { id: 'rcv-public', username: 'name-rcv-public', image: null, avatarUrl: 'https://cdn.example.com/rcv-public.png', avatar: 'https://cdn.example.com/rcv-public.png' },
+      { id: 'rcv-legacy', username: 'name-rcv-legacy', image: null, avatarUrl: 'https://cdn.example.com/rcv-legacy.png', avatar: 'https://cdn.example.com/rcv-legacy.png' },
+      { username: 'name-rcv-friends', avatar: 'https://cdn.example.com/rcv-friends.png' },
+      { username: 'name-rcv-private', avatar: 'https://cdn.example.com/rcv-private.png' },
+    ])
+    expect(requests.map((r: any) => r.receiverId)).toEqual(['rcv-public', 'rcv-legacy', undefined, undefined])
+    for (const hidden of ['rcv-friends', 'rcv-private']) {
+      expect(text).not.toContain(`"${hidden}"`)
+    }
+    expect(text).not.toContain('profileVisibility')
   })
 })

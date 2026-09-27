@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import PrivacyNotice from '@/app/privacy/PrivacyNotice'
+import { metadata } from '@/app/privacy/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_RULES } from '@/lib/data-retention'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from '@/lib/retention-periods'
@@ -123,6 +124,40 @@ describe('privacy notice (#1126)', () => {
     }
   })
 
+  // #1226 (Denys, 2026-09-27 20:32): username, picture and leaderboard results are public
+  // whatever the setting; bio, statistics, achievements, Premium status and online status
+  // follow it, except the Premium badge and game results in lobbies and games you shared.
+  it('says the username, picture and leaderboard results are public, and the rest follows the setting', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const text = container.textContent ?? ''
+    expect(text).toContain('Your username, your picture and your leaderboard results are visible to everyone, whatever your settings')
+    expect(text).toContain(
+      'The rest of your profile (bio, game statistics, achievements, Premium status, and online status, which you can also switch off on its own) follows its visibility setting'
+    )
+    expect(text).toContain(
+      'In lobbies and games you shared, the other players also see your Premium badge and the game results, including on your player card there'
+    )
+    expect(text).not.toContain('(username, picture, bio and game statistics) is visible only to your friends')
+    expect(text).not.toContain('appear on the public leaderboard unless your profile is private')
+
+    // The same statements in every language, and none of the old ones.
+    const expected = {
+      no: ['Brukernavnet ditt, bildet ditt og resultatene dine på topplisten er synlige for alle', 'Premium-status og påloggingsstatus', 'I lobbyer og spill dere har delt'],
+      ru: ['Ваше имя пользователя, фото и результаты в рейтинге видны всем', 'статус Premium и статус «в сети»', 'В общих с вами лобби и играх'],
+      uk: ['Ваше ім’я користувача, фото та результати в рейтингу видно всім', 'статус Premium і статус «у мережі»', 'У спільних із вами лобі та іграх'],
+    }
+    const stale = {
+      no: ['(brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine', 'med mindre profilen er privat.'],
+      ru: ['(имя пользователя, фото, описание и игровая статистика) видят только ваши друзья', 'если профиль не закрыт.'],
+      uk: ['(ім’я користувача, фото, опис та ігрову статистику) бачать лише ваші друзі', 'якщо профіль не закритий.'],
+    }
+    for (const name of ['no', 'ru', 'uk'] as const) {
+      const { extra } = require(`@/locales/${name}`).default.privacyPolicy.purposes.account
+      for (const needle of expected[name]) expect({ name, needle, found: extra.includes(needle) }).toEqual({ name, needle, found: true })
+      for (const needle of stale[name]) expect({ name, needle, found: extra.includes(needle) }).toEqual({ name, needle, found: false })
+    }
+  })
+
   // #1172: player reports keep a copy of what was reported, past the chat TTL and past
   // its author's account, so the notice has to say so in every language.
   it('describes player reports: what is kept, why, who sees it and for how long', () => {
@@ -200,5 +235,17 @@ describe('privacy notice (#1126)', () => {
       expect(text).toContain(name)
     }
     expect(text).toContain('Linked Roles')
+  })
+})
+
+/**
+ * #1227: the "Who is responsible" section names the seller's home address,
+ * so the page stays out of search results while remaining reachable at its
+ * own canonical URL and one click from the footer.
+ */
+describe('/privacy metadata (#1227)', () => {
+  it('is noindex, follow, and keeps its canonical URL', () => {
+    expect(metadata.robots).toEqual({ index: false, follow: true })
+    expect(metadata.alternates?.canonical).toBe('https://boardly.online/privacy')
   })
 })

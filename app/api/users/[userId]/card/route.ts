@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { optionalSessionUser } from '@/lib/session-user'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getGuestClaimsFromRequest } from '@/lib/guest-auth'
+import { canViewProfile } from '@/lib/public-profile'
 
 // It ran a user lookup with every finished game joined in, per call, with no limiter (#1157).
 const limiter = rateLimit(rateLimitPresets.userCard)
@@ -26,6 +28,7 @@ export async function GET(
       isGuest: true,
       premiumUntil: true,
       bot: { select: { id: true } },
+      accountPreferences: { select: { profileVisibility: true } },
       players: {
         where: { game: { status: 'finished' } },
         select: {
@@ -97,6 +100,35 @@ export async function GET(
 
   const isPremium = user.premiumUntil ? new Date(user.premiumUntil) > new Date() : false
 
+  // The card follows the profile's visibility (#1226), like /u/<publicProfileId> and the
+  // leaderboard: a private profile, or a friends-only one for anyone but a friend, shows
+  // its username and picture, which are public everywhere, and none of its content. The
+  // id in this path is not a secret (every lobby hands it out), so without this the card
+  // was the way round the rule.
+  const viewerId = session?.user?.id ?? getGuestClaimsFromRequest(req)?.guestId ?? null
+  const canView = canViewProfile(
+    user.accountPreferences?.profileVisibility,
+    viewerId === userId ? 'self' : relation === 'friends' ? 'friend' : 'other'
+  )
+
+  if (!canView) {
+    // Premium status is profile content, with one exception: the lobby's player list
+    // shows the crown to everyone seated in it, so someone who has sat in a lobby with
+    // this player already saw it, and the card repeats it for them. Statistics and the
+    // favourite game follow the visibility setting for everyone.
+    const lobbyMate = isPremium && viewerId !== null && (await sharesALobby(viewerId, userId))
+    return NextResponse.json({
+      userId: user.id,
+      username: user.username,
+      image: user.avatarUrl ?? user.image,
+      publicProfileId: user.publicProfileId,
+      isGuest: user.isGuest,
+      isPremium: lobbyMate,
+      restricted: true,
+      relation,
+    })
+  }
+
   return NextResponse.json({
     userId: user.id,
     username: user.username,
@@ -110,4 +142,16 @@ export async function GET(
     favouriteGame,
     relation,
   })
+}
+
+/** Whether the viewer has a seat in a game of any lobby the player also had a seat in. */
+async function sharesALobby(viewerId: string, playerId: string): Promise<boolean> {
+  const seat = await prisma.players.findFirst({
+    where: {
+      userId: viewerId,
+      game: { lobby: { games: { some: { players: { some: { userId: playerId } } } } } },
+    },
+    select: { id: true },
+  })
+  return seat !== null
 }

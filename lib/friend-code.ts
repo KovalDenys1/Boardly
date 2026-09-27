@@ -66,7 +66,9 @@ export async function findUserByFriendCode(friendCode: string) {
       username: true,
       image: true,
       avatarUrl: true,
-      friendCode: true
+      friendCode: true,
+      // So the route answers with the picture and id only where the profile is visible (#1226).
+      accountPreferences: { select: { profileVisibility: true } },
     }
   })
 }

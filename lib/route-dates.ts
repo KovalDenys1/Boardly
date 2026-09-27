@@ -41,9 +41,8 @@ export const ROUTE_UPDATED = {
   '/games/checkers': '2026-09-24',
   '/games/ludo': '2026-09-24',
   '/guides': '2026-09-20',
-  '/privacy': '2026-09-02',
-  // #1166: the whole page rewritten and translated.
-  '/terms': '2026-09-27',
+  // /privacy and /terms are noindex and left out of the sitemap (#1227); their own
+  // "last updated" dates come from lib/terms-version.ts.
   // #1162: the right-of-withdrawal page, dated the day it was written.
   '/withdrawal': '2026-09-24',
   // #1173: the community rules page, dated the day it was written.

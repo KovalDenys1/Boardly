@@ -4,6 +4,9 @@ import path from 'node:path'
 import type { Metadata } from 'next'
 
 jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
+// app/leaderboard/page.tsx reads the viewer since #1226; its metadata does not, and the real
+// module pulls in next-auth and its ESM-only jose, which this suite has no transform for.
+jest.mock('@/lib/session-user', () => ({ getOptionalViewerId: jest.fn(async () => null) }))
 
 const findUnique = jest.fn()
 jest.mock('@/lib/db', () => ({

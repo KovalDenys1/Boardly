@@ -132,12 +132,17 @@ describe('sendSubscriptionNoticeEmail (#1165)', () => {
     expect(mail.text).toContain('Abonnementet fornyes automatisk hver måned til du sier det opp.')
   })
 
-  it('ends with the operator imprint once it is configured', async () => {
+  it('never carries the seller identity, even once it is configured (#1227)', async () => {
     process.env[NAME_VAR] = 'Test Operator'
     process.env[ADDRESS_VAR] = 'Street 1|0001 Oslo'
     const { mail } = await send()
 
-    expect(mail.text).toContain('Test Operator, Street 1, 0001 Oslo, Norway. Email: support@boardly.online')
-    expect(visibleText(mail.html)).toContain('Test Operator, Street 1, 0001 Oslo, Norway.')
+    expect(mail.text).not.toContain('Test Operator')
+    expect(mail.text).not.toContain('Norway.')
+    expect(visibleText(mail.html)).not.toContain('Test Operator')
+    expect(visibleText(mail.html)).not.toContain('Norway.')
+    // The company sign-off and the support mailto link still carry the message.
+    expect(mail.text).toContain('The Boardly team')
+    expect(mail.html).toContain('mailto:support@boardly.online')
   })
 })
