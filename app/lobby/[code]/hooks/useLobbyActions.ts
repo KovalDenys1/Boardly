@@ -569,6 +569,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         setError(i18n.t('lobby.joinSection.kickedCannotRejoin'))
         return
       }
+      // Vercel BotID refused a join that would have minted a guest (#1157).
+      if (errorCode === 'BOT_CHECK_FAILED') {
+        setError(i18n.t('errors.botCheckFailed'))
+        return
+      }
       // Same as the signed-in path above: the reason goes to the join screen and the
       // visitor chooses what to do with it (#972).
       const refusalKey = getLobbyJoinRefusalMessageKey(errorCode)

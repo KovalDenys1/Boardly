@@ -8,9 +8,10 @@ import {
 import { logger } from './logger'
 
 /**
- * What a fail-closed route would admit while the shared store is failing, instead of
- * answering 503 (#1156). Both limits are counted in this instance's memory, so they must be
- * set well below the shared ones. No preset uses it: see "Degraded limits" above the presets.
+ * What a fail-closed route admits while the shared store is failing, instead of answering
+ * 503 (#1156). Both limits are counted in this instance's memory, so they must be set well
+ * below the shared ones. Guest entry and lobby creation use it; see "Degraded limits" above
+ * the presets for which routes and why.
  */
 interface DegradedRateLimit {
   /** Per address and window, in this instance. */
@@ -21,6 +22,13 @@ interface DegradedRateLimit {
    * answers 503, as it would with no degraded mode at all.
    */
   instanceMaxRequests: number
+  /**
+   * Buckets every path under one key while degraded, when normal mode keys per path. For a
+   * route whose normal limit is deliberately per resource (rematch, per lobby) but whose
+   * degraded limits must be per address and per instance: keyed per path, each lobby code
+   * would bring its own per-instance ceiling, which would then bound nothing.
+   */
+  keyScope?: string
 }
 
 interface RateLimitConfig {
@@ -45,8 +53,8 @@ interface RateLimitConfig {
   failClosed?: boolean
   /**
    * With `failClosed`: keep serving on this instance's memory under these tighter limits
-   * while the shared store fails, rather than refusing everyone. Unused - see "Degraded
-   * limits" above the presets before setting it on any route.
+   * while the shared store fails, rather than refusing everyone. See "Degraded limits" above
+   * the presets before setting it on another route.
    */
   degraded?: DegradedRateLimit
 }
@@ -427,17 +435,18 @@ export function rateLimit(config: RateLimitConfig) {
       if (!degraded) return limiterUnavailable()
 
       // Degraded (#1156): this instance's memory, under limits set for exactly that.
-      const perAddress = consumeInMemoryRateLimit(`degraded:${key}`, windowMs, now)
+      const degradedScope = degraded.keyScope ?? scope
+      const perAddress = consumeInMemoryRateLimit(`degraded:${caller}:${degradedScope}`, windowMs, now)
       if (perAddress.count > degraded.maxRequests) {
         if (perAddress.count === degraded.maxRequests + 1) {
-          await reportRateLimited(scope, now)
+          await reportRateLimited(degradedScope, now)
         }
         return tooManyRequests(message, degraded.maxRequests, perAddress.resetTime, now)
       }
       // Counted only for requests the per-address limit let through, so one address
       // cannot spend everybody else's share of the instance.
       const everyAddress = consumeInMemoryRateLimit(
-        `degraded-instance:${scope}:${windowMs}`,
+        `degraded-instance:${degradedScope}:${windowMs}`,
         windowMs,
         now
       )
@@ -509,23 +518,33 @@ export async function consumeKeyedRateLimit(
 /**
  * Preset rate limit configurations
  *
- * Degraded limits (#1156): no preset sets `degraded`, so every fail-closed route answers
- * 503 while the shared store fails. Serving guest entry or lobby creation from per-instance
- * memory instead trades abuse protection for availability for as long as the store is
- * down - which an exhausted command quota can make the rest of the billing month - and the
- * Firewall's per-IP rules do not bound a flood from rotating addresses. That is a security
- * decision for the owner and has not been taken. If it is, choose the limits this way:
+ * Degraded limits (#1156). While the shared store fails, a fail-closed route answers 503 -
+ * unless its preset sets `degraded`, in which case it keeps serving from this instance's
+ * memory under tighter limits. Decided by Denys on 2026-09-27: guest entry
+ * (`guestSessionPreset`, `lobbyJoinGuest`, `lobbyJoinNewGuest`) and lobby creation
+ * (`lobbyCreation`, `lobbyCreationPremium`, `lobbyRematch`) degrade; register and the mail
+ * routes (`failClosedAuthPreset`), feedback and reports stay fail-closed. The trade: an
+ * outage - which an exhausted command quota can stretch to the rest of the billing month -
+ * no longer turns every new visitor away, at the price of limits that are per instance, so
+ * a flood from rotating addresses is bounded only by the ceilings below and by the Firewall.
+ * Every request served this way still records `rate_limiter_degraded` (once a minute per
+ * instance), exactly as a refused one does.
+ *
+ * The limits are chosen this way:
  *
  * - per address, about a third of the shared limit, so three warm instances together
  *   admit roughly what the shared counter would have;
  * - per instance, a ceiling for every address together, several times the busiest window
  *   production has seen. From 2026-09-09 to 2026-09-25 that was 5 new guests in a
  *   15-minute window and 5 lobbies in an hour, site-wide (AnalyticsUserFacts, Lobbies).
+ *   guest-session is also called on every page load of a returning guest, so its ceiling
+ *   has more headroom than new guests alone would need.
  *
- * and update #1156's acceptance text and the audit tracker with it. The rematch route uses
- * `lobbyCreation` keyed by its per-code path, so it needs a `keyScope` first, or its
- * per-instance ceiling is per lobby code.
+ * Past the per-instance ceiling the route answers 503, as it would with no degraded mode.
+ * `lobbyCreation` and `lobbyCreationPremium` share one scope (`/api/lobby`) and window, so
+ * they share one per-instance count; both carry the same ceiling for that reason.
  */
+const LOBBY_CREATION_DEGRADED = { maxRequests: 3, instanceMaxRequests: 30 }
 export const rateLimitPresets = {
   // Strict limit for authentication endpoints
   auth: {
@@ -567,6 +586,8 @@ export const rateLimitPresets = {
     maxRequests: 120,
     keyScope: 'lobby-join-guest',
     failClosed: true,
+    // A third of 120 per address; the instance ceiling is the old per-address limit.
+    degraded: { maxRequests: 40, instanceMaxRequests: 120 },
     message: 'Too many join attempts. Please slow down.'
   },
 
@@ -578,6 +599,8 @@ export const rateLimitPresets = {
     maxRequests: 10,
     keyScope: 'lobby-join-new-guest',
     failClosed: true,
+    // Six times the busiest 15 minutes of new guests seen site-wide.
+    degraded: { maxRequests: 3, instanceMaxRequests: 30 },
     message: 'Too many new guests from this network. Please try again in 15 minutes.'
   },
 
@@ -607,6 +630,7 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 10,
     failClosed: true,
+    degraded: LOBBY_CREATION_DEGRADED,
     message: 'Too many lobbies created. Please try again later.'
   },
 
@@ -615,6 +639,19 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 30,
     failClosed: true,
+    degraded: { ...LOBBY_CREATION_DEGRADED, maxRequests: 10 },
+    message: 'Too many lobbies created. Please try again later.'
+  },
+
+  // POST /api/lobby/<code>/rematch: lobby creation's budget. Normally keyed by its path, as it
+  // always was, so the limit is per lobby. While degraded (#1156) it is one bucket per IP
+  // across every code: keyed per path, each code would bring its own per-instance ceiling,
+  // and the ceiling would bound nothing.
+  lobbyRematch: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 10,
+    failClosed: true,
+    degraded: { ...LOBBY_CREATION_DEGRADED, keyScope: 'lobby-rematch-degraded' },
     message: 'Too many lobbies created. Please try again later.'
   },
 
@@ -680,10 +717,24 @@ export const rateLimitPresets = {
 }
 
 /**
- * `auth` for the routes that mint an account or a guest, or send mail: register,
- * guest-session, forgot-password, resend-verification (#1156).
+ * `auth` for the routes that mint an account or send mail: register, forgot-password,
+ * resend-verification (#1156). They answer 503 while the shared store fails; an account or
+ * an email is not something to hand out on per-instance limits.
  */
 export const failClosedAuthPreset = { ...rateLimitPresets.auth, failClosed: true }
+
+/**
+ * `auth` for POST /api/auth/guest-session, which mints a guest (#1156): fail-closed like the
+ * routes above, but degraded rather than refused while the shared store fails, so a store
+ * outage does not turn every new visitor away. See "Degraded limits" above the presets.
+ */
+export const guestSessionPreset = {
+  ...rateLimitPresets.auth,
+  failClosed: true,
+  // Twelve times the busiest 15 minutes of new guests: this route also serves every
+  // returning guest's refresh on page load, which new-guest counts do not include.
+  degraded: { maxRequests: 2, instanceMaxRequests: 60 },
+}
 
 /**
  * Helper to apply rate limiting to a route handler

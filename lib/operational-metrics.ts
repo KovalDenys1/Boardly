@@ -36,6 +36,7 @@ const ALERT_EVENT_NAMES = [
   'rate_limiter_degraded',
   'email_send_failed',
   'email_send_budget_reached',
+  'botid_unavailable',
   ...HUMAN_ACTIVITY_EVENT_NAMES,
 ] as const
 
@@ -103,6 +104,11 @@ export const GUESTS_MINTED_BASELINE_MULTIPLE = 10
 export const RATE_LIMITER_DEGRADED_ALERT_THRESHOLD = 1
 /** Failures are throttled to one per minute per mail kind per instance before they are written. */
 export const EMAIL_SEND_FAILED_ALERT_THRESHOLD = 3
+/**
+ * Any event in the window is a breach: BotID failed open, so signups and new guests went
+ * through unchecked (#1157). Written at most once a minute per instance.
+ */
+export const BOTID_UNAVAILABLE_ALERT_THRESHOLD = 1
 
 export const DISCORD_BOT_HEARTBEAT_SOURCE = 'discord-bot'
 export const DISCORD_BOT_STALE_WARNING_MINUTES = 20
@@ -174,6 +180,7 @@ export type ReliabilityAlertKey =
   | 'guests_minted_per_hour'
   | 'rate_limiter_degraded'
   | 'email_send_failed'
+  | 'botid_unavailable'
 
 export interface ReliabilityAlertRuleStatus {
   alertKey: ReliabilityAlertKey
@@ -624,6 +631,9 @@ export async function evaluateReliabilityAlerts(
   const emailFailedBreached =
     currentEmailFailed >= EMAIL_SEND_FAILED_ALERT_THRESHOLD || currentEmailBudgetReached > 0
 
+  const currentBotIdUnavailable = current.filter((event) => event.eventName === 'botid_unavailable').length
+  const botIdUnavailableBreached = currentBotIdUnavailable >= BOTID_UNAVAILABLE_ALERT_THRESHOLD
+
   const currentRejoinTimeout = current.filter((event) => event.eventName === 'rejoin_timeout').length
   const baselineRejoinTimeout = baseline.filter((event) => event.eventName === 'rejoin_timeout').length
   const baselineRejoinPerWindow =
@@ -769,7 +779,7 @@ export async function evaluateReliabilityAlerts(
         baselineValue: null,
         unit: 'count',
         summary: limiterDegradedBreached
-          ? `rate_limiter_degraded count=${currentLimiterDegraded} in the last ${windowMinutes}m: the shared limiter store is failing; account, guest, lobby and mail routes answer 503`
+          ? `rate_limiter_degraded count=${currentLimiterDegraded} in the last ${windowMinutes}m: the shared limiter store is failing; register and mail routes answer 503, guest entry and lobby creation run on per-instance limits`
           : `rate_limiter_degraded count=0 in the last ${windowMinutes}m`,
         windowMinutes,
         runbookPath: 'docs/OPERATIONS.md#runbook-rate_limiter_degraded',
@@ -788,6 +798,20 @@ export async function evaluateReliabilityAlerts(
             : `email_send_failed count=${currentEmailFailed}, threshold=${EMAIL_SEND_FAILED_ALERT_THRESHOLD} per ${windowMinutes}m window`,
         windowMinutes,
         runbookPath: 'docs/OPERATIONS.md#runbook-email_send_failed',
+      },
+      {
+        alertKey: 'botid_unavailable',
+        breached: botIdUnavailableBreached,
+        severity: 'warning',
+        currentValue: currentBotIdUnavailable,
+        thresholdValue: BOTID_UNAVAILABLE_ALERT_THRESHOLD,
+        baselineValue: null,
+        unit: 'count',
+        summary: botIdUnavailableBreached
+          ? `botid_unavailable count=${currentBotIdUnavailable} in the last ${windowMinutes}m: Vercel BotID gave no verdict, so register, guest-session and new-guest joins went through on rate limits alone`
+          : `botid_unavailable count=0 in the last ${windowMinutes}m`,
+        windowMinutes,
+        runbookPath: 'docs/OPERATIONS.md#runbook-botid_unavailable',
       },
     ],
   }

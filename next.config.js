@@ -1,4 +1,5 @@
 const { withSentryConfig } = require("@sentry/nextjs")
+const { withBotId } = require("botid/next/config")
 const path = require("path")
 const { socialShortLinkRedirects } = require("./lib/social-short-links")
 
@@ -172,10 +173,16 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_VAPID_PUBL
   console.warn('WARN NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set — Web Push is disabled in this build')
 }
 
+// Vercel BotID (#1157): adds the rewrites that serve its challenge script and proxy from this
+// origin, so ad blockers do not strip them and the CSP's 'self' covers them. Rewrites and
+// headers only - no page changes how it renders.
+// https://vercel.com/docs/botid/get-started
+const nextConfigWithBotId = withBotId(nextConfig)
+
 // Sentry webpack plugin is only needed for production builds.
 // Keeping it disabled in local development avoids flaky `.next` manifest lookups
 // (e.g. edge-instrumentation/routes-manifest ENOENT) during hot reload.
 module.exports =
   process.env.NODE_ENV === 'production'
-    ? withSentryConfig(nextConfig, sentryWebpackOptions)
-    : nextConfig
+    ? withSentryConfig(nextConfigWithBotId, sentryWebpackOptions)
+    : nextConfigWithBotId

@@ -148,6 +148,10 @@ export default function RegisterForm() {
           setFieldErrors(zodIssuesToFieldErrors(data.error))
           throw new Error(t('auth.register.fixFields'))
         }
+        // Vercel BotID refused the request (#1157); the server's own text is English only.
+        if (data?.code === 'BOT_CHECK_FAILED') {
+          throw new Error(t('errors.botCheckFailed'))
+        }
         trackError({
           errorType: 'auth',
           errorMessage: data?.error || 'Registration failed',
