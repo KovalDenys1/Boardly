@@ -2180,6 +2180,8 @@ const en = {
     noMessages: 'No messages yet',
     startConversation: 'Start the conversation!',
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
+    rules: 'Rules',
+    rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
   },
   auth: {
     inAppBrowser: {
@@ -3601,7 +3603,7 @@ const en = {
         title: 'Your account',
         data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), the site or campaign you arrived from when you signed up, and when you accepted the Terms and confirmed that you are 13 or older.',
         basis: 'Contract: your account rests on the Terms you accept when you create it, not on consent, and we need this to run it. The sign-up source: our legitimate interest in knowing which channels bring new players.',
-        retention: 'Until you delete the account. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it or it has Premium or has ever started a Premium purchase. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
+        retention: 'Until you delete the account. We do not delete an account because it has not been used; if we ever decide to, we will tell you by email and on this page at least 30 days before it applies. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it or it has Premium or has ever started a Premium purchase. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
         extra: 'A new account\'s profile (username, picture, bio and game statistics) is visible only to your friends, and your online status is hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before this change keep the settings they had: a public profile and online status shown, unless changed. Your username, picture and game results appear on the public leaderboard unless your profile is private.',
       },
       guest: {
@@ -3614,7 +3616,7 @@ const en = {
         title: 'Games, lobbies, chat and friends',
         data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, lobby invites, notifications and achievements.',
         basis: 'Contract: this is the service itself.',
-        retention: 'Games: {{gamesMonths}} months after the game ends. Lobbies: {{lobbiesMonths}} months after creation, once inactive and empty. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends and achievements: until you delete the account.',
+        retention: 'Games: {{gamesMonths}} months after the game ends, we remove the names, questions, answers, guesses and drawings from the game record; the scores and results stay, tied to a player id instead of a name, for your statistics, the leaderboard and achievements. Lobbies: {{lobbiesMonths}} months after creation, an inactive lobby in which no game ever started is deleted together with those games; a lobby in which a game was played gets a neutral name, and its code is released for new lobbies, once its games have been through the step above. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends and achievements: until the account is deleted.',
       },
       signIn: {
         title: 'Signing in with Google, GitHub or Discord',
@@ -4239,6 +4241,17 @@ const en = {
     doneHint: 'Roles follow your account from here on: Premium changes the same day, games played every night.',
     failed: 'Discord did not answer. Try again in a moment.',
     retry: 'Try again',
+    reauthTitle: 'Sign in again to continue',
+    reauthBody: 'For your security, linking Discord needs a sign-in from the last 10 minutes. Sign out and sign in again, and you will come straight back here.',
+    signInAgain: 'Sign in again',
+    linkErrorTitle: 'Discord was not linked',
+    linkErrors: {
+      denied: 'You cancelled on Discord\'s page. Nothing was changed.',
+      expired: 'This link attempt expired, or it was started in another tab or while signed in to another account. Start again from here.',
+      taken: 'That Discord account is already linked to a different Boardly account. Sign in to that account to use it, or link another Discord account.',
+      otherDiscord: 'Your Boardly account is already linked to a different Discord account. Link again with that one, or remove it in your profile first.',
+      failed: 'Discord did not answer. Try again in a moment.',
+    },
   },
 } as const
 

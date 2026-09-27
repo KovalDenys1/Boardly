@@ -22,6 +22,7 @@ import {
 } from '@/lib/error-handler'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getSessionUserOrThrow } from '@/lib/session-user'
+import { isRecentSignIn } from '@/lib/auth-session-policy'
 
 const limiter = rateLimit(rateLimitPresets.api)
 // The current-password check below is a password oracle for whoever holds the
@@ -30,10 +31,6 @@ const emailChangeLimiter = rateLimit({
   ...rateLimitPresets.auth,
   keyScope: 'profile-email-change',
 })
-
-// An account with no password (OAuth only) proves itself by a recent sign-in
-// instead: the session must have signed in within this window (#1136).
-const EMAIL_CHANGE_RECENT_SIGN_IN_MS = 10 * 60 * 1000
 
 const log = apiLogger('/api/user/profile')
 const EMAIL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000
@@ -178,8 +175,9 @@ async function refuseEmailChange(
     return null
   }
 
-  const signedInAt = typeof authenticatedAt === 'number' ? authenticatedAt : 0
-  if (Date.now() - signedInAt > EMAIL_CHANGE_RECENT_SIGN_IN_MS) {
+  // An account with no password (OAuth only) proves itself by a recent sign-in
+  // instead (#1136); the window is shared with /api/discord/link (#1218).
+  if (!isRecentSignIn(authenticatedAt)) {
     throw new AppError(
       'Sign in again to change your email address',
       403,

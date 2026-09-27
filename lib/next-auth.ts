@@ -390,8 +390,9 @@ export const authOptions: NextAuthOptions = {
           // SEPARATE user for it. Signed in, next-auth's OAuth callback links it to the
           // signed-in user instead (the session cookie it decodes picks the account; see
           // the #1136 note above isSessionRevoked). /auth/link, the profile's page for
-          // starting that on purpose, was removed in #1140; /discord/link still starts it
-          // for Discord (#1218).
+          // starting that on purpose, was removed in #1140, and /discord/link no longer
+          // comes through here: it links server-side, bound to the session, and never
+          // issues a session (lib/discord/account-link.ts, #1218).
           const log = apiLogger('OAuth signIn')
           // No address here or anywhere below: the ids identify the account (#1132).
           log.info('New OAuth user will be created', {
@@ -574,6 +575,18 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
+    async signIn({ user }) {
+      // A sign-in is activity (#1130). The jwt callback below writes lastActiveAt at most
+      // every five minutes and not on the sign-in itself, so a short visit – the one the
+      // inactive-account warning asks for – would otherwise leave the account marked
+      // inactive and still due for deletion. Never blocks the sign-in.
+      if (!user?.id) return
+      try {
+        await prisma.users.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } })
+      } catch {
+        // A stale lastActiveAt must not block auth.
+      }
+    },
     async createUser({ user }) {
       // Auto-verify email for new OAuth users
       // Note: This event fires BEFORE accounts are linked by PrismaAdapter

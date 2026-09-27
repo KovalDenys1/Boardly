@@ -780,12 +780,12 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
   }
 }
 
-// Every paragraph is escaped whole, then the three site links, Link's support
-// page and the support address are turned back into anchors by exact match.
+// Every paragraph is escaped whole, then the site links the message names, Link's
+// support page and the support address are turned back into anchors by exact match.
 // Copy therefore never carries markup, and the username cannot smuggle any in.
-function linkify(escaped: string, links: ConfirmationLinks): string {
+function linkify(escaped: string, links: Readonly<Record<string, string>>): string {
   let html = escaped
-  for (const url of [links.profile, links.withdrawal, links.terms, LINK_SUPPORT_URL]) {
+  for (const url of [...Object.values(links), LINK_SUPPORT_URL]) {
     const safe = escapeHtml(url)
     html = html.split(safe).join(`<a href="${safe}" style="color: #FF6B5B;">${safe}</a>`)
   }
@@ -794,7 +794,7 @@ function linkify(escaped: string, links: ConfirmationLinks): string {
     .join(`<a href="mailto:${SUPPORT_EMAIL}" style="color: #FF6B5B;">${SUPPORT_EMAIL}</a>`)
 }
 
-function confirmationCopyHtml(copy: ConfirmationCopy, links: ConfirmationLinks): string {
+function confirmationCopyHtml(copy: ConfirmationCopy, links: Readonly<Record<string, string>>): string {
   const paragraph = (text: string) => `<p>${linkify(escapeHtml(text), links)}</p>`
   const sections = copy.sections
     .map(
@@ -1072,6 +1072,150 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
   } catch (error) {
     await noteEmailSendFailure('sendSubscriptionNoticeEmail', error)
     logger.error('Failed to send subscription notice email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export type InactiveAccountWarningDetails = {
+  /** Resend idempotency key; one per warning, so a retried send cannot double-deliver. */
+  idempotencyKey?: string
+  username?: string | null
+  /** The day the account will be deleted unless its owner signs in first. */
+  deleteOn: Date
+}
+
+type InactiveWarningLinks = { login: string; profile: string; privacy: string }
+
+function englishInactiveWarningCopy(d: InactiveAccountWarningDetails, links: InactiveWarningLinks): ConfirmationCopy {
+  const day = formatDay(d.deleteOn, 'en-US')
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro: `Nobody has signed in to your Boardly account for almost two years. We do not keep accounts that are no longer used, so we will delete yours on ${day} or shortly after, unless you sign in before then.`,
+    sections: [
+      {
+        heading: 'Keeping your account',
+        paragraphs: [`Sign in at ${links.login} before ${day} and we keep the account. That is all it takes, and nothing else changes.`],
+      },
+      {
+        heading: 'What deletion removes',
+        paragraphs: [
+          'Your profile, username, profile picture, friends, achievements and settings are deleted, and so are your game history and statistics. In other players\' game records your name is replaced with "Deleted player". Feedback you sent stays, without your email address and account.',
+        ],
+      },
+      {
+        heading: 'Your data',
+        paragraphs: [
+          `If you want a copy first, sign in and use "Download my data" on your profile page: ${links.profile}. Our privacy policy says how long we keep what: ${links.privacy}.`,
+        ],
+      },
+    ],
+  }
+}
+
+function norwegianInactiveWarningCopy(d: InactiveAccountWarningDetails, links: InactiveWarningLinks): ConfirmationCopy {
+  const day = formatDay(d.deleteOn, 'nb-NO')
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro: `Ingen har logget inn på Boardly-kontoen din på nesten to år. Vi tar ikke vare på kontoer som ikke lenger brukes, så vi sletter din ${day} eller kort tid etter, hvis du ikke logger inn før det.`,
+    sections: [
+      {
+        heading: 'Slik beholder du kontoen',
+        paragraphs: [`Logg inn på ${links.login} før ${day}, så beholder vi kontoen. Mer skal ikke til, og ingenting annet endres.`],
+      },
+      {
+        heading: 'Dette slettes',
+        paragraphs: [
+          'Profilen, brukernavnet, profilbildet, vennene, prestasjonene og innstillingene dine slettes, og det samme gjør spillhistorikken og statistikken din. I andre spilleres spillhistorikk erstattes navnet ditt med «Deleted player». Tilbakemeldinger du har sendt, blir værende, uten e-postadressen og kontoen din.',
+        ],
+      },
+      {
+        heading: 'Dataene dine',
+        paragraphs: [
+          `Vil du ha en kopi først, kan du logge inn og bruke «Last ned dataene mine» på profilsiden: ${links.profile}. I personvernerklæringen står det hvor lenge vi lagrer hva: ${links.privacy}.`,
+        ],
+      },
+    ],
+  }
+}
+
+/**
+ * The warning before an inactive account is deleted (#1130, decision 2026-09-27): a
+ * registered account nobody has signed in to for 24 months is deleted, and its owner hears
+ * about it 30 days before. English first, then Norwegian bokmål, in one message, like the
+ * other notices: no language is stored per user. lib/inactive-accounts.ts decides who is
+ * due and guarantees one send per warning; this only renders and sends.
+ */
+export async function sendInactiveAccountWarningEmail(email: string, details: InactiveAccountWarningDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: InactiveWarningLinks = {
+    login: `${base}/auth/login`,
+    profile: `${base}/profile`,
+    privacy: `${base}/privacy`,
+  }
+  const english = englishInactiveWarningCopy(details, links)
+  const norwegian = norwegianInactiveWarningCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+  const signature = 'The Boardly team'
+  const footerText = emailFooterText()
+
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}\n${signature}`,
+    footerText,
+  ]
+    .filter((part) => part.length > 0)
+    .join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: 'Your Boardly account will be deleted / Boardly-kontoen din blir slettet',
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}<br>
+                ${signature}
+              </p>
+              ${emailFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    await noteEmailSendFailure('sendInactiveAccountWarningEmail', error)
+    logger.error('Failed to send inactive account warning email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

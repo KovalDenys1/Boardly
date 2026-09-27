@@ -2179,7 +2179,9 @@ const no = {
     send: 'Send melding',
     noMessages: 'Ingen meldinger ennå',
     startConversation: 'Start samtalen!',
-    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje'
+    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
+    rules: 'Regler',
+    rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
   },
   auth: {
     inAppBrowser: {
@@ -3589,7 +3591,7 @@ const no = {
         title: 'Kontoen din',
         data: 'Brukernavn, e-postadresse, passordet ditt lagret bare som en enveis bcrypt-hash, profilbilde, bio, aksentfarge og innstillinger, innloggingstjenestene du har koblet til, tidspunktet for siste tilbakestilling av passord eller endring av e-post (brukes bare til å logge ut eldre økter), nettstedet eller kampanjen du kom fra da du registrerte deg, og når du godtok vilkårene og bekreftet at du er 13 år eller eldre.',
         basis: 'Avtale: kontoen din bygger på vilkårene du godtar når du oppretter den, ikke på samtykke, og vi trenger dette for å drive den. Registreringskilden: vår berettigede interesse i å vite hvilke kanaler som bringer nye spillere.',
-        retention: 'Til du sletter kontoen. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har Premium eller noen gang har startet et Premium-kjøp. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
+        retention: 'Til du sletter kontoen. Vi sletter ikke en konto fordi den ikke er brukt; bestemmer vi oss for det, sier vi fra på e-post og på denne siden minst 30 dager før det gjelder. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har Premium eller noen gang har startet et Premium-kjøp. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
         extra: 'Profilen til en ny konto (brukernavn, bilde, bio og spillstatistikk) er bare synlig for vennene dine, og påloggingsstatusen din er skjult. Første gang du logger inn, tilbyr vi å gjøre profilen offentlig, og du kan endre begge deler når som helst i profilinnstillingene. Kontoer opprettet før denne endringen beholder innstillingene de hadde: offentlig profil og synlig påloggingsstatus, med mindre de er endret. Brukernavnet, bildet og spillresultatene dine vises på den offentlige topplisten, med mindre profilen er privat.',
       },
       guest: {
@@ -3602,7 +3604,7 @@ const no = {
         title: 'Spill, lobbyer, chat og venner',
         data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, lobbyinvitasjoner, varsler og prestasjoner.',
         basis: 'Avtale: dette er selve tjenesten.',
-        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, når de er inaktive og tomme. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til du sletter kontoen.',
+        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt, fjerner vi navn, spørsmål, svar, gjetninger og tegninger fra spilloppføringen; poengene og resultatene blir værende, knyttet til en spiller-ID i stedet for et navn, for statistikken din, topplisten og prestasjonene. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, slettes en inaktiv lobby der ingen spill noen gang startet, sammen med disse spillene; en lobby der det ble spilt, får et nøytralt navn, og koden frigjøres for nye lobbyer, når spillene i den har vært gjennom trinnet over. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til kontoen slettes.',
       },
       signIn: {
         title: 'Innlogging med Google, GitHub eller Discord',
@@ -4227,6 +4229,17 @@ const no = {
     doneHint: 'Rollene følger kontoen din fra nå av: Premium samme dag, fullførte spill hver natt.',
     failed: 'Discord svarte ikke. Prøv igjen om litt.',
     retry: 'Prøv igjen',
+    reauthTitle: 'Logg inn på nytt for å fortsette',
+    reauthBody: 'Av sikkerhetshensyn krever kobling av Discord en innlogging fra de siste 10 minuttene. Logg ut og inn igjen, så kommer du rett tilbake hit.',
+    signInAgain: 'Logg inn på nytt',
+    linkErrorTitle: 'Discord ble ikke koblet til',
+    linkErrors: {
+      denied: 'Du avbrøt på Discords side. Ingenting ble endret.',
+      expired: 'Dette koblingsforsøket har utløpt, eller det ble startet i en annen fane eller mens du var logget inn på en annen konto. Start på nytt herfra.',
+      taken: 'Den Discord-kontoen er allerede koblet til en annen Boardly-konto. Logg inn på den kontoen for å bruke den, eller koble til en annen Discord-konto.',
+      otherDiscord: 'Boardly-kontoen din er allerede koblet til en annen Discord-konto. Koble til på nytt med den, eller fjern den i profilen din først.',
+      failed: 'Discord svarte ikke. Prøv igjen om litt.',
+    },
   },
 } as const
 

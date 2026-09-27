@@ -2,6 +2,11 @@ import NextAuth from 'next-auth'
 import { NextResponse, type NextRequest } from 'next/server'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import {
+  DISCORD_LINK_CALLBACK_PATH,
+  handleDiscordLinkCallback,
+  isDiscordLinkState,
+} from '@/lib/discord/account-link'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -59,4 +64,17 @@ async function postHandler(request: NextRequest, context: unknown) {
   return handler(request, context)
 }
 
-export { handler as GET, postHandler as POST }
+// /discord/link links a Discord account server-side and never through next-auth (#1218). It
+// comes back on the redirect URI registered for Discord sign-in, so the Discord developer
+// portal needed no change; its state carries the `bdlink.` prefix, which next-auth's own
+// state (base64url, no `.`) never does. Every other request, Discord sign-in included, is
+// next-auth's as before.
+async function getHandler(request: NextRequest, context: unknown) {
+  const url = new URL(request.url)
+  if (url.pathname === DISCORD_LINK_CALLBACK_PATH && isDiscordLinkState(url.searchParams.get('state'))) {
+    return handleDiscordLinkCallback(request)
+  }
+  return handler(request, context)
+}
+
+export { getHandler as GET, postHandler as POST }

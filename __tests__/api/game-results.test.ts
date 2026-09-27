@@ -121,6 +121,22 @@ describe('GET /api/game/[gameId]/results', () => {
     )
   })
 
+  // #1130: a year-old lobby's code is retired to `~<id>`; it is nobody's to show or join.
+  it('hands back no lobby code once the lobby has been retired, and the code otherwise', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1' } as any)
+
+    const live = await (await GET(buildRequest(), { params: Promise.resolve({ gameId: 'game-1' }) })).json()
+    expect(live.lobbyCode).toBe('ABCD12')
+
+    mockPrisma.games.findUnique.mockResolvedValueOnce({
+      ...mockGame,
+      lobby: { ...mockGame.lobby, code: '~clobby0000000000000000001', name: 'Lobby 4821' },
+    } as any)
+    const retired = await (await GET(buildRequest(), { params: Promise.resolve({ gameId: 'game-1' }) })).json()
+    expect(retired.lobbyCode).toBeNull()
+    expect(retired.lobbyName).toBe('Lobby 4821')
+  })
+
   it('hides replay in match details when the game is not finished even if snapshots exist', async () => {
     mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1' } as any)
     mockPrisma.games.findUnique.mockResolvedValue({
