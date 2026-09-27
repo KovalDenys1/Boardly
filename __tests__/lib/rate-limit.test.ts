@@ -499,16 +499,18 @@ describe('rateLimit store backends', () => {
       process.env.UPSTASH_REDIS_REST_URL = 'https://example.upstash.io'
       process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
 
-      const incr = jest.fn(async () => 1)
+      // One HINCRBY per counted request since #1156 (a hash per window, the key as the field).
+      const hincrby = jest.fn(async () => 1)
       const expire = jest.fn(async () => 1)
-      const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ incr, expire })
+      const { consumeKeyedRateLimit, __rateLimitTestUtils } = await loadRateLimitModule({ hincrby, expire })
       __rateLimitTestUtils.clearInMemoryStore()
       __rateLimitTestUtils.resetSharedClient()
 
       const result = await consumeKeyedRateLimit('user-1', { windowMs: 60_000, maxRequests: 10 })
 
       expect(result.limited).toBe(false)
-      expect(incr).toHaveBeenCalledTimes(1)
+      expect(hincrby).toHaveBeenCalledTimes(1)
+      expect(hincrby.mock.calls[0][1]).toBe('user-1')
     })
   })
 })
