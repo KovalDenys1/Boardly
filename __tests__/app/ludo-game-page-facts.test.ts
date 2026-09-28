@@ -257,12 +257,16 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(ludo.detail.faq.whoPicksMode.a).toMatch(/Rooms that Quick Play or Play vs Bot create use quick/)
   })
 
-  it('lets the host pick the mode at creation and keeps it through Play again', () => {
-    expect(source('app/api/game/create/route.ts')).toMatch(/ludo: \['quick', 'classic'\]/)
+  it('lets the host pick the mode at creation and keeps it through Play again and Return to Lobby', () => {
+    expect(source('lib/game-rules-carryover.ts')).toMatch(/ludo: \['quick', 'classic'\]/)
+    // Both paths read the finished game's rules back through the same reader (#1260).
+    expect(source('app/api/game/create/route.ts')).toContain('extractCarriedGameConfig(gameType, finishedGame.state)')
+    expect(source('lib/lobby-series-transition.ts')).toContain('extractCarriedGameConfig(gameType, previousState)')
+    expect(source('app/api/lobby/[code]/return-to-waiting/route.ts')).toContain('previousState: lastGame.state')
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(
       /type EditableSettingKey = 'maxPlayers' \| 'turnTimer' \| 'allowSpectators' \| 'theme' \| 'gameType'/
     )
-    expect(ludo.detail.faq.whoPicksMode.a).toMatch(/The host, when creating the lobby, and Play again keeps that mode/)
+    expect(ludo.detail.faq.whoPicksMode.a).toMatch(/The host, when creating the lobby; Play Again and Return to Lobby keep that mode/)
   })
 
   it('quotes the create default, the host range and the Play vs Bot clock', () => {

@@ -2322,7 +2322,7 @@ const en = {
           },
           whoPicksMode: {
             q: 'Who chooses quick or classic mode?',
-            a: 'The host, when creating the lobby, and Play again keeps that mode. Rooms that Quick Play or Play vs Bot create use quick.',
+            a: 'The host, when creating the lobby; Play Again and Return to Lobby keep that mode. Rooms that Quick Play or Play vs Bot create use quick.',
           },
           playAgain: {
             q: 'Can we play again with the same people?',

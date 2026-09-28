@@ -2322,7 +2322,7 @@ const no = {
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',
-            a: 'Verten, når lobbyen opprettes, og Spill igjen beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',

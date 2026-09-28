@@ -64,6 +64,8 @@ export async function POST(
       lobbyCode: code,
       gameType,
       players: lastGame.players,
+      // The room keeps the rules it was set up with (#1260).
+      previousState: lastGame.state,
     })
 
     log.info('Lobby returned to waiting state', { code, gameId })
