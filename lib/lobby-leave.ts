@@ -589,7 +589,12 @@ export async function performPlayerLeave(
             currentPlayerId: advanceRef.current.currentPlayerId,
           })
         }
-        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: result.state })
+        // Sanitized like every other game-update (#1274): Memory reaches this branch,
+        // and its raw state carries every face-down card's value.
+        await emitLobbyEvent(log, code, 'game-update', {
+          action: 'state-change',
+          payload: sanitizeStateForBroadcast(activeGame.gameType, result.state as { data?: unknown; status?: string }, null),
+        })
       } else if (result.status === 'conflict') {
         // The turn clock is the backstop here: stuck-turn recovery (#989) asks
         // the server again once it expires on the departed player's seat.
