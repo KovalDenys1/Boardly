@@ -1707,6 +1707,10 @@ const no = {
         audience: {
           whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkens åpningsteori. Reglene læres på et minutt, slagtvangen gir taktikk fra de første trekkene, og det er et godt første strategispill for barn.',
         },
+        history: {
+          names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. Slektningene har andre regler: i russisk og brasiliansk dam kan vanlige brikker slå bakover og kongene flyr, og internasjonal dam spilles på et 10×10-brett.',
+          solved: 'Den engelske varianten er dessuten løst: i 2007 beviste programmet Chinook at perfekt spill fra startstillingen ender uavgjort.',
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',

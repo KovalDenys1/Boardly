@@ -78,6 +78,10 @@ export default function CheckersDetailContent() {
       audience={[
         t('games.checkers.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.checkers.detail.history.names'),
+        t('games.checkers.detail.history.solved'),
+      ]}
       playVsBotGameType="checkers"
     />
   )

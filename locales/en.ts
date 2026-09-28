@@ -1707,6 +1707,10 @@ const en = {
         audience: {
           whoItSuits: 'Checkers suits anyone who wants real strategy without chess opening theory. The rules fit in a minute, forced captures bring tactics from the first moves, and it makes a good first strategy game for children.',
         },
+        history: {
+          names: 'North Americans call the game checkers and the British call it draughts. Its relatives play differently: Russian and Brazilian checkers let men capture backwards and kings fly, and international draughts uses a 10×10 board.',
+          solved: 'The English version is also solved: in 2007 the program Chinook proved that perfect play from the opening position ends in a draw.',
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',
