@@ -1672,6 +1672,20 @@ const no = {
             desc: 'En brikke som når bakerste rad midt i et slag, blir konge og stopper der, så den hopper ikke videre det trekket.',
           },
         },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Å glemme hvor et tvunget hopp lander',
+            desc: 'Motstanderen kan tvinge deg til å slå. Sjekk før hvert trekk hva som kan ofres, og hvor brikken din da havner.',
+          },
+          emptyingBackRow: {
+            title: 'Å tømme bakerste rad for tidlig',
+            desc: 'Da får den første motstanderbrikken som kommer fram, åpne ruter å bli konge på.',
+          },
+          thinkingPastTheClock: {
+            title: 'Å tenke forbi klokka',
+            desc: 'Går tiden ut, taper du partiet med en gang, selv fra en vinnende stilling.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',

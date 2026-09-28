@@ -1672,6 +1672,20 @@ const en = {
             desc: 'A man that reaches the far row mid-capture is crowned and stops there, so it jumps no further that move.',
           },
         },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Forgetting where a forced jump lands',
+            desc: 'Your opponent can make you capture. Before each move, check what they could offer and where your man would end up.',
+          },
+          emptyingBackRow: {
+            title: 'Emptying the back row early',
+            desc: 'It leaves open crowning squares for the first enemy man to arrive.',
+          },
+          thinkingPastTheClock: {
+            title: 'Thinking past the clock',
+            desc: 'A timeout loses the game on the spot, even from a winning position.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

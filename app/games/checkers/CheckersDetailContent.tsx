@@ -64,6 +64,11 @@ export default function CheckersDetailContent() {
         { title: t('games.checkers.detail.strategy.tradeWhenAhead.title'), desc: t('games.checkers.detail.strategy.tradeWhenAhead.desc') },
         { title: t('games.checkers.detail.strategy.crowningStopsTheChain.title'), desc: t('games.checkers.detail.strategy.crowningStopsTheChain.desc') },
       ]}
+      mistakes={[
+        { title: t('games.checkers.detail.mistakes.ignoringTheLanding.title'), desc: t('games.checkers.detail.mistakes.ignoringTheLanding.desc') },
+        { title: t('games.checkers.detail.mistakes.emptyingBackRow.title'), desc: t('games.checkers.detail.mistakes.emptyingBackRow.desc') },
+        { title: t('games.checkers.detail.mistakes.thinkingPastTheClock.title'), desc: t('games.checkers.detail.mistakes.thinkingPastTheClock.desc') },
+      ]}
       playVsBotGameType="checkers"
     />
   )
