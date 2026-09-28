@@ -1639,6 +1639,37 @@ const en = {
           describerRotates: 'Teams alternate, and the describer seat moves to the next teammate each turn instead of staying with one player.',
           threeTurnsEach: 'Once every team has had three turns the higher total wins, and teams level at the top share a tie.',
         },
+        scoring: {
+          title: 'Net words per turn',
+          note: 'A turn is worth its guesses minus its skips, from plus ten to minus ten, so a running total can drop below zero.',
+          rows: {
+            guessedWord: {
+              name: 'Guessed word',
+              value: '+1',
+              rule: 'Counts the moment the describer confirms it.',
+            },
+            skippedWord: {
+              name: 'Skipped word',
+              value: '−1',
+              rule: 'Charged whenever Skip is pressed, early in the turn or late.',
+            },
+            wordLeftAtZero: {
+              name: 'Word left at zero',
+              value: '−1',
+              rule: 'Each word the clock cut off counts as a skip.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Word left after End Turn',
+              value: '0',
+              rule: 'Ending the turn yourself leaves the rest of the card unscored.',
+            },
+            levelAtTheTop: {
+              name: 'Level at the top',
+              value: 'Tie',
+              rule: 'Equal leading totals after the last turn name no winner.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

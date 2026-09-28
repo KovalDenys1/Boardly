@@ -1639,6 +1639,37 @@ const no = {
           describerRotates: 'Lagene bytter på, og forklarerrollen går videre til neste lagkamerat hver tur i stedet for å bli hos én spiller.',
           threeTurnsEach: 'Når alle lag har hatt tre turer, vinner høyest sum, og lag som står likt på toppen, deler uavgjort.',
         },
+        scoring: {
+          title: 'Netto ord per tur',
+          note: 'En tur er verdt gjettede ord minus hoppede, fra pluss ti til minus ti, så en løpende sum kan gå under null.',
+          rows: {
+            guessedWord: {
+              name: 'Gjettet ord',
+              value: '+1',
+              rule: 'Teller i det forklareren bekrefter det.',
+            },
+            skippedWord: {
+              name: 'Hoppet ord',
+              value: '−1',
+              rule: 'Trekkes hver gang «Hopp over» trykkes, tidlig i turen eller sent.',
+            },
+            wordLeftAtZero: {
+              name: 'Ord igjen ved null',
+              value: '−1',
+              rule: 'Hvert ord klokka kuttet av, teller som et hopp.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Ord igjen etter avsluttet tur',
+              value: '0',
+              rule: 'Avslutter du turen selv, blir resten av kortet ikke telt.',
+            },
+            levelAtTheTop: {
+              name: 'Likt på toppen',
+              value: 'Uavgjort',
+              rule: 'Lik ledersum etter siste tur gir ingen vinner.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',

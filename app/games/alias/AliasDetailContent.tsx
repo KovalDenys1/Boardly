@@ -53,6 +53,19 @@ export default function AliasDetailContent() {
         t('games.alias.detail.rules.describerRotates'),
         t('games.alias.detail.rules.threeTurnsEach'),
       ]}
+      scoring={[
+        {
+          title: t('games.alias.detail.scoring.title'),
+          note: t('games.alias.detail.scoring.note'),
+          rows: [
+            { name: t('games.alias.detail.scoring.rows.guessedWord.name'), value: t('games.alias.detail.scoring.rows.guessedWord.value'), rule: t('games.alias.detail.scoring.rows.guessedWord.rule') },
+            { name: t('games.alias.detail.scoring.rows.skippedWord.name'), value: t('games.alias.detail.scoring.rows.skippedWord.value'), rule: t('games.alias.detail.scoring.rows.skippedWord.rule') },
+            { name: t('games.alias.detail.scoring.rows.wordLeftAtZero.name'), value: t('games.alias.detail.scoring.rows.wordLeftAtZero.value'), rule: t('games.alias.detail.scoring.rows.wordLeftAtZero.rule') },
+            { name: t('games.alias.detail.scoring.rows.wordLeftAfterEndTurn.name'), value: t('games.alias.detail.scoring.rows.wordLeftAfterEndTurn.value'), rule: t('games.alias.detail.scoring.rows.wordLeftAfterEndTurn.rule') },
+            { name: t('games.alias.detail.scoring.rows.levelAtTheTop.name'), value: t('games.alias.detail.scoring.rows.levelAtTheTop.value'), rule: t('games.alias.detail.scoring.rows.levelAtTheTop.rule') },
+          ],
+        },
+      ]}
     />
   )
 }
