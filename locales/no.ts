@@ -2082,7 +2082,7 @@ const no = {
         step3Title: 'Stem',
         step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den. En teller viser hvor mange som har stemt.',
         step4Title: 'Avslør og overlev',
-        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres. Hvilken som helst spiller ved bordet kan åpne neste runde.',
+        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres. Hvilken som helst spiller kan åpne neste runde.',
         benefitsTitle: 'Derfor hører Løgnerfest hjemme på Boardly',
         benefit1: 'Laget for spill i samme rom.',
         benefit2: 'Tydelige avstemninger og avsløringer.',
@@ -2090,10 +2090,10 @@ const no = {
         benefit4: 'Ingen app å laste ned.',
         rules: {
           floorRotates: 'Hver runde har én spiller ordet, etter tur, og de som er ute hoppes over.',
-          claimAndMark: 'Den som har ordet skriver 5 til 180 tegn og markerer sannhet eller bløff før innsending.',
+          claimAndMark: 'Den som har ordet skriver opptil 180 tegn og markerer sannhet eller bløff.',
           everyoneElseVotes: 'Alle andre som fortsatt er med stemmer Utfordre eller Tro, én gang.',
           caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
-          strikesAndEnd: 'To avslørte bløffer, og du er ute. Etter ti runder, eller når én spiller er igjen, rangeres de som fortsatt er med over dem som er ute, deretter etter poeng.',
+          strikesAndEnd: 'To avslørte bløffer, og du er ute. Spillet slutter etter ti runder eller når én spiller er igjen.',
         },
         scoring: {
           claimant: {
@@ -2126,7 +2126,7 @@ const no = {
           },
           phaseClock: {
             title: 'Klokke per fase',
-            desc: 'Påstand, avstemning og avsløring får 60 sekunder hver; før start kan verten velge 30 til 180.',
+            desc: 'Hver fase får 60 sekunder; før start kan verten velge 30 til 180.',
           },
           roundsAndStrikes: {
             title: 'Runder og strikes',
@@ -2136,7 +2136,7 @@ const no = {
         strategy: {
           challengeAboveFortyTwo: {
             title: 'Utfordre over 42 prosent',
-            desc: 'Med disse poengene lønner det seg å utfordre så snart en bløff virker mer enn 42 prosent sannsynlig.',
+            desc: 'Å utfordre slår å tro så snart en bløff virker mer enn 42 prosent sannsynlig.',
           },
           yourReadScoresAlone: {
             title: 'Din lesning teller alene',
@@ -2184,15 +2184,15 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Ett rom, alle skjermer',
-            desc: 'Del koden eller invitasjonslenken; påstander, stemmetall og avsløringen oppdateres live for hver spiller.',
+            desc: 'Del koden eller invitasjonslenken; alt oppdateres live på hver spillers skjerm.',
           },
           botsAndSolo: {
             title: 'Bare mennesker',
-            desc: 'En bot har ingenting å bløffe med, så det finnes verken boter eller solomodus. Er dere færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
+            desc: 'En bot har ingenting å bløffe med, så det finnes ingen boter. Færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
           },
           turnTimer: {
             title: 'Én klokke per fase',
-            desc: 'Ved null fyller serveren inn det som mangler så snart en åpen side i rommet sjekker inn, og det gjør sidene av seg selv.',
+            desc: 'Ved null fyller serveren hullet når en åpen side i rommet sjekker inn, noe sidene gjør av seg selv.',
           },
           guestNoDownload: {
             title: 'Ingenting å installere',
@@ -2203,7 +2203,7 @@ const no = {
           whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
         },
         history: {
-          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat. Her kan en hvilken som helst setning være bløffen.',
+          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat.',
         },
         faq: {
           isItFree: {

@@ -2082,7 +2082,7 @@ const en = {
         step3Title: 'Vote',
         step3Desc: 'Other players choose whether to believe or challenge the claim. A counter shows how many have voted.',
         step4Title: 'Reveal and survive',
-        step4Desc: 'The truth comes out and the scoreboard updates. Any player at the table can open the next round.',
+        step4Desc: 'The truth comes out and the scoreboard updates. Any player can open the next round.',
         benefitsTitle: "Why Liar's Party belongs on Boardly",
         benefit1: 'Built for shared room play.',
         benefit2: 'Clear voting and reveal moments.',
@@ -2090,10 +2090,10 @@ const en = {
         benefit4: 'No app download planned.',
         rules: {
           floorRotates: 'Each round one player holds the floor, in turn, skipping anyone who is out.',
-          claimAndMark: 'The claimant writes 5 to 180 characters and marks them truth or bluff before sending.',
+          claimAndMark: 'The claimant writes up to 180 characters and marks them truth or bluff.',
           everyoneElseVotes: 'Every other player still in votes Challenge or Believe, once.',
           caughtNeedsMore: 'A bluff is caught only when challengers outnumber believers; an even split lets it through.',
-          strikesAndEnd: 'Two caught bluffs put you out. After ten rounds, or with one player left, players still in rank above those out, then by points.',
+          strikesAndEnd: 'Two caught bluffs put you out. The game ends after ten rounds or when one player is left.',
         },
         scoring: {
           claimant: {
@@ -2126,7 +2126,7 @@ const en = {
           },
           phaseClock: {
             title: 'Phase clock',
-            desc: 'Claim, vote and reveal each get 60 seconds; before the start, the host can pick 30 to 180.',
+            desc: 'Each phase gets 60 seconds; before the start, the host can pick 30 to 180.',
           },
           roundsAndStrikes: {
             title: 'Rounds and strikes',
@@ -2136,7 +2136,7 @@ const en = {
         strategy: {
           challengeAboveFortyTwo: {
             title: 'Challenge above 42 percent',
-            desc: 'On these scores, challenging beats believing once a bluff looks more than 42 percent likely.',
+            desc: 'Challenging beats believing once a bluff looks more than 42 percent likely.',
           },
           yourReadScoresAlone: {
             title: 'Your read scores alone',
@@ -2184,15 +2184,15 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'One room, every screen',
-            desc: 'Share the code or invite link; claims, vote counts and the reveal update live for every player.',
+            desc: "Share the code or invite link; everything updates live on every player's screen.",
           },
           botsAndSolo: {
             title: 'People only',
-            desc: 'A bot has nothing to bluff with, so there are no bots or solo mode. Short of four? Share the invite link or join an open lobby.',
+            desc: 'A bot has nothing to bluff with, so there are no bots. Short of four? Share the invite link or join an open lobby.',
           },
           turnTimer: {
             title: 'One clock per phase',
-            desc: 'At zero, the server fills in what is missing once any open page in the room checks in, which pages do by themselves.',
+            desc: 'At zero the server fills the gap when an open page in the room checks in, as pages do unprompted.',
           },
           guestNoDownload: {
             title: 'Nothing to install',
@@ -2200,10 +2200,10 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Best for four to twelve people who enjoy reading each other: parties, video calls, club nights.',
+          whoItSuits: 'For four to twelve people who enjoy reading each other: parties, video calls, club nights.',
         },
         history: {
-          origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat. Here any sentence can be the bluff.',
+          origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat.',
         },
         faq: {
           isItFree: {
