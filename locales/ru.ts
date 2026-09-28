@@ -1077,6 +1077,7 @@ const ru = {
         resolvingMismatch: 'Пара не найдена, карты переворачиваются обратно...',
         scoreboardTitle: 'Счёт',
         pairsLabel: 'Собрано {{count}} пар',
+        pairsShort: 'Пар: {{count}}',
         pairsLabel_one: 'Собрана {{count}} пара',
         pairsLabel_few: 'Собрано {{count}} пары',
         pairsLabel_many: 'Собрано {{count}} пар',

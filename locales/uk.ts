@@ -1079,6 +1079,7 @@ const uk: TranslationWithPlurals = {
         resolvingMismatch: 'Пари немає, картки перевертаються назад...',
         scoreboardTitle: 'Рахунок',
         pairsLabel: 'Знайдено {{count}} пар',
+        pairsShort: 'Пар: {{count}}',
         pairsLabel_one: 'Знайдено {{count}} пару',
         pairsLabel_few: 'Знайдено {{count}} пари',
         pairsLabel_many: 'Знайдено {{count}} пар',

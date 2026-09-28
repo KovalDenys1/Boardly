@@ -1030,6 +1030,7 @@ const en = {
         resolvingMismatch: 'No match, flipping cards back...',
         scoreboardTitle: 'Scoreboard',
         pairsLabel: '{{count}} pairs matched',
+        pairsShort: 'Pairs: {{count}}',
         finishedPrefix: 'Game finished:',
         winnerLabel: '{{player}} wins',
         tieLabel: 'It\'s a tie',

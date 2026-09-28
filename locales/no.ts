@@ -1030,6 +1030,7 @@ const no = {
         resolvingMismatch: 'Ikke match, snur kortene tilbake...',
         scoreboardTitle: 'Poengtavle',
         pairsLabel: '{{count}} par funnet',
+        pairsShort: 'Par: {{count}}',
         finishedPrefix: 'Spillet er ferdig:',
         winnerLabel: '{{player}} vinner',
         tieLabel: 'Uavgjort',
