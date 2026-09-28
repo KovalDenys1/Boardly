@@ -28,6 +28,20 @@ export function isTicTacToeMatchComplete(match: TicTacToeMatchState): boolean {
   return match.winsBySymbol.X >= winsNeeded || match.winsBySymbol.O >= winsNeeded
 }
 
+/**
+ * Whether the round was lost on time rather than on the board. A round won on
+ * the board always carries its winning line and a draw carries no winner, so a
+ * finished round with a winner and no line can only be a timeout forfeit. It is
+ * derived rather than stored so rounds already saved before #1246 read the same.
+ * Pure so the client can hide the undo it would be refused.
+ */
+export function isTicTacToeRoundLostOnTime(
+  data: Pick<TicTacToeGameData, 'winner' | 'winningLine'>,
+  status: string | undefined,
+): boolean {
+  return status === 'finished' && (data.winner === 'X' || data.winner === 'O') && !data.winningLine
+}
+
 export interface TicTacToeMoveRecord {
   playerId: string
   symbol: PlayerSymbol
@@ -139,11 +153,23 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
+      // Taking back the move that ended a round is a deliberate casual feature
+      // (#387), but a round lost on time is not a move: undoing it would make
+      // the clock meaningless, and against a bot that accepts every undo no
+      // round could ever be lost (#1246).
+      if (isTicTacToeRoundLostOnTime(gameData, this.state.status)) {
+        return false
+      }
+
       return this.getOpponent(move.playerId) !== null
     }
 
     if (move.type === 'respond-undo') {
       if (gameData.pendingRequest?.type !== 'undo' || gameData.pendingRequest.responderId !== move.playerId) {
+        return false
+      }
+
+      if (move.data.accept === true && isTicTacToeRoundLostOnTime(gameData, this.state.status)) {
         return false
       }
 
