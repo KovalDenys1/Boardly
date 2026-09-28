@@ -1784,7 +1784,7 @@ const en = {
           multiJump: 'The jumping piece must keep jumping while it can; jumped pieces come off when the move ends.',
           crowning: 'A man reaching the far row becomes a king, which ends the move.',
           kings: 'A king moves and captures one square diagonally in any direction; it does not fly.',
-          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw.',
+          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw, and so is one king against one king when neither can capture.',
         },
         modes: {
           moveClock: {
@@ -1900,7 +1900,7 @@ const en = {
           },
           undoOrDraw: {
             q: 'Can I undo a move or offer a draw?',
-            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving.',
+            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving, or at once when each side is down to a single king and neither can capture.',
           },
         },
       },
@@ -1939,6 +1939,7 @@ const en = {
         gameWon: 'Game Won!',
         draw: 'It\'s a Draw!',
         drawRule: 'Draw: 40 moves each without a capture or a man moving',
+        drawLoneKings: 'Draw: one king each, and neither can force a win',
         unknownPlayer: 'Unknown',
         playAgain: 'Play Again',
         loadFailed: 'Failed to load Checkers game state.',
