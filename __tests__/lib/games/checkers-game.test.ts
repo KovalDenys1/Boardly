@@ -260,7 +260,8 @@ describe('CheckersGame', () => {
 
     it('calls a draw after 40 moves each without a capture or a man move', () => {
       const g = makeReadyGame()
-      setPosition(g, [[7, 0, 3], [0, 7, 4]], 1)
+      // A second, idle dark king keeps this off the lone-king draw (#1265).
+      setPosition(g, [[7, 0, 3], [0, 7, 4], [7, 4, 3]], 1)
       const kings: Record<Side, Square> = { 1: [7, 0], 2: [0, 7] }
       for (let ply = 0; ply < DRAW_PLY_LIMIT; ply++) {
         const side = getData(g).currentSide
@@ -274,6 +275,48 @@ describe('CheckersGame', () => {
       expect(getData(g).endReason).toBe('draw-rule')
       expect(g.getState().status).toBe('finished')
       expect(g.getState().winner).toBeUndefined()
+    })
+
+    it('draws at once when a turn leaves one king against one king (#1265)', () => {
+      const g = makeReadyGame()
+      setPosition(g, [[7, 0, 3], [0, 7, 4]], 1)
+      expect(g.makeMove(step('p1', [7, 0], [6, 1]))).toBe(true)
+      expect(getData(g).winner).toBe('draw')
+      expect(getData(g).endReason).toBe('insufficient-material')
+      expect(g.getState().status).toBe('finished')
+      expect(g.getState().winner).toBeUndefined()
+      expect(g.getState().players.map((p) => p.score ?? 0)).toEqual([0, 0])
+      // Nothing moves after the draw.
+      expect(g.makeMove(step('p2', [0, 7], [1, 6]))).toBe(false)
+    })
+
+    it('draws when a capture leaves one king each', () => {
+      const g = makeReadyGame()
+      // Dark king (5,2) jumps the light man on (4,3) to (3,4); a light king waits on (0,7).
+      setPosition(g, [[5, 2, 3], [4, 3, 2], [0, 7, 4]], 1)
+      expect(g.makeMove(step('p1', [5, 2], [3, 4]))).toBe(true)
+      expect(getData(g).endReason).toBe('insufficient-material')
+      expect(getData(g).winner).toBe('draw')
+    })
+
+    it('draws when a promotion makes the last man a king against a lone king', () => {
+      const g = makeReadyGame()
+      // Dark man (1,2) promotes on row 0; light's only piece is a king on (7,6).
+      setPosition(g, [[1, 2, 1], [7, 6, 4]], 1)
+      expect(g.makeMove(step('p1', [1, 2], [0, 1]))).toBe(true)
+      expect(getData(g).endReason).toBe('insufficient-material')
+    })
+
+    it('plays on with a lone king against a man, or two kings against one', () => {
+      const vsMan = makeReadyGame()
+      setPosition(vsMan, [[7, 0, 3], [2, 5, 2]], 1)
+      expect(vsMan.makeMove(step('p1', [7, 0], [6, 1]))).toBe(true)
+      expect(vsMan.getState().status).toBe('playing')
+
+      const twoKings = makeReadyGame()
+      setPosition(twoKings, [[7, 0, 3], [7, 4, 3], [0, 7, 4]], 1)
+      expect(twoKings.makeMove(step('p1', [7, 0], [6, 1]))).toBe(true)
+      expect(twoKings.getState().status).toBe('playing')
     })
 
     it('resets the draw count on a man move', () => {

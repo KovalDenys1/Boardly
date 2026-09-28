@@ -1784,7 +1784,7 @@ const no = {
           multiJump: 'Brikken som hopper, må hoppe videre så lenge den kan; slåtte brikker fjernes når trekket er ferdig.',
           crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket.',
           kings: 'En konge går og slår én rute diagonalt i alle retninger; den flyr ikke.',
-          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort, og det gjør også én konge mot én konge.',
         },
         modes: {
           moveClock: {
@@ -1900,7 +1900,7 @@ const no = {
           },
           undoOrDraw: {
             q: 'Kan jeg angre et trekk eller tilby uavgjort?',
-            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes, eller med en gang når hver side bare har én konge igjen.',
           },
         },
       },
@@ -1939,6 +1939,7 @@ const no = {
         gameWon: 'Spillet er vunnet!',
         draw: 'Uavgjort!',
         drawRule: 'Uavgjort: 40 trekk hver uten slag eller bondetrekk',
+        drawLoneKings: 'Uavgjort: én konge hver, og ingen kan tvinge frem seier',
         unknownPlayer: 'Ukjent',
         playAgain: 'Spill igjen',
         loadFailed: 'Kunne ikke laste damspillet.',
