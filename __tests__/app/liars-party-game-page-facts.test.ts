@@ -77,7 +77,7 @@ describe('the Liar\'s Party rules against the engine (#1240)', () => {
   it('plays ten rounds with two strikes when the lobby sets nothing', () => {
     const engine = startedGame()
     expect([data(engine).maxRounds, data(engine).eliminationThreshold]).toEqual([10, 2])
-    expect(detail.modes.roundsAndStrikes.desc).toMatch(/ten rounds and two strikes/)
+    expect(detail.modes.roundsAndStrikes.desc).toMatch(/^Ten rounds and two strikes; no lobby setting changes them/)
     expect(detail.rules.strikesAndEnd).toMatch(/^Two caught bluffs put you out\. The game ends after ten rounds/)
   })
 
@@ -150,6 +150,16 @@ describe('the Liar\'s Party scorecard against the engine (#1240)', () => {
     const engine = startedGame()
     expect(playRound(engine, false, { p2: 'believe', p3: 'believe', p4: 'challenge' }).claimantScoreDelta).toBe(points(claimant.truthBelieved.value))
     expect(playRound(engine, false, { p1: 'challenge', p3: 'challenge', p4: 'believe' }).claimantScoreDelta).toBe(points(claimant.truthChallenged.value))
+  })
+
+  it('drops a truth to 4 only when most of the table doubts it; a tie still pays 12', () => {
+    const engine = startedGame(5)
+    const tie = playRound(engine, false, { p2: 'challenge', p3: 'challenge', p4: 'believe', p5: 'believe' })
+    expect(tie.claimantScoreDelta).toBe(12)
+    const doubted = playRound(engine, false, { p1: 'challenge', p3: 'challenge', p4: 'challenge', p5: 'believe' })
+    expect(doubted.claimantScoreDelta).toBe(4)
+    expect(doubted.voterScoreDeltas.p1).toBe(-6)
+    expect(detail.strategy.strangeButTrue.desc).toBe('Even if most of the table doubts it, an odd truth still scores 4, while each challenger loses 6.')
   })
 
   it('scores each voter on the truth, not on the tally', () => {

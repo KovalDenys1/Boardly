@@ -2402,7 +2402,7 @@ const en = {
           },
           roundsAndStrikes: {
             title: 'Rounds and strikes',
-            desc: 'Always ten rounds and two strikes; no lobby setting changes them.',
+            desc: 'Ten rounds and two strikes; no lobby setting changes them.',
           },
         },
         strategy: {
@@ -2428,7 +2428,7 @@ const en = {
           },
           strangeButTrue: {
             title: 'Tell truths that sound strange',
-            desc: 'Doubted, an odd truth still scores 4 while each challenger loses 6.',
+            desc: 'Even if most of the table doubts it, an odd truth still scores 4, while each challenger loses 6.',
           },
           specificDetails: {
             title: 'Give a bluff real detail',

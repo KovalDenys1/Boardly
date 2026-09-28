@@ -2402,7 +2402,7 @@ const no = {
           },
           roundsAndStrikes: {
             title: 'Runder og strikes',
-            desc: 'Alltid ti runder og to strikes; ingen lobbyinnstilling endrer det.',
+            desc: 'Ti runder og to strikes; ingen lobbyinnstilling endrer det.',
           },
         },
         strategy: {
@@ -2428,7 +2428,7 @@ const no = {
           },
           strangeButTrue: {
             title: 'Fortell sannheter som høres rare ut',
-            desc: 'En rar sannhet som blir betvilt, gir likevel 4, mens hver utfordrer mister 6.',
+            desc: 'Selv om de fleste ved bordet tviler, gir en rar sannhet likevel 4, mens hver utfordrer mister 6.',
           },
           specificDetails: {
             title: 'Gi bløffen ekte detaljer',
