@@ -72,6 +72,17 @@ export default function AliasDetailContent() {
         { title: t('games.alias.detail.modes.fixedMatch.title'), desc: t('games.alias.detail.modes.fixedMatch.desc') },
         { title: t('games.alias.detail.modes.threePlayerMode.title'), desc: t('games.alias.detail.modes.threePlayerMode.desc') },
       ]}
+      strategy={[
+        { title: t('games.alias.detail.strategy.skipEarlyOrNot.title'), desc: t('games.alias.detail.strategy.skipEarlyOrNot.desc') },
+        { title: t('games.alias.detail.strategy.beatTheZero.title'), desc: t('games.alias.detail.strategy.beatTheZero.desc') },
+        { title: t('games.alias.detail.strategy.sayWhatItDoes.title'), desc: t('games.alias.detail.strategy.sayWhatItDoes.desc') },
+        { title: t('games.alias.detail.strategy.leaveAGap.title'), desc: t('games.alias.detail.strategy.leaveAGap.desc') },
+        { title: t('games.alias.detail.strategy.buildCompoundsInHalves.title'), desc: t('games.alias.detail.strategy.buildCompoundsInHalves.desc') },
+        { title: t('games.alias.detail.strategy.guessInSingleWords.title'), desc: t('games.alias.detail.strategy.guessInSingleWords.desc') },
+        { title: t('games.alias.detail.strategy.tryThePlainForm.title'), desc: t('games.alias.detail.strategy.tryThePlainForm.desc') },
+        { title: t('games.alias.detail.strategy.guessAtThreeAsIfYours.title'), desc: t('games.alias.detail.strategy.guessAtThreeAsIfYours.desc') },
+        { title: t('games.alias.detail.strategy.readTheResults.title'), desc: t('games.alias.detail.strategy.readTheResults.desc') },
+      ]}
     />
   )
 }

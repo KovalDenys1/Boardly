@@ -1688,6 +1688,44 @@ const en = {
             desc: 'At exactly three the teams dissolve into one side per player on their own, and come back if a fourth person joins before the start.',
           },
         },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Skip early or not at all',
+            desc: 'A skip costs the same point at second five as at second forty, so drop a hopeless word at once rather than after a long struggle.',
+          },
+          beatTheZero: {
+            title: 'Beat the clock to zero',
+            desc: 'With a few seconds left and words still on the card, press End Turn: at zero every one of them becomes a skip.',
+          },
+          sayWhatItDoes: {
+            title: 'Say what it does',
+            desc: 'Use or place beats definition: "you ring it at a front door" lands faster than "a small electric bell".',
+          },
+          leaveAGap: {
+            title: 'Leave a gap to fill',
+            desc: 'A familiar phrase with the word missing, such as "Humpty Dumpty sat on a …", gives the team one blank instead of a riddle.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Build compounds in halves',
+            desc: 'The deck is full of joined words like lighthouse and doorbell; steer the team to one half, then the other, without saying either.',
+          },
+          guessInSingleWords: {
+            title: 'Guess in single words',
+            desc: 'The describer scans the feed mid-sentence, so one word per message is easier to spot than a line of options.',
+          },
+          tryThePlainForm: {
+            title: 'Try the plain form',
+            desc: 'Every answer is a single English word, so after a near miss try the basic form or the joined-up compound.',
+          },
+          guessAtThreeAsIfYours: {
+            title: 'At three, guess as if it were yours',
+            desc: 'In the three-player game the points go to the describer, and you will want the same effort back on your own turn.',
+          },
+          readTheResults: {
+            title: 'Read the results screen',
+            desc: 'After each turn the words are listed as guessed or skipped; the skipped ones show which kinds of clue your group finds hard.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

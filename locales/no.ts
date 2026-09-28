@@ -1688,6 +1688,44 @@ const no = {
             desc: 'Med nøyaktig tre spillere oppløses lagene av seg selv til én side per spiller, og de kommer tilbake om en fjerde blir med før start.',
           },
         },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Hopp tidlig eller ikke i det hele tatt',
+            desc: 'Et hopp koster det samme poenget etter fem sekunder som etter førti, så slipp et håpløst ord med en gang i stedet for etter lang kamp.',
+          },
+          beatTheZero: {
+            title: 'Kom klokka i forkjøpet',
+            desc: 'Er det noen sekunder igjen og fortsatt ord på kortet, trykk «Avslutning av tur»: ved null blir hvert av dem et hopp.',
+          },
+          sayWhatItDoes: {
+            title: 'Si hva den gjør',
+            desc: 'Bruk eller sted slår definisjon: «du ringer på den ved inngangsdøra» går raskere enn «en liten elektrisk bjelle».',
+          },
+          leaveAGap: {
+            title: 'La en luke stå åpen',
+            desc: 'Et kjent uttrykk med ordet utelatt, som «Lille Petter …», gir laget én luke å fylle i stedet for en gåte.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Bygg sammensatte ord i to deler',
+            desc: 'Kortstokken er full av sammensatte ord som lighthouse og doorbell; led laget til den ene halvdelen, så den andre, uten å si noen av dem.',
+          },
+          guessInSingleWords: {
+            title: 'Gjett med ett ord',
+            desc: 'Forklareren skumleser strømmen midt i en setning, så ett ord per melding er lettere å få øye på enn en hel liste.',
+          },
+          tryThePlainForm: {
+            title: 'Prøv grunnformen',
+            desc: 'Hvert svar er ett engelsk ord, så etter et nesten-treff kan du prøve grunnformen eller det sammensatte ordet.',
+          },
+          guessAtThreeAsIfYours: {
+            title: 'Med tre: gjett som om det gjaldt deg',
+            desc: 'I spillet for tre går poengene til forklareren, og du vil ha den samme innsatsen tilbake på din egen tur.',
+          },
+          readTheResults: {
+            title: 'Les resultatskjermen',
+            desc: 'Etter hver tur listes ordene som gjettet eller hoppet over; de hoppede viser hvilke typer hint gjengen sliter med.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',
