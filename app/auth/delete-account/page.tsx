@@ -192,7 +192,7 @@ function DeleteAccountContent() {
 
 export default function DeleteAccountPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center"><LoadingSpinner /></div>}>
       <DeleteAccountContent />
     </Suspense>
   )

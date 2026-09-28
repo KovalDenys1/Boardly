@@ -1,9 +1,4 @@
 {
-  "app/auth/delete-account/page.tsx": 2,
-  "app/auth/forgot-password/page.tsx": 22,
-  "app/auth/login/page.tsx": 3,
-  "app/auth/register/page.tsx": 3,
-  "app/auth/reset-password/page.tsx": 23,
   "app/globals.css": 31,
   "app/lobby/[code]/checkers-page.tsx": 4,
   "app/lobby/[code]/connect-four-page.tsx": 4,
