@@ -109,6 +109,9 @@ jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
   getChoiceEmoji: () => '❔',
   getChoiceIcon: () => 'rock',
   CHOICE_LABEL_KEY: { rock: 'lobby.choice.rock', paper: 'lobby.choice.paper', scissors: 'lobby.choice.scissors' },
+  // Without these the page's reveal holds were `undefined` ms, i.e. off, in this suite.
+  RPS_REVEAL_MS: 1100,
+  RPS_RESULT_REVEAL_DELAY_MS: 2000,
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
@@ -249,6 +252,69 @@ describe('RockPaperScissorsLobbyPage', () => {
         { player: 'Bob' }
       )
       expect(mockReplace).toHaveBeenCalledWith('/games')
+    })
+  })
+
+  describe('the final round (#1200)', () => {
+    const tiedState = () => ({
+      id: 'game-1',
+      status: 'playing',
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      players: [
+        { id: 'user-1', name: 'Alice' },
+        { id: 'user-2', name: 'Bob' },
+      ],
+      data: {
+        mode: 'best-of-3',
+        rounds: [
+          { choices: { 'user-1': 'rock', 'user-2': 'scissors' }, winner: 'user-1' },
+          { choices: { 'user-1': 'rock', 'user-2': 'paper' }, winner: 'user-2' },
+        ],
+        playerChoices: {},
+        scores: { 'user-1': 1, 'user-2': 1 },
+        playersReady: [],
+        gameWinner: null,
+      },
+    })
+
+    it('announces the match winner only after the final hands have revealed', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(tiedState()) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      const finalState = tiedState()
+      finalState.status = 'finished'
+      finalState.data = {
+        ...finalState.data,
+        rounds: [...finalState.data.rounds, { choices: { 'user-1': 'paper', 'user-2': 'rock' }, winner: 'user-1' }],
+        scores: { 'user-1': 2, 'user-2': 1 },
+        gameWinner: 'user-1',
+      } as typeof finalState.data
+
+      // The player's own final pick comes back with the resolved match, as it does against a bot.
+      mockFetchWithGuest.mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          return { ok: true, status: 200, json: async () => ({ game: { state: finalState, status: 'finished' } }) } as Response
+        }
+        return { ok: true, json: async () => buildLobbyResponse(finalState) } as Response
+      })
+      await act(async () => {
+        fireEvent.click(screen.getAllByTestId('rps-pick-rock')[0])
+      })
+
+      expect(mockBoardProps.current.shownScores).toEqual({ 'user-1': 1, 'user-2': 1 })
+      // The round has resolved but the hands are still shaking: no verdict yet.
+      expect(mockBoardProps.current.gameData.gameWinner).toBe('user-1')
+      // The banner's VICTORY and the card's WIN pill wait with it. (The result
+      // overlay is in the DOM from the start, invisible for its own reveal delay.)
+      expect(document.body.textContent).not.toMatch(/game\.ui\.(victoryBadge|winBadge)/)
+
+      await waitFor(
+        () => expect(document.body.textContent).toMatch(/game\.ui\.victoryBadge[\s\S]*game\.ui\.winBadge|game\.ui\.winBadge[\s\S]*game\.ui\.victoryBadge/),
+        { timeout: 2000 },
+      )
+      expect(mockBoardProps.current.shownScores).toEqual({ 'user-1': 2, 'user-2': 1 })
     })
   })
 

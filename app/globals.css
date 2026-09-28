@@ -3375,6 +3375,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   border: 2px solid color-mix(in srgb, var(--hand-accent) 35%, var(--bd-line));
   background: color-mix(in srgb, var(--hand-accent) 8%, var(--bd-bg));
   min-width: 0;
+  position: relative;
+  isolation: isolate;
   transition: border-color 0.35s ease, background 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
 }
 .rps-hand__emoji {
@@ -3424,11 +3426,26 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 /* Reveal: both hands shake three times, then the throw flips in and the
    winner lights up. The delays make it a sequence, not a jump. */
 .rps-hand--reveal .rps-hand__emoji { animation: rps-shake 0.75s ease-in-out both, rps-flip 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) 0.75s both; }
-.rps-hand--win { border-color: var(--hand-accent); background: color-mix(in srgb, var(--hand-accent) 22%, var(--bd-bg)); transition-delay: 1s; }
-.rps-hand--win .rps-hand__state { color: var(--hand-accent); transition-delay: 1s; }
-.rps-hand--loss { opacity: 0.7; transition-delay: 1s; }
-.rps-hand--loss .rps-hand__state { color: var(--bd-coral-deep); transition-delay: 1s; }
-.rps-hand--draw .rps-hand__state { color: var(--bd-ink-soft); transition-delay: 1s; }
+/* The verdict waits for the flip. A new result remounts the hands (revealKey),
+   and a transition never runs on a freshly mounted element, so the old
+   `transition-delay: 1s` did nothing: WIN/LOSS and the winner's tint were up
+   while both hands were still blank and shaking (#1200). Animations with a
+   delay and `both` fill do run on mount; opacity only. */
+.rps-hand--reveal .rps-hand__state { animation: rps-verdict-in 0.3s ease 1s both; }
+.rps-hand--win::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  border: 2px solid var(--hand-accent);
+  background: color-mix(in srgb, var(--hand-accent) 22%, var(--bd-bg));
+  animation: rps-verdict-in 0.35s ease 1s both;
+}
+.rps-hand--win .rps-hand__state { color: var(--hand-accent); }
+.rps-hand--loss { animation: rps-loss-dim 0.35s ease 1s both; }
+.rps-hand--loss .rps-hand__state { color: var(--bd-coral-deep); }
+.rps-hand--draw .rps-hand__state { color: var(--bd-ink-soft); }
 
 .rps-stage__center {
   position: relative;
@@ -3537,6 +3554,14 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   16%, 50%, 84% { transform: translateY(-10px) rotate(-10deg); }
   33%, 67% { transform: translateY(2px) rotate(4deg); }
 }
+@keyframes rps-verdict-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rps-loss-dim {
+  from { opacity: 1; }
+  to { opacity: 0.7; }
+}
 @keyframes rps-flip {
   from { transform: scale(0.3) rotate(-30deg); opacity: 0; }
   to { transform: scale(1) rotate(0); opacity: 1; }
@@ -3598,6 +3623,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-rounds-empty__vs { font-size: 10px; font-weight: 800; letter-spacing: 0.18em; color: var(--bd-ink-muted); }
 @media (prefers-reduced-motion: reduce) {
   .rps-tile, .rps-tile--selected, .rps-hand__emoji, .rps-stage__score, .rps-stage__result, .rps-round-row, .rps-rounds-empty__arena span { animation: none !important; }
+  .rps-hand__state, .rps-hand--win::before, .rps-hand--loss { animation: none !important; }
+  .rps-hand--loss { opacity: 0.7; }
 }
 
 
