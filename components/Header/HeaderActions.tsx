@@ -129,7 +129,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
           image={userImage}
           userName={userName}
           userEmail={userEmail}
-          className="h-9 w-9 bg-bd-lav text-white"
+          className="h-9 w-9 bg-bd-lav text-[color:var(--bd-ink-on-accent)]"
           textClassName="text-sm font-bold"
         />
       </button>

@@ -98,7 +98,7 @@ function SpectatorTopBar({
             disabled={joiningAsPlayer}
             style={{
               padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700,
-              background: 'var(--bd-coral)', color: 'white', border: 'none',
+              background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)', border: 'none',
               cursor: joiningAsPlayer ? 'not-allowed' : 'pointer',
               opacity: joiningAsPlayer ? 0.65 : 1,
               fontFamily: 'inherit',

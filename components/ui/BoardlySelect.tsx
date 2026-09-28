@@ -101,7 +101,7 @@ export default function BoardlySelect({
                       <span
                         className={`inline-flex h-7 min-w-[2.4rem] shrink-0 items-center justify-center rounded-full px-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
                           selected
-                            ? 'bg-bd-lav text-white'
+                            ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]'
                             : 'bg-bd-bg2 text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400'
                         }`}
                       >

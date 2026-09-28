@@ -117,7 +117,7 @@ export default function AvatarPicker({
           image={displayAvatar}
           userName={username}
           userEmail={email}
-          className="h-16 w-16 shrink-0 bg-bd-lav text-white"
+          className="h-16 w-16 shrink-0 bg-bd-lav text-[color:var(--bd-ink-on-accent)]"
           textClassName="text-2xl font-bold"
         />
         <div>

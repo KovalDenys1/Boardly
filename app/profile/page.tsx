@@ -1838,7 +1838,7 @@ export default function ProfilePage() {
   const settingsScopeBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-300'
   const actionPrimaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-5 py-3 text-sm font-bold text-white shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-5 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_#E8DDC8] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
   const actionDangerButtonClassName =
@@ -1910,7 +1910,7 @@ export default function ProfilePage() {
                           image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
-                          className="h-28 w-28 border-4 border-white bg-bd-lav text-white shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
+                          className="h-28 w-28 border-4 border-white bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
                         <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
@@ -2003,7 +2003,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={openPublicProfilePreview}
                             disabled={isPublicProfilePreviewTransitioning}
-                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#8b7dff] dark:bg-bd-lav dark:text-white"
+                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-[#8b7dff] dark:bg-bd-lav dark:text-[color:var(--bd-ink-on-accent)]"
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
@@ -2446,7 +2446,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleRequestAccountDeletion}
                           disabled={deleteLoading}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-bd-coral-deep disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-[color:var(--bd-ink-on-accent)] transition-colors hover:bg-bd-coral-deep disabled:opacity-50"
                         >
                           {deleteLoading ? (
                             <>
@@ -3047,7 +3047,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-white shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {customizeSaving ? (
                         <>

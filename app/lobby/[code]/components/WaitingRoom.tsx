@@ -138,7 +138,7 @@ export default function WaitingRoom({
                 </span>
               )}
               {isBot && (
-                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-[color:var(--bd-ink-on-accent)]">
                   {t('game.ui.botBadge')}
                 </span>
               )}

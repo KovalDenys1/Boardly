@@ -37,7 +37,7 @@ const warmSurfaceClassName =
 const tileClassName =
   'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
 const eyebrowClassName =
