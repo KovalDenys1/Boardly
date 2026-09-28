@@ -76,6 +76,16 @@ export default function SketchAndGuessDetailContent() {
         { title: t('games.guess_my_drawing.detail.modes.phaseClocks.title'), desc: t('games.guess_my_drawing.detail.modes.phaseClocks.desc') },
         { title: t('games.guess_my_drawing.detail.modes.roomSize.title'), desc: t('games.guess_my_drawing.detail.modes.roomSize.desc') },
       ]}
+      strategy={[
+        { title: t('games.guess_my_drawing.detail.strategy.pickTheDrawableWord.title'), desc: t('games.guess_my_drawing.detail.strategy.pickTheDrawableWord.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.shapeFirst.title'), desc: t('games.guess_my_drawing.detail.strategy.shapeFirst.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.letColourTalk.title'), desc: t('games.guess_my_drawing.detail.strategy.letColourTalk.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.drawTheScene.title'), desc: t('games.guess_my_drawing.detail.strategy.drawTheScene.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.guessEarly.title'), desc: t('games.guess_my_drawing.detail.strategy.guessEarly.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.readTheMisses.title'), desc: t('games.guess_my_drawing.detail.strategy.readTheMisses.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.countTheBlanks.title'), desc: t('games.guess_my_drawing.detail.strategy.countTheBlanks.desc') },
+        { title: t('games.guess_my_drawing.detail.strategy.trustSoClose.title'), desc: t('games.guess_my_drawing.detail.strategy.trustSoClose.desc') },
+      ]}
     />
   )
 }

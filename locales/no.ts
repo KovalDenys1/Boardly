@@ -2006,6 +2006,16 @@ const no = {
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
           roomSize: { title: 'Tre til ti plasser', desc: 'Verten bestemmer romstørrelsen; nye rom starter med seks.' },
         },
+        strategy: {
+          pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
+          shapeFirst: { title: 'Formen først', desc: 'Et grovt omriss tidlig gir de andre sjansen til fartsbonusen.' },
+          letColourTalk: { title: 'La fargene snakke', desc: 'En blå bølge eller en rød flamme snevrer inn gjettingen raskt.' },
+          drawTheScene: { title: 'Tegn omgivelsene', desc: 'En finne i bølgene leses raskere enn en fisk alene.' },
+          guessEarly: { title: 'Gjett tidlig', desc: 'Et bom koster ingenting, og venting spiser av bonusen.' },
+          readTheMisses: { title: 'Les bommene', desc: 'Feil gjett blir stående i listen, så stryk dem.' },
+          countTheBlanks: { title: 'Tell de blanke feltene', desc: 'De viser lengden og hvor ordene deler seg.' },
+          trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Det betyr en liten skrivefeil: rett stavingen, ikke ideen.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

@@ -2006,6 +2006,16 @@ const en = {
           phaseClocks: { title: 'Fixed phase clocks', desc: '15 seconds to choose, 80 to draw, 8 for the reveal; the lobby timer changes none of them.' },
           roomSize: { title: 'Three to ten seats', desc: 'The host sets the room size; new rooms start with six.' },
         },
+        strategy: {
+          pickTheDrawableWord: { title: 'Pick the drawable word', desc: 'Of the three, take the one with the clearest outline.' },
+          shapeFirst: { title: 'Shape first', desc: 'A rough outline early gives guessers a shot at the speed bonus.' },
+          letColourTalk: { title: 'Let colour talk', desc: 'A blue wave or a red flame narrows the guess fast.' },
+          drawTheScene: { title: 'Draw the scene', desc: 'A fin in the waves reads faster than a lone fish.' },
+          guessEarly: { title: 'Guess early', desc: 'A miss costs nothing, and waiting trims the bonus.' },
+          readTheMisses: { title: 'Read the misses', desc: 'Wrong guesses stay in the feed, so rule them out.' },
+          countTheBlanks: { title: 'Count the blanks', desc: 'They show the length and where the words break.' },
+          trustSoClose: { title: 'Trust “So close!”', desc: 'It means a small typo: fix the spelling, not the idea.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
