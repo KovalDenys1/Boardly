@@ -1999,7 +1999,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Ludo online for free with friends?',
-        answer: 'Yes. Open a lobby, send the code to up to three friends, or fill the empty seats with bots on easy, medium or hard. The die is rolled on our server, never in your browser, and quick mode with two tokens each fits a game into about fifteen minutes. Free, nothing to install.',
+        answer: 'Yes. Open a lobby and send the code to up to three friends, or fill empty seats with bots on easy, medium or hard. Our server rolls the die, and it is free with nothing to install.',
       },
       ribbon: {
         desc: 'The family race game. Roll a six to get out, send rivals back to their yard and bring every token home.',
@@ -2018,35 +2018,155 @@ const en = {
         blue: 'Blue',
       },
       rules: {
-        serverRolls: 'The die is rolled on the server for every player, bots included, and every roll is listed in the roll history.',
+        serverRolls: 'The die is rolled on the server for every player, bots included, and recent rolls are listed in the roll history.',
         sixToLeave: 'Roll a 6 to bring a token out of the yard onto your start square.',
         sixRollsAgain: 'A 6 earns another roll. Three 6s in a row lose the turn.',
         capture: 'Land on an opponent to send their token back to the yard.',
         safeSquares: 'Start squares and star squares are safe: nobody can be captured there.',
         exactHome: 'You need the exact number to reach home.',
         winner: 'The first player to bring every token home wins; the others are ranked by progress.',
-        modes: 'Quick mode plays with two tokens each, classic with four.',
-        timer: 'One turn timer covers your roll and your move, and a bonus roll after a 6 gets a fresh one. When it runs out, the server rolls and moves for you and the turn passes.',
+        timer: 'One timer covers roll and move; a bonus roll after a 6 gets a fresh one. If it runs out while your game is open, the server plays your turn.',
       },
       detail: {
         title: 'Play Ludo Online',
-        heroDesc: 'Classic Ludo for two to four players, in real time in the browser. Invite friends, fill empty seats with bots and race for home.',
+        heroDesc: 'Classic Ludo for two to four players in the browser. Invite friends or fill seats with bots.',
         introTitle: 'What is Ludo?',
-        intro0: 'Ludo is a race game on a cross-shaped board. Each player has a colour, a yard with tokens and a home column leading to the centre.',
-        intro1: 'Roll a six to bring a token out, move round the track and land on rivals to send them back. The first to bring every token home wins.',
+        intro0: 'Ludo is a race game on a cross-shaped board: each colour has a yard, a lap of track and a home column.',
+        intro1: 'Roll, race round the track and send rivals back to their yard; the first to bring every token home wins.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room, pick quick or classic mode and share the code.',
+        step1Desc: 'Open a room and pick quick or classic. Share the code or link.',
         step2Title: 'Fill the seats',
-        step2Desc: 'Wait for friends or add bots to play straight away.',
+        step2Desc: 'Wait for friends or add bots. Alone, one bot joins automatically.',
         step3Title: 'Roll and move',
-        step3Desc: 'Press Roll, then tap the token you want to move.',
+        step3Desc: 'Press Roll, then tap a token. A single possible move plays itself.',
         step4Title: 'Race for home',
-        step4Desc: 'Capture rivals, stay on safe squares and bring every token home first.',
+        step4Desc: 'Capture rivals and get every token home first. The game ends then.',
         benefitsTitle: 'Why play Ludo on Boardly?',
-        benefit1: 'Fair dice: every roll comes from the server and is shown to the whole table.',
-        benefit2: 'Bots on three levels for the empty seats.',
-        benefit3: 'Quick mode for a game in about fifteen minutes.',
-        benefit4: 'Free to play as a guest, nothing to install.',
+        benefit1: 'Fair dice, rolled on the server.',
+        benefit2: 'Bots on three levels.',
+        benefit3: 'Quick mode with two tokens each.',
+        benefit4: 'Free as a guest.',
+        rules: {
+          homeColumn: 'After 50 squares a token enters its own home column, where no rival can land.',
+          noBlocks: 'There are no blocks: landing on two rival tokens sends both back, except on a safe square.',
+          extraRollOnlyOnSix: 'Even an unusable 6 earns the extra roll; captures and finishes earn none.',
+        },
+        modes: {
+          quickOrClassic: {
+            title: 'Quick or classic',
+            desc: 'Two tokens each or four, picked by the host when creating the lobby.',
+          },
+          turnClock: {
+            title: 'A clock on every turn',
+            desc: 'Lobbies you create default to 30 seconds; the host can set 30 to 180 before the start. Quick Play and Play vs Bot use 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Token Rookie moves at random. Token Tactician prefers a capture, then leaving the yard, then heading home. Ludo Grandmaster scores each move, weighing rivals up to six squares behind.',
+          },
+        },
+        strategy: {
+          bringTokensOut: {
+            title: 'Get tokens out',
+            desc: 'More tokens out, more choices per roll.',
+          },
+          restOnStars: {
+            title: 'Rest on stars',
+            desc: 'Start and star squares are safe; wait there.',
+          },
+          countTheGapBehind: {
+            title: 'Count the gap behind',
+            desc: 'A rival one to six back can hit you.',
+          },
+          trailDoNotLead: {
+            title: 'Trail, don\'t lead',
+            desc: 'Tokens only move forward; the threat is behind.',
+          },
+          captureTheCostlyToken: {
+            title: 'Capture the costly token',
+            desc: 'A rival near the end of its lap loses most.',
+          },
+          bankYourLeader: {
+            title: 'Bank your leader',
+            desc: 'No rival reaches the home column; bring your leader in first.',
+          },
+          planTheExactFinish: {
+            title: 'Plan the exact finish',
+            desc: 'Three from home needs exactly a 3; keep a spare token.',
+          },
+          mindRivalStartSquares: {
+            title: 'Mind rival start squares',
+            desc: 'A token entering rolls again; squares past its start are risky.',
+          },
+        },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Stopping just ahead of a rival',
+            desc: 'One to six squares in front of an opponent invites a capture.',
+          },
+          trustingAPairToBlock: {
+            title: 'Trusting a pair to block',
+            desc: 'Two tokens on one square block nobody and fall together off a safe square.',
+          },
+          racingOneTokenAlone: {
+            title: 'Racing one token alone',
+            desc: 'With one token out, any roll but a 6 moves it if it can.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play friends anywhere',
+            desc: 'Share the code with up to three friends; chat opens once two people are seated.',
+          },
+          botsAndSolo: {
+            title: 'Bots for solo play',
+            desc: 'Play vs Bot seats one bot; press Start Game. The host can add more first.',
+          },
+          turnTimer: {
+            title: 'When someone leaves',
+            desc: 'A player silent for 30 seconds is removed at the next table check; their tokens stay, their turns are skipped and play goes on.',
+          },
+          guestNoDownload: {
+            title: 'No app, no sign-up',
+            desc: 'Any browser on a phone, tablet or laptop; a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Families and mixed groups: luck keeps everyone in it, while token choice rewards a sharp eye.',
+        },
+        history: {
+          origin: 'Ludo descends from Pachisi, an Indian race game centuries old, and was patented in England in 1896 as Ludo, Latin for "I play".',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Ludo on Boardly free?',
+            a: 'Yes, every seat, mode, bot and timer. Premium adds extras around the game, such as spectators and lobby themes for the host, replays and profile looks.',
+          },
+          worksOnPhone: {
+            q: 'Can I play Ludo on my phone?',
+            a: 'Yes, in any mobile browser. On a small screen the board, moves, rules and chat, when there is someone to talk to, sit in tabs.',
+          },
+          pickYourOwnRoll: {
+            q: 'Can anyone pick their dice roll?',
+            a: 'No. The server rolls for every seat, ignores numbers a browser sends, and each face is one in six.',
+          },
+          timerRunsOut: {
+            q: 'Which token moves if my timer runs out?',
+            a: 'If your game is open when the timer runs out, the server moves a token reaching home, else one that captures, else the furthest. A 6 rolled so earns no extra roll.',
+          },
+          howManyPlayers: {
+            q: 'How many players can play Ludo?',
+            a: 'Two to four, up to three of them bots. Two players sit in opposite corners of the board.',
+          },
+          whoPicksMode: {
+            q: 'Who chooses quick or classic mode?',
+            a: 'The host, when creating the lobby, and Play again keeps that mode. Rooms that Quick Play or Play vs Bot create use quick.',
+          },
+          playAgain: {
+            q: 'Can we play again with the same people?',
+            a: 'Yes. The host presses Play again and a new game starts in the same lobby with everyone still seated, in the same mode.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

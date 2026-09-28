@@ -879,7 +879,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.ludo.difficulty',
     seo: {
       title: 'Play Ludo Online Free with Friends or Bots',
-      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and send rivals home, with friends or bots. No download.',
+      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
       synonyms: [
         'ludo online',
         'ludo online free',
@@ -899,6 +899,16 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Race board game for two to four players on a cross-shaped track. Roll a die to move your tokens from the yard to home, capture rivals by landing on them, and bring every token home first. Quick mode uses two tokens each, classic four.',
       questionKey: 'games.ludo.seo.question',
       answerKey: 'games.ludo.seo.answer',
+      // Product questions only, none repeating the direct answer above (#1242).
+      faq: [
+        { questionKey: 'games.ludo.detail.faq.isItFree.q', answerKey: 'games.ludo.detail.faq.isItFree.a' },
+        { questionKey: 'games.ludo.detail.faq.worksOnPhone.q', answerKey: 'games.ludo.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.ludo.detail.faq.pickYourOwnRoll.q', answerKey: 'games.ludo.detail.faq.pickYourOwnRoll.a' },
+        { questionKey: 'games.ludo.detail.faq.timerRunsOut.q', answerKey: 'games.ludo.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.ludo.detail.faq.howManyPlayers.q', answerKey: 'games.ludo.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.ludo.detail.faq.whoPicksMode.q', answerKey: 'games.ludo.detail.faq.whoPicksMode.a' },
+        { questionKey: 'games.ludo.detail.faq.playAgain.q', answerKey: 'games.ludo.detail.faq.playAgain.a' },
+      ],
     },
     // In development (#1084): playable behind ENABLE_IN_DEVELOPMENT_GAMES.
     // Featuring it publicly is Denys's call, not the natural last step of the
