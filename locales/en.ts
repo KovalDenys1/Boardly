@@ -1615,6 +1615,15 @@ const en = {
         benefit2: 'Three bot levels for solo play.',
         benefit3: 'Forced captures and jump chains handled for you.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          board: 'Play on the 32 dark squares of an 8×8 board with twelve men a side. Dark moves first.',
+          menMove: 'A man steps one square diagonally forward. It captures forward only, by jumping an adjacent enemy piece onto the empty square behind it.',
+          forcedCapture: 'Capturing is compulsory. When several captures are open you may pick any of them, not only the longest.',
+          multiJump: 'After a jump the same piece must keep jumping while it can. Jumped pieces leave the board when the move ends, so none can be taken twice.',
+          crowning: 'A man that reaches the far row is crowned king, and that ends the move even if another jump was open.',
+          kings: 'A king moves and captures one square diagonally in any direction. It cannot fly along a diagonal.',
+          endAndDraw: 'You win when your opponent has no legal move, whether no pieces are left or all are blocked. Forty moves each with no capture and no man moving is a draw.',
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

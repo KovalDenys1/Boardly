@@ -1615,6 +1615,15 @@ const no = {
         benefit2: 'Tre botnivåer for å spille alene.',
         benefit3: 'Tvungne slag og hoppkjeder håndteres for deg.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          board: 'Dere spiller på de 32 mørke rutene på et 8×8-brett, med tolv brikker hver. Mørk trekker først.',
+          menMove: 'En vanlig brikke går én rute diagonalt fremover. Den slår bare fremover, ved å hoppe over en motstanderbrikke ved siden av og lande på den tomme ruten bak.',
+          forcedCapture: 'Slag er tvunget. Har du flere slag å velge mellom, kan du ta hvilket som helst, ikke bare det lengste.',
+          multiJump: 'Etter et hopp må samme brikke hoppe videre så lenge den kan. Slåtte brikker fjernes først når trekket er ferdig, så ingen kan slås to ganger.',
+          crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket selv om et nytt hopp var mulig.',
+          kings: 'En konge går og slår én rute diagonalt i alle retninger. Den kan ikke fly langs en diagonal.',
+          endAndDraw: 'Du vinner når motstanderen ikke har noe lovlig trekk, enten brikkene er borte eller alle er blokkert. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',

@@ -40,6 +40,15 @@ export default function CheckersDetailContent() {
         t('games.checkers.detail.benefit3'),
         t('games.checkers.detail.benefit4'),
       ]}
+      rules={[
+        t('games.checkers.detail.rules.board'),
+        t('games.checkers.detail.rules.menMove'),
+        t('games.checkers.detail.rules.forcedCapture'),
+        t('games.checkers.detail.rules.multiJump'),
+        t('games.checkers.detail.rules.crowning'),
+        t('games.checkers.detail.rules.kings'),
+        t('games.checkers.detail.rules.endAndDraw'),
+      ]}
       playVsBotGameType="checkers"
     />
   )
