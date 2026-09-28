@@ -76,6 +76,12 @@ export default function RockPaperScissorsDetailContent() {
         { title: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.title'), desc: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.desc') },
         { title: t('games.rock_paper_scissors.detail.mistakes.countingDraws.title'), desc: t('games.rock_paper_scissors.detail.mistakes.countingDraws.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.rock_paper_scissors.detail.multiplayer.withFriends.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.withFriends.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.botsAndSolo.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.desc') },
+      ]}
     />
   )
 }

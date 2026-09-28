@@ -1505,6 +1505,24 @@ const en = {
             desc: 'A draw moves neither score; the match still needs two round wins.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Send the code or the invite link and play from two devices, with a chat beside the board.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot opens a room with the bot you chose already seated.',
+          },
+          turnTimer: {
+            title: 'One countdown per round',
+            desc: 'A player still undecided when it reaches zero gets a random move.',
+          },
+          guestNoDownload: {
+            title: 'Browser, no sign-up',
+            desc: 'Any phone, tablet or laptop works, and a guest name is enough.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',

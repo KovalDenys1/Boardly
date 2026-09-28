@@ -1505,6 +1505,24 @@ const no = {
             desc: 'Uavgjort flytter ingen av stillingene; kampen krever fortsatt to rundeseire.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Send koden eller invitasjonslenken og spill fra to enheter, med chat ved siden av brettet.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: 'Spill mot bot åpner et rom der boten du valgte, allerede sitter.',
+          },
+          turnTimer: {
+            title: 'Én nedtelling per runde',
+            desc: 'En spiller som ikke har valgt når den når null, får et tilfeldig trekk.',
+          },
+          guestNoDownload: {
+            title: 'Nettleser, ingen registrering',
+            desc: 'Mobil, nettbrett eller laptop fungerer, og et gjestenavn er nok.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',
