@@ -1627,11 +1627,11 @@ const no = {
         modes: {
           moveClock: {
             title: 'Sekunder per trekk',
-            desc: 'En opprettet lobby gir 60 sekunder per trekk, som verten kan endre fra 30 til 180 i steg på 30 sekunder før start. «Spill mot bot» gir 45.',
+            desc: '60 sekunder per trekk som standard. Verten velger 30 til 120 når lobbyen opprettes, eller 30 til 180 i steg på 30 sekunder i lobbyinnstillingene før start. «Spill mot bot» gir 45.',
           },
           botLevels: {
             title: 'Tre botnivåer',
-            desc: 'Checkers Rookie trekker tilfeldig. Diagonal Tactician ser ett svar fram og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i omtrent ett sekund.',
+            desc: 'Checkers Rookie trekker tilfeldig. Diagonal Tactician ser ett svar fram og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i opptil omtrent ett sekund.',
           },
           rematches: {
             title: 'Omkamper teller',
@@ -1697,7 +1697,7 @@ const no = {
           },
           turnTimer: {
             title: 'Én klokke for begge',
-            desc: 'Begge ser den samme nedtellingen. Når den når null på ditt trekk, taper du.',
+            desc: 'Begge ser den samme nedtellingen. Når den når null på ditt trekk mens partiet er åpent, taper du.',
           },
           guestNoDownload: {
             title: 'Rett fra nettleseren',
@@ -1714,7 +1714,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er dam på Boardly gratis?',
-            a: 'Ja, også alle tre botene. Premium gir verten ekstra ting som tilskuere, reprise og lobbytemaer; selve spillet er det samme.',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Trenger jeg en konto for å spille?',
@@ -1734,7 +1734,7 @@ const no = {
           },
           timerRunsOut: {
             q: 'Hva skjer når tiden min går ut?',
-            a: 'Du taper partiet. Klokka går i nettleseren din; lukker du fanen, markerer serveren deg som borte etter rundt 30 sekunder, og partiet avbrytes.',
+            a: 'Du taper partiet, selv fra en vinnende stilling. Nedtellingen på skjermen viser hvor lang tid du har igjen, så planlegg de siste sekundene av et vanskelig trekk.',
           },
           undoOrDraw: {
             q: 'Kan jeg angre et trekk eller tilby uavgjort?',

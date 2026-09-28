@@ -1627,11 +1627,11 @@ const en = {
         modes: {
           moveClock: {
             title: 'Seconds per move',
-            desc: 'A created lobby gives 60 seconds a move, which the host can set from 30 to 180 in 30-second steps before the start. Play vs Bot gives 45.',
+            desc: '60 seconds a move by default. The host picks 30 to 120 when creating the lobby, or 30 to 180 in 30-second steps in the lobby settings before the start. Play vs Bot gives 45.',
           },
           botLevels: {
             title: 'Three bot levels',
-            desc: 'Checkers Rookie moves at random. Diagonal Tactician looks one reply ahead and avoids moves that let you win at once. Kingmaker searches several moves deep for about a second.',
+            desc: 'Checkers Rookie moves at random. Diagonal Tactician looks one reply ahead and avoids moves that let you win at once. Kingmaker searches several moves deep for up to about a second.',
           },
           rematches: {
             title: 'Rematches keep score',
@@ -1697,7 +1697,7 @@ const en = {
           },
           turnTimer: {
             title: 'One clock for both',
-            desc: 'Both players see one countdown. At zero on your move, you lose.',
+            desc: 'Both players see one countdown. If it reaches zero on your move with the game open, you lose.',
           },
           guestNoDownload: {
             title: 'Straight from the browser',
@@ -1714,7 +1714,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Checkers on Boardly free?',
-            a: 'Yes, including all three bots. Premium adds host extras such as spectators, replays and lobby themes; the game is the same.',
+            a: 'Yes, including all three bots. Premium adds extras such as spectators and lobby themes for hosts, and game replays; the game is the same.',
           },
           needAccount: {
             q: 'Do I need an account to play?',
@@ -1734,7 +1734,7 @@ const en = {
           },
           timerRunsOut: {
             q: 'What happens when my time runs out?',
-            a: 'You lose the game. The clock runs in your browser; close the tab and the server marks you gone after about 30 seconds, abandoning the game.',
+            a: 'You lose the game, even from a winning position. The countdown on screen shows how long you have left, so plan the last seconds of a hard move.',
           },
           undoOrDraw: {
             q: 'Can I undo a move or offer a draw?',

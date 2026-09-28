@@ -201,9 +201,13 @@ describe('who does what outside the engine (#1241)', () => {
     expect(ck.detail.multiplayer.botsAndSolo.desc).toMatch(/you play Dark/)
   })
 
-  it('marks a silent player gone after about 30 seconds', () => {
-    expect(source('lib/lobby-presence.ts')).toMatch(/HEARTBEAT_STALE_THRESHOLD_MS = 30_000/)
-    expect(ck.detail.faq.timerRunsOut.a).toMatch(/about 30 seconds/)
+  // The forfeit is posted by the timed-out player's own page; a closed tab ends in
+  // abandonment with no winner. The page must not advertise that way out (#1246 class).
+  it('says a timeout loses and never explains how to dodge it', () => {
+    expect(ck.detail.faq.timerRunsOut.a).toMatch(/^You lose the game/)
+    for (const text of [ck.detail.faq.timerRunsOut.a, ck.detail.multiplayer.turnTimer.desc]) {
+      expect(text).not.toMatch(/close the tab|abandon|30 seconds/i)
+    }
   })
 })
 
@@ -214,7 +218,8 @@ describe('the checkers clock against the catalog and the routes (#1241)', () => 
     expect(source('app/api/lobby/route.ts')).toMatch(/turnTimer: z\.number\(\)\.int\(\)\.min\(30\)\.max\(180\)\.default\(60\)/)
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
-    expect(ck.detail.modes.moveClock.desc).toMatch(/60 seconds a move, which the host can set from 30 to 180 in 30-second steps before the start\. Play vs Bot gives 45/)
+    expect(config.turnTimer!.options).toEqual([30, 60, 90, 120])
+    expect(ck.detail.modes.moveClock.desc).toMatch(/60 seconds a move by default\. The host picks 30 to 120 when creating the lobby, or 30 to 180 in 30-second steps in the lobby settings before the start\. Play vs Bot gives 45/)
   })
 })
 
@@ -234,7 +239,7 @@ describe('the checkers bots against lib/bots/checkers (#1241)', () => {
     expect(CHECKERS_HARD_TIME_BUDGET_MS).toBeLessThanOrEqual(1000)
     expect(desc).toMatch(/Checkers Rookie moves at random/)
     expect(desc).toMatch(/avoids moves that let you win at once/)
-    expect(desc).toMatch(/for about a second/)
+    expect(desc).toMatch(/for up to about a second/)
   })
 })
 
