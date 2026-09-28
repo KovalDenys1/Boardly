@@ -2009,6 +2009,10 @@ const no = {
         audience: {
           whoItSuits: 'Familier og blandede grupper: reglene læres på et minutt, flaks holder yngre spillere med i løpet, og valget av hvilken brikke som skal flyttes, belønner likevel et skarpt blikk. Hurtigmodus passer til en kort pause, klassisk til en lengre kveld.',
         },
+        history: {
+          origin: 'Ludo stammer fra Pachisi, et korsformet kappløpsspill som er spilt i India i århundrer, med kauriskjell i stedet for terninger. En forenklet utgave med én terning ble patentert i England i 1896 under navnet Ludo, latin for «jeg spiller».',
+          relatives: 'Slektningene spilles over hele verden: Parcheesi i USA, Mensch ärgere Dich nicht i Tyskland og Fia med knuff i Sverige.',
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',

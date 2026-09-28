@@ -2009,6 +2009,10 @@ const en = {
         audience: {
           whoItSuits: 'Families and mixed groups: the rules fit in a minute, luck keeps younger players in the race, and choosing which token to move still rewards a sharp eye. Quick mode suits a short break; classic suits a longer evening.',
         },
+        history: {
+          origin: 'Ludo descends from Pachisi, a cross-shaped race game played in India for centuries with cowrie shells instead of dice. A simplified version with one die was patented in England in 1896 as Ludo, Latin for "I play".',
+          relatives: 'Its relatives are played worldwide: Parcheesi in the United States, Mensch ärgere Dich nicht in Germany and Fia med knuff in Sweden.',
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

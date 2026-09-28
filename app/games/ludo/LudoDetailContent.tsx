@@ -83,6 +83,10 @@ export default function LudoDetailContent() {
       audience={[
         t('games.ludo.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.ludo.detail.history.origin'),
+        t('games.ludo.detail.history.relatives'),
+      ]}
       playVsBotGameType="ludo"
     />
   )
