@@ -501,13 +501,17 @@ export class CheckersGame extends GameEngine {
 
     const mover = record.side
     const next = otherSide(mover)
-    if (getLegalSteps(data.board, next).length === 0) {
+    const nextSteps = getLegalSteps(data.board, next)
+    if (nextSteps.length === 0) {
       this.finish(mover, 'no-moves')
       return
     }
     // One king cannot force a win against one king, so the ply limit would
     // only have made both players shuffle for up to 80 more plies (#1265).
-    if (isLoneKingEach(data.board)) {
+    // Not while the side to move has a jump, though: a king that stepped next
+    // to the other with the square behind it free has just lost, and the
+    // capture ends the game on no-moves.
+    if (isLoneKingEach(data.board) && !nextSteps.some((s) => s.capture !== null)) {
       this.finishDrawn('insufficient-material')
       return
     }

@@ -165,9 +165,19 @@ describe('the checkers variant against the engine (#1241)', () => {
     expect(g.getState().status).toBe('finished')
     expect(dataOf(g).winner).toBe('draw')
     expect(dataOf(g).endReason).toBe('insufficient-material')
-    expect(ck.detail.rules.endAndDraw).toMatch(/and so is one king against one king/)
-    expect(ck.detail.faq.undoOrDraw.a).toMatch(/at once when each side is down to a single king/)
+    expect(ck.detail.rules.endAndDraw).toMatch(/and so is one king against one king when neither can capture/)
+    expect(ck.detail.faq.undoOrDraw.a).toMatch(/at once when each side is down to a single king and neither can capture/)
     expect(ck.game.drawLoneKings).toMatch(/one king each/)
+  })
+
+  it('plays on past one king each while a capture is on, as the copy says', () => {
+    // Dark steps next to Light's king with the square behind free: Light must jump.
+    const g = gameWith([[5, 4, 3], [3, 2, 4]])
+    expect(g.makeMove(step('dark', [5, 4], [4, 3]))).toBe(true)
+    expect(g.getState().status).toBe('playing')
+    expect(g.makeMove(step('light', [3, 2], [5, 4]))).toBe(true)
+    expect(dataOf(g).winner).toBe(2)
+    expect(dataOf(g).endReason).toBe('no-moves')
   })
 
   it('has no undo and no draw offer, as the FAQ says', () => {

@@ -290,6 +290,32 @@ describe('CheckersGame', () => {
       expect(g.makeMove(step('p2', [0, 7], [1, 6]))).toBe(false)
     })
 
+    it('plays on when the side to move can capture the other lone king', () => {
+      const g = makeReadyGame()
+      // Dark steps next to Light's king with (5,4) free behind it: Light must jump and wins.
+      setPosition(g, [[5, 4, 3], [3, 2, 4]], 1)
+      expect(g.makeMove(step('p1', [5, 4], [4, 3]))).toBe(true)
+      expect(g.getState().status).toBe('playing')
+      expect(getData(g).winner).toBeNull()
+      expect(getData(g).endReason).toBeNull()
+
+      expect(g.makeMove(step('p2', [3, 2], [5, 4]))).toBe(true)
+      expect(getData(g).winner).toBe(2)
+      expect(getData(g).endReason).toBe('no-moves')
+      expect(g.getState().winner).toBe('p2')
+    })
+
+    it('still draws when the kings touch but the square beyond is off the board', () => {
+      const g = makeReadyGame()
+      // Dark's king lands on the edge at (1,0), next to Light's king on (2,1);
+      // Light's jump would land on (0,-1), so there is no capture to make.
+      setPosition(g, [[0, 1, 3], [2, 1, 4]], 1)
+      expect(g.makeMove(step('p1', [0, 1], [1, 0]))).toBe(true)
+      expect(getData(g).winner).toBe('draw')
+      expect(getData(g).endReason).toBe('insufficient-material')
+      expect(g.getState().status).toBe('finished')
+    })
+
     it('draws when a capture leaves one king each', () => {
       const g = makeReadyGame()
       // Dark king (5,2) jumps the light man on (4,3) to (3,4); a light king waits on (0,7).
