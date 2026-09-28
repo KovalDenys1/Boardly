@@ -150,12 +150,34 @@ describe('the checkers variant against the engine (#1241)', () => {
 
   it('draws after forty moves each with no capture and no man moving', () => {
     expect(DRAW_PLY_LIMIT).toBe(80)
-    const g = gameWith([[4, 3, 3], [0, 1, 4]], { quietPlies: DRAW_PLY_LIMIT - 1 })
+    // Two Dark kings, so the lone-king draw below does not end it first.
+    const g = gameWith([[4, 3, 3], [7, 6, 3], [0, 1, 4]], { quietPlies: DRAW_PLY_LIMIT - 1 })
     expect(g.makeMove(step('dark', [4, 3], [5, 4]))).toBe(true)
     expect(dataOf(g).winner).toBe('draw')
     expect(dataOf(g).endReason).toBe('draw-rule')
     expect(ck.detail.rules.endAndDraw).toMatch(/Forty moves each with no capture and no man moving is a draw/)
     expect(ck.detail.faq.undoOrDraw.a).toMatch(/forty moves each/)
+  })
+
+  it('draws at once when each side is down to one king (#1265)', () => {
+    const g = gameWith([[4, 3, 3], [0, 1, 4]])
+    expect(g.makeMove(step('dark', [4, 3], [5, 4]))).toBe(true)
+    expect(g.getState().status).toBe('finished')
+    expect(dataOf(g).winner).toBe('draw')
+    expect(dataOf(g).endReason).toBe('insufficient-material')
+    expect(ck.detail.rules.endAndDraw).toMatch(/and so is one king against one king when neither can capture/)
+    expect(ck.detail.faq.undoOrDraw.a).toMatch(/at once when each side is down to a single king and neither can capture/)
+    expect(ck.game.drawLoneKings).toMatch(/one king each/)
+  })
+
+  it('plays on past one king each while a capture is on, as the copy says', () => {
+    // Dark steps next to Light's king with the square behind free: Light must jump.
+    const g = gameWith([[5, 4, 3], [3, 2, 4]])
+    expect(g.makeMove(step('dark', [5, 4], [4, 3]))).toBe(true)
+    expect(g.getState().status).toBe('playing')
+    expect(g.makeMove(step('light', [3, 2], [5, 4]))).toBe(true)
+    expect(dataOf(g).winner).toBe(2)
+    expect(dataOf(g).endReason).toBe('no-moves')
   })
 
   it('has no undo and no draw offer, as the FAQ says', () => {

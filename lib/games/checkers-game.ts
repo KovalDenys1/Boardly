@@ -40,7 +40,7 @@ export interface CheckersMoveRecord {
   timestamp: number
 }
 
-export type CheckersEndReason = 'no-moves' | 'draw-rule' | 'timeout'
+export type CheckersEndReason = 'no-moves' | 'draw-rule' | 'insufficient-material' | 'timeout'
 
 export interface CheckersGameData {
   board: CheckersCell[][]
@@ -65,6 +65,23 @@ export function pieceSide(cell: number): Side | null {
   if (cell === 1 || cell === 3) return 1
   if (cell === 2 || cell === 4) return 2
   return null
+}
+
+/** Each side has exactly one piece left and both are kings: neither can force a win (#1265). */
+export function isLoneKingEach(board: readonly (readonly number[])[]): boolean {
+  const pieces: number[] = []
+  for (const row of board) {
+    for (const cell of row) {
+      if (cell === 0) continue
+      pieces.push(cell)
+      if (pieces.length > 2) return false
+    }
+  }
+  return (
+    pieces.length === 2 &&
+    pieces.every((cell) => isKing(cell)) &&
+    pieceSide(pieces[0]) !== pieceSide(pieces[1])
+  )
 }
 
 export function isKing(cell: number): boolean {
@@ -484,19 +501,34 @@ export class CheckersGame extends GameEngine {
 
     const mover = record.side
     const next = otherSide(mover)
-    if (getLegalSteps(data.board, next).length === 0) {
+    const nextSteps = getLegalSteps(data.board, next)
+    if (nextSteps.length === 0) {
       this.finish(mover, 'no-moves')
       return
     }
+    // One king cannot force a win against one king, so the ply limit would
+    // only have made both players shuffle for up to 80 more plies (#1265).
+    // Not while the side to move has a jump, though: a king that stepped next
+    // to the other with the square behind it free has just lost, and the
+    // capture ends the game on no-moves.
+    if (isLoneKingEach(data.board) && !nextSteps.some((s) => s.capture !== null)) {
+      this.finishDrawn('insufficient-material')
+      return
+    }
     if (data.quietPlies >= DRAW_PLY_LIMIT) {
-      data.winner = 'draw'
-      data.endReason = 'draw-rule'
-      this.state.status = 'finished'
-      this.state.winner = undefined
+      this.finishDrawn('draw-rule')
       return
     }
     // The side to move follows the seat: makeMove's advanceTurnIndex hands the
     // turn over and syncSideToSeat sets currentSide from it.
+  }
+
+  private finishDrawn(reason: CheckersEndReason): void {
+    const data = this.data
+    data.winner = 'draw'
+    data.endReason = reason
+    this.state.status = 'finished'
+    this.state.winner = undefined
   }
 
   private finish(winnerSide: Side, reason: CheckersEndReason): void {
@@ -527,6 +559,7 @@ export class CheckersGame extends GameEngine {
       'Capturing is mandatory, and a capture chain must be finished by the same piece',
       'A man reaching the far row becomes a king, which ends the turn',
       'A player with no legal move loses; 40 moves each without a capture or a man move is a draw',
+      'A lone king against a lone king is a draw at once',
     ]
   }
 

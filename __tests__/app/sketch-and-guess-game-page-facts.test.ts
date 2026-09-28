@@ -85,16 +85,27 @@ describe('Sketch & Guess seats and bots against the catalog and registry (#1239)
 })
 
 describe('Sketch & Guess rounds and drawers against the engine (#1239)', () => {
-  it('plays three rounds with drawers in joining order, so only three seats draw', () => {
+  it('plays one round per player with drawers in joining order, so everyone draws once (#1266)', () => {
     const engine = startedGame(5)
-    expect(data(engine).totalRounds).toBe(3)
+    expect(data(engine).totalRounds).toBe(5)
     // Run every phase out on the clock until the game ends.
     engine.applyTimeoutFallback(undefined, Date.now() + 60 * 60 * 1000)
     expect(engine.getState().status).toBe('finished')
-    expect(data(engine).rounds.map((r) => r.drawerId)).toEqual(['p1', 'p2', 'p3'])
-    expect(detail.rules.drawOrder).toMatch(/first three players to join draw rounds one, two and three/)
-    expect(detail.faq.everyoneDraws.a).toMatch(/only the first three to join draw/)
-    for (const text of copy) expect(text).not.toMatch(/everybody draws|everyone draws/i)
+    expect(data(engine).rounds.map((r) => r.drawerId)).toEqual(['p1', 'p2', 'p3', 'p4', 'p5'])
+    expect(detail.rules.drawOrder).toMatch(/joining order, one round each: the first player to join draws round one/)
+    expect(detail.faq.everyoneDraws.a).toMatch(/^Yes, exactly once\. A game has one round per player, three to ten/)
+    expect(detail.modes.oneRoundEach.title).toBe('One round per player')
+    expect(detail.modes.oneRoundEach.desc).toMatch(/four players play four rounds; there is no round setting/)
+    expect(detail.step4Desc).toMatch(/once everyone has drawn the game ends/)
+    // Nothing on the page still describes the old fixed three rounds.
+    for (const text of copy) expect(text).not.toMatch(/three rounds|round three|first three/i)
+  })
+
+  it('takes the round count from the seats, never from the client config (#1266)', () => {
+    const engine = new SketchAndGuessGame('sketch-facts-rules', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 2 } })
+    for (let i = 0; i < 6; i += 1) engine.addPlayer({ id: `p${i + 1}`, name: `P${i + 1}`, score: 0, isActive: true })
+    expect(engine.startGame()).toBe(true)
+    expect(data(engine).totalRounds).toBe(6)
   })
 
   it('never repeats a word within a game, and auto-picks one of the three on timeout', () => {
@@ -138,7 +149,7 @@ describe('Sketch & Guess scoring against the engine (#1239)', () => {
     // Live, before any reveal (#1082): the page says points land as each guess does.
     expect(data(engine).phase).toBe('reveal')
     expect(round(engine).isScored).toBe(false)
-    expect(detail.step4Desc).toMatch(/points landed with each guess.*after round three the game ends/)
+    expect(detail.step4Desc).toMatch(/points landed with each guess.*once everyone has drawn the game ends/)
     const tsx = source('app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx')
     expect(tsx).toMatch(/value: '50'/)
     expect(tsx).toMatch(/value: '\+20'/)

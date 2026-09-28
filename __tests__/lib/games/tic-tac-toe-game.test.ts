@@ -981,9 +981,33 @@ describe('TicTacToeGame', () => {
             expect(game.getState().status).toBe('finished')
         })
 
-        it('lets either player start the next round while an undo request hangs (#997)', () => {
+        it('refuses an undo of a round lost on time, and the next round still starts (#997, #1246)', () => {
             game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
             game.makeMove({ playerId: 'player-o', type: 'timeout-forfeit', data: {}, timestamp: new Date() })
+            expect(game.getState().status).toBe('finished')
+
+            // A timeout is not a move to take back: it would make the clock
+            // meaningless, and a bot accepts every undo (#1246).
+            expect(game.makeMove({ playerId: 'player-o', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(false)
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(false)
+            const data = getGameData(game)
+            expect(data.pendingRequest).toBeNull()
+            expect(data.winner).toBe('X')
+            expect(data.match?.winsBySymbol).toEqual({ X: 1, O: 0 })
+            expect(game.getState().status).toBe('finished')
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.getState().status).toBe('playing')
+            expect(getGameData(game).pendingRequest).toBeNull()
+        })
+
+        it('lets either player start the next round while an undo request hangs (#997)', () => {
+            // X wins the round on the board: the one finished round an undo may still target.
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
             expect(game.getState().status).toBe('finished')
 
             // Between rounds there is no clock and no board, so this used to be
@@ -993,6 +1017,38 @@ describe('TicTacToeGame', () => {
             expect(game.makeMove({ playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
             expect(game.getState().status).toBe('playing')
             expect(getGameData(game).pendingRequest).toBeNull()
+        })
+
+        it('still takes back the move that won a round on the board (#387)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
+            expect(getGameData(game).match?.winsBySymbol.X).toBe(1)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.makeMove({ playerId: 'player-o', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(true)
+            expect(game.getState().status).toBe('playing')
+            expect(getGameData(game).match?.winsBySymbol.X).toBe(0)
+        })
+
+        it('refuses to accept an undo that a timed-out round saved before #1246 still carries', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'timeout-forfeit', data: {}, timestamp: new Date() })
+            const state = game.getState()
+            game.restoreState({
+                ...state,
+                data: {
+                    ...(state.data as TicTacToeGameData),
+                    pendingRequest: { type: 'undo', requesterId: 'player-o', responderId: 'player-x', requestedAt: Date.now() },
+                },
+            })
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(false)
+            expect(game.makeMove({ playerId: 'player-x', type: 'respond-undo', data: { accept: false }, timestamp: new Date() })).toBe(true)
+            expect(getGameData(game).winner).toBe('X')
+            expect(game.getState().status).toBe('finished')
         })
 
         it('does not hand the player on the clock a fresh turn timer for an offer and a decline (#998)', () => {

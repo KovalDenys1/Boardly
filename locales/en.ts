@@ -825,7 +825,7 @@ const en = {
         rules: {
           askInTurn: 'Players take turns typing a question to someone else; answers join the round\'s log.',
           whenVotingOpens: 'Voting opens when the host says so, after twice as many answers as players, or at the first answer or skip after five minutes.',
-          howTheVoteEnds: 'Once every player in the game has voted, a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
+          howTheVoteEnds: 'Once every player still in the game has voted, or the 60 seconds run out (a missing vote counts for nobody), a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
           spyMayGuess: 'While the questions run, the spy may guess among all 24 places; right or wrong, the round ends.',
         },
         scoring: {
@@ -879,7 +879,7 @@ const en = {
           },
           fixedClocks: {
             title: 'Fixed rounds and clocks',
-            desc: 'Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.',
+            desc: 'Three rounds and a five-minute question clock; the vote closes after 60 seconds, or sooner once everyone has voted.',
           },
         },
         strategy: {
@@ -1784,7 +1784,7 @@ const en = {
           multiJump: 'The jumping piece must keep jumping while it can; jumped pieces come off when the move ends.',
           crowning: 'A man reaching the far row becomes a king, which ends the move.',
           kings: 'A king moves and captures one square diagonally in any direction; it does not fly.',
-          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw.',
+          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw, and so is one king against one king when neither can capture.',
         },
         modes: {
           moveClock: {
@@ -1900,7 +1900,7 @@ const en = {
           },
           undoOrDraw: {
             q: 'Can I undo a move or offer a draw?',
-            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving.',
+            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving, or at once when each side is down to a single king and neither can capture.',
           },
         },
       },
@@ -1939,6 +1939,7 @@ const en = {
         gameWon: 'Game Won!',
         draw: 'It\'s a Draw!',
         drawRule: 'Draw: 40 moves each without a capture or a man moving',
+        drawLoneKings: 'Draw: one king each, and neither can force a win',
         unknownPlayer: 'Unknown',
         playAgain: 'Play Again',
         loadFailed: 'Failed to load Checkers game state.',
@@ -2322,7 +2323,7 @@ const en = {
           },
           whoPicksMode: {
             q: 'Who chooses quick or classic mode?',
-            a: 'The host, when creating the lobby, and Play again keeps that mode. Rooms that Quick Play or Play vs Bot create use quick.',
+            a: 'The host, when creating the lobby; Play Again and Return to Lobby keep that mode. Rooms that Quick Play or Play vs Bot create use quick.',
           },
           playAgain: {
             q: 'Can we play again with the same people?',
@@ -2653,14 +2654,14 @@ const en = {
         step3Title: 'Guess before the clock runs out',
         step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
-        step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or after round three the game ends.',
+        step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or once everyone has drawn the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
         benefit1: 'A shared canvas that updates live.',
         benefit2: 'Three to ten players in one room.',
         benefit3: 'A new drawer every round, and the rest guess.',
         benefit4: 'Free to play as a guest.',
         rules: {
-          drawOrder: 'Drawers go in joining order, so the first three players to join draw rounds one, two and three.',
+          drawOrder: 'Drawers go in joining order, one round each: the first player to join draws round one, the second round two, and so on until everyone has drawn.',
           wordChoice: 'An undecided drawer gets one of the three words at random after 15 seconds. A word that has been drawn is never offered again that game.',
           matching: 'Capitals, apostrophes and most accents (é, å, ё) are ignored; ø, æ and й are letters of their own. Plurals and synonyms often count too.',
           wordHint: 'Guessers see blanks in their own language; words of three letters or more get a letter uncovered at half time.',
@@ -2682,7 +2683,7 @@ const en = {
           },
         },
         modes: {
-          threeRounds: { title: 'Three rounds, every game', desc: 'One drawing per round, and there is no round setting.' },
+          oneRoundEach: { title: 'One round per player', desc: 'Everyone draws once, so four players play four rounds; there is no round setting.' },
           phaseClocks: { title: 'Fixed phase clocks', desc: '15 seconds to choose, 80 to draw, 8 to reveal. The lobby timer does not apply.' },
           roomSize: { title: 'Three to ten seats', desc: 'Rooms made on the create form start with six seats; Quick Play rooms open with all ten.' },
         },
@@ -2717,7 +2718,7 @@ const en = {
           isItFree: { q: 'Is Sketch & Guess on Boardly free?', a: 'Yes. Every round, word and room size is free; Premium only adds extras such as spectators.' },
           playAloneOrBot: { q: 'Can I play alone or against a bot?', a: 'No. It needs three people, because a bot cannot read a drawing. Send friends the invite link.' },
           guessLanguages: { q: 'Which languages can I guess in?', a: 'English, Norwegian, Russian and Ukrainian. A guess in any of them counts, whatever your screen shows.' },
-          everyoneDraws: { q: 'Does everyone get to draw?', a: 'With three players, yes. Games are three rounds, so in bigger groups only the first three to join draw.' },
+          everyoneDraws: { q: 'Does everyone get to draw?', a: 'Yes, exactly once. A game has one round per player, three to ten, and drawers go in the order they joined the room.' },
           timeRunsOut: { q: 'What happens when time runs out?', a: 'An undecided drawer gets a random word, and when the drawing clock ends the word is revealed.' },
           hostAcceptsGuess: { q: 'Can the host overrule a wrong guess?', a: 'Yes. Until the round moves on, the host can accept another player\'s miss as a right answer.' },
           playerLeaves: { q: 'What if a player leaves mid-game?', a: 'Play goes on while three remain; an absent drawer\'s turn just runs out. Below three, the game ends.' },

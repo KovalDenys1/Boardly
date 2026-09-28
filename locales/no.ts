@@ -825,7 +825,7 @@ const no = {
         rules: {
           askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
           whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
-          howTheVoteEnds: 'Når alle spillerne i spillet har stemt, stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
+          howTheVoteEnds: 'Når alle spillerne som fortsatt er med har stemt, eller de 60 sekundene er ute (en manglende stemme teller for ingen), stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
           spyMayGuess: 'Mens spørsmålene pågår, kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
         },
         scoring: {
@@ -879,7 +879,7 @@ const no = {
           },
           fixedClocks: {
             title: 'Faste runder og klokker',
-            desc: 'Tre runder og fem minutters spørreklokke; nedtellingen på 60 sekunder til avstemningen er veiledende, og avstemningen lukkes når alle har stemt.',
+            desc: 'Tre runder og fem minutters spørreklokke; avstemningen lukkes etter 60 sekunder, eller tidligere når alle har stemt.',
           },
         },
         strategy: {
@@ -1784,7 +1784,7 @@ const no = {
           multiJump: 'Brikken som hopper, må hoppe videre så lenge den kan; slåtte brikker fjernes når trekket er ferdig.',
           crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket.',
           kings: 'En konge går og slår én rute diagonalt i alle retninger; den flyr ikke.',
-          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort, og det gjør også én konge mot én konge når ingen av dem kan slå.',
         },
         modes: {
           moveClock: {
@@ -1900,7 +1900,7 @@ const no = {
           },
           undoOrDraw: {
             q: 'Kan jeg angre et trekk eller tilby uavgjort?',
-            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes, eller med en gang når hver side bare har én konge igjen og ingen kan slå.',
           },
         },
       },
@@ -1939,6 +1939,7 @@ const no = {
         gameWon: 'Spillet er vunnet!',
         draw: 'Uavgjort!',
         drawRule: 'Uavgjort: 40 trekk hver uten slag eller bondetrekk',
+        drawLoneKings: 'Uavgjort: én konge hver, og ingen kan tvinge frem seier',
         unknownPlayer: 'Ukjent',
         playAgain: 'Spill igjen',
         loadFailed: 'Kunne ikke laste damspillet.',
@@ -2322,7 +2323,7 @@ const no = {
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',
-            a: 'Verten, når lobbyen opprettes, og Spill igjen beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',
@@ -2653,14 +2654,14 @@ const no = {
         step3Title: 'Gjett før tiden går ut',
         step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
-        step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter etter runde tre.',
+        step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter når alle har tegnet.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
         benefit1: 'Et delt lerret som oppdateres live.',
         benefit2: 'Tre til ti spillere i samme rom.',
         benefit3: 'Ny tegner hver runde, og resten gjetter.',
         benefit4: 'Gratis å spille som gjest.',
         rules: {
-          drawOrder: 'Tegnerne går i den rekkefølgen de ble med: den første i rommet tegner runde én, den andre runde to, den tredje runde tre.',
+          drawOrder: 'Tegnerne går i den rekkefølgen de ble med, én runde hver: den første i rommet tegner runde én, den andre runde to, og slik videre til alle har tegnet.',
           wordChoice: 'En tegner som ikke har valgt etter 15 sekunder, får ett av de tre ordene tilfeldig. Et ord som er tegnet, blir aldri tilbudt igjen i samme spill.',
           matching: 'Store bokstaver, apostrofer og de fleste aksenter (é, å, ё) ignoreres; ø, æ og й regnes som egne bokstaver. Mange ord godtar også flertall eller et synonym.',
           wordHint: 'De som gjetter, ser blanke felt på sitt eget språk; ord på tre bokstaver eller mer får én bokstav avdekket halvveis.',
@@ -2682,7 +2683,7 @@ const no = {
           },
         },
         modes: {
-          threeRounds: { title: 'Tre runder, hvert spill', desc: 'Én tegning per runde, og det finnes ingen innstilling for antall runder.' },
+          oneRoundEach: { title: 'Én runde per spiller', desc: 'Alle tegner én gang, så fire spillere gir fire runder; det finnes ingen innstilling for antall runder.' },
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
           roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
         },
@@ -2717,7 +2718,7 @@ const no = {
           isItFree: { q: 'Er Tegn og gjett på Boardly gratis?', a: 'Ja. Alle runder, alle ord og alle romstørrelser er gratis; Premium gir bare ekstra, som tilskuere.' },
           playAloneOrBot: { q: 'Kan jeg spille alene eller mot en bot?', a: 'Nei. Spillet trenger tre personer, fordi en bot ikke kan lese en tegning. Send vennene invitasjonslenken.' },
           guessLanguages: { q: 'Hvilke språk kan jeg gjette på?', a: 'Engelsk, norsk, russisk og ukrainsk. Et gjett på hvilket som helst av dem teller, uansett språket på skjermen din.' },
-          everyoneDraws: { q: 'Får alle tegne?', a: 'Med tre spillere, ja. Et spill har tre runder, så i større grupper tegner bare de tre første som ble med.' },
+          everyoneDraws: { q: 'Får alle tegne?', a: 'Ja, nøyaktig én gang. Et spill har én runde per spiller, fra tre til ti, og tegnerne går i den rekkefølgen de ble med i rommet.' },
           timeRunsOut: { q: 'Hva skjer når tiden går ut?', a: 'En tegner som ikke har valgt, får et tilfeldig ord, og når tegneklokken er ute, avsløres ordet.' },
           hostAcceptsGuess: { q: 'Kan verten overstyre et feil gjett?', a: 'Ja. Til runden går videre, kan verten godta en annen spillers bom som et riktig svar.' },
           playerLeaves: { q: 'Hva om en spiller forlater spillet underveis?', a: 'Spillet fortsetter så lenge tre er igjen; turen til en tegner som er borte, løper bare ut. Under tre avsluttes spillet.' },

@@ -6,10 +6,15 @@ import {
 } from '@/lib/game-display'
 
 describe('getGameStatusBadgeColor', () => {
-  it('uses a higher-contrast palette for cancelled games', () => {
-    expect(getGameStatusBadgeColor('cancelled')).toBe(
-      'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-500/30'
-    )
+  it('gives every status a distinct bd-* chip with no pre-Boardly palette (#1255)', () => {
+    const statuses = ['finished', 'playing', 'abandoned', 'cancelled', 'waiting']
+    const chips = statuses.map(getGameStatusBadgeColor)
+    expect(new Set(chips).size).toBe(statuses.length)
+    for (const chip of chips) {
+      expect(chip).toMatch(/\bbg-bd-/)
+      expect(chip).not.toMatch(/(slate|gray|blue|green|rose|yellow)-\d/)
+      expect(chip).not.toMatch(/\bdark:/)
+    }
   })
 })
 

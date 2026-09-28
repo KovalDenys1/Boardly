@@ -655,3 +655,181 @@ describe('sanitizeSpyStateForBroadcast', () => {
     expect(data.location).toBe('Airport')
   })
 })
+
+/**
+ * #1263: a non-spy leaving mid-round stalled it for good. Nothing marked them
+ * inactive, so the vote waited for a ballot that could never come, and the
+ * 60-second vote clock was display-only.
+ */
+describe('SpyGame with a player who left (#1263)', () => {
+  const LOCATIONS = [
+    { name: 'Airport', category: 'Travel', roles: ['Pilot', 'Passenger', 'Security Guard', 'Mechanic'] },
+  ]
+  const IDS = ['p1', 'p2', 'p3', 'p4']
+  const mv = (game: SpyGame, playerId: string, type: string, data: Record<string, unknown> = {}) =>
+    game.makeMove({ playerId, type, data, timestamp: new Date() })
+  const d = (game: SpyGame) => game.getState().data as any
+
+  function fourPlayerRound(): SpyGame {
+    const game = new SpyGame('spy-leave')
+    for (const id of IDS) game.addPlayer({ id, name: id })
+    game.startGame()
+    game.initializeRound(LOCATIONS)
+    return game
+  }
+
+  function toQuestioning(game: SpyGame) {
+    for (const id of IDS) mv(game, id, 'player-ready')
+    expect(d(game).phase).toBe(SpyGamePhase.QUESTIONING)
+  }
+
+  /** A non-spy other than the ones given. */
+  function nonSpy(game: SpyGame, except: string[] = []): string {
+    return IDS.find((id) => id !== d(game).spyPlayerId && !except.includes(id))!
+  }
+
+  it('marks the leaver inactive once, and refuses their later moves', () => {
+    const game = fourPlayerRound()
+    const leaver = nonSpy(game)
+    expect(game.handlePlayerLeave(leaver)).toBe(true)
+    expect(game.getState().players.find((p) => p.id === leaver)?.isActive).toBe(false)
+    expect(game.handlePlayerLeave(leaver)).toBe(false)
+    expect(mv(game, leaver, 'player-ready')).toBe(false)
+  })
+
+  it('starts the questions when everyone still here is ready, not waiting on the leaver', () => {
+    const game = fourPlayerRound()
+    const leaver = nonSpy(game)
+    for (const id of IDS.filter((id) => id !== leaver)) mv(game, id, 'player-ready')
+    expect(d(game).phase).toBe(SpyGamePhase.ROLE_REVEAL)
+    game.handlePlayerLeave(leaver)
+    expect(d(game).phase).toBe(SpyGamePhase.QUESTIONING)
+    expect(d(game).currentQuestionerId).not.toBe(leaver)
+  })
+
+  it('passes the turn on when the questioner leaves, and never back to them', () => {
+    const game = fourPlayerRound()
+    toQuestioning(game)
+    // The spy leaving abandons the game upstream; only a non-spy reaches the engine.
+    const leaver = nonSpy(game)
+    while (d(game).currentQuestionerId !== leaver) mv(game, d(game).currentQuestionerId, 'skip-turn')
+    game.handlePlayerLeave(leaver)
+    expect(d(game).currentQuestionerId).not.toBe(leaver)
+    for (let i = 0; i < 6; i++) {
+      mv(game, d(game).currentQuestionerId, 'skip-turn')
+      expect(d(game).currentQuestionerId).not.toBe(leaver)
+    }
+  })
+
+  it('refuses a question to a player who left, and drops one they were asked', () => {
+    const game = fourPlayerRound()
+    toQuestioning(game)
+    const asker = d(game).currentQuestionerId as string
+    const leaver = nonSpy(game, [asker])
+    expect(mv(game, asker, 'ask-question', { targetId: leaver, question: 'Busy?' })).toBe(true)
+    game.handlePlayerLeave(leaver)
+    expect(d(game).currentTargetId).toBeNull()
+    expect(d(game).pendingQuestion).toBeNull()
+    expect(d(game).currentQuestionerId).toBe(asker)
+    expect(mv(game, asker, 'ask-question', { targetId: leaver, question: 'Still there?' })).toBe(false)
+  })
+
+  it('closes the vote on the votes of those still here, and refuses a vote for the leaver', () => {
+    const game = fourPlayerRound()
+    toQuestioning(game)
+    mv(game, 'p1', 'start-voting')
+    const leaver = nonSpy(game)
+    const stayers = IDS.filter((id) => id !== leaver)
+    // The leaver's own vote goes with them.
+    expect(mv(game, leaver, 'vote', { targetId: stayers[0] })).toBe(true)
+    expect(mv(game, stayers[0], 'vote', { targetId: stayers[1] })).toBe(true)
+    expect(mv(game, stayers[1], 'vote', { targetId: stayers[0] })).toBe(true)
+    game.handlePlayerLeave(leaver)
+    expect(d(game).votes[leaver]).toBeUndefined()
+    expect(d(game).phase).toBe(SpyGamePhase.VOTING)
+    expect(mv(game, stayers[2], 'vote', { targetId: leaver })).toBe(false)
+    expect(mv(game, stayers[2], 'vote', { targetId: stayers[0] })).toBe(true)
+    expect(d(game).phase).toBe(SpyGamePhase.RESULTS)
+  })
+
+  it('closes the vote at once when the leaver was the last one it waited for', () => {
+    const game = fourPlayerRound()
+    toQuestioning(game)
+    mv(game, 'p1', 'start-voting')
+    const leaver = nonSpy(game)
+    const stayers = IDS.filter((id) => id !== leaver)
+    for (const voter of stayers) mv(game, voter, 'vote', { targetId: stayers.find((id) => id !== voter)! })
+    expect(d(game).phase).toBe(SpyGamePhase.VOTING)
+    game.handlePlayerLeave(leaver)
+    expect(d(game).phase).toBe(SpyGamePhase.RESULTS)
+  })
+
+  it('never deals the spy to a player who left', () => {
+    const game = fourPlayerRound()
+    const leaver = nonSpy(game)
+    game.handlePlayerLeave(leaver)
+    for (let i = 0; i < 25; i++) {
+      d(game).phase = SpyGamePhase.WAITING
+      game.initializeRound(LOCATIONS)
+      expect(d(game).spyPlayerId).not.toBe(leaver)
+      expect(d(game).playerRoles[leaver]).toBeUndefined()
+    }
+  })
+})
+
+describe('SpyGame.applyVotingTimeout (#1263)', () => {
+  const LOCATIONS = [
+    { name: 'Airport', category: 'Travel', roles: ['Pilot', 'Passenger', 'Security Guard'] },
+  ]
+  const d = (game: SpyGame) => game.getState().data as any
+
+  function votingRound(): SpyGame {
+    const game = new SpyGame('spy-vote-clock')
+    for (const id of ['p1', 'p2', 'p3']) game.addPlayer({ id, name: id })
+    game.startGame()
+    game.initializeRound(LOCATIONS)
+    for (const id of ['p1', 'p2', 'p3']) {
+      game.makeMove({ playerId: id, type: 'player-ready', data: {}, timestamp: new Date() })
+    }
+    game.makeMove({ playerId: 'p1', type: 'start-voting', data: {}, timestamp: new Date() })
+    expect(d(game).phase).toBe(SpyGamePhase.VOTING)
+    return game
+  }
+
+  it('leaves the vote open until its clock runs out', () => {
+    const game = votingRound()
+    const opened = d(game).phaseStartTime
+    expect(game.applyVotingTimeout(opened + 59_999)).toBe(false)
+    expect(d(game).phase).toBe(SpyGamePhase.VOTING)
+  })
+
+  it('closes it at the limit, a missing vote counting for nobody', () => {
+    const game = votingRound()
+    const opened = d(game).phaseStartTime
+    const spy = d(game).spyPlayerId
+    const scoresBefore = { ...d(game).scores }
+    // Nobody voted: no leader, so the spy escapes.
+    expect(game.applyVotingTimeout(opened + 60_000)).toBe(true)
+    expect(d(game).phase).toBe(SpyGamePhase.RESULTS)
+    expect(d(game).scores[spy]).toBe((scoresBefore[spy] ?? 0) + 300)
+    expect(game.getState().lastMoveAt).toBe(opened + 60_000)
+  })
+
+  it('counts the votes that did come in', () => {
+    const game = votingRound()
+    const opened = d(game).phaseStartTime
+    const spy = d(game).spyPlayerId as string
+    const others = ['p1', 'p2', 'p3'].filter((id) => id !== spy)
+    game.makeMove({ playerId: others[0], type: 'vote', data: { targetId: spy }, timestamp: new Date() })
+    expect(game.applyVotingTimeout(opened + 61_000)).toBe(true)
+    // One vote, on the spy: voted out, so every regular player scores 100 and the voter 50 more.
+    expect(d(game).scores[others[0]]).toBe(150)
+    expect(d(game).scores[others[1]]).toBe(100)
+  })
+
+  it('does nothing outside the vote', () => {
+    const game = votingRound()
+    game.applyVotingTimeout(d(game).phaseStartTime + 60_000)
+    expect(game.applyVotingTimeout(Date.now() + 600_000)).toBe(false)
+  })
+})

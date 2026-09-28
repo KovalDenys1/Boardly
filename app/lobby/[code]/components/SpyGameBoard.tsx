@@ -109,6 +109,11 @@ interface SpyGameBoardProps {
   onProfileClick?: (userId: string) => void
 }
 
+// #1263: how long after the vote's clock runs out the board asks the server to
+// close it, and how often it asks again while the vote is still open.
+const SPY_VOTE_EXPIRED_GRACE_MS = 500
+const SPY_VOTE_EXPIRED_REFRESH_MS = 5000
+
 function computeVoteLeader(votes: Record<string, string>): string {
   const counts: Record<string, number> = {}
   for (const targetId of Object.values(votes)) {
@@ -194,6 +199,21 @@ export default function SpyGameBoard({
     [players]
   )
 
+  // A player who left mid-game keeps their Players row (soft leave) and their
+  // seat in the engine's roster, marked inactive (#1263). They stay on the
+  // roster and in the results, but are no longer asked, voted on or waited for.
+  const departedIds = React.useMemo(() => {
+    const ids = new Set<string>()
+    for (const statePlayer of state.players || []) {
+      if (statePlayer?.isActive === false) ids.add(statePlayer.id)
+    }
+    return ids
+  }, [state.players])
+  const seatedPlayers = React.useMemo(
+    () => normalizedPlayers.filter((player) => !departedIds.has(player.id)),
+    [normalizedPlayers, departedIds]
+  )
+
   const playersById = React.useMemo(() => {
     const map = new Map<string, { id: string; name: string; score: number; avatarSrc: string | null }>()
     for (const player of normalizedPlayers) {
@@ -205,6 +225,7 @@ export default function SpyGameBoard({
   const votes = data.votes || {}
   const scores = data.scores || {}
   const playersReady = data.playersReady || []
+  const seatedReadyCount = playersReady.filter((id) => !departedIds.has(id)).length
   const questionHistory = data.questionHistory || []
   const hasVoted = !!currentUserId && !!votes[currentUserId]
   const votesSubmitted = Object.keys(votes).length
@@ -241,8 +262,8 @@ export default function SpyGameBoard({
     data.pendingQuestion.length > 0
 
   const availableTargets = React.useMemo(
-    () => normalizedPlayers.filter((player) => player.id !== currentUserId),
-    [normalizedPlayers, currentUserId]
+    () => seatedPlayers.filter((player) => player.id !== currentUserId),
+    [seatedPlayers, currentUserId]
   )
 
   // Motion (#1115). Each is "did this just happen while I was watching": the
@@ -456,6 +477,34 @@ export default function SpyGameBoard({
     return () => window.clearInterval(intervalId)
   }, [data.phaseStartTime, data.questionTimeLimit, data.votingTimeLimit, phase])
 
+  // #1263: the vote closes on the server once its clock runs out, applied when
+  // the lobby is read. Nothing else reads it mid-game, so ask once the clock
+  // shows zero, and again every few seconds while the vote is still open (a
+  // client clock running ahead of the server's would otherwise ask too early).
+  const votePhaseStart = phase === SpyGamePhase.VOTING ? Number(data.phaseStartTime || 0) : 0
+  const voteLimitSeconds = phase === SpyGamePhase.VOTING ? Number(data.votingTimeLimit || 0) : 0
+  // Through a ref: onRefresh is a fresh closure on every parent render, and the
+  // deadline timer must not restart with it.
+  const refreshRef = React.useRef(refreshAfterAction)
+  React.useEffect(() => {
+    refreshRef.current = refreshAfterAction
+  }, [refreshAfterAction])
+  React.useEffect(() => {
+    if (!votePhaseStart || voteLimitSeconds <= 0) return
+    let intervalId: number | undefined
+    const deadlineDelay = Math.max(0, votePhaseStart + voteLimitSeconds * 1000 - Date.now())
+    const timeoutId = window.setTimeout(() => {
+      void refreshRef.current()
+      intervalId = window.setInterval(() => {
+        void refreshRef.current()
+      }, SPY_VOTE_EXPIRED_REFRESH_MS)
+    }, deadlineDelay + SPY_VOTE_EXPIRED_GRACE_MS)
+    return () => {
+      window.clearTimeout(timeoutId)
+      if (intervalId !== undefined) window.clearInterval(intervalId)
+    }
+  }, [votePhaseStart, voteLimitSeconds])
+
   // ─── Shared chrome (#905) ────────────────────────────────────────────────
   // Everything below composes components/game-chrome rather than the
   // hand-rolled `.spy-header`, so Leave, the status line, the mobile tabs and
@@ -495,11 +544,11 @@ export default function SpyGameBoard({
    */
   const waitingOnId = (() => {
     if (phase === SpyGamePhase.ROLE_REVEAL) {
-      return normalizedPlayers.find((player) => !playersReady.includes(player.id))?.id ?? ''
+      return seatedPlayers.find((player) => !playersReady.includes(player.id))?.id ?? ''
     }
     if (phase === SpyGamePhase.QUESTIONING) return data.currentQuestionerId || ''
     if (phase === SpyGamePhase.VOTING) {
-      return normalizedPlayers.find((player) => !votes[player.id])?.id ?? ''
+      return seatedPlayers.find((player) => !votes[player.id])?.id ?? ''
     }
     if (phase === SpyGamePhase.RESULTS) return spyId
     return ''
@@ -588,7 +637,7 @@ export default function SpyGameBoard({
       return isCreator && !isSpectator ? t('spy.initializingRound') : t('spy.waitingForCreator')
     }
     if (phase === SpyGamePhase.ROLE_REVEAL) {
-      return t('spy.playersReady', { count: playersReady.length, total: normalizedPlayers.length })
+      return t('spy.playersReady', { count: seatedReadyCount, total: seatedPlayers.length })
     }
     if (phase === SpyGamePhase.QUESTIONING) {
       return currentQuestioner ? t('spy.currentTurn', { player: currentQuestioner.name }) : t('spy.waitingForQuestioner')
@@ -600,7 +649,7 @@ export default function SpyGameBoard({
   // Role reveal already counts readiness in its own line, so a meta counter
   // beside it would print "0/3 players ready 0/3".
   const statusMeta =
-    phase === SpyGamePhase.VOTING ? `${votesSubmitted}/${normalizedPlayers.length}` : undefined
+    phase === SpyGamePhase.VOTING ? `${votesSubmitted}/${seatedPlayers.length}` : undefined
 
   const statusSection = (
     <GameStatusBanner
@@ -638,7 +687,9 @@ export default function SpyGameBoard({
               <span key={category} className="bd-chip bd-chip-coral py-1 text-[11px]">{category}</span>
             ))}
           </div>
-          {roleInfo.possibleLocations && roleInfo.possibleLocations.length > 0 && (
+          {/* The engine accepts a guess only while questioning (#1263): during
+              the vote the button would only earn a 400. */}
+          {phase === SpyGamePhase.QUESTIONING && roleInfo.possibleLocations && roleInfo.possibleLocations.length > 0 && (
             <div className="mt-4 border-t border-[var(--bd-line)] pt-4">
               {!showGuessConfirm ? (
                 <button
@@ -801,8 +852,8 @@ export default function SpyGameBoard({
             locationRole={roleInfo.locationRole}
             possibleCategories={roleInfo.possibleCategories}
             onReady={() => void submitAction('player-ready')}
-            playersReady={playersReady.length}
-            totalPlayers={normalizedPlayers.length}
+            playersReady={seatedReadyCount}
+            totalPlayers={seatedPlayers.length}
             isReady={!!currentUserId && playersReady.includes(currentUserId)}
             flip={roleFlipFresh}
             onFlipEnd={settleRoleFlip}
@@ -813,7 +864,7 @@ export default function SpyGameBoard({
           <div className="spy-panel p-6 text-center">
             <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">
               {isSpectator
-                ? `${playersReady.length}/${normalizedPlayers.length} ${t('spy.phases.roleReveal').toLowerCase()}`
+                ? `${seatedReadyCount}/${seatedPlayers.length} ${t('spy.phases.roleReveal').toLowerCase()}`
                 : isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}
             </p>
           </div>
@@ -969,7 +1020,7 @@ export default function SpyGameBoard({
 
         {phase === SpyGamePhase.VOTING && currentUserId && !isSpectator && (
           <SpyVoting
-            players={normalizedPlayers}
+            players={seatedPlayers}
             currentUserId={currentUserId}
             onVote={(targetId) => void submitAction('vote', { targetId })}
             hasVoted={hasVoted}
@@ -982,7 +1033,7 @@ export default function SpyGameBoard({
           <div className="spy-panel bd-screen p-5 text-center">
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
             <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
-              {votesSubmitted}/{normalizedPlayers.length} {t('spy.phases.voting').toLowerCase()}
+              {votesSubmitted}/{seatedPlayers.length} {t('spy.phases.voting').toLowerCase()}
             </ScorePop>
           </div>
         )}

@@ -6,16 +6,18 @@ export function formatGameTypeLabel(gameType: string): string {
 
 export function getGameStatusBadgeColor(status: string): string {
   switch (status) {
+    // bd-* tokens (#1255). One mapping for every status chip: game history, the replay
+    // viewer and the results modal used to carry three diverging copies.
     case 'finished':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      return 'bg-bd-mint/20 text-bd-ink'
     case 'playing':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      return 'bg-bd-sun/25 text-bd-ink'
     case 'abandoned':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      return 'bg-bd-coral/15 text-bd-ink'
     case 'cancelled':
-      return 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-500/30'
+      return 'bg-bd-bg2 text-bd-ink-soft'
     default:
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      return 'bg-bd-lav/20 text-bd-ink'
   }
 }
 

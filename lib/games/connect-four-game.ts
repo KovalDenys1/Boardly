@@ -45,6 +45,19 @@ export interface ConnectFourGameData {
   moveHistory: ConnectFourMoveRecord[]
 }
 
+/**
+ * Whether the round was lost on time rather than on the board. Four in a row
+ * always stores its winning line and a full board stores no winner, so a
+ * finished round with a winner and no line can only be a timeout forfeit.
+ * Derived rather than stored so rounds saved before #1246 read the same.
+ */
+export function isConnectFourRoundLostOnTime(
+  data: Pick<ConnectFourGameData, 'winner' | 'winningLine'>,
+  status: string | undefined,
+): boolean {
+  return status === 'finished' && (data.winner === 1 || data.winner === 2) && !data.winningLine
+}
+
 export class ConnectFourGame extends GameEngine {
   constructor(gameId: string, config: GameConfig = { maxPlayers: 2, minPlayers: 2 }) {
     super(gameId, 'connectFour', config)
@@ -87,6 +100,9 @@ export class ConnectFourGame extends GameEngine {
     if (move.type === 'request-undo') {
       if (this.state.status !== 'playing' && this.state.status !== 'finished') return false
       if (gameData.pendingRequest || (gameData.undoSnapshots?.length ?? 0) === 0) return false
+      // A round lost on time is not a move to take back: undoing it would make
+      // the clock meaningless, and a bot accepts every undo (#1246).
+      if (isConnectFourRoundLostOnTime(gameData, this.state.status)) return false
       const playerIndex = this.state.players.findIndex((p) => p.id === move.playerId)
       if (playerIndex === -1) return false
       return this.getOpponent(move.playerId) !== null
@@ -94,6 +110,7 @@ export class ConnectFourGame extends GameEngine {
 
     if (move.type === 'respond-undo') {
       if (gameData.pendingRequest?.type !== 'undo' || gameData.pendingRequest.responderId !== move.playerId) return false
+      if (move.data.accept === true && isConnectFourRoundLostOnTime(gameData, this.state.status)) return false
       return typeof move.data.accept === 'boolean'
     }
 

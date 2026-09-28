@@ -7,6 +7,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { commitGameState } from '@/lib/game-state-lock'
 import { restoreGameEngine } from '@/lib/game-registry'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { deleteGameTurnReminderNotifications } from '@/lib/in-app-notifications'
 import { advanceTurnPastDisconnectedPlayers, setPlayerConnectionInState, type TurnAdvanceResult, type TurnState } from '@/lib/disconnected-turn'
@@ -588,7 +589,12 @@ export async function performPlayerLeave(
             currentPlayerId: advanceRef.current.currentPlayerId,
           })
         }
-        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: result.state })
+        // Sanitized like every other game-update (#1274): Memory reaches this branch,
+        // and its raw state carries every face-down card's value.
+        await emitLobbyEvent(log, code, 'game-update', {
+          action: 'state-change',
+          payload: sanitizeStateForBroadcast(activeGame.gameType, result.state as { data?: unknown; status?: string }, null),
+        })
       } else if (result.status === 'conflict') {
         // The turn clock is the backstop here: stuck-turn recovery (#989) asks
         // the server again once it expires on the departed player's seat.
@@ -612,7 +618,12 @@ export async function performPlayerLeave(
       })
 
       if (result.status === 'committed') {
-        await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: result.state })
+        // A shared broadcast has no single viewer: strip every game's hidden
+        // state (Spy's spy and location, #1263) as the move routes do.
+        await emitLobbyEvent(log, code, 'game-update', {
+          action: 'state-change',
+          payload: sanitizeStateForBroadcast(activeGame.gameType, result.state as { data?: unknown; status?: string }, null),
+        })
       } else if (result.status === 'conflict') {
         log.warn('Skipped engine handlePlayerLeave: game row kept changing', {
           gameId: activeGame.id,
