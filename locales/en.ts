@@ -1726,6 +1726,20 @@ const en = {
             desc: 'After each turn the words are listed as guessed or skipped; the skipped ones show which kinds of clue your group finds hard.',
           },
         },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Letting the clock hit zero',
+            desc: 'Unplayed words then cost a point each, where End Turn would have cost nothing.',
+          },
+          skippingOnReflex: {
+            title: 'Skipping on reflex',
+            desc: 'Skip all ten words and the turn ends ten points down.',
+          },
+          guessingInParagraphs: {
+            title: 'Guessing in paragraphs',
+            desc: 'A long message buries the word the describer is scanning for.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

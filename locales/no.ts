@@ -1726,6 +1726,20 @@ const no = {
             desc: 'Etter hver tur listes ordene som gjettet eller hoppet over; de hoppede viser hvilke typer hint gjengen sliter med.',
           },
         },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Å la klokka gå til null',
+            desc: 'Ubrukte ord koster da et poeng hver, mens «Avslutning av tur» ikke ville kostet noe.',
+          },
+          skippingOnReflex: {
+            title: 'Å hoppe over på refleks',
+            desc: 'Hopper du over alle ti ordene, ender turen ti poeng i minus.',
+          },
+          guessingInParagraphs: {
+            title: 'Å gjette i avsnitt',
+            desc: 'En lang melding skjuler ordet forklareren leter etter.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',

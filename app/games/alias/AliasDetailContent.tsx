@@ -83,6 +83,11 @@ export default function AliasDetailContent() {
         { title: t('games.alias.detail.strategy.guessAtThreeAsIfYours.title'), desc: t('games.alias.detail.strategy.guessAtThreeAsIfYours.desc') },
         { title: t('games.alias.detail.strategy.readTheResults.title'), desc: t('games.alias.detail.strategy.readTheResults.desc') },
       ]}
+      mistakes={[
+        { title: t('games.alias.detail.mistakes.lettingTheClockHitZero.title'), desc: t('games.alias.detail.mistakes.lettingTheClockHitZero.desc') },
+        { title: t('games.alias.detail.mistakes.skippingOnReflex.title'), desc: t('games.alias.detail.mistakes.skippingOnReflex.desc') },
+        { title: t('games.alias.detail.mistakes.guessingInParagraphs.title'), desc: t('games.alias.detail.mistakes.guessingInParagraphs.desc') },
+      ]}
     />
   )
 }
