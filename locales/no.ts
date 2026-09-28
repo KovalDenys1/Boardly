@@ -997,6 +997,13 @@ const no = {
         benefit2: 'Brettet oppdateres live for alle spillere.',
         benefit3: 'Enkle kontroller som fungerer godt på mobil.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          flipTwo: 'På din tur snur du to kort med baksiden opp, ett om gangen. Et kort som allerede ligger åpent eller er tatt, kan ikke velges.',
+          matchKeepsTurn: 'Et par som stemmer, blir liggende åpent, gir ett poeng og lar deg snu igjen med en gang.',
+          missPassesTurn: 'Et bom vises i omtrent ett sekund, så snus begge kortene tilbake og neste spiller er på tur.',
+          clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine tilbake, og turen går videre uten poeng.',
+          lastPair: 'Spillet er over i det øyeblikket det siste paret er tatt.',
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',

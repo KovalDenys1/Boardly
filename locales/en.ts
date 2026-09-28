@@ -997,6 +997,13 @@ const en = {
         benefit2: 'Live board updates for every player.',
         benefit3: 'Simple controls that work well on mobile.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          flipTwo: 'On your turn you turn over two face-down cards, one at a time. A card that is already face up or claimed cannot be picked.',
+          matchKeepsTurn: 'A match stays face up, scores one point and lets you flip again straight away.',
+          missPassesTurn: 'A miss stays on show for about a second, then both cards turn face down and the next player moves.',
+          clockRunsOut: 'If the turn clock reaches zero, your face-up cards turn back and the turn passes without a point.',
+          lastPair: 'The game ends the moment the final pair is claimed.',
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

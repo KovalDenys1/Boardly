@@ -40,6 +40,13 @@ export default function MemoryDetailContent() {
         t('games.memory.detail.benefit3'),
         t('games.memory.detail.benefit4'),
       ]}
+      rules={[
+        t('games.memory.detail.rules.flipTwo'),
+        t('games.memory.detail.rules.matchKeepsTurn'),
+        t('games.memory.detail.rules.missPassesTurn'),
+        t('games.memory.detail.rules.clockRunsOut'),
+        t('games.memory.detail.rules.lastPair'),
+      ]}
       playVsBotGameType="memory"
     />
   )
