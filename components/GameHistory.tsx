@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
-import { formatGameTypeLabel } from '@/lib/game-display'
+import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
 import ReplayViewerModal from './ReplayViewerModal'
@@ -31,17 +31,17 @@ const GAME_TYPE_FILTER_OPTIONS = [
 const STATUS_FILTER_OPTIONS = ['all', 'finished', 'playing', 'abandoned', 'cancelled'] as const
 
 const panelClassName =
-  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
 const tileClassName =
-  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+  'rounded-2xl border border-bd-line bg-bd-card-warm'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-transform hover:-translate-y-0.5 hover:bg-bd-bg2 disabled:cursor-not-allowed disabled:opacity-50'
 const eyebrowClassName =
-  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
 interface Player {
   id: string
@@ -131,24 +131,9 @@ function getStatusAccentClassName(status: string): string {
     case 'abandoned':
       return 'bg-bd-coral'
     case 'cancelled':
-      return 'bg-bd-bg2 dark:bg-slate-700'
+      return 'bg-bd-bg2'
     default:
       return 'bg-bd-lav'
-  }
-}
-
-function getStatusBadgeClassName(status: string): string {
-  switch (status) {
-    case 'finished':
-      return 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint'
-    case 'playing':
-      return 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun'
-    case 'abandoned':
-      return 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300'
-    case 'cancelled':
-      return 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300'
-    default:
-      return 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
   }
 }
 
@@ -300,17 +285,17 @@ export default function GameHistory() {
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
               <p className={eyebrowClassName}>{t('profile.gameHistory.title')}</p>
-              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
+              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink">
                 {t('profile.gameHistory.title')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-bd-ink-muted dark:text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm text-bd-ink-soft">
                 {getVisibleRangeLabel()}
               </p>
             </div>
 
             <div className={`${warmSurfaceClassName} px-4 py-3`}>
               <p className={eyebrowClassName}>{t('profile.gameHistory.status')}</p>
-              <p className="mt-2 text-sm font-semibold text-bd-ink dark:text-white">
+              <p className="mt-2 text-sm font-semibold text-bd-ink">
                 {formatStatusLabel(statusFilter)}
               </p>
             </div>
@@ -332,7 +317,7 @@ export default function GameHistory() {
                       label: formatGameTypeFilterLabel(option),
                     }))}
                     renderValue={(option) => (
-                      <span className={gameTypeFilter !== 'all' ? 'block truncate text-bd-lav-deep dark:text-bd-lav' : 'block truncate'}>
+                      <span className={gameTypeFilter !== 'all' ? 'block truncate font-semibold text-bd-ink' : 'block truncate'}>
                         {option?.label ?? ''}
                       </span>
                     )}
@@ -352,7 +337,7 @@ export default function GameHistory() {
                       label: formatStatusLabel(option),
                     }))}
                     renderValue={(option) => (
-                      <span className={statusFilter !== 'all' ? 'block truncate text-bd-lav-deep dark:text-bd-lav' : 'block truncate'}>
+                      <span className={statusFilter !== 'all' ? 'block truncate font-semibold text-bd-ink' : 'block truncate'}>
                         {option?.label ?? ''}
                       </span>
                     )}
@@ -363,9 +348,9 @@ export default function GameHistory() {
           </div>
 
           {error ? (
-            <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10 dark:border-red-500/30 dark:bg-red-500/10">
+            <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10">
               <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
-                <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
+                <p className="text-sm font-semibold text-bd-ink">{error}</p>
               </div>
             </div>
           ) : null}
@@ -377,10 +362,10 @@ export default function GameHistory() {
                 <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                   <BoardIcon />
                 </div>
-                <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink dark:text-white">
+                <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink">
                   {t('profile.gameHistory.noGames')}
                 </h3>
-                <p className="mt-2 max-w-xl text-sm text-bd-ink-muted dark:text-slate-400 sm:text-base">
+                <p className="mt-2 max-w-xl text-sm text-bd-ink-soft sm:text-base">
                   {getVisibleRangeLabel()}
                 </p>
               </div>
@@ -400,12 +385,12 @@ export default function GameHistory() {
                           </div>
                           <div className="min-w-0">
                             <h3
-                              className="truncate text-xl font-bold text-bd-ink dark:text-white"
+                              className="truncate text-xl font-bold text-bd-ink"
                               title={game.lobbyName}
                             >
                               {game.lobbyName}
                             </h3>
-                            <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                            <p className="mt-1 text-sm text-bd-ink-soft">
                               {formatGameTypeLabel(game.gameType)} · {formatDate(game.createdAt)}
                             </p>
                           </div>
@@ -413,11 +398,11 @@ export default function GameHistory() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClassName(game.status)}`}>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getGameStatusBadgeColor(game.status)}`}>
                           {formatStatusLabel(game.status)}
                         </span>
                         {game.lobbyCode && (
-                          <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
+                          <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft">
                             {game.lobbyCode}
                           </span>
                         )}
@@ -432,7 +417,7 @@ export default function GameHistory() {
                             className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
                               player.isWinner
                                 ? 'border-bd-sun-deep bg-bd-sun/20 text-bd-ink'
-                                : 'border-bd-line bg-white text-bd-ink-soft dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
+                                : 'border-bd-line bg-bd-card-warm text-bd-ink-soft'
                             }`}
                           >
                             <span className="flex items-center gap-1">
@@ -447,7 +432,7 @@ export default function GameHistory() {
                               )}
                             </span>
                             {(player.isBot || player.bot) && (
-                              <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400">
+                              <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-soft">
                                 {t('profile.gameReplay.bot')}
                               </span>
                             )}
@@ -457,7 +442,7 @@ export default function GameHistory() {
                               </span>
                             ) : null}
                             {player.isWinner ? (
-                              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
+                              <span className="rounded-full bg-bd-sun px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--bd-ink-on-accent)]">
                                 {t('lobby.game.win')}
                               </span>
                             ) : null}
@@ -467,7 +452,7 @@ export default function GameHistory() {
                     </div>
 
                     <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <p className="inline-flex items-center gap-1.5 text-sm text-bd-ink-muted dark:text-slate-400">
+                      <p className="inline-flex items-center gap-1.5 text-sm text-bd-ink-soft">
                         <ClockIcon />
                         {formatDate(game.updatedAt)}
                       </p>
@@ -488,7 +473,7 @@ export default function GameHistory() {
                             {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
                           </button>
                           {!game.hasReplay && (
-                            <p className="px-1 text-xs text-bd-ink-muted dark:text-slate-500">
+                            <p className="px-1 text-xs text-bd-ink-soft">
                               {game.status === 'abandoned'
                                 ? t('profile.gameResults.replayUnavailableAbandoned')
                                 : game.status === 'cancelled'
@@ -514,7 +499,7 @@ export default function GameHistory() {
                   {t('common.previous')}
                 </button>
 
-                <span className="text-center text-sm text-bd-ink-muted dark:text-slate-400">
+                <span className="text-center text-sm text-bd-ink-soft">
                   {getVisibleRangeLabel()}
                 </span>
 

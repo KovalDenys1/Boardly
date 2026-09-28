@@ -52,8 +52,8 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
   const oPlayer = players[1] ? (playerNameById.get(players[1].userId) ?? 'O') : 'O'
 
   return (
-    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 dark:border-slate-700/60 dark:bg-slate-800/50 sm:p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 mb-3">
+    <div className="rounded-2xl border-[1.5px] border-bd-line bg-bd-bg2 p-4 sm:p-5">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-bd-ink-soft">
         {t('game.ui.tabBoard')}
       </p>
 
@@ -67,21 +67,21 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
               return (
                 <div
                   key={key}
-                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-xl border text-2xl font-extrabold transition-colors ${
+                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-xl border text-2xl font-extrabold ${
                     isWinCell
-                      ? 'border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-950/50'
+                      ? 'border-bd-sun-deep bg-bd-sun'
                       : cell
-                        ? 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'
-                        : 'border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-900/50'
+                        ? 'border-bd-line bg-bd-card-warm'
+                        : 'border-bd-line bg-bd-bg'
                   }`}
                 >
                   {cell === 'X' && (
-                    <span className={isWinCell ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}>
+                    <span className={isWinCell ? 'text-[color:var(--bd-ink-on-accent)]' : 'text-bd-coral-deep'}>
                       X
                     </span>
                   )}
                   {cell === 'O' && (
-                    <span className={isWinCell ? 'text-amber-600 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'}>
+                    <span className={isWinCell ? 'text-[color:var(--bd-ink-on-accent)]' : 'text-bd-lav-deep'}>
                       ○
                     </span>
                   )}
@@ -95,34 +95,35 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
         <div className="flex-1 space-y-3 min-w-0">
           {winsBySymbol && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-700 dark:bg-blue-950/30">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400 truncate">
+              <div className="rounded-xl border border-bd-coral/40 bg-bd-coral/15 px-3 py-2.5">
+                <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-bd-ink-soft">
                   {xPlayer} (X)
                 </div>
-                <div className="mt-1 text-xl font-bold text-blue-700 dark:text-blue-300">
+                <div className="mt-1 text-xl font-bold text-bd-ink">
                   {typeof winsBySymbol.X === 'number' ? winsBySymbol.X : 0}
                 </div>
               </div>
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:border-rose-700 dark:bg-rose-950/30">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-400 truncate">
+              <div className="rounded-xl border border-bd-lav/40 bg-bd-lav/15 px-3 py-2.5">
+                <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-bd-ink-soft">
                   {oPlayer} (○)
                 </div>
-                <div className="mt-1 text-xl font-bold text-rose-600 dark:text-rose-400">
+                <div className="mt-1 text-xl font-bold text-bd-ink">
                   {typeof winsBySymbol.O === 'number' ? winsBySymbol.O : 0}
                 </div>
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/70">
+          <div className="rounded-xl border border-bd-line bg-bd-bg px-3 py-2.5">
             {winner === 'draw' ? (
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('profile.gameReplay.draw')}</p>
+              <p className="text-sm font-semibold text-bd-ink-soft">{t('profile.gameReplay.draw')}</p>
             ) : winner ? (
-              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-bd-ink">
+                <Icon name="crown" size={14} />
                 {t('profile.gameReplay.board.winsRound', { player: winner === 'X' ? xPlayer : oPlayer })}
               </p>
             ) : currentSymbol ? (
-              <p className="text-sm text-slate-600 dark:text-slate-300">
+              <p className="text-sm text-bd-ink-soft">
                 <span className="font-semibold">{currentSymbol === 'X' ? xPlayer : oPlayer}</span>
                 {' '}{t('profile.gameReplay.board.toMove')}
               </p>
