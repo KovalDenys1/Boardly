@@ -1758,6 +1758,9 @@ const en = {
             desc: 'Phone, tablet or computer with nothing to install; guests pick a name and take a seat.',
           },
         },
+        audience: {
+          whoItSuits: 'Alias suits parties, family evenings and friends on a video call, and its English deck doubles as speaking practice for learners.',
+        },
       },
       lobbies: {
         title: 'Alias',

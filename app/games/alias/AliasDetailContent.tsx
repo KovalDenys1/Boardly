@@ -94,6 +94,9 @@ export default function AliasDetailContent() {
         { title: t('games.alias.detail.multiplayer.turnTimer.title'), desc: t('games.alias.detail.multiplayer.turnTimer.desc') },
         { title: t('games.alias.detail.multiplayer.guestNoDownload.title'), desc: t('games.alias.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.alias.detail.audience.whoItSuits'),
+      ]}
     />
   )
 }

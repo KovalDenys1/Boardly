@@ -1758,6 +1758,9 @@ const no = {
             desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; gjester velger et navn og tar en plass.',
           },
         },
+        audience: {
+          whoItSuits: 'Alias passer for fester, familiekvelder og venner på videosamtale, og den engelske ordstokken fungerer også som taletrening for dem som lærer språket.',
+        },
       },
       lobbies: {
         title: 'Alias-spill',
