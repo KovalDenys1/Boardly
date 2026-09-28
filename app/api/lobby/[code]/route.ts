@@ -8,7 +8,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { getGameMetadata as getCatalogGameMetadata, isAvailableGameType } from '@/lib/game-catalog'
-import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
+import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getFinishedGameHumanRoster } from '@/lib/lobby-series-transition'
 import { sweepStalePlayers } from '@/lib/lobby-presence'
@@ -933,7 +933,11 @@ export async function PATCH(
 
     const updates = parsedBody.data
 
-    if (updates.allowSpectators === true) {
+    // Asked once, and only when a Premium-gated setting is in the request. A guest
+    // is never Premium, the same as on POST /api/lobby.
+    let isPremiumCache: boolean | null = null
+    const hostIsPremium = async (): Promise<boolean> => {
+      if (isPremiumCache !== null) return isPremiumCache
       let isPremium = false
       if (!requestUser.isGuest) {
         const dbUser = await prisma.users.findUnique({
@@ -942,14 +946,30 @@ export async function PATCH(
         })
         isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
       }
-      if (!isPremium) {
-        return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
-      }
+      isPremiumCache = isPremium
+      return isPremium
+    }
+
+    if (updates.allowSpectators === true && !(await hostIsPremium())) {
+      return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
     }
 
     // Validate theme if provided
     if (typeof updates.theme === 'string' && !LOBBY_THEME_IDS.includes(updates.theme as typeof LOBBY_THEME_IDS[number])) {
       return NextResponse.json({ error: 'Invalid theme' }, { status: 400 })
+    }
+
+    // #1258: POST /api/lobby refuses a premium theme to a free host, and this
+    // route used to let the same host switch to one from the waiting room. Re-sending
+    // the theme the lobby already has is not a switch, so a host whose Premium has
+    // lapsed can still save other settings alongside it.
+    if (
+      typeof updates.theme === 'string' &&
+      updates.theme !== lobby.theme &&
+      (PREMIUM_LOBBY_THEMES as string[]).includes(updates.theme) &&
+      !(await hostIsPremium())
+    ) {
+      return NextResponse.json({ error: 'Premium required for custom lobby themes' }, { status: 403 })
     }
 
     // Validate gameType if provided
