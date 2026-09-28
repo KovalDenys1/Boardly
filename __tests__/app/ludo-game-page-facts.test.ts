@@ -1,11 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import { Move } from '@/lib/game-engine'
-import { getCatalogGames } from '@/lib/game-catalog'
+import { getCatalogGames, getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
+import { advanceTurnPastDisconnectedPlayers, setPlayerConnectionInState } from '@/lib/disconnected-turn'
 import { BOT_DIFFICULTIES, getBotDisplayName } from '@/lib/bot-profiles'
 import { resolveBotTarget } from '@/lib/quick-play'
 import { getGameMetadata } from '@/lib/game-registry'
-import { HEARTBEAT_STALE_THRESHOLD_MS } from '@/lib/lobby-presence'
 import {
   LudoGame,
   LudoGameData,
@@ -202,7 +202,7 @@ describe('Ludo timeouts (#1242)', () => {
     queueRolls(2)
     capture.makeMove(move(P1, 'timeout'))
     expect(dataOf(capture).tokens[P1]).toEqual([20, 5])
-    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/moves a token reaching home, else one that captures, else the furthest/)
+    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/If your game is open when the timer runs out, the server moves a token reaching home, else one that captures, else the furthest/)
   })
 
   it('grants no extra roll for a 6 rolled on timeout', () => {
@@ -221,10 +221,25 @@ describe('Ludo timeouts (#1242)', () => {
     expect(ludo.rules.timer).toMatch(/If it runs out while your game is open/)
   })
 
+  it('keeps a departed player\'s tokens on the board and skips their turns', () => {
+    expect(getCatalogGameMetadata('ludo')?.advanceTurnOnLeave).toBe(true)
+    const game = newGame([P1, P2, P3])
+    place(game, { [P2]: [12, LUDO_YARD] })
+    const state = game.getState() as unknown as Parameters<typeof setPlayerConnectionInState>[0]
+    expect(setPlayerConnectionInState(state, P2, false)).toBe(true)
+    state.currentPlayerIndex = 1
+    const advance = advanceTurnPastDisconnectedPlayers(state, new Set())
+    expect(advance.skippedPlayerIds).toEqual([P2])
+    expect(advance.currentPlayerId).toBe(P3)
+    expect((state.data as LudoGameData).tokens[P2]).toEqual([12, LUDO_YARD])
+    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/their tokens stay, their turns are skipped and play goes on/)
+  })
+
   it('removes a silent player after 30 seconds, on a lobby read', () => {
-    expect(HEARTBEAT_STALE_THRESHOLD_MS).toBe(30_000)
+    // Read as source: importing lib/lobby-presence pulls in the Prisma client.
+    expect(source('lib/lobby-presence.ts')).toMatch(/HEARTBEAT_STALE_THRESHOLD_MS = 30_000\b/)
     expect(source('app/api/lobby/[code]/route.ts')).toMatch(/sweepStalePlayers/)
-    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/removes them after 30 silent seconds/)
+    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/silent for 30 seconds is removed the next time the table checks; their tokens stay, their turns are skipped/)
   })
 })
 
@@ -238,15 +253,16 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     // Quick Play and Play vs Bot pass no rules for Ludo, so the engine default applies.
     expect(source('app/api/quick-play/route.ts')).toMatch(/\(gameType as string\) === 'yahtzee' \? \{ rules: \{ mode: 'short' \} \} : undefined/)
     expect(dataOf(newGame()).mode).toBe('quick')
-    expect(ludo.detail.modes.quickOrClassic.desc).toMatch(/Quick Play and Play vs Bot rooms use quick/)
+    expect(ludo.detail.modes.quickOrClassic.desc).toMatch(/picked by the host when creating the lobby/)
+    expect(ludo.detail.faq.whoPicksMode.a).toMatch(/Rooms that Quick Play or Play vs Bot create use quick/)
   })
 
-  it('keeps the mode through Play again and offers no way to change it later', () => {
+  it('lets the host pick the mode at creation and keeps it through Play again', () => {
     expect(source('app/api/game/create/route.ts')).toMatch(/ludo: \['quick', 'classic'\]/)
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(
       /type EditableSettingKey = 'maxPlayers' \| 'turnTimer' \| 'allowSpectators' \| 'theme' \| 'gameType'/
     )
-    expect(ludo.detail.faq.changeMode.a).toMatch(/The mode is fixed when the lobby is created and Play again keeps it/)
+    expect(ludo.detail.faq.whoPicksMode.a).toMatch(/The host, when creating the lobby, and Play again keeps that mode/)
   })
 
   it('quotes the create default, the host range and the Play vs Bot clock', () => {
@@ -255,7 +271,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(ludo.detail.modes.turnClock.desc).toMatch(
-      /Lobbies default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start\. Play vs Bot uses 45\./
+      /Lobbies you create default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start\. Quick Play and Play vs Bot use 45\./
     )
   })
 
@@ -264,7 +280,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(resolveBotTarget(meta.minPlayers, true) - 1).toBe(1)
     expect(new LudoGame('qp').getConfig().maxPlayers).toBe(4)
     expect(ludo.detail.multiplayer.botsAndSolo.desc).toMatch(/Play vs Bot seats one bot/)
-    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Quick Play rooms open with four seats/)
+    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Two to four, up to three of them bots/)
   })
 
   it('opens the in-game chat only once two people are seated', () => {

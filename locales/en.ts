@@ -1928,11 +1928,11 @@ const en = {
         modes: {
           quickOrClassic: {
             title: 'Quick or classic',
-            desc: 'Two tokens each or four. The host picks at creation; Quick Play and Play vs Bot rooms use quick.',
+            desc: 'Two tokens each or four, picked by the host when creating the lobby.',
           },
           turnClock: {
             title: 'A clock on every turn',
-            desc: 'Lobbies default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start. Play vs Bot uses 45.',
+            desc: 'Lobbies you create default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start. Quick Play and Play vs Bot use 45.',
           },
           botLevels: {
             title: 'Three bot levels',
@@ -1980,11 +1980,11 @@ const en = {
           },
           trustingAPairToBlock: {
             title: 'Trusting a pair to block',
-            desc: 'Two tokens on one square block nobody and fall together.',
+            desc: 'Two tokens on one square block nobody and fall together off a safe square.',
           },
           racingOneTokenAlone: {
             title: 'Racing one token alone',
-            desc: 'With one token out, any roll but a 6 must move it.',
+            desc: 'With one token out, any roll but a 6 moves it if it can.',
           },
         },
         multiplayer: {
@@ -1998,7 +1998,7 @@ const en = {
           },
           turnTimer: {
             title: 'When someone leaves',
-            desc: 'If a player closes the game, the server removes them after 30 silent seconds; play goes on, or ends if too few remain.',
+            desc: 'A player whose page goes silent for 30 seconds is removed the next time the table checks; their tokens stay, their turns are skipped and play goes on.',
           },
           guestNoDownload: {
             title: 'No app, no sign-up',
@@ -2014,11 +2014,11 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Ludo on Boardly free?',
-            a: 'Yes, every seat, mode, bot and timer. Premium only adds host extras: spectators, replays and lobby themes.',
+            a: 'Yes, every seat, mode, bot and timer. Premium adds extras around the game, such as spectators and lobby themes for the host, replays and profile looks.',
           },
           worksOnPhone: {
             q: 'Can I play Ludo on my phone?',
-            a: 'Yes, in any mobile browser. On a small screen the board, moves, rules and chat sit in tabs.',
+            a: 'Yes, in any mobile browser. On a small screen the board, moves, rules and chat, when there is someone to talk to, sit in tabs.',
           },
           pickYourOwnRoll: {
             q: 'Can anyone pick their dice roll?',
@@ -2026,19 +2026,19 @@ const en = {
           },
           timerRunsOut: {
             q: 'Which token moves if my timer runs out?',
-            a: 'The server moves a token reaching home, else one that captures, else the furthest. A 6 rolled so earns no extra roll.',
+            a: 'If your game is open when the timer runs out, the server moves a token reaching home, else one that captures, else the furthest. A 6 rolled so earns no extra roll.',
           },
           howManyPlayers: {
             q: 'How many players can play Ludo?',
-            a: 'Two to four, any of them bots. Two players sit in opposite corners; Quick Play rooms open with four seats.',
+            a: 'Two to four, up to three of them bots. Two players sit in opposite corners, and with three one corner stays empty.',
           },
-          changeMode: {
-            q: 'Can the host change the mode later?',
-            a: 'No. The mode is fixed when the lobby is created and Play again keeps it; open a new lobby to switch.',
+          whoPicksMode: {
+            q: 'Who chooses quick or classic mode?',
+            a: 'The host, when creating the lobby, and Play again keeps that mode. Rooms that Quick Play or Play vs Bot create use quick.',
           },
           playAgain: {
             q: 'Can we play again with the same people?',
-            a: 'Yes. The host presses Play again and a new game starts in the same lobby with the same seats and mode.',
+            a: 'Yes. The host presses Play again and a new game starts in the same lobby with everyone still seated, in the same mode.',
           },
         },
       },

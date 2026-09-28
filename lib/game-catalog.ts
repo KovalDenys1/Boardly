@@ -895,7 +895,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
         { questionKey: 'games.ludo.detail.faq.pickYourOwnRoll.q', answerKey: 'games.ludo.detail.faq.pickYourOwnRoll.a' },
         { questionKey: 'games.ludo.detail.faq.timerRunsOut.q', answerKey: 'games.ludo.detail.faq.timerRunsOut.a' },
         { questionKey: 'games.ludo.detail.faq.howManyPlayers.q', answerKey: 'games.ludo.detail.faq.howManyPlayers.a' },
-        { questionKey: 'games.ludo.detail.faq.changeMode.q', answerKey: 'games.ludo.detail.faq.changeMode.a' },
+        { questionKey: 'games.ludo.detail.faq.whoPicksMode.q', answerKey: 'games.ludo.detail.faq.whoPicksMode.a' },
         { questionKey: 'games.ludo.detail.faq.playAgain.q', answerKey: 'games.ludo.detail.faq.playAgain.a' },
       ],
     },

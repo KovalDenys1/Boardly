@@ -1928,11 +1928,11 @@ const no = {
         modes: {
           quickOrClassic: {
             title: 'Rask eller klassisk',
-            desc: 'To brikker hver eller fire. Verten velger ved opprettelsen; rom fra Rask spill og Spill mot bot bruker rask.',
+            desc: 'To brikker hver eller fire, valgt av verten når lobbyen opprettes.',
           },
           turnClock: {
             title: 'Klokke på hver tur',
-            desc: 'Lobbyer har 30 sekunder som standard, med 60, 90 eller 120 å velge; før start kan verten sette 30 til 180. Spill mot bot bruker 45.',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard, med 60, 90 eller 120 å velge; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre robotnivåer',
@@ -1980,11 +1980,11 @@ const no = {
           },
           trustingAPairToBlock: {
             title: 'Å stole på at et par sperrer',
-            desc: 'To brikker på samme felt sperrer ingen og ryker sammen.',
+            desc: 'To brikker på samme felt sperrer ingen og ryker sammen utenfor et trygt felt.',
           },
           racingOneTokenAlone: {
             title: 'Å løpe med én brikke alene',
-            desc: 'Med én brikke ute må alle kast unntatt en sekser flytte den.',
+            desc: 'Med én brikke ute flytter alle kast unntatt en sekser den, hvis det går.',
           },
         },
         multiplayer: {
@@ -1998,7 +1998,7 @@ const no = {
           },
           turnTimer: {
             title: 'Når noen går',
-            desc: 'Lukker en spiller spillet, fjerner serveren dem etter 30 stille sekunder; spillet fortsetter, eller slutter hvis for få er igjen.',
+            desc: 'En spiller som har vært stille i 30 sekunder, fjernes neste gang bordet sjekker; brikkene blir stående, turene hoppes over og spillet fortsetter.',
           },
           guestNoDownload: {
             title: 'Ingen app, ingen registrering',
@@ -2014,11 +2014,11 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Ludo på Boardly gratis?',
-            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir bare verten ekstra: tilskuere, reprise og lobbytemaer.',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
           },
           worksOnPhone: {
             q: 'Kan jeg spille Ludo på mobilen?',
-            a: 'Ja, i enhver mobilnettleser. På en liten skjerm ligger brett, trekk, regler og chat i faner.',
+            a: 'Ja, i enhver mobilnettleser. På en liten skjerm ligger brett, trekk, regler og chat, når det er noen å snakke med, i faner.',
           },
           pickYourOwnRoll: {
             q: 'Kan noen velge sitt eget terningkast?',
@@ -2026,19 +2026,19 @@ const no = {
           },
           timerRunsOut: {
             q: 'Hvilken brikke flyttes hvis tiden min går ut?',
-            a: 'Serveren flytter en brikke som kommer hjem, ellers en som slår ut, ellers den som har kommet lengst. En sekser slik gir ikke ekstrakast.',
+            a: 'Er spillet åpent hos deg når tiden går ut, flytter serveren en brikke som kommer hjem, ellers en som slår ut, ellers den som har kommet lengst. En sekser slik gir ikke ekstrakast.',
           },
           howManyPlayers: {
             q: 'Hvor mange kan spille Ludo?',
-            a: 'To til fire, og alle kan være roboter. To spillere sitter i motsatte hjørner; rom fra Rask spill har fire plasser.',
+            a: 'To til fire, hvorav opptil tre kan være roboter. To spillere sitter i motsatte hjørner, og med tre står ett hjørne tomt.',
           },
-          changeMode: {
-            q: 'Kan verten bytte modus senere?',
-            a: 'Nei. Modusen settes når lobbyen opprettes, og Spill igjen beholder den; åpne en ny lobby for å bytte.',
+          whoPicksMode: {
+            q: 'Hvem velger rask eller klassisk modus?',
+            a: 'Verten, når lobbyen opprettes, og Spill igjen beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',
-            a: 'Ja. Verten trykker Spill igjen, og et nytt spill starter i samme lobby med de samme plassene og samme modus.',
+            a: 'Ja. Verten trykker Spill igjen, og et nytt spill starter i samme lobby med alle som fortsatt sitter ved bordet, i samme modus.',
           },
         },
       },
