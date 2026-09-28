@@ -67,6 +67,12 @@ export default function TicTacToeDetailContent() {
         { title: t('games.tictactoe.detail.strategy.useYourOpeningRounds.title'), desc: t('games.tictactoe.detail.strategy.useYourOpeningRounds.desc') },
         { title: t('games.tictactoe.detail.strategy.pickTheRightBot.title'), desc: t('games.tictactoe.detail.strategy.pickTheRightBot.desc') },
       ]}
+      mistakes={[
+        { title: t('games.tictactoe.detail.mistakes.edgeOpening.title'), desc: t('games.tictactoe.detail.mistakes.edgeOpening.desc') },
+        { title: t('games.tictactoe.detail.mistakes.chasingYourOwnLine.title'), desc: t('games.tictactoe.detail.mistakes.chasingYourOwnLine.desc') },
+        { title: t('games.tictactoe.detail.mistakes.thirdCorner.title'), desc: t('games.tictactoe.detail.mistakes.thirdCorner.desc') },
+        { title: t('games.tictactoe.detail.mistakes.offerAsPause.title'), desc: t('games.tictactoe.detail.mistakes.offerAsPause.desc') },
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )

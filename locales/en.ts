@@ -947,6 +947,24 @@ const en = {
             desc: 'Grid Tactician only reacts to lines that are one square from complete, so a fork beats it. Grid Grandmaster cannot be beaten; a draw against it means you made no mistake all round.',
           },
         },
+        mistakes: {
+          edgeOpening: {
+            title: 'Opening on an edge',
+            desc: 'A side square sits on just two lines. Starting there throws away most of the advantage of moving first.',
+          },
+          chasingYourOwnLine: {
+            title: 'Chasing your own line',
+            desc: 'Building towards three while your opponent already has two in a row loses on their very next move.',
+          },
+          thirdCorner: {
+            title: 'Taking the third corner',
+            desc: 'As O against opposite corners, a corner reply walks straight into a fork and turns a drawn round into a lost one.',
+          },
+          offerAsPause: {
+            title: 'Treating an offer as a pause',
+            desc: 'Asking for a draw or an undo does not stop your clock. If it runs out while you wait for an answer, the round is gone.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

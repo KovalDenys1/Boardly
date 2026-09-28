@@ -947,6 +947,24 @@ const no = {
             desc: 'Grid Tactician reagerer bare på linjer som mangler én rute, så en gaffel slår den. Grid Grandmaster kan ikke slås; remis mot den betyr at du ikke gjorde en eneste feil i runden.',
           },
         },
+        mistakes: {
+          edgeOpening: {
+            title: 'Å åpne på en kant',
+            desc: 'En kantrute ligger på bare to linjer. Å starte der kaster bort det meste av fordelen ved å begynne.',
+          },
+          chasingYourOwnLine: {
+            title: 'Å jage din egen linje',
+            desc: 'Å bygge mot tre mens motstanderen allerede har to på rad, taper på motstanderens neste trekk.',
+          },
+          thirdCorner: {
+            title: 'Å ta det tredje hjørnet',
+            desc: 'Som O mot motsatte hjørner går et hjørnesvar rett inn i en gaffel og gjør en remisrunde til et tap.',
+          },
+          offerAsPause: {
+            title: 'Å tro at et tilbud stopper klokka',
+            desc: 'Å be om remis eller angre stopper ikke klokka di. Går tiden ut mens du venter på svar, er runden tapt.',
+          },
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',
