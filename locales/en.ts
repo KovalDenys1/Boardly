@@ -1404,7 +1404,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Rock Paper Scissors online against a friend?',
-        answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; the first to win two rounds takes the match. Free, in the browser.',
+        answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
       ribbon: {
         desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
@@ -1421,7 +1421,7 @@ const en = {
         heroDesc: 'The classic game, played in real time. Both players pick simultaneously — no waiting, no guessing what your opponent chose.',
         introTitle: 'What is Rock Paper Scissors?',
         intro0: 'Rock Paper Scissors is a two-player game where both players pick one of three options at the same time: Rock, Paper, or Scissors.',
-        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. If both players pick the same option, the round is a draw and replays.',
+        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. Matching picks make a draw, and that round is played again.',
         step1Title: 'Create or join a lobby',
         step1Desc: 'Open a room from the lobbies page, or join a friend\'s with its four-character code. Each room seats two.',
         step2Title: 'Pick your move',
