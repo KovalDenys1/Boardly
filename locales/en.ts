@@ -825,7 +825,7 @@ const en = {
         rules: {
           askInTurn: 'Players take turns typing a question to someone else; answers join the round\'s log.',
           whenVotingOpens: 'Voting opens when the host says so, after twice as many answers as players, or at the first answer or skip after five minutes.',
-          howTheVoteEnds: 'Once every player in the game has voted, a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
+          howTheVoteEnds: 'Once every player still in the game has voted, or the 60 seconds run out (a missing vote counts for nobody), a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
           spyMayGuess: 'While the questions run, the spy may guess among all 24 places; right or wrong, the round ends.',
         },
         scoring: {
@@ -879,7 +879,7 @@ const en = {
           },
           fixedClocks: {
             title: 'Fixed rounds and clocks',
-            desc: 'Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.',
+            desc: 'Three rounds and a five-minute question clock; the vote closes after 60 seconds, or sooner once everyone has voted.',
           },
         },
         strategy: {

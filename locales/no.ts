@@ -825,7 +825,7 @@ const no = {
         rules: {
           askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
           whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
-          howTheVoteEnds: 'Når alle spillerne i spillet har stemt, stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
+          howTheVoteEnds: 'Når alle spillerne som fortsatt er med har stemt, eller de 60 sekundene er ute (en manglende stemme teller for ingen), stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
           spyMayGuess: 'Mens spørsmålene pågår, kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
         },
         scoring: {
@@ -879,7 +879,7 @@ const no = {
           },
           fixedClocks: {
             title: 'Faste runder og klokker',
-            desc: 'Tre runder og fem minutters spørreklokke; nedtellingen på 60 sekunder til avstemningen er veiledende, og avstemningen lukkes når alle har stemt.',
+            desc: 'Tre runder og fem minutters spørreklokke; avstemningen lukkes etter 60 sekunder, eller tidligere når alle har stemt.',
           },
         },
         strategy: {

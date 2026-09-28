@@ -208,10 +208,12 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: false,
     translationKey: 'spy',
     advanceTurnOnLeave: false,
-    engineHandlesLeave: false,
+    // A non-spy leave continues: SpyGame.handlePlayerLeave marks the seat
+    // inactive so it no longer holds the reveal or the vote open, and is never
+    // asked (#1263). Phase-based — no currentPlayerIndex to advance.
+    engineHandlesLeave: true,
     usesTurnIndex: false,
-    // The game is unwinnable without its spy; a non-spy leave continues
-    // (phase-based — no currentPlayerIndex to advance).
+    // The game is unwinnable without its spy.
     abandonWhenRoleLeaves: { stateDataKey: 'spyPlayerId', reason: 'spy_left' },
   },
   tic_tac_toe: {
