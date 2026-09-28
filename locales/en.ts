@@ -1740,6 +1740,24 @@ const en = {
             desc: 'A long message buries the word the describer is scanning for.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, many screens',
+            desc: 'Share the room code or invite link; the clock, the tally and the guesses update on every device.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'There is no solo mode or bot seat. Short of three? Post the invite link in a group chat, or join an open room from the lobby list.',
+          },
+          turnTimer: {
+            title: 'One clock for everyone',
+            desc: 'Every screen shows the countdown, and the server ends the turn at zero even if the describer goes quiet.',
+          },
+          guestNoDownload: {
+            title: 'A browser and a name',
+            desc: 'Phone, tablet or computer with nothing to install; guests pick a name and take a seat.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

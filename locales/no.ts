@@ -1740,6 +1740,24 @@ const no = {
             desc: 'En lang melding skjuler ordet forklareren leter etter.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, mange skjermer',
+            desc: 'Del romkoden eller invitasjonslenken; klokka, stillingen og gjettene oppdateres på alle enheter.',
+          },
+          botsAndSolo: {
+            title: 'Folk, aldri boter',
+            desc: 'Det finnes ingen solomodus og ingen botplass. Mangler dere noen til tre? Legg invitasjonslenken i en gruppechat, eller bli med i et åpent rom fra lobbylisten.',
+          },
+          turnTimer: {
+            title: 'Én klokke for alle',
+            desc: 'Alle skjermer viser nedtellingen, og serveren avslutter turen ved null selv om forklareren blir stille.',
+          },
+          guestNoDownload: {
+            title: 'En nettleser og et navn',
+            desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; gjester velger et navn og tar en plass.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',
