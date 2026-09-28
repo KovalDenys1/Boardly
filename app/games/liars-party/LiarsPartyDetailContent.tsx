@@ -98,6 +98,9 @@ export default function LiarsPartyDetailContent() {
         { title: t('games.liars_party.detail.multiplayer.turnTimer.title'), desc: t('games.liars_party.detail.multiplayer.turnTimer.desc') },
         { title: t('games.liars_party.detail.multiplayer.guestNoDownload.title'), desc: t('games.liars_party.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.liars_party.detail.audience.whoItSuits'),
+      ]}
     />
   )
 }

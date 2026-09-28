@@ -2199,6 +2199,9 @@ const en = {
             desc: 'Any browser on a phone or laptop; guests only need a name.',
           },
         },
+        audience: {
+          whoItSuits: 'Best for four to twelve people who enjoy reading each other: parties, video calls, club nights.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

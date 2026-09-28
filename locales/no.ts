@@ -2199,6 +2199,9 @@ const no = {
             desc: 'Hvilken som helst nettleser på mobil eller PC; gjester trenger bare et navn.',
           },
         },
+        audience: {
+          whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
