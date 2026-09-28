@@ -92,6 +92,12 @@ export default function LiarsPartyDetailContent() {
         { title: t('games.liars_party.detail.mistakes.freezingOnYourClaim.title'), desc: t('games.liars_party.detail.mistakes.freezingOnYourClaim.desc') },
         { title: t('games.liars_party.detail.mistakes.challengingEveryClaim.title'), desc: t('games.liars_party.detail.mistakes.challengingEveryClaim.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.liars_party.detail.multiplayer.withFriends.title'), desc: t('games.liars_party.detail.multiplayer.withFriends.desc') },
+        { title: t('games.liars_party.detail.multiplayer.botsAndSolo.title'), desc: t('games.liars_party.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.liars_party.detail.multiplayer.turnTimer.title'), desc: t('games.liars_party.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.liars_party.detail.multiplayer.guestNoDownload.title'), desc: t('games.liars_party.detail.multiplayer.guestNoDownload.desc') },
+      ]}
     />
   )
 }

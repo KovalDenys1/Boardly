@@ -2181,6 +2181,24 @@ const no = {
             desc: 'Hver feil utfordring koster 6, så tvil på alt tapper deg for poeng.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller invitasjonslenken; påstander, stemmetall og avsløringen oppdateres live for hver spiller.',
+          },
+          botsAndSolo: {
+            title: 'Bare mennesker',
+            desc: 'En bot har ingenting å bløffe med, så det finnes verken boter eller solomodus. Er dere færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
+          },
+          turnTimer: {
+            title: 'Én klokke per fase',
+            desc: 'Ved null fyller serveren inn det som mangler så snart en åpen side i rommet sjekker inn, og det gjør sidene av seg selv.',
+          },
+          guestNoDownload: {
+            title: 'Ingenting å installere',
+            desc: 'Hvilken som helst nettleser på mobil eller PC; gjester trenger bare et navn.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

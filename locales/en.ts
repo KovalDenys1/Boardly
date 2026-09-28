@@ -2181,6 +2181,24 @@ const en = {
             desc: 'Each wrong challenge costs 6, so blanket doubt bleeds points.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: 'Share the code or invite link; claims, vote counts and the reveal update live for every player.',
+          },
+          botsAndSolo: {
+            title: 'People only',
+            desc: 'A bot has nothing to bluff with, so there are no bots or solo mode. Short of four? Share the invite link or join an open lobby.',
+          },
+          turnTimer: {
+            title: 'One clock per phase',
+            desc: 'At zero, the server fills in what is missing once any open page in the room checks in, which pages do by themselves.',
+          },
+          guestNoDownload: {
+            title: 'Nothing to install',
+            desc: 'Any browser on a phone or laptop; guests only need a name.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
