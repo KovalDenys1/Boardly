@@ -90,7 +90,8 @@ export default function BoardlySelect({
                     selected
                       ? 'bg-bd-lav/20 text-bd-ink'
                       : focus
-                        ? 'bg-bd-bg2 text-bd-ink'
+                        // bd-bg2 equals the menu's --bd-input-bg in dark mode, which hid focus.
+                        ? 'bg-bd-line text-bd-ink'
                         : 'text-bd-ink-soft'
                   }`
                 }

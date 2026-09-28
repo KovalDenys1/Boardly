@@ -849,7 +849,7 @@ export default function Friends() {
 
                             {friend.statistics && friend.statistics.totalGames > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                                <span className="rounded-full bg-bd-card-warm px-2.5 py-1 font-semibold text-bd-ink-soft">
+                                <span className="rounded-full bg-bd-bg2 px-2.5 py-1 font-semibold text-bd-ink-soft">
                                   {t('header.games')} {friend.statistics.totalGames}
                                 </span>
                                 <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">

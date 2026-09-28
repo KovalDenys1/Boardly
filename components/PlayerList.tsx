@@ -204,7 +204,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
                     ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
-                    ${index >= 3 ? 'bg-bd-bg2 text-bd-ink-soft' : ''}
+                    ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `} style={{ width: 'clamp(24px, 2.4vw, 30px)', height: 'clamp(24px, 2.4vw, 30px)', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
                       {index + 1}
                     </div>
@@ -333,7 +333,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
                     ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
-                    ${index >= 3 ? 'bg-bd-bg2 text-bd-ink-soft' : ''}
+                    ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `}>
                       {index + 1}
                     </div>

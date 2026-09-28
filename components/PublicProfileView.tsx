@@ -175,7 +175,7 @@ export default function PublicProfileView({
     badge:        'border-white/10 bg-white/[0.07] text-white/80',
   } : {
     eyebrow:      'text-bd-ink-soft',
-    handle:       'text-bd-ink-muted',
+    handle:       'text-bd-ink-soft',
     body:         'text-bd-ink-soft',
     back:         'text-bd-ink-soft hover:bg-bd-bg2',
     statCard:     'border-bd-line bg-bd-card-warm',

@@ -1848,13 +1848,13 @@ export default function ProfilePage() {
   const fieldInputClassName =
     'w-full rounded-2xl border bg-[var(--bd-input-bg)] px-4 py-3 text-sm text-bd-ink shadow-sm outline-none transition-all'
   const settingsSyncBadgeClassName =
-    'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+    'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
 
   if (status === 'loading') {
     return (
       <div className="page-shell flex items-center justify-center bg-bd-bg">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-bd-bg2 border-t-bd-lav dark:border-t-bd-lav" />
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-bd-bg2 border-t-bd-lav" />
           <p className="text-sm font-medium text-bd-ink-soft">{t('profile.loading')}</p>
         </div>
       </div>
@@ -2062,7 +2062,7 @@ export default function ProfilePage() {
                           )}
                         </>
                       )
-                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5'
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5'
                       return card.onClick ? (
                         <button
                           key={card.id}
@@ -2081,7 +2081,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="mt-5 w-full">
-                    <div className="rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)]">
+                    <div className="rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)]">
                       <AchievementsGrid items={achievementItems} />
                     </div>
                   </div>
@@ -2309,7 +2309,7 @@ export default function ProfilePage() {
 
                   {loadingLinkedAccounts ? (
                     <div className="flex items-center justify-center py-6">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-bd-bg2 border-t-bd-lav dark:border-t-bd-lav" />
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-bd-bg2 border-t-bd-lav" />
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-3">
@@ -2987,7 +2987,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
                         <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
-                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
+                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-bd-ink-soft'}`}>
                         {hasUploadPack ? <Icon name="check" size={15} /> : '—'}
                       </span>
                     </div>
@@ -3030,7 +3030,7 @@ export default function ProfilePage() {
                 {/* Bio — free */}
                 <div className="mb-6">
                   <label className="mb-1.5 block text-sm font-semibold text-bd-ink">
-                    {t('premium.free.bio.label')} <span className="text-xs font-normal text-bd-ink-muted">{t('profile.customization.bioHint')}</span>
+                    {t('premium.free.bio.label')} <span className="text-xs font-normal text-bd-ink-soft">{t('profile.customization.bioHint')}</span>
                   </label>
                   <textarea
                     value={profileBio}
