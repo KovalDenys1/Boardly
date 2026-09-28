@@ -2133,6 +2133,40 @@ const en = {
             desc: 'Always ten rounds and two strikes; no lobby setting changes them.',
           },
         },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Challenge above 42 percent',
+            desc: 'On these scores, challenging beats believing once a bluff looks more than 42 percent likely.',
+          },
+          yourReadScoresAlone: {
+            title: 'Your read scores alone',
+            desc: 'A right challenge earns 14 even if the bluff survives the vote.',
+          },
+          bluffForTheTable: {
+            title: 'Bluff for the whole table',
+            desc: 'A bluff that gets through with five believers is worth 50.',
+          },
+          countYourStrikes: {
+            title: 'Count your strikes',
+            desc: 'On one strike, a caught bluff ends your game; tell the truth.',
+          },
+          stayInToWin: {
+            title: 'Staying in beats points',
+            desc: 'Everyone still playing ranks above anyone knocked out, whatever the scores.',
+          },
+          strangeButTrue: {
+            title: 'Tell truths that sound strange',
+            desc: 'Doubted, an odd truth still scores 4 while each challenger loses 6.',
+          },
+          specificDetails: {
+            title: 'Give a bluff real detail',
+            desc: 'A place, a year and a consequence read like memory.',
+          },
+          readTheHistory: {
+            title: 'Read the history card',
+            desc: 'Earlier claims and verdicts stay on screen while you vote.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

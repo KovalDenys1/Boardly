@@ -2133,6 +2133,40 @@ const no = {
             desc: 'Alltid ti runder og to strikes; ingen lobbyinnstilling endrer det.',
           },
         },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Utfordre over 42 prosent',
+            desc: 'Med disse poengene lønner det seg å utfordre så snart en bløff virker mer enn 42 prosent sannsynlig.',
+          },
+          yourReadScoresAlone: {
+            title: 'Din lesning teller alene',
+            desc: 'En riktig utfordring gir 14 selv om bløffen overlever avstemningen.',
+          },
+          bluffForTheTable: {
+            title: 'Bløff for hele bordet',
+            desc: 'En bløff som går gjennom med fem som tror, er verdt 50.',
+          },
+          countYourStrikes: {
+            title: 'Tell dine strikes',
+            desc: 'Med én strike avslutter en avslørt bløff spillet ditt; snakk sant.',
+          },
+          stayInToWin: {
+            title: 'Å være med slår poeng',
+            desc: 'Alle som fortsatt spiller, rangeres over dem som er ute, uansett poeng.',
+          },
+          strangeButTrue: {
+            title: 'Fortell sannheter som høres rare ut',
+            desc: 'En rar sannhet som blir betvilt, gir likevel 4, mens hver utfordrer mister 6.',
+          },
+          specificDetails: {
+            title: 'Gi bløffen ekte detaljer',
+            desc: 'Et sted, et år og en konsekvens høres ut som et minne.',
+          },
+          readTheHistory: {
+            title: 'Les historikken',
+            desc: 'Tidligere påstander og dommer står på skjermen mens du stemmer.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

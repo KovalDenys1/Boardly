@@ -77,6 +77,16 @@ export default function LiarsPartyDetailContent() {
         { title: t('games.liars_party.detail.modes.phaseClock.title'), desc: t('games.liars_party.detail.modes.phaseClock.desc') },
         { title: t('games.liars_party.detail.modes.roundsAndStrikes.title'), desc: t('games.liars_party.detail.modes.roundsAndStrikes.desc') },
       ]}
+      strategy={[
+        { title: t('games.liars_party.detail.strategy.challengeAboveFortyTwo.title'), desc: t('games.liars_party.detail.strategy.challengeAboveFortyTwo.desc') },
+        { title: t('games.liars_party.detail.strategy.yourReadScoresAlone.title'), desc: t('games.liars_party.detail.strategy.yourReadScoresAlone.desc') },
+        { title: t('games.liars_party.detail.strategy.bluffForTheTable.title'), desc: t('games.liars_party.detail.strategy.bluffForTheTable.desc') },
+        { title: t('games.liars_party.detail.strategy.countYourStrikes.title'), desc: t('games.liars_party.detail.strategy.countYourStrikes.desc') },
+        { title: t('games.liars_party.detail.strategy.stayInToWin.title'), desc: t('games.liars_party.detail.strategy.stayInToWin.desc') },
+        { title: t('games.liars_party.detail.strategy.strangeButTrue.title'), desc: t('games.liars_party.detail.strategy.strangeButTrue.desc') },
+        { title: t('games.liars_party.detail.strategy.specificDetails.title'), desc: t('games.liars_party.detail.strategy.specificDetails.desc') },
+        { title: t('games.liars_party.detail.strategy.readTheHistory.title'), desc: t('games.liars_party.detail.strategy.readTheHistory.desc') },
+      ]}
     />
   )
 }
