@@ -92,7 +92,7 @@ export default function GameStatusBanner({
       display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
       border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
       ...(isDraw
-        ? { background: 'var(--bd-lav)', color: 'white' }
+        ? { background: 'var(--bd-lav)', color: 'var(--bd-ink-on-accent)' }
         : { background: 'var(--bd-sun)', color: 'var(--bd-ink)' }),
     }
     return (

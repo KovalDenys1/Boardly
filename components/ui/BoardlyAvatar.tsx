@@ -1,9 +1,11 @@
+// Initials on a fill are always the fixed dark ink: white measured 2.0-2.8:1 on these
+// fills, and --bd-ink turns light in dark mode (#1171, Denys's call 2026-09-28).
 const COLOR_MAP = {
-  coral: { bg: 'var(--bd-coral)', text: 'white' },
-  mint:  { bg: 'var(--bd-mint)',  text: 'white' },
-  sun:   { bg: 'var(--bd-sun)',   text: 'var(--bd-ink)' },
-  lav:   { bg: 'var(--bd-lav)',   text: 'white' },
-  sky:   { bg: 'var(--bd-sky)',   text: 'white' },
+  coral: { bg: 'var(--bd-coral)', text: 'var(--bd-ink-on-accent)' },
+  mint:  { bg: 'var(--bd-mint)',  text: 'var(--bd-ink-on-accent)' },
+  sun:   { bg: 'var(--bd-sun)',   text: 'var(--bd-ink-on-accent)' },
+  lav:   { bg: 'var(--bd-lav)',   text: 'var(--bd-ink-on-accent)' },
+  sky:   { bg: 'var(--bd-sky)',   text: 'var(--bd-ink-on-accent)' },
 } as const
 
 export type AvatarColor = keyof typeof COLOR_MAP

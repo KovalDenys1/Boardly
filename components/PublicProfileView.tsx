@@ -336,7 +336,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -423,7 +423,7 @@ export default function PublicProfileView({
   const renderAvatar = (sizeClassName = 'h-48 w-48 sm:h-56 sm:w-56') => (
     <div className="relative">
       <div
-        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-white shadow-[6px_6px_0_var(--bd-ink)]`}
+        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[6px_6px_0_var(--bd-ink)]`}
       >
         {(profile.avatarUrl || profile.image) ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -691,7 +691,7 @@ export default function PublicProfileView({
                         onClick={() => void handleCopyProfileLink()}
                         disabled={copiedProfileLink}
                         aria-label={copiedProfileLink ? t('profile.publicProfile.linkCopied') : t('profile.publicProfile.copyLink')}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                       >
                         {copiedProfileLink ? (
                           <>

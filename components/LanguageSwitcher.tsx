@@ -151,7 +151,7 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
                     <span
                       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold uppercase tracking-[0.16em] ${
                         isSelected
-                          ? 'bg-bd-lav text-white'
+                          ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]'
                           : 'bg-bd-bg2 text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400'
                       }`}
                     >

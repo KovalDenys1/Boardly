@@ -10,6 +10,8 @@
   /* Ink for anything drawn ON an accent fill (sun, coral, mint, lav, sky).
      The accents do not flip in dark mode, so --bd-ink cannot be used there:
      it turns light and the shape vanishes. This one never flips. */
+  /* Text on coral and lavender fills: ~6:1, where white was 2.8:1. Denys chose dark text over
+     darker fills on 2026-09-28 so the brand colours stay as they are (#1171). */
   --bd-ink-on-accent: #1F1B16;
   --bd-ink-soft: #4A3F33;
   --bd-ink-muted: #8A7A66;
@@ -326,7 +328,7 @@ html.dark {
 .home-cta-button-primary {
   background: var(--bd-coral);
   box-shadow: 0 4px 0 var(--bd-coral-deep);
-  color: white;
+  color: var(--bd-ink-on-accent);
 }
 
 .home-cta-button-outline {
@@ -1373,7 +1375,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .bd-btn-primary:active { box-shadow: 0 2px 0 0 var(--bd-coral); }
 
 .bd-btn-coral {
-  background: var(--bd-coral); color: white;
+  background: var(--bd-coral); color: var(--bd-ink-on-accent);
   box-shadow: 0 4px 0 0 var(--bd-coral-deep);
 }
 .bd-btn-coral:hover { box-shadow: 0 6px 0 0 var(--bd-coral-deep); transform: translateY(-1px); }
@@ -2743,7 +2745,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   height: 18px;
   border-radius: 9px;
   background: var(--bd-coral);
-  color: #fff;
+  color: var(--bd-ink-on-accent);
   font-size: 10px;
   font-weight: 800;
   padding: 0 4px;
@@ -2967,7 +2969,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 .game-leave-button:hover {
   border-color: var(--bd-coral);
   background: var(--bd-coral);
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 .game-leave-button:active {
   transform: translateY(1px);
@@ -3311,7 +3313,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: 0 4px 0 0 var(--bd-mint-deep);
 }
 .liars-choice--on-bluff {
-  background: var(--bd-coral); color: #fff;
+  background: var(--bd-coral); color: var(--bd-ink-on-accent);
   box-shadow: 0 4px 0 0 var(--bd-coral-deep);
 }
 

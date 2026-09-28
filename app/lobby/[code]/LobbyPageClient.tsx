@@ -2110,7 +2110,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Icon name={tab === 'players' ? 'users' : 'chat'} size={16} />
                 <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-white">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-[color:var(--bd-ink-on-accent)]">
                     {unreadMessageCount}
                   </span>
                 )}
