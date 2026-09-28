@@ -32,6 +32,8 @@ export interface LiarsPartyRoundResult {
   voterScoreDeltas: Record<string, number>
   claimantStrikeDelta: number
   resolvedAt: number
+  /** The claimant said nothing before the timer ran out: no claim, no vote (#1202). */
+  claimTimedOut?: boolean
 }
 
 export interface LiarsPartyGameData {
@@ -396,9 +398,12 @@ export class LiarsPartyGame extends GameEngine {
 
       if (data.phase === 'claim') {
         if (!data.claim) {
+          // Empty text: the client renders a localized "ran out of time" line off
+          // `autoSubmitted`. It used to be an English debug string carrying the
+          // claimant's user id, shown to the table as a claim to vote on (#1202).
           data.claim = {
             playerId: data.currentClaimantId,
-            text: this.buildTimeoutFallbackClaim(data.currentClaimantId, data.currentRound),
+            text: '',
             isBluff: false,
             submittedAt: timeoutAt,
             autoSubmitted: true,
@@ -411,7 +416,9 @@ export class LiarsPartyGame extends GameEngine {
           }
         }
 
-        data.phase = 'challenge'
+        // A claim that was never made has nothing to challenge or believe, so a
+        // timed-out claimant skips the vote. A claim that exists goes to it.
+        data.phase = data.claim.autoSubmitted ? 'reveal' : 'challenge'
         data.submittedPlayerIds = []
         if (this.getCurrentRoundVoterIds(data).length === 0) {
           data.phase = 'reveal'
@@ -527,7 +534,10 @@ export class LiarsPartyGame extends GameEngine {
     let claimantScoreDelta = 0
     let claimantStrikeDelta = 0
 
-    if (wasBluff) {
+    if (claim.autoSubmitted) {
+      // Saying nothing is only a penalty. It used to be scored as a believed
+      // truth (+12 - 4), which made the silent claimant the one-round winner.
+    } else if (wasBluff) {
       if (bluffCaught) {
         claimantScoreDelta += SCORE_BLUFF_CAUGHT_PENALTY
         claimantStrikeDelta = 1
@@ -583,6 +593,7 @@ export class LiarsPartyGame extends GameEngine {
       voterScoreDeltas,
       claimantStrikeDelta,
       resolvedAt: nowMs,
+      ...(claim.autoSubmitted ? { claimTimedOut: true } : {}),
     })
 
     data.currentRoundResolved = true
@@ -718,9 +729,5 @@ export class LiarsPartyGame extends GameEngine {
       max: MAX_ELIMINATION_THRESHOLD,
       fallback: DEFAULT_ELIMINATION_THRESHOLD,
     })
-  }
-
-  private buildTimeoutFallbackClaim(playerId: string, round: number): string {
-    return `[AUTO TIMEOUT] ${playerId} submitted no claim in round ${round}.`
   }
 }

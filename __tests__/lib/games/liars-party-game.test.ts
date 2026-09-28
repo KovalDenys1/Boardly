@@ -119,20 +119,50 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
     const timeoutResult = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000)
     const data = getData(oneRoundGame)
 
+    // #1202: a claimant who times out has made no claim, so there is
+    // nothing to vote on – claim goes straight to reveal, and nobody is scored
+    // for a vote that never happened.
     expect(timeoutResult.changed).toBe(true)
-    expect(timeoutResult.timeoutWindowsConsumed).toBe(3)
-    expect(timeoutResult.phaseTransitions).toBe(2)
+    expect(timeoutResult.timeoutWindowsConsumed).toBe(2)
+    expect(timeoutResult.phaseTransitions).toBe(1)
     expect(timeoutResult.revealAdvances).toBe(1)
     expect(timeoutResult.autoSubmittedClaims).toBe(1)
-    expect(timeoutResult.autoSubmittedChallenges).toBe(3)
+    expect(timeoutResult.autoSubmittedChallenges).toBe(0)
     expect(oneRoundGame.getState().status).toBe('finished')
     expect(data.completionReason).toBe('max-rounds-reached')
-    expect(data.scores.player1).toBe(8)
-    expect(data.scores.player2).toBe(6)
-    expect(data.scores.player3).toBe(6)
-    expect(data.scores.player4).toBe(6)
-    expect(data.ranking).toEqual(['player1', 'player2', 'player3', 'player4'])
-    expect(data.winnerId).toBe('player1')
+    expect(data.scores.player1).toBe(0)
+    expect(data.scores.player2).toBe(0)
+    expect(data.scores.player3).toBe(0)
+    expect(data.scores.player4).toBe(0)
+    expect(data.roundResults[0]).toEqual(expect.objectContaining({
+      claimantId: 'player1',
+      claimTimedOut: true,
+      challengedBy: [],
+      believedBy: [],
+      voterScoreDeltas: {},
+    }))
+  })
+
+  it('never puts a user id or an English debug string into a timed-out claim (#1202)', () => {
+    const timedOut = new LiarsPartyGame('liars-timeout-text', {
+      maxPlayers: 12,
+      minPlayers: 4,
+      rules: { maxRounds: 3, eliminationStrikes: 2 },
+    })
+    addDefaultPlayers(timedOut)
+    expect(timedOut.startGame()).toBe(true)
+    const phaseStartAt = timedOut.getState().lastMoveAt as number
+
+    // One window: the claim times out and the round moves to reveal, not to a vote.
+    timedOut.applyTimeoutFallback(30, phaseStartAt + 30_000)
+    const data = getData(timedOut)
+
+    expect(data.phase).toBe('reveal')
+    expect(data.claim).toEqual(expect.objectContaining({ playerId: 'player1', autoSubmitted: true, text: '' }))
+    expect(JSON.stringify(data)).not.toContain('AUTO TIMEOUT')
+    expect(data.challengeVotes).toEqual([])
+    // A vote cannot be forced in either.
+    expect(timedOut.makeMove(createMove('player2', 'submit-challenge', { decision: 'challenge' }))).toBe(false)
   })
 
   describe('additional coverage', () => {
@@ -196,36 +226,34 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
       expect(data.strikes.p1 ?? 0).toBe(0)
     })
 
-    it('auto-submitted claim yields lower score than manual claim for truth-teller', () => {
-      // Manual truth + all believe → SCORE_TRUTH_BELIEVED_BONUS = 12
-      // Auto truth + all believe → 12 - SCORE_AUTO_SUBMISSION_PENALTY (4) = 8
-      const manualGame = new LiarsPartyGame('liars-manual', {
+    it('a timed-out claim costs the claimant points instead of paying the truth bonus', () => {
+      // It used to be scored as a believed truth: 12 - SCORE_AUTO_SUBMISSION_PENALTY (4) = +8,
+      // so the player who said nothing won a one-round game (#1202).
+      const game2 = new LiarsPartyGame('liars-auto', {
         maxPlayers: 12,
         minPlayers: 4,
-        rules: { maxRounds: 1, eliminationStrikes: 2 },
+        rules: { maxRounds: 2, eliminationStrikes: 2 },
       })
-      addDefaultPlayers(manualGame)
-      expect(manualGame.startGame()).toBe(true)
-      manualGame.makeMove(createMove('player1', 'submit-claim', { claim: 'This is the truth', isBluff: false }))
-      manualGame.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
-      manualGame.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
-      manualGame.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
-      manualGame.makeMove(createMove('player2', 'advance-round', {}))
-      const manualScore = getData(manualGame).scores.player1
+      addDefaultPlayers(game2)
+      expect(game2.startGame()).toBe(true)
+      // Round 1 honest: player1 earns the believed-truth bonus.
+      game2.makeMove(createMove('player1', 'submit-claim', { claim: 'This is the truth', isBluff: false }))
+      game2.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
+      game2.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
+      game2.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
+      game2.makeMove(createMove('player2', 'advance-round', {}))
+      expect(getData(game2).scores.player2).toBe(getData(game2).scores.player3)
+      const before = { ...getData(game2).scores }
 
-      const autoGame = new LiarsPartyGame('liars-auto', {
-        maxPlayers: 12,
-        minPlayers: 4,
-        rules: { maxRounds: 1, eliminationStrikes: 2 },
-      })
-      addDefaultPlayers(autoGame)
-      expect(autoGame.startGame()).toBe(true)
-      const phaseStart = autoGame.getState().lastMoveAt as number
-      // Trigger full timeout to auto-submit claim and auto-believe for all voters
-      autoGame.applyTimeoutFallback(30, phaseStart + 90_000)
-      const autoScore = getData(autoGame).scores.player1
+      // Round 2: player2 is the claimant and says nothing.
+      const phaseStart = game2.getState().lastMoveAt as number
+      game2.applyTimeoutFallback(30, phaseStart + 60_000)
+      const after = getData(game2).scores
 
-      expect(autoScore).toBeLessThan(manualScore)
+      expect(after.player2).toBe(Math.max(0, before.player2 - 4))
+      expect(after.player1).toBe(before.player1)
+      expect(after.player3).toBe(before.player3)
+      expect(after.player4).toBe(before.player4)
     })
 
     it('claimant rotates from player1 to player2 after round 1 advances', () => {

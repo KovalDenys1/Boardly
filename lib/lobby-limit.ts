@@ -53,6 +53,9 @@ export async function checkOpenLobbyLimit(creatorId: string): Promise<LobbyLimit
   const existing = await prisma.lobbies.findFirst({
     where: {
       creatorId,
+      // A deactivated lobby cannot be joined or returned to, so sending the creator there is
+      // a dead end (#1198); its leftover game is the stale sweep's to finalise.
+      isActive: true,
       games: { some: { status: { in: ['waiting', 'playing'] } } },
     },
     orderBy: { createdAt: 'desc' },

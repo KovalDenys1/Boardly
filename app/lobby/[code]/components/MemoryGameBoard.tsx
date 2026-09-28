@@ -745,7 +745,7 @@ export default function MemoryGameBoard({
               )}
               <div style={{ minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                <ScorePop value={score} style={{ fontSize: 10, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{score}p</ScorePop>
+                <ScorePop value={score} style={{ fontSize: 10, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{t('games.memory.game.pairsShort', { count: score })}</ScorePop>
               </div>
             </div>
           )

@@ -23,6 +23,7 @@ jest.mock('@/lib/db', () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     players: {
       create: jest.fn(),
@@ -875,6 +876,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(waitingLobbyWithHostAndBot as any)
     mockPrisma.players.delete.mockResolvedValue({ id: 'player-host' } as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(1) // remaining players (bot only)
       .mockResolvedValueOnce(0) // remaining human players
@@ -895,6 +897,11 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
       where: { id: 'lobby-123' },
       data: { isActive: false },
+    })
+    // #1198: the waiting game is cancelled with it, or it keeps counting toward the host's limit.
+    expect(mockPrisma.games.updateMany).toHaveBeenCalledWith({
+      where: { id: expect.any(String), status: 'waiting' },
+      data: { status: 'cancelled' },
     })
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
     // lobby-list updates now handled by Postgres Changes on Lobbies table

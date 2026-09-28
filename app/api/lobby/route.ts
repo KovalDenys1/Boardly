@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { Prisma, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
-import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
+import { clampMaxPlayersForGame, createGameEngine, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { checkOpenLobbyLimit } from '@/lib/lobby-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
@@ -118,6 +118,9 @@ export async function POST(request: NextRequest) {
     }
 
     const persistedGameType = toPersistedGameType(gameType)
+    // The schema allows 2-16 for every game; the lobby's seats are the game's (#1101).
+    // Clamped rather than refused: the schema's default of 6 reaches two-player games too.
+    const seatLimit = clampMaxPlayersForGame(gameType, maxPlayers)
     const normalizedLobbyName = name.trim()
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     log.info('Creating lobby', {
       gameType,
-      maxPlayers,
+      maxPlayers: seatLimit,
       allowSpectators,
       spectatorMode: allowSpectators ? 'unlimited' : 'disabled',
       turnTimer,
@@ -219,7 +222,7 @@ export async function POST(request: NextRequest) {
             code,
             name: resolvedLobbyName,
             password: hashedLobbyPassword,
-            maxPlayers,
+            maxPlayers: seatLimit,
             allowSpectators,
             maxSpectators: allowSpectators ? UNLIMITED_SPECTATORS_VALUE : 0,
             spectatorCount: 0,

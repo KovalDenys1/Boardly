@@ -136,6 +136,8 @@ jest.mock('@/lib/game-registry', () => ({
   DEFAULT_GAME_TYPE: 'yahtzee',
   hasBotSupport: jest.fn(() => false),
   isSupportedGameType: jest.fn(() => true),
+  // POST /api/lobby pins the seat count to the game's limits (#1101); pass it through here.
+  clampMaxPlayersForGame: jest.fn((_gameType: string, requested: number) => requested),
   createGameEngine: jest.fn(() => ({
     getState: () => ({ players: [], currentPlayerIndex: 0, status: 'waiting', data: {} }),
   })),

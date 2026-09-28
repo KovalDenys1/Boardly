@@ -90,8 +90,11 @@ type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
  * flips the choice in over 0.35 s (app/globals.css). The score waits for this.
  */
 export const RPS_REVEAL_MS = 1100
-/** The final round's result overlay waits for the reveal plus a beat to read it. */
-export const RPS_RESULT_REVEAL_DELAY_MS = 1300
+/**
+ * The final round's result overlay waits for the reveal plus a beat to read it.
+ * It was 1300, which left the revealed hands 200 ms before they were covered (#1200).
+ */
+export const RPS_RESULT_REVEAL_DELAY_MS = RPS_REVEAL_MS + 900
 
 export default function RockPaperScissorsGameBoard({
   gameData,

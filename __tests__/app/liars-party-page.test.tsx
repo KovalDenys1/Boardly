@@ -567,6 +567,25 @@ describe('LiarsPartyLobbyPage', () => {
       expect(region).toContain('liarsParty.wasBluff')
     })
 
+    it('shows a timed-out claimant as a localized line, with no verdict and no vote (#1202)', async () => {
+      const response = buildRevealResponse()
+      Object.assign(response.activeGame.state.data, {
+        claim: { playerId: 'user-2', text: '', isBluff: false, submittedAt: Date.now(), autoSubmitted: true },
+        challengeVotes: [],
+      })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+
+      expect(desktop().getByTestId('liars-claim-timed-out')).toBeTruthy()
+      expect(desktop().queryByTestId('liars-verdict')).toBeNull()
+      expect(desktop().queryByTestId('liars-vote-breakdown')).toBeNull()
+      const region = contentRegion().textContent ?? ''
+      expect(region).toContain('liarsParty.claimTimedOut')
+      expect(region).not.toContain('liarsParty.wasTruth')
+    })
+
     it('marks a challenger on a bluff correct even when the table did not catch it', async () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildRevealResponse() } as Response)
 

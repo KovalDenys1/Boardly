@@ -25,6 +25,8 @@ jest.mock('@/lib/db', () => ({
     games: {
       create: jest.fn(),
       update: jest.fn(),
+      // Leaving an emptied waiting room cancels its game (#1198).
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
     },
@@ -89,6 +91,8 @@ jest.mock('@/lib/game-registry', () => ({
   DEFAULT_GAME_TYPE: 'yahtzee',
   hasBotSupport: jest.fn(() => true),
   isSupportedGameType: jest.fn(() => true),
+  // POST /api/lobby pins the seat count to the game's limits (#1101); pass it through here.
+  clampMaxPlayersForGame: jest.fn((_gameType: string, requested: number) => requested),
   createGameEngine: jest.fn(() => ({
     getState: () => ({ players: [], currentPlayerIndex: 0, status: 'waiting', data: {} }),
   })),

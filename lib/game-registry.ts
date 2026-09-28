@@ -281,7 +281,42 @@ export function createGameEngine(
   if (!entry) {
     throw new Error(`Unknown game type: "${gameType}"`)
   }
-  return entry.create(gameId, config)
+  return entry.create(gameId, clampPlayerLimits(entry.metadata, config))
+}
+
+/**
+ * Keep a config's seat limits inside the game's own (#1101).
+ *
+ * Most entries spread the caller's config after their defaults, and
+ * POST /api/game/create hands the request body's `config` straight through, so a
+ * client could ask for a three-seat Connect Four. Clamping here covers every
+ * entry and every caller, restore included, instead of trusting each factory to
+ * spread in the right order.
+ */
+export function clampPlayerLimits(
+  metadata: Pick<GameMetadata, 'minPlayers' | 'maxPlayers'>,
+  config?: Partial<GameConfig>,
+): Partial<GameConfig> | undefined {
+  if (!config) return config
+  const clamped: Partial<GameConfig> = { ...config }
+  if (typeof config.maxPlayers === 'number') {
+    clamped.maxPlayers = clampSeats(config.maxPlayers, metadata.minPlayers, metadata.maxPlayers)
+  }
+  if (typeof config.minPlayers === 'number') {
+    clamped.minPlayers = clampSeats(config.minPlayers, metadata.minPlayers, clamped.maxPlayers ?? metadata.maxPlayers)
+  }
+  return clamped
+}
+
+/** A lobby's seat count for this game type, pinned to the game's own limits (#1101). */
+export function clampMaxPlayersForGame(gameType: string, requested: number): number {
+  const metadata = getGameMetadata(gameType)
+  return clampSeats(requested, metadata.minPlayers, metadata.maxPlayers)
+}
+
+function clampSeats(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return max
+  return Math.min(max, Math.max(min, Math.floor(value)))
 }
 
 /**
