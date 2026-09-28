@@ -2088,6 +2088,13 @@ const no = {
         benefit2: 'Tydelige avstemninger og avsløringer.',
         benefit3: 'Midt i blinken for sosiale gjenger.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          floorRotates: 'Hver runde har én spiller ordet, etter tur, og de som er ute hoppes over.',
+          claimAndMark: 'Den som har ordet skriver 5 til 180 tegn og markerer sannhet eller bløff før innsending.',
+          everyoneElseVotes: 'Alle andre som fortsatt er med stemmer Utfordre eller Tro, én gang.',
+          caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
+          strikesAndEnd: 'To avslørte bløffer, og du er ute. Etter ti runder, eller når én spiller er igjen, rangeres de som fortsatt er med over dem som er ute, deretter etter poeng.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

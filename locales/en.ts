@@ -2088,6 +2088,13 @@ const en = {
         benefit2: 'Clear voting and reveal moments.',
         benefit3: 'Great for social groups.',
         benefit4: 'No app download planned.',
+        rules: {
+          floorRotates: 'Each round one player holds the floor, in turn, skipping anyone who is out.',
+          claimAndMark: 'The claimant writes 5 to 180 characters and marks them truth or bluff before sending.',
+          everyoneElseVotes: 'Every other player still in votes Challenge or Believe, once.',
+          caughtNeedsMore: 'A bluff is caught only when challengers outnumber believers; an even split lets it through.',
+          strikesAndEnd: 'Two caught bluffs put you out. After ten rounds, or with one player left, players still in rank above those out, then by points.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

@@ -41,6 +41,13 @@ export default function LiarsPartyDetailContent() {
         t('games.liars_party.detail.benefit3'),
         t('games.liars_party.detail.benefit4'),
       ]}
+      rules={[
+        t('games.liars_party.detail.rules.floorRotates'),
+        t('games.liars_party.detail.rules.claimAndMark'),
+        t('games.liars_party.detail.rules.everyoneElseVotes'),
+        t('games.liars_party.detail.rules.caughtNeedsMore'),
+        t('games.liars_party.detail.rules.strikesAndEnd'),
+      ]}
     />
   )
 }
