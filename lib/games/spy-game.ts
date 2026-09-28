@@ -105,8 +105,10 @@ export class SpyGame extends GameEngine {
     data.location = randomLocation.name
     data.locationCategory = randomLocation.category
 
-    // Assign spy role randomly
-    const playerIds = this.state.players.map((p) => p.id)
+    // Assign spy role randomly — among the players still here: a departed seat
+    // stays in the roster (#1263), and a spy who has left cannot be caught.
+    const seatedPlayers = this.getActivePlayers()
+    const playerIds = seatedPlayers.map((p) => p.id)
     const spyIndex = Math.floor(Math.random() * playerIds.length)
     data.spyPlayerId = playerIds[spyIndex]
 
@@ -114,7 +116,7 @@ export class SpyGame extends GameEngine {
     const availableRoles = [...randomLocation.roles]
     data.playerRoles = {}
 
-    for (const player of this.state.players) {
+    for (const player of seatedPlayers) {
       if (player.id === data.spyPlayerId) {
         data.playerRoles[player.id] = 'Spy'
       } else {
@@ -152,7 +154,8 @@ export class SpyGame extends GameEngine {
     const data = this.state.data as SpyGameData
     const player = this.state.players.find((p) => p.id === move.playerId)
 
-    if (!player) return false
+    // A player who has left takes no further part (#1263).
+    if (!player || player.isActive === false) return false
 
     switch (move.type) {
       case 'player-ready':
@@ -165,7 +168,8 @@ export class SpyGame extends GameEngine {
           typeof move.data.targetId === 'string' &&
           typeof move.data.question === 'string' &&
           move.data.question.trim().length > 0 &&
-          move.data.targetId !== move.playerId // Can't ask yourself
+          move.data.targetId !== move.playerId && // Can't ask yourself
+          this.isActivePlayer(move.data.targetId) // Nor someone who has left (#1263)
         )
 
       case 'answer-question':
@@ -190,7 +194,7 @@ export class SpyGame extends GameEngine {
           data.phase === SpyGamePhase.VOTING &&
           typeof move.data.targetId === 'string' &&
           move.data.targetId !== move.playerId && // Can't vote for yourself
-          this.state.players.some((p) => p.id === move.data.targetId)
+          this.isActivePlayer(move.data.targetId)
         )
 
       case 'spy-guess-location':
@@ -252,11 +256,25 @@ export class SpyGame extends GameEngine {
       data.playersReady.push(playerId)
     }
 
-    // Only wait for active (connected) players — disconnected players are skipped
-    const activePlayers = this.state.players.filter((p) => p.isActive !== false)
-    if (data.playersReady.length >= activePlayers.length) {
+    this.startQuestioningIfAllReady()
+  }
+
+  // Only wait for active (connected) players — disconnected players are skipped
+  private startQuestioningIfAllReady(): void {
+    const data = this.state.data as SpyGameData
+    const activePlayers = this.getActivePlayers()
+    const readyActive = data.playersReady.filter((id) => this.isActivePlayer(id))
+    if (activePlayers.length > 0 && readyActive.length >= activePlayers.length) {
       this.startQuestioningPhase()
     }
+  }
+
+  private getActivePlayers(): Player[] {
+    return this.state.players.filter((p) => p.isActive !== false)
+  }
+
+  private isActivePlayer(playerId: unknown): boolean {
+    return this.state.players.some((p) => p.id === playerId && p.isActive !== false)
   }
 
   private startQuestioningPhase(): void {
@@ -264,8 +282,8 @@ export class SpyGame extends GameEngine {
     data.phase = SpyGamePhase.QUESTIONING
     data.phaseStartTime = Date.now()
 
-    // First player asks question
-    data.currentQuestionerId = this.state.players[0]?.id || null
+    // First player still here asks the first question
+    data.currentQuestionerId = this.getActivePlayers()[0]?.id || null
     data.currentTargetId = null
   }
 
@@ -317,16 +335,26 @@ export class SpyGame extends GameEngine {
   private moveToNextQuestioner(): void {
     const data = this.state.data as SpyGameData
 
-    // Find current questioner index
-    const currentIndex = this.state.players.findIndex((p) => p.id === data.currentQuestionerId)
-    const nextIndex = (currentIndex + 1) % this.state.players.length
+    // Find current questioner index, then the next seat still occupied — a
+    // player who left keeps their seat in the roster but never asks (#1263).
+    const players = this.state.players
+    const currentIndex = players.findIndex((p) => p.id === data.currentQuestionerId)
+    let nextId: string | null = null
+    for (let step = 1; step <= players.length; step += 1) {
+      const candidate = players[(currentIndex + step + players.length) % players.length]
+      if (candidate && candidate.isActive !== false) {
+        nextId = candidate.id
+        break
+      }
+    }
 
-    data.currentQuestionerId = this.state.players[nextIndex]?.id || null
+    data.currentQuestionerId = nextId
     data.currentTargetId = null
+    data.pendingQuestion = null
 
     // Check if time limit exceeded or enough questions asked
     const timeElapsed = (Date.now() - data.phaseStartTime) / 1000
-    const enoughQuestions = data.questionHistory.length >= this.state.players.length * 2
+    const enoughQuestions = data.questionHistory.length >= this.getActivePlayers().length * 2
 
     if (timeElapsed >= data.questionTimeLimit || enoughQuestions) {
       this.startVotingPhase()
@@ -343,12 +371,75 @@ export class SpyGame extends GameEngine {
   private processVote(voterId: string, targetId: string): void {
     const data = this.state.data as SpyGameData
     data.votes[voterId] = targetId
+    this.closeVoteIfEveryoneVoted()
+  }
 
-    // Only count active (connected) players — disconnected players skip voting
-    const activePlayers = this.state.players.filter((p) => p.isActive !== false)
-    if (Object.keys(data.votes).length >= activePlayers.length) {
+  // Only count active (connected) players — a player who left does not hold
+  // the vote open (#1263).
+  private closeVoteIfEveryoneVoted(): boolean {
+    const data = this.state.data as SpyGameData
+    const activePlayers = this.getActivePlayers()
+    const activeVotes = Object.keys(data.votes).filter((voterId) => this.isActivePlayer(voterId))
+    if (activeVotes.length >= activePlayers.length) {
       this.calculateResults()
+      return true
     }
+    return false
+  }
+
+  /**
+   * #1263: the vote closes on its clock, not only once everyone has voted. The
+   * lobby GET calls this, the way it applies the other party games' timeouts,
+   * and a missing vote counts as no vote. Returns whether the state changed.
+   */
+  applyVotingTimeout(nowMs: number = Date.now()): boolean {
+    const data = this.state.data as SpyGameData
+    if (this.state.status !== 'playing' || data?.phase !== SpyGamePhase.VOTING) return false
+    const limitSeconds = Number(data.votingTimeLimit)
+    const startedAt = Number(data.phaseStartTime)
+    if (!Number.isFinite(limitSeconds) || limitSeconds <= 0 || !Number.isFinite(startedAt)) return false
+    if (nowMs - startedAt < limitSeconds * 1000) return false
+
+    this.calculateResults()
+    this.state.lastMoveAt = nowMs
+    return true
+  }
+
+  /**
+   * A player left mid-game (#1263). The spy leaving abandons the game before
+   * this runs (catalog `abandonWhenRoleLeaves`), and so does the roster
+   * falling under three; what is left here is a non-spy leaving a game that
+   * carries on. Their seat stays in the roster, marked inactive, so the round's
+   * history still names them, but they no longer hold a phase open: not the
+   * reveal, not the vote, and they are never asked or made to ask.
+   */
+  handlePlayerLeave(playerId: string): boolean {
+    const data = this.state.data as SpyGameData
+    const player = this.state.players.find((p) => p.id === playerId)
+    if (!player || player.isActive === false) return false
+
+    player.isActive = false
+    // A vote they cast no longer counts; votes cast for them still do.
+    if (data?.votes && playerId in data.votes) delete data.votes[playerId]
+
+    if (this.state.status === 'playing' && data) {
+      if (data.phase === SpyGamePhase.ROLE_REVEAL) {
+        this.startQuestioningIfAllReady()
+      } else if (data.phase === SpyGamePhase.QUESTIONING) {
+        if (data.currentQuestionerId === playerId) {
+          this.moveToNextQuestioner()
+        } else if (data.currentTargetId === playerId) {
+          // The question they were asked goes unanswered; the asker picks again.
+          data.currentTargetId = null
+          data.pendingQuestion = null
+        }
+      } else if (data.phase === SpyGamePhase.VOTING) {
+        this.closeVoteIfEveryoneVoted()
+      }
+    }
+
+    this.state.updatedAt = new Date()
+    return true
   }
 
   private processSpyGuessLocation(playerId: string, guessedLocation: string): void {
@@ -362,7 +453,7 @@ export class SpyGame extends GameEngine {
       data.scores[data.spyPlayerId] = (data.scores[data.spyPlayerId] || 0) + 500
     } else {
       // Wrong guess — regular players win
-      for (const player of this.state.players) {
+      for (const player of this.getActivePlayers()) {
         if (player.id !== data.spyPlayerId) {
           data.scores[player.id] = (data.scores[player.id] || 0) + 100
         }
@@ -405,7 +496,7 @@ export class SpyGame extends GameEngine {
       data.scores[data.spyPlayerId] = (data.scores[data.spyPlayerId] || 0) + 300
     } else {
       // Regular players win - each gets 100 points
-      for (const player of this.state.players) {
+      for (const player of this.getActivePlayers()) {
         if (player.id !== data.spyPlayerId) {
           data.scores[player.id] = (data.scores[player.id] || 0) + 100
         }

@@ -88,7 +88,7 @@ describe('the Guess the Spy table against the catalog and the registry (#1243)',
     expect([initial.totalRounds, initial.questionTimeLimit, initial.votingTimeLimit]).toEqual([3, 300, 60])
     expect(config.turnTimer).toBeUndefined()
     expect(source('app/api/game/[gameId]/spy-init/route.ts')).not.toMatch(/turnTimer|questionTimeLimit|votingTimeLimit/)
-    expect(detail.modes.fixedClocks.desc).toBe('Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.')
+    expect(detail.modes.fixedClocks.desc).toBe('Three rounds and a five-minute question clock; the vote closes after 60 seconds, or sooner once everyone has voted.')
   })
 
   it('draws from 24 locations in seven categories, each with a role for every non-spy seat', () => {
@@ -157,14 +157,38 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
     expect(move(late, data(late).spyPlayerId, 'spy-guess-location', { location: data(late).location })).toBe(false)
   })
 
-  it('keeps the vote open past its 60-second countdown until the last vote is in', () => {
+  it('closes the vote once its 60 seconds run out, a missing vote counting for nobody (#1263)', () => {
     const engine = round(3)
     allReady(engine)
     move(engine, 'p1', 'start-voting')
-    data(engine).phaseStartTime = Date.now() - 120_000
+    const opened = data(engine).phaseStartTime
     expect(move(engine, 'p1', 'vote', { targetId: 'p2' })).toBe(true)
-    expect(engine.getPhaseInfo().timeRemaining).toBe(0)
+    expect(engine.applyVotingTimeout(opened + 59_000)).toBe(false)
     expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
+    expect(engine.applyVotingTimeout(opened + 60_000)).toBe(true)
+    expect(data(engine).phase).toBe(SpyGamePhase.RESULTS)
+    // The lobby read is what applies it, with no turn-timer gate: Spy runs its own clocks.
+    expect(source('app/api/lobby/[code]/route.ts')).toContain('spyGame.applyVotingTimeout()')
+    expect(detail.rules.howTheVoteEnds).toMatch(/or the 60 seconds run out \(a missing vote counts for nobody\)/)
+  })
+
+  it('stops waiting for a player who left: the vote closes on the votes of those still in (#1263)', () => {
+    const engine = round(4)
+    allReady(engine)
+    move(engine, 'p1', 'start-voting')
+    const spy = data(engine).spyPlayerId
+    const leaver = PLAYERS.slice(0, 4).find((id) => id !== spy)!
+    const stayers = PLAYERS.slice(0, 4).filter((id) => id !== leaver)
+    for (const voter of stayers.slice(0, 2)) {
+      expect(move(engine, voter, 'vote', { targetId: stayers.find((id) => id !== voter)! })).toBe(true)
+    }
+    expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
+    expect(engine.handlePlayerLeave(leaver)).toBe(true)
+    expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
+    const last = stayers[2]
+    expect(move(engine, last, 'vote', { targetId: stayers.find((id) => id !== last)! })).toBe(true)
+    expect(data(engine).phase).toBe(SpyGamePhase.RESULTS)
+    expect(detail.rules.howTheVoteEnds).toMatch(/^Once every player still in the game has voted/)
   })
 
   it('lets only the host call the vote early, as step 4 now says', () => {
@@ -181,7 +205,7 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
     expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
     expect(move(engine, 'p3', 'vote', { targetId: 'p1' })).toBe(true)
     expect(data(engine).phase).toBe(SpyGamePhase.RESULTS)
-    expect(detail.rules.howTheVoteEnds).toMatch(/^Once every player in the game has voted, a single leader is voted out; a tie votes out nobody/)
+    expect(detail.rules.howTheVoteEnds).toMatch(/^Once every player still in the game has voted, .*, a single leader is voted out; a tie votes out nobody/)
   })
 
   it('names the overall winner by total points after three rounds, and a shared top as a draw', () => {

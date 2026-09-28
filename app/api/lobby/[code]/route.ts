@@ -20,6 +20,7 @@ import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { AliasGame } from '@/lib/games/alias'
 import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
+import { SpyGame } from '@/lib/games/spy-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { verifyLobbyPassword } from '@/lib/lobby-password'
@@ -501,6 +502,40 @@ export async function GET(
             error: error instanceof Error ? error.message : String(error),
           })
         }
+      }
+    }
+
+    if (
+      activeGame &&
+      !presenceSweptGameAbandoned &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'guess_the_spy'
+    ) {
+      // #1263: the vote's own clock (votingTimeLimit), not the lobby's turn
+      // timer, so no `turnTimerSeconds > 0` gate. Without this the countdown was
+      // display-only and one player who never voted held the round open for good.
+      try {
+        const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
+        const spyGame = new SpyGame(activeGame.id)
+        spyGame.loadState(parsedState)
+
+        if (spyGame.applyVotingTimeout()) {
+          await commitTimeoutFallback({
+            activeGame,
+            nextState: spyGame.getState(),
+            actionType: 'spy:vote-timeout',
+            actionPayload: {},
+            lobbyCode: safeLobby.code,
+            gameType: 'guess_the_spy',
+          })
+        }
+      } catch (error) {
+        const log = apiLogger('GET /api/lobby/[code]')
+        log.warn('Guess the Spy vote timeout on lobby GET failed', {
+          code,
+          gameId: activeGame.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
       }
     }
 
