@@ -816,12 +816,174 @@ const en = {
         step3Title: 'Ask smart questions',
         step3Desc: 'Take turns asking questions. Regulars try to expose the spy; the spy tries to blend in.',
         step4Title: 'Vote or guess',
-        step4Desc: 'The group can call a vote at any time. The spy can also guess the location early — correct guess wins 500 pts, wrong guess ends the round.',
+        step4Desc: 'The host can call a vote during the questions. The spy can also guess the location early — correct guess wins 500 pts, wrong guess ends the round.',
         benefitsTitle: 'Why play Guess the Spy on Boardly?',
         benefit1: 'Easy to start with a shared room link.',
         benefit2: 'Great for groups, parties, and quick breaks.',
         benefit3: 'Works from any modern browser.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          askInTurn: 'Players take turns typing a question to someone else; answers join the round\'s log.',
+          whenVotingOpens: 'Voting opens when the host says so, after twice as many answers as players, or at the first answer or skip after five minutes.',
+          howTheVoteEnds: 'Once every player in the game has voted, a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
+          spyMayGuess: 'While the questions run, the spy may guess among all 24 places; right or wrong, the round ends.',
+        },
+        scoring: {
+          vote: {
+            title: 'When the table votes',
+            note: 'Votes also score alone.',
+            rows: {
+              spyEscapes: {
+                name: 'Spy not voted out',
+                value: '+300',
+                rule: 'To the spy, ties included.',
+              },
+              spyCaught: {
+                name: 'Spy voted out',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+              voteOnSpy: {
+                name: 'Vote on the spy',
+                value: '+50',
+                rule: 'To that voter.',
+              },
+              voteOnOther: {
+                name: 'Vote on anyone else',
+                value: '−10',
+                rule: 'To that voter; the spy\'s own vote always.',
+              },
+            },
+          },
+          guess: {
+            title: 'When the spy guesses',
+            note: 'Nobody votes that round.',
+            rows: {
+              rightPlace: {
+                name: 'Right location',
+                value: '+500',
+                rule: 'To the spy.',
+              },
+              wrongPlace: {
+                name: 'Wrong location',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: '3 to 8 seats on the create form, 6 by default, up to 10 before the start.',
+          },
+          fixedClocks: {
+            title: 'Fixed rounds and clocks',
+            desc: 'Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.',
+          },
+        },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Strike places off',
+            desc: 'As the spy, cross out every place an answer rules out.',
+          },
+          countToTheDeadline: {
+            title: 'Count the answers',
+            desc: 'With five players, guess before the tenth answer opens the vote.',
+          },
+          weighTheGuess: {
+            title: 'Weigh 500 against 300',
+            desc: 'Surviving pays 300; guess only when one place fits every answer.',
+          },
+          aTieIsEnough: {
+            title: 'A tie is enough',
+            desc: 'A tied vote also pays the spy, so split the doubt.',
+          },
+          answerInRole: {
+            title: 'Answer in role',
+            desc: 'Answer as your job there, never naming the place.',
+          },
+          askTheUnasked: {
+            title: 'Ask the unasked',
+            desc: 'A spy hides best in a seat nobody questions.',
+          },
+          voteForPoints: {
+            title: 'Your vote scores alone',
+            desc: 'A vote on the spy pays 50, whoever the table picks.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Host: time the vote',
+            desc: 'Ending early blocks the spy\'s guess but leaves fewer answers.',
+          },
+        },
+        mistakes: {
+          namingThePlace: {
+            title: 'Naming the place',
+            desc: 'Mention a runway and the spy guesses the airport.',
+          },
+          splittingTheVote: {
+            title: 'Splitting the vote',
+            desc: 'A tied top votes out nobody and pays the spy 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Guessing on a hunch',
+            desc: 'A wrong guess pays every other player 100.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: 'Share the code or link; every screen updates live.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'No solo mode or bots; share the invite or join an open room.',
+          },
+          secretsStayPrivate: {
+            title: 'Secrets stay private',
+            desc: 'Only your browser gets your role.',
+          },
+          guestNoDownload: {
+            title: 'A name and a browser',
+            desc: 'Guests type a name and play; nothing to install.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Groups of three to ten who like reading people: parties, classrooms, video calls.',
+        },
+        history: {
+          origin: 'Spyfall by Alexandr Ushan (2014) made the spy-without-a-location format a party staple.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Guess the Spy on Boardly free?',
+            a: 'Yes, for everyone, guests included. Only letting spectators in (the host), replays (the viewer) and premium lobby themes need Premium.',
+          },
+          worksOnPhone: {
+            q: 'Does Guess the Spy work on a phone?',
+            a: 'Yes, in the mobile browser: round, players and chat sit on separate tabs in portrait.',
+          },
+          canOthersSeeSpy: {
+            q: 'Can other players see who the spy is?',
+            a: 'Not before the results: until then no browser receives the spy\'s name, and each role goes only to its holder.',
+          },
+          typedOrSpoken: {
+            q: 'Are the questions typed or spoken?',
+            a: 'Typed. The asker picks a player and types a question, and the typed answer is logged.',
+          },
+          whoStartsVote: {
+            q: 'Who can start the vote?',
+            a: 'Only the host; otherwise it opens after twice as many answers as players, or at the first answer or skip after five minutes.',
+          },
+          whichLocations: {
+            q: 'Which locations can come up?',
+            a: 'Any of 24 places, from airport and casino to hospital and museum, named in English everywhere.',
+          },
+          howWinnerDecided: {
+            q: 'How is the overall winner decided?',
+            a: 'By total points after three rounds; scores carry over, and a shared top total is a draw.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',

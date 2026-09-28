@@ -26,7 +26,8 @@ export const ROUTE_UPDATED = {
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
-  '/games/spy': '2026-09-15',
+  // #1243 added the Track A sections below the existing copy.
+  '/games/spy': '2026-09-28',
   '/games/tic-tac-toe': '2026-09-28', // #1235 expanded the page
   // #1236 expanded the page to the Track A sections.
   '/games/memory': '2026-09-28',

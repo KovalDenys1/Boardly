@@ -816,12 +816,174 @@ const no = {
         step3Title: 'Still smarte spørsmål',
         step3Desc: 'Still spørsmål etter tur. Vanlige spillere prøver å avsløre spionen; spionen prøver å blande seg inn.',
         step4Title: 'Stem eller gjett',
-        step4Desc: 'Gruppen kan kalle en avstemning når som helst. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
+        step4Desc: 'Verten kan starte en avstemning under spørsmålene. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
         benefitsTitle: 'Hvorfor spille Gjett spionen på Boardly?',
         benefit1: 'Enkelt å starte med en delt romlenke.',
         benefit2: 'Perfekt for grupper, fester og korte pauser.',
         benefit3: 'Fungerer i alle moderne nettlesere.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
+          whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          howTheVoteEnds: 'Når alle spillerne i spillet har stemt, stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
+          spyMayGuess: 'Mens spørsmålene pågår, kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
+        },
+        scoring: {
+          vote: {
+            title: 'Når bordet stemmer',
+            note: 'Hver stemme gir også poeng for seg.',
+            rows: {
+              spyEscapes: {
+                name: 'Spionen ikke stemt ut',
+                value: '+300',
+                rule: 'Til spionen, også ved uavgjort.',
+              },
+              spyCaught: {
+                name: 'Spionen stemt ut',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+              voteOnSpy: {
+                name: 'Stemme på spionen',
+                value: '+50',
+                rule: 'Til den som stemte.',
+              },
+              voteOnOther: {
+                name: 'Stemme på en annen',
+                value: '−10',
+                rule: 'Til den som stemte; alltid spionens egen stemme.',
+              },
+            },
+          },
+          guess: {
+            title: 'Når spionen gjetter',
+            note: 'Ingen stemmer den runden.',
+            rows: {
+              rightPlace: {
+                name: 'Riktig sted',
+                value: '+500',
+                rule: 'Til spionen.',
+              },
+              wrongPlace: {
+                name: 'Feil sted',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Opprettingsskjemaet tilbyr 3 til 8 plasser, 6 som standard; verten kan øke til 10 før start.',
+          },
+          fixedClocks: {
+            title: 'Faste runder og klokker',
+            desc: 'Tre runder og fem minutters spørreklokke; nedtellingen på 60 sekunder til avstemningen er veiledende, og avstemningen lukkes når alle har stemt.',
+          },
+        },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Stryk steder',
+            desc: 'Som spion stryker du hvert sted et svar utelukker.',
+          },
+          countToTheDeadline: {
+            title: 'Tell svarene',
+            desc: 'Med fem spillere åpner det tiende svaret avstemningen, så gjett før det.',
+          },
+          weighTheGuess: {
+            title: 'Vei 500 mot 300',
+            desc: 'Å overleve avstemningen gir 300; gjett bare når ett sted passer med hvert svar.',
+          },
+          aTieIsEnough: {
+            title: 'Uavgjort holder',
+            desc: 'Uavgjort gir også spionen poeng, så fordel tvilen.',
+          },
+          answerInRole: {
+            title: 'Svar i rollen',
+            desc: 'Svarer du som jobben din der, viser du at du kjenner stedet uten å nevne det.',
+          },
+          askTheUnasked: {
+            title: 'Spør dem som ikke er spurt',
+            desc: 'En spion gjemmer seg best på en plass ingen spør.',
+          },
+          voteForPoints: {
+            title: 'Stemmen din teller for seg',
+            desc: 'En stemme på spionen gir 50 selv om bordet bommer.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Vert: velg tidspunktet',
+            desc: 'Å avslutte tidlig stopper spionens gjetning, men gir færre svar.',
+          },
+        },
+        mistakes: {
+          namingThePlace: {
+            title: 'Å nevne stedet',
+            desc: 'Spør om rullebanen, og spionen gjetter flyplassen.',
+          },
+          splittingTheVote: {
+            title: 'Å splitte stemmene',
+            desc: 'Delt topp stemmer ut ingen og gir spionen 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Å gjette på magefølelse',
+            desc: 'En feil gjetning gir alle de andre spillerne 100.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller lenken; loggen og poengene oppdateres på hver skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Mennesker, aldri boter',
+            desc: 'Ingen solomodus eller boter. Mangler dere en tredje? Del invitasjonen eller bli med i et åpent rom.',
+          },
+          secretsStayPrivate: {
+            title: 'Hemmeligheter holdes private',
+            desc: 'Bare din nettleser får rollen din.',
+          },
+          guestNoDownload: {
+            title: 'Et navn og en nettleser',
+            desc: 'Gjester skriver et navn og spiller; ingenting å installere.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, videosamtaler.',
+        },
+        history: {
+          origin: 'Spyfall av Alexandr Ushan, utgitt i 2014, gjorde formatet med en spion uten sted til en selskapsklassiker.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Gjett spionen på Boardly gratis?',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Gjett spionen på mobil?',
+            a: 'Ja, i mobilnettleseren, med runden, spillerlista og chatten i hver sin fane i stående format, ett trykk unna.',
+          },
+          canOthersSeeSpy: {
+            q: 'Kan andre spillere se hvem som er spion?',
+            a: 'Ikke før resultatene. Fram til da holder serveren spionens navn utenfor det nettleserne mottar, og hver rolle når bare den som har den.',
+          },
+          typedOrSpoken: {
+            q: 'Skrives spørsmålene, eller sies de høyt?',
+            a: 'De skrives. Den som spør, velger en spiller og skriver et spørsmål; det skrevne svaret logges ved siden av.',
+          },
+          whoStartsVote: {
+            q: 'Hvem kan starte avstemningen?',
+            a: 'Verten, når som helst under spørsmålene. Ellers åpner den etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          },
+          whichLocations: {
+            q: 'Hvilke steder kan dukke opp?',
+            a: 'Et av 24 steder i sju grupper, fra flyplass og kasino til sykehus og museum, med engelske navn uansett språk på siden.',
+          },
+          howWinnerDecided: {
+            q: 'Hvordan avgjøres vinneren av spillet?',
+            a: 'På totalpoeng etter tre runder; poengene tas med videre, og delt toppsum er uavgjort.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

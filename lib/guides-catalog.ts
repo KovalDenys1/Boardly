@@ -103,7 +103,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     accent: 'var(--bd-lav)',
     category: 'how-to-play',
     game: 'spy',
-    updated: '2026-09-22',
+    updated: '2026-09-28',
     published: '2026-03-25',
     seo: {
       title: 'How to Play Guess the Spy Online - Complete Guide',
