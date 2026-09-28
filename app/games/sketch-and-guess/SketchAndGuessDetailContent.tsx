@@ -86,6 +86,11 @@ export default function SketchAndGuessDetailContent() {
         { title: t('games.guess_my_drawing.detail.strategy.countTheBlanks.title'), desc: t('games.guess_my_drawing.detail.strategy.countTheBlanks.desc') },
         { title: t('games.guess_my_drawing.detail.strategy.trustSoClose.title'), desc: t('games.guess_my_drawing.detail.strategy.trustSoClose.desc') },
       ]}
+      mistakes={[
+        { title: t('games.guess_my_drawing.detail.mistakes.leavingTheCanvasEmpty.title'), desc: t('games.guess_my_drawing.detail.mistakes.leavingTheCanvasEmpty.desc') },
+        { title: t('games.guess_my_drawing.detail.mistakes.clearingForOneLine.title'), desc: t('games.guess_my_drawing.detail.mistakes.clearingForOneLine.desc') },
+        { title: t('games.guess_my_drawing.detail.mistakes.waitingToBeSure.title'), desc: t('games.guess_my_drawing.detail.mistakes.waitingToBeSure.desc') },
+      ]}
     />
   )
 }

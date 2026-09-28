@@ -2016,6 +2016,11 @@ const no = {
           countTheBlanks: { title: 'Tell de blanke feltene', desc: 'De viser lengden og hvor ordene deler seg.' },
           trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Det betyr en liten skrivefeil: rett stavingen, ikke ideen.' },
         },
+        mistakes: {
+          leavingTheCanvasEmpty: { title: 'Å la lerretet stå tomt', desc: 'Det koster tegneren 20 poeng.' },
+          clearingForOneLine: { title: 'Å tømme alt for én dårlig strek', desc: 'Angre fjerner bare den siste streken.' },
+          waitingToBeSure: { title: 'Å vente til du er sikker', desc: 'Da er bonusen for første riktige ofte borte.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

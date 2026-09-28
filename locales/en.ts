@@ -2016,6 +2016,11 @@ const en = {
           countTheBlanks: { title: 'Count the blanks', desc: 'They show the length and where the words break.' },
           trustSoClose: { title: 'Trust “So close!”', desc: 'It means a small typo: fix the spelling, not the idea.' },
         },
+        mistakes: {
+          leavingTheCanvasEmpty: { title: 'Leaving the canvas empty', desc: 'It costs the drawer 20 points.' },
+          clearingForOneLine: { title: 'Clearing for one bad line', desc: 'Undo takes back just the last stroke.' },
+          waitingToBeSure: { title: 'Waiting to be sure', desc: 'By then the first-in bonus has often gone.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
