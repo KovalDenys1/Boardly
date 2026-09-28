@@ -1761,6 +1761,9 @@ const no = {
         audience: {
           whoItSuits: 'Alias passer for fester, familiekvelder og venner på videosamtale, og den engelske ordstokken fungerer også som taletrening for dem som lærer språket.',
         },
+        history: {
+          origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
+        },
       },
       lobbies: {
         title: 'Alias-spill',

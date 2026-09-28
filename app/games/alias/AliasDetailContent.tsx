@@ -97,6 +97,9 @@ export default function AliasDetailContent() {
       audience={[
         t('games.alias.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.alias.detail.history.origin'),
+      ]}
     />
   )
 }

@@ -1761,6 +1761,9 @@ const en = {
         audience: {
           whoItSuits: 'Alias suits parties, family evenings and friends on a video call, and its English deck doubles as speaking practice for learners.',
         },
+        history: {
+          origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
+        },
       },
       lobbies: {
         title: 'Alias',
