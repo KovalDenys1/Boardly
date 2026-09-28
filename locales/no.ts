@@ -1112,6 +1112,36 @@ const no = {
           origin: 'Å finne par er et gammelt selskapsspill med mange navn, blant dem Concentration, Pelmanism og Pexeso. Enhver kortstokk med to av hvert kort fungerer.',
           boardlyDeck: 'På Boardly viser kortene fruktbilder, og hvert spill starter med en ny stokking.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Hukommelse på Boardly gratis?',
+            a: 'Ja. Alle brett, botnivåer og klokkevalg er gratis.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Hukommelse på mobil?',
+            a: 'Ja, i mobilnettleseren; trekk og chat ligger i faner ved siden av brettet.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer hvis turklokken min går ut?',
+            a: 'Du mister turen, ikke spillet; de åpne kortene dine snus tilbake.',
+          },
+          playRemotely: {
+            q: 'Hvordan spiller jeg med en venn et annet sted?',
+            a: 'Send romkoden eller invitasjonslenken; vennen blir med fra sin egen enhet.',
+          },
+          botBoard: {
+            q: 'Hvilket brett bruker «Spill mot bot»?',
+            a: '4×4-brettet med 45 sekunders turer, mot én bot på nivået du velger.',
+          },
+          mixBotsAndPeople: {
+            q: 'Kan folk og boter spille i samme parti?',
+            a: 'Ja. Verten kan sette en bot på hver ledige plass.',
+          },
+          canPeek: {
+            q: 'Kan noen tjuvkikke på kortene som ligger med baksiden opp?',
+            a: 'Nei. Et bilde når spillernes nettlesere først når kortet er snudd.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',

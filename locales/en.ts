@@ -1112,6 +1112,36 @@ const en = {
           origin: 'Matching pairs is an old parlour game with many names, among them Concentration, Pelmanism and Pexeso. Any deck holding two of each card will do.',
           boardlyDeck: 'On Boardly the faces are fruit pictures, and every game starts from a fresh shuffle.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Memory on Boardly free?',
+            a: 'Yes. Every board, bot level and clock setting is free.',
+          },
+          worksOnPhone: {
+            q: 'Does Memory work on a phone?',
+            a: 'Yes, in the mobile browser; moves and chat sit in tabs beside the board.',
+          },
+          timerRunsOut: {
+            q: 'What if my turn clock runs out?',
+            a: 'You lose the turn, not the game; your open cards flip back.',
+          },
+          playRemotely: {
+            q: 'How do I play a friend who is elsewhere?',
+            a: 'Send the room code or invite link; they join from their own device.',
+          },
+          botBoard: {
+            q: 'Which board does Play vs Bot use?',
+            a: 'The 4×4 board with 45-second turns, against one bot at the level you pick.',
+          },
+          mixBotsAndPeople: {
+            q: 'Can people and bots share one game?',
+            a: 'Yes. The host can seat a bot in any empty chair.',
+          },
+          canPeek: {
+            q: 'Can anyone peek at face-down cards?',
+            a: 'No. A picture reaches players\' browsers only once its card is turned over.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',
