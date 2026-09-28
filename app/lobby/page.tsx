@@ -107,7 +107,7 @@ function LobbyListPageContent() {
               type="button"
               data-tour-step="create-lobby"
               onClick={handleCreateLobby}
-              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
+              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-[color:var(--bd-ink-on-accent)] shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
               <Icon name="sparkle" size={34} />
               <span
@@ -116,7 +116,7 @@ function LobbyListPageContent() {
               >
                 {t('lobby.createNew')}
               </span>
-              <span className="text-sm font-bold opacity-80">{t('lobby.getStarted')} →</span>
+              <span className="text-sm font-bold">{t('lobby.getStarted')} →</span>
             </button>
 
           </div>

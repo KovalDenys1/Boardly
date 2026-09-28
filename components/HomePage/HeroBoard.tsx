@@ -19,7 +19,7 @@ const DEMOS: Demo[] = [
     component: HeroDemoTicTacToe,
     badge: 'TIC-TAC-TOE',
     badgeColor: 'var(--bd-coral)',
-    badgeTextColor: 'white',
+    badgeTextColor: 'var(--bd-ink-on-accent)',
     boardColor: 'var(--bd-card-warm)',
     extra: (
       <>
@@ -48,7 +48,7 @@ const DEMOS: Demo[] = [
     component: HeroDemoMemory,
     badge: 'MEMORY',
     badgeColor: 'var(--bd-sun)',
-    badgeTextColor: 'var(--bd-ink)',
+    badgeTextColor: 'var(--bd-ink-on-accent)',
     boardColor: 'var(--bd-sky)',
     extra: (
       <>
@@ -79,7 +79,7 @@ const DEMOS: Demo[] = [
     component: HeroDemoConnectFour,
     badge: 'CONNECT FOUR',
     badgeColor: 'var(--bd-lav)',
-    badgeTextColor: 'white',
+    badgeTextColor: 'var(--bd-ink-on-accent)',
     boardColor: 'var(--bd-mint)',
     extra: (
       <>

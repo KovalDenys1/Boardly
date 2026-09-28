@@ -11,7 +11,7 @@ export default function TicTacToeDetailContent() {
       gameName={t('games.tictactoe.name')}
       title={t('games.tictactoe.detail.title')}
       description={t('games.tictactoe.detail.heroDesc')}
-      iconLabel="Tic Tac Toe board"
+      iconLabel={t('games.tictactoe.name')}
       gameId="tic-tac-toe"
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"
@@ -39,6 +39,49 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.benefit2'),
         t('games.tictactoe.detail.benefit3'),
         t('games.tictactoe.detail.benefit4'),
+      ]}
+      rules={[
+        t('games.tictactoe.detail.rules.twoMarks'),
+        t('games.tictactoe.detail.rules.xOpensFirstRound'),
+        t('games.tictactoe.detail.rules.threeInALine'),
+        t('games.tictactoe.detail.rules.fullGridDraw'),
+        t('games.tictactoe.detail.rules.timeoutLoses'),
+        t('games.tictactoe.detail.rules.offersNeedConsent'),
+        t('games.tictactoe.detail.rules.hostStartsNextRound'),
+      ]}
+      modes={[
+        { title: t('games.tictactoe.detail.modes.seriesLength.title'), desc: t('games.tictactoe.detail.modes.seriesLength.desc') },
+        { title: t('games.tictactoe.detail.modes.moveClock.title'), desc: t('games.tictactoe.detail.modes.moveClock.desc') },
+        { title: t('games.tictactoe.detail.modes.botLevels.title'), desc: t('games.tictactoe.detail.modes.botLevels.desc') },
+      ]}
+      strategy={[
+        { title: t('games.tictactoe.detail.strategy.takeTheCentre.title'), desc: t('games.tictactoe.detail.strategy.takeTheCentre.desc') },
+        { title: t('games.tictactoe.detail.strategy.cornerAgainstCentre.title'), desc: t('games.tictactoe.detail.strategy.cornerAgainstCentre.desc') },
+        { title: t('games.tictactoe.detail.strategy.centreAgainstCorner.title'), desc: t('games.tictactoe.detail.strategy.centreAgainstCorner.desc') },
+        { title: t('games.tictactoe.detail.strategy.winBeforeBlock.title'), desc: t('games.tictactoe.detail.strategy.winBeforeBlock.desc') },
+        { title: t('games.tictactoe.detail.strategy.buildAFork.title'), desc: t('games.tictactoe.detail.strategy.buildAFork.desc') },
+        { title: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.title'), desc: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.desc') },
+        { title: t('games.tictactoe.detail.strategy.useYourOpeningRounds.title'), desc: t('games.tictactoe.detail.strategy.useYourOpeningRounds.desc') },
+        { title: t('games.tictactoe.detail.strategy.pickTheRightBot.title'), desc: t('games.tictactoe.detail.strategy.pickTheRightBot.desc') },
+      ]}
+      mistakes={[
+        { title: t('games.tictactoe.detail.mistakes.edgeOpening.title'), desc: t('games.tictactoe.detail.mistakes.edgeOpening.desc') },
+        { title: t('games.tictactoe.detail.mistakes.chasingYourOwnLine.title'), desc: t('games.tictactoe.detail.mistakes.chasingYourOwnLine.desc') },
+        { title: t('games.tictactoe.detail.mistakes.thirdCorner.title'), desc: t('games.tictactoe.detail.mistakes.thirdCorner.desc') },
+        { title: t('games.tictactoe.detail.mistakes.offerAsPause.title'), desc: t('games.tictactoe.detail.mistakes.offerAsPause.desc') },
+      ]}
+      multiplayer={[
+        { title: t('games.tictactoe.detail.multiplayer.withFriends.title'), desc: t('games.tictactoe.detail.multiplayer.withFriends.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.botsAndSolo.title'), desc: t('games.tictactoe.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.turnTimer.title'), desc: t('games.tictactoe.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.guestNoDownload.title'), desc: t('games.tictactoe.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.tictactoe.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.tictactoe.detail.history.origin'),
+        t('games.tictactoe.detail.history.solved'),
       ]}
       playVsBotGameType="tic_tac_toe"
     />

@@ -855,7 +855,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Tic Tac Toe online with a friend for free?',
-        answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby plays a single round unless you set it to a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
+        answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby keeps playing rounds with a running score unless you set a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
       },
       ribbon: {
         desc: 'A fast two-player classic. Play with a friend or start a quick game when you only have a minute.',
@@ -866,21 +866,151 @@ const en = {
         title: 'Play Tic Tac Toe Online',
         heroDesc: 'A clean online version of the classic X and O game. Invite a friend, add a bot, and play a quick match in the browser.',
         introTitle: 'What is Tic Tac Toe?',
-        intro0: 'Tic Tac Toe is a two-player game on a 3×3 grid. Players take turns placing X and O, and the first player to make a full row, column, or diagonal wins.',
-        intro1: 'On Boardly, you can play with a friend, add a bot, or use match mode when one quick round is not enough.',
+        intro0: 'Tic Tac Toe is a game for two on a three-by-three grid. One player marks X, the other O, and you take turns claiming one empty square at a time until someone completes a line or the grid runs out.',
+        intro1: 'On Boardly a lobby runs open-ended with a running score, or as a best of 3, 5 or 10, and a bot on one of three levels can take the second seat.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room from the lobbies page, or enter a friend\'s four-digit code. The room\'s creator sets the series length.',
         step2Title: 'Choose friend or bot',
-        step2Desc: 'Invite another player or add a bot when you want to play right away.',
+        step2Desc: 'Send the code or the link to one other person. If nobody is free, seat a bot in the second chair.',
         step3Title: 'Place your mark',
-        step3Desc: 'Take turns choosing empty cells on the board.',
+        step3Desc: 'Tap or click any empty square while it is your turn. A countdown shows how many seconds are left for the move.',
         step4Title: 'Win the line',
-        step4Desc: 'Get three marks in a row before your opponent does.',
+        step4Desc: 'Three marks in a straight line take the round, and the winning line lights up. The host starts the next round, and the score carries over.',
         benefitsTitle: 'Why play Tic Tac Toe on Boardly?',
         benefit1: 'Fast rooms for quick matches.',
         benefit2: 'Bot support for solo play.',
         benefit3: 'Match mode for best-of series.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          twoMarks: 'Two players share the grid as X and O, placing one mark per turn in any empty square.',
+          xOpensFirstRound: 'X opens the first round; after that the first move alternates, so O starts round two.',
+          threeInALine: 'Three of your marks in a row, column or diagonal win the round at once.',
+          fullGridDraw: 'A full grid with no line is a draw: it counts as a round played, and nobody scores.',
+          timeoutLoses: 'A move is never skipped when the clock runs out: the whole round goes to your opponent instead.',
+          offersNeedConsent: 'Undo and draw offers take effect only if the opponent accepts, and a draw can be offered once the first mark is down.',
+          hostStartsNextRound: 'Between rounds the host starts the next one; the grid clears and the score stays.',
+        },
+        modes: {
+          seriesLength: {
+            title: 'Best of 3, 5 or 10, or no limit',
+            desc: 'A series ends once someone has won more than half its rounds: two in a best of 3, three in a best of 5, six in a best of 10. Draws use up rounds, so it can also finish level. Pick ∞ and rounds keep coming.',
+          },
+          moveClock: {
+            title: 'Seconds on every move',
+            desc: 'Each move gets 60 seconds in a lobby you create; before the game starts, the host can change that in 30-second steps from 30 to 180. A Play vs Bot game gives 45 seconds a move.',
+          },
+          botLevels: {
+            title: 'Easy, medium and hard bots',
+            desc: 'Grid Rookie plays a random empty square. Grid Tactician wins when it can, blocks when it must, and otherwise takes the centre, then a corner. Grid Grandmaster searches every line of play and never loses.',
+          },
+        },
+        strategy: {
+          takeTheCentre: {
+            title: 'Claim the middle square',
+            desc: 'Four of the eight lines run through the middle square, so an X there works in more directions than anywhere else.',
+          },
+          cornerAgainstCentre: {
+            title: 'Meet the centre with a corner',
+            desc: 'When X opens in the middle, O is safe only in a corner; an edge reply lets X build two threats.',
+          },
+          centreAgainstCorner: {
+            title: 'Meet a corner with the centre',
+            desc: 'If X opens in a corner, only the centre holds the draw for O. Any other reply loses to best play.',
+          },
+          winBeforeBlock: {
+            title: 'Look for your win before your block',
+            desc: 'Before each mark, check for a square that completes your own line. Block only when there is none.',
+          },
+          buildAFork: {
+            title: 'Build a fork',
+            desc: 'A fork is one mark that leaves two of your lines a square short each. Only one of them can be blocked.',
+          },
+          edgeAgainstOppositeCorners: {
+            title: 'Against opposite corners, take an edge',
+            desc: 'As O holding the centre against two opposite corners, play an edge. A third corner lets X fork you at once.',
+          },
+          useYourOpeningRounds: {
+            title: 'Press in the rounds you open',
+            desc: 'In a series the first move alternates: push for a win when you start, and play safe when you do not.',
+          },
+          pickTheRightBot: {
+            title: 'Practise against the right bot',
+            desc: 'Grid Tactician only reacts to lines one square from complete, so a fork beats it. Against Grid Grandmaster a draw is a flawless round.',
+          },
+        },
+        mistakes: {
+          edgeOpening: {
+            title: 'Opening on an edge',
+            desc: 'An edge square sits on just two lines. It still draws with best play, but gives you fewer winning chances.',
+          },
+          chasingYourOwnLine: {
+            title: 'Chasing your own line',
+            desc: 'Unless you can complete your own line this move, building it while the opponent has two in a row loses the round.',
+          },
+          thirdCorner: {
+            title: 'Taking the third corner',
+            desc: 'As O against opposite corners, a corner reply walks into a fork.',
+          },
+          offerAsPause: {
+            title: 'Treating an offer as a pause',
+            desc: 'A draw or undo request does not stop your clock, and a timeout while you wait still loses the round.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend who is far away',
+            desc: 'Send the four-digit code or the link and play from anywhere. Each mark shows on both screens as it lands, with a chat when two people play.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot above starts a game at the level you pick, or you can seat a bot in your own lobby.',
+          },
+          turnTimer: {
+            title: 'The same countdown for both',
+            desc: 'Both players see one countdown, and at zero the round goes to whoever was waiting.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'Nothing to install and no sign-up: a guest name works on a phone, a tablet or a computer.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Tic Tac Toe suits anyone with a minute to spare, from two friends on a break to a parent teaching a child to spot a threat. On a grid this small, attention decides most rounds.',
+        },
+        history: {
+          origin: 'Three-in-a-row games are older than any of their names: noughts and crosses in Britain, tic-tac-toe in the United States, where a drawn game is called a cat\'s game.',
+          solved: 'The game is solved: best play from both sides always draws. Yet most of the 255,168 possible games end in a win, because somebody slipped.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Does Tic Tac Toe on Boardly cost anything?',
+            a: 'No. Friends, all three bots and every series length are free. Premium adds extras such as spectators, replays and custom lobby themes; the game itself is the same.',
+          },
+          needAccount: {
+            q: 'Do I have to register first?',
+            a: 'No. A guest name is enough to create a lobby, join one with a code or play a bot; an account is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play it on my phone?',
+            a: 'Yes. It runs in the mobile browser with no app to download; tap an empty square to place your mark.',
+          },
+          howManyPlayers: {
+            q: 'How many people take part in one game?',
+            a: 'Two, one X and one O, both people or one of them a bot. A Premium host can also open the lobby to spectators.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose that round and your opponent takes the point. The game never skips your move or plays one for you.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play with a friend who is not in the same room?',
+            a: 'Yes. Create a lobby, send the four-digit code or the link, and play in real time from two devices anywhere online.',
+          },
+          takeBackOrDraw: {
+            q: 'Can I undo a move or agree to a draw?',
+            a: 'You can ask, and your opponent decides. A bot accepts every undo, but a draw only when perfect play from there would end level, which is most positions until someone slips.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',
@@ -985,18 +1115,162 @@ const en = {
         intro0: 'Memory, also called Matching Pairs, is a card game where all cards start face-down. On each turn, a player flips two cards and tries to find a match.',
         intro1: 'If the cards match, that player scores the pair. If they do not match, the cards turn back over and everyone tries to remember where they were.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Pick a difficulty and invite friends with the room code.',
+        step1Desc: 'Choose a board size and a turn clock, then share the room code. Up to four people fit at one table.',
         step2Title: 'Flip two cards',
-        step2Desc: 'Reveal two face-down cards on your turn.',
+        step2Desc: 'Reveal two face-down cards on your turn. Both pictures show on every screen.',
         step3Title: 'Keep the matches',
-        step3Desc: 'Matched pairs stay open and add to your score.',
+        step3Desc: 'A matching pair stays open and scores a point. It also earns you another go.',
         step4Title: 'Find the most pairs',
-        step4Desc: 'When all cards are matched, the highest score wins.',
+        step4Desc: 'When all cards are matched, the highest score wins. Equal leaders tie.',
         benefitsTitle: 'Why play Memory on Boardly?',
         benefit1: 'Three difficulty levels for different groups.',
         benefit2: 'Live board updates for every player.',
         benefit3: 'Simple controls that work well on mobile.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          flipTwo: 'On your turn you turn over two face-down cards, one at a time; open or claimed cards cannot be picked.',
+          matchKeepsTurn: 'A match stays face up, scores one point and lets you flip again straight away.',
+          missPassesTurn: 'A miss shows for a second or two, then both cards turn back and the next player moves.',
+          clockRunsOut: 'If the turn clock reaches zero, your unmatched face-up cards turn back and the turn passes.',
+          lastPair: 'The game ends the moment the final pair is claimed.',
+        },
+        scoring: {
+          title: 'Pairs are the only score',
+          note: 'Most pairs at the end wins.',
+          rows: {
+            matchedPair: {
+              name: 'Matched pair',
+              value: '1 point',
+              rule: 'Scored the instant the second card matches.',
+            },
+            missedPair: {
+              name: 'Missed pair',
+              value: '0 points',
+              rule: 'Only ends your turn.',
+            },
+            levelAtTop: {
+              name: 'Level at the top',
+              value: 'Tie',
+              rule: 'No winner is named.',
+            },
+          },
+        },
+        modes: {
+          boardSize: {
+            title: 'Three boards, the host\'s choice',
+            desc: '16, 20 or 36 cards (4×4, 5×4 or 6×6), with the smallest preselected.',
+          },
+          turnClock: {
+            title: 'Turn clock',
+            desc: 'Each turn gets 30, 60, 90 or 120 seconds, 60 by default; Play vs Bot uses 45.',
+          },
+          botLevels: {
+            title: 'Three bots',
+            desc: 'Memory Scout misses most tries, Pattern Seeker hits about half, and Recall Master finds a pair on most.',
+          },
+        },
+        strategy: {
+          flipUnknownFirst: {
+            title: 'New card first',
+            desc: 'Open with an unseen card; if you know its twin, the point is yours.',
+          },
+          safeSecondFlip: {
+            title: 'A safe second flip',
+            desc: 'Cannot place the twin? Turn a card you already know and reveal nothing new.',
+          },
+          nameAndPlace: {
+            title: 'Name it, place it',
+            desc: 'Every face is a fruit, and "banana, top left" sticks better than a picture.',
+          },
+          coordinatesOnHard: {
+            title: 'Coordinates on 6×6',
+            desc: 'On the big board, file each card by row and column.',
+          },
+          anchorOnCorners: {
+            title: 'Start from the corners',
+            desc: 'Corners and edges are easiest to recall, so pin early finds to them.',
+          },
+          rehearseBetweenTurns: {
+            title: 'Rehearse while waiting',
+            desc: 'Between turns, run through every position you know.',
+          },
+          guessLate: {
+            title: 'Guess late, not early',
+            desc: 'With few unknown cards left, a blind flip has real odds.',
+          },
+          climbTheBots: {
+            title: 'Climb the bot ladder',
+            desc: 'Start with Memory Scout and move up as you improve.',
+          },
+        },
+        mistakes: {
+          gamblingTheSecondFlip: {
+            title: 'Gambling the second flip',
+            desc: 'A random unknown instead of a known card shows the table one more position for free.',
+          },
+          lookingAway: {
+            title: 'Looking away',
+            desc: 'Another player\'s miss is on screen for a second or two, then it is gone.',
+          },
+          lettingTheClockRun: {
+            title: 'Letting the clock run',
+            desc: 'Running out the clock scores nothing more, even with a pair you know.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Friends on their own screens',
+            desc: 'Share the room code or invite link, and each flip shows on every device as it happens.',
+          },
+          botsAndSolo: {
+            title: 'Solo against a bot',
+            desc: 'Play vs Bot opens a table with a bot already seated, ready to start, or seat a bot in your own lobby.',
+          },
+          turnTimer: {
+            title: 'Nobody stalls the table',
+            desc: 'Every player sees the countdown; let it run out and you lose the turn.',
+          },
+          guestNoDownload: {
+            title: 'Straight in the browser',
+            desc: 'Phone, tablet or computer with nothing to install; a guest name gets you a seat.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Memory suits mixed ages: a sharp-eyed child can beat an adult, 4×4 makes a quick round, and 6×6 tests keen players.',
+        },
+        history: {
+          origin: 'Matching pairs is an old parlour game known as Concentration, Pelmanism or Pexeso, playable with any deck holding two of each card.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Memory on Boardly free?',
+            a: 'Yes. All three board sizes, all three bot levels and every turn clock setting are free to use.',
+          },
+          worksOnPhone: {
+            q: 'Does Memory work on a phone?',
+            a: 'Yes, in the mobile browser. Moves sit in a tab beside the board, plus chat when two or more people play.',
+          },
+          timerRunsOut: {
+            q: 'What if my turn clock runs out?',
+            a: 'You lose that turn, not the game: any unmatched card you had turned over flips back face down.',
+          },
+          playRemotely: {
+            q: 'How do I play a friend who is elsewhere?',
+            a: 'Send them the room code or invite link; they join from their own device, wherever they are.',
+          },
+          botBoard: {
+            q: 'Which board does Play vs Bot use?',
+            a: 'The 4×4 board with 45-second turns, against one bot at the level you pick before it starts.',
+          },
+          mixBotsAndPeople: {
+            q: 'Can people and bots share one game?',
+            a: 'Yes. Before the game starts, the host can seat a bot in any empty chair next to real players.',
+          },
+          canPeek: {
+            q: 'Can anyone peek at face-down cards?',
+            a: 'No player can. A card\'s picture only reaches players\' browsers once it is turned over, never before.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

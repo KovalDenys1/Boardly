@@ -475,7 +475,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.tictactoe.difficulty',
     seo: {
       title: 'Play Tic Tac Toe Online Free with Friends',
-      description: 'Play Tic Tac Toe online free in the browser. Take the 3×3 grid against a friend or a bot, one round or a best of 3, 5 or 10. No download, no account needed.',
+      description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
       synonyms: [
         'tic tac toe online',
         'tic tac toe online free',
@@ -492,6 +492,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic 3×3 grid strategy game where two players alternate placing X and O marks, aiming to get three in a row.',
       questionKey: 'games.tictactoe.seo.question',
       answerKey: 'games.tictactoe.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1235).
+      faq: [
+        { questionKey: 'games.tictactoe.detail.faq.isItFree.q', answerKey: 'games.tictactoe.detail.faq.isItFree.a' },
+        { questionKey: 'games.tictactoe.detail.faq.needAccount.q', answerKey: 'games.tictactoe.detail.faq.needAccount.a' },
+        { questionKey: 'games.tictactoe.detail.faq.worksOnPhone.q', answerKey: 'games.tictactoe.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.tictactoe.detail.faq.howManyPlayers.q', answerKey: 'games.tictactoe.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.tictactoe.detail.faq.timerRunsOut.q', answerKey: 'games.tictactoe.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.tictactoe.detail.faq.playFriendRemotely.q', answerKey: 'games.tictactoe.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.tictactoe.detail.faq.takeBackOrDraw.q', answerKey: 'games.tictactoe.detail.faq.takeBackOrDraw.a' },
+      ],
     },
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',
@@ -529,6 +540,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Matching pairs card game for two to four players. Every card starts face down; flip two on your turn and keep the pair when they match. Easy is 4×4, hard is 6×6.',
       questionKey: 'games.memory.seo.question',
       answerKey: 'games.memory.seo.answer',
+      // Product questions only: the how-to guide already answers players,
+      // difficulty, game length, the bot, reshuffling and accounts (#1236).
+      faq: [
+        { questionKey: 'games.memory.detail.faq.isItFree.q', answerKey: 'games.memory.detail.faq.isItFree.a' },
+        { questionKey: 'games.memory.detail.faq.worksOnPhone.q', answerKey: 'games.memory.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.memory.detail.faq.timerRunsOut.q', answerKey: 'games.memory.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.memory.detail.faq.playRemotely.q', answerKey: 'games.memory.detail.faq.playRemotely.a' },
+        { questionKey: 'games.memory.detail.faq.botBoard.q', answerKey: 'games.memory.detail.faq.botBoard.a' },
+        { questionKey: 'games.memory.detail.faq.mixBotsAndPeople.q', answerKey: 'games.memory.detail.faq.mixBotsAndPeople.a' },
+        { questionKey: 'games.memory.detail.faq.canPeek.q', answerKey: 'games.memory.detail.faq.canPeek.a' },
+      ],
     },
     availability: 'available',
     route: '/games/memory/lobbies',
