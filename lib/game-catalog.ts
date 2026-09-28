@@ -456,6 +456,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Social deduction party game where each player receives a secret location and a role in it, except the spy, who must blend in without knowing where they are.',
       questionKey: 'games.spy.seo.question',
       answerKey: 'games.spy.seo.answer',
+      // Product questions only: the how-to guide already answers player
+      // count, bots, a wrong accusation, the spy's late guess, how specific
+      // to be and round length, and the two sets stay disjoint (#1243).
+      faq: [
+        { questionKey: 'games.spy.detail.faq.isItFree.q', answerKey: 'games.spy.detail.faq.isItFree.a' },
+        { questionKey: 'games.spy.detail.faq.worksOnPhone.q', answerKey: 'games.spy.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.spy.detail.faq.canOthersSeeSpy.q', answerKey: 'games.spy.detail.faq.canOthersSeeSpy.a' },
+        { questionKey: 'games.spy.detail.faq.typedOrSpoken.q', answerKey: 'games.spy.detail.faq.typedOrSpoken.a' },
+        { questionKey: 'games.spy.detail.faq.whoStartsVote.q', answerKey: 'games.spy.detail.faq.whoStartsVote.a' },
+        { questionKey: 'games.spy.detail.faq.whichLocations.q', answerKey: 'games.spy.detail.faq.whichLocations.a' },
+        { questionKey: 'games.spy.detail.faq.howWinnerDecided.q', answerKey: 'games.spy.detail.faq.howWinnerDecided.a' },
+      ],
     },
     availability: 'available',
     route: '/games/spy/lobbies',

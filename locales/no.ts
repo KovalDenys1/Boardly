@@ -954,6 +954,36 @@ const no = {
         history: {
           origin: 'Spyfall av Alexandr Ushan, utgitt i 2014, gjorde formatet med en spion uten sted til en selskapsklassiker.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Gjett spionen på Boardly gratis?',
+            a: 'Ja, for alle, også gjester. Bare tilskuere, reprise og premium-lobbytemaer krever Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Gjett spionen på mobil?',
+            a: 'Ja, i mobilnettleseren, med runden, spillerlista og chatten i hver sin fane, ett trykk unna.',
+          },
+          canOthersSeeSpy: {
+            q: 'Kan andre spillere se hvem som er spion?',
+            a: 'Ikke før resultatene. Fram til da holder serveren spionens navn utenfor det nettleserne mottar, og hver rolle når bare den som har den.',
+          },
+          typedOrSpoken: {
+            q: 'Skrives spørsmålene, eller sies de høyt?',
+            a: 'De skrives. Den som spør, velger en spiller og skriver et spørsmål; det skrevne svaret logges ved siden av.',
+          },
+          whoStartsVote: {
+            q: 'Hvem kan starte avstemningen?',
+            a: 'Verten, når som helst under spørsmålene. Ellers åpner den etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          },
+          whichLocations: {
+            q: 'Hvilke steder kan dukke opp?',
+            a: 'Et av 24 steder i sju grupper, fra flyplass og kasino til sykehus og museum, med engelske navn uansett språk på siden.',
+          },
+          howWinnerDecided: {
+            q: 'Hvordan avgjøres vinneren av spillet?',
+            a: 'På totalpoeng etter tre runder; poengene tas med videre, og delt toppsum er uavgjort.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

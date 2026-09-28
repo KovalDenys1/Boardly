@@ -954,6 +954,36 @@ const en = {
         history: {
           origin: 'Spyfall by Alexandr Ushan, published in 2014, made the spy-without-a-location format a party staple.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Guess the Spy on Boardly free?',
+            a: 'Yes, for everyone, guests included. Only spectators, replays and premium lobby themes need Premium.',
+          },
+          worksOnPhone: {
+            q: 'Does Guess the Spy work on a phone?',
+            a: 'Yes, in the mobile browser; the round, the players and the chat sit on separate tabs.',
+          },
+          canOthersSeeSpy: {
+            q: 'Can other players see who the spy is?',
+            a: 'Not before the results: until then no browser receives the spy\'s name, and each role goes only to its holder.',
+          },
+          typedOrSpoken: {
+            q: 'Are the questions typed or spoken?',
+            a: 'Typed. The asker picks a player and types a question, and the typed answer is logged.',
+          },
+          whoStartsVote: {
+            q: 'Who can start the vote?',
+            a: 'Only the host, by button; otherwise it opens after twice as many answers as players, or at the first answer or skip after five minutes.',
+          },
+          whichLocations: {
+            q: 'Which locations can come up?',
+            a: 'Any of 24 places, from airport and casino to hospital and museum, with English names in every language.',
+          },
+          howWinnerDecided: {
+            q: 'How is the overall winner decided?',
+            a: 'By total points after three rounds; scores carry over, and a shared top total is a draw.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
