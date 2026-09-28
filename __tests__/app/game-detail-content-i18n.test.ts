@@ -33,6 +33,8 @@ const CONTENT_FILES = {
   yahtzee: path.join(root, 'app/games/yahtzee/YahtzeeDetailContent.tsx'),
   // #1235: the same long-form sections.
   'tic-tac-toe': path.join(root, 'app/games/tic-tac-toe/TicTacToeDetailContent.tsx'),
+  // #1241: the same long-form sections.
+  checkers: path.join(root, 'app/games/checkers/CheckersDetailContent.tsx'),
   // #1239: the same long-form sections, scoring rows included.
   'sketch-and-guess': path.join(root, 'app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx'),
   // #1242: the same long-form sections.

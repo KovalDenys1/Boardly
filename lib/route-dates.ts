@@ -40,7 +40,7 @@ export const ROUTE_UPDATED = {
   '/games/liars-party': '2026-09-28',
   // #1239 expanded the page to the Track A sections.
   '/games/sketch-and-guess': '2026-09-28',
-  '/games/checkers': '2026-09-24',
+  '/games/checkers': '2026-09-28', // #1241 expanded the page
   // #1242 expanded the page to the Track A sections.
   '/games/ludo': '2026-09-28',
   '/guides': '2026-09-20',
