@@ -985,18 +985,162 @@ const no = {
         intro0: 'Hukommelse, også kalt Finn par, er et kortspill der alle kort starter med baksiden opp. I løpet av turen snur en spiller to kort og prøver å finne et par.',
         intro1: 'Hvis kortene matcher, scorer spilleren paret. Hvis ikke, snues kortene tilbake og alle prøver å huske hvor de var.',
         step1Title: 'Opprett eller bli med i et lobby',
-        step1Desc: 'Velg vanskelighetsgrad og inviter venner med romkoden.',
+        step1Desc: 'Velg brettstørrelse og turklokke, og del romkoden. Opptil fire personer får plass ved ett bord.',
         step2Title: 'Vend to kort',
-        step2Desc: 'Avslør to baksidevendte kort i løpet av turen din.',
+        step2Desc: 'Snu to kort med baksiden opp når det er din tur. Begge bildene vises på alle skjermer.',
         step3Title: 'Behold parene',
-        step3Desc: 'Matchende par forblir åpne og legges til poengsummen din.',
+        step3Desc: 'Et par som stemmer, blir liggende åpent og gir ett poeng. Du får også en tur til.',
         step4Title: 'Finn flest par',
-        step4Desc: 'Når alle kort er matchet, vinner spilleren med høyest poengsum.',
+        step4Desc: 'Når alle kortene er matchet, vinner den med flest poeng. Likt i toppen blir uavgjort.',
         benefitsTitle: 'Hvorfor spille Hukommelse på Boardly?',
         benefit1: 'Tre vanskelighetsgrader for ulike grupper.',
         benefit2: 'Brettet oppdateres live for alle spillere.',
         benefit3: 'Enkle kontroller som fungerer godt på mobil.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          flipTwo: 'På din tur snur du to kort med baksiden opp, ett om gangen; åpne eller tatte kort kan ikke velges.',
+          matchKeepsTurn: 'Et par som stemmer, blir liggende åpent, gir ett poeng og lar deg snu igjen med en gang.',
+          missPassesTurn: 'Et bom vises i et sekund eller to, så snus begge kortene og neste spiller er på tur.',
+          clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine som ikke ble par, og turen går videre.',
+          lastPair: 'Spillet er over i det øyeblikket det siste paret er tatt.',
+        },
+        scoring: {
+          title: 'Bare par gir poeng',
+          note: 'Flest par til slutt vinner.',
+          rows: {
+            matchedPair: {
+              name: 'Par som stemmer',
+              value: '1 poeng',
+              rule: 'Telles i det øyeblikket det andre kortet stemmer.',
+            },
+            missedPair: {
+              name: 'Bom',
+              value: '0 poeng',
+              rule: 'Avslutter bare turen din.',
+            },
+            levelAtTop: {
+              name: 'Likt på toppen',
+              value: 'Uavgjort',
+              rule: 'Ingen utropes til vinner.',
+            },
+          },
+        },
+        modes: {
+          boardSize: {
+            title: 'Tre brett, verten velger',
+            desc: '16, 20 eller 36 kort (4×4, 5×4 eller 6×6), med det minste forhåndsvalgt.',
+          },
+          turnClock: {
+            title: 'Turklokke',
+            desc: 'Hver tur får 30, 60, 90 eller 120 sekunder, 60 som standard; «Spill mot bot» bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre boter',
+            desc: 'Memory Scout bommer på de fleste forsøk, Pattern Seeker treffer omtrent halvparten, og Recall Master finner par på de fleste.',
+          },
+        },
+        strategy: {
+          flipUnknownFirst: {
+            title: 'Nytt kort først',
+            desc: 'Begynn med et kort du ikke har sett; kjenner du tvillingen, er poenget ditt.',
+          },
+          safeSecondFlip: {
+            title: 'Et trygt andrekort',
+            desc: 'Vet du ikke hvor tvillingen er? Snu et kort du allerede kjenner, så avslører du ingenting nytt.',
+          },
+          nameAndPlace: {
+            title: 'Gi det navn og plass',
+            desc: 'Alle bildene er frukt, og «banan, øverst til venstre» sitter bedre enn et bilde alene.',
+          },
+          coordinatesOnHard: {
+            title: 'Koordinater på 6×6',
+            desc: 'På det store brettet lagrer du hvert kort etter rad og kolonne.',
+          },
+          anchorOnCorners: {
+            title: 'Start i hjørnene',
+            desc: 'Hjørner og kanter er lettest å huske, så knytt de første funnene til dem.',
+          },
+          rehearseBetweenTurns: {
+            title: 'Repeter mens du venter',
+            desc: 'Mellom turene går du gjennom alle plasseringene du kan.',
+          },
+          guessLate: {
+            title: 'Gjett sent, ikke tidlig',
+            desc: 'Når få ukjente kort er igjen, har et blindt kort reelle sjanser.',
+          },
+          climbTheBots: {
+            title: 'Klatre på bot-stigen',
+            desc: 'Begynn med Memory Scout og gå opp etter hvert som du blir bedre.',
+          },
+        },
+        mistakes: {
+          gamblingTheSecondFlip: {
+            title: 'Å gamble med andrekortet',
+            desc: 'Et tilfeldig ukjent kort i stedet for et kjent viser bordet én plassering til gratis.',
+          },
+          lookingAway: {
+            title: 'Å se bort',
+            desc: 'En annen spillers bom vises i et sekund eller to, så er det borte.',
+          },
+          lettingTheClockRun: {
+            title: 'Å la klokken gå ut',
+            desc: 'Lar du klokken gå ut, får du ikke flere poeng, selv med et par du kjenner.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Venner på hver sin skjerm',
+            desc: 'Del romkoden eller invitasjonslenken, så vises hvert kort på alle enheter i det det snus.',
+          },
+          botsAndSolo: {
+            title: 'Alene mot en bot',
+            desc: '«Spill mot bot» åpner et bord der en bot allerede sitter, klart til start, eller du kan sette en bot inn i din egen lobby.',
+          },
+          turnTimer: {
+            title: 'Ingen holder bordet igjen',
+            desc: 'Alle spillerne ser nedtellingen; lar du den gå ut, mister du turen.',
+          },
+          guestNoDownload: {
+            title: 'Rett i nettleseren',
+            desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; et gjestenavn gir deg en plass.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Hukommelse passer for alle aldre: et skarpt barn kan slå en voksen, 4×4 gir en rask runde, og 6×6 tester ivrige spillere.',
+        },
+        history: {
+          origin: 'Å finne par er et gammelt selskapsspill kjent som Concentration, Pelmanism eller Pexeso, og det kan spilles med enhver kortstokk med to av hvert kort.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Hukommelse på Boardly gratis?',
+            a: 'Ja. Alle tre brettstørrelser, alle tre botnivåer og alle innstillinger for turklokken er gratis.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Hukommelse på mobil?',
+            a: 'Ja, i mobilnettleseren. Trekkene ligger i en fane ved siden av brettet, og chatten også når to eller flere spiller.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer hvis turklokken min går ut?',
+            a: 'Du mister den turen, ikke spillet: kort du hadde snudd uten å få par, legges tilbake med baksiden opp.',
+          },
+          playRemotely: {
+            q: 'Hvordan spiller jeg med en venn et annet sted?',
+            a: 'Send romkoden eller invitasjonslenken; vennen blir med fra sin egen enhet, uansett hvor de er.',
+          },
+          botBoard: {
+            q: 'Hvilket brett bruker «Spill mot bot»?',
+            a: '4×4-brettet med turer på 45 sekunder, mot én bot på nivået du velger før partiet starter.',
+          },
+          mixBotsAndPeople: {
+            q: 'Kan folk og boter spille i samme parti?',
+            a: 'Ja. Før spillet starter, kan verten sette en bot på hver ledige plass ved siden av ekte spillere.',
+          },
+          canPeek: {
+            q: 'Kan noen tjuvkikke på kortene som ligger med baksiden opp?',
+            a: 'Ingen spiller kan det. Bildet på et kort når spillernes nettlesere først når kortet er snudd, aldri før.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',
