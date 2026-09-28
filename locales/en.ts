@@ -855,7 +855,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Tic Tac Toe online with a friend for free?',
-        answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby plays a single round unless you set it to a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
+        answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby keeps playing rounds with a running score unless you set a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
       },
       ribbon: {
         desc: 'A fast two-player classic. Play with a friend or start a quick game when you only have a minute.',
@@ -866,21 +866,151 @@ const en = {
         title: 'Play Tic Tac Toe Online',
         heroDesc: 'A clean online version of the classic X and O game. Invite a friend, add a bot, and play a quick match in the browser.',
         introTitle: 'What is Tic Tac Toe?',
-        intro0: 'Tic Tac Toe is a two-player game on a 3×3 grid. Players take turns placing X and O, and the first player to make a full row, column, or diagonal wins.',
-        intro1: 'On Boardly, you can play with a friend, add a bot, or use match mode when one quick round is not enough.',
+        intro0: 'Tic Tac Toe is a game for two on a three-by-three grid. One player marks X, the other O, and you take turns claiming one empty square at a time until someone completes a line or the grid runs out.',
+        intro1: 'On Boardly a lobby runs open-ended with a running score, or as a best of 3, 5 or 10, and a bot on one of three levels can take the second seat.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room from the lobbies page, or enter a friend\'s four-digit code. The room\'s creator sets the series length.',
         step2Title: 'Choose friend or bot',
-        step2Desc: 'Invite another player or add a bot when you want to play right away.',
+        step2Desc: 'Send the code or the link to one other person. If nobody is free, seat a bot in the second chair.',
         step3Title: 'Place your mark',
-        step3Desc: 'Take turns choosing empty cells on the board.',
+        step3Desc: 'Tap or click any empty square while it is your turn. A countdown shows how many seconds are left for the move.',
         step4Title: 'Win the line',
-        step4Desc: 'Get three marks in a row before your opponent does.',
+        step4Desc: 'Three marks in a straight line take the round, and the winning line lights up. The host starts the next round, and the score carries over.',
         benefitsTitle: 'Why play Tic Tac Toe on Boardly?',
         benefit1: 'Fast rooms for quick matches.',
         benefit2: 'Bot support for solo play.',
         benefit3: 'Match mode for best-of series.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          twoMarks: 'Two players share the grid as X and O, placing one mark per turn in any empty square.',
+          xOpensFirstRound: 'X opens the first round; after that the first move alternates, so O starts round two.',
+          threeInALine: 'Three of your marks in a row, column or diagonal win the round at once.',
+          fullGridDraw: 'A full grid with no line is a draw: it counts as a round played, and nobody scores.',
+          timeoutLoses: 'A move is never skipped when the clock runs out: the whole round goes to your opponent instead.',
+          offersNeedConsent: 'Undo and draw offers take effect only if the opponent accepts, and a draw can be offered once the first mark is down.',
+          hostStartsNextRound: 'Between rounds the host starts the next one; the grid clears and the score stays.',
+        },
+        modes: {
+          seriesLength: {
+            title: 'Best of 3, 5 or 10, or no limit',
+            desc: 'A series ends once someone has won more than half its rounds: two in a best of 3, three in a best of 5, six in a best of 10. Draws use up rounds, so it can also finish level. Pick ∞ and rounds keep coming.',
+          },
+          moveClock: {
+            title: 'Seconds on every move',
+            desc: 'Each move gets 60 seconds in a lobby you create; before the game starts, the host can change that in 30-second steps from 30 to 180. A Play vs Bot game gives 45 seconds a move.',
+          },
+          botLevels: {
+            title: 'Easy, medium and hard bots',
+            desc: 'Grid Rookie plays a random empty square. Grid Tactician wins when it can, blocks when it must, and otherwise takes the centre, then a corner. Grid Grandmaster searches every line of play and never loses.',
+          },
+        },
+        strategy: {
+          takeTheCentre: {
+            title: 'Claim the middle square',
+            desc: 'Four of the eight lines run through the middle square, so an X there works in more directions than anywhere else.',
+          },
+          cornerAgainstCentre: {
+            title: 'Meet the centre with a corner',
+            desc: 'When X opens in the middle, O is safe only in a corner; an edge reply lets X build two threats.',
+          },
+          centreAgainstCorner: {
+            title: 'Meet a corner with the centre',
+            desc: 'If X opens in a corner, only the centre holds the draw for O. Any other reply loses to best play.',
+          },
+          winBeforeBlock: {
+            title: 'Look for your win before your block',
+            desc: 'Before each mark, check for a square that completes your own line. Block only when there is none.',
+          },
+          buildAFork: {
+            title: 'Build a fork',
+            desc: 'A fork is one mark that leaves two of your lines a square short each. Only one of them can be blocked.',
+          },
+          edgeAgainstOppositeCorners: {
+            title: 'Against opposite corners, take an edge',
+            desc: 'As O holding the centre against two opposite corners, play an edge. A third corner lets X fork you at once.',
+          },
+          useYourOpeningRounds: {
+            title: 'Press in the rounds you open',
+            desc: 'In a series the first move alternates: push for a win when you start, and play safe when you do not.',
+          },
+          pickTheRightBot: {
+            title: 'Practise against the right bot',
+            desc: 'Grid Tactician only reacts to lines one square from complete, so a fork beats it. Against Grid Grandmaster a draw is a flawless round.',
+          },
+        },
+        mistakes: {
+          edgeOpening: {
+            title: 'Opening on an edge',
+            desc: 'An edge square sits on just two lines. It still draws with best play, but gives you fewer winning chances.',
+          },
+          chasingYourOwnLine: {
+            title: 'Chasing your own line',
+            desc: 'Unless you can complete your own line this move, building it while the opponent has two in a row loses the round.',
+          },
+          thirdCorner: {
+            title: 'Taking the third corner',
+            desc: 'As O against opposite corners, a corner reply walks into a fork.',
+          },
+          offerAsPause: {
+            title: 'Treating an offer as a pause',
+            desc: 'A draw or undo request does not stop your clock, and a timeout while you wait still loses the round.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend who is far away',
+            desc: 'Send the four-digit code or the link and play from anywhere. Each mark shows on both screens as it lands, with a chat when two people play.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot above starts a game at the level you pick, or you can seat a bot in your own lobby.',
+          },
+          turnTimer: {
+            title: 'The same countdown for both',
+            desc: 'Both players see one countdown, and at zero the round goes to whoever was waiting.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'Nothing to install and no sign-up: a guest name works on a phone, a tablet or a computer.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Tic Tac Toe suits anyone with a minute to spare, from two friends on a break to a parent teaching a child to spot a threat. On a grid this small, attention decides most rounds.',
+        },
+        history: {
+          origin: 'Three-in-a-row games are older than any of their names: noughts and crosses in Britain, tic-tac-toe in the United States, where a drawn game is called a cat\'s game.',
+          solved: 'The game is solved: best play from both sides always draws. Yet most of the 255,168 possible games end in a win, because somebody slipped.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Does Tic Tac Toe on Boardly cost anything?',
+            a: 'No. Friends, all three bots and every series length are free. Premium adds extras such as spectators, replays and custom lobby themes; the game itself is the same.',
+          },
+          needAccount: {
+            q: 'Do I have to register first?',
+            a: 'No. A guest name is enough to create a lobby, join one with a code or play a bot; an account is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play it on my phone?',
+            a: 'Yes. It runs in the mobile browser with no app to download; tap an empty square to place your mark.',
+          },
+          howManyPlayers: {
+            q: 'How many people take part in one game?',
+            a: 'Two, one X and one O, both people or one of them a bot. A Premium host can also open the lobby to spectators.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose that round and your opponent takes the point. The game never skips your move or plays one for you.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play with a friend who is not in the same room?',
+            a: 'Yes. Create a lobby, send the four-digit code or the link, and play in real time from two devices anywhere online.',
+          },
+          takeBackOrDraw: {
+            q: 'Can I undo a move or agree to a draw?',
+            a: 'You can ask, and your opponent decides. A bot accepts every undo, but a draw only when perfect play from there would end level, which is most positions until someone slips.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',
