@@ -61,6 +61,16 @@ export default function RockPaperScissorsDetailContent() {
         { title: t('games.rock_paper_scissors.detail.modes.roundClock.title'), desc: t('games.rock_paper_scissors.detail.modes.roundClock.desc') },
         { title: t('games.rock_paper_scissors.detail.modes.botLevels.title'), desc: t('games.rock_paper_scissors.detail.modes.botLevels.desc') },
       ]}
+      strategy={[
+        { title: t('games.rock_paper_scissors.detail.strategy.readTheRoundList.title'), desc: t('games.rock_paper_scissors.detail.strategy.readTheRoundList.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.answerARepeat.title'), desc: t('games.rock_paper_scissors.detail.strategy.answerARepeat.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.spotACycle.title'), desc: t('games.rock_paper_scissors.detail.strategy.spotACycle.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.thinkOneStepFurther.title'), desc: t('games.rock_paper_scissors.detail.strategy.thinkOneStepFurther.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.watchYourOwnCount.title'), desc: t('games.rock_paper_scissors.detail.strategy.watchYourOwnCount.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.exploitMindGambit.title'), desc: t('games.rock_paper_scissors.detail.strategy.exploitMindGambit.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.title'), desc: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.title'), desc: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.desc') },
+      ]}
     />
   )
 }

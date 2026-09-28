@@ -1457,6 +1457,40 @@ const no = {
             desc: 'Tempo Rookie velger tilfeldig. Pattern Reader kontrer trekket du bruker mest, i omtrent sju av ti runder; Mind Gambit kontrer det i hver runde.',
           },
         },
+        strategy: {
+          readTheRoundList: {
+            title: 'Les rundelisten',
+            desc: 'Hvert tidligere par av trekk ligger i Runder-panelet. Se der etter trekket motstanderen foretrekker.',
+          },
+          answerARepeat: {
+            title: 'Svar på en gjentakelse',
+            desc: 'Et trekk som er brukt to ganger på rad, kommer ofte en tredje gang. Velg det som slår det.',
+          },
+          spotACycle: {
+            title: 'Se etter en syklus',
+            desc: 'Spillere som unngår gjentakelser, går ofte stein, papir, saks i rekkefølge. Slå neste steg.',
+          },
+          thinkOneStepFurther: {
+            title: 'Tenk ett steg lenger',
+            desc: 'Venter de at du gjentar et vinnertrekk, velger de motsvaret. Slå heller det.',
+          },
+          watchYourOwnCount: {
+            title: 'Følg med på din egen telling',
+            desc: 'Når ett trekk leder i din egen telling, må du regne med at en oppmerksom motstander har sett det.',
+          },
+          exploitMindGambit: {
+            title: 'Utnytt Mind Gambit',
+            desc: 'Den svarer alltid på trekket du bruker mest, så velg det som slår svaret.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Hold det jevnt mot Pattern Reader',
+            desc: 'Fordel trekkene jevnt, så har den ingen favoritt hos deg å sikte på.',
+          },
+          climbTheLevels: {
+            title: 'Gå opp nivåene',
+            desc: 'Tempo Rookie viser ren tilfeldighet, Mind Gambit belønner en klar lesning, og Pattern Reader tester begge deler.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

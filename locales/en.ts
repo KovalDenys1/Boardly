@@ -1457,6 +1457,40 @@ const en = {
             desc: 'Tempo Rookie throws at random. Pattern Reader counters your most-played move about seven rounds in ten; Mind Gambit counters it every round.',
           },
         },
+        strategy: {
+          readTheRoundList: {
+            title: 'Read the round list',
+            desc: 'Every past pair of throws stays in the Rounds panel. Look there for the move your opponent favours.',
+          },
+          answerARepeat: {
+            title: 'Answer a repeat',
+            desc: 'A move thrown twice running often comes a third time. Play the one that beats it.',
+          },
+          spotACycle: {
+            title: 'Spot a cycle',
+            desc: 'Players who avoid repeats often step Rock, Paper, Scissors in order. Beat the next step.',
+          },
+          thinkOneStepFurther: {
+            title: 'Think one step further',
+            desc: 'If they expect you to repeat a winner, they will throw its counter. Beat that instead.',
+          },
+          watchYourOwnCount: {
+            title: 'Watch your own count',
+            desc: 'When one move leads your own tally, assume an attentive opponent has noticed.',
+          },
+          exploitMindGambit: {
+            title: 'Exploit Mind Gambit',
+            desc: 'It always answers your most-played move, so throw whatever beats its answer.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Stay even against Pattern Reader',
+            desc: 'Spread your throws evenly and it has no favourite of yours to aim at.',
+          },
+          climbTheLevels: {
+            title: 'Climb the levels',
+            desc: 'Tempo Rookie shows plain chance, Mind Gambit rewards a clean read, and Pattern Reader tests both.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',
