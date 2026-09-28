@@ -1589,7 +1589,7 @@ const en = {
       difficulty: 'Medium',
       seo: {
         question: 'Can you play checkers online for free with a friend?',
-        answer: 'Yes. It is standard English checkers on an 8×8 board, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and play a bot. Captures are forced, jumps chain, and a guest name is all the account you need.',
+        answer: 'Yes. It is standard English checkers on an 8×8 board in the browser: send a friend your lobby code or play a bot on easy, medium or hard. A guest name is all the account you need.',
       },
       ribbon: {
         desc: 'The classic diagonal duel. Force captures, chain jumps and crown your kings.',
@@ -1600,12 +1600,12 @@ const en = {
         title: 'Play Checkers Online',
         heroDesc: 'Classic English checkers in the browser. Invite a friend or add a bot, and play move by move in real time.',
         introTitle: 'What is Checkers?',
-        intro0: 'Checkers, also called draughts, is a two-player strategy game on the dark squares of an 8×8 board. Each side starts with twelve pieces and moves them diagonally forward, one square at a time.',
-        intro1: 'You capture by jumping over an opposing piece, and if a capture is available you must take it. A piece that reaches the far row becomes a king and can move backwards too. Take every piece or leave your opponent without a move to win.',
+        intro0: 'Checkers, also called draughts, is a two-player strategy game on the dark squares of an 8×8 board, where pieces move diagonally and capture by jumping.',
+        intro1: 'Captures are compulsory, and a piece that reaches the far row becomes a king. Take every piece or leave your opponent without a move to win.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room, or join a friend\'s with its code. Each room seats two.',
         step2Title: 'Choose friend or bot',
-        step2Desc: 'Invite another player or add a bot to play right away.',
+        step2Desc: 'Send the code or the link. If nobody is free, add a bot.',
         step3Title: 'Tap a piece, then a square',
         step3Desc: 'Legal destinations light up. When a capture is on, the pieces that must take are highlighted.',
         step4Title: 'Crown kings and win',
@@ -1615,6 +1615,132 @@ const en = {
         benefit2: 'Three bot levels for solo play.',
         benefit3: 'Forced captures and jump chains handled for you.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          board: 'Twelve men a side on the 32 dark squares of an 8×8 board. Dark moves first.',
+          menMove: 'A man moves one square diagonally forward and captures forward only.',
+          forcedCapture: 'Capturing is compulsory, but you may pick any capture, not only the longest.',
+          multiJump: 'The jumping piece must keep jumping while it can; jumped pieces come off when the move ends.',
+          crowning: 'A man reaching the far row becomes a king, which ends the move.',
+          kings: 'A king moves and captures one square diagonally in any direction; it does not fly.',
+          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw.',
+        },
+        modes: {
+          moveClock: {
+            title: 'Seconds per move',
+            desc: '60 seconds a move by default. The host picks 30 to 120 when creating the lobby, or 30 to 180 in 30-second steps in the lobby settings before the start. Play vs Bot gives 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Checkers Rookie moves at random. Diagonal Tactician looks one reply ahead and avoids moves that let you win at once. Kingmaker searches several moves deep for up to about a second.',
+          },
+          rematches: {
+            title: 'Rematches keep score',
+            desc: 'The host\'s Play Again starts the next game in the same room. Wins add up; draws add nothing.',
+          },
+        },
+        strategy: {
+          guardBackRow: {
+            title: 'Guard your back row',
+            desc: 'Home-row men stop enemy crowning. Move them last.',
+          },
+          holdTheCentre: {
+            title: 'Hold the centre',
+            desc: 'A central man has two squares forward; an edge man has one.',
+          },
+          moveInPairs: {
+            title: 'Move in pairs',
+            desc: 'A man backed up on its diagonal cannot be jumped along it.',
+          },
+          baitTheForcedCapture: {
+            title: 'Use the forced capture',
+            desc: 'Offer a man so the forced jump lets you take two back.',
+          },
+          readTheChain: {
+            title: 'Read the whole chain',
+            desc: 'Follow where each jump lands; gaps can turn one capture into three.',
+          },
+          raceForAKing: {
+            title: 'Race for the first king',
+            desc: 'A king moves backwards too and usually decides an even ending.',
+          },
+          tradeWhenAhead: {
+            title: 'Trade when ahead',
+            desc: 'One man up, even exchanges lead to an ending you can win.',
+          },
+          crowningStopsTheChain: {
+            title: 'Crowning stops a chain',
+            desc: 'A man crowned mid-capture stops there for that move.',
+          },
+        },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Forgetting where a forced jump lands',
+            desc: 'Your opponent can force you to capture. Check where your man would land.',
+          },
+          emptyingBackRow: {
+            title: 'Emptying the back row early',
+            desc: 'It opens crowning squares for the enemy.',
+          },
+          thinkingPastTheClock: {
+            title: 'Thinking past the clock',
+            desc: 'A timeout loses the game, even from a winning position.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Share the code or link; moves appear on both boards live, with chat when two people play.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot opens a lobby with your bot seated. Press Start; you play Dark.',
+          },
+          turnTimer: {
+            title: 'One clock for both',
+            desc: 'Both players see one countdown. If it reaches zero on your move with the game open, you lose.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'No install on phone, tablet or computer; a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Checkers suits anyone after real strategy without chess theory, and makes a good first strategy game for children.',
+        },
+        history: {
+          names: 'North Americans say checkers, the British draughts. Russian and Brazilian checkers let men capture backwards and kings fly; international draughts uses a 10×10 board.',
+          solved: 'This English version is solved: in 2007 the program Chinook proved perfect play ends in a draw.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Checkers on Boardly free?',
+            a: 'Yes, including all three bots. Premium adds extras such as spectators and lobby themes for hosts, and game replays; the game is the same.',
+          },
+          needAccount: {
+            q: 'Do I need an account to play?',
+            a: 'No. A guest name is enough to create or join a lobby or play a bot; signing up is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play on my phone?',
+            a: 'Yes, in the mobile browser with no app to install: tap a piece, then a highlighted square.',
+          },
+          whichRules: {
+            q: 'Which checkers rules does Boardly use?',
+            a: 'English draughts, with forward-only men and one-step kings. Russian, Brazilian and international rules are not offered.',
+          },
+          whoMovesFirst: {
+            q: 'Who moves first?',
+            a: 'Dark, held by the first seat, and Play Again does not swap colours. Against a bot you always play Dark.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose the game, even from a winning position. The countdown on screen shows how long you have left, so plan the last seconds of a hard move.',
+          },
+          undoOrDraw: {
+            q: 'Can I undo a move or offer a draw?',
+            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

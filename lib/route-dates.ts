@@ -40,7 +40,7 @@ export const ROUTE_UPDATED = {
   '/games/liars-party': '2026-09-28',
   // #1239 expanded the page to the Track A sections.
   '/games/sketch-and-guess': '2026-09-28',
-  '/games/checkers': '2026-09-24',
+  '/games/checkers': '2026-09-28', // #1241 expanded the page
   '/games/ludo': '2026-09-24',
   '/guides': '2026-09-20',
   // /privacy and /terms are noindex and left out of the sitemap (#1227); their own

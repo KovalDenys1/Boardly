@@ -11,7 +11,7 @@ export default function CheckersDetailContent() {
       gameName={t('games.checkers.name')}
       title={t('games.checkers.detail.title')}
       description={t('games.checkers.detail.heroDesc')}
-      iconLabel="Checkers board"
+      iconLabel={t('games.checkers.name')}
       gameId="checkers"
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"
@@ -39,6 +39,48 @@ export default function CheckersDetailContent() {
         t('games.checkers.detail.benefit2'),
         t('games.checkers.detail.benefit3'),
         t('games.checkers.detail.benefit4'),
+      ]}
+      rules={[
+        t('games.checkers.detail.rules.board'),
+        t('games.checkers.detail.rules.menMove'),
+        t('games.checkers.detail.rules.forcedCapture'),
+        t('games.checkers.detail.rules.multiJump'),
+        t('games.checkers.detail.rules.crowning'),
+        t('games.checkers.detail.rules.kings'),
+        t('games.checkers.detail.rules.endAndDraw'),
+      ]}
+      modes={[
+        { title: t('games.checkers.detail.modes.moveClock.title'), desc: t('games.checkers.detail.modes.moveClock.desc') },
+        { title: t('games.checkers.detail.modes.botLevels.title'), desc: t('games.checkers.detail.modes.botLevels.desc') },
+        { title: t('games.checkers.detail.modes.rematches.title'), desc: t('games.checkers.detail.modes.rematches.desc') },
+      ]}
+      strategy={[
+        { title: t('games.checkers.detail.strategy.guardBackRow.title'), desc: t('games.checkers.detail.strategy.guardBackRow.desc') },
+        { title: t('games.checkers.detail.strategy.holdTheCentre.title'), desc: t('games.checkers.detail.strategy.holdTheCentre.desc') },
+        { title: t('games.checkers.detail.strategy.moveInPairs.title'), desc: t('games.checkers.detail.strategy.moveInPairs.desc') },
+        { title: t('games.checkers.detail.strategy.baitTheForcedCapture.title'), desc: t('games.checkers.detail.strategy.baitTheForcedCapture.desc') },
+        { title: t('games.checkers.detail.strategy.readTheChain.title'), desc: t('games.checkers.detail.strategy.readTheChain.desc') },
+        { title: t('games.checkers.detail.strategy.raceForAKing.title'), desc: t('games.checkers.detail.strategy.raceForAKing.desc') },
+        { title: t('games.checkers.detail.strategy.tradeWhenAhead.title'), desc: t('games.checkers.detail.strategy.tradeWhenAhead.desc') },
+        { title: t('games.checkers.detail.strategy.crowningStopsTheChain.title'), desc: t('games.checkers.detail.strategy.crowningStopsTheChain.desc') },
+      ]}
+      mistakes={[
+        { title: t('games.checkers.detail.mistakes.ignoringTheLanding.title'), desc: t('games.checkers.detail.mistakes.ignoringTheLanding.desc') },
+        { title: t('games.checkers.detail.mistakes.emptyingBackRow.title'), desc: t('games.checkers.detail.mistakes.emptyingBackRow.desc') },
+        { title: t('games.checkers.detail.mistakes.thinkingPastTheClock.title'), desc: t('games.checkers.detail.mistakes.thinkingPastTheClock.desc') },
+      ]}
+      multiplayer={[
+        { title: t('games.checkers.detail.multiplayer.withFriends.title'), desc: t('games.checkers.detail.multiplayer.withFriends.desc') },
+        { title: t('games.checkers.detail.multiplayer.botsAndSolo.title'), desc: t('games.checkers.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.checkers.detail.multiplayer.turnTimer.title'), desc: t('games.checkers.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.checkers.detail.multiplayer.guestNoDownload.title'), desc: t('games.checkers.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.checkers.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.checkers.detail.history.names'),
+        t('games.checkers.detail.history.solved'),
       ]}
       playVsBotGameType="checkers"
     />

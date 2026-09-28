@@ -1589,7 +1589,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan man spille dam gratis på nett med en venn?',
-        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett, spilt live i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og spill mot en bot. Slag er tvungne, hopp kan kjedes, og et gjestenavn er all kontoen du trenger.',
+        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
         desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
@@ -1600,12 +1600,12 @@ const no = {
         title: 'Spill dam på nett',
         heroDesc: 'Klassisk engelsk dam i nettleseren. Inviter en venn eller legg til en bot, og spill trekk for trekk i sanntid.',
         introTitle: 'Hva er dam?',
-        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett. Hver side starter med tolv brikker og flytter dem diagonalt fremover, én rute om gangen.',
-        intro1: 'Du slår ved å hoppe over en motstanderbrikke, og har du et slag, må du ta det. En brikke som når bakerste rad blir konge og kan også gå bakover. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
+        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett, der brikkene går diagonalt og slår ved å hoppe.',
+        intro1: 'Slag er tvunget, og en brikke som når bakerste rad, blir konge. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
         step1Title: 'Opprett eller bli med i en lobby',
-        step1Desc: 'Åpne et rom og del koden med motstanderen.',
+        step1Desc: 'Åpne et rom, eller bli med i en venns rom med koden. Hvert rom har plass til to.',
         step2Title: 'Velg venn eller bot',
-        step2Desc: 'Inviter en annen spiller eller legg til en bot for å spille med en gang.',
+        step2Desc: 'Send koden eller lenken. Er ingen ledig, legger du til en bot.',
         step3Title: 'Trykk på en brikke, så en rute',
         step3Desc: 'Lovlige ruter lyser opp. Når et slag er mulig, er brikkene som må slå uthevet.',
         step4Title: 'Kron konger og vinn',
@@ -1615,6 +1615,132 @@ const no = {
         benefit2: 'Tre botnivåer for å spille alene.',
         benefit3: 'Tvungne slag og hoppkjeder håndteres for deg.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          board: 'Tolv brikker hver på de 32 mørke rutene på et 8×8-brett. Mørk trekker først.',
+          menMove: 'En vanlig brikke går én rute diagonalt fremover og slår bare fremover.',
+          forcedCapture: 'Slag er tvunget, men du kan velge hvilket som helst slag, ikke bare det lengste.',
+          multiJump: 'Brikken som hopper, må hoppe videre så lenge den kan; slåtte brikker fjernes når trekket er ferdig.',
+          crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket.',
+          kings: 'En konge går og slår én rute diagonalt i alle retninger; den flyr ikke.',
+          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+        },
+        modes: {
+          moveClock: {
+            title: 'Sekunder per trekk',
+            desc: '60 sekunder per trekk som standard. Verten velger 30 til 120 når lobbyen opprettes, eller 30 til 180 i steg på 30 sekunder i lobbyinnstillingene før start. «Spill mot bot» gir 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Checkers Rookie trekker tilfeldig. Diagonal Tactician ser ett svar fram og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i opptil omtrent ett sekund.',
+          },
+          rematches: {
+            title: 'Omkamper teller',
+            desc: 'Vertens «Spill igjen» starter neste parti i samme rom. Seirene summeres, uavgjort gir ingenting.',
+          },
+        },
+        strategy: {
+          guardBackRow: {
+            title: 'Vokt bakerste rad',
+            desc: 'Brikker på hjemraden hindrer motstanderen i å få konge. Flytt dem sist.',
+          },
+          holdTheCentre: {
+            title: 'Hold midten',
+            desc: 'En brikke i midten har to ruter fremover, en kantbrikke bare én.',
+          },
+          moveInPairs: {
+            title: 'Flytt i par',
+            desc: 'En brikke med støtte bak seg på diagonalen kan ikke slås langs den.',
+          },
+          baitTheForcedCapture: {
+            title: 'Bruk slagtvangen',
+            desc: 'Ofre en brikke slik at det tvungne hoppet lar deg slå to tilbake.',
+          },
+          readTheChain: {
+            title: 'Les hele kjeden',
+            desc: 'Følg hvor hvert hopp lander; åpne ruter kan gjøre ett slag til tre.',
+          },
+          raceForAKing: {
+            title: 'Kappløp om første konge',
+            desc: 'En konge går også bakover og avgjør ofte et jevnt sluttspill.',
+          },
+          tradeWhenAhead: {
+            title: 'Bytt når du leder',
+            desc: 'Én brikke foran fører jevne bytter til et sluttspill du kan vinne.',
+          },
+          crowningStopsTheChain: {
+            title: 'Kroning stopper kjeden',
+            desc: 'En brikke som kroner midt i et slag, stopper der det trekket.',
+          },
+        },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Å glemme hvor et tvunget hopp lander',
+            desc: 'Motstanderen kan tvinge deg til å slå. Sjekk hvor brikken din vil lande.',
+          },
+          emptyingBackRow: {
+            title: 'Å tømme bakerste rad for tidlig',
+            desc: 'Det åpner kroningsruter for motstanderen.',
+          },
+          thinkingPastTheClock: {
+            title: 'Å tenke forbi klokka',
+            desc: 'Går tiden ut, taper du partiet, selv fra en vinnende stilling.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: '«Spill mot bot» åpner en lobby der boten allerede sitter. Start spillet, så spiller du Mørk.',
+          },
+          turnTimer: {
+            title: 'Én klokke for begge',
+            desc: 'Begge ser den samme nedtellingen. Når den når null på ditt trekk mens partiet er åpent, taper du.',
+          },
+          guestNoDownload: {
+            title: 'Rett fra nettleseren',
+            desc: 'Ingenting å installere på mobil, nettbrett eller PC; et gjestenavn holder.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkteori, og er et godt første strategispill for barn.',
+        },
+        history: {
+          names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. I russisk og brasiliansk dam slår vanlige brikker bakover og kongene flyr; internasjonal dam spilles på 10×10.',
+          solved: 'Den engelske varianten er løst: i 2007 beviste programmet Chinook at perfekt spill ender uavgjort.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er dam på Boardly gratis?',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto for å spille?',
+            a: 'Nei. Et gjestenavn holder for å opprette eller bli med i en lobby eller spille mot en bot; registrering er valgfritt.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille på mobilen?',
+            a: 'Ja, i mobilnettleseren uten app å installere: trykk på en brikke, så på en uthevet rute.',
+          },
+          whichRules: {
+            q: 'Hvilke damregler bruker Boardly?',
+            a: 'Engelsk dam, der vanlige brikker bare går fremover og kongene én rute. Russiske, brasilianske og internasjonale regler finnes ikke her.',
+          },
+          whoMovesFirst: {
+            q: 'Hvem trekker først?',
+            a: 'Mørk, som første sete får, og «Spill igjen» bytter ikke farger. Mot en bot spiller du alltid Mørk.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden min går ut?',
+            a: 'Du taper partiet, selv fra en vinnende stilling. Nedtellingen på skjermen viser hvor lang tid du har igjen, så planlegg de siste sekundene av et vanskelig trekk.',
+          },
+          undoOrDraw: {
+            q: 'Kan jeg angre et trekk eller tilby uavgjort?',
+            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',
