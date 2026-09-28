@@ -52,6 +52,25 @@ export default function SketchAndGuessDetailContent() {
         t('games.guess_my_drawing.detail.rules.wordHint'),
         t('games.guess_my_drawing.detail.rules.chatLock'),
       ]}
+      scoring={[
+        {
+          title: t('games.guess_my_drawing.detail.scoring.guessing.title'),
+          rows: [
+            { name: t('games.guess_my_drawing.detail.scoring.guessing.rightGuess.name'), value: '50', rule: t('games.guess_my_drawing.detail.scoring.guessing.rightGuess.rule') },
+            { name: t('games.guess_my_drawing.detail.scoring.guessing.speedBonus.name'), value: t('games.guess_my_drawing.detail.scoring.guessing.speedBonus.value'), rule: t('games.guess_my_drawing.detail.scoring.guessing.speedBonus.rule') },
+            { name: t('games.guess_my_drawing.detail.scoring.guessing.firstIn.name'), value: '+20', rule: t('games.guess_my_drawing.detail.scoring.guessing.firstIn.rule') },
+          ],
+        },
+        {
+          title: t('games.guess_my_drawing.detail.scoring.drawing.title'),
+          note: t('games.guess_my_drawing.detail.scoring.drawing.note'),
+          rows: [
+            { name: t('games.guess_my_drawing.detail.scoring.drawing.perCorrectGuesser.name'), value: '+40', rule: t('games.guess_my_drawing.detail.scoring.drawing.perCorrectGuesser.rule') },
+            { name: t('games.guess_my_drawing.detail.scoring.drawing.ownRuling.name'), value: '0', rule: t('games.guess_my_drawing.detail.scoring.drawing.ownRuling.rule') },
+            { name: t('games.guess_my_drawing.detail.scoring.drawing.blankCanvas.name'), value: '−20', rule: t('games.guess_my_drawing.detail.scoring.drawing.blankCanvas.rule') },
+          ],
+        },
+      ]}
     />
   )
 }

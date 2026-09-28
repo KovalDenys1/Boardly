@@ -1986,6 +1986,21 @@ const no = {
           wordHint: 'De som gjetter, ser blanke felt på sitt eget språk; ord på tre bokstaver eller mer får én bokstav avdekket halvveis.',
           chatLock: 'Frem til avsløringen kan verken tegneren eller de som har gjettet ordet, skrive i chatten.',
         },
+        scoring: {
+          guessing: {
+            title: 'Gjetting',
+            rightGuess: { name: 'Riktig gjett', rule: 'Hvert riktige svar før tiden er ute.' },
+            speedBonus: { name: 'Fartsbonus', value: 'opptil +50', rule: 'Krymper mens tegneklokken går.' },
+            firstIn: { name: 'Først inne', rule: 'Bare den første som gjetter riktig i runden.' },
+          },
+          drawing: {
+            title: 'Tegning',
+            note: 'Ingen poengsum går noen gang under null.',
+            perCorrectGuesser: { name: 'Per riktig gjetter', rule: 'Et sent svar gir like mye som et tidlig.' },
+            ownRuling: { name: 'Egen godkjenning', rule: 'Et gjett som en tegnende vert godkjenner selv, gir vedkommende ingenting.' },
+            blankCanvas: { name: 'Tomt lerret', rule: 'Ingenting tegnet når runden er over.' },
+          },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

@@ -1986,6 +1986,21 @@ const en = {
           wordHint: 'Guessers see blanks in their own language; words of three letters or more get a letter uncovered at half time.',
           chatLock: 'Until the reveal, the drawer and anyone who has guessed the word cannot post in chat.',
         },
+        scoring: {
+          guessing: {
+            title: 'Guessing',
+            rightGuess: { name: 'Right guess', rule: 'Any correct answer before time is up.' },
+            speedBonus: { name: 'Speed bonus', value: 'up to +50', rule: 'Shrinks as the drawing clock runs down.' },
+            firstIn: { name: 'First in', rule: 'Only the round\'s first correct guesser.' },
+          },
+          drawing: {
+            title: 'Drawing',
+            note: 'No total ever drops below zero.',
+            perCorrectGuesser: { name: 'Per correct guesser', rule: 'A late answer pays as much as an early one.' },
+            ownRuling: { name: 'Own ruling', rule: 'A guess the drawing host accepts earns them nothing.' },
+            blankCanvas: { name: 'Blank canvas', rule: 'Nothing drawn by the end of the round.' },
+          },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
