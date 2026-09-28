@@ -31,7 +31,8 @@ export const ROUTE_UPDATED = {
   '/games/memory': '2026-09-15',
   // #1090 expanded the page and folded the strategy guide into it.
   '/games/connect-four': '2026-09-24',
-  '/games/alias': '2026-09-15',
+  // #1237 expanded the page to the Track A sections.
+  '/games/alias': '2026-09-28',
   // #1043 added the guide link to the detail page, and the new guide to the
   // catalog the /guides index lists from.
   '/games/rock-paper-scissors': '2026-09-20',
