@@ -2202,6 +2202,9 @@ const en = {
         audience: {
           whoItSuits: 'Best for four to twelve people who enjoy reading each other: parties, video calls, club nights.',
         },
+        history: {
+          origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat. Here any sentence can be the bluff.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

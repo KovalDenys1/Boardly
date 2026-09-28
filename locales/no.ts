@@ -2202,6 +2202,9 @@ const no = {
         audience: {
           whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
         },
+        history: {
+          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat. Her kan en hvilken som helst setning være bløffen.',
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

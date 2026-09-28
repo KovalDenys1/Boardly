@@ -101,6 +101,9 @@ export default function LiarsPartyDetailContent() {
       audience={[
         t('games.liars_party.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.liars_party.detail.history.origin'),
+      ]}
     />
   )
 }
