@@ -1877,7 +1877,7 @@ const en = {
       difficulty: 'Medium',
       seo: {
         question: 'Can you play Alias online with a group for free?',
-        answer: 'Yes, with four to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
+        answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
       ribbon: {
         desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
@@ -1887,23 +1887,173 @@ const en = {
       detail: {
         title: 'Play Alias Online',
         heroDesc: 'A team word game where one player describes secret words and the team races to guess as many as possible.',
-        groupNotice: "Alias needs at least 4 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
+        groupNotice: "Alias needs at least 3 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
         introTitle: 'What is Alias?',
         intro0: 'Alias is a team word-description game. One player sees a secret word and explains it without saying the word itself.',
         intro1: 'Correct guesses score points. Skips cost points. Teams take turns until the final score decides the winner.',
         step1Title: 'Create a lobby',
-        step1Desc: 'Invite your group and split into teams.',
+        step1Desc: 'Invite your group and split into teams. From four players up, anyone can switch sides before the start.',
         step2Title: 'Describe words',
-        step2Desc: 'Use clues, synonyms, and examples without saying the secret word.',
+        step2Desc: 'Use clues, synonyms, and examples without saying the secret word. Ten words per card, shown one at a time.',
         step3Title: 'Guess quickly',
-        step3Desc: 'The team guesses against the timer and scores for correct answers.',
+        step3Desc: 'The team guesses against the timer and scores for correct answers. Typed guesses appear in the describer\'s feed.',
         step4Title: 'Switch teams',
-        step4Desc: 'Teams alternate turns until the match ends.',
+        step4Desc: 'Teams alternate turns until the match ends. Each team gets three turns, and the describer seat rotates.',
         benefitsTitle: 'Why Alias belongs on Boardly',
         benefit1: 'Designed for group play.',
         benefit2: 'Simple room links for friends.',
         benefit3: 'Fast rounds that work for parties.',
         benefit4: 'No app download planned.',
+        rules: {
+          teamsFromFour: 'Four or more players form two teams, and newcomers join the smaller one.',
+          threeAreSolo: 'With exactly three, everyone plays alone and scores only while describing.',
+          tenWordCard: 'Each turn deals ten words, one at a time, never repeated in a game.',
+          markEveryWord: 'The describer taps Guessed or Skip for every word.',
+          howATurnEnds: 'A turn ends at the tenth word, at End Turn, or at zero on the clock.',
+        },
+        scoring: {
+          title: 'Net words per turn',
+          note: 'Guesses minus skips, so a turn ranges from plus ten to minus ten.',
+          rows: {
+            guessedWord: {
+              name: 'Guessed word',
+              value: '+1',
+              rule: 'When the describer confirms it.',
+            },
+            skippedWord: {
+              name: 'Skipped word',
+              value: '−1',
+              rule: 'Whenever Skip is pressed.',
+            },
+            wordLeftAtZero: {
+              name: 'Word left at zero',
+              value: '−1',
+              rule: 'Counts as a skip.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Word left after End Turn',
+              value: '0',
+              rule: 'Not scored.',
+            },
+            levelAtTheTop: {
+              name: 'Level at the top',
+              value: 'Tie',
+              rule: 'Equal top totals after three turns each.',
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Rooms of 4, 6, 8, 10, 12 or 16 seats, 8 by default; more than ten needs a Premium host.',
+          },
+          turnLength: {
+            title: 'Turn length',
+            desc: '30, 60, 90 or 120 seconds per turn, 60 by default.',
+          },
+        },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Skip early or not at all',
+            desc: 'A skip costs one point at any second, so drop hopeless words at once.',
+          },
+          beatTheZero: {
+            title: 'Beat the clock to zero',
+            desc: 'Near zero with words left? Press End Turn before they become skips.',
+          },
+          sayWhatItDoes: {
+            title: 'Say what it does',
+            desc: '"You ring it at a front door" beats "a small electric bell".',
+          },
+          leaveAGap: {
+            title: 'Leave a gap to fill',
+            desc: 'A phrase missing one word, like "Humpty Dumpty sat on a …", is quick to fill.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Build compounds in halves',
+            desc: 'For lighthouse or doorbell, lead the team to each half without saying it.',
+          },
+          guessInSingleWords: {
+            title: 'Guess in single words',
+            desc: 'One word per message is easiest to spot in the describer\'s feed.',
+          },
+          tryThePlainForm: {
+            title: 'Try the plain form',
+            desc: 'Every answer is one English word; after a near miss, try the basic form.',
+          },
+          readTheResults: {
+            title: 'Read the results screen',
+            desc: 'Skipped words listed between turns show which clues your group finds hard.',
+          },
+        },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Letting the clock hit zero',
+            desc: 'Every unplayed word then costs a point.',
+          },
+          skippingOnReflex: {
+            title: 'Skipping on reflex',
+            desc: 'Skip all ten words and the turn ends ten points down.',
+          },
+          guessingInParagraphs: {
+            title: 'Guessing in paragraphs',
+            desc: 'A long message buries the word the describer is scanning for.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, many screens',
+            desc: 'Share the room code or link; clock, tally and guesses update on every connected device.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'No solo mode or bots. Short of three? Share the invite link or join an open room.',
+          },
+          turnTimer: {
+            title: 'One shared clock',
+            desc: 'Every player sees the countdown; once it runs out, the turn closes and unplayed words count as skips.',
+          },
+          guestNoDownload: {
+            title: 'A browser and a name',
+            desc: 'Any browser, nothing to install; guests pick a name and play.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alias suits parties, family evenings and video calls; its English deck also helps learners.',
+        },
+        history: {
+          origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Alias on Boardly free?',
+            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; 12 or 16 seats, spectators and premium lobby themes need a Premium host.',
+          },
+          worksOnPhone: {
+            q: 'Does Alias work on a phone?',
+            a: 'Yes, in the mobile browser. The card and the Guesses feed sit on two tabs, one tap apart.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'The turn ends, and every word left on the card counts as a skip. End Turn before zero avoids that.',
+          },
+          canGuessersSeeWord: {
+            q: 'Can guessers see the word?',
+            a: 'Only the describer\'s screen shows the card; everyone else sees a question mark and the describer\'s name.',
+          },
+          howTeamsArePicked: {
+            q: 'How are the teams picked?',
+            a: 'Newcomers join the smaller team, with four or more players anyone can switch sides, and the host starts once no team is empty.',
+          },
+          wordsInEnglish: {
+            q: 'Are the words in English?',
+            a: 'Yes, whatever the site language: 200 English words such as castle and kaleidoscope, none repeated in a game.',
+          },
+          describerLeaves: {
+            q: 'What if the describer leaves mid-turn?',
+            a: 'The turn ends at once, scoring only words already marked; below three players the game ends.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

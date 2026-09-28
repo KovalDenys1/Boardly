@@ -1877,7 +1877,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan du spille Alias online med en gjeng gratis?',
-        answer: 'Ja, med fire til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
+        answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
       ribbon: {
         desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
@@ -1887,23 +1887,173 @@ const no = {
       detail: {
         title: 'Spill Alias på nett',
         heroDesc: 'Et lagspill med ord: én spiller forklarer hemmelige ord mens laget kappes om å gjette så mange som mulig.',
-        groupNotice: 'Alias krever minst 4 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
+        groupNotice: 'Alias krever minst 3 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
         introTitle: 'Hva er Alias?',
         intro0: 'Alias er et lagspill der man forklarer ord. Én spiller ser et hemmelig ord og forklarer det uten å si selve ordet.',
         intro1: 'Riktige gjett gir poeng, og å hoppe over koster poeng. Lagene bytter på turene til sluttstillingen avgjør hvem som vinner.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter gjengen og del dere inn i lag.',
+        step1Desc: 'Inviter gjengen og del dere inn i lag. Fra fire spillere og oppover kan alle bytte side før start.',
         step2Title: 'Forklar ordene',
-        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet.',
+        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet. Ti ord per kort, vist ett om gangen.',
         step3Title: 'Gjett raskt',
-        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar.',
+        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar. Gjett som skrives inn, vises i forklarerens strøm.',
         step4Title: 'Bytt lag',
-        step4Desc: 'Lagene veksler på turene til kampen er over.',
+        step4Desc: 'Lagene veksler på turene til kampen er over. Hvert lag får tre turer, og forklarerrollen går på rundgang.',
         benefitsTitle: 'Derfor hører Alias hjemme på Boardly',
         benefit1: 'Laget for spill i gjeng.',
         benefit2: 'Enkle romlenker til vennene.',
         benefit3: 'Raske runder som passer i et selskap.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          teamsFromFour: 'Fire eller flere spillere danner to lag, og nykommere havner på det minste.',
+          threeAreSolo: 'Med nøyaktig tre spiller alle alene og scorer bare mens de forklarer.',
+          tenWordCard: 'Hver tur deler ut ti ord, ett om gangen, aldri gjentatt i et spill.',
+          markEveryWord: 'Forklareren trykker «Gjett riktig» eller «Hopp over» for hvert ord.',
+          howATurnEnds: 'En tur slutter ved det tiende ordet, ved «Avslutning av tur» eller når klokka står på null.',
+        },
+        scoring: {
+          title: 'Netto ord per tur',
+          note: 'Gjettede minus hoppede ord, så en tur spenner fra pluss ti til minus ti.',
+          rows: {
+            guessedWord: {
+              name: 'Gjettet ord',
+              value: '+1',
+              rule: 'Når forklareren bekrefter det.',
+            },
+            skippedWord: {
+              name: 'Hoppet ord',
+              value: '−1',
+              rule: 'Hver gang «Hopp over» trykkes.',
+            },
+            wordLeftAtZero: {
+              name: 'Ord igjen ved null',
+              value: '−1',
+              rule: 'Teller som et hopp.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Ord igjen etter avsluttet tur',
+              value: '0',
+              rule: 'Telles ikke.',
+            },
+            levelAtTheTop: {
+              name: 'Likt på toppen',
+              value: 'Uavgjort',
+              rule: 'Lik toppsum etter tre turer hver.',
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4, 6, 8, 10, 12 eller 16 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          turnLength: {
+            title: 'Turlengde',
+            desc: '30, 60, 90 eller 120 sekunder per tur, 60 som standard.',
+          },
+        },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Hopp tidlig eller ikke i det hele tatt',
+            desc: 'Et hopp koster ett poeng uansett når, så slipp håpløse ord med en gang.',
+          },
+          beatTheZero: {
+            title: 'Kom klokka i forkjøpet',
+            desc: 'Nær null med ord igjen? Trykk «Avslutning av tur» før de blir hopp.',
+          },
+          sayWhatItDoes: {
+            title: 'Si hva den gjør',
+            desc: '«Du ringer på den ved inngangsdøra» slår «en liten elektrisk bjelle».',
+          },
+          leaveAGap: {
+            title: 'La en luke stå åpen',
+            desc: 'Et uttrykk som mangler ett ord, som «Lille Petter …», er raskt å fylle ut.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Bygg sammensatte ord i to deler',
+            desc: 'For lighthouse eller doorbell leder du laget til hver halvdel uten å si den.',
+          },
+          guessInSingleWords: {
+            title: 'Gjett med ett ord',
+            desc: 'Ett ord per melding er lettest å få øye på i forklarerens strøm.',
+          },
+          tryThePlainForm: {
+            title: 'Prøv grunnformen',
+            desc: 'Hvert svar er ett engelsk ord; etter et nesten-treff, prøv grunnformen.',
+          },
+          readTheResults: {
+            title: 'Les resultatskjermen',
+            desc: 'Hoppede ord listet mellom turene viser hvilke hint gjengen sliter med.',
+          },
+        },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Å la klokka gå til null',
+            desc: 'Hvert ubrukt ord koster da et poeng.',
+          },
+          skippingOnReflex: {
+            title: 'Å hoppe over på refleks',
+            desc: 'Hopper du over alle ti ordene, ender turen ti poeng i minus.',
+          },
+          guessingInParagraphs: {
+            title: 'Å gjette i avsnitt',
+            desc: 'En lang melding skjuler ordet forklareren leter etter.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, mange skjermer',
+            desc: 'Del romkoden eller lenken; klokka, stillingen og gjettene oppdateres på alle tilkoblede enheter.',
+          },
+          botsAndSolo: {
+            title: 'Folk, aldri boter',
+            desc: 'Ingen solomodus eller boter. Mangler dere noen til tre? Del lenken eller bli med i et åpent rom.',
+          },
+          turnTimer: {
+            title: 'Én felles klokke',
+            desc: 'Alle spillerne ser nedtellingen; når den er ute, lukkes turen, og ubrukte ord teller som hopp.',
+          },
+          guestNoDownload: {
+            title: 'En nettleser og et navn',
+            desc: 'Hvilken som helst nettleser, ingenting å installere; gjester velger et navn og spiller.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alias passer for fester, familiekvelder og videosamtaler; den engelske ordstokken hjelper også dem som lærer språket.',
+        },
+        history: {
+          origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Alias på Boardly gratis?',
+            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; 12 eller 16 plasser, tilskuere og premium-temaer for lobbyen krever en vert med Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Alias på mobil?',
+            a: 'Ja, i mobilnettleseren. Kortet og «Gjettinger»-strømmen ligger i to faner, ett trykk fra hverandre.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når klokka går ut?',
+            a: 'Turen slutter, og hvert ord som er igjen på kortet, teller som et hopp. «Avslutning av tur» før null unngår det.',
+          },
+          canGuessersSeeWord: {
+            q: 'Kan de som gjetter, se ordet?',
+            a: 'Bare forklarerens skjerm viser kortet; alle andre ser et spørsmålstegn og navnet på forklareren.',
+          },
+          howTeamsArePicked: {
+            q: 'Hvordan blir lagene satt sammen?',
+            a: 'Nykommere havner på det minste laget, med fire eller flere spillere kan alle bytte side, og verten starter når ingen lag er tomme.',
+          },
+          wordsInEnglish: {
+            q: 'Er ordene på engelsk?',
+            a: 'Ja, uansett språk på nettstedet: 200 engelske ord som castle og kaleidoscope, og ingen gjentas i samme spill.',
+          },
+          describerLeaves: {
+            q: 'Hva om forklareren går midt i turen?',
+            a: 'Turen slutter med en gang og teller bare ord som alt er markert; under tre spillere er spillet over.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',
