@@ -94,6 +94,9 @@ export default function SpyDetailContent() {
       audience={[
         t('games.spy.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.spy.detail.history.origin'),
+      ]}
     />
   )
 }

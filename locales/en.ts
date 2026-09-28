@@ -951,6 +951,9 @@ const en = {
         audience: {
           whoItSuits: 'Groups of three to ten who like reading people: parties, classrooms, team breaks, video calls.',
         },
+        history: {
+          origin: 'Spyfall by Alexandr Ushan, published in 2014, made the spy-without-a-location format a party staple.',
+        },
       },
       lobbies: {
         title: 'Guess the Spy',

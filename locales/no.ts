@@ -951,6 +951,9 @@ const no = {
         audience: {
           whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, pauser på jobben, videosamtaler.',
         },
+        history: {
+          origin: 'Spyfall av Alexandr Ushan, utgitt i 2014, gjorde formatet med en spion uten sted til en selskapsklassiker.',
+        },
       },
       lobbies: {
         title: 'Gjett spionen',
