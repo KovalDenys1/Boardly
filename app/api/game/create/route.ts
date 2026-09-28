@@ -18,110 +18,14 @@ import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
+import {
+  extractCarriedGameConfig,
+  extractGameMode,
+  extractMemoryDifficulty,
+  extractTicTacToeTargetRounds,
+} from '@/lib/game-rules-carryover'
 
 const limiter = rateLimit(rateLimitPresets.game)
-
-function extractTicTacToeTargetRounds(rawState: unknown): number | null | undefined {
-  let parsedState = rawState
-
-  if (typeof rawState === 'string') {
-    try {
-      parsedState = JSON.parse(rawState)
-    } catch {
-      return undefined
-    }
-  }
-
-  if (!parsedState || typeof parsedState !== 'object') {
-    return undefined
-  }
-
-  const stateData = (parsedState as { data?: unknown }).data
-  if (!stateData || typeof stateData !== 'object') {
-    return undefined
-  }
-
-  const matchState = (stateData as { match?: unknown }).match
-  if (!matchState || typeof matchState !== 'object') {
-    return undefined
-  }
-
-  const targetRounds = (matchState as { targetRounds?: unknown }).targetRounds
-  if (targetRounds === null) {
-    return null
-  }
-  if (
-    typeof targetRounds === 'number' &&
-    Number.isInteger(targetRounds) &&
-    targetRounds > 0
-  ) {
-    return targetRounds
-  }
-
-  return undefined
-}
-
-/**
- * The modes a game keeps in `state.data.mode`, which is where a mode has to be read
- * back from when a waiting game starts or a finished one is played again. One
- * reader and one list instead of a copy per game (#1102).
- */
-const STATE_DATA_MODES: Readonly<Record<string, readonly string[]>> = {
-  yahtzee: ['classic', 'short'],
-  ludo: ['quick', 'classic'],
-}
-
-function extractStateDataMode(rawState: unknown, allowed: readonly string[]): string | undefined {
-  let parsedState = rawState
-
-  if (typeof rawState === 'string') {
-    try {
-      parsedState = JSON.parse(rawState)
-    } catch {
-      return undefined
-    }
-  }
-
-  const stateData = parsedState && typeof parsedState === 'object'
-    ? (parsedState as { data?: unknown }).data
-    : undefined
-  const mode = stateData && typeof stateData === 'object' ? (stateData as { mode?: unknown }).mode : undefined
-  return typeof mode === 'string' && allowed.includes(mode) ? mode : undefined
-}
-
-/** The mode of a game that keeps one in state.data, or undefined for every other game. */
-function extractGameMode(gameType: string, rawState: unknown): string | undefined {
-  const allowed = STATE_DATA_MODES[gameType]
-  return allowed ? extractStateDataMode(rawState, allowed) : undefined
-}
-
-function extractMemoryDifficulty(rawState: unknown): 'easy' | 'medium' | 'hard' | undefined {
-  let parsedState = rawState
-
-  if (typeof rawState === 'string') {
-    try {
-      parsedState = JSON.parse(rawState)
-    } catch {
-      return undefined
-    }
-  }
-
-  if (!parsedState || typeof parsedState !== 'object') {
-    return undefined
-  }
-
-  const stateData = (parsedState as { data?: unknown }).data
-  if (!stateData || typeof stateData !== 'object') {
-    return undefined
-  }
-
-  const difficulty = (stateData as { difficulty?: unknown }).difficulty
-  if (difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard') {
-    return difficulty
-  }
-
-  return undefined
-}
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting
@@ -219,33 +123,11 @@ export async function POST(request: NextRequest) {
           playerCount: returningPlayers.length
         })
 
-        const finishedGameTargetRounds =
-          gameType === 'tic_tac_toe' ? extractTicTacToeTargetRounds(finishedGame.state) : undefined
-        const finishedGameMemoryDifficulty =
-          gameType === 'memory' ? extractMemoryDifficulty(finishedGame.state) : undefined
-        const finishedGameMode = extractGameMode(gameType, finishedGame.state)
+        // The same reader Back to lobby uses (#1260): series length, difficulty or mode.
         const initialWaitingState = createGameEngine(
           gameType,
           `waiting_${Date.now()}`,
-          gameType === 'tic_tac_toe' && finishedGameTargetRounds !== undefined
-            ? {
-                rules: {
-                  targetRounds: finishedGameTargetRounds,
-                },
-              }
-            : gameType === 'memory' && finishedGameMemoryDifficulty !== undefined
-              ? {
-                  rules: {
-                    difficulty: finishedGameMemoryDifficulty,
-                  },
-                }
-              : finishedGameMode !== undefined
-                ? {
-                    rules: {
-                      mode: finishedGameMode,
-                    },
-                  }
-                : undefined
+          extractCarriedGameConfig(gameType, finishedGame.state)
         ).getState()
 
         // Create new waiting game with same players

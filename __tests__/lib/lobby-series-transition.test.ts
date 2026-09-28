@@ -107,6 +107,22 @@ describe('transitionLobbyToWaitingRoom', () => {
     expect(createManyArg.data.map((p: { position: number }) => p.position)).toEqual([0])
   })
 
+  it('rebuilds the waiting game with the rules found in the previous state (#1260)', async () => {
+    await transitionLobbyToWaitingRoom({
+      lobbyId: 'lobby-4',
+      lobbyCode: 'LUDO',
+      gameType: 'ludo',
+      players: [],
+      previousState: JSON.stringify({ status: 'finished', data: { mode: 'classic' } }),
+    })
+    expect(createGameEngine).toHaveBeenCalledWith('ludo', 'temp', { rules: { mode: 'classic' } })
+  })
+
+  it('uses the engine defaults when no previous state is given', async () => {
+    await transitionLobbyToWaitingRoom({ lobbyId: 'lobby-5', lobbyCode: 'NONE', gameType: 'ludo', players: [] })
+    expect(createGameEngine).toHaveBeenCalledWith('ludo', 'temp', undefined)
+  })
+
   it('carries over zero players when everyone remaining is a bot', async () => {
     await transitionLobbyToWaitingRoom({
       lobbyId: 'lobby-2',
@@ -148,6 +164,11 @@ describe('maybeAutoTransitionCompletedSeries', () => {
   it('triggers the transition once a tic-tac-toe series is complete on a finished game', () => {
     maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, jest.fn())
     expect(prisma.$transaction).toHaveBeenCalled()
+  })
+
+  it('builds the next waiting room with the finished series length (#1260)', () => {
+    maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, jest.fn())
+    expect(createGameEngine).toHaveBeenCalledWith('tic_tac_toe', 'temp', { rules: { targetRounds: 3 } })
   })
 
   it('does not trigger when the series is not yet complete', () => {

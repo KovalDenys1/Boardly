@@ -5,6 +5,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import type { GameEngine } from '@/lib/game-engine'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { extractCarriedGameConfig } from '@/lib/game-rules-carryover'
 
 interface TransitionPlayer {
   userId: string
@@ -19,6 +20,12 @@ interface TransitionParams {
   gameType: string
   /** Players from the just-finished game. */
   players: TransitionPlayer[]
+  /**
+   * The just-finished game's state, for the rules the room was set up with –
+   * Ludo's and Yahtzee's mode, Memory's difficulty, Tic-Tac-Toe's series length.
+   * Without it the waiting room fell back to the engine's defaults (#1260).
+   */
+  previousState?: unknown
 }
 
 /**
@@ -30,13 +37,17 @@ interface TransitionParams {
  * series-complete trigger fired from the move-processing routes.
  */
 export async function transitionLobbyToWaitingRoom(params: TransitionParams): Promise<{ gameId: string }> {
-  const { lobbyId, lobbyCode, gameType, players } = params
+  const { lobbyId, lobbyCode, gameType, players, previousState } = params
   // Departures are soft-leaves, so the finished game still holds their Players row. Carrying
   // it into the fresh waiting room seats a player who is gone (#1011) — the same defect the
   // "Play again" path had. Only the roster of people still here crosses over.
   const humanPlayers = players.filter((p) => !p.user?.bot && !p.leftAt)
 
-  const initialState = createGameEngine(gameType, 'temp').getState()
+  const initialState = createGameEngine(
+    gameType,
+    'temp',
+    previousState === undefined ? undefined : extractCarriedGameConfig(gameType, previousState)
+  ).getState()
 
   const newGame = await prisma.$transaction(async (tx) => {
     const game = await tx.games.create({
@@ -135,6 +146,9 @@ export function maybeAutoTransitionCompletedSeries(
     gameEngine instanceof TicTacToeGame &&
     gameEngine.isSeriesComplete()
   ) {
-    void transitionLobbyToWaitingRoom(transitionParams).catch(onError)
+    void transitionLobbyToWaitingRoom({
+      ...transitionParams,
+      previousState: transitionParams.previousState ?? gameEngine.getState(),
+    }).catch(onError)
   }
 }
