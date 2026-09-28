@@ -881,6 +881,16 @@ const no = {
         benefit2: 'Robotstøtte for solospilling.',
         benefit3: 'Kampmoduset for best-av-serier.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          twoMarks: 'To spillere deler brettet, den ene som X og den andre som O. Hvert trekk setter nøyaktig ett merke i en ledig rute, og en rute som er tatt, kan ikke overskrives.',
+          xOpensFirstRound: 'X begynner i første runde. Deretter bytter førstetrekket hver runde, så O starter den andre, X den tredje, og så videre.',
+          threeInALine: 'Tre av dine egne merker i én rad, én kolonne eller en av de to diagonalene vinner runden med en gang.',
+          fullGridDraw: 'Blir alle ni rutene fylt uten en linje, ender runden uavgjort. Den teller som en spilt runde, og ingen av spillerne får poeng.',
+          timeoutLoses: 'Går tiden ut, hoppes ikke trekket over: runden går til motstanderen.',
+          undoByConsent: 'Begge spillerne kan be om å ta tilbake det siste merket, og det fjernes bare hvis den andre godtar.',
+          drawByAgreement: 'Når det første merket er satt, kan begge spillerne tilby remis; et godtatt tilbud avslutter runden uavgjort med en gang.',
+          hostStartsNextRound: 'Når en runde er over, starter verten den neste: brettet tømmes, og poengstillingen blir stående.',
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',

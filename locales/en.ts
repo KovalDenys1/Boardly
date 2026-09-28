@@ -881,6 +881,16 @@ const en = {
         benefit2: 'Bot support for solo play.',
         benefit3: 'Match mode for best-of series.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          twoMarks: 'Two players share the grid, one as X and one as O. Each turn places exactly one mark in an empty square, and a taken square cannot be written over.',
+          xOpensFirstRound: 'X moves first in the opening round. After that the first move switches every round, so O starts the second, X the third, and so on.',
+          threeInALine: 'Three of your own marks in one row, one column or either diagonal win the round on the spot.',
+          fullGridDraw: 'If all nine squares fill without a line, the round is a draw. It counts as a round played, and neither player gains a point.',
+          timeoutLoses: 'A move is never skipped when the clock runs out: the whole round goes to your opponent instead.',
+          undoByConsent: 'Either player can ask to take back the last mark, and it only comes off the board if the other player accepts.',
+          drawByAgreement: 'Once the first mark is down, either player can offer a draw; an accepted offer ends the round level at once.',
+          hostStartsNextRound: 'When a round is over, the host starts the next one: the grid clears and the score stays.',
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

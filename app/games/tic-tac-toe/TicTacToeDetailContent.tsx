@@ -40,6 +40,16 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.benefit3'),
         t('games.tictactoe.detail.benefit4'),
       ]}
+      rules={[
+        t('games.tictactoe.detail.rules.twoMarks'),
+        t('games.tictactoe.detail.rules.xOpensFirstRound'),
+        t('games.tictactoe.detail.rules.threeInALine'),
+        t('games.tictactoe.detail.rules.fullGridDraw'),
+        t('games.tictactoe.detail.rules.timeoutLoses'),
+        t('games.tictactoe.detail.rules.undoByConsent'),
+        t('games.tictactoe.detail.rules.drawByAgreement'),
+        t('games.tictactoe.detail.rules.hostStartsNextRound'),
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )
