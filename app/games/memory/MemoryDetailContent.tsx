@@ -87,6 +87,10 @@ export default function MemoryDetailContent() {
       audience={[
         t('games.memory.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.memory.detail.history.origin'),
+        t('games.memory.detail.history.boardlyDeck'),
+      ]}
       playVsBotGameType="memory"
     />
   )

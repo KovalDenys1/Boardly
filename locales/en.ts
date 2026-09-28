@@ -1108,6 +1108,10 @@ const en = {
         audience: {
           whoItSuits: 'Memory suits mixed ages and short breaks. A sharp-eyed child can beat an adult, the 4×4 board makes a quick round, and the 6×6 board gives keen players a real test.',
         },
+        history: {
+          origin: 'Matching pairs is an old parlour game with many names, among them Concentration, Pelmanism and Pexeso. Any deck holding two of each card will do.',
+          boardlyDeck: 'On Boardly the faces are fruit pictures, and every game starts from a fresh shuffle.',
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',
