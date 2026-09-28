@@ -23,6 +23,9 @@ const log = apiLogger('/cleanup/unverified-accounts')
  */
 export function purgeableUnverifiedAccountsWhere(now: Date = new Date()): Prisma.UsersWhereInput {
   return {
+    // Guests have their own lifecycle (scripts/cleanup-old-guests.ts) and a placeholder
+    // guest-<id>@boardly.guest address: warning them bounced every night (#1256).
+    isGuest: false,
     emailVerified: null,
     bot: null,
     accounts: { none: {} },

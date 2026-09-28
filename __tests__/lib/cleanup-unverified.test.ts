@@ -190,6 +190,7 @@ describe('cleanup-unverified', () => {
 
     const DAY = 24 * 60 * 60 * 1000
     const unverified = {
+      isGuest: false,
       emailVerified: null,
       stripeSubscriptionId: null,
       stripeCustomerId: null,
@@ -208,6 +209,8 @@ describe('cleanup-unverified', () => {
       // A recorded checkout consent, whatever the Stripe columns say.
       consented: { ...unverified, purchaseConsents: [{ id: 'pc_1' }] },
       oauth: { ...unverified, accounts: [{ provider: 'google' }] },
+      // A guest carries a placeholder guest-<id>@boardly.guest address that bounces (#1256).
+      guest: { ...unverified, isGuest: true },
     }
 
     it('the deletion excludes a subscription and Premium time still to run', async () => {
@@ -254,6 +257,14 @@ describe('cleanup-unverified', () => {
       expect(matches(where, rows.paidTimeLeft)).toBe(false)
       expect(matches(where, rows.paidOnceLapsed)).toBe(false)
       expect(matches(where, rows.consented)).toBe(false)
+    })
+
+    it('never warns or deletes a guest, whose address only bounces (#1256)', async () => {
+      await warnUnverifiedAccounts(2, 7)
+      expect(matches(mockPrisma.users.findMany.mock.calls[0][0].where, rows.guest)).toBe(false)
+      mockPrisma.users.findMany.mockClear()
+      await cleanupUnverifiedAccounts(7)
+      expect(matches(mockPrisma.users.findMany.mock.calls[0][0].where, rows.guest)).toBe(false)
     })
 
     it('still spares bots and accounts that sign in with a provider', async () => {
