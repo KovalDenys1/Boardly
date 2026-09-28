@@ -31,6 +31,8 @@ const CONTENT_FILES = {
   // #1077: the first page with the long-form sections, which are plain object
   // properties too – every row of its scorecard has to be a t() call.
   yahtzee: path.join(root, 'app/games/yahtzee/YahtzeeDetailContent.tsx'),
+  // #1235: the same long-form sections.
+  'tic-tac-toe': path.join(root, 'app/games/tic-tac-toe/TicTacToeDetailContent.tsx'),
 } as const
 
 const PAGE_FILES = {

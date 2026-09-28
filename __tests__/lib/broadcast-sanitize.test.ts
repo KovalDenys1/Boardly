@@ -1,3 +1,4 @@
+import { AliasGame } from '@/lib/games/alias'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 type StateLike = { status?: string; data?: unknown }
@@ -119,9 +120,41 @@ describe('alias sanitization (#716)', () => {
     ])
   })
 
-  it('leaves state alone outside an active turn', () => {
+  it('leaves the card alone outside an active turn', () => {
     const state = buildState('turn_results')
-    expect(sanitizeStateForBroadcast('alias', state, 'opponent')).toBe(state)
+    expect(cardOf(sanitizeStateForBroadcast('alias', state, 'opponent'))).toEqual(['bridge', 'kettle', 'anchor'])
+  })
+
+  // #1249: the deal pushes the card's indices into usedWordIndices before it
+  // returns the words, so mid-turn the last ten entries ARE the card, and the
+  // word list ships in the client bundle. Nobody but the engine may see them.
+  it('never sends the dealt-word indices, to anyone, in any phase', () => {
+    const game = new AliasGame('g-1249')
+    for (const id of ['describer', 'teammate', 'opponent', 'opponent2']) {
+      game.addPlayer({ id, name: id, score: 0, isActive: true })
+    }
+    game.startGame()
+    game.makeMove({ type: 'start_round', playerId: 'describer', data: {}, timestamp: new Date() })
+    const live = game.getState() as unknown as StateLike
+    const liveData = live.data as { phase: string; usedWordIndices: number[]; currentCard: string[] }
+    expect(liveData.phase).toBe('turn_active')
+    expect(liveData.usedWordIndices).toHaveLength(10)
+
+    const describerId = (liveData as unknown as { teams: Array<{ playerIds: string[]; describerIndex: number }>; currentTeamIndex: number })
+    const team = describerId.teams[describerId.currentTeamIndex]
+    const describer = team.playerIds[team.describerIndex]
+
+    for (const viewer of ['describer', 'teammate', 'opponent', 'opponent2', null]) {
+      const out = sanitizeStateForBroadcast('alias', live, viewer).data as { usedWordIndices: number[]; currentCard: string[] | null }
+      expect(out.usedWordIndices).toEqual([])
+      if (viewer !== describer) {
+        expect(out.currentCard).toBeNull()
+        const json = JSON.stringify(out)
+        for (const word of liveData.currentCard) expect(json).not.toContain(`"${word}"`)
+      }
+    }
+    // the engine's own copy is untouched, so the next deal still avoids repeats
+    expect(liveData.usedWordIndices).toHaveLength(10)
   })
 
   it('keeps already-resolved words visible', () => {
@@ -173,5 +206,52 @@ describe('fake_artist sanitization (#716)', () => {
     const result = sanitizeStateForBroadcast('fake_artist', buildState(), 'honest')
     const rounds = (result.data as { roundResults: Array<{ fakeArtistId: string }> }).roundResults
     expect(rounds[0].fakeArtistId).toBe('honest')
+  })
+})
+
+describe('liars_party sanitization (#1253)', () => {
+  const buildState = (phase: 'claim' | 'challenge' | 'reveal' = 'challenge'): StateLike => ({
+    status: 'playing',
+    data: {
+      phase,
+      claim: { playerId: 'claimant', text: 'I have met a president', isBluff: true, submittedAt: 1 },
+      challengeVotes: [
+        { playerId: 'early', decision: 'challenge', submittedAt: 2 },
+        { playerId: 'viewer', decision: 'believe', submittedAt: 3 },
+      ],
+      roundResults: [],
+    },
+  })
+  type Out = { claim: Record<string, unknown> | null; challengeVotes: Array<Record<string, unknown>> }
+  const dataOf = (state: StateLike) => state.data as Out
+
+  it.each(['viewer', 'early', null])('hides whether the claim is a bluff from %s before the reveal', (viewer) => {
+    const out = dataOf(sanitizeStateForBroadcast('liars_party', buildState(), viewer))
+    expect(out.claim).not.toHaveProperty('isBluff')
+    expect(out.claim?.text).toBe('I have met a president')
+    expect(JSON.stringify(out)).not.toContain('isBluff')
+  })
+
+  it('keeps the flag for the claimant, who chose it', () => {
+    expect(dataOf(sanitizeStateForBroadcast('liars_party', buildState(), 'claimant')).claim?.isBluff).toBe(true)
+  })
+
+  it("shows a voter only their own decision, but every vote's existence", () => {
+    const out = dataOf(sanitizeStateForBroadcast('liars_party', buildState(), 'viewer'))
+    expect(out.challengeVotes).toHaveLength(2)
+    expect(out.challengeVotes.find((v) => v.playerId === 'viewer')?.decision).toBe('believe')
+    expect(out.challengeVotes.find((v) => v.playerId === 'early')).not.toHaveProperty('decision')
+  })
+
+  it('hides every decision on a shared broadcast and from the claimant', () => {
+    for (const viewer of [null, 'claimant']) {
+      const out = dataOf(sanitizeStateForBroadcast('liars_party', buildState(), viewer))
+      for (const vote of out.challengeVotes) expect(vote).not.toHaveProperty('decision')
+    }
+  })
+
+  it('makes everything public at the reveal', () => {
+    const state = buildState('reveal')
+    expect(sanitizeStateForBroadcast('liars_party', state, null)).toBe(state)
   })
 })

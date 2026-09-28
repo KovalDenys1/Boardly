@@ -64,17 +64,16 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | white text on `bd-coral-deep` | 4.0:1 | AA large only |
 | white text on `bd-lav-deep` | 4.3:1 | AA large only |
 | white text on `bd-mint-deep` | 3.0:1 | AA large only |
-| white text on `bd-coral` (Coral CTA example above) | 2.8:1 | **fails AA at any size** |
-| white text on `bd-lav` (Lav button example above) | 2.8:1 | **fails AA at any size** |
-| `bd-line` border on `bd-bg` (default input/card border) | 1.3:1 | **fails the 3:1 UI-boundary target** |
+| `bd-ink-on-accent` text on `bd-coral` (Coral CTA) | 6.1:1 | AA text + large |
+| `bd-ink-on-accent` text on `bd-lav` (Lav button) | 6.2:1 | AA text + large |
+| white text on `bd-coral` / `bd-lav` | 2.8:1 | **fails AA at any size — never use** |
+| `bd-input-border` on white (`.bd-input` resting border) | 3.6:1 | AA UI boundary |
+| `bd-line` border on `bd-bg` (cards, dividers) | 1.3:1 | decorative only — not for a field's edge |
 
-The last three rows are real gaps, not measured before #1171: the Coral and Lav button
-patterns in this file only clear AA when their label is large+bold text (≥18px / ≥14px
-bold); `.bd-input`'s resting border is `bd-line` on `bd-bg` (1.3:1, below the 3:1
-boundary target) and only reaches a high-contrast `bd-ink` border (`:focus`,
-`app/globals.css`) once the field is focused, so an unfocused input's edge is the one that
-fails today. Changing `bd-coral`, `bd-lav` or the resting input border is a brand-color
-decision, not an a11y bugfix — flag it rather than re-tuning the palette unilaterally.
+**Text on a coral or lavender fill is `--bd-ink-on-accent` (#1F1B16, the same in both
+themes), never white.** Denys chose this on 2026-09-28 (#1171) over darkening the fills,
+so the brand colours stay as they are. `.bd-input`'s resting border is its own token,
+`--bd-input-border`, since `bd-line` gave a field's edge only 1.3:1.
 
 Recompute with the WCAG relative-luminance formula (not perceived brightness) whenever a
 new token or a new text-on-fill pairing is added, and add it to this table.
@@ -176,7 +175,7 @@ Use system font (default) for body text, descriptions, labels.
 ### Coral CTA (coral bg, coral-deep shadow)
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-bold text-white bg-bd-coral shadow-bd-coral-4 hover:scale-105 transition-transform"
+  className="px-6 py-3 rounded-bd-md font-bold text-[color:var(--bd-ink-on-accent)] bg-bd-coral shadow-bd-coral-4 hover:scale-105 transition-transform"
 >
   Play free
 </button>
@@ -194,7 +193,7 @@ Use system font (default) for body text, descriptions, labels.
 ### Lav (feedback/lav actions)
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-bold text-white bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition-all"
+  className="px-6 py-3 rounded-bd-md font-bold text-[color:var(--bd-ink-on-accent)] bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition-all"
 >
   Send
 </button>
@@ -239,7 +238,7 @@ style={{ background: held ? 'var(--bd-sun)' : 'white', border: '2px solid var(--
 
 // BoardlyAvatar color map
 const COLOR_MAP = {
-  coral: { bg: 'var(--bd-coral)', text: 'white' },
+  coral: { bg: 'var(--bd-coral)', text: 'var(--bd-ink-on-accent)' },
   sun:   { bg: 'var(--bd-sun)',   text: 'var(--bd-ink)' },
   // ...
 }

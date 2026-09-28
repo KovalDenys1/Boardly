@@ -48,6 +48,44 @@ export default function RockPaperScissorsDetailContent() {
         t('games.rock_paper_scissors.detail.benefit3'),
         t('games.rock_paper_scissors.detail.benefit4'),
       ]}
+      rules={[
+        t('games.rock_paper_scissors.detail.rules.noTurns'),
+        t('games.rock_paper_scissors.detail.rules.pickStaysHidden'),
+        t('games.rock_paper_scissors.detail.rules.revealOrder'),
+        t('games.rock_paper_scissors.detail.rules.timeoutRandomPick'),
+      ]}
+      modes={[
+        { title: t('games.rock_paper_scissors.detail.modes.matchLength.title'), desc: t('games.rock_paper_scissors.detail.modes.matchLength.desc') },
+        { title: t('games.rock_paper_scissors.detail.modes.roundClock.title'), desc: t('games.rock_paper_scissors.detail.modes.roundClock.desc') },
+        { title: t('games.rock_paper_scissors.detail.modes.botLevels.title'), desc: t('games.rock_paper_scissors.detail.modes.botLevels.desc') },
+      ]}
+      strategy={[
+        { title: t('games.rock_paper_scissors.detail.strategy.readTheRoundList.title'), desc: t('games.rock_paper_scissors.detail.strategy.readTheRoundList.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.answerARepeat.title'), desc: t('games.rock_paper_scissors.detail.strategy.answerARepeat.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.spotACycle.title'), desc: t('games.rock_paper_scissors.detail.strategy.spotACycle.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.thinkOneStepFurther.title'), desc: t('games.rock_paper_scissors.detail.strategy.thinkOneStepFurther.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.watchYourOwnCount.title'), desc: t('games.rock_paper_scissors.detail.strategy.watchYourOwnCount.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.exploitMindGambit.title'), desc: t('games.rock_paper_scissors.detail.strategy.exploitMindGambit.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.title'), desc: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.desc') },
+        { title: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.title'), desc: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.desc') },
+      ]}
+      mistakes={[
+        { title: t('games.rock_paper_scissors.detail.mistakes.readingTempoRookie.title'), desc: t('games.rock_paper_scissors.detail.mistakes.readingTempoRookie.desc') },
+        { title: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.title'), desc: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.desc') },
+        { title: t('games.rock_paper_scissors.detail.mistakes.countingDraws.title'), desc: t('games.rock_paper_scissors.detail.mistakes.countingDraws.desc') },
+      ]}
+      multiplayer={[
+        { title: t('games.rock_paper_scissors.detail.multiplayer.withFriends.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.withFriends.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.botsAndSolo.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.rock_paper_scissors.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.rock_paper_scissors.detail.history.origin'),
+      ]}
     />
   )
 }

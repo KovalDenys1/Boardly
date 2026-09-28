@@ -475,7 +475,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.tictactoe.difficulty',
     seo: {
       title: 'Play Tic Tac Toe Online Free with Friends',
-      description: 'Play Tic Tac Toe online free in the browser. Take the 3×3 grid against a friend or a bot, one round or a best of 3, 5 or 10. No download, no account needed.',
+      description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
       synonyms: [
         'tic tac toe online',
         'tic tac toe online free',
@@ -492,6 +492,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic 3×3 grid strategy game where two players alternate placing X and O marks, aiming to get three in a row.',
       questionKey: 'games.tictactoe.seo.question',
       answerKey: 'games.tictactoe.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1235).
+      faq: [
+        { questionKey: 'games.tictactoe.detail.faq.isItFree.q', answerKey: 'games.tictactoe.detail.faq.isItFree.a' },
+        { questionKey: 'games.tictactoe.detail.faq.needAccount.q', answerKey: 'games.tictactoe.detail.faq.needAccount.a' },
+        { questionKey: 'games.tictactoe.detail.faq.worksOnPhone.q', answerKey: 'games.tictactoe.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.tictactoe.detail.faq.howManyPlayers.q', answerKey: 'games.tictactoe.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.tictactoe.detail.faq.timerRunsOut.q', answerKey: 'games.tictactoe.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.tictactoe.detail.faq.playFriendRemotely.q', answerKey: 'games.tictactoe.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.tictactoe.detail.faq.takeBackOrDraw.q', answerKey: 'games.tictactoe.detail.faq.takeBackOrDraw.a' },
+      ],
     },
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',
@@ -529,6 +540,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Matching pairs card game for two to four players. Every card starts face down; flip two on your turn and keep the pair when they match. Easy is 4×4, hard is 6×6.',
       questionKey: 'games.memory.seo.question',
       answerKey: 'games.memory.seo.answer',
+      // Product questions only: the how-to guide already answers players,
+      // difficulty, game length, the bot, reshuffling and accounts (#1236).
+      faq: [
+        { questionKey: 'games.memory.detail.faq.isItFree.q', answerKey: 'games.memory.detail.faq.isItFree.a' },
+        { questionKey: 'games.memory.detail.faq.worksOnPhone.q', answerKey: 'games.memory.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.memory.detail.faq.timerRunsOut.q', answerKey: 'games.memory.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.memory.detail.faq.playRemotely.q', answerKey: 'games.memory.detail.faq.playRemotely.a' },
+        { questionKey: 'games.memory.detail.faq.botBoard.q', answerKey: 'games.memory.detail.faq.botBoard.a' },
+        { questionKey: 'games.memory.detail.faq.mixBotsAndPeople.q', answerKey: 'games.memory.detail.faq.mixBotsAndPeople.a' },
+        { questionKey: 'games.memory.detail.faq.canPeek.q', answerKey: 'games.memory.detail.faq.canPeek.a' },
+      ],
     },
     availability: 'available',
     route: '/games/memory/lobbies',
@@ -622,6 +644,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Team word description game where players describe words to their teammates without saying the word itself, racing against a timer to score points.',
       questionKey: 'games.alias.seo.question',
       answerKey: 'games.alias.seo.answer',
+      // Product questions only: the how-to guide already answers player
+      // count, voice calls, what counts as cheating, skipping, bots and game
+      // length (#1237).
+      faq: [
+        { questionKey: 'games.alias.detail.faq.isItFree.q', answerKey: 'games.alias.detail.faq.isItFree.a' },
+        { questionKey: 'games.alias.detail.faq.worksOnPhone.q', answerKey: 'games.alias.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.alias.detail.faq.timerRunsOut.q', answerKey: 'games.alias.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.alias.detail.faq.canGuessersSeeWord.q', answerKey: 'games.alias.detail.faq.canGuessersSeeWord.a' },
+        { questionKey: 'games.alias.detail.faq.howTeamsArePicked.q', answerKey: 'games.alias.detail.faq.howTeamsArePicked.a' },
+        { questionKey: 'games.alias.detail.faq.wordsInEnglish.q', answerKey: 'games.alias.detail.faq.wordsInEnglish.a' },
+        { questionKey: 'games.alias.detail.faq.describerLeaves.q', answerKey: 'games.alias.detail.faq.describerLeaves.a' },
+      ],
     },
     availability: 'available',
     route: '/games/alias/lobbies',
@@ -693,6 +727,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic two-player simultaneous-choice game. Both players pick Rock, Paper or Scissors at the same time. Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
       questionKey: 'games.rock_paper_scissors.seo.question',
       answerKey: 'games.rock_paper_scissors.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1238).
+      faq: [
+        { questionKey: 'games.rock_paper_scissors.detail.faq.isItFree.q', answerKey: 'games.rock_paper_scissors.detail.faq.isItFree.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.q', answerKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.q', answerKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.q', answerKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.q', answerKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.changeTimer.q', answerKey: 'games.rock_paper_scissors.detail.faq.changeTimer.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playAgain.q', answerKey: 'games.rock_paper_scissors.detail.faq.playAgain.a' },
+      ],
     },
     availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',

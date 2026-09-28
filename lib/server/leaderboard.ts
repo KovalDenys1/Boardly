@@ -18,6 +18,10 @@ import {
 // a specific game type — otherwise players with mixed portfolios appear in
 // the total but vanish when drilling down by type.
 const MIN_GAMES_ALL = 10
+
+// Accounts that play only to test the site and never belong on a public ranking (#1234):
+// DenysTest is the owner's second account for two-player checks.
+export const LEADERBOARD_HIDDEN_USER_IDS: readonly string[] = ['cmiz488060000isil2lgf6jzk']
 const MIN_GAMES_FILTERED = 1
 
 // Profile changes must not linger (#638).
@@ -186,6 +190,7 @@ async function queryLeaderboardPage({ gameType, period, page }: LeaderboardQuery
       LEFT JOIN "AccountPreferences" ap ON ap."userId" = u.id
       WHERE g.status = 'finished'
         AND b.id IS NULL
+        AND u.id NOT IN (${Prisma.join(LEADERBOARD_HIDDEN_USER_IDS)})
         ${gameTypeClause}
         ${sinceClause}
     )

@@ -243,7 +243,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                               aria-selected={selected}
                               onClick={() => handleGameFilterSelect(f.value)}
                               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                                selected ? 'bg-bd-lav text-white' : 'text-bd-ink hover:bg-bd-card-warm'
+                                selected ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]' : 'text-bd-ink hover:bg-bd-card-warm'
                               }`}
                             >
                               <span className="flex min-w-0 items-center gap-3">

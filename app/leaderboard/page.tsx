@@ -27,6 +27,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://boardly.online/leaderboard',
   },
+  // Out of the index while the all-games board is a handful of rows (#1234): AdSense
+  // rejected the site for low-value content on 2026-09-28, and four qualifying players
+  // read as an empty site. It is out of app/sitemap.ts for the same reason; put both
+  // back once the board has a real field of players.
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 // The top rows are rendered into the HTML so crawlers get real players

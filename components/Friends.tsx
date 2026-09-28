@@ -64,7 +64,7 @@ const warmSurfaceClassName =
 const tileClassName =
   'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
 const dangerButtonClassName =
@@ -716,7 +716,7 @@ export default function Friends() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
+                    ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
                     : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                 }`}
               >
@@ -813,7 +813,7 @@ export default function Friends() {
                       <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                           <div className="relative shrink-0">
-                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-white shadow-[2px_2px_0_var(--bd-ink)]">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[2px_2px_0_var(--bd-ink)]">
                               {renderAvatar(friend.username || 'Unknown', friend.avatar)}
                             </div>
                             {isOnline && (
@@ -903,7 +903,7 @@ export default function Friends() {
                         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
-                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bd-lav text-white dark:border-slate-900">
+                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bd-lav text-[color:var(--bd-ink-on-accent)] dark:border-slate-900">
                           <MailIcon />
                         </div>
                       </div>
@@ -1023,7 +1023,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('link')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'link'
-                          ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                       }`}
                     >
@@ -1035,7 +1035,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('code')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'code'
-                          ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                       }`}
                     >

@@ -26,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Core pages
     page('/', { changeFrequency: 'daily', priority: 1.0 }),
     page('/games', { changeFrequency: 'weekly', priority: 0.9 }),
-    page('/leaderboard', { changeFrequency: 'daily', priority: 0.7 }),
+    // /leaderboard is noindex while the board is nearly empty (#1234).
     page('/about', { changeFrequency: 'yearly', priority: 0.5 }),
     page('/premium', { changeFrequency: 'monthly', priority: 0.7 }),
 

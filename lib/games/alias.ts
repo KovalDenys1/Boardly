@@ -407,14 +407,21 @@ export function sanitizeAliasStateForBroadcast<T extends { data?: unknown; statu
   viewerUserId: string | null = null
 ): T {
   const data = state.data as AliasGameData | undefined
-  if (!data || !data.currentCard) return state
+  if (!data) return state
+
+  // `usedWordIndices` never leaves the server (#1249). The deal pushes the card's
+  // indices before it returns the words, so mid-turn its last ten entries are the
+  // live card in order, and ALIAS_WORDS ships in the client bundle – redacting
+  // `currentCard` alone left the card one lookup away. No client reads it; only
+  // `_dealCard` does, on the server's own copy of the state.
+  const withoutDeck = { ...data, usedWordIndices: [] as number[] }
 
   // Outside an active turn there is no live card to protect.
-  if (data.phase !== 'turn_active') return state
+  if (!data.currentCard || data.phase !== 'turn_active') return { ...state, data: withoutDeck }
 
   const currentTeam = Array.isArray(data.teams) ? data.teams[data.currentTeamIndex] : undefined
   const describerId = currentTeam?.playerIds?.[currentTeam.describerIndex]
-  if (viewerUserId !== null && describerId === viewerUserId) return state
+  if (viewerUserId !== null && describerId === viewerUserId) return { ...state, data: withoutDeck }
 
-  return { ...state, data: { ...data, currentCard: null } }
+  return { ...state, data: { ...withoutDeck, currentCard: null } }
 }

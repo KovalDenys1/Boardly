@@ -5,6 +5,7 @@ import { sanitizeSketchAndGuessStateForBroadcast } from './games/sketch-and-gues
 import { sanitizeMemoryStateForBroadcast } from './games/memory-game'
 import { sanitizeAliasStateForBroadcast } from './games/alias'
 import { sanitizeFakeArtistStateForBroadcast } from './games/fake-artist-game'
+import { sanitizeLiarsPartyStateForBroadcast } from './games/liars-party-game'
 
 /**
  * Single dispatch point for "strip secrets before this state leaves the
@@ -57,8 +58,8 @@ const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
   yahtzee: null,
   // Tokens, dice and roll history are all on the table.
   ludo: null,
-  // Every claim and challenge is made in the open; the bluff is social, not informational.
-  liars_party: null,
+  // The claim text is public; whether it is a bluff, and how others voted, is not – until the reveal (#1253).
+  liars_party: (state, viewerUserId) => sanitizeLiarsPartyStateForBroadcast(state, viewerUserId),
   // Each step is revealed to the next player in the chain by design, and the
   // full chain is only assembled at the reveal phase.
   telephone_doodle: null,

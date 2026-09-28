@@ -105,7 +105,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
           >
             {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
             {hasActiveFilters && !showFilters && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-bd-coral px-1 text-[10px] font-bold text-white">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-bd-coral px-1 text-[10px] font-bold text-[color:var(--bd-ink-on-accent)]">
                 {activeFilterCount}
               </span>
             )}

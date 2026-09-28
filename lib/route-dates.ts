@@ -9,8 +9,8 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
  * Seeded on 2026-09-15 by one rule for every key: the last commit on
  * `origin/develop` that touched the route's own files – its `page.tsx` and the
  * components beside it, sub-routes such as `/lobbies` excluded
- * (`git log -1 --format=%cs -- app/<route>/*.tsx`). `/leaderboard` is dated by
- * this change because #922 changed what its HTML contains. No seed is older
+ * (`git log -1 --format=%cs -- app/<route>/*.tsx`). `/leaderboard` left the
+ * sitemap and this map in #1234 (noindex while its board is nearly empty). No seed is older
  * than the date the sitemap advertised before #922, so no lastmod regresses.
  * `/games` and `/guides` are index pages: their date here is only the last
  * change to the index itself, and `getRouteUpdated` lifts it to the newest
@@ -21,20 +21,21 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
   '/games': '2026-09-07',
-  '/leaderboard': '2026-09-15',
-  '/about': '2026-09-15',
+  // #1234 named all eleven games (it listed seven).
+  '/about': '2026-09-28',
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
   '/games/spy': '2026-09-15',
-  '/games/tic-tac-toe': '2026-09-15',
-  '/games/memory': '2026-09-15',
+  '/games/tic-tac-toe': '2026-09-28', // #1235 expanded the page
+  // #1236 expanded the page to the Track A sections.
+  '/games/memory': '2026-09-28',
   // #1090 expanded the page and folded the strategy guide into it.
   '/games/connect-four': '2026-09-24',
-  '/games/alias': '2026-09-15',
-  // #1043 added the guide link to the detail page, and the new guide to the
-  // catalog the /guides index lists from.
-  '/games/rock-paper-scissors': '2026-09-20',
+  // #1237 expanded the page to the Track A sections.
+  '/games/alias': '2026-09-28',
+  // #1238 expanded the page to the Track A sections.
+  '/games/rock-paper-scissors': '2026-09-28',
   // Released by #873 on 2026-09-21, the day they became indexable.
   '/games/liars-party': '2026-09-21',
   '/games/sketch-and-guess': '2026-09-21',
