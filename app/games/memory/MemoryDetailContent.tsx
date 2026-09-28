@@ -58,6 +58,11 @@ export default function MemoryDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.memory.detail.modes.boardSize.title'), desc: t('games.memory.detail.modes.boardSize.desc') },
+        { title: t('games.memory.detail.modes.turnClock.title'), desc: t('games.memory.detail.modes.turnClock.desc') },
+        { title: t('games.memory.detail.modes.botLevels.title'), desc: t('games.memory.detail.modes.botLevels.desc') },
+      ]}
       playVsBotGameType="memory"
     />
   )

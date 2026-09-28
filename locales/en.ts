@@ -1025,6 +1025,20 @@ const en = {
             },
           },
         },
+        modes: {
+          boardSize: {
+            title: 'Three boards, the host\'s choice',
+            desc: 'The create form offers 16, 20 or 36 cards (4×4, 5×4 or 6×6), with the smallest preselected.',
+          },
+          turnClock: {
+            title: 'Turn clock',
+            desc: 'Each turn gets 30, 60, 90 or 120 seconds, 60 unless the host picks another.',
+          },
+          botLevels: {
+            title: 'Three bots',
+            desc: 'Memory Scout misses most of its tries, Pattern Seeker finds a pair about half the time, and Recall Master finds one on most tries.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

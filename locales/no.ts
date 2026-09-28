@@ -1025,6 +1025,20 @@ const no = {
             },
           },
         },
+        modes: {
+          boardSize: {
+            title: 'Tre brett, verten velger',
+            desc: 'Opprettingsskjemaet tilbyr 16, 20 eller 36 kort (4×4, 5×4 eller 6×6), med det minste forhåndsvalgt.',
+          },
+          turnClock: {
+            title: 'Turklokke',
+            desc: 'Hver tur får 30, 60, 90 eller 120 sekunder, 60 med mindre verten velger noe annet.',
+          },
+          botLevels: {
+            title: 'Tre boter',
+            desc: 'Memory Scout bommer på de fleste forsøkene, Pattern Seeker finner et par omtrent halvparten av gangene, og Recall Master finner ett på de fleste forsøk.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',
