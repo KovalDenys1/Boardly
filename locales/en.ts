@@ -816,12 +816,174 @@ const en = {
         step3Title: 'Ask smart questions',
         step3Desc: 'Take turns asking questions. Regulars try to expose the spy; the spy tries to blend in.',
         step4Title: 'Vote or guess',
-        step4Desc: 'The group can call a vote at any time. The spy can also guess the location early — correct guess wins 500 pts, wrong guess ends the round.',
+        step4Desc: 'The host can call a vote during the questions. The spy can also guess the location early — correct guess wins 500 pts, wrong guess ends the round.',
         benefitsTitle: 'Why play Guess the Spy on Boardly?',
         benefit1: 'Easy to start with a shared room link.',
         benefit2: 'Great for groups, parties, and quick breaks.',
         benefit3: 'Works from any modern browser.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          askInTurn: 'Players take turns typing a question to someone else; answers join the round\'s log.',
+          whenVotingOpens: 'Voting opens when the host says so, after twice as many answers as players, or at the first answer or skip after five minutes.',
+          howTheVoteEnds: 'Once every player in the game has voted, a single leader is voted out; a tie votes out nobody. The results name the spy either way.',
+          spyMayGuess: 'While the questions run, the spy may guess among all 24 places; right or wrong, the round ends.',
+        },
+        scoring: {
+          vote: {
+            title: 'When the table votes',
+            note: 'Votes also score alone.',
+            rows: {
+              spyEscapes: {
+                name: 'Spy not voted out',
+                value: '+300',
+                rule: 'To the spy, ties included.',
+              },
+              spyCaught: {
+                name: 'Spy voted out',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+              voteOnSpy: {
+                name: 'Vote on the spy',
+                value: '+50',
+                rule: 'To that voter.',
+              },
+              voteOnOther: {
+                name: 'Vote on anyone else',
+                value: '−10',
+                rule: 'To that voter; the spy\'s own vote always.',
+              },
+            },
+          },
+          guess: {
+            title: 'When the spy guesses',
+            note: 'Nobody votes that round.',
+            rows: {
+              rightPlace: {
+                name: 'Right location',
+                value: '+500',
+                rule: 'To the spy.',
+              },
+              wrongPlace: {
+                name: 'Wrong location',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: '3 to 8 seats on the create form, 6 by default, up to 10 before the start.',
+          },
+          fixedClocks: {
+            title: 'Fixed rounds and clocks',
+            desc: 'Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.',
+          },
+        },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Strike places off',
+            desc: 'As the spy, cross out every place an answer rules out.',
+          },
+          countToTheDeadline: {
+            title: 'Count the answers',
+            desc: 'With five players, guess before the tenth answer opens the vote.',
+          },
+          weighTheGuess: {
+            title: 'Weigh 500 against 300',
+            desc: 'Surviving pays 300; guess only when one place fits every answer.',
+          },
+          aTieIsEnough: {
+            title: 'A tie is enough',
+            desc: 'A tied vote also pays the spy, so split the doubt.',
+          },
+          answerInRole: {
+            title: 'Answer in role',
+            desc: 'Answer as your job there, never naming the place.',
+          },
+          askTheUnasked: {
+            title: 'Ask the unasked',
+            desc: 'A spy hides best in a seat nobody questions.',
+          },
+          voteForPoints: {
+            title: 'Your vote scores alone',
+            desc: 'A vote on the spy pays 50, whoever the table picks.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Host: time the vote',
+            desc: 'Ending early blocks the spy\'s guess but leaves fewer answers.',
+          },
+        },
+        mistakes: {
+          namingThePlace: {
+            title: 'Naming the place',
+            desc: 'Mention a runway and the spy guesses the airport.',
+          },
+          splittingTheVote: {
+            title: 'Splitting the vote',
+            desc: 'A tied top votes out nobody and pays the spy 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Guessing on a hunch',
+            desc: 'A wrong guess pays every other player 100.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: 'Share the code or link; every screen updates live.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'No solo mode or bots; share the invite or join an open room.',
+          },
+          secretsStayPrivate: {
+            title: 'Secrets stay private',
+            desc: 'Only your browser gets your role.',
+          },
+          guestNoDownload: {
+            title: 'A name and a browser',
+            desc: 'Guests type a name and play; nothing to install.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Groups of three to ten who like reading people: parties, classrooms, video calls.',
+        },
+        history: {
+          origin: 'Spyfall by Alexandr Ushan (2014) made the spy-without-a-location format a party staple.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Guess the Spy on Boardly free?',
+            a: 'Yes, for everyone, guests included. Only letting spectators in (the host), replays (the viewer) and premium lobby themes need Premium.',
+          },
+          worksOnPhone: {
+            q: 'Does Guess the Spy work on a phone?',
+            a: 'Yes, in the mobile browser: round, players and chat sit on separate tabs in portrait.',
+          },
+          canOthersSeeSpy: {
+            q: 'Can other players see who the spy is?',
+            a: 'Not before the results: until then no browser receives the spy\'s name, and each role goes only to its holder.',
+          },
+          typedOrSpoken: {
+            q: 'Are the questions typed or spoken?',
+            a: 'Typed. The asker picks a player and types a question, and the typed answer is logged.',
+          },
+          whoStartsVote: {
+            q: 'Who can start the vote?',
+            a: 'Only the host; otherwise it opens after twice as many answers as players, or at the first answer or skip after five minutes.',
+          },
+          whichLocations: {
+            q: 'Which locations can come up?',
+            a: 'Any of 24 places, from airport and casino to hospital and museum, named in English everywhere.',
+          },
+          howWinnerDecided: {
+            q: 'How is the overall winner decided?',
+            a: 'By total points after three rounds; scores carry over, and a shared top total is a draw.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
@@ -1589,7 +1751,7 @@ const en = {
       difficulty: 'Medium',
       seo: {
         question: 'Can you play checkers online for free with a friend?',
-        answer: 'Yes. It is standard English checkers on an 8×8 board, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and play a bot. Captures are forced, jumps chain, and a guest name is all the account you need.',
+        answer: 'Yes. It is standard English checkers on an 8×8 board in the browser: send a friend your lobby code or play a bot on easy, medium or hard. A guest name is all the account you need.',
       },
       ribbon: {
         desc: 'The classic diagonal duel. Force captures, chain jumps and crown your kings.',
@@ -1600,12 +1762,12 @@ const en = {
         title: 'Play Checkers Online',
         heroDesc: 'Classic English checkers in the browser. Invite a friend or add a bot, and play move by move in real time.',
         introTitle: 'What is Checkers?',
-        intro0: 'Checkers, also called draughts, is a two-player strategy game on the dark squares of an 8×8 board. Each side starts with twelve pieces and moves them diagonally forward, one square at a time.',
-        intro1: 'You capture by jumping over an opposing piece, and if a capture is available you must take it. A piece that reaches the far row becomes a king and can move backwards too. Take every piece or leave your opponent without a move to win.',
+        intro0: 'Checkers, also called draughts, is a two-player strategy game on the dark squares of an 8×8 board, where pieces move diagonally and capture by jumping.',
+        intro1: 'Captures are compulsory, and a piece that reaches the far row becomes a king. Take every piece or leave your opponent without a move to win.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room, or join a friend\'s with its code. Each room seats two.',
         step2Title: 'Choose friend or bot',
-        step2Desc: 'Invite another player or add a bot to play right away.',
+        step2Desc: 'Send the code or the link. If nobody is free, add a bot.',
         step3Title: 'Tap a piece, then a square',
         step3Desc: 'Legal destinations light up. When a capture is on, the pieces that must take are highlighted.',
         step4Title: 'Crown kings and win',
@@ -1615,6 +1777,132 @@ const en = {
         benefit2: 'Three bot levels for solo play.',
         benefit3: 'Forced captures and jump chains handled for you.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          board: 'Twelve men a side on the 32 dark squares of an 8×8 board. Dark moves first.',
+          menMove: 'A man moves one square diagonally forward and captures forward only.',
+          forcedCapture: 'Capturing is compulsory, but you may pick any capture, not only the longest.',
+          multiJump: 'The jumping piece must keep jumping while it can; jumped pieces come off when the move ends.',
+          crowning: 'A man reaching the far row becomes a king, which ends the move.',
+          kings: 'A king moves and captures one square diagonally in any direction; it does not fly.',
+          endAndDraw: 'You win when your opponent cannot move. Forty moves each with no capture and no man moving is a draw.',
+        },
+        modes: {
+          moveClock: {
+            title: 'Seconds per move',
+            desc: '60 seconds a move by default. The host picks 30 to 120 when creating the lobby, or 30 to 180 in 30-second steps in the lobby settings before the start. Play vs Bot gives 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Checkers Rookie moves at random. Diagonal Tactician looks one reply ahead and avoids moves that let you win at once. Kingmaker searches several moves deep for up to about a second.',
+          },
+          rematches: {
+            title: 'Rematches keep score',
+            desc: 'The host\'s Play Again starts the next game in the same room. Wins add up; draws add nothing.',
+          },
+        },
+        strategy: {
+          guardBackRow: {
+            title: 'Guard your back row',
+            desc: 'Home-row men stop enemy crowning. Move them last.',
+          },
+          holdTheCentre: {
+            title: 'Hold the centre',
+            desc: 'A central man has two squares forward; an edge man has one.',
+          },
+          moveInPairs: {
+            title: 'Move in pairs',
+            desc: 'A man backed up on its diagonal cannot be jumped along it.',
+          },
+          baitTheForcedCapture: {
+            title: 'Use the forced capture',
+            desc: 'Offer a man so the forced jump lets you take two back.',
+          },
+          readTheChain: {
+            title: 'Read the whole chain',
+            desc: 'Follow where each jump lands; gaps can turn one capture into three.',
+          },
+          raceForAKing: {
+            title: 'Race for the first king',
+            desc: 'A king moves backwards too and usually decides an even ending.',
+          },
+          tradeWhenAhead: {
+            title: 'Trade when ahead',
+            desc: 'One man up, even exchanges lead to an ending you can win.',
+          },
+          crowningStopsTheChain: {
+            title: 'Crowning stops a chain',
+            desc: 'A man crowned mid-capture stops there for that move.',
+          },
+        },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Forgetting where a forced jump lands',
+            desc: 'Your opponent can force you to capture. Check where your man would land.',
+          },
+          emptyingBackRow: {
+            title: 'Emptying the back row early',
+            desc: 'It opens crowning squares for the enemy.',
+          },
+          thinkingPastTheClock: {
+            title: 'Thinking past the clock',
+            desc: 'A timeout loses the game, even from a winning position.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Share the code or link; moves appear on both boards live, with chat when two people play.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot opens a lobby with your bot seated. Press Start; you play Dark.',
+          },
+          turnTimer: {
+            title: 'One clock for both',
+            desc: 'Both players see one countdown. If it reaches zero on your move with the game open, you lose.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'No install on phone, tablet or computer; a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Checkers suits anyone after real strategy without chess theory, and makes a good first strategy game for children.',
+        },
+        history: {
+          names: 'North Americans say checkers, the British draughts. Russian and Brazilian checkers let men capture backwards and kings fly; international draughts uses a 10×10 board.',
+          solved: 'This English version is solved: in 2007 the program Chinook proved perfect play ends in a draw.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Checkers on Boardly free?',
+            a: 'Yes, including all three bots. Premium adds extras such as spectators and lobby themes for hosts, and game replays; the game is the same.',
+          },
+          needAccount: {
+            q: 'Do I need an account to play?',
+            a: 'No. A guest name is enough to create or join a lobby or play a bot; signing up is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play on my phone?',
+            a: 'Yes, in the mobile browser with no app to install: tap a piece, then a highlighted square.',
+          },
+          whichRules: {
+            q: 'Which checkers rules does Boardly use?',
+            a: 'English draughts, with forward-only men and one-step kings. Russian, Brazilian and international rules are not offered.',
+          },
+          whoMovesFirst: {
+            q: 'Who moves first?',
+            a: 'Dark, held by the first seat, and Play Again does not swap colours. Against a bot you always play Dark.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose the game, even from a winning position. The countdown on screen shows how long you have left, so plan the last seconds of a hard move.',
+          },
+          undoOrDraw: {
+            q: 'Can I undo a move or offer a draw?',
+            a: 'No, every move stands. A game is drawn only after forty moves each with no capture and no man moving.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',
@@ -1873,7 +2161,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Ludo online for free with friends?',
-        answer: 'Yes. Open a lobby, send the code to up to three friends, or fill the empty seats with bots on easy, medium or hard. The die is rolled on our server, never in your browser, and quick mode with two tokens each fits a game into about fifteen minutes. Free, nothing to install.',
+        answer: 'Yes. Open a lobby and send the code to up to three friends, or fill empty seats with bots on easy, medium or hard. Our server rolls the die, and it is free with nothing to install.',
       },
       ribbon: {
         desc: 'The family race game. Roll a six to get out, send rivals back to their yard and bring every token home.',
@@ -1892,35 +2180,155 @@ const en = {
         blue: 'Blue',
       },
       rules: {
-        serverRolls: 'The die is rolled on the server for every player, bots included, and every roll is listed in the roll history.',
+        serverRolls: 'The die is rolled on the server for every player, bots included, and recent rolls are listed in the roll history.',
         sixToLeave: 'Roll a 6 to bring a token out of the yard onto your start square.',
         sixRollsAgain: 'A 6 earns another roll. Three 6s in a row lose the turn.',
         capture: 'Land on an opponent to send their token back to the yard.',
         safeSquares: 'Start squares and star squares are safe: nobody can be captured there.',
         exactHome: 'You need the exact number to reach home.',
         winner: 'The first player to bring every token home wins; the others are ranked by progress.',
-        modes: 'Quick mode plays with two tokens each, classic with four.',
-        timer: 'One turn timer covers your roll and your move, and a bonus roll after a 6 gets a fresh one. When it runs out, the server rolls and moves for you and the turn passes.',
+        timer: 'One timer covers roll and move; a bonus roll after a 6 gets a fresh one. If it runs out while your game is open, the server plays your turn.',
       },
       detail: {
         title: 'Play Ludo Online',
-        heroDesc: 'Classic Ludo for two to four players, in real time in the browser. Invite friends, fill empty seats with bots and race for home.',
+        heroDesc: 'Classic Ludo for two to four players in the browser. Invite friends or fill seats with bots.',
         introTitle: 'What is Ludo?',
-        intro0: 'Ludo is a race game on a cross-shaped board. Each player has a colour, a yard with tokens and a home column leading to the centre.',
-        intro1: 'Roll a six to bring a token out, move round the track and land on rivals to send them back. The first to bring every token home wins.',
+        intro0: 'Ludo is a race game on a cross-shaped board: each colour has a yard, a lap of track and a home column.',
+        intro1: 'Roll, race round the track and send rivals back to their yard; the first to bring every token home wins.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room, pick quick or classic mode and share the code.',
+        step1Desc: 'Open a room and pick quick or classic. Share the code or link.',
         step2Title: 'Fill the seats',
-        step2Desc: 'Wait for friends or add bots to play straight away.',
+        step2Desc: 'Wait for friends or add bots. Alone, one bot joins automatically.',
         step3Title: 'Roll and move',
-        step3Desc: 'Press Roll, then tap the token you want to move.',
+        step3Desc: 'Press Roll, then tap a token. A single possible move plays itself.',
         step4Title: 'Race for home',
-        step4Desc: 'Capture rivals, stay on safe squares and bring every token home first.',
+        step4Desc: 'Capture rivals and get every token home first. The game ends then.',
         benefitsTitle: 'Why play Ludo on Boardly?',
-        benefit1: 'Fair dice: every roll comes from the server and is shown to the whole table.',
-        benefit2: 'Bots on three levels for the empty seats.',
-        benefit3: 'Quick mode for a game in about fifteen minutes.',
-        benefit4: 'Free to play as a guest, nothing to install.',
+        benefit1: 'Fair dice, rolled on the server.',
+        benefit2: 'Bots on three levels.',
+        benefit3: 'Quick mode with two tokens each.',
+        benefit4: 'Free as a guest.',
+        rules: {
+          homeColumn: 'After 50 squares a token enters its own home column, where no rival can land.',
+          noBlocks: 'There are no blocks: landing on two rival tokens sends both back, except on a safe square.',
+          extraRollOnlyOnSix: 'Even an unusable 6 earns the extra roll; captures and finishes earn none.',
+        },
+        modes: {
+          quickOrClassic: {
+            title: 'Quick or classic',
+            desc: 'Two tokens each or four, picked by the host when creating the lobby.',
+          },
+          turnClock: {
+            title: 'A clock on every turn',
+            desc: 'Lobbies you create default to 30 seconds; the host can set 30 to 180 before the start. Quick Play and Play vs Bot use 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Token Rookie moves at random. Token Tactician prefers a capture, then leaving the yard, then heading home. Ludo Grandmaster scores each move, weighing rivals up to six squares behind.',
+          },
+        },
+        strategy: {
+          bringTokensOut: {
+            title: 'Get tokens out',
+            desc: 'More tokens out, more choices per roll.',
+          },
+          restOnStars: {
+            title: 'Rest on stars',
+            desc: 'Start and star squares are safe; wait there.',
+          },
+          countTheGapBehind: {
+            title: 'Count the gap behind',
+            desc: 'A rival one to six back can hit you.',
+          },
+          trailDoNotLead: {
+            title: 'Trail, don\'t lead',
+            desc: 'Tokens only move forward; the threat is behind.',
+          },
+          captureTheCostlyToken: {
+            title: 'Capture the costly token',
+            desc: 'A rival near the end of its lap loses most.',
+          },
+          bankYourLeader: {
+            title: 'Bank your leader',
+            desc: 'No rival reaches the home column; bring your leader in first.',
+          },
+          planTheExactFinish: {
+            title: 'Plan the exact finish',
+            desc: 'Three from home needs exactly a 3; keep a spare token.',
+          },
+          mindRivalStartSquares: {
+            title: 'Mind rival start squares',
+            desc: 'A token entering rolls again; squares past its start are risky.',
+          },
+        },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Stopping just ahead of a rival',
+            desc: 'One to six squares in front of an opponent invites a capture.',
+          },
+          trustingAPairToBlock: {
+            title: 'Trusting a pair to block',
+            desc: 'Two tokens on one square block nobody and fall together off a safe square.',
+          },
+          racingOneTokenAlone: {
+            title: 'Racing one token alone',
+            desc: 'With one token out, any roll but a 6 moves it if it can.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play friends anywhere',
+            desc: 'Share the code with up to three friends; chat opens once two people are seated.',
+          },
+          botsAndSolo: {
+            title: 'Bots for solo play',
+            desc: 'Play vs Bot seats one bot; press Start Game. The host can add more first.',
+          },
+          turnTimer: {
+            title: 'When someone leaves',
+            desc: 'A player silent for 30 seconds is removed at the next table check; their tokens stay, their turns are skipped and play goes on.',
+          },
+          guestNoDownload: {
+            title: 'No app, no sign-up',
+            desc: 'Any browser on a phone, tablet or laptop; a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Families and mixed groups: luck keeps everyone in it, while token choice rewards a sharp eye.',
+        },
+        history: {
+          origin: 'Ludo descends from Pachisi, an Indian race game centuries old, and was patented in England in 1896 as Ludo, Latin for "I play".',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Ludo on Boardly free?',
+            a: 'Yes, every seat, mode, bot and timer. Premium adds extras around the game, such as spectators and lobby themes for the host, replays and profile looks.',
+          },
+          worksOnPhone: {
+            q: 'Can I play Ludo on my phone?',
+            a: 'Yes, in any mobile browser. On a small screen the board, moves, rules and chat, when there is someone to talk to, sit in tabs.',
+          },
+          pickYourOwnRoll: {
+            q: 'Can anyone pick their dice roll?',
+            a: 'No. The server rolls for every seat, ignores numbers a browser sends, and each face is one in six.',
+          },
+          timerRunsOut: {
+            q: 'Which token moves if my timer runs out?',
+            a: 'If your game is open when the timer runs out, the server moves a token reaching home, else one that captures, else the furthest. A 6 rolled so earns no extra roll.',
+          },
+          howManyPlayers: {
+            q: 'How many players can play Ludo?',
+            a: 'Two to four, up to three of them bots. Two players sit in opposite corners of the board.',
+          },
+          whoPicksMode: {
+            q: 'Who chooses quick or classic mode?',
+            a: 'The host, when creating the lobby, and Play again keeps that mode. Rooms that Quick Play or Play vs Bot create use quick.',
+          },
+          playAgain: {
+            q: 'Can we play again with the same people?',
+            a: 'Yes. The host presses Play again and a new game starts in the same lobby with everyone still seated, in the same mode.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',
@@ -2233,24 +2641,87 @@ const en = {
       },
       detail: {
         title: 'Play Sketch & Guess Online',
-        heroDesc: 'Draw a secret prompt on a shared canvas and race to guess what everyone else is drawing. Three to ten players, live in the browser.',
-        groupNotice: 'Sketch & Guess needs at least three players and has no bots – bring a group, or warm up in a game that plays against a bot.',
+        heroDesc: 'Draw a secret word on a shared canvas and race to guess everyone else\'s. Three to ten players, live in the browser.',
+        groupNotice: 'Sketch & Guess needs at least three players and has no bots – bring a group, or warm up in a game with a bot.',
         introTitle: 'What is Sketch & Guess?',
-        intro0: 'Sketch & Guess is a party game for three to ten people. Each round one player is given a secret prompt and draws it on a shared canvas while everyone else types what they think it is.',
-        intro1: 'Correct guesses score points, the first one in scores the most, and the drawer scores for every player who works it out. When the last round has been revealed, the highest total wins.',
+        intro0: 'Sketch & Guess is a party game for three to ten people. Each round one player draws a secret word on a shared canvas while the others type guesses.',
+        intro1: 'Correct guesses score, the first one in scores most, and the drawer scores for every player who gets it. After the last reveal, the highest total wins.',
         step1Title: 'Create or join a lobby',
         step1Desc: 'Open a room and share the code. Three players is the minimum.',
         step2Title: 'Draw your prompt',
-        step2Desc: 'On your turn you pick one of three words and get up to 80 seconds to draw it.',
+        step2Desc: 'Pick one of three words within 15 seconds. Then draw it in up to 80 seconds.',
         step3Title: 'Guess before the clock runs out',
-        step3Desc: 'Everyone else guesses as often as they like while you draw, in any of the site\'s languages. The faster the right answer, the more it scores.',
+        step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
-        step4Desc: 'The prompt is revealed, points are shared out, and the next player draws.',
+        step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or after round three the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
         benefit1: 'A shared canvas that updates live.',
         benefit2: 'Three to ten players in one room.',
-        benefit3: 'Everybody draws and everybody guesses.',
+        benefit3: 'A new drawer every round, and the rest guess.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          drawOrder: 'Drawers go in joining order, so the first three players to join draw rounds one, two and three.',
+          wordChoice: 'An undecided drawer gets one of the three words at random after 15 seconds. A word that has been drawn is never offered again that game.',
+          matching: 'Capitals, apostrophes and most accents (é, å, ё) are ignored; ø, æ and й are letters of their own. Plurals and synonyms often count too.',
+          wordHint: 'Guessers see blanks in their own language; words of three letters or more get a letter uncovered at half time.',
+          chatLock: 'Until the reveal, the drawer and anyone who has guessed the word cannot post in chat.',
+        },
+        scoring: {
+          guessing: {
+            title: 'Guessing',
+            rightGuess: { name: 'Right guess', rule: 'Any correct answer in time.' },
+            speedBonus: { name: 'Speed bonus', value: 'up to +50', rule: 'Shrinks as the clock runs.' },
+            firstIn: { name: 'First in', rule: 'Only the round\'s first correct guesser.' },
+          },
+          drawing: {
+            title: 'Drawing',
+            note: 'No total drops below zero.',
+            perCorrectGuesser: { name: 'Per correct guesser', rule: 'Late answers pay as much as early ones.' },
+            ownRuling: { name: 'Own ruling', rule: 'A drawing host\'s own accept pays them nothing.' },
+            blankCanvas: { name: 'Blank canvas', rule: 'Nothing drawn by the round\'s end.' },
+          },
+        },
+        modes: {
+          threeRounds: { title: 'Three rounds, every game', desc: 'One drawing per round, and there is no round setting.' },
+          phaseClocks: { title: 'Fixed phase clocks', desc: '15 seconds to choose, 80 to draw, 8 to reveal. The lobby timer does not apply.' },
+          roomSize: { title: 'Three to ten seats', desc: 'Rooms made on the create form start with six seats; Quick Play rooms open with all ten.' },
+        },
+        strategy: {
+          pickTheDrawableWord: { title: 'Pick the drawable word', desc: 'Take the one with the clearest outline.' },
+          shapeFirst: { title: 'Shape first', desc: 'An early outline gives guessers a shot at the speed bonus.' },
+          letColourTalk: { title: 'Let colour talk', desc: 'A blue wave or red flame narrows it fast.' },
+          drawTheScene: { title: 'Draw the scene', desc: 'A fin in waves beats a lone fish.' },
+          guessEarly: { title: 'Guess early', desc: 'A miss costs nothing, and waiting trims the bonus.' },
+          readTheMisses: { title: 'Read the misses', desc: 'Misses stay in the feed (near misses show only as “close”); rule them out.' },
+          countTheBlanks: { title: 'Count the blanks', desc: 'They show the length and where the words break.' },
+          trustSoClose: { title: 'Trust “So close!”', desc: 'You are one letter off an accepted answer: usually a typo, sometimes a neighbouring word.' },
+        },
+        mistakes: {
+          leavingTheCanvasEmpty: { title: 'Leaving the canvas empty', desc: 'It costs the drawer 20 points.' },
+          clearingForOneLine: { title: 'Clearing for one bad line', desc: 'Undo takes back just the last stroke.' },
+          waitingToBeSure: { title: 'Waiting to be sure', desc: 'By then the first-in bonus has often gone.' },
+        },
+        multiplayer: {
+          withFriends: { title: 'Friends anywhere', desc: 'Share the code or link; one canvas fills in live.' },
+          botsAndSolo: { title: 'People, not bots', desc: 'A bot cannot read a sketch; bring three people.' },
+          turnTimer: { title: 'One bar per phase', desc: 'Every player sees one countdown; at zero, play moves on.' },
+          guestNoDownload: { title: 'Guest in a browser', desc: 'Any browser, no install; a guest name is enough.' },
+        },
+        audience: {
+          whoItSuits: 'Groups of three to ten: families, classes, video calls and mixed-language tables.',
+        },
+        history: {
+          origin: 'Sketch guessing is an old parlour game that Pictionary boxed in 1985. Boardly adds a four-language word bank.',
+        },
+        faq: {
+          isItFree: { q: 'Is Sketch & Guess on Boardly free?', a: 'Yes. Every round, word and room size is free; Premium only adds extras such as spectators.' },
+          playAloneOrBot: { q: 'Can I play alone or against a bot?', a: 'No. It needs three people, because a bot cannot read a drawing. Send friends the invite link.' },
+          guessLanguages: { q: 'Which languages can I guess in?', a: 'English, Norwegian, Russian and Ukrainian. A guess in any of them counts, whatever your screen shows.' },
+          everyoneDraws: { q: 'Does everyone get to draw?', a: 'With three players, yes. Games are three rounds, so in bigger groups only the first three to join draw.' },
+          timeRunsOut: { q: 'What happens when time runs out?', a: 'An undecided drawer gets a random word, and when the drawing clock ends the word is revealed.' },
+          hostAcceptsGuess: { q: 'Can the host overrule a wrong guess?', a: 'Yes. Until the round moves on, the host can accept another player\'s miss as a right answer.' },
+          playerLeaves: { q: 'What if a player leaves mid-game?', a: 'Play goes on while three remain; an absent drawer\'s turn just runs out. Below three, the game ends.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
@@ -2346,20 +2817,167 @@ const en = {
         heroDesc: 'A social bluffing game where players make claims, read the room, and vote on who is telling the truth.',
         introTitle: "What is Liar's Party?",
         intro0: "Liar's Party is a social bluffing game. One player makes a claim, and everyone else decides whether to believe it or challenge it.",
-        intro1: 'Good reads earn points. Bad reads cost you. Get caught too many times and you are out of the round.',
+        intro1: 'Good reads earn points. Bad reads cost you. Get caught too many times and you are out of the game.',
         step1Title: 'Create a lobby',
-        step1Desc: 'Invite a group and start a round together.',
+        step1Desc: 'Invite a group and start a round together. The host can start once four players are seated.',
         step2Title: 'Make your claim',
-        step2Desc: 'Tell the truth or bluff, then mark it secretly.',
+        step2Desc: 'Tell the truth or bluff, then mark which it is. No screen shows your choice until the reveal.',
         step3Title: 'Vote',
-        step3Desc: 'Other players choose whether to believe or challenge the claim.',
+        step3Desc: 'Other players choose whether to believe or challenge the claim. A counter shows how many have voted.',
         step4Title: 'Reveal and survive',
-        step4Desc: 'The truth comes out and the scoreboard updates.',
+        step4Desc: 'The truth comes out and the scoreboard updates. Any player can open the next round.',
         benefitsTitle: "Why Liar's Party belongs on Boardly",
         benefit1: 'Built for shared room play.',
         benefit2: 'Clear voting and reveal moments.',
         benefit3: 'Great for social groups.',
         benefit4: 'No app download planned.',
+        rules: {
+          floorRotates: 'Each round one player holds the floor, in turn, skipping anyone who is out.',
+          claimAndMark: 'The claimant writes up to 180 characters and marks them truth or bluff.',
+          everyoneElseVotes: 'Every other player still in votes Challenge or Believe, once.',
+          caughtNeedsMore: 'A bluff is caught only when challengers outnumber believers; an even split lets it through.',
+          strikesAndEnd: 'Two caught bluffs put you out. The game ends after ten rounds or when one player is left.',
+        },
+        scoring: {
+          claimant: {
+            title: 'The claimant',
+            note: 'No score drops below zero.',
+            rows: {
+              bluffGetsThrough: { name: 'Bluff gets through', value: '+20', rule: 'Plus 6 per believer.' },
+              bluffCaught: { name: 'Bluff caught', value: '−12', rule: 'Plus a strike.' },
+              truthBelieved: { name: 'Truth believed', value: '+12', rule: 'Believers match or outnumber challengers.' },
+              truthChallenged: { name: 'Truth challenged', value: '+4', rule: 'Challengers outnumber believers.' },
+              noClaimInTime: { name: 'No claim in time', value: '−4', rule: 'No vote that round.' },
+            },
+          },
+          voters: {
+            title: 'Each voter',
+            note: 'Scored on the truth, not on the tally.',
+            rows: {
+              challengeBluff: { name: 'Challenge a bluff', value: '+14', rule: 'You spotted it.' },
+              challengeTruth: { name: 'Challenge a truth', value: '−6', rule: 'An honest claim doubted.' },
+              believeTruth: { name: 'Believe a truth', value: '+10', rule: 'An honest claim trusted.' },
+              believeBluff: { name: 'Believe a bluff', value: '−8', rule: 'You were fooled.' },
+              noVoteInTime: { name: 'No vote in time', value: '−4', rule: 'Also counted as Believe.' },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Rooms of 4 to 12 seats, 8 by default; more than ten needs a Premium host.',
+          },
+          phaseClock: {
+            title: 'Phase clock',
+            desc: 'Each phase gets 60 seconds; before the start, the host can pick 30 to 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Rounds and strikes',
+            desc: 'Ten rounds and two strikes; no lobby setting changes them.',
+          },
+        },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Challenge above 42 percent',
+            desc: 'Challenging beats believing once a bluff looks more than 42 percent likely.',
+          },
+          yourReadScoresAlone: {
+            title: 'Your read scores alone',
+            desc: 'A right challenge earns 14 even if the bluff survives the vote.',
+          },
+          bluffForTheTable: {
+            title: 'Bluff for the whole table',
+            desc: 'A bluff that gets through with five believers is worth 50.',
+          },
+          countYourStrikes: {
+            title: 'Count your strikes',
+            desc: 'On one strike, a caught bluff ends your game; tell the truth.',
+          },
+          stayInToWin: {
+            title: 'Staying in beats points',
+            desc: 'Everyone still playing ranks above anyone knocked out, whatever the scores.',
+          },
+          strangeButTrue: {
+            title: 'Tell truths that sound strange',
+            desc: 'Even if most of the table doubts it, an odd truth still scores 4, while each challenger loses 6.',
+          },
+          specificDetails: {
+            title: 'Give a bluff real detail',
+            desc: 'A place, a year and a consequence read like memory.',
+          },
+          readTheHistory: {
+            title: 'Read the history card',
+            desc: 'Earlier claims and verdicts stay on screen while you vote.',
+          },
+        },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Letting the clock vote',
+            desc: 'A missed vote counts as Believe and costs 4 more points.',
+          },
+          freezingOnYourClaim: {
+            title: 'Freezing on your claim',
+            desc: 'Run out the clock and you lose 4 with nothing to win back.',
+          },
+          challengingEveryClaim: {
+            title: 'Challenging every claim',
+            desc: 'Each wrong challenge costs 6, so blanket doubt bleeds points.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: "Share the code or invite link; everything updates live on every player's screen.",
+          },
+          botsAndSolo: {
+            title: 'People only',
+            desc: 'A bot has nothing to bluff with, so there are no bots. Short of four? Share the invite link or join an open lobby.',
+          },
+          turnTimer: {
+            title: 'One clock per phase',
+            desc: 'At zero the server fills the gap when an open page in the room checks in, as pages do unprompted.',
+          },
+          guestNoDownload: {
+            title: 'Nothing to install',
+            desc: 'Any browser on a phone or laptop; guests only need a name.',
+          },
+        },
+        audience: {
+          whoItSuits: 'For four to twelve people who enjoy reading each other: parties, video calls, club nights.',
+        },
+        history: {
+          origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat.',
+        },
+        faq: {
+          isItFree: {
+            q: "Is Liar's Party free to play?",
+            a: 'Yes, the whole game is free for up to ten players. Premium adds bigger rooms, spectators, replays and lobby themes.',
+          },
+          worksOnPhone: {
+            q: "Does Liar's Party work on a phone?",
+            a: 'Yes, in any mobile browser: the game sits on one tab, with players and chat one tap away.',
+          },
+          whatCanIClaim: {
+            q: 'What can I claim?',
+            a: 'Anything from 5 to 180 characters, true or invented: a story about you, a fact, a boast.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'A silent claimant loses 4 and the vote is skipped; a missing vote counts as Believe, minus 4.',
+          },
+          playerLeaves: {
+            q: 'What if a player leaves mid-game?',
+            a: 'They are out and rank below everyone still in; below four players in the room, the game ends.',
+          },
+          howLong: {
+            q: 'How long does a game last?',
+            a: 'Ten rounds at most, one claim each, and fewer if only one player is left in the game.',
+          },
+          canFriendsWatch: {
+            q: 'Can friends watch without playing?',
+            a: 'Yes, if a Premium host allows spectators; they follow claims, votes and the reveal but cannot vote.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
@@ -3826,7 +4444,7 @@ const en = {
     rule1: 'Each round, one active player becomes the claimant and submits one claim.',
     rule2: 'Other active players submit one vote: challenge or believe.',
     rule3: 'A bluff is considered caught only when challengers are a strict majority.',
-    rule4: 'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
+    rule4: 'Wrong votes lose points; correct reads gain points; each caught bluff adds a strike.',
     rule5: 'A player is eliminated after reaching strike limit.',
     waitingForPlayers: 'Waiting for players...',
     roundsCount: '{{count}} rounds',

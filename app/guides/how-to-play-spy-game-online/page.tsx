@@ -90,8 +90,8 @@ export default function HowToPlaySpyGuide() {
               detail: "Players take turns asking each other one question about the location. Keep questions vague enough not to reveal the location to the spy, but specific enough to prove you know it.",
             },
             {
-              title: 'Anyone can call a vote',
-              detail: 'Any player can close the questions and open the vote. Everyone votes at once, and the player with the most votes is revealed – a tie eliminates nobody. Naming anyone but the spy loses the round for the group.',
+              title: 'The host can call the vote',
+              detail: 'The host can close the questions and open the vote early. Everyone votes at once, and the player with the most votes is voted out – a tie eliminates nobody. Naming anyone but the spy loses the round for the group.',
             },
             {
               title: 'The spy can guess the location',

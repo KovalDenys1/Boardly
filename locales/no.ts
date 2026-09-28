@@ -816,12 +816,174 @@ const no = {
         step3Title: 'Still smarte spørsmål',
         step3Desc: 'Still spørsmål etter tur. Vanlige spillere prøver å avsløre spionen; spionen prøver å blande seg inn.',
         step4Title: 'Stem eller gjett',
-        step4Desc: 'Gruppen kan kalle en avstemning når som helst. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
+        step4Desc: 'Verten kan starte en avstemning under spørsmålene. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
         benefitsTitle: 'Hvorfor spille Gjett spionen på Boardly?',
         benefit1: 'Enkelt å starte med en delt romlenke.',
         benefit2: 'Perfekt for grupper, fester og korte pauser.',
         benefit3: 'Fungerer i alle moderne nettlesere.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
+          whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          howTheVoteEnds: 'Når alle spillerne i spillet har stemt, stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
+          spyMayGuess: 'Mens spørsmålene pågår, kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
+        },
+        scoring: {
+          vote: {
+            title: 'Når bordet stemmer',
+            note: 'Hver stemme gir også poeng for seg.',
+            rows: {
+              spyEscapes: {
+                name: 'Spionen ikke stemt ut',
+                value: '+300',
+                rule: 'Til spionen, også ved uavgjort.',
+              },
+              spyCaught: {
+                name: 'Spionen stemt ut',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+              voteOnSpy: {
+                name: 'Stemme på spionen',
+                value: '+50',
+                rule: 'Til den som stemte.',
+              },
+              voteOnOther: {
+                name: 'Stemme på en annen',
+                value: '−10',
+                rule: 'Til den som stemte; alltid spionens egen stemme.',
+              },
+            },
+          },
+          guess: {
+            title: 'Når spionen gjetter',
+            note: 'Ingen stemmer den runden.',
+            rows: {
+              rightPlace: {
+                name: 'Riktig sted',
+                value: '+500',
+                rule: 'Til spionen.',
+              },
+              wrongPlace: {
+                name: 'Feil sted',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Opprettingsskjemaet tilbyr 3 til 8 plasser, 6 som standard; verten kan øke til 10 før start.',
+          },
+          fixedClocks: {
+            title: 'Faste runder og klokker',
+            desc: 'Tre runder og fem minutters spørreklokke; nedtellingen på 60 sekunder til avstemningen er veiledende, og avstemningen lukkes når alle har stemt.',
+          },
+        },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Stryk steder',
+            desc: 'Som spion stryker du hvert sted et svar utelukker.',
+          },
+          countToTheDeadline: {
+            title: 'Tell svarene',
+            desc: 'Med fem spillere åpner det tiende svaret avstemningen, så gjett før det.',
+          },
+          weighTheGuess: {
+            title: 'Vei 500 mot 300',
+            desc: 'Å overleve avstemningen gir 300; gjett bare når ett sted passer med hvert svar.',
+          },
+          aTieIsEnough: {
+            title: 'Uavgjort holder',
+            desc: 'Uavgjort gir også spionen poeng, så fordel tvilen.',
+          },
+          answerInRole: {
+            title: 'Svar i rollen',
+            desc: 'Svarer du som jobben din der, viser du at du kjenner stedet uten å nevne det.',
+          },
+          askTheUnasked: {
+            title: 'Spør dem som ikke er spurt',
+            desc: 'En spion gjemmer seg best på en plass ingen spør.',
+          },
+          voteForPoints: {
+            title: 'Stemmen din teller for seg',
+            desc: 'En stemme på spionen gir 50 selv om bordet bommer.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Vert: velg tidspunktet',
+            desc: 'Å avslutte tidlig stopper spionens gjetning, men gir færre svar.',
+          },
+        },
+        mistakes: {
+          namingThePlace: {
+            title: 'Å nevne stedet',
+            desc: 'Spør om rullebanen, og spionen gjetter flyplassen.',
+          },
+          splittingTheVote: {
+            title: 'Å splitte stemmene',
+            desc: 'Delt topp stemmer ut ingen og gir spionen 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Å gjette på magefølelse',
+            desc: 'En feil gjetning gir alle de andre spillerne 100.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller lenken; loggen og poengene oppdateres på hver skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Mennesker, aldri boter',
+            desc: 'Ingen solomodus eller boter. Mangler dere en tredje? Del invitasjonen eller bli med i et åpent rom.',
+          },
+          secretsStayPrivate: {
+            title: 'Hemmeligheter holdes private',
+            desc: 'Bare din nettleser får rollen din.',
+          },
+          guestNoDownload: {
+            title: 'Et navn og en nettleser',
+            desc: 'Gjester skriver et navn og spiller; ingenting å installere.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, videosamtaler.',
+        },
+        history: {
+          origin: 'Spyfall av Alexandr Ushan, utgitt i 2014, gjorde formatet med en spion uten sted til en selskapsklassiker.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Gjett spionen på Boardly gratis?',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Gjett spionen på mobil?',
+            a: 'Ja, i mobilnettleseren, med runden, spillerlista og chatten i hver sin fane i stående format, ett trykk unna.',
+          },
+          canOthersSeeSpy: {
+            q: 'Kan andre spillere se hvem som er spion?',
+            a: 'Ikke før resultatene. Fram til da holder serveren spionens navn utenfor det nettleserne mottar, og hver rolle når bare den som har den.',
+          },
+          typedOrSpoken: {
+            q: 'Skrives spørsmålene, eller sies de høyt?',
+            a: 'De skrives. Den som spør, velger en spiller og skriver et spørsmål; det skrevne svaret logges ved siden av.',
+          },
+          whoStartsVote: {
+            q: 'Hvem kan starte avstemningen?',
+            a: 'Verten, når som helst under spørsmålene. Ellers åpner den etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          },
+          whichLocations: {
+            q: 'Hvilke steder kan dukke opp?',
+            a: 'Et av 24 steder i sju grupper, fra flyplass og kasino til sykehus og museum, med engelske navn uansett språk på siden.',
+          },
+          howWinnerDecided: {
+            q: 'Hvordan avgjøres vinneren av spillet?',
+            a: 'På totalpoeng etter tre runder; poengene tas med videre, og delt toppsum er uavgjort.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',
@@ -1589,7 +1751,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan man spille dam gratis på nett med en venn?',
-        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett, spilt live i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og spill mot en bot. Slag er tvungne, hopp kan kjedes, og et gjestenavn er all kontoen du trenger.',
+        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
         desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
@@ -1600,12 +1762,12 @@ const no = {
         title: 'Spill dam på nett',
         heroDesc: 'Klassisk engelsk dam i nettleseren. Inviter en venn eller legg til en bot, og spill trekk for trekk i sanntid.',
         introTitle: 'Hva er dam?',
-        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett. Hver side starter med tolv brikker og flytter dem diagonalt fremover, én rute om gangen.',
-        intro1: 'Du slår ved å hoppe over en motstanderbrikke, og har du et slag, må du ta det. En brikke som når bakerste rad blir konge og kan også gå bakover. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
+        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett, der brikkene går diagonalt og slår ved å hoppe.',
+        intro1: 'Slag er tvunget, og en brikke som når bakerste rad, blir konge. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
         step1Title: 'Opprett eller bli med i en lobby',
-        step1Desc: 'Åpne et rom og del koden med motstanderen.',
+        step1Desc: 'Åpne et rom, eller bli med i en venns rom med koden. Hvert rom har plass til to.',
         step2Title: 'Velg venn eller bot',
-        step2Desc: 'Inviter en annen spiller eller legg til en bot for å spille med en gang.',
+        step2Desc: 'Send koden eller lenken. Er ingen ledig, legger du til en bot.',
         step3Title: 'Trykk på en brikke, så en rute',
         step3Desc: 'Lovlige ruter lyser opp. Når et slag er mulig, er brikkene som må slå uthevet.',
         step4Title: 'Kron konger og vinn',
@@ -1615,6 +1777,132 @@ const no = {
         benefit2: 'Tre botnivåer for å spille alene.',
         benefit3: 'Tvungne slag og hoppkjeder håndteres for deg.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          board: 'Tolv brikker hver på de 32 mørke rutene på et 8×8-brett. Mørk trekker først.',
+          menMove: 'En vanlig brikke går én rute diagonalt fremover og slår bare fremover.',
+          forcedCapture: 'Slag er tvunget, men du kan velge hvilket som helst slag, ikke bare det lengste.',
+          multiJump: 'Brikken som hopper, må hoppe videre så lenge den kan; slåtte brikker fjernes når trekket er ferdig.',
+          crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket.',
+          kings: 'En konge går og slår én rute diagonalt i alle retninger; den flyr ikke.',
+          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+        },
+        modes: {
+          moveClock: {
+            title: 'Sekunder per trekk',
+            desc: '60 sekunder per trekk som standard. Verten velger 30 til 120 når lobbyen opprettes, eller 30 til 180 i steg på 30 sekunder i lobbyinnstillingene før start. «Spill mot bot» gir 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Checkers Rookie trekker tilfeldig. Diagonal Tactician ser ett svar fram og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i opptil omtrent ett sekund.',
+          },
+          rematches: {
+            title: 'Omkamper teller',
+            desc: 'Vertens «Spill igjen» starter neste parti i samme rom. Seirene summeres, uavgjort gir ingenting.',
+          },
+        },
+        strategy: {
+          guardBackRow: {
+            title: 'Vokt bakerste rad',
+            desc: 'Brikker på hjemraden hindrer motstanderen i å få konge. Flytt dem sist.',
+          },
+          holdTheCentre: {
+            title: 'Hold midten',
+            desc: 'En brikke i midten har to ruter fremover, en kantbrikke bare én.',
+          },
+          moveInPairs: {
+            title: 'Flytt i par',
+            desc: 'En brikke med støtte bak seg på diagonalen kan ikke slås langs den.',
+          },
+          baitTheForcedCapture: {
+            title: 'Bruk slagtvangen',
+            desc: 'Ofre en brikke slik at det tvungne hoppet lar deg slå to tilbake.',
+          },
+          readTheChain: {
+            title: 'Les hele kjeden',
+            desc: 'Følg hvor hvert hopp lander; åpne ruter kan gjøre ett slag til tre.',
+          },
+          raceForAKing: {
+            title: 'Kappløp om første konge',
+            desc: 'En konge går også bakover og avgjør ofte et jevnt sluttspill.',
+          },
+          tradeWhenAhead: {
+            title: 'Bytt når du leder',
+            desc: 'Én brikke foran fører jevne bytter til et sluttspill du kan vinne.',
+          },
+          crowningStopsTheChain: {
+            title: 'Kroning stopper kjeden',
+            desc: 'En brikke som kroner midt i et slag, stopper der det trekket.',
+          },
+        },
+        mistakes: {
+          ignoringTheLanding: {
+            title: 'Å glemme hvor et tvunget hopp lander',
+            desc: 'Motstanderen kan tvinge deg til å slå. Sjekk hvor brikken din vil lande.',
+          },
+          emptyingBackRow: {
+            title: 'Å tømme bakerste rad for tidlig',
+            desc: 'Det åpner kroningsruter for motstanderen.',
+          },
+          thinkingPastTheClock: {
+            title: 'Å tenke forbi klokka',
+            desc: 'Går tiden ut, taper du partiet, selv fra en vinnende stilling.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: '«Spill mot bot» åpner en lobby der boten allerede sitter. Start spillet, så spiller du Mørk.',
+          },
+          turnTimer: {
+            title: 'Én klokke for begge',
+            desc: 'Begge ser den samme nedtellingen. Når den når null på ditt trekk mens partiet er åpent, taper du.',
+          },
+          guestNoDownload: {
+            title: 'Rett fra nettleseren',
+            desc: 'Ingenting å installere på mobil, nettbrett eller PC; et gjestenavn holder.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkteori, og er et godt første strategispill for barn.',
+        },
+        history: {
+          names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. I russisk og brasiliansk dam slår vanlige brikker bakover og kongene flyr; internasjonal dam spilles på 10×10.',
+          solved: 'Den engelske varianten er løst: i 2007 beviste programmet Chinook at perfekt spill ender uavgjort.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er dam på Boardly gratis?',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto for å spille?',
+            a: 'Nei. Et gjestenavn holder for å opprette eller bli med i en lobby eller spille mot en bot; registrering er valgfritt.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille på mobilen?',
+            a: 'Ja, i mobilnettleseren uten app å installere: trykk på en brikke, så på en uthevet rute.',
+          },
+          whichRules: {
+            q: 'Hvilke damregler bruker Boardly?',
+            a: 'Engelsk dam, der vanlige brikker bare går fremover og kongene én rute. Russiske, brasilianske og internasjonale regler finnes ikke her.',
+          },
+          whoMovesFirst: {
+            q: 'Hvem trekker først?',
+            a: 'Mørk, som første sete får, og «Spill igjen» bytter ikke farger. Mot en bot spiller du alltid Mørk.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden min går ut?',
+            a: 'Du taper partiet, selv fra en vinnende stilling. Nedtellingen på skjermen viser hvor lang tid du har igjen, så planlegg de siste sekundene av et vanskelig trekk.',
+          },
+          undoOrDraw: {
+            q: 'Kan jeg angre et trekk eller tilby uavgjort?',
+            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',
@@ -1873,7 +2161,7 @@ const no = {
       difficulty: 'Lett',
       seo: {
         question: 'Kan man spille Ludo gratis på nett med venner?',
-        answer: 'Ja. Opprett en lobby, send koden til opptil tre venner, eller fyll de tomme plassene med roboter på lett, middels eller vanskelig. Terningen kastes på serveren vår, aldri i nettleseren din, og hurtigmodus med to brikker hver gjør at et spill tar omtrent et kvarter. Gratis, ingenting å installere.',
+        answer: 'Ja. Opprett en lobby og send koden til opptil tre venner, eller fyll tomme plasser med roboter på lett, middels eller vanskelig. Serveren vår kaster terningen, og det er gratis uten noe å installere.',
       },
       ribbon: {
         desc: 'Det klassiske familiespillet. Slå en sekser for å komme ut, send motstanderne tilbake til gården og få alle brikkene hjem.',
@@ -1892,35 +2180,155 @@ const no = {
         blue: 'Blå',
       },
       rules: {
-        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og hvert kast vises i kasthistorikken.',
+        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og de siste kastene vises i kasthistorikken.',
         sixToLeave: 'Slå en sekser for å flytte en brikke ut av gården og inn på startfeltet ditt.',
         sixRollsAgain: 'En sekser gir et nytt kast. Tre seksere på rad gjør at du mister turen.',
         capture: 'Lander du på en motstander, går brikken deres tilbake til gården.',
         safeSquares: 'Startfelt og stjernefelt er trygge: ingen kan slås ut der.',
         exactHome: 'Du må slå nøyaktig riktig tall for å komme hjem.',
         winner: 'Den første som får alle brikkene hjem vinner; de andre rangeres etter hvor langt de har kommet.',
-        modes: 'Hurtigmodus spilles med to brikker hver, klassisk med fire.',
-        timer: 'Én turtid gjelder både kastet og trekket, og et ekstrakast etter en sekser får ny tid. Når tiden går ut, kaster og flytter serveren for deg, og turen går videre.',
+        timer: 'Én tid gjelder kast og trekk; et ekstrakast etter en sekser får ny tid. Går tiden ut mens spillet er åpent hos deg, spiller serveren turen for deg.',
       },
       detail: {
         title: 'Spill Ludo på nett',
-        heroDesc: 'Klassisk Ludo for to til fire spillere, i sanntid i nettleseren. Inviter venner, fyll tomme plasser med roboter og løp om å komme hjem.',
+        heroDesc: 'Klassisk Ludo for to til fire spillere i nettleseren. Inviter venner eller fyll plasser med roboter.',
         introTitle: 'Hva er Ludo?',
-        intro0: 'Ludo er et kappløpsspill på et korsformet brett. Hver spiller har en farge, en gård med brikker og en hjemmekolonne inn mot midten.',
-        intro1: 'Slå en sekser for å få en brikke ut, flytt rundt banen og land på motstanderne for å sende dem tilbake. Den første som får alle brikkene hjem vinner.',
+        intro0: 'Ludo er et kappløpsspill på et korsformet brett: hver farge har en gård, en runde bane og en hjemmekolonne.',
+        intro1: 'Kast, løp rundt banen og send motstandere tilbake til gården; den første som får alle brikkene hjem, vinner.',
         step1Title: 'Opprett eller bli med i en lobby',
-        step1Desc: 'Åpne et rom, velg rask eller klassisk modus og del koden.',
+        step1Desc: 'Åpne et rom og velg rask eller klassisk. Del koden eller lenken.',
         step2Title: 'Fyll plassene',
-        step2Desc: 'Vent på venner eller legg til roboter for å spille med en gang.',
+        step2Desc: 'Vent på venner eller legg til roboter. Alene får du én robot automatisk.',
         step3Title: 'Kast og flytt',
-        step3Desc: 'Trykk Kast, og trykk deretter på brikken du vil flytte.',
+        step3Desc: 'Trykk Kast, og trykk så på en brikke. Et eneste mulig trekk spilles av seg selv.',
         step4Title: 'Løp mot mål',
-        step4Desc: 'Slå ut motstandere, stå på trygge felt og få alle brikkene hjem først.',
+        step4Desc: 'Slå ut motstandere og få alle brikkene hjem først. Da er spillet over.',
         benefitsTitle: 'Hvorfor spille Ludo på Boardly?',
-        benefit1: 'Rettferdige terninger: hvert kast kommer fra serveren og vises for hele bordet.',
-        benefit2: 'Roboter på tre nivåer til de tomme plassene.',
-        benefit3: 'Hurtigmodus for et spill på omtrent et kvarter.',
-        benefit4: 'Gratis å spille som gjest, ingenting å installere.',
+        benefit1: 'Rettferdige terninger, kastet på serveren.',
+        benefit2: 'Roboter på tre nivåer.',
+        benefit3: 'Hurtigmodus med to brikker hver.',
+        benefit4: 'Gratis som gjest.',
+        rules: {
+          homeColumn: 'Etter 50 felt går brikken inn i sin egen hjemmekolonne, der ingen motstander kan lande.',
+          noBlocks: 'Det finnes ingen sperrer: lander du på to motstanderbrikker, går begge tilbake, unntatt på et trygt felt.',
+          extraRollOnlyOnSix: 'Selv en sekser du ikke kan bruke, gir ekstrakast; å slå ut eller komme hjem gir det ikke.',
+        },
+        modes: {
+          quickOrClassic: {
+            title: 'Rask eller klassisk',
+            desc: 'To brikker hver eller fire, valgt av verten når lobbyen opprettes.',
+          },
+          turnClock: {
+            title: 'Klokke på hver tur',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre robotnivåer',
+            desc: 'Token Rookie flytter tilfeldig. Token Tactician foretrekker å slå ut, så å gå ut av gården, så å komme hjem. Ludo Grandmaster gir hvert trekk poeng og veier motstandere opptil seks felt bak.',
+          },
+        },
+        strategy: {
+          bringTokensOut: {
+            title: 'Få brikker ut',
+            desc: 'Flere brikker ute, flere valg per kast.',
+          },
+          restOnStars: {
+            title: 'Hvil på stjerner',
+            desc: 'Start- og stjernefelt er trygge; vent der.',
+          },
+          countTheGapBehind: {
+            title: 'Tell avstanden bak',
+            desc: 'En motstander ett til seks felt bak kan slå deg ut.',
+          },
+          trailDoNotLead: {
+            title: 'Følg, ikke led',
+            desc: 'Brikker går bare fremover; trusselen står bak.',
+          },
+          captureTheCostlyToken: {
+            title: 'Slå ut den dyre brikken',
+            desc: 'En motstander nær slutten av runden taper mest.',
+          },
+          bankYourLeader: {
+            title: 'Sikre lederen',
+            desc: 'Ingen motstander når hjemmekolonnen; få lederen inn først.',
+          },
+          planTheExactFinish: {
+            title: 'Planlegg målgangen',
+            desc: 'Tre felt fra mål krever nøyaktig en treer; hold en brikke i reserve.',
+          },
+          mindRivalStartSquares: {
+            title: 'Pass på andres startfelt',
+            desc: 'En brikke som kommer ut, kaster igjen; feltene etter startfeltet er utsatt.',
+          },
+        },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Å stoppe rett foran en motstander',
+            desc: 'Ett til seks felt foran en motstander ber om å bli slått ut.',
+          },
+          trustingAPairToBlock: {
+            title: 'Å stole på at et par sperrer',
+            desc: 'To brikker på samme felt sperrer ingen og ryker sammen utenfor et trygt felt.',
+          },
+          racingOneTokenAlone: {
+            title: 'Å løpe med én brikke alene',
+            desc: 'Med én brikke ute flytter alle kast unntatt en sekser den, hvis det går.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill med venner hvor som helst',
+            desc: 'Del koden med opptil tre venner; chatten åpnes når to personer sitter ved bordet.',
+          },
+          botsAndSolo: {
+            title: 'Roboter når du spiller alene',
+            desc: 'Spill mot bot setter inn én robot; trykk Start. Verten kan legge til flere først.',
+          },
+          turnTimer: {
+            title: 'Når noen går',
+            desc: 'En spiller som er stille i 30 sekunder, fjernes ved neste sjekk av bordet; brikkene blir stående, turene hoppes over og spillet fortsetter.',
+          },
+          guestNoDownload: {
+            title: 'Ingen app, ingen registrering',
+            desc: 'Enhver nettleser på mobil, nettbrett eller PC; et gjestenavn er nok.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Familier og blandede grupper: flaks holder alle med, mens valget av brikke belønner et skarpt blikk.',
+        },
+        history: {
+          origin: 'Ludo stammer fra Pachisi, et flere hundre år gammelt indisk kappløpsspill, og ble patentert i England i 1896 som Ludo, latin for «jeg spiller».',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Ludo på Boardly gratis?',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille Ludo på mobilen?',
+            a: 'Ja, i enhver mobilnettleser. På en liten skjerm ligger brett, trekk, regler og chat, når det er noen å snakke med, i faner.',
+          },
+          pickYourOwnRoll: {
+            q: 'Kan noen velge sitt eget terningkast?',
+            a: 'Nei. Serveren kaster for alle plassene, ser bort fra tall nettleseren sender, og hver side har sjanse én av seks.',
+          },
+          timerRunsOut: {
+            q: 'Hvilken brikke flyttes hvis tiden min går ut?',
+            a: 'Er spillet åpent hos deg når tiden går ut, flytter serveren en brikke som kommer hjem, ellers en som slår ut, ellers den som har kommet lengst. En sekser slik gir ikke ekstrakast.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange kan spille Ludo?',
+            a: 'To til fire, hvorav opptil tre kan være roboter. To spillere sitter i motsatte hjørner av brettet.',
+          },
+          whoPicksMode: {
+            q: 'Hvem velger rask eller klassisk modus?',
+            a: 'Verten, når lobbyen opprettes, og Spill igjen beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+          },
+          playAgain: {
+            q: 'Kan vi spille igjen med de samme folkene?',
+            a: 'Ja. Verten trykker Spill igjen, og et nytt spill starter i samme lobby med alle som fortsatt sitter ved bordet, i samme modus.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
@@ -2241,16 +2649,79 @@ const no = {
         step1Title: 'Opprett eller bli med i en lobby',
         step1Desc: 'Åpne et rom og del koden. Tre spillere er minimum.',
         step2Title: 'Tegn ordet ditt',
-        step2Desc: 'Når det er din tur, velger du ett av tre ord og har inntil 80 sekunder på å tegne det.',
+        step2Desc: 'Du har 15 sekunder på å velge ett av tre ord. Deretter har du inntil 80 sekunder på å tegne det.',
         step3Title: 'Gjett før tiden går ut',
-        step3Desc: 'De andre gjetter så ofte de vil mens du tegner, på hvilket som helst av sidens språk. Jo raskere riktig svar, desto flere poeng.',
+        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
-        step4Desc: 'Ordet avsløres, poengene fordeles, og neste spiller tegner.',
+        step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter etter runde tre.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
         benefit1: 'Et delt lerret som oppdateres live.',
         benefit2: 'Tre til ti spillere i samme rom.',
-        benefit3: 'Alle tegner og alle gjetter.',
+        benefit3: 'Ny tegner hver runde, og resten gjetter.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          drawOrder: 'Tegnerne går i den rekkefølgen de ble med: den første i rommet tegner runde én, den andre runde to, den tredje runde tre.',
+          wordChoice: 'En tegner som ikke har valgt etter 15 sekunder, får ett av de tre ordene tilfeldig. Et ord som er tegnet, blir aldri tilbudt igjen i samme spill.',
+          matching: 'Store bokstaver, apostrofer og de fleste aksenter (é, å, ё) ignoreres; ø, æ og й regnes som egne bokstaver. Mange ord godtar også flertall eller et synonym.',
+          wordHint: 'De som gjetter, ser blanke felt på sitt eget språk; ord på tre bokstaver eller mer får én bokstav avdekket halvveis.',
+          chatLock: 'Frem til avsløringen kan verken tegneren eller de som har gjettet ordet, skrive i chatten.',
+        },
+        scoring: {
+          guessing: {
+            title: 'Gjetting',
+            rightGuess: { name: 'Riktig gjett', rule: 'Hvert riktige svar før tiden er ute.' },
+            speedBonus: { name: 'Fartsbonus', value: 'opptil +50', rule: 'Krymper mens tegneklokken går.' },
+            firstIn: { name: 'Først inne', rule: 'Bare den første som gjetter riktig i runden.' },
+          },
+          drawing: {
+            title: 'Tegning',
+            note: 'Ingen poengsum går noen gang under null.',
+            perCorrectGuesser: { name: 'Per riktig gjetter', rule: 'Et sent svar gir like mye som et tidlig.' },
+            ownRuling: { name: 'Egen godkjenning', rule: 'Et gjett som en tegnende vert godkjenner selv, gir vedkommende ingenting.' },
+            blankCanvas: { name: 'Tomt lerret', rule: 'Ingenting tegnet når runden er over.' },
+          },
+        },
+        modes: {
+          threeRounds: { title: 'Tre runder, hvert spill', desc: 'Én tegning per runde, og det finnes ingen innstilling for antall runder.' },
+          phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
+        },
+        strategy: {
+          pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
+          shapeFirst: { title: 'Formen først', desc: 'Et grovt omriss tidlig gir de andre sjansen til fartsbonusen.' },
+          letColourTalk: { title: 'La fargene snakke', desc: 'En blå bølge eller en rød flamme snevrer inn gjettingen raskt.' },
+          drawTheScene: { title: 'Tegn omgivelsene', desc: 'En finne i bølgene leses raskere enn en fisk alene.' },
+          guessEarly: { title: 'Gjett tidlig', desc: 'Et bom koster ingenting, og venting spiser av bonusen.' },
+          readTheMisses: { title: 'Les bommene', desc: 'Bom blir stående i listen (nesten-treff ser andre bare som «er nær»); stryk dem.' },
+          countTheBlanks: { title: 'Tell de blanke feltene', desc: 'De viser lengden og hvor ordene deler seg.' },
+          trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Du er én bokstav unna et godkjent svar: oftest en skrivefeil, noen ganger et naboord.' },
+        },
+        mistakes: {
+          leavingTheCanvasEmpty: { title: 'Å la lerretet stå tomt', desc: 'Det koster tegneren 20 poeng.' },
+          clearingForOneLine: { title: 'Å tømme alt for én dårlig strek', desc: 'Angre fjerner bare den siste streken.' },
+          waitingToBeSure: { title: 'Å vente til du er sikker', desc: 'Da er bonusen for første riktige ofte borte.' },
+        },
+        multiplayer: {
+          withFriends: { title: 'Venner hvor som helst', desc: 'Del koden eller invitasjonslenken og se ett lerret fylles live.' },
+          botsAndSolo: { title: 'Mennesker, ikke bots', desc: 'En bot kan ikke lese en skisse, så samle minst tre personer.' },
+          turnTimer: { title: 'Én linje per fase', desc: 'Hver spiller ser den samme nedtellingen; ved null går spillet videre.' },
+          guestNoDownload: { title: 'Gjest i nettleseren', desc: 'Mobil eller laptop, ingenting å installere, og et gjestenavn holder.' },
+        },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti: familier, skoleklasser, venner på videosamtale og bord der flere språk blandes.',
+        },
+        history: {
+          origin: 'Å gjette ut fra en rask skisse er en gammel selskapslek som Pictionary gjorde til brettspill i 1985. Boardly legger til en ordbank på fire språk.',
+        },
+        faq: {
+          isItFree: { q: 'Er Tegn og gjett på Boardly gratis?', a: 'Ja. Alle runder, alle ord og alle romstørrelser er gratis; Premium gir bare ekstra, som tilskuere.' },
+          playAloneOrBot: { q: 'Kan jeg spille alene eller mot en bot?', a: 'Nei. Spillet trenger tre personer, fordi en bot ikke kan lese en tegning. Send vennene invitasjonslenken.' },
+          guessLanguages: { q: 'Hvilke språk kan jeg gjette på?', a: 'Engelsk, norsk, russisk og ukrainsk. Et gjett på hvilket som helst av dem teller, uansett språket på skjermen din.' },
+          everyoneDraws: { q: 'Får alle tegne?', a: 'Med tre spillere, ja. Et spill har tre runder, så i større grupper tegner bare de tre første som ble med.' },
+          timeRunsOut: { q: 'Hva skjer når tiden går ut?', a: 'En tegner som ikke har valgt, får et tilfeldig ord, og når tegneklokken er ute, avsløres ordet.' },
+          hostAcceptsGuess: { q: 'Kan verten overstyre et feil gjett?', a: 'Ja. Til runden går videre, kan verten godta en annen spillers bom som et riktig svar.' },
+          playerLeaves: { q: 'Hva om en spiller forlater spillet underveis?', a: 'Spillet fortsetter så lenge tre er igjen; turen til en tegner som er borte, løper bare ut. Under tre avsluttes spillet.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',
@@ -2346,20 +2817,167 @@ const no = {
         heroDesc: 'Et sosialt bløffespill der spillerne kommer med påstander, leser rommet og stemmer over hvem som snakker sant.',
         introTitle: 'Hva er Løgnerfest?',
         intro0: 'Løgnerfest er et sosialt bløffespill. Én spiller kommer med en påstand, og resten avgjør om de tror på den eller utfordrer den.',
-        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av runden.',
+        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av spillet.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter en gjeng og start en runde sammen.',
+        step1Desc: 'Inviter en gjeng og start en runde sammen. Verten kan starte så snart fire spillere har satt seg.',
         step2Title: 'Kom med påstanden din',
-        step2Desc: 'Snakk sant eller bløff, og marker valget i hemmelighet.',
+        step2Desc: 'Snakk sant eller bløff, og marker hva det er. Ingen skjerm viser valget ditt før avsløringen.',
         step3Title: 'Stem',
-        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den.',
+        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den. En teller viser hvor mange som har stemt.',
         step4Title: 'Avslør og overlev',
-        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres.',
+        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres. Hvilken som helst spiller kan åpne neste runde.',
         benefitsTitle: 'Derfor hører Løgnerfest hjemme på Boardly',
         benefit1: 'Laget for spill i samme rom.',
         benefit2: 'Tydelige avstemninger og avsløringer.',
         benefit3: 'Midt i blinken for sosiale gjenger.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          floorRotates: 'Hver runde har én spiller ordet, etter tur, og de som er ute hoppes over.',
+          claimAndMark: 'Den som har ordet skriver opptil 180 tegn og markerer sannhet eller bløff.',
+          everyoneElseVotes: 'Alle andre som fortsatt er med stemmer Utfordre eller Tro, én gang.',
+          caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
+          strikesAndEnd: 'To avslørte bløffer, og du er ute. Spillet slutter etter ti runder eller når én spiller er igjen.',
+        },
+        scoring: {
+          claimant: {
+            title: 'Den som har ordet',
+            note: 'Ingen poengsum går under null.',
+            rows: {
+              bluffGetsThrough: { name: 'Bløffen går gjennom', value: '+20', rule: 'Pluss 6 per spiller som trodde.' },
+              bluffCaught: { name: 'Bløffen avslørt', value: '−12', rule: 'Pluss én strike.' },
+              truthBelieved: { name: 'Sannheten trodd', value: '+12', rule: 'Minst like mange tror som utfordrer.' },
+              truthChallenged: { name: 'Sannheten utfordret', value: '+4', rule: 'Flere utfordrer enn tror.' },
+              noClaimInTime: { name: 'Ingen påstand i tide', value: '−4', rule: 'Ingen avstemning den runden.' },
+            },
+          },
+          voters: {
+            title: 'Hver som stemmer',
+            note: 'Poengene følger sannheten, ikke flertallet.',
+            rows: {
+              challengeBluff: { name: 'Utfordre en bløff', value: '+14', rule: 'Du så den.' },
+              challengeTruth: { name: 'Utfordre en sannhet', value: '−6', rule: 'En ærlig påstand betvilt.' },
+              believeTruth: { name: 'Tro på en sannhet', value: '+10', rule: 'En ærlig påstand trodd.' },
+              believeBluff: { name: 'Tro på en bløff', value: '−8', rule: 'Du ble lurt.' },
+              noVoteInTime: { name: 'Ingen stemme i tide', value: '−4', rule: 'Teller også som Tro.' },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4 til 12 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          phaseClock: {
+            title: 'Klokke per fase',
+            desc: 'Hver fase får 60 sekunder; før start kan verten velge 30 til 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Runder og strikes',
+            desc: 'Ti runder og to strikes; ingen lobbyinnstilling endrer det.',
+          },
+        },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Utfordre over 42 prosent',
+            desc: 'Å utfordre slår å tro så snart en bløff virker mer enn 42 prosent sannsynlig.',
+          },
+          yourReadScoresAlone: {
+            title: 'Din lesning teller alene',
+            desc: 'En riktig utfordring gir 14 selv om bløffen overlever avstemningen.',
+          },
+          bluffForTheTable: {
+            title: 'Bløff for hele bordet',
+            desc: 'En bløff som går gjennom med fem som tror, er verdt 50.',
+          },
+          countYourStrikes: {
+            title: 'Tell dine strikes',
+            desc: 'Med én strike avslutter en avslørt bløff spillet ditt; snakk sant.',
+          },
+          stayInToWin: {
+            title: 'Å være med slår poeng',
+            desc: 'Alle som fortsatt spiller, rangeres over dem som er ute, uansett poeng.',
+          },
+          strangeButTrue: {
+            title: 'Fortell sannheter som høres rare ut',
+            desc: 'Selv om de fleste ved bordet tviler, gir en rar sannhet likevel 4, mens hver utfordrer mister 6.',
+          },
+          specificDetails: {
+            title: 'Gi bløffen ekte detaljer',
+            desc: 'Et sted, et år og en konsekvens høres ut som et minne.',
+          },
+          readTheHistory: {
+            title: 'Les historikken',
+            desc: 'Tidligere påstander og dommer står på skjermen mens du stemmer.',
+          },
+        },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Å la klokka stemme',
+            desc: 'En stemme som uteblir, teller som Tro og koster 4 poeng ekstra.',
+          },
+          freezingOnYourClaim: {
+            title: 'Å fryse på påstanden',
+            desc: 'Går tiden ut, mister du 4 uten noe å vinne tilbake.',
+          },
+          challengingEveryClaim: {
+            title: 'Å utfordre alt',
+            desc: 'Hver feil utfordring koster 6, så tvil på alt tapper deg for poeng.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller invitasjonslenken; alt oppdateres live på hver spillers skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Bare mennesker',
+            desc: 'En bot har ingenting å bløffe med, så det finnes ingen boter. Færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
+          },
+          turnTimer: {
+            title: 'Én klokke per fase',
+            desc: 'Ved null fyller serveren hullet når en åpen side i rommet sjekker inn, noe sidene gjør av seg selv.',
+          },
+          guestNoDownload: {
+            title: 'Ingenting å installere',
+            desc: 'Hvilken som helst nettleser på mobil eller PC; gjester trenger bare et navn.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
+        },
+        history: {
+          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Løgnerfest gratis å spille?',
+            a: 'Ja, hele spillet er gratis for opptil ti spillere. Premium gir større rom, tilskuere, repriser og lobbytemaer.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Løgnerfest på mobil?',
+            a: 'Ja, i hvilken som helst mobilnettleser: spillet ligger på én fane, med spillere og chat ett trykk unna.',
+          },
+          whatCanIClaim: {
+            q: 'Hva kan jeg påstå?',
+            a: 'Hva som helst på 5 til 180 tegn, sant eller oppdiktet: en historie om deg, et faktum, litt skryt.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden renner ut?',
+            a: 'Den som ikke skrev noe, mister 4 og avstemningen hoppes over; en manglende stemme teller som Tro, minus 4.',
+          },
+          playerLeaves: {
+            q: 'Hva om en spiller går midt i spillet?',
+            a: 'Spilleren er ute og rangeres under alle som fortsatt er med; under fire spillere i rommet slutter spillet.',
+          },
+          howLong: {
+            q: 'Hvor lenge varer et spill?',
+            a: 'Høyst ti runder med én påstand hver, og færre hvis bare én spiller er igjen i spillet.',
+          },
+          canFriendsWatch: {
+            q: 'Kan venner se på uten å spille?',
+            a: 'Ja, hvis en vert med Premium tillater tilskuere; de følger påstander, stemmer og avsløringen, men kan ikke stemme.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
@@ -3814,7 +4432,7 @@ const no = {
     rule1: 'Hver runde blir én aktiv spiller kravstiller og sender inn ett krav.',
     rule2: 'Øvrige aktive spillere sender inn én stemme: utfordre eller tro på.',
     rule3: 'En bløff regnes som avslørt kun når utfordrerne utgjør et strengt flertall.',
-    rule4: 'Feil stemmer mister poeng; riktige leser vinner poeng; gjentatte blotlagte bløffer gir strikes.',
+    rule4: 'Feil stemmer koster poeng; riktige lesninger gir poeng; hver avslørte bløff gir én strike.',
     rule5: 'En spiller er eliminert etter å ha nådd strike-grensen.',
     waitingForPlayers: 'Venter på spillere...',
     roundsCount: '{{count}} runder',

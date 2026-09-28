@@ -456,6 +456,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Social deduction party game where each player receives a secret location and a role in it, except the spy, who must blend in without knowing where they are.',
       questionKey: 'games.spy.seo.question',
       answerKey: 'games.spy.seo.answer',
+      // Product questions only: the how-to guide already answers player
+      // count, bots, a wrong accusation, the spy's late guess, how specific
+      // to be and round length, and the two sets stay disjoint (#1243).
+      faq: [
+        { questionKey: 'games.spy.detail.faq.isItFree.q', answerKey: 'games.spy.detail.faq.isItFree.a' },
+        { questionKey: 'games.spy.detail.faq.worksOnPhone.q', answerKey: 'games.spy.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.spy.detail.faq.canOthersSeeSpy.q', answerKey: 'games.spy.detail.faq.canOthersSeeSpy.a' },
+        { questionKey: 'games.spy.detail.faq.typedOrSpoken.q', answerKey: 'games.spy.detail.faq.typedOrSpoken.a' },
+        { questionKey: 'games.spy.detail.faq.whoStartsVote.q', answerKey: 'games.spy.detail.faq.whoStartsVote.a' },
+        { questionKey: 'games.spy.detail.faq.whichLocations.q', answerKey: 'games.spy.detail.faq.whichLocations.a' },
+        { questionKey: 'games.spy.detail.faq.howWinnerDecided.q', answerKey: 'games.spy.detail.faq.howWinnerDecided.a' },
+      ],
     },
     availability: 'available',
     route: '/games/spy/lobbies',
@@ -692,6 +704,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Social bluffing party game where players make claims (true or bluff), others vote to challenge or believe, and players are eliminated after too many caught bluffs.',
       questionKey: 'games.liars_party.seo.question',
       answerKey: 'games.liars_party.seo.answer',
+      // Product questions. There is no how-to guide for this game, so nothing to
+      // keep them disjoint from; the rules live in the page's own sections (#1240).
+      faq: [
+        { questionKey: 'games.liars_party.detail.faq.isItFree.q', answerKey: 'games.liars_party.detail.faq.isItFree.a' },
+        { questionKey: 'games.liars_party.detail.faq.worksOnPhone.q', answerKey: 'games.liars_party.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.liars_party.detail.faq.whatCanIClaim.q', answerKey: 'games.liars_party.detail.faq.whatCanIClaim.a' },
+        { questionKey: 'games.liars_party.detail.faq.timerRunsOut.q', answerKey: 'games.liars_party.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.liars_party.detail.faq.playerLeaves.q', answerKey: 'games.liars_party.detail.faq.playerLeaves.a' },
+        { questionKey: 'games.liars_party.detail.faq.howLong.q', answerKey: 'games.liars_party.detail.faq.howLong.a' },
+        { questionKey: 'games.liars_party.detail.faq.canFriendsWatch.q', answerKey: 'games.liars_party.detail.faq.canFriendsWatch.a' },
+      ],
     },
     availability: 'available',
     route: '/games/liars-party/lobbies',
@@ -774,6 +797,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Drawing and guessing party game for three to ten players. Each round one player draws a secret prompt on a shared canvas while everyone else types guesses, scored on how quickly they land it.',
       questionKey: 'games.guess_my_drawing.seo.question',
       answerKey: 'games.guess_my_drawing.seo.answer',
+      // Product questions. There is no how-to guide for this game, so nothing
+      // to keep disjoint from; the rules live in the page's own #rules (#1239).
+      faq: [
+        { questionKey: 'games.guess_my_drawing.detail.faq.isItFree.q', answerKey: 'games.guess_my_drawing.detail.faq.isItFree.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.playAloneOrBot.q', answerKey: 'games.guess_my_drawing.detail.faq.playAloneOrBot.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.guessLanguages.q', answerKey: 'games.guess_my_drawing.detail.faq.guessLanguages.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.everyoneDraws.q', answerKey: 'games.guess_my_drawing.detail.faq.everyoneDraws.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.timeRunsOut.q', answerKey: 'games.guess_my_drawing.detail.faq.timeRunsOut.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.hostAcceptsGuess.q', answerKey: 'games.guess_my_drawing.detail.faq.hostAcceptsGuess.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.playerLeaves.q', answerKey: 'games.guess_my_drawing.detail.faq.playerLeaves.a' },
+      ],
     },
     // Still in-development: #873 is where the product decision to feature it
     // publicly is taken, and the flip belongs to that ticket alone. #1035 only
@@ -823,6 +857,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Two-player strategy board game on an 8×8 board. Pieces move diagonally, captures are mandatory and chain into multi-jumps, and a piece reaching the far row is crowned a king.',
       questionKey: 'games.checkers.seo.question',
       answerKey: 'games.checkers.seo.answer',
+      // Product questions (#1241). Checkers has no how-to guide, so there is no
+      // guide FAQ to stay disjoint from; the rules live in the page's #rules.
+      faq: [
+        { questionKey: 'games.checkers.detail.faq.isItFree.q', answerKey: 'games.checkers.detail.faq.isItFree.a' },
+        { questionKey: 'games.checkers.detail.faq.needAccount.q', answerKey: 'games.checkers.detail.faq.needAccount.a' },
+        { questionKey: 'games.checkers.detail.faq.worksOnPhone.q', answerKey: 'games.checkers.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.checkers.detail.faq.whichRules.q', answerKey: 'games.checkers.detail.faq.whichRules.a' },
+        { questionKey: 'games.checkers.detail.faq.whoMovesFirst.q', answerKey: 'games.checkers.detail.faq.whoMovesFirst.a' },
+        { questionKey: 'games.checkers.detail.faq.timerRunsOut.q', answerKey: 'games.checkers.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.checkers.detail.faq.undoOrDraw.q', answerKey: 'games.checkers.detail.faq.undoOrDraw.a' },
+      ],
     },
     // In development (#1083). Playable behind ENABLE_IN_DEVELOPMENT_GAMES;
     // featuring it publicly is a separate decision for Denys, like #873's.
@@ -846,7 +891,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.ludo.difficulty',
     seo: {
       title: 'Play Ludo Online Free with Friends or Bots',
-      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and send rivals home, with friends or bots. No download.',
+      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
       synonyms: [
         'ludo online',
         'ludo online free',
@@ -866,6 +911,16 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Race board game for two to four players on a cross-shaped track. Roll a die to move your tokens from the yard to home, capture rivals by landing on them, and bring every token home first. Quick mode uses two tokens each, classic four.',
       questionKey: 'games.ludo.seo.question',
       answerKey: 'games.ludo.seo.answer',
+      // Product questions only, none repeating the direct answer above (#1242).
+      faq: [
+        { questionKey: 'games.ludo.detail.faq.isItFree.q', answerKey: 'games.ludo.detail.faq.isItFree.a' },
+        { questionKey: 'games.ludo.detail.faq.worksOnPhone.q', answerKey: 'games.ludo.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.ludo.detail.faq.pickYourOwnRoll.q', answerKey: 'games.ludo.detail.faq.pickYourOwnRoll.a' },
+        { questionKey: 'games.ludo.detail.faq.timerRunsOut.q', answerKey: 'games.ludo.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.ludo.detail.faq.howManyPlayers.q', answerKey: 'games.ludo.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.ludo.detail.faq.whoPicksMode.q', answerKey: 'games.ludo.detail.faq.whoPicksMode.a' },
+        { questionKey: 'games.ludo.detail.faq.playAgain.q', answerKey: 'games.ludo.detail.faq.playAgain.a' },
+      ],
     },
     // In development (#1084): playable behind ENABLE_IN_DEVELOPMENT_GAMES.
     // Featuring it publicly is Denys's call, not the natural last step of the

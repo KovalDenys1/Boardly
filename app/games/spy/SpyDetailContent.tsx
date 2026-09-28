@@ -40,6 +40,63 @@ export default function SpyDetailContent() {
         t('games.spy.detail.benefit3'),
         t('games.spy.detail.benefit4'),
       ]}
+      rules={[
+        t('games.spy.detail.rules.askInTurn'),
+        t('games.spy.detail.rules.whenVotingOpens'),
+        t('games.spy.detail.rules.howTheVoteEnds'),
+        t('games.spy.detail.rules.spyMayGuess'),
+      ]}
+      scoring={[
+        {
+          title: t('games.spy.detail.scoring.vote.title'),
+          note: t('games.spy.detail.scoring.vote.note'),
+          rows: [
+            { name: t('games.spy.detail.scoring.vote.rows.spyEscapes.name'), value: t('games.spy.detail.scoring.vote.rows.spyEscapes.value'), rule: t('games.spy.detail.scoring.vote.rows.spyEscapes.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.spyCaught.name'), value: t('games.spy.detail.scoring.vote.rows.spyCaught.value'), rule: t('games.spy.detail.scoring.vote.rows.spyCaught.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.voteOnSpy.name'), value: t('games.spy.detail.scoring.vote.rows.voteOnSpy.value'), rule: t('games.spy.detail.scoring.vote.rows.voteOnSpy.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.voteOnOther.name'), value: t('games.spy.detail.scoring.vote.rows.voteOnOther.value'), rule: t('games.spy.detail.scoring.vote.rows.voteOnOther.rule') },
+          ],
+        },
+        {
+          title: t('games.spy.detail.scoring.guess.title'),
+          note: t('games.spy.detail.scoring.guess.note'),
+          rows: [
+            { name: t('games.spy.detail.scoring.guess.rows.rightPlace.name'), value: t('games.spy.detail.scoring.guess.rows.rightPlace.value'), rule: t('games.spy.detail.scoring.guess.rows.rightPlace.rule') },
+            { name: t('games.spy.detail.scoring.guess.rows.wrongPlace.name'), value: t('games.spy.detail.scoring.guess.rows.wrongPlace.value'), rule: t('games.spy.detail.scoring.guess.rows.wrongPlace.rule') },
+          ],
+        },
+      ]}
+      modes={[
+        { title: t('games.spy.detail.modes.tableSize.title'), desc: t('games.spy.detail.modes.tableSize.desc') },
+        { title: t('games.spy.detail.modes.fixedClocks.title'), desc: t('games.spy.detail.modes.fixedClocks.desc') },
+      ]}
+      strategy={[
+        { title: t('games.spy.detail.strategy.strikeFromTheList.title'), desc: t('games.spy.detail.strategy.strikeFromTheList.desc') },
+        { title: t('games.spy.detail.strategy.countToTheDeadline.title'), desc: t('games.spy.detail.strategy.countToTheDeadline.desc') },
+        { title: t('games.spy.detail.strategy.weighTheGuess.title'), desc: t('games.spy.detail.strategy.weighTheGuess.desc') },
+        { title: t('games.spy.detail.strategy.aTieIsEnough.title'), desc: t('games.spy.detail.strategy.aTieIsEnough.desc') },
+        { title: t('games.spy.detail.strategy.answerInRole.title'), desc: t('games.spy.detail.strategy.answerInRole.desc') },
+        { title: t('games.spy.detail.strategy.askTheUnasked.title'), desc: t('games.spy.detail.strategy.askTheUnasked.desc') },
+        { title: t('games.spy.detail.strategy.voteForPoints.title'), desc: t('games.spy.detail.strategy.voteForPoints.desc') },
+        { title: t('games.spy.detail.strategy.hostEndsOnPurpose.title'), desc: t('games.spy.detail.strategy.hostEndsOnPurpose.desc') },
+      ]}
+      mistakes={[
+        { title: t('games.spy.detail.mistakes.namingThePlace.title'), desc: t('games.spy.detail.mistakes.namingThePlace.desc') },
+        { title: t('games.spy.detail.mistakes.splittingTheVote.title'), desc: t('games.spy.detail.mistakes.splittingTheVote.desc') },
+        { title: t('games.spy.detail.mistakes.guessingOnAHunch.title'), desc: t('games.spy.detail.mistakes.guessingOnAHunch.desc') },
+      ]}
+      multiplayer={[
+        { title: t('games.spy.detail.multiplayer.withFriends.title'), desc: t('games.spy.detail.multiplayer.withFriends.desc') },
+        { title: t('games.spy.detail.multiplayer.botsAndSolo.title'), desc: t('games.spy.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.spy.detail.multiplayer.secretsStayPrivate.title'), desc: t('games.spy.detail.multiplayer.secretsStayPrivate.desc') },
+        { title: t('games.spy.detail.multiplayer.guestNoDownload.title'), desc: t('games.spy.detail.multiplayer.guestNoDownload.desc') },
+      ]}
+      audience={[
+        t('games.spy.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.spy.detail.history.origin'),
+      ]}
     />
   )
 }

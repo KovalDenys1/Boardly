@@ -26,7 +26,8 @@ export const ROUTE_UPDATED = {
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
-  '/games/spy': '2026-09-15',
+  // #1243 added the Track A sections below the existing copy.
+  '/games/spy': '2026-09-28',
   '/games/tic-tac-toe': '2026-09-28', // #1235 expanded the page
   // #1236 expanded the page to the Track A sections.
   '/games/memory': '2026-09-28',
@@ -36,11 +37,13 @@ export const ROUTE_UPDATED = {
   '/games/alias': '2026-09-28',
   // #1238 expanded the page to the Track A sections.
   '/games/rock-paper-scissors': '2026-09-28',
-  // Released by #873 on 2026-09-21, the day they became indexable.
-  '/games/liars-party': '2026-09-21',
-  '/games/sketch-and-guess': '2026-09-21',
-  '/games/checkers': '2026-09-24',
-  '/games/ludo': '2026-09-24',
+  // #1240 expanded the page to the Track A sections.
+  '/games/liars-party': '2026-09-28',
+  // #1239 expanded the page to the Track A sections.
+  '/games/sketch-and-guess': '2026-09-28',
+  '/games/checkers': '2026-09-28', // #1241 expanded the page
+  // #1242 expanded the page to the Track A sections.
+  '/games/ludo': '2026-09-28',
   '/guides': '2026-09-20',
   // /privacy and /terms are noindex and left out of the sitemap (#1227); their own
   // "last updated" dates come from lib/terms-version.ts.
