@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react'
 import AboutPage, { metadata } from '@/app/about/page'
 import { aboutPageJsonLd, organizationJsonLd } from '@/app/about/about-json-ld'
 import { organizationNode } from '@/lib/organization-json-ld'
+import { ABOUT_DESCRIPTION } from '@/app/about/about-json-ld'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import en from '@/locales/en'
 
 // Resolve keys against the real English locale so the test checks the visible
 // entity statement, not just that a key was requested.
@@ -77,5 +80,22 @@ describe('/about content', () => {
     expect(first.textContent).toMatch(/English, Norwegian, Russian and Ukrainian/)
     expect(screen.getByText(/not boardly\.co, boardly\.ai or joinboardly\.com/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'support@boardly.online' })).toHaveAttribute('href', 'mailto:support@boardly.online')
+  })
+})
+
+describe('/about names every public game (#1234)', () => {
+  // It listed seven of eleven for weeks; AdSense reads a stale about page as an
+  // unmaintained site. Hyphens and spaces are the same word here ("Tic-Tac-Toe").
+  const norm = (s: string) => s.toLowerCase().replace(/[-\s]+/g, ' ')
+  const lookup = (key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown>)?.[part], en) as string
+  const names = getCatalogAvailableGames().map((g) => lookup(g.nameKey))
+
+  it.each([
+    ['the meta/JSON-LD description', ABOUT_DESCRIPTION],
+    ['the visible entity statement', en.about.entity],
+  ])('%s', (_label, text) => {
+    expect(names.length).toBeGreaterThanOrEqual(11)
+    for (const name of names) expect(norm(text)).toContain(norm(name))
   })
 })

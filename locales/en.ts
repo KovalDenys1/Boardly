@@ -3574,7 +3574,7 @@ const en = {
   about: {
     breadcrumb: 'About',
     title: 'About Boardly',
-    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Memory, Alias and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
+    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
     originTitle: 'Where it came from',
     origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
     origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',

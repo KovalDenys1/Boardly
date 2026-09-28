@@ -3562,7 +3562,7 @@ const no = {
   about: {
     breadcrumb: 'Om',
     title: 'Om Boardly',
-    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, Memory, Alias og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
+    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
     originTitle: 'Hvor det kom fra',
     origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
     origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
