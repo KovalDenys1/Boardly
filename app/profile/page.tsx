@@ -1661,7 +1661,7 @@ export default function ProfilePage() {
       ? 'text-emerald-600 dark:text-emerald-400'
       : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
         ? 'text-red-600 dark:text-red-400'
-        : 'text-slate-500 dark:text-slate-400'
+        : 'text-bd-ink-soft'
 
   const inlineEditorHasChanges = editingField
     ? editingField === 'username'
@@ -1755,7 +1755,7 @@ export default function ProfilePage() {
                   ? 'border-emerald-400'
                   : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
                     ? 'border-red-400'
-                    : 'border-blue-400/70 dark:border-blue-400/60'
+                    : 'border-bd-lav-deep'
               } ${inputClassName}`}
               autoFocus
             />
@@ -1775,7 +1775,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={cancelInlineEdit}
                 tabIndex={isEditing ? 0 : -1}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200/70 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-300/80 dark:bg-slate-700/70 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-bd-bg2 text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-line"
                 aria-label={t('profile.inline.cancel')}
               >
                 ×
@@ -1800,7 +1800,7 @@ export default function ProfilePage() {
             placeholder={t('profile.inline.currentPassword')}
             aria-label={t('profile.inline.currentPassword')}
             autoComplete="current-password"
-            className="mt-2 w-full border-0 border-b-2 border-blue-400/70 bg-transparent px-0 pb-1 text-sm text-bd-ink-soft shadow-none outline-none placeholder:text-bd-ink-muted focus:ring-0 dark:border-blue-400/60 dark:text-slate-300 dark:placeholder:text-slate-500"
+            className="mt-2 w-full border-0 border-b-2 border-bd-lav-deep bg-transparent px-0 pb-1 text-sm text-bd-ink-soft shadow-none outline-none placeholder:text-bd-ink-muted focus:ring-0"
           />
         )}
 
@@ -1830,23 +1830,23 @@ export default function ProfilePage() {
   }
 
   const settingsSectionClassName =
-    'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80 sm:p-6'
+    'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] sm:p-6'
   const settingsSurfaceClassName =
-    'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 p-4 dark:border-slate-700/60 dark:bg-slate-800/70'
+    'rounded-[1.5rem] border border-bd-line bg-bd-bg p-4'
   const settingsToggleCardClassName =
-    'flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-bd-line bg-white/90 p-4 transition-colors hover:bg-bd-card-warm dark:border-slate-700/60 dark:bg-slate-900/70 dark:hover:bg-slate-800'
+    'flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-bd-line bg-bd-card-warm p-4 transition-colors hover:bg-bd-bg2'
   const settingsScopeBadgeClassName =
-    'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-300'
+    'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft'
   const actionPrimaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-5 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_#E8DDC8] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border border-[#F0B3AC] bg-white px-4 py-2.5 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-[#FFF2EF] dark:border-red-500/30 dark:bg-slate-900/75 dark:text-red-300 dark:hover:bg-red-500/10'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border border-[#F0B3AC] bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-[#FFF2EF] dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
   const profileSurfaceClassName =
-    'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 p-5 dark:border-slate-700/60 dark:bg-slate-800/70'
+    'rounded-[1.5rem] border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-white px-4 py-3 text-sm text-bd-ink shadow-sm outline-none transition-all dark:bg-slate-900 dark:text-white'
+    'w-full rounded-2xl border bg-[var(--bd-input-bg)] px-4 py-3 text-sm text-bd-ink shadow-sm outline-none transition-all'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
 
@@ -1854,8 +1854,8 @@ export default function ProfilePage() {
     return (
       <div className="page-shell flex items-center justify-center bg-bd-bg">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-bd-bg2 border-t-bd-lav dark:border-slate-700 dark:border-t-bd-lav" />
-          <p className="text-sm font-medium text-bd-ink-muted dark:text-slate-400">{t('profile.loading')}</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-bd-bg2 border-t-bd-lav dark:border-t-bd-lav" />
+          <p className="text-sm font-medium text-bd-ink-soft">{t('profile.loading')}</p>
         </div>
       </div>
     )
@@ -1897,7 +1897,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className={heroPreviewTransitionClassName}>
-              <div className="relative overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700/60 dark:bg-slate-900/80">
+              <div className="relative overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)]">
                 <div className="dot-grid absolute inset-0 opacity-40" />
                 <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-bd-lav/20" />
                 <div className="absolute -bottom-16 left-10 h-32 w-32 rounded-[2rem] rotate-12 bg-bd-sun/20" />
@@ -1929,7 +1929,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={handleBackNavigation}
-                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-all hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800"
+                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-all hover:bg-bd-bg2"
                       >
                         <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">
                           ←
@@ -1947,9 +1947,9 @@ export default function ProfilePage() {
                           value: username,
                           title: t('profile.inline.editUsername'),
                           displayClassName:
-                            'font-display text-4xl font-bold leading-none text-bd-ink hover:text-bd-coral-deep dark:text-white dark:hover:text-bd-sun sm:text-5xl',
+                            'font-display text-4xl font-bold leading-none text-bd-ink hover:text-bd-coral-deep dark:hover:text-bd-sun sm:text-5xl',
                           inputClassName:
-                            'font-display text-4xl font-bold leading-none text-bd-ink placeholder:text-bd-ink-muted dark:text-white dark:placeholder:text-slate-500 sm:text-5xl',
+                            'font-display text-4xl font-bold leading-none text-bd-ink placeholder:text-bd-ink-muted sm:text-5xl',
                         })}
 
                         {renderHeroEditableField({
@@ -1957,9 +1957,9 @@ export default function ProfilePage() {
                           value: email,
                           title: t('profile.inline.editEmail'),
                           displayClassName:
-                            'text-sm font-medium text-bd-ink-muted hover:text-bd-coral-deep dark:text-slate-400 dark:hover:text-bd-sun sm:text-base',
+                            'text-sm font-medium text-bd-ink-soft hover:text-bd-coral-deep dark:hover:text-bd-sun sm:text-base',
                           inputClassName:
-                            'text-sm font-medium text-bd-ink-soft placeholder:text-bd-ink-muted dark:text-slate-300 dark:placeholder:text-slate-500 sm:text-base',
+                            'text-sm font-medium text-bd-ink-soft placeholder:text-bd-ink-muted sm:text-base',
                         })}
 
                         <div className="flex flex-wrap justify-center gap-2 pt-2 sm:justify-start">
@@ -1997,7 +1997,7 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="shrink-0 lg:w-[220px]">
-                      <div className="flex h-full flex-col justify-center gap-3 rounded-3xl border border-bd-line bg-bd-card-warm/85 p-5 text-center dark:border-slate-700 dark:bg-slate-800/70">
+                      <div className="flex h-full flex-col justify-center gap-3 rounded-3xl border border-bd-line bg-bd-bg p-5 text-center">
                         {canPreviewPublicProfile && (
                           <button
                             type="button"
@@ -2014,27 +2014,27 @@ export default function ProfilePage() {
                         {/* Who can see the profile, one click from the setting that changes it (#1226). */}
                         <div
                           className={`flex flex-col items-center gap-1.5 ${
-                            canPreviewPublicProfile ? 'border-t border-bd-line pt-3 dark:border-slate-700' : ''
+                            canPreviewPublicProfile ? 'border-t border-bd-line pt-3' : ''
                           }`}
                         >
-                          <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-muted dark:text-slate-400">
+                          <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft">
                             {t('profile.settings.privacy.profileVisibility')}
                           </span>
                           {profileVisibilitySummary ? (
                             <span
                               data-testid="profile-visibility-summary"
-                              className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink dark:text-white"
+                              className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink"
                             >
                               <Icon name={profileVisibilitySummary.icon} size={14} />
                               {profileVisibilitySummary.label}
                             </span>
                           ) : (
-                            <span className="h-5 w-20 animate-pulse rounded-lg bg-bd-bg2 dark:bg-slate-700" aria-hidden="true" />
+                            <span className="h-5 w-20 animate-pulse rounded-lg bg-bd-bg2" aria-hidden="true" />
                           )}
                           <button
                             type="button"
                             onClick={openPrivacySettings}
-                            className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-white px-3 py-2 text-xs font-bold text-bd-ink transition-colors hover:bg-bd-bg2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                            className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-bd-card-warm px-3 py-2 text-xs font-bold text-bd-ink transition-colors hover:bg-bd-bg2"
                           >
                             <Icon name="shield" size={14} />
                             {t('profile.publicProfile.privacySettingsLink')}
@@ -2050,11 +2050,11 @@ export default function ProfilePage() {
                       const inner = (
                         <>
                           <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-20 ${card.accent.split(' ')[0]}`} />
-                          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft">
                             {card.label}
                           </p>
                           {card.value === null ? (
-                            <div className="mt-2 h-8 w-16 animate-pulse rounded-lg bg-bd-bg2 dark:bg-slate-700" aria-hidden="true" />
+                            <div className="mt-2 h-8 w-16 animate-pulse rounded-lg bg-bd-bg2" aria-hidden="true" />
                           ) : (
                             <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
                               {card.value}
@@ -2062,7 +2062,7 @@ export default function ProfilePage() {
                           )}
                         </>
                       )
-                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800'
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5'
                       return card.onClick ? (
                         <button
                           key={card.id}
@@ -2081,7 +2081,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="mt-5 w-full">
-                    <div className="rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-800">
+                    <div className="rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)]">
                       <AchievementsGrid items={achievementItems} />
                     </div>
                   </div>
@@ -2096,7 +2096,7 @@ export default function ProfilePage() {
               ref={tabListRef}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
+              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)]"
             >
               <div
                 aria-hidden="true"
@@ -2122,8 +2122,8 @@ export default function ProfilePage() {
                   onClick={() => handleTabChange(tab.id)}
                   className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
-                      ? 'text-white'
-                      : 'text-bd-ink-soft hover:bg-white/70 hover:text-bd-ink dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
+                      ? 'text-[color:var(--bd-ink-on-accent)]'
+                      : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                   }`}
                 >
                   <Icon name={tab.icon} size={16} />
@@ -2134,7 +2134,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Tab Content ── */}
-          <div className="mt-6 rounded-[2rem] border-[1.5px] border-bd-line bg-white p-5 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700/60 dark:bg-slate-900/80 sm:p-8">
+          <div className="mt-6 rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] sm:p-8">
 
           {activeTab === 'profile' && (
             <div role="tabpanel" id="profile-tab-panel-profile" aria-labelledby="profile-tab-profile">
@@ -2172,7 +2172,7 @@ export default function ProfilePage() {
                 {/* Avatar picker */}
                 <div className={profileSurfaceClassName}>
                   <div className="mb-5">
-                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">{t('profile.avatarSection')}</h3>
+                    <h3 className="text-lg font-bold text-bd-ink">{t('profile.avatarSection')}</h3>
                   </div>
                   <AvatarPicker
                     currentAvatarUrl={profileSummary?.avatarUrl ?? null}
@@ -2194,12 +2194,12 @@ export default function ProfilePage() {
 
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>
                   <div className="mb-5">
-                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">{t('profile.detailsSection')}</h3>
+                    <h3 className="text-lg font-bold text-bd-ink">{t('profile.detailsSection')}</h3>
                   </div>
 
                   <div className="space-y-5">
                     <div>
-                      <label htmlFor="profile-email-input" className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                      <label htmlFor="profile-email-input" className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.email')}
                         {effectiveEmailVerified && (
                           <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-xs font-bold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
@@ -2218,7 +2218,7 @@ export default function ProfilePage() {
                             ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
                               ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                              : 'border-bd-line focus:border-[#7867E8] focus:ring-[#9B8CFF]/20 dark:border-slate-700'
+                              : 'border-[var(--bd-input-border)] focus:border-bd-lav-deep focus:ring-bd-lav/20'
                         }`}
                         autoComplete="email"
                       />
@@ -2229,13 +2229,13 @@ export default function ProfilePage() {
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
                                 ? 'text-red-600 dark:text-red-400'
-                                : 'text-bd-ink-muted dark:text-slate-400'
+                                : 'text-bd-ink-soft'
                           }`}
                         >
                           {emailMessage}
                         </p>
                         {pendingEmail && (
-                          <p className="text-bd-ink-muted dark:text-slate-400">
+                          <p className="text-bd-ink-soft">
                             {t('profile.inline.pendingEmailHelp', { email: pendingEmail })}
                           </p>
                         )}
@@ -2244,7 +2244,7 @@ export default function ProfilePage() {
 
                     {profileEmailChanged && emailChangeNeedsPassword && (
                       <div>
-                        <label htmlFor="profile-current-password-input" className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                        <label htmlFor="profile-current-password-input" className="mb-2 block text-sm font-semibold text-bd-ink">
                           {t('profile.inline.currentPassword')}
                         </label>
                         <input
@@ -2252,10 +2252,10 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-bd-line focus:border-[#7867E8] focus:ring-[#9B8CFF]/20 dark:border-slate-700`}
+                          className={`${fieldInputClassName} border-[var(--bd-input-border)] focus:border-bd-lav-deep focus:ring-bd-lav/20`}
                           autoComplete="current-password"
                         />
-                        <p className="mt-1.5 text-xs text-bd-ink-muted dark:text-slate-400">
+                        <p className="mt-1.5 text-xs text-bd-ink-soft">
                           {t('profile.inline.currentPasswordHint')}
                         </p>
                       </div>
@@ -2301,15 +2301,15 @@ export default function ProfilePage() {
 
                 <div className={profileSurfaceClassName}>
                   <div className="mb-5">
-                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">{t('profile.linkedAccounts.title')}</h3>
-                    <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                    <h3 className="text-lg font-bold text-bd-ink">{t('profile.linkedAccounts.title')}</h3>
+                    <p className="mt-1 text-sm text-bd-ink-soft">
                       {t('profile.linkedAccounts.subtitle')}
                     </p>
                   </div>
 
                   {loadingLinkedAccounts ? (
                     <div className="flex items-center justify-center py-6">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-bd-bg2 border-t-bd-lav dark:border-slate-700 dark:border-t-bd-lav" />
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-bd-bg2 border-t-bd-lav dark:border-t-bd-lav" />
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-3">
@@ -2317,7 +2317,7 @@ export default function ProfilePage() {
                         {
                           id: 'google' as const,
                           name: 'Google',
-                          iconWrapperClassName: 'bg-[#E9F3FF] dark:bg-blue-500/15',
+                          iconWrapperClassName: 'bg-bd-sky/20',
                           icon: (
                             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
                               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z" fill="#4285F4"/>
@@ -2330,9 +2330,9 @@ export default function ProfilePage() {
                         {
                           id: 'github' as const,
                           name: 'GitHub',
-                          iconWrapperClassName: 'bg-bd-bg2 dark:bg-slate-800',
+                          iconWrapperClassName: 'bg-bd-bg2',
                           icon: (
-                            <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current text-bd-ink dark:text-white">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current text-bd-ink">
                               <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                             </svg>
                           ),
@@ -2340,7 +2340,7 @@ export default function ProfilePage() {
                         {
                           id: 'discord' as const,
                           name: 'Discord',
-                          iconWrapperClassName: 'bg-[#EEF0FF] dark:bg-indigo-500/15',
+                          iconWrapperClassName: 'bg-bd-lav/15',
                           icon: (
                             <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current text-[#5865F2]">
                               <path d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286ZM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189Zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
@@ -2356,7 +2356,7 @@ export default function ProfilePage() {
                             className={`rounded-2xl border p-4 ${
                               isConnected
                                 ? 'border-bd-mint/40 bg-bd-mint/10 dark:border-bd-mint/30 dark:bg-bd-mint/10'
-                                : 'border-bd-line bg-white/90 dark:border-slate-700 dark:bg-slate-900/70'
+                                : 'border-bd-line bg-bd-card-warm'
                             }`}
                           >
                             <div className="flex flex-col items-center gap-3 text-center">
@@ -2364,13 +2364,13 @@ export default function ProfilePage() {
                                 {provider.icon}
                               </div>
                               <div>
-                                <p className="text-sm font-semibold text-bd-ink dark:text-white">{provider.name}</p>
+                                <p className="text-sm font-semibold text-bd-ink">{provider.name}</p>
                                 {isConnected ? (
                                   <p className="text-xs font-medium text-bd-mint-deep dark:text-bd-mint">
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
                                 ) : (
-                                  <p className="text-xs font-medium text-bd-ink-soft dark:text-slate-400">
+                                  <p className="text-xs font-medium text-bd-ink-soft">
                                     {t('profile.linkedAccounts.notConnected')}
                                   </p>
                                 )}
@@ -2395,10 +2395,10 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={profileSurfaceClassName}>
-                  <h3 className="text-lg font-bold text-bd-ink dark:text-white">
+                  <h3 className="text-lg font-bold text-bd-ink">
                     {t('profile.dataExport.title')}
                   </h3>
-                  <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="mt-1 text-sm text-bd-ink-soft">
                     {t('profile.dataExport.description')}
                   </p>
                   <button
@@ -2431,7 +2431,7 @@ export default function ProfilePage() {
                       role="dialog"
                       aria-modal="false"
                       aria-labelledby="delete-confirm-title"
-                      className="mt-4 rounded-2xl border border-bd-danger-border bg-white p-4 dark:border-red-500/20 dark:bg-slate-900/70"
+                      className="mt-4 rounded-2xl border border-bd-danger-border bg-bd-card-warm p-4 dark:border-red-500/20"
                     >
                       <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
                         {t('profile.dangerZone.confirmTitle')}
@@ -2490,7 +2490,7 @@ export default function ProfilePage() {
               {session?.user?.id ? (
                 <PlayerStatsDashboard userId={session.user.id} />
               ) : (
-                <div className="flex items-center justify-center py-12 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-center py-12 text-sm text-bd-ink-soft">
                   {t('profile.stats.dashboard.errors.unavailable')}
                 </div>
               )}
@@ -2506,8 +2506,8 @@ export default function ProfilePage() {
               className="space-y-5"
             >
               <div className="max-w-2xl">
-                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">{t('profile.settings.title')}</h2>
-                <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                <h2 className="font-display text-3xl font-bold text-bd-ink">{t('profile.settings.title')}</h2>
+                <p className="mt-1 text-sm text-bd-ink-soft">
                   {t('profile.settings.subtitle')}
                 </p>
               </div>
@@ -2517,14 +2517,14 @@ export default function ProfilePage() {
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-bd-ink dark:text-white">
+                        <h3 className="text-lg font-bold text-bd-ink">
                           {t('profile.settings.sections.appearance.title')}
                         </h3>
                         <span className={settingsScopeBadgeClassName}>
                           {t('profile.settings.scope.device')}
                         </span>
                       </div>
-                      <p className="text-sm text-bd-ink-muted dark:text-slate-400">
+                      <p className="text-sm text-bd-ink-soft">
                         {t('profile.settings.sections.appearance.subtitle')}
                       </p>
                     </div>
@@ -2532,10 +2532,10 @@ export default function ProfilePage() {
 
                   <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
                     <div className={settingsSurfaceClassName}>
-                      <label className="mb-2 block text-sm font-semibold text-bd-ink dark:text-white">
+                      <label className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.settings.language.title')}
                       </label>
-                      <p className="mb-3 text-sm text-bd-ink-muted dark:text-slate-400">
+                      <p className="mb-3 text-sm text-bd-ink-soft">
                         {t('profile.settings.language.subtitle')}
                       </p>
                       <BoardlySelect
@@ -2545,11 +2545,11 @@ export default function ProfilePage() {
                         options={SETTINGS_LANGUAGE_OPTIONS}
                         renderValue={(option) => (
                           <span className="flex items-center gap-3">
-                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-lav-deep dark:bg-slate-800 dark:text-bd-lav">
+                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-lav-deep dark:text-bd-lav">
                               {option?.badge ?? '--'}
                             </span>
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-bd-ink dark:text-white">
+                              <span className="block truncate text-sm font-semibold text-bd-ink">
                                 {option?.label ?? ''}
                               </span>
                             </span>
@@ -2564,7 +2564,7 @@ export default function ProfilePage() {
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-bold text-bd-ink dark:text-white">
+                      <h3 className="text-lg font-bold text-bd-ink">
                         {t('profile.settings.notifications.title')}
                       </h3>
                       <span className={settingsScopeBadgeClassName}>
@@ -2577,7 +2577,7 @@ export default function ProfilePage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="mt-1 text-sm text-bd-ink-soft">
                     {t('profile.settings.notifications.subtitle')}
                   </p>
 
@@ -2585,10 +2585,10 @@ export default function ProfilePage() {
                     <div className="grid gap-3 xl:grid-cols-3">
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
-                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                          <div className="text-sm font-semibold text-bd-ink">
                             {t('profile.settings.notifications.email')}
                           </div>
-                          <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                          <div className="mt-1 text-xs text-bd-ink-soft">
                             {t('profile.settings.notifications.emailDesc')}
                           </div>
                         </div>
@@ -2602,10 +2602,10 @@ export default function ProfilePage() {
 
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
-                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                          <div className="text-sm font-semibold text-bd-ink">
                             {t('profile.settings.notifications.inApp')}
                           </div>
-                          <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                          <div className="mt-1 text-xs text-bd-ink-soft">
                             {t('profile.settings.notifications.inAppDesc')}
                           </div>
                         </div>
@@ -2619,10 +2619,10 @@ export default function ProfilePage() {
 
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
-                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                          <div className="text-sm font-semibold text-bd-ink">
                             {t('profile.settings.notifications.push')}
                           </div>
-                          <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                          <div className="mt-1 text-xs text-bd-ink-soft">
                             {pushPermission === 'unsupported'
                               ? t('profile.settings.notifications.pushUnsupported')
                               : pushPermission === 'unavailable'
@@ -2644,10 +2644,10 @@ export default function ProfilePage() {
                           above - it stays available whatever emailNotificationsEnabled is. */}
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
-                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                          <div className="text-sm font-semibold text-bd-ink">
                             {t('profile.settings.notifications.marketing')}
                           </div>
-                          <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                          <div className="mt-1 text-xs text-bd-ink-soft">
                             {t('profile.settings.notifications.marketingDesc')}
                           </div>
                         </div>
@@ -2661,16 +2661,16 @@ export default function ProfilePage() {
                     </div>
 
                     <div
-                      className={`rounded-[1.5rem] border border-bd-line bg-bd-card-warm/75 p-4 transition-opacity dark:border-slate-700/60 dark:bg-slate-800/50 ${
+                      className={`rounded-[1.5rem] border border-bd-line bg-bd-bg p-4 transition-opacity ${
                         emailNotificationsEnabled ? 'opacity-100' : 'opacity-65'
                       }`}
                     >
-                      <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                      <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-bd-ink-soft">
                         {t('profile.settings.notifications.categories.title')}
                       </p>
                       {emailNotificationsEnabled ? (
-                        <div className="overflow-hidden rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/55">
-                          <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-bd-card-warm dark:hover:bg-slate-800/70">
+                        <div className="overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm">
+                          <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-bd-bg2">
                             <Checkbox
                               checked={notificationPreferences.gameInvites}
                               onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
@@ -2678,16 +2678,16 @@ export default function ProfilePage() {
                               className="mt-0.5 shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                              <div className="text-sm font-semibold text-bd-ink">
                                 {t('profile.settings.notifications.categories.gameInvites')}
                               </div>
-                              <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                              <div className="mt-1 text-xs text-bd-ink-soft">
                                 {t('profile.settings.notifications.categories.gameInvitesDesc')}
                               </div>
                             </div>
                           </Label>
 
-                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-card-warm dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-bg2">
                             <Checkbox
                               checked={notificationPreferences.turnReminders}
                               onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
@@ -2695,16 +2695,16 @@ export default function ProfilePage() {
                               className="mt-0.5 shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                              <div className="text-sm font-semibold text-bd-ink">
                                 {t('profile.settings.notifications.categories.turnReminders')}
                               </div>
-                              <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                              <div className="mt-1 text-xs text-bd-ink-soft">
                                 {t('profile.settings.notifications.categories.turnRemindersDesc')}
                               </div>
                             </div>
                           </Label>
 
-                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-card-warm dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-bg2">
                             <Checkbox
                               checked={notificationPreferences.friendRequests}
                               onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
@@ -2712,16 +2712,16 @@ export default function ProfilePage() {
                               className="mt-0.5 shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                              <div className="text-sm font-semibold text-bd-ink">
                                 {t('profile.settings.notifications.categories.friendRequests')}
                               </div>
-                              <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                              <div className="mt-1 text-xs text-bd-ink-soft">
                                 {t('profile.settings.notifications.categories.friendRequestsDesc')}
                               </div>
                             </div>
                           </Label>
 
-                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-card-warm dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-bd-line px-4 py-3 transition-colors hover:bg-bd-bg2">
                             <Checkbox
                               checked={notificationPreferences.friendAccepted}
                               onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
@@ -2729,17 +2729,17 @@ export default function ProfilePage() {
                               className="mt-0.5 shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                              <div className="text-sm font-semibold text-bd-ink">
                                 {t('profile.settings.notifications.categories.friendAccepted')}
                               </div>
-                              <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                              <div className="mt-1 text-xs text-bd-ink-soft">
                                 {t('profile.settings.notifications.categories.friendAcceptedDesc')}
                               </div>
                             </div>
                           </Label>
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-dashed border-bd-line bg-white/70 px-4 py-3 text-sm text-bd-ink-muted dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">
+                        <div className="rounded-2xl border border-dashed border-bd-line bg-bd-card-warm px-4 py-3 text-sm text-bd-ink-soft">
                           {t('profile.settings.notifications.categories.disabledHint')}
                         </div>
                       )}
@@ -2756,7 +2756,7 @@ export default function ProfilePage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3
                         id="profile-settings-privacy-title"
-                        className="inline-flex items-center gap-2 text-lg font-bold text-bd-ink dark:text-white"
+                        className="inline-flex items-center gap-2 text-lg font-bold text-bd-ink"
                       >
                         <Icon name="shield" size={18} />
                         {t('profile.settings.privacy.title')}
@@ -2776,17 +2776,17 @@ export default function ProfilePage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="mt-1 text-sm text-bd-ink-soft">
                     {t('profile.settings.privacy.subtitle')}
                   </p>
 
                   <div className="mt-5">
                     <div className={settingsSurfaceClassName}>
                       <div>
-                        <label className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-300">
+                        <label className="mb-2 block text-sm font-semibold text-bd-ink">
                           {t('profile.settings.privacy.profileVisibility')}
                         </label>
-                        <p className="mb-3 text-xs text-bd-ink-muted dark:text-slate-400">
+                        <p className="mb-3 text-xs text-bd-ink-soft">
                           {t('profile.settings.privacy.profileVisibilityDesc')}
                         </p>
                         <div className="grid gap-2 sm:grid-cols-3">
@@ -2821,23 +2821,23 @@ export default function ProfilePage() {
                               className={`rounded-2xl border px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
                                 accountPreferencesLoaded && accountPreferences.profileVisibility === option.value
                                   ? 'border-[#7867E8] bg-bd-lav/15 text-bd-lav-deep shadow-sm dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
-                                  : 'border-bd-line bg-white text-bd-ink-soft hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800'
+                                  : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2'
                               }`}
                             >
                               <div className="flex items-center gap-2 text-sm font-semibold">
-                                <span className="inline-flex min-w-[2.2rem] items-center justify-center rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-300">
+                                <span className="inline-flex min-w-[2.2rem] items-center justify-center rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-soft">
                                   <Icon name={option.icon} size={13} />
                                 </span>
                                 <span>{option.label}</span>
                               </div>
-                              <p className="mt-2 text-xs leading-5 text-bd-ink-muted dark:text-slate-400">
+                              <p className="mt-2 text-xs leading-5 text-bd-ink-soft">
                                 {option.description}
                               </p>
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="mt-4 border-t border-bd-line pt-4 dark:border-slate-700">
+                      <div className="mt-4 border-t border-bd-line pt-4">
                         <Label className="flex cursor-pointer items-start gap-3">
                           <Checkbox
                             checked={accountPreferencesLoaded && accountPreferences.showOnlineStatus}
@@ -2848,10 +2848,10 @@ export default function ProfilePage() {
                             className="mt-0.5 shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                            <div className="text-sm font-semibold text-bd-ink">
                               {t('profile.settings.privacy.showOnline')}
                             </div>
-                            <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
+                            <div className="mt-1 text-xs text-bd-ink-soft">
                               {t('profile.settings.privacy.showOnlineDesc')}
                             </div>
                           </div>
@@ -2868,8 +2868,8 @@ export default function ProfilePage() {
           {activeTab === 'premium' && (
             <div role="tabpanel" id="profile-tab-panel-premium" aria-labelledby="profile-tab-premium" className="space-y-5">
               <div className="max-w-2xl">
-                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">{t('premium.title')}</h2>
-                <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                <h2 className="font-display text-3xl font-bold text-bd-ink">{t('premium.title')}</h2>
+                <p className="mt-1 text-sm text-bd-ink-soft">
                   {!hasUploadPack
                     ? t('profile.premiumTab.leadFree')
                     : t('profile.premiumTab.leadPremium')}
@@ -2953,17 +2953,17 @@ export default function ProfilePage() {
 
               {/* Feature overview */}
               <div className={profileSurfaceClassName}>
-                <h3 className="mb-4 text-base font-bold text-bd-ink dark:text-white">{t('profile.premiumTab.included')}</h3>
+                <h3 className="mb-4 text-base font-bold text-bd-ink">{t('profile.premiumTab.included')}</h3>
 
                 {/* Free features */}
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">{t('profile.premiumTab.freeForever')}</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-soft">{t('profile.premiumTab.freeForever')}</p>
                 <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {FREE_FEATURES.map(({ icon, labelKey, descKey }) => (
-                    <div key={labelKey} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+                    <div key={labelKey} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2.5">
                       <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
-                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{t(labelKey)}</p>
-                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{t(descKey)}</p>
+                        <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
+                        <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
                       <span className="ml-auto shrink-0 text-bd-mint-deep dark:text-bd-mint"><Icon name="check" size={15} /></span>
                     </div>
@@ -2979,15 +2979,15 @@ export default function ProfilePage() {
                       className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
                         hasUploadPack
                           ? 'border-amber-200/70 bg-amber-50/60 dark:border-amber-700/30 dark:bg-amber-950/20'
-                          : 'border-bd-line bg-white opacity-60 dark:border-slate-700 dark:bg-slate-800/50'
+                          : 'border-bd-line bg-bd-card-warm opacity-60'
                       }`}
                     >
                       <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
-                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{t(labelKey)}</p>
-                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{t(descKey)}</p>
+                        <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
+                        <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
-                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
                         {hasUploadPack ? <Icon name="check" size={15} /> : '—'}
                       </span>
                     </div>
@@ -3015,21 +3015,21 @@ export default function ProfilePage() {
                         </>
                       )}
                     </button>
-                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">{t('profile.premiumTab.cancelAnytime')}</p>
+                    <p className="text-xs text-bd-ink-soft">{t('profile.premiumTab.cancelAnytime')}</p>
                   </div>
                 )}
               </div>
 
               {/* Profile Customization */}
               <div className={profileSurfaceClassName}>
-                <h3 className="mb-1 text-lg font-bold text-bd-ink dark:text-white">{t('profile.customization.title')}</h3>
-                <p className="mb-5 text-sm text-bd-ink-muted dark:text-slate-400">
+                <h3 className="mb-1 text-lg font-bold text-bd-ink">{t('profile.customization.title')}</h3>
+                <p className="mb-5 text-sm text-bd-ink-soft">
                   {t('profile.customization.subtitle')}
                 </p>
 
                 {/* Bio — free */}
                 <div className="mb-6">
-                  <label className="mb-1.5 block text-sm font-semibold text-bd-ink dark:text-white">
+                  <label className="mb-1.5 block text-sm font-semibold text-bd-ink">
                     {t('premium.free.bio.label')} <span className="text-xs font-normal text-bd-ink-muted">{t('profile.customization.bioHint')}</span>
                   </label>
                   <textarea
@@ -3037,7 +3037,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-bd-line bg-white px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                    className="w-full rounded-xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none"
                   />
                   <div className="mt-1 flex items-center justify-between">
                     <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
@@ -3059,15 +3059,15 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="border-t border-bd-line pt-5 dark:border-slate-700">
+                <div className="border-t border-bd-line pt-5">
 
                 {/* Accent color — premium */}
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.accentTitle')}</label>
+                    <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.accentTitle')}</label>
                     {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.accentHint')}</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.accentHint')}</p>
                   <div className="flex flex-wrap gap-2">
                     {ACCENT_COLORS.map(({ hex, nameKey }) => (
                       <button
@@ -3112,10 +3112,10 @@ export default function ProfilePage() {
                 {/* Featured game — premium */}
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.featuredTitle')}</label>
+                    <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.featuredTitle')}</label>
                     {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.featuredHint')}</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.featuredHint')}</p>
                   <div className="flex flex-wrap gap-2">
                     {FEATURED_GAMES.map(({ id, glyph, labelKey }) => (
                       <button
@@ -3132,8 +3132,8 @@ export default function ProfilePage() {
                         }}
                         className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
                           profileFeaturedGame === id
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
-                            : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                            : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                         }`}
                         style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: 'pointer' }}
                       >
@@ -3147,10 +3147,10 @@ export default function ProfilePage() {
                 {/* Premium profile card style */}
                 <div>
                   <div className="mb-2 flex items-center gap-2">
-                    <label className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.customization.cardStyleTitle')}</label>
+                    <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.cardStyleTitle')}</label>
                     {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
-                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">{t('profile.customization.cardStyleHint')}</p>
+                  <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.cardStyleHint')}</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {PREMIUM_CARD_STYLES.map(({ id, nameKey, descKey, preview, text }) => {
                       const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
@@ -3182,7 +3182,7 @@ export default function ProfilePage() {
                           <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t(nameKey)}</span>
                           <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{t(descKey)}</span>
                           {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bd-ink shadow-sm"><Icon name="check" size={10} /></span>
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[color:var(--bd-ink-on-accent)] shadow-sm"><Icon name="check" size={10} /></span>
                           )}
                         </button>
                       )
