@@ -916,6 +916,20 @@ const no = {
             desc: 'Å avslutte tidlig stopper spionens gjetning, men gir færre svar.',
           },
         },
+        mistakes: {
+          namingThePlace: {
+            title: 'Å nevne stedet',
+            desc: 'Spør om rullebanen, og spionen gjetter flyplassen.',
+          },
+          splittingTheVote: {
+            title: 'Å splitte stemmene',
+            desc: 'Delt topp avslører ingen og gir spionen 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Å gjette på magefølelse',
+            desc: 'En feil gjetning gir alle de andre spillerne 100.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

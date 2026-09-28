@@ -916,6 +916,20 @@ const en = {
             desc: 'Ending early blocks the spy\'s guess but leaves fewer answers.',
           },
         },
+        mistakes: {
+          namingThePlace: {
+            title: 'Naming the place',
+            desc: 'Mention a runway and the spy guesses the airport.',
+          },
+          splittingTheVote: {
+            title: 'Splitting the vote',
+            desc: 'A tied top reveals nobody and pays the spy 300.',
+          },
+          guessingOnAHunch: {
+            title: 'Guessing on a hunch',
+            desc: 'A wrong guess pays every other player 100.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',

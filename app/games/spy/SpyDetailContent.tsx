@@ -80,6 +80,11 @@ export default function SpyDetailContent() {
         { title: t('games.spy.detail.strategy.voteForPoints.title'), desc: t('games.spy.detail.strategy.voteForPoints.desc') },
         { title: t('games.spy.detail.strategy.hostEndsOnPurpose.title'), desc: t('games.spy.detail.strategy.hostEndsOnPurpose.desc') },
       ]}
+      mistakes={[
+        { title: t('games.spy.detail.mistakes.namingThePlace.title'), desc: t('games.spy.detail.mistakes.namingThePlace.desc') },
+        { title: t('games.spy.detail.mistakes.splittingTheVote.title'), desc: t('games.spy.detail.mistakes.splittingTheVote.desc') },
+        { title: t('games.spy.detail.mistakes.guessingOnAHunch.title'), desc: t('games.spy.detail.mistakes.guessingOnAHunch.desc') },
+      ]}
     />
   )
 }
