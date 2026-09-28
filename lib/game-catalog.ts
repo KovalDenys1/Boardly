@@ -846,7 +846,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.ludo.difficulty',
     seo: {
       title: 'Play Ludo Online Free with Friends or Bots',
-      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and send rivals home, with friends or bots. No download.',
+      description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
       synonyms: [
         'ludo online',
         'ludo online free',
