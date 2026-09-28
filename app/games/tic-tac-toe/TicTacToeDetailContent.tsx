@@ -79,6 +79,14 @@ export default function TicTacToeDetailContent() {
         { title: t('games.tictactoe.detail.multiplayer.turnTimer.title'), desc: t('games.tictactoe.detail.multiplayer.turnTimer.desc') },
         { title: t('games.tictactoe.detail.multiplayer.guestNoDownload.title'), desc: t('games.tictactoe.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.tictactoe.detail.audience.whoItSuits'),
+      ]}
+      history={[
+        t('games.tictactoe.detail.history.origin'),
+        t('games.tictactoe.detail.history.oxo'),
+        t('games.tictactoe.detail.history.solved'),
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )

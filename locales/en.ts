@@ -983,6 +983,14 @@ const en = {
             desc: 'There is nothing to install and nothing to sign up for: a guest name gets you into a lobby on a phone, a tablet or a computer.',
           },
         },
+        audience: {
+          whoItSuits: 'Tic Tac Toe suits anyone who wants a complete game in the time it takes a kettle to boil: two friends on a break, a parent showing a child how to spot a threat, or a player warming up before something longer. Because the grid is so small, the real contest is attention. The first player to miss a block usually loses, and a best of 5 or 10 rewards whoever stays sharp the longest.',
+        },
+        history: {
+          origin: 'Games of three in a row on a small grid are much older than any of their names. British players call it noughts and crosses, Americans say tic-tac-toe, and in the United States a drawn game is known as a cat\'s game.',
+          oxo: 'In 1952 Alexander Douglas wrote OXO, a noughts and crosses program for the EDSAC computer at the University of Cambridge, and it is often listed among the earliest video games.',
+          solved: 'The game is solved: with best play from both sides, every round ends in a draw. Of the 255,168 possible games, most still end in a win, which means someone slipped – and that slip is exactly what Grid Grandmaster waits for.',
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

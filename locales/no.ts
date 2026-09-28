@@ -983,6 +983,14 @@ const no = {
             desc: 'Ingenting å installere og ingenting å registrere seg for: et gjestenavn tar deg inn i en lobby på mobil, nettbrett eller datamaskin.',
           },
         },
+        audience: {
+          whoItSuits: 'Tre på rad passer for alle som vil ha et helt spill på den tiden det tar å koke opp vann: to venner i en pause, en forelder som viser et barn hvordan man ser en trussel, eller en spiller som varmer opp før noe lengre. Fordi brettet er så lite, handler kampen egentlig om oppmerksomhet. Den som først overser en blokkering, taper som regel, og best av 5 eller 10 belønner den som holder seg skjerpet lengst.',
+        },
+        history: {
+          origin: 'Spill med tre på rad på et lite rutenett er mye eldre enn noen av navnene deres. I Storbritannia heter det noughts and crosses, i USA tic-tac-toe, og der kalles et uavgjort parti et «cat\'s game».',
+          oxo: 'I 1952 skrev Alexander Douglas OXO, et tre på rad-program for EDSAC-datamaskinen ved University of Cambridge, og det regnes ofte blant de aller første videospillene.',
+          solved: 'Spillet er løst: med beste spill fra begge sider ender hver runde uavgjort. Av de 255 168 mulige partiene ender likevel de fleste med seier, noe som betyr at noen har gjort en feil – og nettopp den feilen venter Grid Grandmaster på.',
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',
