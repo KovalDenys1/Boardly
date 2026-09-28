@@ -1988,6 +1988,24 @@ const en = {
             desc: 'With one token out, any roll but a 6 must move it, however unsafe the landing.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Play friends anywhere',
+            desc: 'Send the code or invite link to up to three friends. Once two people are seated, a chat opens beside the board.',
+          },
+          botsAndSolo: {
+            title: 'Bots for solo play',
+            desc: 'Play vs Bot opens a room with one bot already seated; press Start Game to begin. The host can add more bots before the start.',
+          },
+          turnTimer: {
+            title: 'A clock that keeps the table moving',
+            desc: 'If a player closes the game, the other pages ask the server, which removes anyone silent for 30 seconds. Play then carries on without them, or ends if too few players remain.',
+          },
+          guestNoDownload: {
+            title: 'No app, no sign-up',
+            desc: 'It runs in the browser on a phone, tablet or laptop, and a guest name is enough to take a seat.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

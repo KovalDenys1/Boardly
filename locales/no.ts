@@ -1988,6 +1988,24 @@ const no = {
             desc: 'Med bare én brikke ute må alle kast unntatt en sekser flytte den, uansett hvor utrygt den lander.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill med venner hvor som helst',
+            desc: 'Send koden eller invitasjonslenken til opptil tre venner. Når to personer sitter ved bordet, åpnes en chat ved siden av brettet.',
+          },
+          botsAndSolo: {
+            title: 'Roboter når du spiller alene',
+            desc: 'Spill mot bot åpner et rom med én robot allerede på plass; trykk Start for å begynne. Verten kan legge til flere roboter før start.',
+          },
+          turnTimer: {
+            title: 'En klokke som holder spillet i gang',
+            desc: 'Lukker en spiller spillet, spør de andres sider serveren, som fjerner den som har vært stille i 30 sekunder. Spillet fortsetter så uten dem, eller slutter hvis det er for få spillere igjen.',
+          },
+          guestNoDownload: {
+            title: 'Ingen app, ingen registrering',
+            desc: 'Det kjører i nettleseren på mobil, nettbrett eller PC, og et gjestenavn er nok for å ta plass.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',

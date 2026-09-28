@@ -74,6 +74,12 @@ export default function LudoDetailContent() {
         { title: t('games.ludo.detail.mistakes.trustingAPairToBlock.title'), desc: t('games.ludo.detail.mistakes.trustingAPairToBlock.desc') },
         { title: t('games.ludo.detail.mistakes.racingOneTokenAlone.title'), desc: t('games.ludo.detail.mistakes.racingOneTokenAlone.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.ludo.detail.multiplayer.withFriends.title'), desc: t('games.ludo.detail.multiplayer.withFriends.desc') },
+        { title: t('games.ludo.detail.multiplayer.botsAndSolo.title'), desc: t('games.ludo.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.ludo.detail.multiplayer.turnTimer.title'), desc: t('games.ludo.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.ludo.detail.multiplayer.guestNoDownload.title'), desc: t('games.ludo.detail.multiplayer.guestNoDownload.desc') },
+      ]}
       playVsBotGameType="ludo"
     />
   )
