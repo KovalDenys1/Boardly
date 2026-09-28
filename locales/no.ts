@@ -882,6 +882,40 @@ const no = {
             desc: 'Tre runder, fem minutters spørreklokke og 60 sekunders nedtelling til avstemning; ingen innstilling endrer dem.',
           },
         },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Stryk steder',
+            desc: 'Som spion stryker du hvert sted et svar utelukker.',
+          },
+          countToTheDeadline: {
+            title: 'Tell svarene',
+            desc: 'Med fem spillere åpner det tiende svaret avstemningen, så gjett før det.',
+          },
+          weighTheGuess: {
+            title: 'Vei 500 mot 300',
+            desc: 'Å overleve avstemningen gir 300; gjett bare når ett sted passer med hvert svar.',
+          },
+          aTieIsEnough: {
+            title: 'Uavgjort holder',
+            desc: 'Uavgjort gir også spionen poeng, så fordel tvilen.',
+          },
+          answerInRole: {
+            title: 'Svar i rollen',
+            desc: 'Svarer du som jobben din der, viser du at du kjenner stedet uten å nevne det.',
+          },
+          askTheUnasked: {
+            title: 'Spør dem som ikke er spurt',
+            desc: 'En spion gjemmer seg best på en plass ingen spør.',
+          },
+          voteForPoints: {
+            title: 'Stemmen din teller for seg',
+            desc: 'En stemme på spionen gir 50 selv om bordet bommer.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Vert: velg tidspunktet',
+            desc: 'Å avslutte tidlig stopper spionens gjetning, men gir færre svar.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

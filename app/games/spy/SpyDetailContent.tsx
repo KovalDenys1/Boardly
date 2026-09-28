@@ -70,6 +70,16 @@ export default function SpyDetailContent() {
         { title: t('games.spy.detail.modes.tableSize.title'), desc: t('games.spy.detail.modes.tableSize.desc') },
         { title: t('games.spy.detail.modes.fixedClocks.title'), desc: t('games.spy.detail.modes.fixedClocks.desc') },
       ]}
+      strategy={[
+        { title: t('games.spy.detail.strategy.strikeFromTheList.title'), desc: t('games.spy.detail.strategy.strikeFromTheList.desc') },
+        { title: t('games.spy.detail.strategy.countToTheDeadline.title'), desc: t('games.spy.detail.strategy.countToTheDeadline.desc') },
+        { title: t('games.spy.detail.strategy.weighTheGuess.title'), desc: t('games.spy.detail.strategy.weighTheGuess.desc') },
+        { title: t('games.spy.detail.strategy.aTieIsEnough.title'), desc: t('games.spy.detail.strategy.aTieIsEnough.desc') },
+        { title: t('games.spy.detail.strategy.answerInRole.title'), desc: t('games.spy.detail.strategy.answerInRole.desc') },
+        { title: t('games.spy.detail.strategy.askTheUnasked.title'), desc: t('games.spy.detail.strategy.askTheUnasked.desc') },
+        { title: t('games.spy.detail.strategy.voteForPoints.title'), desc: t('games.spy.detail.strategy.voteForPoints.desc') },
+        { title: t('games.spy.detail.strategy.hostEndsOnPurpose.title'), desc: t('games.spy.detail.strategy.hostEndsOnPurpose.desc') },
+      ]}
     />
   )
 }

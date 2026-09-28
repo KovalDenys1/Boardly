@@ -882,6 +882,40 @@ const en = {
             desc: 'Three rounds, a five-minute question clock and a 60-second vote countdown; no setting changes them.',
           },
         },
+        strategy: {
+          strikeFromTheList: {
+            title: 'Strike places off',
+            desc: 'As the spy, cross out every place an answer rules out.',
+          },
+          countToTheDeadline: {
+            title: 'Count the answers',
+            desc: 'With five players, guess before the tenth answer opens the vote.',
+          },
+          weighTheGuess: {
+            title: 'Weigh 500 against 300',
+            desc: 'Surviving pays 300; guess only when one place fits every answer.',
+          },
+          aTieIsEnough: {
+            title: 'A tie is enough',
+            desc: 'A tied vote also pays the spy, so split the doubt.',
+          },
+          answerInRole: {
+            title: 'Answer in role',
+            desc: 'Answer as your job there, never naming the place.',
+          },
+          askTheUnasked: {
+            title: 'Ask the unasked',
+            desc: 'A spy hides best in a seat nobody questions.',
+          },
+          voteForPoints: {
+            title: 'Your vote scores alone',
+            desc: 'A vote on the spy pays 50, whoever the table picks.',
+          },
+          hostEndsOnPurpose: {
+            title: 'Host: time the vote',
+            desc: 'Ending early blocks the spy\'s guess but leaves fewer answers.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
