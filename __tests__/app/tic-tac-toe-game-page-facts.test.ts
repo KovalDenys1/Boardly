@@ -85,7 +85,7 @@ describe('the Tic Tac Toe rules against the engine (#1235)', () => {
     expect(engine.makeMove({ playerId: 'x', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
     expect((engine.getState().data as TicTacToeGameData).currentSymbol).toBe('O')
     expect(engine.getState().currentPlayerIndex).toBe(1)
-    expect(ttt.detail.rules.xOpensFirstRound).toMatch(/O starts the second/)
+    expect(ttt.detail.rules.xOpensFirstRound).toMatch(/O starts round two/)
   })
 
   it('hands the round to the opponent on a timeout rather than skipping the move', () => {
@@ -100,6 +100,6 @@ describe('the Tic Tac Toe rules against the engine (#1235)', () => {
     expect(engine.makeMove({ playerId: 'x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(false)
     play(engine, 'x', 1, 1)
     expect(engine.makeMove({ playerId: 'x', type: 'request-draw', data: {}, timestamp: new Date() })).toBe(true)
-    expect(ttt.detail.rules.drawByAgreement).toMatch(/Once the first mark is down/)
+    expect(ttt.detail.rules.offersNeedConsent).toMatch(/once the first mark is down/)
   })
 })

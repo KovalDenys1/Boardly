@@ -46,15 +46,13 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.rules.threeInALine'),
         t('games.tictactoe.detail.rules.fullGridDraw'),
         t('games.tictactoe.detail.rules.timeoutLoses'),
-        t('games.tictactoe.detail.rules.undoByConsent'),
-        t('games.tictactoe.detail.rules.drawByAgreement'),
+        t('games.tictactoe.detail.rules.offersNeedConsent'),
         t('games.tictactoe.detail.rules.hostStartsNextRound'),
       ]}
       modes={[
         { title: t('games.tictactoe.detail.modes.seriesLength.title'), desc: t('games.tictactoe.detail.modes.seriesLength.desc') },
         { title: t('games.tictactoe.detail.modes.moveClock.title'), desc: t('games.tictactoe.detail.modes.moveClock.desc') },
         { title: t('games.tictactoe.detail.modes.botLevels.title'), desc: t('games.tictactoe.detail.modes.botLevels.desc') },
-        { title: t('games.tictactoe.detail.modes.requests.title'), desc: t('games.tictactoe.detail.modes.requests.desc') },
       ]}
       strategy={[
         { title: t('games.tictactoe.detail.strategy.takeTheCentre.title'), desc: t('games.tictactoe.detail.strategy.takeTheCentre.desc') },
@@ -62,7 +60,6 @@ export default function TicTacToeDetailContent() {
         { title: t('games.tictactoe.detail.strategy.centreAgainstCorner.title'), desc: t('games.tictactoe.detail.strategy.centreAgainstCorner.desc') },
         { title: t('games.tictactoe.detail.strategy.winBeforeBlock.title'), desc: t('games.tictactoe.detail.strategy.winBeforeBlock.desc') },
         { title: t('games.tictactoe.detail.strategy.buildAFork.title'), desc: t('games.tictactoe.detail.strategy.buildAFork.desc') },
-        { title: t('games.tictactoe.detail.strategy.steerTheForcedReply.title'), desc: t('games.tictactoe.detail.strategy.steerTheForcedReply.desc') },
         { title: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.title'), desc: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.desc') },
         { title: t('games.tictactoe.detail.strategy.useYourOpeningRounds.title'), desc: t('games.tictactoe.detail.strategy.useYourOpeningRounds.desc') },
         { title: t('games.tictactoe.detail.strategy.pickTheRightBot.title'), desc: t('games.tictactoe.detail.strategy.pickTheRightBot.desc') },
@@ -84,7 +81,6 @@ export default function TicTacToeDetailContent() {
       ]}
       history={[
         t('games.tictactoe.detail.history.origin'),
-        t('games.tictactoe.detail.history.oxo'),
         t('games.tictactoe.detail.history.solved'),
       ]}
       playVsBotGameType="tic_tac_toe"
