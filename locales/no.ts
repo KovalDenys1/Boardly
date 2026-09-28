@@ -1603,7 +1603,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan du spille Alias online med en gjeng gratis?',
-        answer: 'Ja, med fire til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
+        answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
       ribbon: {
         desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
@@ -1613,7 +1613,7 @@ const no = {
       detail: {
         title: 'Spill Alias på nett',
         heroDesc: 'Et lagspill med ord: én spiller forklarer hemmelige ord mens laget kappes om å gjette så mange som mulig.',
-        groupNotice: 'Alias krever minst 4 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
+        groupNotice: 'Alias krever minst 3 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
         introTitle: 'Hva er Alias?',
         intro0: 'Alias er et lagspill der man forklarer ord. Én spiller ser et hemmelig ord og forklarer det uten å si selve ordet.',
         intro1: 'Riktige gjett gir poeng, og å hoppe over koster poeng. Lagene bytter på turene til sluttstillingen avgjør hvem som vinner.',

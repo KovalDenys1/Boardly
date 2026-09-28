@@ -17,11 +17,11 @@ export default function AliasDetailContent() {
       accent="var(--bd-coral)"
       lobbiesHref="/games/alias/lobbies"
       primaryCtaLabel={t('games.playNow')}
-      // minPlayers is 4 and supportsBots is false, so a visitor arriving alone
-      // cannot start anything (#780).
+      // minPlayers is 3 (#847) and supportsBots is false, so a visitor arriving
+      // alone cannot start anything (#780).
       groupNotice={t('games.alias.detail.groupNotice')}
       facts={[
-        { label: t('games.detail.labels.players'), value: '4–16' },
+        { label: t('games.detail.labels.players'), value: '3–16' },
         { label: t('games.detail.labels.price'), value: t('games.detail.values.free') },
         { label: t('games.detail.labels.download'), value: t('games.detail.values.none') },
         { label: t('games.detail.labels.gameType'), value: t('games.detail.values.team') },

@@ -1603,7 +1603,7 @@ const en = {
       difficulty: 'Medium',
       seo: {
         question: 'Can you play Alias online with a group for free?',
-        answer: 'Yes, with four to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
+        answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
       ribbon: {
         desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
@@ -1613,7 +1613,7 @@ const en = {
       detail: {
         title: 'Play Alias Online',
         heroDesc: 'A team word game where one player describes secret words and the team races to guess as many as possible.',
-        groupNotice: "Alias needs at least 4 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
+        groupNotice: "Alias needs at least 3 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
         introTitle: 'What is Alias?',
         intro0: 'Alias is a team word-description game. One player sees a secret word and explains it without saying the word itself.',
         intro1: 'Correct guesses score points. Skips cost points. Teams take turns until the final score decides the winner.',
