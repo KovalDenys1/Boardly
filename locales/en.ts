@@ -1892,7 +1892,7 @@ const en = {
         blue: 'Blue',
       },
       rules: {
-        serverRolls: 'The die is rolled on the server for every player, bots included, and every roll is listed in the roll history.',
+        serverRolls: 'The die is rolled on the server for every player, bots included, and recent rolls are listed in the roll history.',
         sixToLeave: 'Roll a 6 to bring a token out of the yard onto your start square.',
         sixRollsAgain: 'A 6 earns another roll. Three 6s in a row lose the turn.',
         capture: 'Land on an opponent to send their token back to the yard.',
@@ -1900,7 +1900,7 @@ const en = {
         exactHome: 'You need the exact number to reach home.',
         winner: 'The first player to bring every token home wins; the others are ranked by progress.',
         modes: 'Quick mode plays with two tokens each, classic with four.',
-        timer: 'One turn timer covers your roll and your move, and a bonus roll after a 6 gets a fresh one. When it runs out, the server rolls and moves for you and the turn passes.',
+        timer: 'One turn timer covers your roll and your move, and a bonus roll after a 6 gets a fresh one. If it runs out while your game is open, the server rolls and moves for you and the turn passes.',
       },
       detail: {
         title: 'Play Ludo Online',
@@ -1921,6 +1921,11 @@ const en = {
         benefit2: 'Bots on three levels for the empty seats.',
         benefit3: 'Quick mode for a game in about fifteen minutes.',
         benefit4: 'Free to play as a guest, nothing to install.',
+        rules: {
+          homeColumn: 'After 50 squares of track, a token turns into its own home column, where no rival can land.',
+          noBlocks: 'There are no blocks. A token passes any square, and landing on a pair of rival tokens sends both back unless the square is safe.',
+          extraRollOnlyOnSix: 'A 6 you cannot use still earns the extra roll; a capture or a token reaching home earns none.',
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

@@ -1892,7 +1892,7 @@ const no = {
         blue: 'Blå',
       },
       rules: {
-        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og hvert kast vises i kasthistorikken.',
+        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og de siste kastene vises i kasthistorikken.',
         sixToLeave: 'Slå en sekser for å flytte en brikke ut av gården og inn på startfeltet ditt.',
         sixRollsAgain: 'En sekser gir et nytt kast. Tre seksere på rad gjør at du mister turen.',
         capture: 'Lander du på en motstander, går brikken deres tilbake til gården.',
@@ -1900,7 +1900,7 @@ const no = {
         exactHome: 'Du må slå nøyaktig riktig tall for å komme hjem.',
         winner: 'Den første som får alle brikkene hjem vinner; de andre rangeres etter hvor langt de har kommet.',
         modes: 'Hurtigmodus spilles med to brikker hver, klassisk med fire.',
-        timer: 'Én turtid gjelder både kastet og trekket, og et ekstrakast etter en sekser får ny tid. Når tiden går ut, kaster og flytter serveren for deg, og turen går videre.',
+        timer: 'Én turtid gjelder både kastet og trekket, og et ekstrakast etter en sekser får ny tid. Går tiden ut mens spillet er åpent hos deg, kaster og flytter serveren for deg, og turen går videre.',
       },
       detail: {
         title: 'Spill Ludo på nett',
@@ -1921,6 +1921,11 @@ const no = {
         benefit2: 'Roboter på tre nivåer til de tomme plassene.',
         benefit3: 'Hurtigmodus for et spill på omtrent et kvarter.',
         benefit4: 'Gratis å spille som gjest, ingenting å installere.',
+        rules: {
+          homeColumn: 'Etter 50 felt på banen svinger brikken inn i sin egen hjemmekolonne, der ingen motstander kan lande.',
+          noBlocks: 'Det finnes ingen sperrer. En brikke kan passere alle felt, og lander den på to motstanderbrikker, går begge tilbake med mindre feltet er trygt.',
+          extraRollOnlyOnSix: 'En sekser du ikke kan bruke, gir likevel ekstrakast; å slå ut en brikke eller få en brikke hjem gir det ikke.',
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
