@@ -891,6 +891,24 @@ const en = {
           drawByAgreement: 'Once the first mark is down, either player can offer a draw; an accepted offer ends the round level at once.',
           hostStartsNextRound: 'When a round is over, the host starts the next one: the grid clears and the score stays.',
         },
+        modes: {
+          seriesLength: {
+            title: 'Best of 3, 5 or 10, or no limit',
+            desc: 'A series ends as soon as one player has won more than half its rounds: two in a best of 3, three in a best of 5, six in a best of 10. Draws use up rounds too, so a series can also finish level. Pick ∞ and rounds keep coming, with the score kept.',
+          },
+          moveClock: {
+            title: 'Seconds on every move',
+            desc: 'A lobby you create gives each move 60 seconds, and the host can change that to anything from 30 to 180 in the lobby settings. A Play vs Bot game runs at 45 seconds a move.',
+          },
+          botLevels: {
+            title: 'Easy, medium and hard bots',
+            desc: 'Grid Rookie drops its mark on a random empty square. Grid Tactician wins when it can, blocks when it must, and otherwise prefers the centre, then a corner. Grid Grandmaster searches every continuation to the end of the round and never loses.',
+          },
+          requests: {
+            title: 'Undo and draw requests',
+            desc: 'Neither takes effect on its own: the request waits until the other player accepts or declines it. A bot always lets you take a move back, but only agrees to a draw once best play from both sides can no longer produce a winner.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

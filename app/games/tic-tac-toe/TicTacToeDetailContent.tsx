@@ -50,6 +50,12 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.rules.drawByAgreement'),
         t('games.tictactoe.detail.rules.hostStartsNextRound'),
       ]}
+      modes={[
+        { title: t('games.tictactoe.detail.modes.seriesLength.title'), desc: t('games.tictactoe.detail.modes.seriesLength.desc') },
+        { title: t('games.tictactoe.detail.modes.moveClock.title'), desc: t('games.tictactoe.detail.modes.moveClock.desc') },
+        { title: t('games.tictactoe.detail.modes.botLevels.title'), desc: t('games.tictactoe.detail.modes.botLevels.desc') },
+        { title: t('games.tictactoe.detail.modes.requests.title'), desc: t('games.tictactoe.detail.modes.requests.desc') },
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )

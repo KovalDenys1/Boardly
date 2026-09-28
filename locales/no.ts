@@ -891,6 +891,24 @@ const no = {
           drawByAgreement: 'Når det første merket er satt, kan begge spillerne tilby remis; et godtatt tilbud avslutter runden uavgjort med en gang.',
           hostStartsNextRound: 'Når en runde er over, starter verten den neste: brettet tømmes, og poengstillingen blir stående.',
         },
+        modes: {
+          seriesLength: {
+            title: 'Best av 3, 5 eller 10, eller uten grense',
+            desc: 'En serie er over så snart én spiller har vunnet mer enn halvparten av rundene: to i best av 3, tre i best av 5, seks i best av 10. Uavgjorte runder teller også, så en serie kan ende likt. Velger du ∞, fortsetter rundene, og poengstillingen blir med.',
+          },
+          moveClock: {
+            title: 'Sekunder på hvert trekk',
+            desc: 'En lobby du oppretter, gir 60 sekunder per trekk, og verten kan endre det til alt fra 30 til 180 i lobbyinnstillingene. Et spill startet med «Spill mot bot» går med 45 sekunder per trekk.',
+          },
+          botLevels: {
+            title: 'Lett, middels og vanskelig robot',
+            desc: 'Grid Rookie setter merket sitt i en tilfeldig ledig rute. Grid Tactician vinner når den kan, blokkerer når den må, og foretrekker ellers midten og så et hjørne. Grid Grandmaster regner gjennom alle fortsettelser til runden er slutt og taper aldri.',
+          },
+          requests: {
+            title: 'Angre og remis',
+            desc: 'Ingen av dem virker alene: forespørselen venter til den andre spilleren godtar eller avslår den. En robot lar deg alltid ta tilbake et trekk, men godtar remis først når ingen av sidene kan vinne med beste spill.',
+          },
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',
