@@ -492,6 +492,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic 3×3 grid strategy game where two players alternate placing X and O marks, aiming to get three in a row.',
       questionKey: 'games.tictactoe.seo.question',
       answerKey: 'games.tictactoe.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1235).
+      faq: [
+        { questionKey: 'games.tictactoe.detail.faq.isItFree.q', answerKey: 'games.tictactoe.detail.faq.isItFree.a' },
+        { questionKey: 'games.tictactoe.detail.faq.needAccount.q', answerKey: 'games.tictactoe.detail.faq.needAccount.a' },
+        { questionKey: 'games.tictactoe.detail.faq.worksOnPhone.q', answerKey: 'games.tictactoe.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.tictactoe.detail.faq.howManyPlayers.q', answerKey: 'games.tictactoe.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.tictactoe.detail.faq.timerRunsOut.q', answerKey: 'games.tictactoe.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.tictactoe.detail.faq.playFriendRemotely.q', answerKey: 'games.tictactoe.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.tictactoe.detail.faq.takeBackOrDraw.q', answerKey: 'games.tictactoe.detail.faq.takeBackOrDraw.a' },
+      ],
     },
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',

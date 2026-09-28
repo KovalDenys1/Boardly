@@ -991,6 +991,36 @@ const en = {
           oxo: 'In 1952 Alexander Douglas wrote OXO, a noughts and crosses program for the EDSAC computer at the University of Cambridge, and it is often listed among the earliest video games.',
           solved: 'The game is solved: with best play from both sides, every round ends in a draw. Of the 255,168 possible games, most still end in a win, which means someone slipped – and that slip is exactly what Grid Grandmaster waits for.',
         },
+        faq: {
+          isItFree: {
+            q: 'Does Tic Tac Toe on Boardly cost anything?',
+            a: 'No. Games against friends, all three bots and every series length are free, and nothing that changes how the game plays sits behind a payment.',
+          },
+          needAccount: {
+            q: 'Do I have to register first?',
+            a: 'No. A guest name is enough to create a lobby, join one with a code or take on a bot. An account is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play it on my phone?',
+            a: 'Yes. It runs in the mobile browser with no app to download; tap an empty square to place your mark.',
+          },
+          howManyPlayers: {
+            q: 'How many people take part in one game?',
+            a: 'Two, one X and one O, whether both are people or one of them is a bot. If the host allows spectators, others can join the lobby just to watch.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose that round and your opponent takes the point. The game never skips your move or places a mark for you.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play with a friend who is not in the same room?',
+            a: 'Yes. Create a lobby, send the four-digit code or the link, and play in real time from two devices anywhere with an internet connection.',
+          },
+          takeBackOrDraw: {
+            q: 'Can I undo a move or agree to a draw?',
+            a: 'You can ask for either, and your opponent decides. A bot says yes to every undo, and to a draw only when the position can no longer be won by either side.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

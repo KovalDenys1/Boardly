@@ -991,6 +991,36 @@ const no = {
           oxo: 'I 1952 skrev Alexander Douglas OXO, et tre på rad-program for EDSAC-datamaskinen ved University of Cambridge, og det regnes ofte blant de aller første videospillene.',
           solved: 'Spillet er løst: med beste spill fra begge sider ender hver runde uavgjort. Av de 255 168 mulige partiene ender likevel de fleste med seier, noe som betyr at noen har gjort en feil – og nettopp den feilen venter Grid Grandmaster på.',
         },
+        faq: {
+          isItFree: {
+            q: 'Koster Tre på rad på Boardly noe?',
+            a: 'Nei. Spill mot venner, alle tre robotene og alle serielengder er gratis, og ingenting som endrer selve spillet, ligger bak betaling.',
+          },
+          needAccount: {
+            q: 'Må jeg registrere meg først?',
+            a: 'Nei. Et gjestenavn holder for å opprette en lobby, bli med i en med kode eller spille mot en robot. En konto er valgfri.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille på mobilen?',
+            a: 'Ja. Spillet kjører i mobilnettleseren uten app å laste ned; trykk på en ledig rute for å sette merket ditt.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange er med i ett spill?',
+            a: 'To, én X og én O, enten begge er mennesker eller den ene er en robot. Tillater verten tilskuere, kan andre bli med i lobbyen bare for å se på.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden min går ut?',
+            a: 'Du taper den runden, og motstanderen får poenget. Spillet hopper aldri over trekket ditt og setter aldri et merke for deg.',
+          },
+          playFriendRemotely: {
+            q: 'Kan jeg spille med en venn som ikke er i samme rom?',
+            a: 'Ja. Opprett en lobby, send den firesifrede koden eller lenken, og spill i sanntid fra to enheter hvor som helst med internett.',
+          },
+          takeBackOrDraw: {
+            q: 'Kan jeg angre et trekk eller bli enig om remis?',
+            a: 'Du kan be om begge deler, og motstanderen bestemmer. En robot sier ja til hver angring, og til remis bare når ingen av sidene lenger kan vinne stillingen.',
+          },
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',
