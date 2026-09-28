@@ -2367,16 +2367,79 @@ const no = {
         step1Title: 'Opprett eller bli med i en lobby',
         step1Desc: 'Åpne et rom og del koden. Tre spillere er minimum.',
         step2Title: 'Tegn ordet ditt',
-        step2Desc: 'Når det er din tur, velger du ett av tre ord og har inntil 80 sekunder på å tegne det.',
+        step2Desc: 'Du har 15 sekunder på å velge ett av tre ord. Deretter har du inntil 80 sekunder på å tegne det.',
         step3Title: 'Gjett før tiden går ut',
-        step3Desc: 'De andre gjetter så ofte de vil mens du tegner, på hvilket som helst av sidens språk. Jo raskere riktig svar, desto flere poeng.',
+        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
-        step4Desc: 'Ordet avsløres, poengene fordeles, og neste spiller tegner.',
+        step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter etter runde tre.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
         benefit1: 'Et delt lerret som oppdateres live.',
         benefit2: 'Tre til ti spillere i samme rom.',
-        benefit3: 'Alle tegner og alle gjetter.',
+        benefit3: 'Ny tegner hver runde, og resten gjetter.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          drawOrder: 'Tegnerne går i den rekkefølgen de ble med: den første i rommet tegner runde én, den andre runde to, den tredje runde tre.',
+          wordChoice: 'En tegner som ikke har valgt etter 15 sekunder, får ett av de tre ordene tilfeldig. Et ord som er tegnet, blir aldri tilbudt igjen i samme spill.',
+          matching: 'Store bokstaver, apostrofer og de fleste aksenter (é, å, ё) ignoreres; ø, æ og й regnes som egne bokstaver. Mange ord godtar også flertall eller et synonym.',
+          wordHint: 'De som gjetter, ser blanke felt på sitt eget språk; ord på tre bokstaver eller mer får én bokstav avdekket halvveis.',
+          chatLock: 'Frem til avsløringen kan verken tegneren eller de som har gjettet ordet, skrive i chatten.',
+        },
+        scoring: {
+          guessing: {
+            title: 'Gjetting',
+            rightGuess: { name: 'Riktig gjett', rule: 'Hvert riktige svar før tiden er ute.' },
+            speedBonus: { name: 'Fartsbonus', value: 'opptil +50', rule: 'Krymper mens tegneklokken går.' },
+            firstIn: { name: 'Først inne', rule: 'Bare den første som gjetter riktig i runden.' },
+          },
+          drawing: {
+            title: 'Tegning',
+            note: 'Ingen poengsum går noen gang under null.',
+            perCorrectGuesser: { name: 'Per riktig gjetter', rule: 'Et sent svar gir like mye som et tidlig.' },
+            ownRuling: { name: 'Egen godkjenning', rule: 'Et gjett som en tegnende vert godkjenner selv, gir vedkommende ingenting.' },
+            blankCanvas: { name: 'Tomt lerret', rule: 'Ingenting tegnet når runden er over.' },
+          },
+        },
+        modes: {
+          threeRounds: { title: 'Tre runder, hvert spill', desc: 'Én tegning per runde, og det finnes ingen innstilling for antall runder.' },
+          phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
+        },
+        strategy: {
+          pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
+          shapeFirst: { title: 'Formen først', desc: 'Et grovt omriss tidlig gir de andre sjansen til fartsbonusen.' },
+          letColourTalk: { title: 'La fargene snakke', desc: 'En blå bølge eller en rød flamme snevrer inn gjettingen raskt.' },
+          drawTheScene: { title: 'Tegn omgivelsene', desc: 'En finne i bølgene leses raskere enn en fisk alene.' },
+          guessEarly: { title: 'Gjett tidlig', desc: 'Et bom koster ingenting, og venting spiser av bonusen.' },
+          readTheMisses: { title: 'Les bommene', desc: 'Bom blir stående i listen (nesten-treff ser andre bare som «er nær»); stryk dem.' },
+          countTheBlanks: { title: 'Tell de blanke feltene', desc: 'De viser lengden og hvor ordene deler seg.' },
+          trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Du er én bokstav unna et godkjent svar: oftest en skrivefeil, noen ganger et naboord.' },
+        },
+        mistakes: {
+          leavingTheCanvasEmpty: { title: 'Å la lerretet stå tomt', desc: 'Det koster tegneren 20 poeng.' },
+          clearingForOneLine: { title: 'Å tømme alt for én dårlig strek', desc: 'Angre fjerner bare den siste streken.' },
+          waitingToBeSure: { title: 'Å vente til du er sikker', desc: 'Da er bonusen for første riktige ofte borte.' },
+        },
+        multiplayer: {
+          withFriends: { title: 'Venner hvor som helst', desc: 'Del koden eller invitasjonslenken og se ett lerret fylles live.' },
+          botsAndSolo: { title: 'Mennesker, ikke bots', desc: 'En bot kan ikke lese en skisse, så samle minst tre personer.' },
+          turnTimer: { title: 'Én linje per fase', desc: 'Hver spiller ser den samme nedtellingen; ved null går spillet videre.' },
+          guestNoDownload: { title: 'Gjest i nettleseren', desc: 'Mobil eller laptop, ingenting å installere, og et gjestenavn holder.' },
+        },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti: familier, skoleklasser, venner på videosamtale og bord der flere språk blandes.',
+        },
+        history: {
+          origin: 'Å gjette ut fra en rask skisse er en gammel selskapslek som Pictionary gjorde til brettspill i 1985. Boardly legger til en ordbank på fire språk.',
+        },
+        faq: {
+          isItFree: { q: 'Er Tegn og gjett på Boardly gratis?', a: 'Ja. Alle runder, alle ord og alle romstørrelser er gratis; Premium gir bare ekstra, som tilskuere.' },
+          playAloneOrBot: { q: 'Kan jeg spille alene eller mot en bot?', a: 'Nei. Spillet trenger tre personer, fordi en bot ikke kan lese en tegning. Send vennene invitasjonslenken.' },
+          guessLanguages: { q: 'Hvilke språk kan jeg gjette på?', a: 'Engelsk, norsk, russisk og ukrainsk. Et gjett på hvilket som helst av dem teller, uansett språket på skjermen din.' },
+          everyoneDraws: { q: 'Får alle tegne?', a: 'Med tre spillere, ja. Et spill har tre runder, så i større grupper tegner bare de tre første som ble med.' },
+          timeRunsOut: { q: 'Hva skjer når tiden går ut?', a: 'En tegner som ikke har valgt, får et tilfeldig ord, og når tegneklokken er ute, avsløres ordet.' },
+          hostAcceptsGuess: { q: 'Kan verten overstyre et feil gjett?', a: 'Ja. Til runden går videre, kan verten godta en annen spillers bom som et riktig svar.' },
+          playerLeaves: { q: 'Hva om en spiller forlater spillet underveis?', a: 'Spillet fortsetter så lenge tre er igjen; turen til en tegner som er borte, løper bare ut. Under tre avsluttes spillet.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',
@@ -2472,20 +2535,167 @@ const no = {
         heroDesc: 'Et sosialt bløffespill der spillerne kommer med påstander, leser rommet og stemmer over hvem som snakker sant.',
         introTitle: 'Hva er Løgnerfest?',
         intro0: 'Løgnerfest er et sosialt bløffespill. Én spiller kommer med en påstand, og resten avgjør om de tror på den eller utfordrer den.',
-        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av runden.',
+        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av spillet.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter en gjeng og start en runde sammen.',
+        step1Desc: 'Inviter en gjeng og start en runde sammen. Verten kan starte så snart fire spillere har satt seg.',
         step2Title: 'Kom med påstanden din',
-        step2Desc: 'Snakk sant eller bløff, og marker valget i hemmelighet.',
+        step2Desc: 'Snakk sant eller bløff, og marker hva det er. Ingen skjerm viser valget ditt før avsløringen.',
         step3Title: 'Stem',
-        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den.',
+        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den. En teller viser hvor mange som har stemt.',
         step4Title: 'Avslør og overlev',
-        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres.',
+        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres. Hvilken som helst spiller kan åpne neste runde.',
         benefitsTitle: 'Derfor hører Løgnerfest hjemme på Boardly',
         benefit1: 'Laget for spill i samme rom.',
         benefit2: 'Tydelige avstemninger og avsløringer.',
         benefit3: 'Midt i blinken for sosiale gjenger.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          floorRotates: 'Hver runde har én spiller ordet, etter tur, og de som er ute hoppes over.',
+          claimAndMark: 'Den som har ordet skriver opptil 180 tegn og markerer sannhet eller bløff.',
+          everyoneElseVotes: 'Alle andre som fortsatt er med stemmer Utfordre eller Tro, én gang.',
+          caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
+          strikesAndEnd: 'To avslørte bløffer, og du er ute. Spillet slutter etter ti runder eller når én spiller er igjen.',
+        },
+        scoring: {
+          claimant: {
+            title: 'Den som har ordet',
+            note: 'Ingen poengsum går under null.',
+            rows: {
+              bluffGetsThrough: { name: 'Bløffen går gjennom', value: '+20', rule: 'Pluss 6 per spiller som trodde.' },
+              bluffCaught: { name: 'Bløffen avslørt', value: '−12', rule: 'Pluss én strike.' },
+              truthBelieved: { name: 'Sannheten trodd', value: '+12', rule: 'Minst like mange tror som utfordrer.' },
+              truthChallenged: { name: 'Sannheten utfordret', value: '+4', rule: 'Flere utfordrer enn tror.' },
+              noClaimInTime: { name: 'Ingen påstand i tide', value: '−4', rule: 'Ingen avstemning den runden.' },
+            },
+          },
+          voters: {
+            title: 'Hver som stemmer',
+            note: 'Poengene følger sannheten, ikke flertallet.',
+            rows: {
+              challengeBluff: { name: 'Utfordre en bløff', value: '+14', rule: 'Du så den.' },
+              challengeTruth: { name: 'Utfordre en sannhet', value: '−6', rule: 'En ærlig påstand betvilt.' },
+              believeTruth: { name: 'Tro på en sannhet', value: '+10', rule: 'En ærlig påstand trodd.' },
+              believeBluff: { name: 'Tro på en bløff', value: '−8', rule: 'Du ble lurt.' },
+              noVoteInTime: { name: 'Ingen stemme i tide', value: '−4', rule: 'Teller også som Tro.' },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4 til 12 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          phaseClock: {
+            title: 'Klokke per fase',
+            desc: 'Hver fase får 60 sekunder; før start kan verten velge 30 til 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Runder og strikes',
+            desc: 'Ti runder og to strikes; ingen lobbyinnstilling endrer det.',
+          },
+        },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Utfordre over 42 prosent',
+            desc: 'Å utfordre slår å tro så snart en bløff virker mer enn 42 prosent sannsynlig.',
+          },
+          yourReadScoresAlone: {
+            title: 'Din lesning teller alene',
+            desc: 'En riktig utfordring gir 14 selv om bløffen overlever avstemningen.',
+          },
+          bluffForTheTable: {
+            title: 'Bløff for hele bordet',
+            desc: 'En bløff som går gjennom med fem som tror, er verdt 50.',
+          },
+          countYourStrikes: {
+            title: 'Tell dine strikes',
+            desc: 'Med én strike avslutter en avslørt bløff spillet ditt; snakk sant.',
+          },
+          stayInToWin: {
+            title: 'Å være med slår poeng',
+            desc: 'Alle som fortsatt spiller, rangeres over dem som er ute, uansett poeng.',
+          },
+          strangeButTrue: {
+            title: 'Fortell sannheter som høres rare ut',
+            desc: 'Selv om de fleste ved bordet tviler, gir en rar sannhet likevel 4, mens hver utfordrer mister 6.',
+          },
+          specificDetails: {
+            title: 'Gi bløffen ekte detaljer',
+            desc: 'Et sted, et år og en konsekvens høres ut som et minne.',
+          },
+          readTheHistory: {
+            title: 'Les historikken',
+            desc: 'Tidligere påstander og dommer står på skjermen mens du stemmer.',
+          },
+        },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Å la klokka stemme',
+            desc: 'En stemme som uteblir, teller som Tro og koster 4 poeng ekstra.',
+          },
+          freezingOnYourClaim: {
+            title: 'Å fryse på påstanden',
+            desc: 'Går tiden ut, mister du 4 uten noe å vinne tilbake.',
+          },
+          challengingEveryClaim: {
+            title: 'Å utfordre alt',
+            desc: 'Hver feil utfordring koster 6, så tvil på alt tapper deg for poeng.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller invitasjonslenken; alt oppdateres live på hver spillers skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Bare mennesker',
+            desc: 'En bot har ingenting å bløffe med, så det finnes ingen boter. Færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
+          },
+          turnTimer: {
+            title: 'Én klokke per fase',
+            desc: 'Ved null fyller serveren hullet når en åpen side i rommet sjekker inn, noe sidene gjør av seg selv.',
+          },
+          guestNoDownload: {
+            title: 'Ingenting å installere',
+            desc: 'Hvilken som helst nettleser på mobil eller PC; gjester trenger bare et navn.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
+        },
+        history: {
+          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Løgnerfest gratis å spille?',
+            a: 'Ja, hele spillet er gratis for opptil ti spillere. Premium gir større rom, tilskuere, repriser og lobbytemaer.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Løgnerfest på mobil?',
+            a: 'Ja, i hvilken som helst mobilnettleser: spillet ligger på én fane, med spillere og chat ett trykk unna.',
+          },
+          whatCanIClaim: {
+            q: 'Hva kan jeg påstå?',
+            a: 'Hva som helst på 5 til 180 tegn, sant eller oppdiktet: en historie om deg, et faktum, litt skryt.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden renner ut?',
+            a: 'Den som ikke skrev noe, mister 4 og avstemningen hoppes over; en manglende stemme teller som Tro, minus 4.',
+          },
+          playerLeaves: {
+            q: 'Hva om en spiller går midt i spillet?',
+            a: 'Spilleren er ute og rangeres under alle som fortsatt er med; under fire spillere i rommet slutter spillet.',
+          },
+          howLong: {
+            q: 'Hvor lenge varer et spill?',
+            a: 'Høyst ti runder med én påstand hver, og færre hvis bare én spiller er igjen i spillet.',
+          },
+          canFriendsWatch: {
+            q: 'Kan venner se på uten å spille?',
+            a: 'Ja, hvis en vert med Premium tillater tilskuere; de følger påstander, stemmer og avsløringen, men kan ikke stemme.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
@@ -3940,7 +4150,7 @@ const no = {
     rule1: 'Hver runde blir én aktiv spiller kravstiller og sender inn ett krav.',
     rule2: 'Øvrige aktive spillere sender inn én stemme: utfordre eller tro på.',
     rule3: 'En bløff regnes som avslørt kun når utfordrerne utgjør et strengt flertall.',
-    rule4: 'Feil stemmer mister poeng; riktige leser vinner poeng; gjentatte blotlagte bløffer gir strikes.',
+    rule4: 'Feil stemmer koster poeng; riktige lesninger gir poeng; hver avslørte bløff gir én strike.',
     rule5: 'En spiller er eliminert etter å ha nådd strike-grensen.',
     waitingForPlayers: 'Venter på spillere...',
     roundsCount: '{{count}} runder',

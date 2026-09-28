@@ -1040,15 +1040,16 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     ? Math.max(0, turnTimerSeconds - Math.floor((Date.now() - lastMoveAt) / 1000))
     : turnTimerSeconds
 
-  const rules = gameEngine
-    ? (gameEngine as LiarsPartyGame).getGameRules()
-    : [
-        t('liarsParty.rule1'),
-        t('liarsParty.rule2'),
-        t('liarsParty.rule3'),
-        t('liarsParty.rule4'),
-        t('liarsParty.rule5'),
-      ]
+  // Always the locale's copy. It used to switch to the engine's getGameRules()
+  // once a game was loaded, which is English only, so every Norwegian, Russian
+  // and Ukrainian table read its rules card in English (#1240).
+  const rules = [
+    t('liarsParty.rule1'),
+    t('liarsParty.rule2'),
+    t('liarsParty.rule3'),
+    t('liarsParty.rule4'),
+    t('liarsParty.rule5'),
+  ]
 
   const claimantId = data?.currentClaimantId ?? ''
   const claimantName = nameOf(claimantId)
@@ -1186,10 +1187,12 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       }
     />
   ) : null
-  // Reveal has no clock – it waits on a click – and the waiting room has
-  // nothing on one either, so neither gets a countdown bar that would be
-  // decoration. The region under the header is the phase card in both cases,
-  // which is full, so this is not an empty region.
+  // Reveal and the waiting room get no countdown bar. Reveal is meant to end on
+  // a click, but it is not clockless: after one phase timer the server's timeout
+  // fallback advances it anyway (applyTimeoutFallback in liars-party-game.ts),
+  // so the bar is left off by choice, not because nothing is timed. The region
+  // under the header is the phase card in both cases, which is full, so this is
+  // not an empty region.
 
   // ─── Phase card ───────────────────────────────────────────────────────────
   // `phaseAction` is what the viewer can press, and it is rendered OUTSIDE the
