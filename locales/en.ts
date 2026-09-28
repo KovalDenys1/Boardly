@@ -1073,6 +1073,20 @@ const en = {
             desc: 'Start with Memory Scout and move up as your recall sharpens.',
           },
         },
+        mistakes: {
+          gamblingTheSecondFlip: {
+            title: 'Gambling the second flip',
+            desc: 'A random unknown, when a known card was on offer, shows the table one more position for free.',
+          },
+          lookingAway: {
+            title: 'Looking away',
+            desc: 'Another player\'s miss is on screen for about a second, then it is gone.',
+          },
+          lettingTheClockRun: {
+            title: 'Letting the clock run',
+            desc: 'A timed-out turn scores nothing, even if you knew exactly where the pair was.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

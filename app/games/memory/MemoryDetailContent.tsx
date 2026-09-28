@@ -73,6 +73,11 @@ export default function MemoryDetailContent() {
         { title: t('games.memory.detail.strategy.guessLate.title'), desc: t('games.memory.detail.strategy.guessLate.desc') },
         { title: t('games.memory.detail.strategy.climbTheBots.title'), desc: t('games.memory.detail.strategy.climbTheBots.desc') },
       ]}
+      mistakes={[
+        { title: t('games.memory.detail.mistakes.gamblingTheSecondFlip.title'), desc: t('games.memory.detail.mistakes.gamblingTheSecondFlip.desc') },
+        { title: t('games.memory.detail.mistakes.lookingAway.title'), desc: t('games.memory.detail.mistakes.lookingAway.desc') },
+        { title: t('games.memory.detail.mistakes.lettingTheClockRun.title'), desc: t('games.memory.detail.mistakes.lettingTheClockRun.desc') },
+      ]}
       playVsBotGameType="memory"
     />
   )

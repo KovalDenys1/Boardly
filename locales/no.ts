@@ -1073,6 +1073,20 @@ const no = {
             desc: 'Begynn med Memory Scout og gå opp etter hvert som hukommelsen skjerpes.',
           },
         },
+        mistakes: {
+          gamblingTheSecondFlip: {
+            title: 'Å gamble med andrekortet',
+            desc: 'Et tilfeldig ukjent kort, når et kjent kort var tilgjengelig, viser bordet én plassering til gratis.',
+          },
+          lookingAway: {
+            title: 'Å se bort',
+            desc: 'En annen spillers bom vises i omtrent ett sekund, så er det borte.',
+          },
+          lettingTheClockRun: {
+            title: 'Å la klokken gå ut',
+            desc: 'En tur som går ut på tid, gir ingen poeng, selv om du visste nøyaktig hvor paret lå.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',
