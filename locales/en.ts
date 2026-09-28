@@ -2030,6 +2030,9 @@ const en = {
         audience: {
           whoItSuits: 'Groups of three to ten: families, classes, friends on a video call, and tables that mix languages.',
         },
+        history: {
+          origin: 'Guessing from a quick sketch is an old parlour game that Pictionary put in a box in 1985. Boardly adds a word bank in four languages.',
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',

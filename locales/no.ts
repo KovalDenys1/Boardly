@@ -2030,6 +2030,9 @@ const no = {
         audience: {
           whoItSuits: 'Grupper på tre til ti: familier, skoleklasser, venner på videosamtale og bord der flere språk blandes.',
         },
+        history: {
+          origin: 'Å gjette ut fra en rask skisse er en gammel selskapslek som Pictionary gjorde til brettspill i 1985. Boardly legger til en ordbank på fire språk.',
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

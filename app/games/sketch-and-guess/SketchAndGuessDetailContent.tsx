@@ -100,6 +100,9 @@ export default function SketchAndGuessDetailContent() {
       audience={[
         t('games.guess_my_drawing.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.guess_my_drawing.detail.history.origin'),
+      ]}
     />
   )
 }
