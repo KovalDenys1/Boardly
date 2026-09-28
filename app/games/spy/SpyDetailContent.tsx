@@ -85,6 +85,12 @@ export default function SpyDetailContent() {
         { title: t('games.spy.detail.mistakes.splittingTheVote.title'), desc: t('games.spy.detail.mistakes.splittingTheVote.desc') },
         { title: t('games.spy.detail.mistakes.guessingOnAHunch.title'), desc: t('games.spy.detail.mistakes.guessingOnAHunch.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.spy.detail.multiplayer.withFriends.title'), desc: t('games.spy.detail.multiplayer.withFriends.desc') },
+        { title: t('games.spy.detail.multiplayer.botsAndSolo.title'), desc: t('games.spy.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.spy.detail.multiplayer.secretsStayPrivate.title'), desc: t('games.spy.detail.multiplayer.secretsStayPrivate.desc') },
+        { title: t('games.spy.detail.multiplayer.guestNoDownload.title'), desc: t('games.spy.detail.multiplayer.guestNoDownload.desc') },
+      ]}
     />
   )
 }

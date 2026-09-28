@@ -930,6 +930,24 @@ const no = {
             desc: 'En feil gjetning gir alle de andre spillerne 100.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller lenken; loggen og poengene oppdateres på hver skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Mennesker, aldri boter',
+            desc: 'Ingen solomodus eller boter. Mangler dere en tredje? Del invitasjonen eller bli med i et åpent rom.',
+          },
+          secretsStayPrivate: {
+            title: 'Hemmeligheter holdes private',
+            desc: 'Rollen din når bare din nettleser; spionen navngis med resultatene.',
+          },
+          guestNoDownload: {
+            title: 'Et navn og en nettleser',
+            desc: 'Gjester skriver et navn og spiller; ingenting å installere.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

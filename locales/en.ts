@@ -930,6 +930,24 @@ const en = {
             desc: 'A wrong guess pays every other player 100.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: 'Share the code or link; every screen updates live.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'No solo mode or bots; share the invite or join an open room.',
+          },
+          secretsStayPrivate: {
+            title: 'Secrets stay private',
+            desc: 'Only your browser gets your role; the results name the spy.',
+          },
+          guestNoDownload: {
+            title: 'A name and a browser',
+            desc: 'Guests type a name and play; nothing to install.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
