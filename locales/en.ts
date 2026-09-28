@@ -1087,6 +1087,24 @@ const en = {
             desc: 'A timed-out turn scores nothing, even if you knew exactly where the pair was.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Friends on their own screens',
+            desc: 'Share the room code or invite link, and each flip shows on every device as it happens.',
+          },
+          botsAndSolo: {
+            title: 'Solo against a bot',
+            desc: 'Play vs Bot starts at once on the 4×4 board; for a bigger one, make a lobby and seat a bot.',
+          },
+          turnTimer: {
+            title: 'Nobody stalls the table',
+            desc: 'Everyone sees the countdown, and an idle player just loses the turn.',
+          },
+          guestNoDownload: {
+            title: 'Straight in the browser',
+            desc: 'Phone, tablet or computer with nothing to install; a guest name gets you a seat.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

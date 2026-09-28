@@ -78,6 +78,12 @@ export default function MemoryDetailContent() {
         { title: t('games.memory.detail.mistakes.lookingAway.title'), desc: t('games.memory.detail.mistakes.lookingAway.desc') },
         { title: t('games.memory.detail.mistakes.lettingTheClockRun.title'), desc: t('games.memory.detail.mistakes.lettingTheClockRun.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.memory.detail.multiplayer.withFriends.title'), desc: t('games.memory.detail.multiplayer.withFriends.desc') },
+        { title: t('games.memory.detail.multiplayer.botsAndSolo.title'), desc: t('games.memory.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.memory.detail.multiplayer.turnTimer.title'), desc: t('games.memory.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.memory.detail.multiplayer.guestNoDownload.title'), desc: t('games.memory.detail.multiplayer.guestNoDownload.desc') },
+      ]}
       playVsBotGameType="memory"
     />
   )

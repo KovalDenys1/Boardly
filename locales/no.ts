@@ -1087,6 +1087,24 @@ const no = {
             desc: 'En tur som går ut på tid, gir ingen poeng, selv om du visste nøyaktig hvor paret lå.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Venner på hver sin skjerm',
+            desc: 'Del romkoden eller invitasjonslenken, så vises hvert kort på alle enheter i det det snus.',
+          },
+          botsAndSolo: {
+            title: 'Alene mot en bot',
+            desc: '«Spill mot bot» starter straks på 4×4-brettet; vil du ha et større brett, oppretter du en lobby og setter inn en bot.',
+          },
+          turnTimer: {
+            title: 'Ingen holder bordet igjen',
+            desc: 'Alle ser nedtellingen, og en spiller som ikke gjør noe, mister bare turen.',
+          },
+          guestNoDownload: {
+            title: 'Rett i nettleseren',
+            desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; et gjestenavn gir deg en plass.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',
