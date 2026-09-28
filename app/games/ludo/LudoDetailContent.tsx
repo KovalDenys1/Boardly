@@ -80,6 +80,9 @@ export default function LudoDetailContent() {
         { title: t('games.ludo.detail.multiplayer.turnTimer.title'), desc: t('games.ludo.detail.multiplayer.turnTimer.desc') },
         { title: t('games.ludo.detail.multiplayer.guestNoDownload.title'), desc: t('games.ludo.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.ludo.detail.audience.whoItSuits'),
+      ]}
       playVsBotGameType="ludo"
     />
   )

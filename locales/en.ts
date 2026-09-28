@@ -2006,6 +2006,9 @@ const en = {
             desc: 'It runs in the browser on a phone, tablet or laptop, and a guest name is enough to take a seat.',
           },
         },
+        audience: {
+          whoItSuits: 'Families and mixed groups: the rules fit in a minute, luck keeps younger players in the race, and choosing which token to move still rewards a sharp eye. Quick mode suits a short break; classic suits a longer evening.',
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

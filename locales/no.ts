@@ -2006,6 +2006,9 @@ const no = {
             desc: 'Det kjører i nettleseren på mobil, nettbrett eller PC, og et gjestenavn er nok for å ta plass.',
           },
         },
+        audience: {
+          whoItSuits: 'Familier og blandede grupper: reglene læres på et minutt, flaks holder yngre spillere med i løpet, og valget av hvilken brikke som skal flyttes, belønner likevel et skarpt blikk. Hurtigmodus passer til en kort pause, klassisk til en lengre kveld.',
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
