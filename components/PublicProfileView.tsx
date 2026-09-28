@@ -133,11 +133,11 @@ const PREMIUM_PAGE_THEMES: Record<string, {
 }
 
 const primaryActionClassName =
-  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950'
+  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white'
 const secondaryActionClassName =
-  'inline-flex w-full items-center justify-center rounded-2xl border-2 border-bd-ink bg-white px-5 py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800'
+  'inline-flex w-full items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-card-warm px-5 py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2'
 const quietActionClassName =
-  'inline-flex items-center justify-center rounded-2xl border border-bd-line bg-white px-5 py-3 text-sm font-bold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+  'inline-flex items-center justify-center rounded-2xl border border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-bold text-bd-ink-soft transition-colors hover:bg-bd-bg2'
 
 export default function PublicProfileView({
   profile,
@@ -165,23 +165,23 @@ export default function PublicProfileView({
   const isDark = pageTheme?.isDark ?? false
 
   const tc = isDark ? {
-    eyebrow:      'text-slate-500',
-    handle:       'text-slate-500',
-    body:         'text-slate-300',
-    back:         'text-slate-400 hover:bg-white/8',
+    eyebrow:      'text-white/55',
+    handle:       'text-white/55',
+    body:         'text-white/80',
+    back:         'text-white/65 hover:bg-white/[0.08]',
     statCard:     'border-white/[0.07] bg-white/[0.05]',
-    statLabel:    'text-slate-500',
-    statValueAlt: 'text-slate-200',
-    badge:        'border-white/10 bg-white/[0.07] text-slate-300',
+    statLabel:    'text-white/55',
+    statValueAlt: 'text-white/90',
+    badge:        'border-white/10 bg-white/[0.07] text-white/80',
   } : {
-    eyebrow:      'text-bd-ink-muted dark:text-slate-400',
-    handle:       'text-bd-ink-muted',
-    body:         'text-bd-ink-soft dark:text-slate-300',
-    back:         'text-bd-ink-soft hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800',
-    statCard:     'border-bd-line bg-bd-card-warm dark:border-slate-700 dark:bg-slate-800',
-    statLabel:    'text-bd-ink-muted dark:text-slate-400',
-    statValueAlt: 'text-bd-ink dark:text-white',
-    badge:        'border-bd-line bg-bd-card-warm text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-white',
+    eyebrow:      'text-bd-ink-soft',
+    handle:       'text-bd-ink-soft',
+    body:         'text-bd-ink-soft',
+    back:         'text-bd-ink-soft hover:bg-bd-bg2',
+    statCard:     'border-bd-line bg-bd-card-warm',
+    statLabel:    'text-bd-ink-soft',
+    statValueAlt: 'text-bd-ink',
+    badge:        'border-bd-line bg-bd-card-warm text-bd-ink',
   }
   const isEmbeddedPreview = mode === 'embedded-preview'
   const shouldShowAction = !isEmbeddedPreview
@@ -219,7 +219,7 @@ export default function PublicProfileView({
           type="button"
           onClick={() => setReportOpen(true)}
           aria-haspopup="dialog"
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav-deep ${className}`}
         >
           <Icon name="flag" size={13} />
           {t('report.reportProfile')}
@@ -455,7 +455,7 @@ export default function PublicProfileView({
   const renderRestrictedState = () => (
     <div
       data-testid="restricted-profile"
-      className="mx-auto flex w-full max-w-xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-5 py-8 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10 sm:py-10"
+      className="mx-auto flex w-full max-w-xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-8 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] sm:px-10 sm:py-10"
     >
       <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.75rem] border-[3px] border-bd-ink bg-bd-bg2 text-bd-ink-muted shadow-[5px_5px_0_var(--bd-ink)] sm:h-32 sm:w-32">
         {(profile.avatarUrl || profile.image) ? (
@@ -465,10 +465,10 @@ export default function PublicProfileView({
           <span aria-hidden className="font-display text-6xl font-black uppercase">{displayName.charAt(0)}</span>
         )}
       </div>
-      <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
+      <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-soft">
         {t('profile.publicProfile.eyebrow')}
       </p>
-      <h1 className="mt-2 max-w-full break-words font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink dark:text-white">
+      <h1 className="mt-2 max-w-full break-words font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink">
         {displayName}
       </h1>
       <p className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-bd-ink bg-bd-sun px-4 py-1.5 text-sm font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
@@ -476,7 +476,7 @@ export default function PublicProfileView({
         <Icon name="lock" size={15} />
         {t('profile.publicProfile.privateTitle')}
       </p>
-      <p className="mt-4 max-w-md text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
+      <p className="mt-4 max-w-md text-sm leading-6 text-bd-ink-soft sm:text-base">
         {accessState === 'friends_only'
           ? t('profile.publicProfile.friendsOnlySubtitle')
           : t('profile.publicProfile.privateSubtitle')}
@@ -493,7 +493,7 @@ export default function PublicProfileView({
           </Link>
         )}
       </div>
-      {renderReportButton('mt-5 text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200')}
+      {renderReportButton('mt-5 text-bd-ink-soft hover:text-bd-ink')}
     </div>
   )
 
@@ -501,7 +501,7 @@ export default function PublicProfileView({
     <div
       className={`relative overflow-hidden text-bd-ink ${
         isEmbeddedPreview
-          ? 'rounded-[2rem] border-[1.5px] border-bd-line bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700'
+          ? 'rounded-[2rem] border-[1.5px] border-bd-line bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)]'
           : 'flex min-h-[var(--game-h)] items-center safe-left safe-right'
       } ${isDark ? 'text-white' : 'bg-bd-bg'}`}
       style={{
@@ -572,7 +572,7 @@ export default function PublicProfileView({
                     @{handle}
                   </p>
                   {profile.bio ? (
-                    <p className={`mt-4 max-w-xl text-sm italic leading-6 ${isDark ? 'text-slate-300' : 'text-bd-ink dark:text-slate-200'}`}>
+                    <p className={`mt-4 max-w-xl text-sm italic leading-6 ${isDark ? 'text-white/80' : 'text-bd-ink'}`}>
                       &ldquo;{profile.bio}&rdquo;
                     </p>
                   ) : (
@@ -661,7 +661,7 @@ export default function PublicProfileView({
                 const isDarkPanel = panelCardStyle && profile.premiumCardStyle === 'dark'
                 return (
                   <div
-                    className={`relative flex items-center justify-center border-t p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 ${panelCardStyle ? 'border-transparent' : 'border-bd-line bg-bd-card-warm dark:border-slate-700 dark:bg-slate-800/70'}`}
+                    className={`relative flex items-center justify-center border-t p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 ${panelCardStyle ? 'border-transparent' : 'border-bd-line bg-bd-card-warm'}`}
                     style={panelCardStyle ? getPremiumPanelStyle(profile.premiumCardStyle!) : undefined}
                   >
                     <div className="relative flex w-full max-w-sm flex-col items-center text-center">
@@ -683,7 +683,7 @@ export default function PublicProfileView({
                       ) : (
                         renderAvatar()
                       )}
-                      <p className={`mt-8 text-sm leading-6 ${isDarkPanel ? 'text-slate-400' : 'text-bd-ink-muted dark:text-slate-300'}`}>
+                      <p className={`mt-8 text-sm leading-6 ${isDarkPanel ? 'text-white/65' : 'text-bd-ink-soft'}`}>
                         {t('profile.publicProfile.linkHint')}
                       </p>
                       <button
@@ -706,7 +706,7 @@ export default function PublicProfileView({
                         )}
                       </button>
                       {renderReportButton(
-                        `mt-4 ${isDarkPanel ? 'text-slate-400 hover:text-slate-200' : 'text-bd-ink-muted hover:text-bd-ink dark:text-slate-400 dark:hover:text-slate-200'}`
+                        `mt-4 ${isDarkPanel ? 'text-white/65 hover:text-white/90' : 'text-bd-ink-soft hover:text-bd-ink'}`
                       )}
                     </div>
                   </div>

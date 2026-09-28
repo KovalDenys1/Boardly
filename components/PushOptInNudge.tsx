@@ -236,29 +236,29 @@ export default function PushOptInNudge({ source, gameType }: PushOptInNudgeProps
   if (!eligible || phase !== 'open') return null
 
   return (
-    <div className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
+    <div className="mt-2 w-full rounded-2xl border border-bd-line bg-bd-card-warm p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="shrink-0 text-slate-500 dark:text-slate-400">
+        <div className="shrink-0 text-bd-ink-soft">
           <Icon name="clock" size={22} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+          <p className="text-sm font-bold text-bd-ink">
             {t('game.ui.pushAskHeadline')}
           </p>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-xs text-bd-ink-soft">
             {t('game.ui.pushAskBody')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => void accept()}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-slate-700 disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:text-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-bd-ink px-4 py-2 text-xs font-bold text-bd-bg shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
             >
               {t('game.ui.pushAskAccept')}
             </button>
             <button
               onClick={dismiss}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/60 sm:text-sm"
+              className="inline-flex items-center rounded-xl border border-bd-line bg-transparent px-4 py-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:bg-bd-bg2 sm:text-sm"
             >
               {t('game.ui.pushAskDismiss')}
             </button>
