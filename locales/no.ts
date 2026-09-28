@@ -2021,6 +2021,12 @@ const no = {
           clearingForOneLine: { title: 'Å tømme alt for én dårlig strek', desc: 'Angre fjerner bare den siste streken.' },
           waitingToBeSure: { title: 'Å vente til du er sikker', desc: 'Da er bonusen for første riktige ofte borte.' },
         },
+        multiplayer: {
+          withFriends: { title: 'Venner hvor som helst', desc: 'Del koden eller invitasjonslenken og se ett lerret fylles live.' },
+          botsAndSolo: { title: 'Mennesker, ikke bots', desc: 'En bot kan ikke lese en skisse, så samle minst tre personer.' },
+          turnTimer: { title: 'Én linje per fase', desc: 'Hver spiller ser den samme nedtellingen; ved null går spillet videre.' },
+          guestNoDownload: { title: 'Gjest i nettleseren', desc: 'Mobil eller laptop, ingenting å installere, og et gjestenavn holder.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

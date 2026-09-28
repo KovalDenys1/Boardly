@@ -91,6 +91,12 @@ export default function SketchAndGuessDetailContent() {
         { title: t('games.guess_my_drawing.detail.mistakes.clearingForOneLine.title'), desc: t('games.guess_my_drawing.detail.mistakes.clearingForOneLine.desc') },
         { title: t('games.guess_my_drawing.detail.mistakes.waitingToBeSure.title'), desc: t('games.guess_my_drawing.detail.mistakes.waitingToBeSure.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.guess_my_drawing.detail.multiplayer.withFriends.title'), desc: t('games.guess_my_drawing.detail.multiplayer.withFriends.desc') },
+        { title: t('games.guess_my_drawing.detail.multiplayer.botsAndSolo.title'), desc: t('games.guess_my_drawing.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.guess_my_drawing.detail.multiplayer.turnTimer.title'), desc: t('games.guess_my_drawing.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.guess_my_drawing.detail.multiplayer.guestNoDownload.title'), desc: t('games.guess_my_drawing.detail.multiplayer.guestNoDownload.desc') },
+      ]}
     />
   )
 }

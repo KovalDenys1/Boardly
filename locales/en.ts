@@ -2021,6 +2021,12 @@ const en = {
           clearingForOneLine: { title: 'Clearing for one bad line', desc: 'Undo takes back just the last stroke.' },
           waitingToBeSure: { title: 'Waiting to be sure', desc: 'By then the first-in bonus has often gone.' },
         },
+        multiplayer: {
+          withFriends: { title: 'Friends anywhere', desc: 'Share the code or invite link and watch one canvas fill in live.' },
+          botsAndSolo: { title: 'People, not bots', desc: 'A bot cannot read a sketch, so gather at least three people.' },
+          turnTimer: { title: 'One bar per phase', desc: 'Every player sees the same countdown; at zero the game moves on.' },
+          guestNoDownload: { title: 'Guest in a browser', desc: 'Phone or laptop, nothing to install, and a guest name is enough.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
