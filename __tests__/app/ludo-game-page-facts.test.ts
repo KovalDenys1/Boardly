@@ -231,7 +231,7 @@ describe('Ludo timeouts (#1242)', () => {
     const advance = advanceTurnPastDisconnectedPlayers(state, new Set())
     expect(advance.skippedPlayerIds).toEqual([P2])
     expect(advance.currentPlayerId).toBe(P3)
-    expect((state.data as LudoGameData).tokens[P2]).toEqual([12, LUDO_YARD])
+    expect((state.data as unknown as LudoGameData).tokens[P2]).toEqual([12, LUDO_YARD])
     expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/their tokens stay, their turns are skipped and play goes on/)
   })
 
