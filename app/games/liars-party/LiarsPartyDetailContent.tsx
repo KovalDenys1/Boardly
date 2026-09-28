@@ -72,6 +72,11 @@ export default function LiarsPartyDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.liars_party.detail.modes.tableSize.title'), desc: t('games.liars_party.detail.modes.tableSize.desc') },
+        { title: t('games.liars_party.detail.modes.phaseClock.title'), desc: t('games.liars_party.detail.modes.phaseClock.desc') },
+        { title: t('games.liars_party.detail.modes.roundsAndStrikes.title'), desc: t('games.liars_party.detail.modes.roundsAndStrikes.desc') },
+      ]}
     />
   )
 }

@@ -2119,6 +2119,20 @@ const en = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Rooms of 4 to 12 seats, 8 by default; more than ten needs a Premium host.',
+          },
+          phaseClock: {
+            title: 'Phase clock',
+            desc: 'Claim, vote and reveal each get 60 seconds; before the start, the host can pick 30 to 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Rounds and strikes',
+            desc: 'Always ten rounds and two strikes; no lobby setting changes them.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

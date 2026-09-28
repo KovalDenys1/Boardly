@@ -2119,6 +2119,20 @@ const no = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4 til 12 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          phaseClock: {
+            title: 'Klokke per fase',
+            desc: 'Påstand, avstemning og avsløring får 60 sekunder hver; før start kan verten velge 30 til 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Runder og strikes',
+            desc: 'Alltid ti runder og to strikes; ingen lobbyinnstilling endrer det.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
