@@ -2167,6 +2167,20 @@ const no = {
             desc: 'Tidligere påstander og dommer står på skjermen mens du stemmer.',
           },
         },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Å la klokka stemme',
+            desc: 'En stemme som uteblir, teller som Tro og koster 4 poeng ekstra.',
+          },
+          freezingOnYourClaim: {
+            title: 'Å fryse på påstanden',
+            desc: 'Går tiden ut, mister du 4 uten noe å vinne tilbake.',
+          },
+          challengingEveryClaim: {
+            title: 'Å utfordre alt',
+            desc: 'Hver feil utfordring koster 6, så tvil på alt tapper deg for poeng.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

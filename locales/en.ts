@@ -2167,6 +2167,20 @@ const en = {
             desc: 'Earlier claims and verdicts stay on screen while you vote.',
           },
         },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Letting the clock vote',
+            desc: 'A missed vote counts as Believe and costs 4 more points.',
+          },
+          freezingOnYourClaim: {
+            title: 'Freezing on your claim',
+            desc: 'Run out the clock and you lose 4 with nothing to win back.',
+          },
+          challengingEveryClaim: {
+            title: 'Challenging every claim',
+            desc: 'Each wrong challenge costs 6, so blanket doubt bleeds points.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

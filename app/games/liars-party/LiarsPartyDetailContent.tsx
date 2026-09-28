@@ -87,6 +87,11 @@ export default function LiarsPartyDetailContent() {
         { title: t('games.liars_party.detail.strategy.specificDetails.title'), desc: t('games.liars_party.detail.strategy.specificDetails.desc') },
         { title: t('games.liars_party.detail.strategy.readTheHistory.title'), desc: t('games.liars_party.detail.strategy.readTheHistory.desc') },
       ]}
+      mistakes={[
+        { title: t('games.liars_party.detail.mistakes.lettingTheClockVote.title'), desc: t('games.liars_party.detail.mistakes.lettingTheClockVote.desc') },
+        { title: t('games.liars_party.detail.mistakes.freezingOnYourClaim.title'), desc: t('games.liars_party.detail.mistakes.freezingOnYourClaim.desc') },
+        { title: t('games.liars_party.detail.mistakes.challengingEveryClaim.title'), desc: t('games.liars_party.detail.mistakes.challengingEveryClaim.desc') },
+      ]}
     />
   )
 }
