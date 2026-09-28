@@ -680,6 +680,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Social bluffing party game where players make claims (true or bluff), others vote to challenge or believe, and players are eliminated after too many caught bluffs.',
       questionKey: 'games.liars_party.seo.question',
       answerKey: 'games.liars_party.seo.answer',
+      // Product questions. There is no how-to guide for this game, so nothing to
+      // keep them disjoint from; the rules live in the page's own sections (#1240).
+      faq: [
+        { questionKey: 'games.liars_party.detail.faq.isItFree.q', answerKey: 'games.liars_party.detail.faq.isItFree.a' },
+        { questionKey: 'games.liars_party.detail.faq.worksOnPhone.q', answerKey: 'games.liars_party.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.liars_party.detail.faq.whatCanIClaim.q', answerKey: 'games.liars_party.detail.faq.whatCanIClaim.a' },
+        { questionKey: 'games.liars_party.detail.faq.timerRunsOut.q', answerKey: 'games.liars_party.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.liars_party.detail.faq.playerLeaves.q', answerKey: 'games.liars_party.detail.faq.playerLeaves.a' },
+        { questionKey: 'games.liars_party.detail.faq.howLong.q', answerKey: 'games.liars_party.detail.faq.howLong.a' },
+        { questionKey: 'games.liars_party.detail.faq.canFriendsWatch.q', answerKey: 'games.liars_party.detail.faq.canFriendsWatch.a' },
+      ],
     },
     availability: 'available',
     route: '/games/liars-party/lobbies',

@@ -2205,6 +2205,36 @@ const no = {
         history: {
           origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat. Her kan en hvilken som helst setning være bløffen.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Løgnerfest gratis å spille?',
+            a: 'Ja, hele spillet er gratis for opptil ti spillere. Premium gir større rom, tilskuere, repriser og lobbytemaer.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Løgnerfest på mobil?',
+            a: 'Ja, i hvilken som helst mobilnettleser: spillet ligger på én fane, med spillere og chat ett trykk unna.',
+          },
+          whatCanIClaim: {
+            q: 'Hva kan jeg påstå?',
+            a: 'Hva som helst på 5 til 180 tegn, sant eller oppdiktet: en historie om deg, et faktum, litt skryt.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden renner ut?',
+            a: 'Den som ikke skrev noe, mister 4 og avstemningen hoppes over; en manglende stemme teller som Tro, minus 4.',
+          },
+          playerLeaves: {
+            q: 'Hva om en spiller går midt i spillet?',
+            a: 'Spilleren er ute og rangeres under alle som fortsatt er med; under fire spillere i rommet slutter spillet.',
+          },
+          howLong: {
+            q: 'Hvor lenge varer et spill?',
+            a: 'Høyst ti runder med én påstand hver, og færre hvis bare én spiller er igjen i spillet.',
+          },
+          canFriendsWatch: {
+            q: 'Kan venner se på uten å spille?',
+            a: 'Ja, hvis en vert med Premium tillater tilskuere; de følger påstander, stemmer og avsløringen, men kan ikke stemme.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

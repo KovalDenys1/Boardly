@@ -2205,6 +2205,36 @@ const en = {
         history: {
           origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat. Here any sentence can be the bluff.',
         },
+        faq: {
+          isItFree: {
+            q: "Is Liar's Party free to play?",
+            a: 'Yes, the whole game is free for up to ten players. Premium adds bigger rooms, spectators, replays and lobby themes.',
+          },
+          worksOnPhone: {
+            q: "Does Liar's Party work on a phone?",
+            a: 'Yes, in any mobile browser: the game sits on one tab, with players and chat one tap away.',
+          },
+          whatCanIClaim: {
+            q: 'What can I claim?',
+            a: 'Anything from 5 to 180 characters, true or invented: a story about you, a fact, a boast.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'A silent claimant loses 4 and the vote is skipped; a missing vote counts as Believe, minus 4.',
+          },
+          playerLeaves: {
+            q: 'What if a player leaves mid-game?',
+            a: 'They are out and rank below everyone still in; below four players in the room, the game ends.',
+          },
+          howLong: {
+            q: 'How long does a game last?',
+            a: 'Ten rounds at most, one claim each, and fewer if only one player is left in the game.',
+          },
+          canFriendsWatch: {
+            q: 'Can friends watch without playing?',
+            a: 'Yes, if a Premium host allows spectators; they follow claims, votes and the reveal but cannot vote.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
