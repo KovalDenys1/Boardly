@@ -774,6 +774,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Drawing and guessing party game for three to ten players. Each round one player draws a secret prompt on a shared canvas while everyone else types guesses, scored on how quickly they land it.',
       questionKey: 'games.guess_my_drawing.seo.question',
       answerKey: 'games.guess_my_drawing.seo.answer',
+      // Product questions. There is no how-to guide for this game, so nothing
+      // to keep disjoint from; the rules live in the page's own #rules (#1239).
+      faq: [
+        { questionKey: 'games.guess_my_drawing.detail.faq.isItFree.q', answerKey: 'games.guess_my_drawing.detail.faq.isItFree.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.playAloneOrBot.q', answerKey: 'games.guess_my_drawing.detail.faq.playAloneOrBot.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.guessLanguages.q', answerKey: 'games.guess_my_drawing.detail.faq.guessLanguages.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.everyoneDraws.q', answerKey: 'games.guess_my_drawing.detail.faq.everyoneDraws.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.timeRunsOut.q', answerKey: 'games.guess_my_drawing.detail.faq.timeRunsOut.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.hostAcceptsGuess.q', answerKey: 'games.guess_my_drawing.detail.faq.hostAcceptsGuess.a' },
+        { questionKey: 'games.guess_my_drawing.detail.faq.playerLeaves.q', answerKey: 'games.guess_my_drawing.detail.faq.playerLeaves.a' },
+      ],
     },
     // Still in-development: #873 is where the product decision to feature it
     // publicly is taken, and the flip belongs to that ticket alone. #1035 only
