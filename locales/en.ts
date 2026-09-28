@@ -1678,7 +1678,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Rock Paper Scissors online against a friend?',
-        answer: 'Yes. Both players pick at the same time and the choices reveal together, so nobody waits to see what the other did. Play a friend from a shared lobby code or a bot on easy, medium or hard, best of three or best of five. Free, in the browser.',
+        answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
       ribbon: {
         desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
@@ -1688,27 +1688,149 @@ const en = {
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
       rule_2: 'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
       rule_3: 'If both choose the same, the round is a draw - replay',
-      rule_4: 'Best-of-3 or Best-of-5 format (decided at game start)',
+      rule_4: 'Best of three: the first to win two rounds takes the match',
       rule_5: 'First to win majority of rounds wins the game',
       detail: {
         title: 'Play Rock Paper Scissors Online',
         heroDesc: 'The classic game, played in real time. Both players pick simultaneously — no waiting, no guessing what your opponent chose.',
         introTitle: 'What is Rock Paper Scissors?',
         intro0: 'Rock Paper Scissors is a two-player game where both players pick one of three options at the same time: Rock, Paper, or Scissors.',
-        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. If both players pick the same option, the round is a draw and replays.',
+        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. Matching picks make a draw, and that round is played again.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room from the lobbies page, or join a friend\'s with its four-character code. Each room seats two.',
         step2Title: 'Pick your move',
-        step2Desc: 'Choose Rock, Paper, or Scissors before the timer runs out.',
+        step2Desc: 'Choose Rock, Paper or Scissors before the timer runs out. One tap locks it in.',
         step3Title: 'Simultaneous reveal',
-        step3Desc: 'Both choices show at the same time — no waiting for the other player.',
+        step3Desc: 'Once the second pick is in, both hands shake and turn over together. Then the round result shows.',
         step4Title: 'First to the target wins',
-        step4Desc: 'Play rounds until one player reaches the win count.',
+        step4Desc: 'Play rounds until one player has won two. Then the host can call a rematch.',
         benefitsTitle: 'Why play Rock Paper Scissors on Boardly?',
         benefit1: 'Real-time simultaneous reveals.',
         benefit2: 'Bot support for solo practice.',
         benefit3: 'Instant rounds with no setup.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          noTurns: 'There are no turns: each round, both players pick once, in any order.',
+          pickStaysHidden: 'Until both picks are in, your opponent sees only that you locked in, even after a reload.',
+          revealOrder: 'The score changes only after the round verdict appears.',
+          timeoutRandomPick: 'The clock restarts whenever a player locks in. If yours runs out while the game is open, a random move is locked in for you.',
+        },
+        modes: {
+          matchLength: {
+            title: 'Best of three, always',
+            desc: 'First to two round wins takes the match; draws add rounds without counting.',
+          },
+          roundClock: {
+            title: 'A clock on every round',
+            desc: '60 seconds a round by default; before the match starts, the host can choose 30 to 180. Play vs Bot uses 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'All three pick at random in round one. Then Tempo Rookie stays random; the others guess your most-played throw, your last counting twice. Mind Gambit counters that guess every round, Pattern Reader about eight in ten.',
+          },
+        },
+        strategy: {
+          readTheRoundList: {
+            title: 'Read the round list',
+            desc: 'The Rounds panel lists every past pair of throws; find your opponent\'s favourite there.',
+          },
+          answerARepeat: {
+            title: 'Answer a repeat',
+            desc: 'A move thrown twice running often comes again. Beat it.',
+          },
+          spotACycle: {
+            title: 'Spot a cycle',
+            desc: 'Players who avoid repeats often step Rock, Paper, Scissors in order. Beat the next step.',
+          },
+          thinkOneStepFurther: {
+            title: 'Think one step further',
+            desc: 'If they expect you to repeat a winner, they will throw its counter. Beat that instead.',
+          },
+          watchYourOwnCount: {
+            title: 'Watch your own count',
+            desc: 'If one move leads your tally, your opponent has likely noticed.',
+          },
+          exploitMindGambit: {
+            title: 'Exploit Mind Gambit',
+            desc: 'From round two it counters its guess, so play what beats that counter.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Stay even against Pattern Reader',
+            desc: 'Keep your throws even and it aims at your last one; play what beats the counter to it.',
+          },
+          climbTheLevels: {
+            title: 'Climb the levels',
+            desc: 'Tempo Rookie is pure chance, Mind Gambit rewards a clean read, Pattern Reader tests both.',
+          },
+        },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Reading Tempo Rookie',
+            desc: 'The easy bot has no pattern, so any streak you see there is chance.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Waiting for their lock-in',
+            desc: 'Their lock-in says nothing about the move they chose.',
+          },
+          countingDraws: {
+            title: 'Counting draws as progress',
+            desc: 'A draw moves neither score; the match still needs two round wins.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Send the code or invite link; a chat sits beside the board.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot opens a room with the bot you chose already seated.',
+          },
+          turnTimer: {
+            title: 'A countdown on every pick',
+            desc: 'Locking in restarts it for your opponent, so a quick pick never rushes a slow one.',
+          },
+          guestNoDownload: {
+            title: 'Browser, no sign-up',
+            desc: 'Any phone, tablet or laptop works, and a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Anyone with a spare minute: friends deciding who goes first, or anyone out to read a person.',
+        },
+        history: {
+          origin: 'Hand games like it were recorded in China around 1600; the rock, paper and scissors form took shape in Japan as jan-ken and spread west. Some Americans call it roshambo.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Rock Paper Scissors on Boardly free?',
+            a: 'Yes. Friends, all three bots and every timer setting are free; Premium only adds extras around a match, such as spectators.',
+          },
+          worksOnPhone: {
+            q: 'Does it work on a phone?',
+            a: 'Yes, in the mobile browser with no app to install. One tap on a choice tile locks your pick in.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play a friend who is somewhere else?',
+            a: 'Yes. Create a lobby, send the four-character code or the link, and play live from separate devices.',
+          },
+          howManyPlayers: {
+            q: 'How many players are in a match?',
+            a: 'Exactly two. Your opponent is another person or a bot, and there is never a third player alongside.',
+          },
+          botSeesPick: {
+            q: 'Can the bot see my pick?',
+            a: 'No. It always chooses after you lock in, but it reads only finished rounds, never the pick still waiting to be revealed.',
+          },
+          changeTimer: {
+            q: 'Can I change how long a round lasts?',
+            a: 'Yes, as host, in the lobby settings: 30 to 180 seconds. New rooms start at 60, Play vs Bot rooms at 45.',
+          },
+          playAgain: {
+            q: 'Can we play again after a match?',
+            a: 'Yes. The host can start a new match in the same room, or send both players back to the lobby first.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',
@@ -1877,7 +1999,7 @@ const en = {
       difficulty: 'Medium',
       seo: {
         question: 'Can you play Alias online with a group for free?',
-        answer: 'Yes, with four to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
+        answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
       ribbon: {
         desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
@@ -1887,23 +2009,173 @@ const en = {
       detail: {
         title: 'Play Alias Online',
         heroDesc: 'A team word game where one player describes secret words and the team races to guess as many as possible.',
-        groupNotice: "Alias needs at least 4 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
+        groupNotice: "Alias needs at least 3 players and has no bots — it's a group game. Gather your crew before creating a lobby, or warm up with a bot-ready game like Yahtzee or Connect Four.",
         introTitle: 'What is Alias?',
         intro0: 'Alias is a team word-description game. One player sees a secret word and explains it without saying the word itself.',
         intro1: 'Correct guesses score points. Skips cost points. Teams take turns until the final score decides the winner.',
         step1Title: 'Create a lobby',
-        step1Desc: 'Invite your group and split into teams.',
+        step1Desc: 'Invite your group and split into teams. From four players up, anyone can switch sides before the start.',
         step2Title: 'Describe words',
-        step2Desc: 'Use clues, synonyms, and examples without saying the secret word.',
+        step2Desc: 'Use clues, synonyms, and examples without saying the secret word. Ten words per card, shown one at a time.',
         step3Title: 'Guess quickly',
-        step3Desc: 'The team guesses against the timer and scores for correct answers.',
+        step3Desc: 'The team guesses against the timer and scores for correct answers. Typed guesses appear in the describer\'s feed.',
         step4Title: 'Switch teams',
-        step4Desc: 'Teams alternate turns until the match ends.',
+        step4Desc: 'Teams alternate turns until the match ends. Each team gets three turns, and the describer seat rotates.',
         benefitsTitle: 'Why Alias belongs on Boardly',
         benefit1: 'Designed for group play.',
         benefit2: 'Simple room links for friends.',
         benefit3: 'Fast rounds that work for parties.',
         benefit4: 'No app download planned.',
+        rules: {
+          teamsFromFour: 'Four or more players form two teams, and newcomers join the smaller one.',
+          threeAreSolo: 'With exactly three, everyone plays alone and scores only while describing.',
+          tenWordCard: 'Each turn deals ten words, one at a time, never repeated in a game.',
+          markEveryWord: 'The describer taps Guessed or Skip for every word.',
+          howATurnEnds: 'A turn ends at the tenth word, at End Turn, or at zero on the clock.',
+        },
+        scoring: {
+          title: 'Net words per turn',
+          note: 'Guesses minus skips, so a turn ranges from plus ten to minus ten.',
+          rows: {
+            guessedWord: {
+              name: 'Guessed word',
+              value: '+1',
+              rule: 'When the describer confirms it.',
+            },
+            skippedWord: {
+              name: 'Skipped word',
+              value: '−1',
+              rule: 'Whenever Skip is pressed.',
+            },
+            wordLeftAtZero: {
+              name: 'Word left at zero',
+              value: '−1',
+              rule: 'Counts as a skip.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Word left after End Turn',
+              value: '0',
+              rule: 'Not scored.',
+            },
+            levelAtTheTop: {
+              name: 'Level at the top',
+              value: 'Tie',
+              rule: 'Equal top totals after three turns each.',
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Rooms of 4, 6, 8, 10, 12 or 16 seats, 8 by default; more than ten needs a Premium host.',
+          },
+          turnLength: {
+            title: 'Turn length',
+            desc: '30, 60, 90 or 120 seconds per turn, 60 by default.',
+          },
+        },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Skip early or not at all',
+            desc: 'A skip costs one point at any second, so drop hopeless words at once.',
+          },
+          beatTheZero: {
+            title: 'Beat the clock to zero',
+            desc: 'Near zero with words left? Press End Turn before they become skips.',
+          },
+          sayWhatItDoes: {
+            title: 'Say what it does',
+            desc: '"You ring it at a front door" beats "a small electric bell".',
+          },
+          leaveAGap: {
+            title: 'Leave a gap to fill',
+            desc: 'A phrase missing one word, like "Humpty Dumpty sat on a …", is quick to fill.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Build compounds in halves',
+            desc: 'For lighthouse or doorbell, lead the team to each half without saying it.',
+          },
+          guessInSingleWords: {
+            title: 'Guess in single words',
+            desc: 'One word per message is easiest to spot in the describer\'s feed.',
+          },
+          tryThePlainForm: {
+            title: 'Try the plain form',
+            desc: 'Every answer is one English word; after a near miss, try the basic form.',
+          },
+          readTheResults: {
+            title: 'Read the results screen',
+            desc: 'Skipped words listed between turns show which clues your group finds hard.',
+          },
+        },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Letting the clock hit zero',
+            desc: 'Every unplayed word then costs a point.',
+          },
+          skippingOnReflex: {
+            title: 'Skipping on reflex',
+            desc: 'Skip all ten words and the turn ends ten points down.',
+          },
+          guessingInParagraphs: {
+            title: 'Guessing in paragraphs',
+            desc: 'A long message buries the word the describer is scanning for.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, many screens',
+            desc: 'Share the room code or link; clock, tally and guesses update on every connected device.',
+          },
+          botsAndSolo: {
+            title: 'People, never bots',
+            desc: 'No solo mode or bots. Short of three? Share the invite link or join an open room.',
+          },
+          turnTimer: {
+            title: 'One shared clock',
+            desc: 'Every player sees the countdown; once it runs out, the turn closes and unplayed words count as skips.',
+          },
+          guestNoDownload: {
+            title: 'A browser and a name',
+            desc: 'Any browser, nothing to install; guests pick a name and play.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alias suits parties, family evenings and video calls; its English deck also helps learners.',
+        },
+        history: {
+          origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Alias on Boardly free?',
+            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; 12 or 16 seats, spectators and premium lobby themes need a Premium host.',
+          },
+          worksOnPhone: {
+            q: 'Does Alias work on a phone?',
+            a: 'Yes, in the mobile browser. The card and the Guesses feed sit on two tabs, one tap apart.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'The turn ends, and every word left on the card counts as a skip. End Turn before zero avoids that.',
+          },
+          canGuessersSeeWord: {
+            q: 'Can guessers see the word?',
+            a: 'Only the describer\'s screen shows the card; everyone else sees a question mark and the describer\'s name.',
+          },
+          howTeamsArePicked: {
+            q: 'How are the teams picked?',
+            a: 'Newcomers join the smaller team, with four or more players anyone can switch sides, and the host starts once no team is empty.',
+          },
+          wordsInEnglish: {
+            q: 'Are the words in English?',
+            a: 'Yes, whatever the site language: 200 English words such as castle and kaleidoscope, none repeated in a game.',
+          },
+          describerLeaves: {
+            q: 'What if the describer leaves mid-turn?',
+            a: 'The turn ends at once, scoring only words already marked; below three players the game ends.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',
