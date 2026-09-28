@@ -1709,13 +1709,13 @@ const no = {
           },
           readTheResults: {
             title: 'Les resultatskjermen',
-            desc: 'Hoppede ord listet etter hver tur viser hvilke hint gjengen sliter med.',
+            desc: 'Hoppede ord listet mellom turene viser hvilke hint gjengen sliter med.',
           },
         },
         mistakes: {
           lettingTheClockHitZero: {
             title: 'Å la klokka gå til null',
-            desc: 'Ubrukte ord koster da et poeng hver; «Avslutning av tur» ville ikke gjort det.',
+            desc: 'Hvert ubrukt ord koster da et poeng.',
           },
           skippingOnReflex: {
             title: 'Å hoppe over på refleks',
@@ -1729,15 +1729,15 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Ett rom, mange skjermer',
-            desc: 'Del romkoden eller lenken; klokka, stillingen og gjettene oppdateres på alle enheter.',
+            desc: 'Del romkoden eller lenken; klokka, stillingen og gjettene oppdateres på alle tilkoblede enheter.',
           },
           botsAndSolo: {
             title: 'Folk, aldri boter',
             desc: 'Ingen solomodus eller boter. Mangler dere noen til tre? Del lenken eller bli med i et åpent rom.',
           },
           turnTimer: {
-            title: 'Én klokke for alle',
-            desc: 'Alle ser nedtellingen, og serveren avslutter turen ved null.',
+            title: 'Én felles klokke',
+            desc: 'Alle spillerne ser nedtellingen; når den er ute, lukkes turen, og ubrukte ord teller som hopp.',
           },
           guestNoDownload: {
             title: 'En nettleser og et navn',
@@ -1745,7 +1745,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Alias passer for fester, familiekvelder og videosamtaler, og den engelske ordstokken er også god øving for dem som lærer språket.',
+          whoItSuits: 'Alias passer for fester, familiekvelder og videosamtaler; den engelske ordstokken hjelper også dem som lærer språket.',
         },
         history: {
           origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
@@ -1753,7 +1753,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Alias på Boardly gratis?',
-            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; 12 eller 16 plasser krever en vert med Premium.',
+            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; 12 eller 16 plasser, tilskuere og premium-temaer for lobbyen krever en vert med Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Alias på mobil?',
@@ -1765,11 +1765,11 @@ const no = {
           },
           canGuessersSeeWord: {
             q: 'Kan de som gjetter, se ordet?',
-            a: 'Bare forklarerens enhet får kortet. Alle andre ser et spørsmålstegn og navnet på forklareren.',
+            a: 'Bare forklarerens skjerm viser kortet; alle andre ser et spørsmålstegn og navnet på forklareren.',
           },
           howTeamsArePicked: {
             q: 'Hvordan blir lagene satt sammen?',
-            a: 'Nykommere havner på det minste laget, alle kan bytte side, og verten starter når ingen lag er tomme.',
+            a: 'Nykommere havner på det minste laget, med fire eller flere spillere kan alle bytte side, og verten starter når ingen lag er tomme.',
           },
           wordsInEnglish: {
             q: 'Er ordene på engelsk?',

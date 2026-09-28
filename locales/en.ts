@@ -1709,13 +1709,13 @@ const en = {
           },
           readTheResults: {
             title: 'Read the results screen',
-            desc: 'Skipped words listed after each turn show which clues your group finds hard.',
+            desc: 'Skipped words listed between turns show which clues your group finds hard.',
           },
         },
         mistakes: {
           lettingTheClockHitZero: {
             title: 'Letting the clock hit zero',
-            desc: 'Unplayed words then cost a point each; End Turn would not have.',
+            desc: 'Every unplayed word then costs a point.',
           },
           skippingOnReflex: {
             title: 'Skipping on reflex',
@@ -1729,15 +1729,15 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'One room, many screens',
-            desc: 'Share the room code or link; clock, tally and guesses update on every device.',
+            desc: 'Share the room code or link; clock, tally and guesses update on every connected device.',
           },
           botsAndSolo: {
             title: 'People, never bots',
             desc: 'No solo mode or bots. Short of three? Share the invite link or join an open room.',
           },
           turnTimer: {
-            title: 'One clock for everyone',
-            desc: 'Everyone sees the countdown, and the server ends the turn at zero.',
+            title: 'One shared clock',
+            desc: 'Every player sees the countdown; once it runs out, the turn closes and unplayed words count as skips.',
           },
           guestNoDownload: {
             title: 'A browser and a name',
@@ -1745,7 +1745,7 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Alias suits parties, family evenings and video calls, and its English deck doubles as practice for learners.',
+          whoItSuits: 'Alias suits parties, family evenings and video calls; its English deck also helps learners.',
         },
         history: {
           origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
@@ -1753,7 +1753,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Alias on Boardly free?',
-            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; 12 or 16 seats need a Premium host.',
+            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; 12 or 16 seats, spectators and premium lobby themes need a Premium host.',
           },
           worksOnPhone: {
             q: 'Does Alias work on a phone?',
@@ -1765,11 +1765,11 @@ const en = {
           },
           canGuessersSeeWord: {
             q: 'Can guessers see the word?',
-            a: 'Only the describer\'s device receives the card. Everyone else sees a question mark and the describer\'s name.',
+            a: 'Only the describer\'s screen shows the card; everyone else sees a question mark and the describer\'s name.',
           },
           howTeamsArePicked: {
             q: 'How are the teams picked?',
-            a: 'Newcomers join the smaller team, anyone can switch sides, and the host starts once no team is empty.',
+            a: 'Newcomers join the smaller team, with four or more players anyone can switch sides, and the host starts once no team is empty.',
           },
           wordsInEnglish: {
             q: 'Are the words in English?',
