@@ -46,6 +46,26 @@ export default function SpyDetailContent() {
         t('games.spy.detail.rules.howTheVoteEnds'),
         t('games.spy.detail.rules.spyMayGuess'),
       ]}
+      scoring={[
+        {
+          title: t('games.spy.detail.scoring.vote.title'),
+          note: t('games.spy.detail.scoring.vote.note'),
+          rows: [
+            { name: t('games.spy.detail.scoring.vote.rows.spyEscapes.name'), value: t('games.spy.detail.scoring.vote.rows.spyEscapes.value'), rule: t('games.spy.detail.scoring.vote.rows.spyEscapes.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.spyCaught.name'), value: t('games.spy.detail.scoring.vote.rows.spyCaught.value'), rule: t('games.spy.detail.scoring.vote.rows.spyCaught.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.voteOnSpy.name'), value: t('games.spy.detail.scoring.vote.rows.voteOnSpy.value'), rule: t('games.spy.detail.scoring.vote.rows.voteOnSpy.rule') },
+            { name: t('games.spy.detail.scoring.vote.rows.voteOnOther.name'), value: t('games.spy.detail.scoring.vote.rows.voteOnOther.value'), rule: t('games.spy.detail.scoring.vote.rows.voteOnOther.rule') },
+          ],
+        },
+        {
+          title: t('games.spy.detail.scoring.guess.title'),
+          note: t('games.spy.detail.scoring.guess.note'),
+          rows: [
+            { name: t('games.spy.detail.scoring.guess.rows.rightPlace.name'), value: t('games.spy.detail.scoring.guess.rows.rightPlace.value'), rule: t('games.spy.detail.scoring.guess.rows.rightPlace.rule') },
+            { name: t('games.spy.detail.scoring.guess.rows.wrongPlace.name'), value: t('games.spy.detail.scoring.guess.rows.wrongPlace.value'), rule: t('games.spy.detail.scoring.guess.rows.wrongPlace.rule') },
+          ],
+        },
+      ]}
     />
   )
 }

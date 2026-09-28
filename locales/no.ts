@@ -828,6 +828,50 @@ const no = {
           howTheVoteEnds: 'Når alle tilkoblede spillere har stemt, avsløres den ene med flest stemmer; uavgjort avslører ingen.',
           spyMayGuess: 'Før avstemningen kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
         },
+        scoring: {
+          vote: {
+            title: 'Når bordet stemmer',
+            note: 'Hver stemme gir også poeng for seg.',
+            rows: {
+              spyEscapes: {
+                name: 'Spionen ikke stemt ut',
+                value: '+300',
+                rule: 'Til spionen, også ved uavgjort.',
+              },
+              spyCaught: {
+                name: 'Spionen stemt ut',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+              voteOnSpy: {
+                name: 'Stemme på spionen',
+                value: '+50',
+                rule: 'Til den som stemte.',
+              },
+              voteOnOther: {
+                name: 'Stemme på en annen',
+                value: '−10',
+                rule: 'Alltid spionens egen stemme.',
+              },
+            },
+          },
+          guess: {
+            title: 'Når spionen gjetter',
+            note: 'Ingen stemmer den runden.',
+            rows: {
+              rightPlace: {
+                name: 'Riktig sted',
+                value: '+500',
+                rule: 'Til spionen.',
+              },
+              wrongPlace: {
+                name: 'Feil sted',
+                value: '+100',
+                rule: 'Til alle de andre spillerne.',
+              },
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

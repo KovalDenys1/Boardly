@@ -828,6 +828,50 @@ const en = {
           howTheVoteEnds: 'Once every connected player has voted, a single leader is revealed; a tie reveals nobody.',
           spyMayGuess: 'Before the vote, the spy may guess among all 24 places; right or wrong, the round ends.',
         },
+        scoring: {
+          vote: {
+            title: 'When the table votes',
+            note: 'Votes also score alone.',
+            rows: {
+              spyEscapes: {
+                name: 'Spy not voted out',
+                value: '+300',
+                rule: 'To the spy, ties included.',
+              },
+              spyCaught: {
+                name: 'Spy voted out',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+              voteOnSpy: {
+                name: 'Vote on the spy',
+                value: '+50',
+                rule: 'To that voter.',
+              },
+              voteOnOther: {
+                name: 'Vote on anyone else',
+                value: '−10',
+                rule: 'The spy\'s own vote, always.',
+              },
+            },
+          },
+          guess: {
+            title: 'When the spy guesses',
+            note: 'Nobody votes that round.',
+            rows: {
+              rightPlace: {
+                name: 'Right location',
+                value: '+500',
+                rule: 'To the spy.',
+              },
+              wrongPlace: {
+                name: 'Wrong location',
+                value: '+100',
+                rule: 'To every other player.',
+              },
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
