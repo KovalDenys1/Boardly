@@ -56,6 +56,17 @@ export default function TicTacToeDetailContent() {
         { title: t('games.tictactoe.detail.modes.botLevels.title'), desc: t('games.tictactoe.detail.modes.botLevels.desc') },
         { title: t('games.tictactoe.detail.modes.requests.title'), desc: t('games.tictactoe.detail.modes.requests.desc') },
       ]}
+      strategy={[
+        { title: t('games.tictactoe.detail.strategy.takeTheCentre.title'), desc: t('games.tictactoe.detail.strategy.takeTheCentre.desc') },
+        { title: t('games.tictactoe.detail.strategy.cornerAgainstCentre.title'), desc: t('games.tictactoe.detail.strategy.cornerAgainstCentre.desc') },
+        { title: t('games.tictactoe.detail.strategy.centreAgainstCorner.title'), desc: t('games.tictactoe.detail.strategy.centreAgainstCorner.desc') },
+        { title: t('games.tictactoe.detail.strategy.winBeforeBlock.title'), desc: t('games.tictactoe.detail.strategy.winBeforeBlock.desc') },
+        { title: t('games.tictactoe.detail.strategy.buildAFork.title'), desc: t('games.tictactoe.detail.strategy.buildAFork.desc') },
+        { title: t('games.tictactoe.detail.strategy.steerTheForcedReply.title'), desc: t('games.tictactoe.detail.strategy.steerTheForcedReply.desc') },
+        { title: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.title'), desc: t('games.tictactoe.detail.strategy.edgeAgainstOppositeCorners.desc') },
+        { title: t('games.tictactoe.detail.strategy.useYourOpeningRounds.title'), desc: t('games.tictactoe.detail.strategy.useYourOpeningRounds.desc') },
+        { title: t('games.tictactoe.detail.strategy.pickTheRightBot.title'), desc: t('games.tictactoe.detail.strategy.pickTheRightBot.desc') },
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )

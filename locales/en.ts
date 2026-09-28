@@ -909,6 +909,44 @@ const en = {
             desc: 'Neither takes effect on its own: the request waits until the other player accepts or declines it. A bot always lets you take a move back, but only agrees to a draw once best play from both sides can no longer produce a winner.',
           },
         },
+        strategy: {
+          takeTheCentre: {
+            title: 'Claim the middle square',
+            desc: 'Four of the eight winning lines run through the middle square, so an X placed there works in more directions than anywhere else.',
+          },
+          cornerAgainstCentre: {
+            title: 'Meet the centre with a corner',
+            desc: 'When X opens in the middle, O is safe only in a corner. An edge reply gives X time to set up two threats.',
+          },
+          centreAgainstCorner: {
+            title: 'Meet a corner with the centre',
+            desc: 'If X opens in a corner, the centre is the one reply that holds the draw for O. Every other square leaves X a forced win.',
+          },
+          winBeforeBlock: {
+            title: 'Look for your win before your block',
+            desc: 'Before each mark, check whether one square completes a line of yours; only if none does, take the square that stops theirs. Blocking when you could have won hands the opponent another turn.',
+          },
+          buildAFork: {
+            title: 'Build a fork',
+            desc: 'A fork is a single mark that leaves two of your lines each one square short. The opponent can block only one, and you complete the other.',
+          },
+          steerTheForcedReply: {
+            title: 'Decide where their block lands',
+            desc: 'Two in a row forces your opponent onto the third square. Choose threats whose forced reply builds nothing for them and leaves your fork within reach.',
+          },
+          edgeAgainstOppositeCorners: {
+            title: 'Against opposite corners, take an edge',
+            desc: 'Playing O with the centre while X holds two opposite corners, your next mark belongs on an edge square. A third corner lets X fork you straight away.',
+          },
+          useYourOpeningRounds: {
+            title: 'Press in the rounds you open',
+            desc: 'In a series the first move changes hands every round. Play for the win when you start, and for a safe draw when your opponent does.',
+          },
+          pickTheRightBot: {
+            title: 'Practise against the right bot',
+            desc: 'Grid Tactician only reacts to lines that are one square from complete, so a fork beats it. Grid Grandmaster cannot be beaten; a draw against it means you made no mistake all round.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',

@@ -909,6 +909,44 @@ const no = {
             desc: 'Ingen av dem virker alene: forespørselen venter til den andre spilleren godtar eller avslår den. En robot lar deg alltid ta tilbake et trekk, men godtar remis først når ingen av sidene kan vinne med beste spill.',
           },
         },
+        strategy: {
+          takeTheCentre: {
+            title: 'Ta midtruten',
+            desc: 'Fire av de åtte vinnerlinjene går gjennom midtruten, så en X der virker i flere retninger enn noe annet sted.',
+          },
+          cornerAgainstCentre: {
+            title: 'Svar på midten med et hjørne',
+            desc: 'Når X åpner i midten, er O bare trygg i et hjørne. Et svar på en kantrute gir X tid til å bygge to trusler.',
+          },
+          centreAgainstCorner: {
+            title: 'Svar på et hjørne med midten',
+            desc: 'Åpner X i et hjørne, er midten det eneste svaret som holder O i remis. Alle andre ruter gir X en tvungen seier.',
+          },
+          winBeforeBlock: {
+            title: 'Se etter seieren før blokkeringen',
+            desc: 'Før hvert merke: sjekk om én rute fullfører en linje for deg; bare hvis ingen gjør det, tar du ruten som stopper motstanderens. Å blokkere når du kunne ha vunnet, gir motstanderen et nytt trekk.',
+          },
+          buildAFork: {
+            title: 'Lag en gaffel',
+            desc: 'En gaffel er ett merke som gir deg to linjer som hver mangler én rute. Motstanderen kan bare blokkere den ene, og du fullfører den andre.',
+          },
+          steerTheForcedReply: {
+            title: 'Bestem hvor blokkeringen havner',
+            desc: 'To på rad tvinger motstanderen til å ta den tredje ruten. Velg trusler der det tvungne svaret ikke bygger noe for dem og gaffelen din er innen rekkevidde.',
+          },
+          edgeAgainstOppositeCorners: {
+            title: 'Mot motsatte hjørner: ta en kantrute',
+            desc: 'Spiller du O med midten mens X har to motsatte hjørner, skal neste merke på en kantrute. Et tredje hjørne lar X lage en gaffel med en gang.',
+          },
+          useYourOpeningRounds: {
+            title: 'Gå for seier i rundene du åpner',
+            desc: 'I en serie bytter førstetrekket hver runde. Spill for seier når du starter, og for trygg remis når motstanderen gjør det.',
+          },
+          pickTheRightBot: {
+            title: 'Øv mot riktig robot',
+            desc: 'Grid Tactician reagerer bare på linjer som mangler én rute, så en gaffel slår den. Grid Grandmaster kan ikke slås; remis mot den betyr at du ikke gjorde en eneste feil i runden.',
+          },
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',
