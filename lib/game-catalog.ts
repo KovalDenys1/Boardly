@@ -727,6 +727,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic two-player simultaneous-choice game. Both players pick Rock, Paper or Scissors at the same time. Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
       questionKey: 'games.rock_paper_scissors.seo.question',
       answerKey: 'games.rock_paper_scissors.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1238).
+      faq: [
+        { questionKey: 'games.rock_paper_scissors.detail.faq.isItFree.q', answerKey: 'games.rock_paper_scissors.detail.faq.isItFree.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.q', answerKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.q', answerKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.q', answerKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.q', answerKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.changeTimer.q', answerKey: 'games.rock_paper_scissors.detail.faq.changeTimer.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playAgain.q', answerKey: 'games.rock_paper_scissors.detail.faq.playAgain.a' },
+      ],
     },
     availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',

@@ -1678,7 +1678,7 @@ const no = {
       difficulty: 'Lett',
       seo: {
         question: 'Kan du spille Stein, saks, papir online mot en venn?',
-        answer: 'Ja. Begge velger samtidig og valgene vises samtidig, så ingen venter på å se hva den andre gjorde. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig, best av tre eller best av fem. Gratis, i nettleseren.',
+        answer: 'Ja. Begge velger samtidig, og de to hendene snus samtidig, så ingen ser den andres trekk først. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig; den som først vinner to runder, tar kampen. Gratis, i nettleseren.',
       },
       ribbon: {
         desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
@@ -1688,7 +1688,7 @@ const no = {
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
       rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
       rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',
-      rule_4: 'Best-av-3 eller best-av-5-format (bestemmes ved spillstart)',
+      rule_4: 'Best av tre: den som først vinner to runder, tar kampen',
       rule_5: 'Første spiller som vinner flest runder vinner spillet',
       detail: {
         title: 'Spill Stein, saks, papir på nett',
@@ -1697,18 +1697,140 @@ const no = {
         intro0: 'Stein, saks, papir er et spill for to, der begge velger ett av tre alternativer samtidig: stein, saks eller papir.',
         intro1: 'Stein slår saks, saks slår papir, og papir slår stein. Velger begge det samme, blir runden uavgjort og spilles på nytt.',
         step1Title: 'Lag en lobby eller bli med i en',
-        step1Desc: 'Åpne et rom og del koden med motstanderen.',
+        step1Desc: 'Åpne et rom fra lobbysiden, eller bli med i en venns rom med den firetegns koden. Hvert rom har to plasser.',
         step2Title: 'Velg trekket ditt',
-        step2Desc: 'Velg stein, saks eller papir før tiden går ut.',
+        step2Desc: 'Velg stein, saks eller papir før tiden går ut. Ett trykk låser det.',
         step3Title: 'Samtidig avsløring',
-        step3Desc: 'Begge valgene vises samtidig – du venter aldri på den andre.',
+        step3Desc: 'Når det andre valget er inne, rister begge hendene og snus samtidig. Så vises rundens resultat.',
         step4Title: 'Først til målet vinner',
-        step4Desc: 'Spill runder til én spiller når antall seire.',
+        step4Desc: 'Spill runder til én spiller har vunnet to. Da kan verten starte en omkamp.',
         benefitsTitle: 'Derfor spiller du Stein, saks, papir på Boardly',
         benefit1: 'Samtidig avsløring i sanntid.',
         benefit2: 'En bot å øve mot når du spiller alene.',
         benefit3: 'Runder som starter med én gang.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          noTurns: 'Det finnes ingen turer: i hver runde velger begge én gang, i hvilken som helst rekkefølge.',
+          pickStaysHidden: 'Til begge valgene er inne, ser motstanderen bare at du har låst, selv etter ny innlasting.',
+          revealOrder: 'Stillingen endres først etter at rundens utfall er vist.',
+          timeoutRandomPick: 'Klokken starter på nytt hver gang en spiller låser. Går din ut mens spillet er åpent, låses et tilfeldig trekk for deg.',
+        },
+        modes: {
+          matchLength: {
+            title: 'Alltid best av tre',
+            desc: 'Først til to rundeseire tar kampen; uavgjorte runder legger til runder uten å telle.',
+          },
+          roundClock: {
+            title: 'En klokke på hver runde',
+            desc: '60 sekunder per runde som standard; før kampen starter, kan verten velge 30 til 180. Spill mot bot bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Alle tre velger tilfeldig i første runde. Deretter er Tempo Rookie fortsatt tilfeldig; de andre gjetter trekket du bruker mest, der det siste teller dobbelt. Mind Gambit kontrer den gjetningen hver runde, Pattern Reader omtrent åtte av ti.',
+          },
+        },
+        strategy: {
+          readTheRoundList: {
+            title: 'Les rundelisten',
+            desc: 'Runder-panelet viser hvert tidligere par av trekk; finn motstanderens favoritt der.',
+          },
+          answerARepeat: {
+            title: 'Svar på en gjentakelse',
+            desc: 'Et trekk brukt to ganger på rad kommer ofte igjen. Slå det.',
+          },
+          spotACycle: {
+            title: 'Se etter en syklus',
+            desc: 'Spillere som unngår gjentakelser, går ofte stein, papir, saks i rekkefølge. Slå neste steg.',
+          },
+          thinkOneStepFurther: {
+            title: 'Tenk ett steg lenger',
+            desc: 'Venter de at du gjentar et vinnertrekk, velger de motsvaret. Slå heller det.',
+          },
+          watchYourOwnCount: {
+            title: 'Følg med på din egen telling',
+            desc: 'Leder ett trekk i din telling, har motstanderen trolig sett det.',
+          },
+          exploitMindGambit: {
+            title: 'Utnytt Mind Gambit',
+            desc: 'Fra runde to kontrer den gjetningen sin, så velg det som slår det motsvaret.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Hold det jevnt mot Pattern Reader',
+            desc: 'Fordel trekkene jevnt, så sikter den på ditt siste; velg det som slår motsvaret til det.',
+          },
+          climbTheLevels: {
+            title: 'Gå opp nivåene',
+            desc: 'Tempo Rookie er ren tilfeldighet, Mind Gambit belønner en klar lesning, Pattern Reader tester begge deler.',
+          },
+        },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Å lese Tempo Rookie',
+            desc: 'Den lette boten har ikke noe mønster, så en rekke du ser der, er tilfeldig.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Å vente på at de låser',
+            desc: 'At de har låst, sier ingenting om trekket de valgte.',
+          },
+          countingDraws: {
+            title: 'Å telle uavgjort som fremgang',
+            desc: 'Uavgjort flytter ingen av stillingene; kampen krever fortsatt to rundeseire.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Send koden eller invitasjonslenken; en chat står ved siden av brettet.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: 'Spill mot bot åpner et rom der boten du valgte, allerede sitter.',
+          },
+          turnTimer: {
+            title: 'En nedtelling for hvert valg',
+            desc: 'Når du låser, starter den på nytt for motstanderen, så et raskt valg presser aldri et tregt.',
+          },
+          guestNoDownload: {
+            title: 'Nettleser, ingen registrering',
+            desc: 'Mobil, nettbrett eller laptop fungerer, og et gjestenavn er nok.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alle med et ledig minutt: venner som avgjør hvem som starter, eller alle som vil lese et menneske.',
+        },
+        history: {
+          origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Stein, saks, papir på Boardly gratis?',
+            a: 'Ja. Venner, alle tre botene og alle tidsinnstillinger er gratis; Premium gir bare ekstra rundt kampen, som tilskuere.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer det på mobil?',
+            a: 'Ja, i mobilnettleseren uten noen app å installere. Ett trykk på en valgflis låser valget ditt.',
+          },
+          playFriendRemotely: {
+            q: 'Kan jeg spille mot en venn som er et annet sted?',
+            a: 'Ja. Lag en lobby, send den firetegns koden eller lenken, og spill direkte fra hver deres enhet.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange spillere er det i en kamp?',
+            a: 'Nøyaktig to. Motstanderen er et annet menneske eller en bot, og det er aldri en tredje spiller i tillegg.',
+          },
+          botSeesPick: {
+            q: 'Kan boten se valget mitt?',
+            a: 'Nei. Den velger alltid etter at du har låst, men leser bare ferdige runder, aldri valget som venter på å bli vist.',
+          },
+          changeTimer: {
+            q: 'Kan jeg endre hvor lenge en runde varer?',
+            a: 'Ja, som vert, i lobbyinnstillingene: 30 til 180 sekunder. Nye rom starter på 60, rom fra Spill mot bot på 45.',
+          },
+          playAgain: {
+            q: 'Kan vi spille igjen etter en kamp?',
+            a: 'Ja. Verten kan starte en ny kamp i samme rom, eller først sende begge spillerne tilbake til venterommet.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

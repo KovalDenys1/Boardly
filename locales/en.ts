@@ -1678,7 +1678,7 @@ const en = {
       difficulty: 'Easy',
       seo: {
         question: 'Can you play Rock Paper Scissors online against a friend?',
-        answer: 'Yes. Both players pick at the same time and the choices reveal together, so nobody waits to see what the other did. Play a friend from a shared lobby code or a bot on easy, medium or hard, best of three or best of five. Free, in the browser.',
+        answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
       ribbon: {
         desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
@@ -1688,27 +1688,149 @@ const en = {
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
       rule_2: 'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
       rule_3: 'If both choose the same, the round is a draw - replay',
-      rule_4: 'Best-of-3 or Best-of-5 format (decided at game start)',
+      rule_4: 'Best of three: the first to win two rounds takes the match',
       rule_5: 'First to win majority of rounds wins the game',
       detail: {
         title: 'Play Rock Paper Scissors Online',
         heroDesc: 'The classic game, played in real time. Both players pick simultaneously — no waiting, no guessing what your opponent chose.',
         introTitle: 'What is Rock Paper Scissors?',
         intro0: 'Rock Paper Scissors is a two-player game where both players pick one of three options at the same time: Rock, Paper, or Scissors.',
-        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. If both players pick the same option, the round is a draw and replays.',
+        intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. Matching picks make a draw, and that round is played again.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room and share the code with your opponent.',
+        step1Desc: 'Open a room from the lobbies page, or join a friend\'s with its four-character code. Each room seats two.',
         step2Title: 'Pick your move',
-        step2Desc: 'Choose Rock, Paper, or Scissors before the timer runs out.',
+        step2Desc: 'Choose Rock, Paper or Scissors before the timer runs out. One tap locks it in.',
         step3Title: 'Simultaneous reveal',
-        step3Desc: 'Both choices show at the same time — no waiting for the other player.',
+        step3Desc: 'Once the second pick is in, both hands shake and turn over together. Then the round result shows.',
         step4Title: 'First to the target wins',
-        step4Desc: 'Play rounds until one player reaches the win count.',
+        step4Desc: 'Play rounds until one player has won two. Then the host can call a rematch.',
         benefitsTitle: 'Why play Rock Paper Scissors on Boardly?',
         benefit1: 'Real-time simultaneous reveals.',
         benefit2: 'Bot support for solo practice.',
         benefit3: 'Instant rounds with no setup.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          noTurns: 'There are no turns: each round, both players pick once, in any order.',
+          pickStaysHidden: 'Until both picks are in, your opponent sees only that you locked in, even after a reload.',
+          revealOrder: 'The score changes only after the round verdict appears.',
+          timeoutRandomPick: 'The clock restarts whenever a player locks in. If yours runs out while the game is open, a random move is locked in for you.',
+        },
+        modes: {
+          matchLength: {
+            title: 'Best of three, always',
+            desc: 'First to two round wins takes the match; draws add rounds without counting.',
+          },
+          roundClock: {
+            title: 'A clock on every round',
+            desc: '60 seconds a round by default; before the match starts, the host can choose 30 to 180. Play vs Bot uses 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'All three pick at random in round one. Then Tempo Rookie stays random; the others guess your most-played throw, your last counting twice. Mind Gambit counters that guess every round, Pattern Reader about eight in ten.',
+          },
+        },
+        strategy: {
+          readTheRoundList: {
+            title: 'Read the round list',
+            desc: 'The Rounds panel lists every past pair of throws; find your opponent\'s favourite there.',
+          },
+          answerARepeat: {
+            title: 'Answer a repeat',
+            desc: 'A move thrown twice running often comes again. Beat it.',
+          },
+          spotACycle: {
+            title: 'Spot a cycle',
+            desc: 'Players who avoid repeats often step Rock, Paper, Scissors in order. Beat the next step.',
+          },
+          thinkOneStepFurther: {
+            title: 'Think one step further',
+            desc: 'If they expect you to repeat a winner, they will throw its counter. Beat that instead.',
+          },
+          watchYourOwnCount: {
+            title: 'Watch your own count',
+            desc: 'If one move leads your tally, your opponent has likely noticed.',
+          },
+          exploitMindGambit: {
+            title: 'Exploit Mind Gambit',
+            desc: 'From round two it counters its guess, so play what beats that counter.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Stay even against Pattern Reader',
+            desc: 'Keep your throws even and it aims at your last one; play what beats the counter to it.',
+          },
+          climbTheLevels: {
+            title: 'Climb the levels',
+            desc: 'Tempo Rookie is pure chance, Mind Gambit rewards a clean read, Pattern Reader tests both.',
+          },
+        },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Reading Tempo Rookie',
+            desc: 'The easy bot has no pattern, so any streak you see there is chance.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Waiting for their lock-in',
+            desc: 'Their lock-in says nothing about the move they chose.',
+          },
+          countingDraws: {
+            title: 'Counting draws as progress',
+            desc: 'A draw moves neither score; the match still needs two round wins.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Send the code or invite link; a chat sits beside the board.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot opens a room with the bot you chose already seated.',
+          },
+          turnTimer: {
+            title: 'A countdown on every pick',
+            desc: 'Locking in restarts it for your opponent, so a quick pick never rushes a slow one.',
+          },
+          guestNoDownload: {
+            title: 'Browser, no sign-up',
+            desc: 'Any phone, tablet or laptop works, and a guest name is enough.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Anyone with a spare minute: friends deciding who goes first, or anyone out to read a person.',
+        },
+        history: {
+          origin: 'Hand games like it were recorded in China around 1600; the rock, paper and scissors form took shape in Japan as jan-ken and spread west. Some Americans call it roshambo.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Is Rock Paper Scissors on Boardly free?',
+            a: 'Yes. Friends, all three bots and every timer setting are free; Premium only adds extras around a match, such as spectators.',
+          },
+          worksOnPhone: {
+            q: 'Does it work on a phone?',
+            a: 'Yes, in the mobile browser with no app to install. One tap on a choice tile locks your pick in.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play a friend who is somewhere else?',
+            a: 'Yes. Create a lobby, send the four-character code or the link, and play live from separate devices.',
+          },
+          howManyPlayers: {
+            q: 'How many players are in a match?',
+            a: 'Exactly two. Your opponent is another person or a bot, and there is never a third player alongside.',
+          },
+          botSeesPick: {
+            q: 'Can the bot see my pick?',
+            a: 'No. It always chooses after you lock in, but it reads only finished rounds, never the pick still waiting to be revealed.',
+          },
+          changeTimer: {
+            q: 'Can I change how long a round lasts?',
+            a: 'Yes, as host, in the lobby settings: 30 to 180 seconds. New rooms start at 60, Play vs Bot rooms at 45.',
+          },
+          playAgain: {
+            q: 'Can we play again after a match?',
+            a: 'Yes. The host can start a new match in the same room, or send both players back to the lobby first.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',
