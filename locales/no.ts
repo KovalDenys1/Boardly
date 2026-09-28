@@ -1678,7 +1678,7 @@ const no = {
       difficulty: 'Lett',
       seo: {
         question: 'Kan du spille Stein, saks, papir online mot en venn?',
-        answer: 'Ja. Begge velger samtidig og valgene vises samtidig, så ingen venter på å se hva den andre gjorde. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig, best av tre eller best av fem. Gratis, i nettleseren.',
+        answer: 'Ja. Begge velger samtidig, og de to hendene snus samtidig, så ingen ser den andres trekk først. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig; den som først vinner to runder, tar kampen. Gratis, i nettleseren.',
       },
       ribbon: {
         desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
@@ -1688,7 +1688,7 @@ const no = {
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
       rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
       rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',
-      rule_4: 'Best-av-3 eller best-av-5-format (bestemmes ved spillstart)',
+      rule_4: 'Best av tre: den som først vinner to runder, tar kampen',
       rule_5: 'Første spiller som vinner flest runder vinner spillet',
       detail: {
         title: 'Spill Stein, saks, papir på nett',
@@ -1697,18 +1697,140 @@ const no = {
         intro0: 'Stein, saks, papir er et spill for to, der begge velger ett av tre alternativer samtidig: stein, saks eller papir.',
         intro1: 'Stein slår saks, saks slår papir, og papir slår stein. Velger begge det samme, blir runden uavgjort og spilles på nytt.',
         step1Title: 'Lag en lobby eller bli med i en',
-        step1Desc: 'Åpne et rom og del koden med motstanderen.',
+        step1Desc: 'Åpne et rom fra lobbysiden, eller bli med i en venns rom med den firetegns koden. Hvert rom har to plasser.',
         step2Title: 'Velg trekket ditt',
-        step2Desc: 'Velg stein, saks eller papir før tiden går ut.',
+        step2Desc: 'Velg stein, saks eller papir før tiden går ut. Ett trykk låser det.',
         step3Title: 'Samtidig avsløring',
-        step3Desc: 'Begge valgene vises samtidig – du venter aldri på den andre.',
+        step3Desc: 'Når det andre valget er inne, rister begge hendene og snus samtidig. Så vises rundens resultat.',
         step4Title: 'Først til målet vinner',
-        step4Desc: 'Spill runder til én spiller når antall seire.',
+        step4Desc: 'Spill runder til én spiller har vunnet to. Da kan verten starte en omkamp.',
         benefitsTitle: 'Derfor spiller du Stein, saks, papir på Boardly',
         benefit1: 'Samtidig avsløring i sanntid.',
         benefit2: 'En bot å øve mot når du spiller alene.',
         benefit3: 'Runder som starter med én gang.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          noTurns: 'Det finnes ingen turer: i hver runde velger begge én gang, i hvilken som helst rekkefølge.',
+          pickStaysHidden: 'Til begge valgene er inne, ser motstanderen bare at du har låst, selv etter ny innlasting.',
+          revealOrder: 'Stillingen endres først etter at rundens utfall er vist.',
+          timeoutRandomPick: 'Klokken starter på nytt hver gang en spiller låser. Går din ut mens spillet er åpent, låses et tilfeldig trekk for deg.',
+        },
+        modes: {
+          matchLength: {
+            title: 'Alltid best av tre',
+            desc: 'Først til to rundeseire tar kampen; uavgjorte runder legger til runder uten å telle.',
+          },
+          roundClock: {
+            title: 'En klokke på hver runde',
+            desc: '60 sekunder per runde som standard; før kampen starter, kan verten velge 30 til 180. Spill mot bot bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Alle tre velger tilfeldig i første runde. Deretter er Tempo Rookie fortsatt tilfeldig; de andre gjetter trekket du bruker mest, der det siste teller dobbelt. Mind Gambit kontrer den gjetningen hver runde, Pattern Reader omtrent åtte av ti.',
+          },
+        },
+        strategy: {
+          readTheRoundList: {
+            title: 'Les rundelisten',
+            desc: 'Runder-panelet viser hvert tidligere par av trekk; finn motstanderens favoritt der.',
+          },
+          answerARepeat: {
+            title: 'Svar på en gjentakelse',
+            desc: 'Et trekk brukt to ganger på rad kommer ofte igjen. Slå det.',
+          },
+          spotACycle: {
+            title: 'Se etter en syklus',
+            desc: 'Spillere som unngår gjentakelser, går ofte stein, papir, saks i rekkefølge. Slå neste steg.',
+          },
+          thinkOneStepFurther: {
+            title: 'Tenk ett steg lenger',
+            desc: 'Venter de at du gjentar et vinnertrekk, velger de motsvaret. Slå heller det.',
+          },
+          watchYourOwnCount: {
+            title: 'Følg med på din egen telling',
+            desc: 'Leder ett trekk i din telling, har motstanderen trolig sett det.',
+          },
+          exploitMindGambit: {
+            title: 'Utnytt Mind Gambit',
+            desc: 'Fra runde to kontrer den gjetningen sin, så velg det som slår det motsvaret.',
+          },
+          stayEvenAgainstPatternReader: {
+            title: 'Hold det jevnt mot Pattern Reader',
+            desc: 'Fordel trekkene jevnt, så sikter den på ditt siste; velg det som slår motsvaret til det.',
+          },
+          climbTheLevels: {
+            title: 'Gå opp nivåene',
+            desc: 'Tempo Rookie er ren tilfeldighet, Mind Gambit belønner en klar lesning, Pattern Reader tester begge deler.',
+          },
+        },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Å lese Tempo Rookie',
+            desc: 'Den lette boten har ikke noe mønster, så en rekke du ser der, er tilfeldig.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Å vente på at de låser',
+            desc: 'At de har låst, sier ingenting om trekket de valgte.',
+          },
+          countingDraws: {
+            title: 'Å telle uavgjort som fremgang',
+            desc: 'Uavgjort flytter ingen av stillingene; kampen krever fortsatt to rundeseire.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Send koden eller invitasjonslenken; en chat står ved siden av brettet.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: 'Spill mot bot åpner et rom der boten du valgte, allerede sitter.',
+          },
+          turnTimer: {
+            title: 'En nedtelling for hvert valg',
+            desc: 'Når du låser, starter den på nytt for motstanderen, så et raskt valg presser aldri et tregt.',
+          },
+          guestNoDownload: {
+            title: 'Nettleser, ingen registrering',
+            desc: 'Mobil, nettbrett eller laptop fungerer, og et gjestenavn er nok.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alle med et ledig minutt: venner som avgjør hvem som starter, eller alle som vil lese et menneske.',
+        },
+        history: {
+          origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Stein, saks, papir på Boardly gratis?',
+            a: 'Ja. Venner, alle tre botene og alle tidsinnstillinger er gratis; Premium gir bare ekstra rundt kampen, som tilskuere.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer det på mobil?',
+            a: 'Ja, i mobilnettleseren uten noen app å installere. Ett trykk på en valgflis låser valget ditt.',
+          },
+          playFriendRemotely: {
+            q: 'Kan jeg spille mot en venn som er et annet sted?',
+            a: 'Ja. Lag en lobby, send den firetegns koden eller lenken, og spill direkte fra hver deres enhet.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange spillere er det i en kamp?',
+            a: 'Nøyaktig to. Motstanderen er et annet menneske eller en bot, og det er aldri en tredje spiller i tillegg.',
+          },
+          botSeesPick: {
+            q: 'Kan boten se valget mitt?',
+            a: 'Nei. Den velger alltid etter at du har låst, men leser bare ferdige runder, aldri valget som venter på å bli vist.',
+          },
+          changeTimer: {
+            q: 'Kan jeg endre hvor lenge en runde varer?',
+            a: 'Ja, som vert, i lobbyinnstillingene: 30 til 180 sekunder. Nye rom starter på 60, rom fra Spill mot bot på 45.',
+          },
+          playAgain: {
+            q: 'Kan vi spille igjen etter en kamp?',
+            a: 'Ja. Verten kan starte en ny kamp i samme rom, eller først sende begge spillerne tilbake til venterommet.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',
@@ -1877,7 +1999,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan du spille Alias online med en gjeng gratis?',
-        answer: 'Ja, med fire til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
+        answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
       ribbon: {
         desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
@@ -1887,23 +2009,173 @@ const no = {
       detail: {
         title: 'Spill Alias på nett',
         heroDesc: 'Et lagspill med ord: én spiller forklarer hemmelige ord mens laget kappes om å gjette så mange som mulig.',
-        groupNotice: 'Alias krever minst 4 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
+        groupNotice: 'Alias krever minst 3 spillere og har ingen bots – dette er et gjengspill. Samle gjengen før du lager en lobby, eller varm opp i et spill med bot, som Yatzy eller Fire på rad.',
         introTitle: 'Hva er Alias?',
         intro0: 'Alias er et lagspill der man forklarer ord. Én spiller ser et hemmelig ord og forklarer det uten å si selve ordet.',
         intro1: 'Riktige gjett gir poeng, og å hoppe over koster poeng. Lagene bytter på turene til sluttstillingen avgjør hvem som vinner.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter gjengen og del dere inn i lag.',
+        step1Desc: 'Inviter gjengen og del dere inn i lag. Fra fire spillere og oppover kan alle bytte side før start.',
         step2Title: 'Forklar ordene',
-        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet.',
+        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet. Ti ord per kort, vist ett om gangen.',
         step3Title: 'Gjett raskt',
-        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar.',
+        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar. Gjett som skrives inn, vises i forklarerens strøm.',
         step4Title: 'Bytt lag',
-        step4Desc: 'Lagene veksler på turene til kampen er over.',
+        step4Desc: 'Lagene veksler på turene til kampen er over. Hvert lag får tre turer, og forklarerrollen går på rundgang.',
         benefitsTitle: 'Derfor hører Alias hjemme på Boardly',
         benefit1: 'Laget for spill i gjeng.',
         benefit2: 'Enkle romlenker til vennene.',
         benefit3: 'Raske runder som passer i et selskap.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          teamsFromFour: 'Fire eller flere spillere danner to lag, og nykommere havner på det minste.',
+          threeAreSolo: 'Med nøyaktig tre spiller alle alene og scorer bare mens de forklarer.',
+          tenWordCard: 'Hver tur deler ut ti ord, ett om gangen, aldri gjentatt i et spill.',
+          markEveryWord: 'Forklareren trykker «Gjett riktig» eller «Hopp over» for hvert ord.',
+          howATurnEnds: 'En tur slutter ved det tiende ordet, ved «Avslutning av tur» eller når klokka står på null.',
+        },
+        scoring: {
+          title: 'Netto ord per tur',
+          note: 'Gjettede minus hoppede ord, så en tur spenner fra pluss ti til minus ti.',
+          rows: {
+            guessedWord: {
+              name: 'Gjettet ord',
+              value: '+1',
+              rule: 'Når forklareren bekrefter det.',
+            },
+            skippedWord: {
+              name: 'Hoppet ord',
+              value: '−1',
+              rule: 'Hver gang «Hopp over» trykkes.',
+            },
+            wordLeftAtZero: {
+              name: 'Ord igjen ved null',
+              value: '−1',
+              rule: 'Teller som et hopp.',
+            },
+            wordLeftAfterEndTurn: {
+              name: 'Ord igjen etter avsluttet tur',
+              value: '0',
+              rule: 'Telles ikke.',
+            },
+            levelAtTheTop: {
+              name: 'Likt på toppen',
+              value: 'Uavgjort',
+              rule: 'Lik toppsum etter tre turer hver.',
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4, 6, 8, 10, 12 eller 16 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          turnLength: {
+            title: 'Turlengde',
+            desc: '30, 60, 90 eller 120 sekunder per tur, 60 som standard.',
+          },
+        },
+        strategy: {
+          skipEarlyOrNot: {
+            title: 'Hopp tidlig eller ikke i det hele tatt',
+            desc: 'Et hopp koster ett poeng uansett når, så slipp håpløse ord med en gang.',
+          },
+          beatTheZero: {
+            title: 'Kom klokka i forkjøpet',
+            desc: 'Nær null med ord igjen? Trykk «Avslutning av tur» før de blir hopp.',
+          },
+          sayWhatItDoes: {
+            title: 'Si hva den gjør',
+            desc: '«Du ringer på den ved inngangsdøra» slår «en liten elektrisk bjelle».',
+          },
+          leaveAGap: {
+            title: 'La en luke stå åpen',
+            desc: 'Et uttrykk som mangler ett ord, som «Lille Petter …», er raskt å fylle ut.',
+          },
+          buildCompoundsInHalves: {
+            title: 'Bygg sammensatte ord i to deler',
+            desc: 'For lighthouse eller doorbell leder du laget til hver halvdel uten å si den.',
+          },
+          guessInSingleWords: {
+            title: 'Gjett med ett ord',
+            desc: 'Ett ord per melding er lettest å få øye på i forklarerens strøm.',
+          },
+          tryThePlainForm: {
+            title: 'Prøv grunnformen',
+            desc: 'Hvert svar er ett engelsk ord; etter et nesten-treff, prøv grunnformen.',
+          },
+          readTheResults: {
+            title: 'Les resultatskjermen',
+            desc: 'Hoppede ord listet mellom turene viser hvilke hint gjengen sliter med.',
+          },
+        },
+        mistakes: {
+          lettingTheClockHitZero: {
+            title: 'Å la klokka gå til null',
+            desc: 'Hvert ubrukt ord koster da et poeng.',
+          },
+          skippingOnReflex: {
+            title: 'Å hoppe over på refleks',
+            desc: 'Hopper du over alle ti ordene, ender turen ti poeng i minus.',
+          },
+          guessingInParagraphs: {
+            title: 'Å gjette i avsnitt',
+            desc: 'En lang melding skjuler ordet forklareren leter etter.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, mange skjermer',
+            desc: 'Del romkoden eller lenken; klokka, stillingen og gjettene oppdateres på alle tilkoblede enheter.',
+          },
+          botsAndSolo: {
+            title: 'Folk, aldri boter',
+            desc: 'Ingen solomodus eller boter. Mangler dere noen til tre? Del lenken eller bli med i et åpent rom.',
+          },
+          turnTimer: {
+            title: 'Én felles klokke',
+            desc: 'Alle spillerne ser nedtellingen; når den er ute, lukkes turen, og ubrukte ord teller som hopp.',
+          },
+          guestNoDownload: {
+            title: 'En nettleser og et navn',
+            desc: 'Hvilken som helst nettleser, ingenting å installere; gjester velger et navn og spiller.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Alias passer for fester, familiekvelder og videosamtaler; den engelske ordstokken hjelper også dem som lærer språket.',
+        },
+        history: {
+          origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Alias på Boardly gratis?',
+            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; 12 eller 16 plasser, tilskuere og premium-temaer for lobbyen krever en vert med Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Alias på mobil?',
+            a: 'Ja, i mobilnettleseren. Kortet og «Gjettinger»-strømmen ligger i to faner, ett trykk fra hverandre.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når klokka går ut?',
+            a: 'Turen slutter, og hvert ord som er igjen på kortet, teller som et hopp. «Avslutning av tur» før null unngår det.',
+          },
+          canGuessersSeeWord: {
+            q: 'Kan de som gjetter, se ordet?',
+            a: 'Bare forklarerens skjerm viser kortet; alle andre ser et spørsmålstegn og navnet på forklareren.',
+          },
+          howTeamsArePicked: {
+            q: 'Hvordan blir lagene satt sammen?',
+            a: 'Nykommere havner på det minste laget, med fire eller flere spillere kan alle bytte side, og verten starter når ingen lag er tomme.',
+          },
+          wordsInEnglish: {
+            q: 'Er ordene på engelsk?',
+            a: 'Ja, uansett språk på nettstedet: 200 engelske ord som castle og kaleidoscope, og ingen gjentas i samme spill.',
+          },
+          describerLeaves: {
+            q: 'Hva om forklareren går midt i turen?',
+            a: 'Turen slutter med en gang og teller bare ord som alt er markert; under tre spillere er spillet over.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',

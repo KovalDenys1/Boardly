@@ -644,6 +644,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Team word description game where players describe words to their teammates without saying the word itself, racing against a timer to score points.',
       questionKey: 'games.alias.seo.question',
       answerKey: 'games.alias.seo.answer',
+      // Product questions only: the how-to guide already answers player
+      // count, voice calls, what counts as cheating, skipping, bots and game
+      // length (#1237).
+      faq: [
+        { questionKey: 'games.alias.detail.faq.isItFree.q', answerKey: 'games.alias.detail.faq.isItFree.a' },
+        { questionKey: 'games.alias.detail.faq.worksOnPhone.q', answerKey: 'games.alias.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.alias.detail.faq.timerRunsOut.q', answerKey: 'games.alias.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.alias.detail.faq.canGuessersSeeWord.q', answerKey: 'games.alias.detail.faq.canGuessersSeeWord.a' },
+        { questionKey: 'games.alias.detail.faq.howTeamsArePicked.q', answerKey: 'games.alias.detail.faq.howTeamsArePicked.a' },
+        { questionKey: 'games.alias.detail.faq.wordsInEnglish.q', answerKey: 'games.alias.detail.faq.wordsInEnglish.a' },
+        { questionKey: 'games.alias.detail.faq.describerLeaves.q', answerKey: 'games.alias.detail.faq.describerLeaves.a' },
+      ],
     },
     availability: 'available',
     route: '/games/alias/lobbies',
@@ -726,6 +738,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Classic two-player simultaneous-choice game. Both players pick Rock, Paper or Scissors at the same time. Rock beats Scissors, Scissors beats Paper, Paper beats Rock.',
       questionKey: 'games.rock_paper_scissors.seo.question',
       answerKey: 'games.rock_paper_scissors.seo.answer',
+      // Product questions only: the rules questions live in the how-to guide's
+      // FAQ, and the two sets stay disjoint (#1238).
+      faq: [
+        { questionKey: 'games.rock_paper_scissors.detail.faq.isItFree.q', answerKey: 'games.rock_paper_scissors.detail.faq.isItFree.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.q', answerKey: 'games.rock_paper_scissors.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.q', answerKey: 'games.rock_paper_scissors.detail.faq.playFriendRemotely.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.q', answerKey: 'games.rock_paper_scissors.detail.faq.howManyPlayers.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.q', answerKey: 'games.rock_paper_scissors.detail.faq.botSeesPick.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.changeTimer.q', answerKey: 'games.rock_paper_scissors.detail.faq.changeTimer.a' },
+        { questionKey: 'games.rock_paper_scissors.detail.faq.playAgain.q', answerKey: 'games.rock_paper_scissors.detail.faq.playAgain.a' },
+      ],
     },
     availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',

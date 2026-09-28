@@ -101,7 +101,7 @@ export class RockPaperScissorsGame extends GameEngine {
             'Both players choose Rock, Paper, or Scissors simultaneously',
             'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
             'If both choose the same, the round is a draw - replay',
-            'Best-of-3 or Best-of-5 format (decided at game start)',
+            'Best of three: the first to win two rounds takes the match',
             'First to win majority of rounds wins the game',
         ]
     }

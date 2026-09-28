@@ -731,3 +731,32 @@ export class LiarsPartyGame extends GameEngine {
     })
   }
 }
+
+/**
+ * Hides the round's secret until the reveal (#1253).
+ *
+ * `claim.isBluff` is the whole game: whether the claimant is lying. It used to go
+ * out in every payload during the claim and challenge phases, so anyone reading
+ * the network response could vote with certainty. Other players' vote decisions
+ * went out too, which lets a late voter follow the room instead of reading the
+ * claimant. Before `reveal`, the flag stays only with the claimant and each
+ * viewer sees only their own decision; the vote entries themselves stay, because
+ * the table shows how many have voted. From `reveal` on everything is public.
+ */
+export function sanitizeLiarsPartyStateForBroadcast<T extends { data?: unknown; status?: string }>(
+  state: T,
+  viewerUserId: string | null = null
+): T {
+  const data = state.data as LiarsPartyGameData | undefined
+  if (!data || data.phase === 'reveal') return state
+
+  const claim =
+    data.claim && data.claim.playerId !== viewerUserId
+      ? (({ isBluff: _hidden, ...rest }) => rest)(data.claim)
+      : data.claim
+  const challengeVotes = (data.challengeVotes ?? []).map((vote) =>
+    vote.playerId === viewerUserId ? vote : (({ decision: _hidden, ...rest }) => rest)(vote)
+  )
+
+  return { ...state, data: { ...data, claim, challengeVotes } }
+}
