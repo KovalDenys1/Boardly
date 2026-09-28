@@ -371,7 +371,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         id: 'games',
         label: t('profile.stats.dashboard.summary.totalGames'),
         value: String(stats.overall.totalGames),
-        accentClassName: 'bg-bd-coral text-bd-coral-deep',
+        accentClassName: 'bg-bd-coral',
       },
       {
         id: 'favoriteGame',
@@ -379,13 +379,13 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: stats.overall.favoriteGame
           ? formatGameTypeLabel(stats.overall.favoriteGame)
           : t('profile.stats.dashboard.common.notAvailable'),
-        accentClassName: 'bg-bd-mint text-bd-mint-deep',
+        accentClassName: 'bg-bd-mint',
       },
       {
         id: 'winRate',
         label: t('profile.stats.dashboard.summary.winRate'),
         value: formatPercent(stats.overall.winRate),
-        accentClassName: 'bg-bd-lav text-bd-lav-deep',
+        accentClassName: 'bg-bd-lav',
       },
       {
         id: 'bestStreak',
@@ -394,7 +394,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           stats.overall.longestWinStreak === null
             ? t('profile.stats.dashboard.common.notAvailable')
             : String(stats.overall.longestWinStreak),
-        accentClassName: 'bg-bd-mint text-bd-mint-deep',
+        accentClassName: 'bg-bd-mint',
       },
     ]
   }, [stats, t])
@@ -522,7 +522,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                   <p className={eyebrowClassName}>{card.label}</p>
                   <p className="mt-4 text-2xl font-bold text-bd-ink">{card.value}</p>
                 </div>
-                <div className={`h-2 w-full ${card.accentClassName.split(' ')[0]}`} />
+                <div className={`h-2 w-full ${card.accentClassName}`} />
               </div>
             ))}
           </div>
@@ -555,7 +555,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                           badge: String(item.gamesPlayed),
                         }))}
                         renderValue={(option) => (
-                          <span className="block truncate text-bd-lav-deep">
+                          <span className="block truncate font-semibold text-bd-ink">
                             {option?.label ?? ''}
                           </span>
                         )}

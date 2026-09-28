@@ -43,7 +43,7 @@ function Badge({
         className={`flex min-h-28 w-full cursor-help flex-col rounded-2xl border-[1.5px] p-3 text-left transition-opacity ${
           item.earned
             ? 'border-bd-line bg-bd-card-warm opacity-100'
-            : 'border-bd-line/70 bg-transparent opacity-50'
+            : 'border-bd-line bg-transparent opacity-50'
         }`}
       >
         <span

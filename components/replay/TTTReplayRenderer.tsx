@@ -70,7 +70,9 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
                   className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-xl border text-2xl font-extrabold ${
                     isWinCell
                       ? 'border-bd-sun-deep bg-bd-sun'
-                      : 'border-bd-line bg-bd-bg'
+                      : cell
+                        ? 'border-bd-line bg-bd-card-warm'
+                        : 'border-bd-line bg-bd-bg'
                   }`}
                 >
                   {cell === 'X' && (

@@ -10,6 +10,7 @@ import { clientLogger } from '@/lib/client-logger'
 import {
   formatCompactDuration,
   formatGameTypeLabel,
+  getGameStatusBadgeColor,
 } from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
@@ -121,21 +122,6 @@ function humanizeToken(value: string): string {
 
 // Status chip: a translucent accent tint under bd-ink text. The tints read on both themes,
 // and bd-ink flips with them, so no dark: variant is needed (DESIGN.md "Dark mode").
-function getStatusChipClassName(status: string): string {
-  switch (status) {
-    case 'finished':
-      return 'border border-bd-mint/40 bg-bd-mint/20 text-bd-ink'
-    case 'playing':
-      return 'border border-bd-sun/50 bg-bd-sun/25 text-bd-ink'
-    case 'abandoned':
-      return 'border border-bd-coral/40 bg-bd-coral/15 text-bd-ink'
-    case 'cancelled':
-      return 'border border-bd-line bg-bd-bg text-bd-ink-soft'
-    default:
-      return 'border border-bd-lav/40 bg-bd-lav/20 text-bd-ink'
-  }
-}
-
 function formatGameStatusLabel(status: string, t: ReturnType<typeof useTranslation>['t']): string {
   const key = GAME_STATUS_KEYS[status as keyof typeof GAME_STATUS_KEYS]
   if (key) {
@@ -705,7 +691,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
             </p>
             {data?.game.status && (
               <div className="mt-3">
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusChipClassName(data.game.status)}`}>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(data.game.status)}`}>
                   {formatGameStatusLabel(data.game.status, t)}
                 </span>
               </div>
@@ -723,7 +709,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
             >
               <div className="flex flex-wrap items-center gap-2">
                 {finalStatus && (
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusChipClassName(finalStatus)}`}>
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(finalStatus)}`}>
                     {formatGameStatusLabel(finalStatus, t)}
                   </span>
                 )}

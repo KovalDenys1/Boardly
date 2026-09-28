@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
-import { formatGameTypeLabel } from '@/lib/game-display'
+import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
 import ReplayViewerModal from './ReplayViewerModal'
@@ -134,21 +134,6 @@ function getStatusAccentClassName(status: string): string {
       return 'bg-bd-bg2'
     default:
       return 'bg-bd-lav'
-  }
-}
-
-function getStatusBadgeClassName(status: string): string {
-  switch (status) {
-    case 'finished':
-      return 'bg-bd-mint/20 text-bd-ink'
-    case 'playing':
-      return 'bg-bd-sun/25 text-bd-ink-soft'
-    case 'abandoned':
-      return 'bg-bd-coral/15 text-bd-ink'
-    case 'cancelled':
-      return 'bg-bd-bg2 text-bd-ink-soft'
-    default:
-      return 'bg-bd-lav/20 text-bd-ink'
   }
 }
 
@@ -332,7 +317,7 @@ export default function GameHistory() {
                       label: formatGameTypeFilterLabel(option),
                     }))}
                     renderValue={(option) => (
-                      <span className={gameTypeFilter !== 'all' ? 'block truncate text-bd-lav-deep' : 'block truncate'}>
+                      <span className={gameTypeFilter !== 'all' ? 'block truncate font-semibold text-bd-ink' : 'block truncate'}>
                         {option?.label ?? ''}
                       </span>
                     )}
@@ -352,7 +337,7 @@ export default function GameHistory() {
                       label: formatStatusLabel(option),
                     }))}
                     renderValue={(option) => (
-                      <span className={statusFilter !== 'all' ? 'block truncate text-bd-lav-deep' : 'block truncate'}>
+                      <span className={statusFilter !== 'all' ? 'block truncate font-semibold text-bd-ink' : 'block truncate'}>
                         {option?.label ?? ''}
                       </span>
                     )}
@@ -413,7 +398,7 @@ export default function GameHistory() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClassName(game.status)}`}>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getGameStatusBadgeColor(game.status)}`}>
                           {formatStatusLabel(game.status)}
                         </span>
                         {game.lobbyCode && (
