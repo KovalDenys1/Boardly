@@ -42,8 +42,8 @@ function Badge({
         onClick={onTogglePin}
         className={`flex min-h-28 w-full cursor-help flex-col rounded-2xl border-[1.5px] p-3 text-left transition-opacity ${
           item.earned
-            ? 'border-bd-line bg-bd-card-warm opacity-100 dark:border-slate-700 dark:bg-slate-900/70'
-            : 'border-bd-line/70 bg-transparent opacity-50 dark:border-slate-700'
+            ? 'border-bd-line bg-bd-card-warm opacity-100'
+            : 'border-bd-line/70 bg-transparent opacity-50'
         }`}
       >
         <span
@@ -58,7 +58,7 @@ function Badge({
             tone={item.earned ? 'on-accent' : 'muted'}
           />
         </span>
-        <span className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink dark:text-slate-100">
+        <span className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink">
           {item.label}
         </span>
       </button>
@@ -71,8 +71,8 @@ function Badge({
         <p className="text-sm font-bold leading-tight text-bd-ink">{item.label}</p>
         <p className="mt-1 text-xs leading-snug text-bd-ink-soft">{item.description}</p>
         {item.unlockedOnLabel && (
-          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-bd-mint-deep">
-            <Icon name="check" size={12} /> {item.unlockedOnLabel}
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-bd-ink-soft">
+            <span className="text-bd-mint-deep"><Icon name="check" size={12} /></span> {item.unlockedOnLabel}
           </p>
         )}
       </div>
@@ -107,11 +107,11 @@ export default function AchievementsGrid({ items }: { items: AchievementGridItem
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
+        <h2 className="font-display text-2xl font-bold text-bd-ink">
           {t('profile.achievements.title')}
         </h2>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink-soft dark:bg-slate-700 dark:text-slate-200">
+          <span className="rounded-full bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink-soft">
             {earnedCount} / {items.length}
           </span>
           {hasOverflow && (
@@ -119,7 +119,7 @@ export default function AchievementsGrid({ items }: { items: AchievementGridItem
               type="button"
               aria-expanded={expanded}
               onClick={() => setExpanded((value) => !value)}
-              className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-bd-line bg-bd-card-warm px-3 py-1 text-xs font-bold text-bd-ink-soft transition-colors hover:text-bd-ink dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300"
+              className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-bd-line bg-bd-card-warm px-3 py-1 text-xs font-bold text-bd-ink-soft transition-colors hover:text-bd-ink"
             >
               {expanded
                 ? t('profile.achievements.showLess')

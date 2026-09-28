@@ -10,7 +10,6 @@ import { clientLogger } from '@/lib/client-logger'
 import {
   formatCompactDuration,
   formatGameTypeLabel,
-  getGameStatusBadgeColor,
 } from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
@@ -118,6 +117,23 @@ function humanizeToken(value: string): string {
   const normalized = value.replace(/[:_-]+/g, ' ').replace(/\s+/g, ' ').trim()
   if (!normalized) return value
   return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+// Status chip: a translucent accent tint under bd-ink text. The tints read on both themes,
+// and bd-ink flips with them, so no dark: variant is needed (DESIGN.md "Dark mode").
+function getStatusChipClassName(status: string): string {
+  switch (status) {
+    case 'finished':
+      return 'border border-bd-mint/40 bg-bd-mint/20 text-bd-ink'
+    case 'playing':
+      return 'border border-bd-sun/50 bg-bd-sun/25 text-bd-ink'
+    case 'abandoned':
+      return 'border border-bd-coral/40 bg-bd-coral/15 text-bd-ink'
+    case 'cancelled':
+      return 'border border-bd-line bg-bd-bg text-bd-ink-soft'
+    default:
+      return 'border border-bd-lav/40 bg-bd-lav/20 text-bd-ink'
+  }
 }
 
 function formatGameStatusLabel(status: string, t: ReturnType<typeof useTranslation>['t']): string {
@@ -659,19 +675,26 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
           <LoadingSpinner />
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200 sm:p-5">
+        <div
+          role="alert"
+          className="rounded-2xl border p-4 text-bd-ink sm:p-5"
+          style={{
+            background: 'color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm))',
+            borderColor: 'color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line))',
+          }}
+        >
           {error}
         </div>
       ) : !data || snapshots.length === 0 ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/70">
-          <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-3xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
+        <div className="overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft">
+          <div className="bg-bd-bg2 px-6 py-5">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-3xl text-bd-ink">
               <Icon name="film" size={22} />
             </div>
-            <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h3 className="mt-4 font-display text-xl font-bold tracking-tight text-bd-ink">
               {t('profile.gameReplay.unavailable')}
             </h3>
-            <p className="mt-2 max-w-lg text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-2 max-w-lg text-sm text-bd-ink-soft">
               {data?.game.status === 'abandoned'
                 ? t('profile.gameResults.replayUnavailableAbandoned')
                 : data?.game.status === 'cancelled'
@@ -682,13 +705,8 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
             </p>
             {data?.game.status && (
               <div className="mt-3">
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  data.game.status === 'finished' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' :
-                  data.game.status === 'abandoned' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' :
-                  data.game.status === 'cancelled' ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' :
-                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                }`}>
-                  {data.game.status}
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusChipClassName(data.game.status)}`}>
+                  {formatGameStatusLabel(data.game.status, t)}
                 </span>
               </div>
             )}
@@ -705,7 +723,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
             >
               <div className="flex flex-wrap items-center gap-2">
                 {finalStatus && (
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(finalStatus)}`}>
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusChipClassName(finalStatus)}`}>
                     {formatGameStatusLabel(finalStatus, t)}
                   </span>
                 )}
@@ -732,7 +750,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                     className={`flex flex-col gap-0.5 py-3 ${i > 0 ? 'ml-4 border-l pl-4' : ''}`}
                     style={i > 0 ? { borderColor: 'var(--bd-line)' } : undefined}
                   >
-                    <dt className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-soft)' }}>
                       {fact.label}
                     </dt>
                     <dd className="whitespace-nowrap text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
@@ -767,7 +785,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                 onClick={togglePlayPause}
                 disabled={snapshots.length <= 1}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ background: 'var(--bd-ink)', color: 'white' }}
+                style={{ background: 'var(--bd-ink)', color: 'var(--bd-bg)' }}
                 aria-label={isPlaying ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
               >
                 {isPlaying ? (
@@ -807,7 +825,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
             </div>
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3 text-xs tabular-nums" style={{ color: 'var(--bd-ink-muted)' }}>
+              <div className="flex items-center gap-3 text-xs tabular-nums" style={{ color: 'var(--bd-ink-soft)' }}>
                 <span>
                   {t('profile.gameReplay.stepOf', {
                     current: currentIndex + 1,
@@ -830,7 +848,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       className="rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors"
                       style={
                         speed === s
-                          ? { background: 'var(--bd-ink)', color: 'white' }
+                          ? { background: 'var(--bd-ink)', color: 'var(--bd-bg)' }
                           : { color: 'var(--bd-ink-soft)' }
                       }
                     >
@@ -842,7 +860,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                 <a
                   href={`/api/game/${gameId}/replay?download=1`}
                   className="flex h-8 w-8 items-center justify-center rounded-xl transition-opacity hover:opacity-70"
-                  style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-muted)' }}
+                  style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                   title={t('profile.gameReplay.download')}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
@@ -872,7 +890,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                 className="rounded-2xl px-4 py-4 sm:px-5"
                 style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-soft)' }}>
                   {t('profile.gameReplay.currentStep')}
                 </p>
                 <h3 className="mt-2 text-xl font-semibold" style={{ color: 'var(--bd-ink)' }}>
@@ -891,7 +909,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                         className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
                         style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                       >
-                        <span style={{ color: 'var(--bd-ink-muted)' }}>{t('profile.gameReplay.currentTurn')}:</span>
+                        <span style={{ color: 'var(--bd-ink-soft)' }}>{t('profile.gameReplay.currentTurn')}:</span>
                         {' '}{currentTurnLabel}
                       </span>
                     )}
@@ -929,7 +947,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                   className="flex flex-wrap items-center gap-4 rounded-2xl px-4 py-3"
                   style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
                 >
-                  <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                  <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-soft)' }}>
                     {t('profile.gameReplay.scoreboard')}
                   </span>
                   {standings.map((entry, index) => (
@@ -959,24 +977,24 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
               >
                 <summary
                   className="cursor-pointer select-none px-4 py-3.5 text-sm font-medium"
-                  style={{ color: 'var(--bd-ink-muted)', background: 'var(--bd-bg2)' }}
+                  style={{ color: 'var(--bd-ink-soft)', background: 'var(--bd-bg2)' }}
                 >
                   {t('profile.gameReplay.advancedDetails')}
                 </summary>
                 <div className="grid gap-3 p-4 lg:grid-cols-2" style={{ background: 'var(--bd-bg)' }}>
                   <div>
-                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-soft)' }}>
                       {t('profile.gameReplay.actionPayload')}
                     </h4>
-                    <pre className="max-h-72 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                    <pre className="max-h-72 overflow-auto rounded-xl border border-bd-line bg-bd-bg2 p-3 text-xs text-bd-ink">
                       {currentSnapshot ? toPrettyJson(currentSnapshot.actionPayload) : 'null'}
                     </pre>
                   </div>
                   <div>
-                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-soft)' }}>
                       {t('profile.gameReplay.state')}
                     </h4>
-                    <pre className="max-h-72 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                    <pre className="max-h-72 overflow-auto rounded-xl border border-bd-line bg-bd-bg2 p-3 text-xs text-bd-ink">
                       {currentSnapshot ? toPrettyJson(currentSnapshot.state) : 'null'}
                     </pre>
                   </div>
@@ -989,7 +1007,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
               className="rounded-2xl px-4 py-4 sm:px-5"
               style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
             >
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('profile.gameReplay.timeline')}
               </p>
               <div className="max-h-[20rem] space-y-1 overflow-auto pr-1 sm:max-h-[24rem] xl:max-h-[42rem]">
@@ -1007,7 +1025,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       className="w-full rounded-xl px-3 py-2.5 text-left transition-colors"
                       style={
                         isActive
-                          ? { background: 'var(--bd-ink)', color: 'white' }
+                          ? { background: 'var(--bd-ink)', color: 'var(--bd-bg)' }
                           : { background: 'var(--bd-bg)', color: 'var(--bd-ink)' }
                       }
                     >
@@ -1017,7 +1035,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                         </span>
                         <span
                           className="shrink-0 text-xs tabular-nums"
-                          style={isActive ? { color: 'rgba(255,255,255,0.65)' } : { color: 'var(--bd-ink-muted)' }}
+                          style={isActive ? { color: 'var(--bd-bg)', opacity: 0.75 } : { color: 'var(--bd-ink-soft)' }}
                         >
                           {new Date(snapshot.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -1027,7 +1045,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       </div>
                       <p
                         className="mt-0.5 truncate text-xs"
-                        style={isActive ? { color: 'rgba(255,255,255,0.65)' } : { color: 'var(--bd-ink-soft)' }}
+                        style={isActive ? { color: 'var(--bd-bg)', opacity: 0.75 } : { color: 'var(--bd-ink-soft)' }}
                       >
                         {getCurrentStepDescription(
                           snapshotActor,

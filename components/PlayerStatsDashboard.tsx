@@ -48,13 +48,13 @@ interface StatsResponse {
 }
 
 const panelClassName =
-  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
 const tileClassName =
-  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+  'rounded-2xl border border-bd-line bg-bd-card-warm'
 const eyebrowClassName =
-  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
 function formatPercent(value: number): string {
   return `${value}%`
@@ -113,11 +113,11 @@ type GameAnalyticsLabels = {
 }
 
 const metricAccents = {
-  wins: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
-  losses: 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300',
-  draws: 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300',
-  score: 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun',
-  rate: 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav',
+  wins: 'bg-bd-mint/20 text-bd-ink',
+  losses: 'bg-bd-coral/15 text-bd-ink',
+  draws: 'bg-bd-bg2 text-bd-ink-soft',
+  score: 'bg-bd-sun/25 text-bd-ink',
+  rate: 'bg-bd-lav/15 text-bd-ink',
 }
 
 const defaultAnalyticsProfile: GameAnalyticsProfile = {
@@ -385,7 +385,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         id: 'winRate',
         label: t('profile.stats.dashboard.summary.winRate'),
         value: formatPercent(stats.overall.winRate),
-        accentClassName: 'bg-bd-lav text-[#6758d8]',
+        accentClassName: 'bg-bd-lav text-bd-lav-deep',
       },
       {
         id: 'bestStreak',
@@ -490,10 +490,10 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
               <p className={eyebrowClassName}>{t('profile.stats.title')}</p>
-              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
+              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink">
                 {t('profile.stats.dashboard.title')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-bd-ink-muted dark:text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm text-bd-ink-soft">
                 {t('profile.stats.dashboard.subtitle')}
               </p>
             </div>
@@ -506,9 +506,9 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       </div>
 
       {error ? (
-        <div className="overflow-hidden rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] dark:border-red-500/30 dark:bg-red-500/10">
+        <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10">
           <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
-            <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
+            <p className="text-sm font-semibold text-bd-ink">{error}</p>
           </div>
         </div>
       ) : null}
@@ -520,7 +520,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
               <div key={card.id} className={`${panelClassName} min-w-0 overflow-hidden`}>
                 <div className="p-5">
                   <p className={eyebrowClassName}>{card.label}</p>
-                  <p className="mt-4 text-2xl font-bold text-bd-ink dark:text-white">{card.value}</p>
+                  <p className="mt-4 text-2xl font-bold text-bd-ink">{card.value}</p>
                 </div>
                 <div className={`h-2 w-full ${card.accentClassName.split(' ')[0]}`} />
               </div>
@@ -528,13 +528,13 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           </div>
 
           <div className={`${panelClassName} overflow-hidden`}>
-            <div className="relative border-b border-bd-line p-6 sm:p-7 dark:border-slate-700/60">
+            <div className="relative border-b border-bd-line p-6 sm:p-7">
               <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-2xl font-bold text-bd-ink dark:text-white">
+                  <h3 className="text-2xl font-bold text-bd-ink">
                     {t('profile.stats.dashboard.sections.byGame.title')}
                   </h3>
-                  <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="mt-2 text-sm text-bd-ink-soft">
                     {t('profile.stats.dashboard.sections.byGame.subtitle')}
                   </p>
                 </div>
@@ -555,7 +555,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                           badge: String(item.gamesPlayed),
                         }))}
                         renderValue={(option) => (
-                          <span className="block truncate text-bd-lav-deep dark:text-bd-lav">
+                          <span className="block truncate text-bd-lav-deep">
                             {option?.label ?? ''}
                           </span>
                         )}
@@ -569,7 +569,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
             <div className="p-5 sm:p-6">
               {availableByGameStats.length === 0 ? (
                 <div className={`${warmSurfaceClassName} p-6 sm:p-8`}>
-                  <p className="text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="text-sm text-bd-ink-soft">
                     {t('profile.stats.dashboard.sections.byGame.empty')}
                   </p>
                 </div>
@@ -580,16 +580,16 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.gameLabel')}</p>
-                          <p className="mt-3 truncate text-2xl font-bold text-bd-ink dark:text-white">
+                          <p className="mt-3 truncate text-2xl font-bold text-bd-ink">
                             {selectedGameLabel}
                           </p>
-                          <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+                          <p className="mt-2 text-sm text-bd-ink-soft">
                             {t(selectedAnalyticsProfile.descriptionKey)}
                           </p>
                         </div>
 
                         {accentMetric ? (
-                          <div className="inline-flex flex-col items-end rounded-2xl bg-bd-lav/15 px-4 py-2 text-right text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
+                          <div className="inline-flex flex-col items-end rounded-2xl bg-bd-lav/15 px-4 py-2 text-right text-bd-ink">
                             <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
                               {t(accentMetric.labelKey)}
                             </span>
@@ -604,14 +604,14 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName ?? metricAccents.rate}`}>
                               {item.label}
                             </span>
-                            <p className="mt-3 text-3xl font-bold text-bd-ink dark:text-white">{item.value}</p>
+                            <p className="mt-3 text-3xl font-bold text-bd-ink">{item.value}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className={`${warmSurfaceClassName} p-5`}>
-                      <h4 className="text-lg font-bold text-bd-ink dark:text-white">
+                      <h4 className="text-lg font-bold text-bd-ink">
                         {t(selectedAnalyticsProfile.titleKey)}
                       </h4>
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
@@ -620,10 +620,10 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                             key={item.id}
                             className={`${tileClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400 sm:text-[11px]">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft sm:text-[11px]">
                               {item.label}
                             </p>
-                            <p className="mt-3 text-xl font-bold text-bd-ink dark:text-white sm:text-2xl">
+                            <p className="mt-3 text-xl font-bold text-bd-ink sm:text-2xl">
                               {item.value}
                             </p>
                           </div>
@@ -633,7 +633,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                   </div>
 
                   <div className={`${warmSurfaceClassName} flex h-full flex-col p-5`}>
-                    <h4 className="text-lg font-bold text-bd-ink dark:text-white">
+                    <h4 className="text-lg font-bold text-bd-ink">
                       {t('profile.stats.dashboard.summary.quickFacts')}
                     </h4>
                     <div className="mt-4 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-fr xl:grid-cols-1 xl:grid-rows-4">
@@ -642,8 +642,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                           key={fact.id}
                           className={`${tileClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
                         >
-                          <span className="text-sm text-bd-ink-muted dark:text-slate-300">{fact.label}</span>
-                          <span className="text-base font-semibold text-bd-ink dark:text-white">{fact.value}</span>
+                          <span className="text-sm text-bd-ink-soft">{fact.label}</span>
+                          <span className="text-base font-semibold text-bd-ink">{fact.value}</span>
                         </div>
                       ))}
                     </div>
