@@ -1006,7 +1006,7 @@ const no = {
         },
         scoring: {
           title: 'Bare par gir poeng',
-          note: 'Den som har flest par når brettet er tomt, vinner.',
+          note: 'Flest par til slutt vinner.',
           rows: {
             matchedPair: {
               name: 'Par som stemmer',
@@ -1084,7 +1084,7 @@ const no = {
           },
           lettingTheClockRun: {
             title: 'Å la klokken gå ut',
-            desc: 'En tur som går ut på tid, gir ingen poeng, selv om du visste nøyaktig hvor paret lå.',
+            desc: 'En tur som går ut på tid, gir ingen poeng, selv med et kjent par.',
           },
         },
         multiplayer: {
@@ -1110,36 +1110,35 @@ const no = {
         },
         history: {
           origin: 'Å finne par er et gammelt selskapsspill kjent som Concentration, Pelmanism eller Pexeso, og det kan spilles med enhver kortstokk med to av hvert kort.',
-          boardlyDeck: 'På Boardly viser kortene fruktbilder, og hvert spill starter med en ny stokking.',
         },
         faq: {
           isItFree: {
             q: 'Er Hukommelse på Boardly gratis?',
-            a: 'Ja. Alle brett, botnivåer og klokkevalg er gratis.',
+            a: 'Ja. Alle tre brettstørrelser, alle tre botnivåer og alle innstillinger for turklokken er gratis.',
           },
           worksOnPhone: {
             q: 'Fungerer Hukommelse på mobil?',
-            a: 'Ja, i mobilnettleseren; trekk og chat ligger i faner ved siden av brettet.',
+            a: 'Ja, i mobilnettleseren uten noen app. Trekk og chat ligger i faner ved siden av brettet.',
           },
           timerRunsOut: {
             q: 'Hva skjer hvis turklokken min går ut?',
-            a: 'Du mister turen, ikke spillet; de åpne kortene dine snus tilbake.',
+            a: 'Du mister den turen, ikke spillet: kortene du hadde snudd, legges tilbake med baksiden opp.',
           },
           playRemotely: {
             q: 'Hvordan spiller jeg med en venn et annet sted?',
-            a: 'Send romkoden eller invitasjonslenken; vennen blir med fra sin egen enhet.',
+            a: 'Send romkoden eller invitasjonslenken; vennen blir med fra sin egen enhet, uansett hvor de er.',
           },
           botBoard: {
             q: 'Hvilket brett bruker «Spill mot bot»?',
-            a: '4×4-brettet med 45 sekunders turer, mot én bot på nivået du velger.',
+            a: '4×4-brettet med turer på 45 sekunder, mot én bot på nivået du velger før partiet starter.',
           },
           mixBotsAndPeople: {
             q: 'Kan folk og boter spille i samme parti?',
-            a: 'Ja. Verten kan sette en bot på hver ledige plass.',
+            a: 'Ja. Før spillet starter, kan verten sette en bot på hver ledige plass ved siden av ekte spillere.',
           },
           canPeek: {
             q: 'Kan noen tjuvkikke på kortene som ligger med baksiden opp?',
-            a: 'Nei. Et bilde når spillernes nettlesere først når kortet er snudd.',
+            a: 'Nei. Bildet på et kort når spillernes nettlesere først når kortet er snudd, aldri før.',
           },
         },
       },

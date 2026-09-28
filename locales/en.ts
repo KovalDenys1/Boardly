@@ -1006,7 +1006,7 @@ const en = {
         },
         scoring: {
           title: 'Pairs are the only score',
-          note: 'Whoever holds the most pairs when the board is empty wins.',
+          note: 'Most pairs at the end wins.',
           rows: {
             matchedPair: {
               name: 'Matched pair',
@@ -1084,7 +1084,7 @@ const en = {
           },
           lettingTheClockRun: {
             title: 'Letting the clock run',
-            desc: 'A timed-out turn scores nothing, even if you knew exactly where the pair was.',
+            desc: 'A timed-out turn scores nothing, even with a known pair.',
           },
         },
         multiplayer: {
@@ -1110,36 +1110,35 @@ const en = {
         },
         history: {
           origin: 'Matching pairs is an old parlour game known as Concentration, Pelmanism or Pexeso, playable with any deck holding two of each card.',
-          boardlyDeck: 'On Boardly the faces are fruit pictures, and every game starts from a fresh shuffle.',
         },
         faq: {
           isItFree: {
             q: 'Is Memory on Boardly free?',
-            a: 'Yes. Every board, bot level and clock setting is free.',
+            a: 'Yes. All three board sizes, all three bot levels and every turn clock setting are free to use.',
           },
           worksOnPhone: {
             q: 'Does Memory work on a phone?',
-            a: 'Yes, in the mobile browser; moves and chat sit in tabs beside the board.',
+            a: 'Yes, in the mobile browser with no app. Moves and chat sit in tabs beside the board.',
           },
           timerRunsOut: {
             q: 'What if my turn clock runs out?',
-            a: 'You lose the turn, not the game; your open cards flip back.',
+            a: 'You lose that turn, not the game: any card you had turned over flips back face down.',
           },
           playRemotely: {
             q: 'How do I play a friend who is elsewhere?',
-            a: 'Send the room code or invite link; they join from their own device.',
+            a: 'Send them the room code or invite link; they join from their own device, wherever they are.',
           },
           botBoard: {
             q: 'Which board does Play vs Bot use?',
-            a: 'The 4×4 board with 45-second turns, against one bot at the level you pick.',
+            a: 'The 4×4 board with 45-second turns, against one bot at the level you pick before it starts.',
           },
           mixBotsAndPeople: {
             q: 'Can people and bots share one game?',
-            a: 'Yes. The host can seat a bot in any empty chair.',
+            a: 'Yes. Before the game starts, the host can seat a bot in any empty chair next to real players.',
           },
           canPeek: {
             q: 'Can anyone peek at face-down cards?',
-            a: 'No. A picture reaches players\' browsers only once its card is turned over.',
+            a: 'No. A card\'s picture only reaches players\' browsers once it is turned over, never before.',
           },
         },
       },

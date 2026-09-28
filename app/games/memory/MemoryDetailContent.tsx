@@ -89,7 +89,6 @@ export default function MemoryDetailContent() {
       ]}
       history={[
         t('games.memory.detail.history.origin'),
-        t('games.memory.detail.history.boardlyDeck'),
       ]}
       playVsBotGameType="memory"
     />
