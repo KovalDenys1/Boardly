@@ -557,7 +557,9 @@ export function sanitizeSpyStateForBroadcast<T extends { data?: unknown; status?
   // The location goes too: the whole game is the spy not knowing it, and the
   // payload is readable in the browser's network tab. Every player who is
   // entitled to it already gets it from GET /api/game/[gameId]/spy-role, and
-  // the results screen reads it from the revealed state above.
-  const { spyPlayerId: _s, playerRoles: _r, location: _l, ...safeData } = data
+  // the results screen reads it from the revealed state above. Its category goes
+  // with it (#1262): with 24 places in 7 categories it names the place outright
+  // for a one-place category and narrows the rest to a handful.
+  const { spyPlayerId: _s, playerRoles: _r, location: _l, locationCategory: _c, ...safeData } = data
   return { ...state, data: safeData }
 }

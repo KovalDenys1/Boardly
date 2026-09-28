@@ -635,6 +635,9 @@ describe('sanitizeSpyStateForBroadcast', () => {
     expect(data.spyPlayerId).toBeUndefined()
     expect(data.playerRoles).toBeUndefined()
     expect(data.location).toBeUndefined()
+    // #1262: the category names a one-place category outright.
+    expect(data.locationCategory).toBeUndefined()
+    expect(JSON.stringify(data)).not.toContain('Travel')
 
     // What the board still needs to render.
     expect(data.phase).toBeDefined()

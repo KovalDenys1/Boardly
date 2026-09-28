@@ -2161,7 +2161,7 @@ const no = {
       difficulty: 'Lett',
       seo: {
         question: 'Kan man spille Ludo gratis på nett med venner?',
-        answer: 'Ja. Opprett en lobby, send koden til opptil tre venner, eller fyll de tomme plassene med roboter på lett, middels eller vanskelig. Terningen kastes på serveren vår, aldri i nettleseren din, og hurtigmodus med to brikker hver gjør at et spill tar omtrent et kvarter. Gratis, ingenting å installere.',
+        answer: 'Ja. Opprett en lobby og send koden til opptil tre venner, eller fyll tomme plasser med roboter på lett, middels eller vanskelig. Serveren vår kaster terningen, og det er gratis uten noe å installere.',
       },
       ribbon: {
         desc: 'Det klassiske familiespillet. Slå en sekser for å komme ut, send motstanderne tilbake til gården og få alle brikkene hjem.',
@@ -2180,35 +2180,155 @@ const no = {
         blue: 'Blå',
       },
       rules: {
-        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og hvert kast vises i kasthistorikken.',
+        serverRolls: 'Terningen kastes på serveren for alle spillere, også robotene, og de siste kastene vises i kasthistorikken.',
         sixToLeave: 'Slå en sekser for å flytte en brikke ut av gården og inn på startfeltet ditt.',
         sixRollsAgain: 'En sekser gir et nytt kast. Tre seksere på rad gjør at du mister turen.',
         capture: 'Lander du på en motstander, går brikken deres tilbake til gården.',
         safeSquares: 'Startfelt og stjernefelt er trygge: ingen kan slås ut der.',
         exactHome: 'Du må slå nøyaktig riktig tall for å komme hjem.',
         winner: 'Den første som får alle brikkene hjem vinner; de andre rangeres etter hvor langt de har kommet.',
-        modes: 'Hurtigmodus spilles med to brikker hver, klassisk med fire.',
-        timer: 'Én turtid gjelder både kastet og trekket, og et ekstrakast etter en sekser får ny tid. Når tiden går ut, kaster og flytter serveren for deg, og turen går videre.',
+        timer: 'Én tid gjelder kast og trekk; et ekstrakast etter en sekser får ny tid. Går tiden ut mens spillet er åpent hos deg, spiller serveren turen for deg.',
       },
       detail: {
         title: 'Spill Ludo på nett',
-        heroDesc: 'Klassisk Ludo for to til fire spillere, i sanntid i nettleseren. Inviter venner, fyll tomme plasser med roboter og løp om å komme hjem.',
+        heroDesc: 'Klassisk Ludo for to til fire spillere i nettleseren. Inviter venner eller fyll plasser med roboter.',
         introTitle: 'Hva er Ludo?',
-        intro0: 'Ludo er et kappløpsspill på et korsformet brett. Hver spiller har en farge, en gård med brikker og en hjemmekolonne inn mot midten.',
-        intro1: 'Slå en sekser for å få en brikke ut, flytt rundt banen og land på motstanderne for å sende dem tilbake. Den første som får alle brikkene hjem vinner.',
+        intro0: 'Ludo er et kappløpsspill på et korsformet brett: hver farge har en gård, en runde bane og en hjemmekolonne.',
+        intro1: 'Kast, løp rundt banen og send motstandere tilbake til gården; den første som får alle brikkene hjem, vinner.',
         step1Title: 'Opprett eller bli med i en lobby',
-        step1Desc: 'Åpne et rom, velg rask eller klassisk modus og del koden.',
+        step1Desc: 'Åpne et rom og velg rask eller klassisk. Del koden eller lenken.',
         step2Title: 'Fyll plassene',
-        step2Desc: 'Vent på venner eller legg til roboter for å spille med en gang.',
+        step2Desc: 'Vent på venner eller legg til roboter. Alene får du én robot automatisk.',
         step3Title: 'Kast og flytt',
-        step3Desc: 'Trykk Kast, og trykk deretter på brikken du vil flytte.',
+        step3Desc: 'Trykk Kast, og trykk så på en brikke. Et eneste mulig trekk spilles av seg selv.',
         step4Title: 'Løp mot mål',
-        step4Desc: 'Slå ut motstandere, stå på trygge felt og få alle brikkene hjem først.',
+        step4Desc: 'Slå ut motstandere og få alle brikkene hjem først. Da er spillet over.',
         benefitsTitle: 'Hvorfor spille Ludo på Boardly?',
-        benefit1: 'Rettferdige terninger: hvert kast kommer fra serveren og vises for hele bordet.',
-        benefit2: 'Roboter på tre nivåer til de tomme plassene.',
-        benefit3: 'Hurtigmodus for et spill på omtrent et kvarter.',
-        benefit4: 'Gratis å spille som gjest, ingenting å installere.',
+        benefit1: 'Rettferdige terninger, kastet på serveren.',
+        benefit2: 'Roboter på tre nivåer.',
+        benefit3: 'Hurtigmodus med to brikker hver.',
+        benefit4: 'Gratis som gjest.',
+        rules: {
+          homeColumn: 'Etter 50 felt går brikken inn i sin egen hjemmekolonne, der ingen motstander kan lande.',
+          noBlocks: 'Det finnes ingen sperrer: lander du på to motstanderbrikker, går begge tilbake, unntatt på et trygt felt.',
+          extraRollOnlyOnSix: 'Selv en sekser du ikke kan bruke, gir ekstrakast; å slå ut eller komme hjem gir det ikke.',
+        },
+        modes: {
+          quickOrClassic: {
+            title: 'Rask eller klassisk',
+            desc: 'To brikker hver eller fire, valgt av verten når lobbyen opprettes.',
+          },
+          turnClock: {
+            title: 'Klokke på hver tur',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre robotnivåer',
+            desc: 'Token Rookie flytter tilfeldig. Token Tactician foretrekker å slå ut, så å gå ut av gården, så å komme hjem. Ludo Grandmaster gir hvert trekk poeng og veier motstandere opptil seks felt bak.',
+          },
+        },
+        strategy: {
+          bringTokensOut: {
+            title: 'Få brikker ut',
+            desc: 'Flere brikker ute, flere valg per kast.',
+          },
+          restOnStars: {
+            title: 'Hvil på stjerner',
+            desc: 'Start- og stjernefelt er trygge; vent der.',
+          },
+          countTheGapBehind: {
+            title: 'Tell avstanden bak',
+            desc: 'En motstander ett til seks felt bak kan slå deg ut.',
+          },
+          trailDoNotLead: {
+            title: 'Følg, ikke led',
+            desc: 'Brikker går bare fremover; trusselen står bak.',
+          },
+          captureTheCostlyToken: {
+            title: 'Slå ut den dyre brikken',
+            desc: 'En motstander nær slutten av runden taper mest.',
+          },
+          bankYourLeader: {
+            title: 'Sikre lederen',
+            desc: 'Ingen motstander når hjemmekolonnen; få lederen inn først.',
+          },
+          planTheExactFinish: {
+            title: 'Planlegg målgangen',
+            desc: 'Tre felt fra mål krever nøyaktig en treer; hold en brikke i reserve.',
+          },
+          mindRivalStartSquares: {
+            title: 'Pass på andres startfelt',
+            desc: 'En brikke som kommer ut, kaster igjen; feltene etter startfeltet er utsatt.',
+          },
+        },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Å stoppe rett foran en motstander',
+            desc: 'Ett til seks felt foran en motstander ber om å bli slått ut.',
+          },
+          trustingAPairToBlock: {
+            title: 'Å stole på at et par sperrer',
+            desc: 'To brikker på samme felt sperrer ingen og ryker sammen utenfor et trygt felt.',
+          },
+          racingOneTokenAlone: {
+            title: 'Å løpe med én brikke alene',
+            desc: 'Med én brikke ute flytter alle kast unntatt en sekser den, hvis det går.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill med venner hvor som helst',
+            desc: 'Del koden med opptil tre venner; chatten åpnes når to personer sitter ved bordet.',
+          },
+          botsAndSolo: {
+            title: 'Roboter når du spiller alene',
+            desc: 'Spill mot bot setter inn én robot; trykk Start. Verten kan legge til flere først.',
+          },
+          turnTimer: {
+            title: 'Når noen går',
+            desc: 'En spiller som er stille i 30 sekunder, fjernes ved neste sjekk av bordet; brikkene blir stående, turene hoppes over og spillet fortsetter.',
+          },
+          guestNoDownload: {
+            title: 'Ingen app, ingen registrering',
+            desc: 'Enhver nettleser på mobil, nettbrett eller PC; et gjestenavn er nok.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Familier og blandede grupper: flaks holder alle med, mens valget av brikke belønner et skarpt blikk.',
+        },
+        history: {
+          origin: 'Ludo stammer fra Pachisi, et flere hundre år gammelt indisk kappløpsspill, og ble patentert i England i 1896 som Ludo, latin for «jeg spiller».',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Ludo på Boardly gratis?',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille Ludo på mobilen?',
+            a: 'Ja, i enhver mobilnettleser. På en liten skjerm ligger brett, trekk, regler og chat, når det er noen å snakke med, i faner.',
+          },
+          pickYourOwnRoll: {
+            q: 'Kan noen velge sitt eget terningkast?',
+            a: 'Nei. Serveren kaster for alle plassene, ser bort fra tall nettleseren sender, og hver side har sjanse én av seks.',
+          },
+          timerRunsOut: {
+            q: 'Hvilken brikke flyttes hvis tiden min går ut?',
+            a: 'Er spillet åpent hos deg når tiden går ut, flytter serveren en brikke som kommer hjem, ellers en som slår ut, ellers den som har kommet lengst. En sekser slik gir ikke ekstrakast.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange kan spille Ludo?',
+            a: 'To til fire, hvorav opptil tre kan være roboter. To spillere sitter i motsatte hjørner av brettet.',
+          },
+          whoPicksMode: {
+            q: 'Hvem velger rask eller klassisk modus?',
+            a: 'Verten, når lobbyen opprettes, og Spill igjen beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+          },
+          playAgain: {
+            q: 'Kan vi spille igjen med de samme folkene?',
+            a: 'Ja. Verten trykker Spill igjen, og et nytt spill starter i samme lobby med alle som fortsatt sitter ved bordet, i samme modus.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
