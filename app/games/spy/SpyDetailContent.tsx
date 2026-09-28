@@ -91,6 +91,9 @@ export default function SpyDetailContent() {
         { title: t('games.spy.detail.multiplayer.secretsStayPrivate.title'), desc: t('games.spy.detail.multiplayer.secretsStayPrivate.desc') },
         { title: t('games.spy.detail.multiplayer.guestNoDownload.title'), desc: t('games.spy.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.spy.detail.audience.whoItSuits'),
+      ]}
     />
   )
 }

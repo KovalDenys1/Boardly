@@ -948,6 +948,9 @@ const no = {
             desc: 'Gjester skriver et navn og spiller; ingenting å installere.',
           },
         },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, pauser på jobben, videosamtaler.',
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

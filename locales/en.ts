@@ -948,6 +948,9 @@ const en = {
             desc: 'Guests type a name and play; nothing to install.',
           },
         },
+        audience: {
+          whoItSuits: 'Groups of three to ten who like reading people: parties, classrooms, team breaks, video calls.',
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
