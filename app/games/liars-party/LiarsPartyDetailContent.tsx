@@ -48,6 +48,30 @@ export default function LiarsPartyDetailContent() {
         t('games.liars_party.detail.rules.caughtNeedsMore'),
         t('games.liars_party.detail.rules.strikesAndEnd'),
       ]}
+      scoring={[
+        {
+          title: t('games.liars_party.detail.scoring.claimant.title'),
+          note: t('games.liars_party.detail.scoring.claimant.note'),
+          rows: [
+            { name: t('games.liars_party.detail.scoring.claimant.rows.bluffGetsThrough.name'), value: t('games.liars_party.detail.scoring.claimant.rows.bluffGetsThrough.value'), rule: t('games.liars_party.detail.scoring.claimant.rows.bluffGetsThrough.rule') },
+            { name: t('games.liars_party.detail.scoring.claimant.rows.bluffCaught.name'), value: t('games.liars_party.detail.scoring.claimant.rows.bluffCaught.value'), rule: t('games.liars_party.detail.scoring.claimant.rows.bluffCaught.rule') },
+            { name: t('games.liars_party.detail.scoring.claimant.rows.truthBelieved.name'), value: t('games.liars_party.detail.scoring.claimant.rows.truthBelieved.value'), rule: t('games.liars_party.detail.scoring.claimant.rows.truthBelieved.rule') },
+            { name: t('games.liars_party.detail.scoring.claimant.rows.truthChallenged.name'), value: t('games.liars_party.detail.scoring.claimant.rows.truthChallenged.value'), rule: t('games.liars_party.detail.scoring.claimant.rows.truthChallenged.rule') },
+            { name: t('games.liars_party.detail.scoring.claimant.rows.noClaimInTime.name'), value: t('games.liars_party.detail.scoring.claimant.rows.noClaimInTime.value'), rule: t('games.liars_party.detail.scoring.claimant.rows.noClaimInTime.rule') },
+          ],
+        },
+        {
+          title: t('games.liars_party.detail.scoring.voters.title'),
+          note: t('games.liars_party.detail.scoring.voters.note'),
+          rows: [
+            { name: t('games.liars_party.detail.scoring.voters.rows.challengeBluff.name'), value: t('games.liars_party.detail.scoring.voters.rows.challengeBluff.value'), rule: t('games.liars_party.detail.scoring.voters.rows.challengeBluff.rule') },
+            { name: t('games.liars_party.detail.scoring.voters.rows.challengeTruth.name'), value: t('games.liars_party.detail.scoring.voters.rows.challengeTruth.value'), rule: t('games.liars_party.detail.scoring.voters.rows.challengeTruth.rule') },
+            { name: t('games.liars_party.detail.scoring.voters.rows.believeTruth.name'), value: t('games.liars_party.detail.scoring.voters.rows.believeTruth.value'), rule: t('games.liars_party.detail.scoring.voters.rows.believeTruth.rule') },
+            { name: t('games.liars_party.detail.scoring.voters.rows.believeBluff.name'), value: t('games.liars_party.detail.scoring.voters.rows.believeBluff.value'), rule: t('games.liars_party.detail.scoring.voters.rows.believeBluff.rule') },
+            { name: t('games.liars_party.detail.scoring.voters.rows.noVoteInTime.name'), value: t('games.liars_party.detail.scoring.voters.rows.noVoteInTime.value'), rule: t('games.liars_party.detail.scoring.voters.rows.noVoteInTime.rule') },
+          ],
+        },
+      ]}
     />
   )
 }

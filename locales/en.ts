@@ -2095,6 +2095,30 @@ const en = {
           caughtNeedsMore: 'A bluff is caught only when challengers outnumber believers; an even split lets it through.',
           strikesAndEnd: 'Two caught bluffs put you out. After ten rounds, or with one player left, players still in rank above those out, then by points.',
         },
+        scoring: {
+          claimant: {
+            title: 'The claimant',
+            note: 'No score drops below zero.',
+            rows: {
+              bluffGetsThrough: { name: 'Bluff gets through', value: '+20', rule: 'Plus 6 per believer.' },
+              bluffCaught: { name: 'Bluff caught', value: '−12', rule: 'Plus a strike.' },
+              truthBelieved: { name: 'Truth believed', value: '+12', rule: 'Believers match or outnumber challengers.' },
+              truthChallenged: { name: 'Truth challenged', value: '+4', rule: 'Challengers outnumber believers.' },
+              noClaimInTime: { name: 'No claim in time', value: '−4', rule: 'No vote that round.' },
+            },
+          },
+          voters: {
+            title: 'Each voter',
+            note: 'Scored on the truth, not on the tally.',
+            rows: {
+              challengeBluff: { name: 'Challenge a bluff', value: '+14', rule: 'You spotted it.' },
+              challengeTruth: { name: 'Challenge a truth', value: '−6', rule: 'An honest claim doubted.' },
+              believeTruth: { name: 'Believe a truth', value: '+10', rule: 'An honest claim trusted.' },
+              believeBluff: { name: 'Believe a bluff', value: '−8', rule: 'You were fooled.' },
+              noVoteInTime: { name: 'No vote in time', value: '−4', rule: 'Also counted as Believe.' },
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',

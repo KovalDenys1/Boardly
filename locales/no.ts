@@ -2095,6 +2095,30 @@ const no = {
           caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
           strikesAndEnd: 'To avslørte bløffer, og du er ute. Etter ti runder, eller når én spiller er igjen, rangeres de som fortsatt er med over dem som er ute, deretter etter poeng.',
         },
+        scoring: {
+          claimant: {
+            title: 'Den som har ordet',
+            note: 'Ingen poengsum går under null.',
+            rows: {
+              bluffGetsThrough: { name: 'Bløffen går gjennom', value: '+20', rule: 'Pluss 6 per spiller som trodde.' },
+              bluffCaught: { name: 'Bløffen avslørt', value: '−12', rule: 'Pluss én strike.' },
+              truthBelieved: { name: 'Sannheten trodd', value: '+12', rule: 'Minst like mange tror som utfordrer.' },
+              truthChallenged: { name: 'Sannheten utfordret', value: '+4', rule: 'Flere utfordrer enn tror.' },
+              noClaimInTime: { name: 'Ingen påstand i tide', value: '−4', rule: 'Ingen avstemning den runden.' },
+            },
+          },
+          voters: {
+            title: 'Hver som stemmer',
+            note: 'Poengene følger sannheten, ikke flertallet.',
+            rows: {
+              challengeBluff: { name: 'Utfordre en bløff', value: '+14', rule: 'Du så den.' },
+              challengeTruth: { name: 'Utfordre en sannhet', value: '−6', rule: 'En ærlig påstand betvilt.' },
+              believeTruth: { name: 'Tro på en sannhet', value: '+10', rule: 'En ærlig påstand trodd.' },
+              believeBluff: { name: 'Tro på en bløff', value: '−8', rule: 'Du ble lurt.' },
+              noVoteInTime: { name: 'Ingen stemme i tide', value: '−4', rule: 'Teller også som Tro.' },
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
