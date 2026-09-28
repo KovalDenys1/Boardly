@@ -11,7 +11,7 @@ export default function CheckersDetailContent() {
       gameName={t('games.checkers.name')}
       title={t('games.checkers.detail.title')}
       description={t('games.checkers.detail.heroDesc')}
-      iconLabel="Checkers board"
+      iconLabel={t('games.checkers.name')}
       gameId="checkers"
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"
