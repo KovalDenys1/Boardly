@@ -1940,6 +1940,40 @@ const en = {
             desc: 'Token Rookie picks any legal token at random. Token Tactician prefers a capture, then leaving the yard, then heading home. Ludo Grandmaster scores every move, counting rivals up to six squares behind where it lands.',
           },
         },
+        strategy: {
+          bringTokensOut: {
+            title: 'Get tokens out',
+            desc: 'More tokens on the track give each roll more uses.',
+          },
+          restOnStars: {
+            title: 'Rest on stars',
+            desc: 'Nobody can capture on a start or star square, so wait out danger there.',
+          },
+          countTheGapBehind: {
+            title: 'Count the gap behind',
+            desc: 'A rival one to six squares back can hit you with one roll.',
+          },
+          trailDoNotLead: {
+            title: 'Trail, don\'t lead',
+            desc: 'Tokens only move forward, so the token behind threatens the one ahead.',
+          },
+          captureTheCostlyToken: {
+            title: 'Capture the costly token',
+            desc: 'A rival deep into its lap loses the most when sent back.',
+          },
+          bankYourLeader: {
+            title: 'Bank your leader',
+            desc: 'Nothing touches a token in its home column, so bring your furthest one in first.',
+          },
+          planTheExactFinish: {
+            title: 'Plan the exact finish',
+            desc: 'A token three from home finishes only on a 3; keep another free for other rolls.',
+          },
+          mindRivalStartSquares: {
+            title: 'Mind rival start squares',
+            desc: 'A token leaving the yard rolls again, so squares just past its start are exposed.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

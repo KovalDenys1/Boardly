@@ -59,6 +59,16 @@ export default function LudoDetailContent() {
         { title: t('games.ludo.detail.modes.turnClock.title'), desc: t('games.ludo.detail.modes.turnClock.desc') },
         { title: t('games.ludo.detail.modes.botLevels.title'), desc: t('games.ludo.detail.modes.botLevels.desc') },
       ]}
+      strategy={[
+        { title: t('games.ludo.detail.strategy.bringTokensOut.title'), desc: t('games.ludo.detail.strategy.bringTokensOut.desc') },
+        { title: t('games.ludo.detail.strategy.restOnStars.title'), desc: t('games.ludo.detail.strategy.restOnStars.desc') },
+        { title: t('games.ludo.detail.strategy.countTheGapBehind.title'), desc: t('games.ludo.detail.strategy.countTheGapBehind.desc') },
+        { title: t('games.ludo.detail.strategy.trailDoNotLead.title'), desc: t('games.ludo.detail.strategy.trailDoNotLead.desc') },
+        { title: t('games.ludo.detail.strategy.captureTheCostlyToken.title'), desc: t('games.ludo.detail.strategy.captureTheCostlyToken.desc') },
+        { title: t('games.ludo.detail.strategy.bankYourLeader.title'), desc: t('games.ludo.detail.strategy.bankYourLeader.desc') },
+        { title: t('games.ludo.detail.strategy.planTheExactFinish.title'), desc: t('games.ludo.detail.strategy.planTheExactFinish.desc') },
+        { title: t('games.ludo.detail.strategy.mindRivalStartSquares.title'), desc: t('games.ludo.detail.strategy.mindRivalStartSquares.desc') },
+      ]}
       playVsBotGameType="ludo"
     />
   )

@@ -1940,6 +1940,40 @@ const no = {
             desc: 'Token Rookie velger en tilfeldig lovlig brikke. Token Tactician foretrekker å slå ut, deretter å gå ut av gården, deretter å komme hjem. Ludo Grandmaster gir hvert trekk poeng og teller motstandere opptil seks felt bak der brikken lander.',
           },
         },
+        strategy: {
+          bringTokensOut: {
+            title: 'Få brikker ut',
+            desc: 'Flere brikker på banen gir hvert kast flere bruksmåter.',
+          },
+          restOnStars: {
+            title: 'Hvil på stjerner',
+            desc: 'Ingen kan slås ut på et start- eller stjernefelt, så vent der når det er farlig.',
+          },
+          countTheGapBehind: {
+            title: 'Tell avstanden bak',
+            desc: 'En motstander ett til seks felt bak kan slå deg ut med ett kast.',
+          },
+          trailDoNotLead: {
+            title: 'Følg, ikke led',
+            desc: 'Brikker går bare fremover, så den som står bak, truer den som står foran.',
+          },
+          captureTheCostlyToken: {
+            title: 'Slå ut den dyre brikken',
+            desc: 'En motstander langt ute på runden taper mest på å bli sendt tilbake.',
+          },
+          bankYourLeader: {
+            title: 'Sikre lederen',
+            desc: 'Ingenting når en brikke i hjemmekolonnen, så få den som har kommet lengst, inn først.',
+          },
+          planTheExactFinish: {
+            title: 'Planlegg målgangen',
+            desc: 'En brikke tre felt fra mål kommer bare hjem på en treer; hold en annen brikke fri til de andre kastene.',
+          },
+          mindRivalStartSquares: {
+            title: 'Pass på andres startfelt',
+            desc: 'En brikke som kommer ut av gården, kaster igjen, så feltene rett etter startfeltet er utsatt.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
