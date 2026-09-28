@@ -1624,6 +1624,20 @@ const no = {
           kings: 'En konge går og slår én rute diagonalt i alle retninger. Den kan ikke fly langs en diagonal.',
           endAndDraw: 'Du vinner når motstanderen ikke har noe lovlig trekk, enten brikkene er borte eller alle er blokkert. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
         },
+        modes: {
+          moveClock: {
+            title: 'Sekunder per trekk',
+            desc: 'En lobby du oppretter, gir 60 sekunder per trekk. Før spillet starter, kan verten velge fra 30 til 180 i steg på 30 sekunder, og «Spill mot bot» gir 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Checkers Rookie spiller et tilfeldig lovlig trekk. Diagonal Tactician ser ett svar fram, veier det den slår, mot det du kan slå tilbake, og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i opptil omtrent ett sekund.',
+          },
+          rematches: {
+            title: 'Omkamper teller',
+            desc: 'Når et parti er over, starter vertens «Spill igjen» det neste i samme rom. Seirene summeres per spiller, og uavgjort gir ingenting.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',

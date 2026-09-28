@@ -49,6 +49,11 @@ export default function CheckersDetailContent() {
         t('games.checkers.detail.rules.kings'),
         t('games.checkers.detail.rules.endAndDraw'),
       ]}
+      modes={[
+        { title: t('games.checkers.detail.modes.moveClock.title'), desc: t('games.checkers.detail.modes.moveClock.desc') },
+        { title: t('games.checkers.detail.modes.botLevels.title'), desc: t('games.checkers.detail.modes.botLevels.desc') },
+        { title: t('games.checkers.detail.modes.rematches.title'), desc: t('games.checkers.detail.modes.rematches.desc') },
+      ]}
       playVsBotGameType="checkers"
     />
   )

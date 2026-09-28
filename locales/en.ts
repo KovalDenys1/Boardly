@@ -1624,6 +1624,20 @@ const en = {
           kings: 'A king moves and captures one square diagonally in any direction. It cannot fly along a diagonal.',
           endAndDraw: 'You win when your opponent has no legal move, whether no pieces are left or all are blocked. Forty moves each with no capture and no man moving is a draw.',
         },
+        modes: {
+          moveClock: {
+            title: 'Seconds per move',
+            desc: 'A lobby you create gives 60 seconds a move. Before the game starts the host can set 30 to 180 in 30-second steps, and Play vs Bot gives 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Checkers Rookie plays a random legal move. Diagonal Tactician looks one reply ahead, weighs what it captures against what you can take back, and avoids a move that lets you win at once. Kingmaker searches several moves deep for up to about a second.',
+          },
+          rematches: {
+            title: 'Rematches keep score',
+            desc: 'When a game ends, the host\'s Play Again starts the next one in the same room. Wins add up by name, and a draw adds nothing.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',
