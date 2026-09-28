@@ -1618,118 +1618,104 @@ const en = {
         intro0: 'Alias is a team word-description game. One player sees a secret word and explains it without saying the word itself.',
         intro1: 'Correct guesses score points. Skips cost points. Teams take turns until the final score decides the winner.',
         step1Title: 'Create a lobby',
-        step1Desc: 'Invite your group and split into teams. From four players up, anyone can switch sides until the host starts the rounds.',
+        step1Desc: 'Invite your group and split into teams. From four players up, anyone can switch sides before the start.',
         step2Title: 'Describe words',
-        step2Desc: 'Use clues, synonyms, and examples without saying the secret word. Your card holds ten words, and they reach your screen one at a time.',
+        step2Desc: 'Use clues, synonyms, and examples without saying the secret word. Ten words per card, shown one at a time.',
         step3Title: 'Guess quickly',
-        step3Desc: 'The team guesses against the timer and scores for correct answers. Typed guesses land in a feed the describer reads while talking.',
+        step3Desc: 'The team guesses against the timer and scores for correct answers. Typed guesses appear in the describer\'s feed.',
         step4Title: 'Switch teams',
-        step4Desc: 'Teams alternate turns until the match ends. Three turns each settle it, and the describer role passes along the team every turn.',
+        step4Desc: 'Teams alternate turns until the match ends. Each team gets three turns, and the describer seat rotates.',
         benefitsTitle: 'Why Alias belongs on Boardly',
         benefit1: 'Designed for group play.',
         benefit2: 'Simple room links for friends.',
         benefit3: 'Fast rounds that work for parties.',
         benefit4: 'No app download planned.',
         rules: {
-          teamsFromFour: 'From four players up the room splits into two teams, and each newcomer is placed on the smaller one.',
-          threeAreSolo: 'Exactly three players means no teams: everyone is a side of one, takes the card in rotation and scores only while describing.',
-          tenWordCard: 'Every turn deals the describer a card of ten words, shown one at a time, and no word is dealt twice in the same game.',
-          markEveryWord: 'The describer taps Guessed or Skip for each word, and the next one appears either way.',
-          howATurnEnds: 'A turn stops at the tenth word, at End Turn, or when the clock reaches zero, whichever comes first.',
-          describerRotates: 'Teams alternate, and the describer seat moves to the next teammate each turn instead of staying with one player.',
-          threeTurnsEach: 'Once every team has had three turns the higher total wins, and teams level at the top share a tie.',
+          teamsFromFour: 'Four or more players form two teams, and newcomers join the smaller one.',
+          threeAreSolo: 'With exactly three, everyone plays alone and scores only while describing.',
+          tenWordCard: 'Each turn deals ten words, one at a time, never repeated in a game.',
+          markEveryWord: 'The describer taps Guessed or Skip for every word.',
+          howATurnEnds: 'A turn ends at the tenth word, at End Turn, or at zero on the clock.',
         },
         scoring: {
           title: 'Net words per turn',
-          note: 'A turn is worth its guesses minus its skips, from plus ten to minus ten, so a running total can drop below zero.',
+          note: 'Guesses minus skips, so a turn ranges from plus ten to minus ten.',
           rows: {
             guessedWord: {
               name: 'Guessed word',
               value: '+1',
-              rule: 'Counts the moment the describer confirms it.',
+              rule: 'When the describer confirms it.',
             },
             skippedWord: {
               name: 'Skipped word',
               value: '−1',
-              rule: 'Charged whenever Skip is pressed, early in the turn or late.',
+              rule: 'Whenever Skip is pressed.',
             },
             wordLeftAtZero: {
               name: 'Word left at zero',
               value: '−1',
-              rule: 'Each word the clock cut off counts as a skip.',
+              rule: 'Counts as a skip.',
             },
             wordLeftAfterEndTurn: {
               name: 'Word left after End Turn',
               value: '0',
-              rule: 'Ending the turn yourself leaves the rest of the card unscored.',
+              rule: 'Not scored.',
             },
             levelAtTheTop: {
               name: 'Level at the top',
               value: 'Tie',
-              rule: 'Equal leading totals after the last turn name no winner.',
+              rule: 'Equal top totals after three turns each.',
             },
           },
         },
         modes: {
           tableSize: {
             title: 'Table size',
-            desc: 'The host opens a room for 4, 6, 8, 10, 12 or 16 seats, with 8 preselected; 12 and 16 need a Premium host.',
+            desc: 'Rooms of 4, 6, 8, 10, 12 or 16 seats, 8 by default; more than ten needs a Premium host.',
           },
           turnLength: {
             title: 'Turn length',
-            desc: 'Describers get 30, 60, 90 or 120 seconds a turn, and the form starts on 60.',
-          },
-          fixedMatch: {
-            title: 'A fixed match',
-            desc: 'Three turns per team are built in, so there is no target score to agree before starting.',
-          },
-          threePlayerMode: {
-            title: 'Three-player mode',
-            desc: 'At exactly three the teams dissolve into one side per player on their own, and come back if a fourth person joins before the start.',
+            desc: '30, 60, 90 or 120 seconds per turn, 60 by default.',
           },
         },
         strategy: {
           skipEarlyOrNot: {
             title: 'Skip early or not at all',
-            desc: 'A skip costs the same point at second five as at second forty, so drop a hopeless word at once rather than after a long struggle.',
+            desc: 'A skip costs one point at any second, so drop hopeless words at once.',
           },
           beatTheZero: {
             title: 'Beat the clock to zero',
-            desc: 'With a few seconds left and words still on the card, press End Turn: at zero every one of them becomes a skip.',
+            desc: 'Near zero with words left? Press End Turn before they become skips.',
           },
           sayWhatItDoes: {
             title: 'Say what it does',
-            desc: 'Use or place beats definition: "you ring it at a front door" lands faster than "a small electric bell".',
+            desc: '"You ring it at a front door" beats "a small electric bell".',
           },
           leaveAGap: {
             title: 'Leave a gap to fill',
-            desc: 'A familiar phrase with the word missing, such as "Humpty Dumpty sat on a …", gives the team one blank instead of a riddle.',
+            desc: 'A phrase missing one word, like "Humpty Dumpty sat on a …", is quick to fill.',
           },
           buildCompoundsInHalves: {
             title: 'Build compounds in halves',
-            desc: 'The deck is full of joined words like lighthouse and doorbell; steer the team to one half, then the other, without saying either.',
+            desc: 'For lighthouse or doorbell, lead the team to each half without saying it.',
           },
           guessInSingleWords: {
             title: 'Guess in single words',
-            desc: 'The describer scans the feed mid-sentence, so one word per message is easier to spot than a line of options.',
+            desc: 'One word per message is easiest to spot in the describer\'s feed.',
           },
           tryThePlainForm: {
             title: 'Try the plain form',
-            desc: 'Every answer is a single English word, so after a near miss try the basic form or the joined-up compound.',
-          },
-          guessAtThreeAsIfYours: {
-            title: 'At three, guess as if it were yours',
-            desc: 'In the three-player game the points go to the describer, and you will want the same effort back on your own turn.',
+            desc: 'Every answer is one English word; after a near miss, try the basic form.',
           },
           readTheResults: {
             title: 'Read the results screen',
-            desc: 'After each turn the words are listed as guessed or skipped; the skipped ones show which kinds of clue your group finds hard.',
+            desc: 'Skipped words listed after each turn show which clues your group finds hard.',
           },
         },
         mistakes: {
           lettingTheClockHitZero: {
             title: 'Letting the clock hit zero',
-            desc: 'Unplayed words then cost a point each, where End Turn would have cost nothing.',
+            desc: 'Unplayed words then cost a point each; End Turn would not have.',
           },
           skippingOnReflex: {
             title: 'Skipping on reflex',
@@ -1743,23 +1729,23 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'One room, many screens',
-            desc: 'Share the room code or invite link; the clock, the tally and the guesses update on every device.',
+            desc: 'Share the room code or link; clock, tally and guesses update on every device.',
           },
           botsAndSolo: {
             title: 'People, never bots',
-            desc: 'There is no solo mode or bot seat. Short of three? Post the invite link in a group chat, or join an open room from the lobby list.',
+            desc: 'No solo mode or bots. Short of three? Share the invite link or join an open room.',
           },
           turnTimer: {
             title: 'One clock for everyone',
-            desc: 'Every screen shows the countdown, and the server ends the turn at zero even if the describer goes quiet.',
+            desc: 'Everyone sees the countdown, and the server ends the turn at zero.',
           },
           guestNoDownload: {
             title: 'A browser and a name',
-            desc: 'Phone, tablet or computer with nothing to install; guests pick a name and take a seat.',
+            desc: 'Any browser, nothing to install; guests pick a name and play.',
           },
         },
         audience: {
-          whoItSuits: 'Alias suits parties, family evenings and friends on a video call, and its English deck doubles as speaking practice for learners.',
+          whoItSuits: 'Alias suits parties, family evenings and video calls, and its English deck doubles as practice for learners.',
         },
         history: {
           origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
@@ -1767,7 +1753,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Alias on Boardly free?',
-            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; only a 12- or 16-seat room needs a Premium host.',
+            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; 12 or 16 seats need a Premium host.',
           },
           worksOnPhone: {
             q: 'Does Alias work on a phone?',
@@ -1775,7 +1761,7 @@ const en = {
           },
           timerRunsOut: {
             q: 'What happens when the clock runs out?',
-            a: 'The turn ends and every word left on the card counts as a skip. End Turn before zero leaves them unscored.',
+            a: 'The turn ends, and every word left on the card counts as a skip. End Turn before zero avoids that.',
           },
           canGuessersSeeWord: {
             q: 'Can guessers see the word?',
@@ -1783,15 +1769,15 @@ const en = {
           },
           howTeamsArePicked: {
             q: 'How are the teams picked?',
-            a: 'Newcomers join the smaller team, anyone can switch sides on the team screen, and the host starts once no team is empty.',
+            a: 'Newcomers join the smaller team, anyone can switch sides, and the host starts once no team is empty.',
           },
           wordsInEnglish: {
             q: 'Are the words in English?',
-            a: 'Yes. The deck is 200 English words, such as castle and kaleidoscope, in every site language, and none repeats within a game.',
+            a: 'Yes, whatever the site language: 200 English words such as castle and kaleidoscope, none repeated in a game.',
           },
           describerLeaves: {
             q: 'What if the describer leaves mid-turn?',
-            a: 'The turn ends at once and scores only the words already marked; if fewer than three players remain, the game ends.',
+            a: 'The turn ends at once, scoring only words already marked; below three players the game ends.',
           },
         },
       },

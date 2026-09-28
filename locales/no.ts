@@ -1618,118 +1618,104 @@ const no = {
         intro0: 'Alias er et lagspill der man forklarer ord. Én spiller ser et hemmelig ord og forklarer det uten å si selve ordet.',
         intro1: 'Riktige gjett gir poeng, og å hoppe over koster poeng. Lagene bytter på turene til sluttstillingen avgjør hvem som vinner.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter gjengen og del dere inn i lag. Fra fire spillere og oppover kan hvem som helst bytte side til verten starter rundene.',
+        step1Desc: 'Inviter gjengen og del dere inn i lag. Fra fire spillere og oppover kan alle bytte side før start.',
         step2Title: 'Forklar ordene',
-        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet. Kortet ditt har ti ord, og de dukker opp på skjermen ett om gangen.',
+        step2Desc: 'Bruk hint, synonymer og eksempler – alt unntatt selve ordet. Ti ord per kort, vist ett om gangen.',
         step3Title: 'Gjett raskt',
-        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar. Gjett som skrives inn, havner i en strøm som forklareren leser mens hen snakker.',
+        step3Desc: 'Laget gjetter mot klokka og får poeng for hvert riktige svar. Gjett som skrives inn, vises i forklarerens strøm.',
         step4Title: 'Bytt lag',
-        step4Desc: 'Lagene veksler på turene til kampen er over. Tre turer hver avgjør det, og rollen som forklarer går videre i laget for hver tur.',
+        step4Desc: 'Lagene veksler på turene til kampen er over. Hvert lag får tre turer, og forklarerrollen går på rundgang.',
         benefitsTitle: 'Derfor hører Alias hjemme på Boardly',
         benefit1: 'Laget for spill i gjeng.',
         benefit2: 'Enkle romlenker til vennene.',
         benefit3: 'Raske runder som passer i et selskap.',
         benefit4: 'Ingen app å laste ned.',
         rules: {
-          teamsFromFour: 'Fra fire spillere og oppover deles rommet i to lag, og hver nykommer plasseres på det minste.',
-          threeAreSolo: 'Med nøyaktig tre spillere blir det ingen lag: hver er sin egen side, får kortet etter tur og scorer bare mens hen forklarer.',
-          tenWordCard: 'Hver tur gir forklareren et kort med ti ord, vist ett om gangen, og ingen ord deles ut to ganger i samme spill.',
-          markEveryWord: 'Forklareren trykker «Gjett riktig» eller «Hopp over» for hvert ord, og det neste dukker opp uansett.',
-          howATurnEnds: 'En tur stopper ved det tiende ordet, ved «Avslutning av tur» eller når klokka når null – det som skjer først.',
-          describerRotates: 'Lagene bytter på, og forklarerrollen går videre til neste lagkamerat hver tur i stedet for å bli hos én spiller.',
-          threeTurnsEach: 'Når alle lag har hatt tre turer, vinner høyest sum, og lag som står likt på toppen, deler uavgjort.',
+          teamsFromFour: 'Fire eller flere spillere danner to lag, og nykommere havner på det minste.',
+          threeAreSolo: 'Med nøyaktig tre spiller alle alene og scorer bare mens de forklarer.',
+          tenWordCard: 'Hver tur deler ut ti ord, ett om gangen, aldri gjentatt i et spill.',
+          markEveryWord: 'Forklareren trykker «Gjett riktig» eller «Hopp over» for hvert ord.',
+          howATurnEnds: 'En tur slutter ved det tiende ordet, ved «Avslutning av tur» eller når klokka står på null.',
         },
         scoring: {
           title: 'Netto ord per tur',
-          note: 'En tur er verdt gjettede ord minus hoppede, fra pluss ti til minus ti, så en løpende sum kan gå under null.',
+          note: 'Gjettede minus hoppede ord, så en tur spenner fra pluss ti til minus ti.',
           rows: {
             guessedWord: {
               name: 'Gjettet ord',
               value: '+1',
-              rule: 'Teller i det forklareren bekrefter det.',
+              rule: 'Når forklareren bekrefter det.',
             },
             skippedWord: {
               name: 'Hoppet ord',
               value: '−1',
-              rule: 'Trekkes hver gang «Hopp over» trykkes, tidlig i turen eller sent.',
+              rule: 'Hver gang «Hopp over» trykkes.',
             },
             wordLeftAtZero: {
               name: 'Ord igjen ved null',
               value: '−1',
-              rule: 'Hvert ord klokka kuttet av, teller som et hopp.',
+              rule: 'Teller som et hopp.',
             },
             wordLeftAfterEndTurn: {
               name: 'Ord igjen etter avsluttet tur',
               value: '0',
-              rule: 'Avslutter du turen selv, blir resten av kortet ikke telt.',
+              rule: 'Telles ikke.',
             },
             levelAtTheTop: {
               name: 'Likt på toppen',
               value: 'Uavgjort',
-              rule: 'Lik ledersum etter siste tur gir ingen vinner.',
+              rule: 'Lik toppsum etter tre turer hver.',
             },
           },
         },
         modes: {
           tableSize: {
             title: 'Bordstørrelse',
-            desc: 'Verten åpner et rom med 4, 6, 8, 10, 12 eller 16 plasser, med 8 forhåndsvalgt; 12 og 16 krever en vert med Premium.',
+            desc: 'Rom med 4, 6, 8, 10, 12 eller 16 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
           },
           turnLength: {
             title: 'Turlengde',
-            desc: 'Forklarerne får 30, 60, 90 eller 120 sekunder per tur, og skjemaet starter på 60.',
-          },
-          fixedMatch: {
-            title: 'Fast kamplengde',
-            desc: 'Tre turer per lag er innebygd, så det finnes ingen målsum å bli enige om før start.',
-          },
-          threePlayerMode: {
-            title: 'Tremannsmodus',
-            desc: 'Med nøyaktig tre spillere oppløses lagene av seg selv til én side per spiller, og de kommer tilbake om en fjerde blir med før start.',
+            desc: '30, 60, 90 eller 120 sekunder per tur, 60 som standard.',
           },
         },
         strategy: {
           skipEarlyOrNot: {
             title: 'Hopp tidlig eller ikke i det hele tatt',
-            desc: 'Et hopp koster det samme poenget etter fem sekunder som etter førti, så slipp et håpløst ord med en gang i stedet for etter lang kamp.',
+            desc: 'Et hopp koster ett poeng uansett når, så slipp håpløse ord med en gang.',
           },
           beatTheZero: {
             title: 'Kom klokka i forkjøpet',
-            desc: 'Er det noen sekunder igjen og fortsatt ord på kortet, trykk «Avslutning av tur»: ved null blir hvert av dem et hopp.',
+            desc: 'Nær null med ord igjen? Trykk «Avslutning av tur» før de blir hopp.',
           },
           sayWhatItDoes: {
             title: 'Si hva den gjør',
-            desc: 'Bruk eller sted slår definisjon: «du ringer på den ved inngangsdøra» går raskere enn «en liten elektrisk bjelle».',
+            desc: '«Du ringer på den ved inngangsdøra» slår «en liten elektrisk bjelle».',
           },
           leaveAGap: {
             title: 'La en luke stå åpen',
-            desc: 'Et kjent uttrykk med ordet utelatt, som «Lille Petter …», gir laget én luke å fylle i stedet for en gåte.',
+            desc: 'Et uttrykk som mangler ett ord, som «Lille Petter …», er raskt å fylle ut.',
           },
           buildCompoundsInHalves: {
             title: 'Bygg sammensatte ord i to deler',
-            desc: 'Kortstokken er full av sammensatte ord som lighthouse og doorbell; led laget til den ene halvdelen, så den andre, uten å si noen av dem.',
+            desc: 'For lighthouse eller doorbell leder du laget til hver halvdel uten å si den.',
           },
           guessInSingleWords: {
             title: 'Gjett med ett ord',
-            desc: 'Forklareren skumleser strømmen midt i en setning, så ett ord per melding er lettere å få øye på enn en hel liste.',
+            desc: 'Ett ord per melding er lettest å få øye på i forklarerens strøm.',
           },
           tryThePlainForm: {
             title: 'Prøv grunnformen',
-            desc: 'Hvert svar er ett engelsk ord, så etter et nesten-treff kan du prøve grunnformen eller det sammensatte ordet.',
-          },
-          guessAtThreeAsIfYours: {
-            title: 'Med tre: gjett som om det gjaldt deg',
-            desc: 'I spillet for tre går poengene til forklareren, og du vil ha den samme innsatsen tilbake på din egen tur.',
+            desc: 'Hvert svar er ett engelsk ord; etter et nesten-treff, prøv grunnformen.',
           },
           readTheResults: {
             title: 'Les resultatskjermen',
-            desc: 'Etter hver tur listes ordene som gjettet eller hoppet over; de hoppede viser hvilke typer hint gjengen sliter med.',
+            desc: 'Hoppede ord listet etter hver tur viser hvilke hint gjengen sliter med.',
           },
         },
         mistakes: {
           lettingTheClockHitZero: {
             title: 'Å la klokka gå til null',
-            desc: 'Ubrukte ord koster da et poeng hver, mens «Avslutning av tur» ikke ville kostet noe.',
+            desc: 'Ubrukte ord koster da et poeng hver; «Avslutning av tur» ville ikke gjort det.',
           },
           skippingOnReflex: {
             title: 'Å hoppe over på refleks',
@@ -1743,23 +1729,23 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Ett rom, mange skjermer',
-            desc: 'Del romkoden eller invitasjonslenken; klokka, stillingen og gjettene oppdateres på alle enheter.',
+            desc: 'Del romkoden eller lenken; klokka, stillingen og gjettene oppdateres på alle enheter.',
           },
           botsAndSolo: {
             title: 'Folk, aldri boter',
-            desc: 'Det finnes ingen solomodus og ingen botplass. Mangler dere noen til tre? Legg invitasjonslenken i en gruppechat, eller bli med i et åpent rom fra lobbylisten.',
+            desc: 'Ingen solomodus eller boter. Mangler dere noen til tre? Del lenken eller bli med i et åpent rom.',
           },
           turnTimer: {
             title: 'Én klokke for alle',
-            desc: 'Alle skjermer viser nedtellingen, og serveren avslutter turen ved null selv om forklareren blir stille.',
+            desc: 'Alle ser nedtellingen, og serveren avslutter turen ved null.',
           },
           guestNoDownload: {
             title: 'En nettleser og et navn',
-            desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; gjester velger et navn og tar en plass.',
+            desc: 'Hvilken som helst nettleser, ingenting å installere; gjester velger et navn og spiller.',
           },
         },
         audience: {
-          whoItSuits: 'Alias passer for fester, familiekvelder og venner på videosamtale, og den engelske ordstokken fungerer også som taletrening for dem som lærer språket.',
+          whoItSuits: 'Alias passer for fester, familiekvelder og videosamtaler, og den engelske ordstokken er også god øving for dem som lærer språket.',
         },
         history: {
           origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
@@ -1767,7 +1753,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Alias på Boardly gratis?',
-            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; bare et rom med 12 eller 16 plasser krever en vert med Premium.',
+            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; 12 eller 16 plasser krever en vert med Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Alias på mobil?',
@@ -1775,7 +1761,7 @@ const no = {
           },
           timerRunsOut: {
             q: 'Hva skjer når klokka går ut?',
-            a: 'Turen slutter, og hvert ord som er igjen på kortet, teller som et hopp. «Avslutning av tur» før null lar dem stå uten poeng.',
+            a: 'Turen slutter, og hvert ord som er igjen på kortet, teller som et hopp. «Avslutning av tur» før null unngår det.',
           },
           canGuessersSeeWord: {
             q: 'Kan de som gjetter, se ordet?',
@@ -1783,15 +1769,15 @@ const no = {
           },
           howTeamsArePicked: {
             q: 'Hvordan blir lagene satt sammen?',
-            a: 'Nykommere havner på det minste laget, alle kan bytte side på lagskjermen, og verten starter når ingen lag er tomme.',
+            a: 'Nykommere havner på det minste laget, alle kan bytte side, og verten starter når ingen lag er tomme.',
           },
           wordsInEnglish: {
             q: 'Er ordene på engelsk?',
-            a: 'Ja. Ordstokken er 200 engelske ord, som castle og kaleidoscope, på alle språkene nettstedet har, og ingen gjentas i samme spill.',
+            a: 'Ja, uansett språk på nettstedet: 200 engelske ord som castle og kaleidoscope, og ingen gjentas i samme spill.',
           },
           describerLeaves: {
             q: 'Hva om forklareren går midt i turen?',
-            a: 'Turen slutter med en gang og teller bare ordene som alt er markert; er det færre enn tre spillere igjen, er spillet over.',
+            a: 'Turen slutter med en gang og teller bare ord som alt er markert; under tre spillere er spillet over.',
           },
         },
       },
