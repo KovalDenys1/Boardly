@@ -107,7 +107,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     expect(current(game)).toBe(P1)
     expect(game.makeMove(move(P1, 'roll'))).toBe(true)
     expect(current(game)).toBe(P2)
-    expect(ludo.detail.rules.extraRollOnlyOnSix).toMatch(/A 6 you cannot use still earns the extra roll/)
+    expect(ludo.detail.rules.extraRollOnlyOnSix).toMatch(/Even an unusable 6 earns the extra roll/)
     expect(ludo.rules.sixRollsAgain).toMatch(/Three 6s in a row lose the turn/)
   })
 
@@ -118,7 +118,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     game.makeMove(move(P1, 'roll'))
     expect(dataOf(game).tokens[P2][0]).toBe(LUDO_YARD)
     expect(current(game)).toBe(P2)
-    expect(ludo.detail.rules.extraRollOnlyOnSix).toMatch(/a capture or a token reaching home earns none/)
+    expect(ludo.detail.rules.extraRollOnlyOnSix).toMatch(/captures and finishes earn none/)
   })
 
   it('has no blocks: a pair of rival tokens is captured together', () => {
@@ -126,7 +126,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     place(game, { [P1]: [3, LUDO_YARD], [P2]: [yellowOn(5), yellowOn(5)] })
     const [option] = game.getMoveOptionsFor(P1, 2)
     expect(option.captures).toHaveLength(2)
-    expect(ludo.detail.rules.noBlocks).toMatch(/landing on a pair of rival tokens sends both back unless the square is safe/)
+    expect(ludo.detail.rules.noBlocks).toMatch(/landing on two rival tokens sends both back, except on a safe square/)
   })
 
   it('captures nobody on a start or star square', () => {
@@ -144,7 +144,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     place(game, { [P1]: [54, LUDO_FINISH] })
     expect(game.getMoveOptionsFor(P1, 3)).toEqual([])
     expect(game.getMoveOptionsFor(P1, 2).map((o) => o.to)).toEqual([LUDO_FINISH])
-    expect(ludo.detail.rules.homeColumn).toMatch(/After 50 squares of track/)
+    expect(ludo.detail.rules.homeColumn).toMatch(/After 50 squares a token enters its own home column/)
   })
 
   it('plays the only possible move without asking', () => {
@@ -153,7 +153,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     queueRolls(3)
     game.makeMove(move(P1, 'roll'))
     expect(dataOf(game).tokens[P1][0]).toBe(13)
-    expect(ludo.detail.step3Desc).toMatch(/If only one move is possible, it is played for you/)
+    expect(ludo.detail.step3Desc).toMatch(/A single possible move plays itself/)
   })
 
   it('ends the game the moment one player has every token home, and ranks the rest by progress', () => {
@@ -163,13 +163,13 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     game.makeMove(move(P1, 'roll'))
     expect(game.getState().status).toBe('finished')
     expect(dataOf(game).ranking).toEqual([P1, P3, P2])
-    expect(ludo.detail.step4Desc).toMatch(/The game ends the moment someone does/)
+    expect(ludo.detail.step4Desc).toMatch(/get every token home first\. The game ends then/)
   })
 
   it('seats two players in opposite corners and leaves one corner empty for three', () => {
     expect(dataOf(newGame()).seats.map((s) => s.color)).toEqual(['red', 'yellow'])
     expect(dataOf(newGame([P1, P2, P3])).seats.map((s) => s.color)).toEqual(['red', 'green', 'yellow'])
-    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Two players start in opposite corners and three leave one corner empty/)
+    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Two players sit in opposite corners/)
   })
 
   it('rolls on the server, ignoring any number a client sends', () => {
@@ -178,7 +178,7 @@ describe('Ludo house rules against lib/games/ludo-game.ts (#1242)', () => {
     queueRolls(2)
     game.makeMove(move(P1, 'roll', { value: 6 }))
     expect(dataOf(game).lastRoll?.value).toBe(2)
-    expect(ludo.detail.faq.pickYourOwnRoll.a).toMatch(/ignores any number a browser sends/)
+    expect(ludo.detail.faq.pickYourOwnRoll.a).toMatch(/ignores numbers a browser sends/)
   })
 
   it('never claims captures send a token home', () => {
@@ -202,7 +202,7 @@ describe('Ludo timeouts (#1242)', () => {
     queueRolls(2)
     capture.makeMove(move(P1, 'timeout'))
     expect(dataOf(capture).tokens[P1]).toEqual([20, 5])
-    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/a token that reaches home, else one that captures, else the one furthest along/)
+    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/moves a token reaching home, else one that captures, else the furthest/)
   })
 
   it('grants no extra roll for a 6 rolled on timeout', () => {
@@ -212,7 +212,7 @@ describe('Ludo timeouts (#1242)', () => {
     game.makeMove(move(P1, 'timeout'))
     expect(dataOf(game).tokens[P1]).toEqual([10, 26])
     expect(current(game)).toBe(P2)
-    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/A 6 rolled this way earns no extra roll/)
+    expect(ludo.detail.faq.timerRunsOut.a).toMatch(/A 6 rolled so earns no extra roll/)
   })
 
   it('is sent by the player\'s own open page, so the page says "while your game is open"', () => {
@@ -224,7 +224,7 @@ describe('Ludo timeouts (#1242)', () => {
   it('removes a silent player after 30 seconds, on a lobby read', () => {
     expect(HEARTBEAT_STALE_THRESHOLD_MS).toBe(30_000)
     expect(source('app/api/lobby/[code]/route.ts')).toMatch(/sweepStalePlayers/)
-    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/removes anyone silent for 30 seconds/)
+    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/removes them after 30 silent seconds/)
   })
 })
 
@@ -238,7 +238,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     // Quick Play and Play vs Bot pass no rules for Ludo, so the engine default applies.
     expect(source('app/api/quick-play/route.ts')).toMatch(/\(gameType as string\) === 'yahtzee' \? \{ rules: \{ mode: 'short' \} \} : undefined/)
     expect(dataOf(newGame()).mode).toBe('quick')
-    expect(ludo.detail.modes.quickOrClassic.desc).toMatch(/rooms opened by Quick Play or Play vs Bot use quick/)
+    expect(ludo.detail.modes.quickOrClassic.desc).toMatch(/Quick Play and Play vs Bot rooms use quick/)
   })
 
   it('keeps the mode through Play again and offers no way to change it later', () => {
@@ -246,7 +246,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(
       /type EditableSettingKey = 'maxPlayers' \| 'turnTimer' \| 'allowSpectators' \| 'theme' \| 'gameType'/
     )
-    expect(ludo.detail.faq.changeMode.a).toMatch(/The mode is set when the lobby is created, and Play again keeps it/)
+    expect(ludo.detail.faq.changeMode.a).toMatch(/The mode is fixed when the lobby is created and Play again keeps it/)
   })
 
   it('quotes the create default, the host range and the Play vs Bot clock', () => {
@@ -255,7 +255,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(ludo.detail.modes.turnClock.desc).toMatch(
-      /New lobbies default to 30 seconds, with 60, 90 or 120 on offer; before the start the host can pick 30 to 180\. Play vs Bot uses 45\./
+      /Lobbies default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start\. Play vs Bot uses 45\./
     )
   })
 
@@ -263,13 +263,13 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     const meta = getGameMetadata('ludo')
     expect(resolveBotTarget(meta.minPlayers, true) - 1).toBe(1)
     expect(new LudoGame('qp').getConfig().maxPlayers).toBe(4)
-    expect(ludo.detail.multiplayer.botsAndSolo.desc).toMatch(/Play vs Bot opens a room with one bot already seated/)
-    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Rooms opened by Quick Play have four seats/)
+    expect(ludo.detail.multiplayer.botsAndSolo.desc).toMatch(/Play vs Bot seats one bot/)
+    expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Quick Play rooms open with four seats/)
   })
 
   it('opens the in-game chat only once two people are seated', () => {
     expect(source('app/lobby/[code]/ludo-page.tsx')).toMatch(/const showChat = hasMultipleHumans \|\| isSpectator/)
-    expect(ludo.detail.multiplayer.withFriends.desc).toMatch(/Once two people are seated, a chat opens/)
+    expect(ludo.detail.multiplayer.withFriends.desc).toMatch(/chat opens once two people are seated/)
   })
 })
 
@@ -288,7 +288,7 @@ describe('Ludo bots against lib/bots/ludo and lib/bot-profiles.ts (#1242)', () =
     expect(bot.chooseOption(P1, options).token).toBe(0)
     jest.spyOn(Math, 'random').mockReturnValue(0.99)
     expect(bot.chooseOption(P1, options).token).toBe(1)
-    expect(ludo.detail.modes.botLevels.desc).toMatch(/Token Rookie picks any legal token at random/)
+    expect(ludo.detail.modes.botLevels.desc).toMatch(/Token Rookie moves at random/)
   })
 
   it('has the medium bot prefer a capture over leaving the yard, and leaving over heading home', () => {
@@ -305,6 +305,6 @@ describe('Ludo bots against lib/bots/ludo and lib/bot-profiles.ts (#1242)', () =
 
   it('has the hard bot count rivals one to six squares behind its landing square', () => {
     expect(source('lib/bots/ludo/ludo-bot.ts')).toMatch(/if \(distance < 1 \|\| distance > 6\) return false/)
-    expect(ludo.detail.modes.botLevels.desc).toMatch(/Ludo Grandmaster scores every move, counting rivals up to six squares behind where it lands/)
+    expect(ludo.detail.modes.botLevels.desc).toMatch(/Ludo Grandmaster scores each move, weighing rivals up to six squares behind/)
   })
 })

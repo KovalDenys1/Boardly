@@ -41,7 +41,6 @@ export default function LudoDetailContent() {
         t('games.ludo.detail.benefit4'),
       ]}
       rules={[
-        t('games.ludo.rules.serverRolls'),
         t('games.ludo.rules.sixToLeave'),
         t('games.ludo.rules.sixRollsAgain'),
         t('games.ludo.detail.rules.extraRollOnlyOnSix'),
@@ -51,7 +50,6 @@ export default function LudoDetailContent() {
         t('games.ludo.detail.rules.homeColumn'),
         t('games.ludo.rules.exactHome'),
         t('games.ludo.rules.winner'),
-        t('games.ludo.rules.modes'),
         t('games.ludo.rules.timer'),
       ]}
       modes={[
@@ -85,7 +83,6 @@ export default function LudoDetailContent() {
       ]}
       history={[
         t('games.ludo.detail.history.origin'),
-        t('games.ludo.detail.history.relatives'),
       ]}
       playVsBotGameType="ludo"
     />
