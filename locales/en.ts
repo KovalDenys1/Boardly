@@ -1443,6 +1443,20 @@ const en = {
           matchResultLast: 'In the deciding round the match result waits until both hands are showing.',
           timeoutRandomPick: 'If your clock runs out before you pick, a random move is locked in for you and counts like any other.',
         },
+        modes: {
+          matchLength: {
+            title: 'Best of three, always',
+            desc: 'There is no length setting: the first to win two rounds takes the match, and draws make it longer without counting.',
+          },
+          roundClock: {
+            title: 'A clock on every round',
+            desc: 'Rooms you create give 60 seconds a round, and the host can choose 30 to 180 before the start. Play vs Bot rounds get 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Tempo Rookie throws at random. Pattern Reader counters your most-played move about seven rounds in ten; Mind Gambit counters it every round.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',

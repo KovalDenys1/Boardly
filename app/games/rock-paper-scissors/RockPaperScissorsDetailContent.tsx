@@ -56,6 +56,11 @@ export default function RockPaperScissorsDetailContent() {
         t('games.rock_paper_scissors.detail.rules.matchResultLast'),
         t('games.rock_paper_scissors.detail.rules.timeoutRandomPick'),
       ]}
+      modes={[
+        { title: t('games.rock_paper_scissors.detail.modes.matchLength.title'), desc: t('games.rock_paper_scissors.detail.modes.matchLength.desc') },
+        { title: t('games.rock_paper_scissors.detail.modes.roundClock.title'), desc: t('games.rock_paper_scissors.detail.modes.roundClock.desc') },
+        { title: t('games.rock_paper_scissors.detail.modes.botLevels.title'), desc: t('games.rock_paper_scissors.detail.modes.botLevels.desc') },
+      ]}
     />
   )
 }

@@ -1443,6 +1443,20 @@ const no = {
           matchResultLast: 'I den avgjørende runden venter kampresultatet til begge hendene er synlige.',
           timeoutRandomPick: 'Går klokken din ut før du har valgt, låses et tilfeldig trekk for deg, og det teller som alle andre.',
         },
+        modes: {
+          matchLength: {
+            title: 'Alltid best av tre',
+            desc: 'Lengden kan ikke stilles inn: den som først vinner to runder, tar kampen, og uavgjorte runder gjør den lengre uten å telle.',
+          },
+          roundClock: {
+            title: 'En klokke på hver runde',
+            desc: 'Rom du lager, gir 60 sekunder per runde, og verten kan velge 30 til 180 før start. I Spill mot bot får hver runde 45.',
+          },
+          botLevels: {
+            title: 'Tre botnivåer',
+            desc: 'Tempo Rookie velger tilfeldig. Pattern Reader kontrer trekket du bruker mest, i omtrent sju av ti runder; Mind Gambit kontrer det i hver runde.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',
