@@ -54,6 +54,16 @@ export default function CheckersDetailContent() {
         { title: t('games.checkers.detail.modes.botLevels.title'), desc: t('games.checkers.detail.modes.botLevels.desc') },
         { title: t('games.checkers.detail.modes.rematches.title'), desc: t('games.checkers.detail.modes.rematches.desc') },
       ]}
+      strategy={[
+        { title: t('games.checkers.detail.strategy.guardBackRow.title'), desc: t('games.checkers.detail.strategy.guardBackRow.desc') },
+        { title: t('games.checkers.detail.strategy.holdTheCentre.title'), desc: t('games.checkers.detail.strategy.holdTheCentre.desc') },
+        { title: t('games.checkers.detail.strategy.moveInPairs.title'), desc: t('games.checkers.detail.strategy.moveInPairs.desc') },
+        { title: t('games.checkers.detail.strategy.baitTheForcedCapture.title'), desc: t('games.checkers.detail.strategy.baitTheForcedCapture.desc') },
+        { title: t('games.checkers.detail.strategy.readTheChain.title'), desc: t('games.checkers.detail.strategy.readTheChain.desc') },
+        { title: t('games.checkers.detail.strategy.raceForAKing.title'), desc: t('games.checkers.detail.strategy.raceForAKing.desc') },
+        { title: t('games.checkers.detail.strategy.tradeWhenAhead.title'), desc: t('games.checkers.detail.strategy.tradeWhenAhead.desc') },
+        { title: t('games.checkers.detail.strategy.crowningStopsTheChain.title'), desc: t('games.checkers.detail.strategy.crowningStopsTheChain.desc') },
+      ]}
       playVsBotGameType="checkers"
     />
   )

@@ -1638,6 +1638,40 @@ const en = {
             desc: 'When a game ends, the host\'s Play Again starts the next one in the same room. Wins add up by name, and a draw adds nothing.',
           },
         },
+        strategy: {
+          guardBackRow: {
+            title: 'Guard your back row',
+            desc: 'Men on your home row stop enemy men from being crowned there. Move them last.',
+          },
+          holdTheCentre: {
+            title: 'Hold the centre',
+            desc: 'A man in the middle has two forward squares and backs up its neighbours. On the edge it has one.',
+          },
+          moveInPairs: {
+            title: 'Move in pairs',
+            desc: 'A man with a friend right behind it on the diagonal cannot be jumped along that line: the landing square is taken.',
+          },
+          baitTheForcedCapture: {
+            title: 'Use the forced capture',
+            desc: 'Offer a man so the compulsory jump lands your opponent where you take two back.',
+          },
+          readTheChain: {
+            title: 'Read the whole chain',
+            desc: 'Before capturing, follow where each jump lands. A row of gaps can turn one capture into three.',
+          },
+          raceForAKing: {
+            title: 'Race for the first king',
+            desc: 'A king also moves backwards, which usually decides an even ending.',
+          },
+          tradeWhenAhead: {
+            title: 'Trade when ahead',
+            desc: 'One man up, even exchanges shrink the board to an ending you can win.',
+          },
+          crowningStopsTheChain: {
+            title: 'Crowning stops a chain',
+            desc: 'A man that reaches the far row mid-capture is crowned and stops there, so it jumps no further that move.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

@@ -1638,6 +1638,40 @@ const no = {
             desc: 'Når et parti er over, starter vertens «Spill igjen» det neste i samme rom. Seirene summeres per spiller, og uavgjort gir ingenting.',
           },
         },
+        strategy: {
+          guardBackRow: {
+            title: 'Vokt bakerste rad',
+            desc: 'Brikker på din egen hjemrad hindrer motstanderen i å krone brikker der. Flytt dem sist.',
+          },
+          holdTheCentre: {
+            title: 'Hold midten',
+            desc: 'En brikke i midten har to ruter å gå til og støtter naboene. På kanten har den bare én.',
+          },
+          moveInPairs: {
+            title: 'Flytt i par',
+            desc: 'En brikke med en egen brikke rett bak seg på diagonalen kan ikke hoppes over langs den linjen: landingsruten er opptatt.',
+          },
+          baitTheForcedCapture: {
+            title: 'Bruk slagtvangen',
+            desc: 'Ofre en brikke slik at det tvungne hoppet fører motstanderen dit du slår to tilbake.',
+          },
+          readTheChain: {
+            title: 'Les hele kjeden',
+            desc: 'Før du slår, følg hvor hvert hopp lander. En rekke åpne ruter kan gjøre ett slag til tre.',
+          },
+          raceForAKing: {
+            title: 'Kappløp om første konge',
+            desc: 'En konge kan også gå bakover, og det avgjør ofte et jevnt sluttspill.',
+          },
+          tradeWhenAhead: {
+            title: 'Bytt når du leder',
+            desc: 'Er du én brikke foran, krymper jevne bytter brettet til et sluttspill du kan vinne.',
+          },
+          crowningStopsTheChain: {
+            title: 'Kroning stopper kjeden',
+            desc: 'En brikke som når bakerste rad midt i et slag, blir konge og stopper der, så den hopper ikke videre det trekket.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',
