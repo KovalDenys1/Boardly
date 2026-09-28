@@ -1529,6 +1529,36 @@ const no = {
         history: {
           origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Stein, saks, papir på Boardly gratis?',
+            a: 'Ja. Venner, alle tre botene og alle tidsinnstillinger er gratis; Premium gir bare ekstra rundt kampen, som tilskuere.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer det på mobil?',
+            a: 'Ja, i mobilnettleseren uten noen app å installere. Ett trykk på en valgflis låser valget ditt.',
+          },
+          playFriendRemotely: {
+            q: 'Kan jeg spille mot en venn som er et annet sted?',
+            a: 'Ja. Lag en lobby, send den firetegns koden eller lenken, og spill direkte fra hver deres enhet.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange spillere er det i en kamp?',
+            a: 'Nøyaktig to. Motstanderen er et annet menneske eller en bot, og det er aldri en tredje spiller i tillegg.',
+          },
+          botSeesPick: {
+            q: 'Kan boten se valget mitt?',
+            a: 'Nei. Den velger ofte etter at du har låst, men studerer bare ferdige runder, aldri valget som fortsatt venter.',
+          },
+          changeTimer: {
+            q: 'Kan jeg endre hvor lenge en runde varer?',
+            a: 'Ja, som vert, i lobbyinnstillingene: 30 til 180 sekunder. Nye rom starter på 60, rom fra Spill mot bot på 45.',
+          },
+          playAgain: {
+            q: 'Kan vi spille igjen etter en kamp?',
+            a: 'Ja. Verten kan starte en ny kamp i samme rom, eller først sende begge spillerne tilbake til venterommet.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

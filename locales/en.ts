@@ -1529,6 +1529,36 @@ const en = {
         history: {
           origin: 'Hand games like it were recorded in China around 1600, and the rock, paper and scissors form took shape in Japan as jan-ken before spreading west. Some Americans call it roshambo.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Rock Paper Scissors on Boardly free?',
+            a: 'Yes. Friends, all three bots and every timer setting are free; Premium only adds extras around a match, such as spectators.',
+          },
+          worksOnPhone: {
+            q: 'Does it work on a phone?',
+            a: 'Yes, in the mobile browser with no app to install. One tap on a choice tile locks your pick in.',
+          },
+          playFriendRemotely: {
+            q: 'Can I play a friend who is somewhere else?',
+            a: 'Yes. Create a lobby, send the four-character code or the link, and play live from separate devices.',
+          },
+          howManyPlayers: {
+            q: 'How many players are in a match?',
+            a: 'Exactly two. Your opponent is another person or a bot, and there is never a third player alongside.',
+          },
+          botSeesPick: {
+            q: 'Can the bot see my pick?',
+            a: 'No. It often chooses after you lock in, but it studies only finished rounds, never the pick still waiting.',
+          },
+          changeTimer: {
+            q: 'Can I change how long a round lasts?',
+            a: 'Yes, as host, in the lobby settings: 30 to 180 seconds. New rooms start at 60, Play vs Bot rooms at 45.',
+          },
+          playAgain: {
+            q: 'Can we play again after a match?',
+            a: 'Yes. The host can start a new match in the same room, or send both players back to the lobby first.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',
