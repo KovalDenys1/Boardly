@@ -622,6 +622,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Team word description game where players describe words to their teammates without saying the word itself, racing against a timer to score points.',
       questionKey: 'games.alias.seo.question',
       answerKey: 'games.alias.seo.answer',
+      // Product questions only: the how-to guide already answers player
+      // count, voice calls, what counts as cheating, skipping, bots and game
+      // length (#1237).
+      faq: [
+        { questionKey: 'games.alias.detail.faq.isItFree.q', answerKey: 'games.alias.detail.faq.isItFree.a' },
+        { questionKey: 'games.alias.detail.faq.worksOnPhone.q', answerKey: 'games.alias.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.alias.detail.faq.timerRunsOut.q', answerKey: 'games.alias.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.alias.detail.faq.canGuessersSeeWord.q', answerKey: 'games.alias.detail.faq.canGuessersSeeWord.a' },
+        { questionKey: 'games.alias.detail.faq.howTeamsArePicked.q', answerKey: 'games.alias.detail.faq.howTeamsArePicked.a' },
+        { questionKey: 'games.alias.detail.faq.wordsInEnglish.q', answerKey: 'games.alias.detail.faq.wordsInEnglish.a' },
+        { questionKey: 'games.alias.detail.faq.describerLeaves.q', answerKey: 'games.alias.detail.faq.describerLeaves.a' },
+      ],
     },
     availability: 'available',
     route: '/games/alias/lobbies',

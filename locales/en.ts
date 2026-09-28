@@ -1764,6 +1764,36 @@ const en = {
         history: {
           origin: 'Describing a word without saying it is an old parlour game; the boxed Alias made it a party classic in the Nordic countries and Eastern Europe.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Alias on Boardly free?',
+            a: 'Yes. Rooms of up to ten, every turn length and the whole deck are free; only a 12- or 16-seat room needs a Premium host.',
+          },
+          worksOnPhone: {
+            q: 'Does Alias work on a phone?',
+            a: 'Yes, in the mobile browser. The card and the Guesses feed sit on two tabs, one tap apart.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'The turn ends and every word left on the card counts as a skip. End Turn before zero leaves them unscored.',
+          },
+          canGuessersSeeWord: {
+            q: 'Can guessers see the word?',
+            a: 'Only the describer\'s device receives the card. Everyone else sees a question mark and the describer\'s name.',
+          },
+          howTeamsArePicked: {
+            q: 'How are the teams picked?',
+            a: 'Newcomers join the smaller team, anyone can switch sides on the team screen, and the host starts once no team is empty.',
+          },
+          wordsInEnglish: {
+            q: 'Are the words in English?',
+            a: 'Yes. The deck is 200 English words, such as castle and kaleidoscope, in every site language, and none repeats within a game.',
+          },
+          describerLeaves: {
+            q: 'What if the describer leaves mid-turn?',
+            a: 'The turn ends at once and scores only the words already marked; if fewer than three players remain, the game ends.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

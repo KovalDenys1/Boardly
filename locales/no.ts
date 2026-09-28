@@ -1764,6 +1764,36 @@ const no = {
         history: {
           origin: 'Å forklare et ord uten å si det er en gammel selskapslek; brettspillet Alias gjorde den til en festklassiker i Norden og Øst-Europa.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Alias på Boardly gratis?',
+            a: 'Ja. Rom for opptil ti, alle turlengder og hele ordstokken er gratis; bare et rom med 12 eller 16 plasser krever en vert med Premium.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Alias på mobil?',
+            a: 'Ja, i mobilnettleseren. Kortet og «Gjettinger»-strømmen ligger i to faner, ett trykk fra hverandre.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når klokka går ut?',
+            a: 'Turen slutter, og hvert ord som er igjen på kortet, teller som et hopp. «Avslutning av tur» før null lar dem stå uten poeng.',
+          },
+          canGuessersSeeWord: {
+            q: 'Kan de som gjetter, se ordet?',
+            a: 'Bare forklarerens enhet får kortet. Alle andre ser et spørsmålstegn og navnet på forklareren.',
+          },
+          howTeamsArePicked: {
+            q: 'Hvordan blir lagene satt sammen?',
+            a: 'Nykommere havner på det minste laget, alle kan bytte side på lagskjermen, og verten starter når ingen lag er tomme.',
+          },
+          wordsInEnglish: {
+            q: 'Er ordene på engelsk?',
+            a: 'Ja. Ordstokken er 200 engelske ord, som castle og kaleidoscope, på alle språkene nettstedet har, og ingen gjentas i samme spill.',
+          },
+          describerLeaves: {
+            q: 'Hva om forklareren går midt i turen?',
+            a: 'Turen slutter med en gang og teller bare ordene som alt er markert; er det færre enn tre spillere igjen, er spillet over.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',
