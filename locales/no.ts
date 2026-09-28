@@ -1630,6 +1630,15 @@ const no = {
         benefit2: 'Enkle romlenker til vennene.',
         benefit3: 'Raske runder som passer i et selskap.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          teamsFromFour: 'Fra fire spillere og oppover deles rommet i to lag, og hver nykommer plasseres på det minste.',
+          threeAreSolo: 'Med nøyaktig tre spillere blir det ingen lag: hver er sin egen side, får kortet etter tur og scorer bare mens hen forklarer.',
+          tenWordCard: 'Hver tur gir forklareren et kort med ti ord, vist ett om gangen, og ingen ord deles ut to ganger i samme spill.',
+          markEveryWord: 'Forklareren trykker «Gjett riktig» eller «Hopp over» for hvert ord, og det neste dukker opp uansett.',
+          howATurnEnds: 'En tur stopper ved det tiende ordet, ved «Avslutning av tur» eller når klokka når null – det som skjer først.',
+          describerRotates: 'Lagene bytter på, og forklarerrollen går videre til neste lagkamerat hver tur i stedet for å bli hos én spiller.',
+          threeTurnsEach: 'Når alle lag har hatt tre turer, vinner høyest sum, og lag som står likt på toppen, deler uavgjort.',
+        },
       },
       lobbies: {
         title: 'Alias-spill',

@@ -1630,6 +1630,15 @@ const en = {
         benefit2: 'Simple room links for friends.',
         benefit3: 'Fast rounds that work for parties.',
         benefit4: 'No app download planned.',
+        rules: {
+          teamsFromFour: 'From four players up the room splits into two teams, and each newcomer is placed on the smaller one.',
+          threeAreSolo: 'Exactly three players means no teams: everyone is a side of one, takes the card in rotation and scores only while describing.',
+          tenWordCard: 'Every turn deals the describer a card of ten words, shown one at a time, and no word is dealt twice in the same game.',
+          markEveryWord: 'The describer taps Guessed or Skip for each word, and the next one appears either way.',
+          howATurnEnds: 'A turn stops at the tenth word, at End Turn, or when the clock reaches zero, whichever comes first.',
+          describerRotates: 'Teams alternate, and the describer seat moves to the next teammate each turn instead of staying with one player.',
+          threeTurnsEach: 'Once every team has had three turns the higher total wins, and teams level at the top share a tie.',
+        },
       },
       lobbies: {
         title: 'Alias',

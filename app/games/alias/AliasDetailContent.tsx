@@ -44,6 +44,15 @@ export default function AliasDetailContent() {
         t('games.alias.detail.benefit3'),
         t('games.alias.detail.benefit4'),
       ]}
+      rules={[
+        t('games.alias.detail.rules.teamsFromFour'),
+        t('games.alias.detail.rules.threeAreSolo'),
+        t('games.alias.detail.rules.tenWordCard'),
+        t('games.alias.detail.rules.markEveryWord'),
+        t('games.alias.detail.rules.howATurnEnds'),
+        t('games.alias.detail.rules.describerRotates'),
+        t('games.alias.detail.rules.threeTurnsEach'),
+      ]}
     />
   )
 }
