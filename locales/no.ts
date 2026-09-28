@@ -1423,34 +1423,33 @@ const no = {
         intro0: 'Stein, saks, papir er et spill for to, der begge velger ett av tre alternativer samtidig: stein, saks eller papir.',
         intro1: 'Stein slår saks, saks slår papir, og papir slår stein. Velger begge det samme, blir runden uavgjort og spilles på nytt.',
         step1Title: 'Lag en lobby eller bli med i en',
-        step1Desc: 'Åpne et rom fra lobbysiden, eller bli med i en venns rom med den firetegns koden. Rom i Stein, saks, papir har plass til to spillere og ikke flere.',
+        step1Desc: 'Åpne et rom fra lobbysiden, eller bli med i en venns rom med den firetegns koden. Hvert rom har to plasser.',
         step2Title: 'Velg trekket ditt',
-        step2Desc: 'Velg stein, saks eller papir før tiden går ut. Ett trykk låser valget, og det kan ikke endres.',
+        step2Desc: 'Velg stein, saks eller papir før tiden går ut. Ett trykk låser det.',
         step3Title: 'Samtidig avsløring',
-        step3Desc: 'Når det andre valget er inne, rister begge hendene og snus samtidig. Så vises rundens resultat, og deretter endres stillingen.',
+        step3Desc: 'Begge hendene snus i det øyeblikket det andre valget kommer inn. Så vises rundens resultat.',
         step4Title: 'Først til målet vinner',
-        step4Desc: 'Spill runder til én spiller har vunnet to. Etter kampen kan verten starte en omkamp i samme rom.',
+        step4Desc: 'Spill runder til én spiller har vunnet to. Da kan verten starte en omkamp.',
         benefitsTitle: 'Derfor spiller du Stein, saks, papir på Boardly',
         benefit1: 'Samtidig avsløring i sanntid.',
         benefit2: 'En bot å øve mot når du spiller alene.',
         benefit3: 'Runder som starter med én gang.',
         benefit4: 'Gratis å spille som gjest.',
         rules: {
-          noTurns: 'Det finnes ingen turer. I hver runde velger begge spillerne stein, saks eller papir én gang, i den rekkefølgen de vil.',
+          noTurns: 'Det finnes ingen turer: i hver runde velger begge én gang, i hvilken som helst rekkefølge.',
           pickIsFinal: 'Et valg låses i det øyeblikket du trykker, og kan ikke endres i den runden.',
-          pickStaysHidden: 'Til begge valgene er inne, ser motstanderen bare at du har låst, ikke hvilket trekk, selv om siden lastes inn på nytt.',
-          revealOrder: 'Avsløringen går i fast rekkefølge: begge hendene rister og snus samtidig, rundens utfall vises, og først da endres stillingen.',
-          matchResultLast: 'I den avgjørende runden venter kampresultatet til begge hendene er synlige.',
-          timeoutRandomPick: 'Går klokken din ut før du har valgt, låses et tilfeldig trekk for deg, og det teller som alle andre.',
+          pickStaysHidden: 'Til begge valgene er inne, ser motstanderen bare at du har låst, selv etter ny innlasting.',
+          revealOrder: 'Begge hendene snus samtidig, så vises rundens utfall, og først da endres stillingen.',
+          timeoutRandomPick: 'Går klokken din ut, låses et tilfeldig trekk for deg.',
         },
         modes: {
           matchLength: {
             title: 'Alltid best av tre',
-            desc: 'Lengden kan ikke stilles inn: den som først vinner to runder, tar kampen, og uavgjorte runder gjør den lengre uten å telle.',
+            desc: 'Først til to rundeseire tar kampen; uavgjorte runder legger til runder uten å telle.',
           },
           roundClock: {
             title: 'En klokke på hver runde',
-            desc: 'Rom du lager, gir 60 sekunder per runde, og verten kan velge 30 til 180 før start. I Spill mot bot får hver runde 45.',
+            desc: '60 sekunder per runde som standard; verten kan velge 30 til 180. Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre botnivåer',
@@ -1460,11 +1459,11 @@ const no = {
         strategy: {
           readTheRoundList: {
             title: 'Les rundelisten',
-            desc: 'Hvert tidligere par av trekk ligger i Runder-panelet. Se der etter trekket motstanderen foretrekker.',
+            desc: 'Runder-panelet viser hvert tidligere par av trekk; finn motstanderens favoritt der.',
           },
           answerARepeat: {
             title: 'Svar på en gjentakelse',
-            desc: 'Et trekk som er brukt to ganger på rad, kommer ofte en tredje gang. Velg det som slår det.',
+            desc: 'Et trekk brukt to ganger på rad kommer ofte igjen. Slå det.',
           },
           spotACycle: {
             title: 'Se etter en syklus',
@@ -1476,7 +1475,7 @@ const no = {
           },
           watchYourOwnCount: {
             title: 'Følg med på din egen telling',
-            desc: 'Når ett trekk leder i din egen telling, må du regne med at en oppmerksom motstander har sett det.',
+            desc: 'Leder ett trekk i din telling, har motstanderen trolig sett det.',
           },
           exploitMindGambit: {
             title: 'Utnytt Mind Gambit',
@@ -1488,7 +1487,7 @@ const no = {
           },
           climbTheLevels: {
             title: 'Gå opp nivåene',
-            desc: 'Tempo Rookie viser ren tilfeldighet, Mind Gambit belønner en klar lesning, og Pattern Reader tester begge deler.',
+            desc: 'Tempo Rookie er ren tilfeldighet, Mind Gambit belønner en klar lesning, Pattern Reader tester begge deler.',
           },
         },
         mistakes: {
@@ -1498,7 +1497,7 @@ const no = {
           },
           waitingForTheirLockIn: {
             title: 'Å vente på at de låser',
-            desc: 'Det avslører ingenting om trekket deres, så du vinner ingenting på å vente.',
+            desc: 'At de har låst, sier ingenting om trekket de valgte.',
           },
           countingDraws: {
             title: 'Å telle uavgjort som fremgang',
@@ -1508,7 +1507,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn hvor som helst',
-            desc: 'Send koden eller invitasjonslenken og spill fra to enheter, med chat ved siden av brettet.',
+            desc: 'Send koden eller invitasjonslenken; en chat står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -1524,7 +1523,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Det passer for alle med et ledig minutt: venner som avgjør hvem som starter, spillere på pause, eller alle som vil teste om de leser folk bedre enn tilfeldighetene.',
+          whoItSuits: 'Alle med et ledig minutt: venner som avgjør hvem som starter, spillere på pause, eller alle som vil lese et menneske.',
         },
         history: {
           origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',

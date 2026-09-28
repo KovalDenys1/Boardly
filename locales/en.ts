@@ -1423,34 +1423,33 @@ const en = {
         intro0: 'Rock Paper Scissors is a two-player game where both players pick one of three options at the same time: Rock, Paper, or Scissors.',
         intro1: 'Rock beats Scissors, Scissors beats Paper, and Paper beats Rock. If both players pick the same option, the round is a draw and replays.',
         step1Title: 'Create or join a lobby',
-        step1Desc: 'Open a room from the lobbies page, or join a friend\'s with its four-character code. Rock Paper Scissors rooms hold two players and no more.',
+        step1Desc: 'Open a room from the lobbies page, or join a friend\'s with its four-character code. Each room seats two.',
         step2Title: 'Pick your move',
-        step2Desc: 'Choose Rock, Paper or Scissors before the timer runs out. One tap locks the pick in, and it cannot be changed.',
+        step2Desc: 'Choose Rock, Paper or Scissors before the timer runs out. One tap locks it in.',
         step3Title: 'Simultaneous reveal',
-        step3Desc: 'Once the second pick is in, both hands shake and turn over together. The round result appears next, then the score moves.',
+        step3Desc: 'Both hands turn over the moment the second pick lands. Then the round result shows.',
         step4Title: 'First to the target wins',
-        step4Desc: 'Play rounds until one player has won two. After the match the host can start a rematch in the same room.',
+        step4Desc: 'Play rounds until one player has won two. Then the host can call a rematch.',
         benefitsTitle: 'Why play Rock Paper Scissors on Boardly?',
         benefit1: 'Real-time simultaneous reveals.',
         benefit2: 'Bot support for solo practice.',
         benefit3: 'Instant rounds with no setup.',
         benefit4: 'Free to play as a guest.',
         rules: {
-          noTurns: 'There are no turns. Each round both players pick Rock, Paper or Scissors once, in whatever order they like.',
+          noTurns: 'There are no turns: each round, both players pick once, in any order.',
           pickIsFinal: 'A pick is locked the moment you tap it and cannot be changed for that round.',
-          pickStaysHidden: 'Until both picks are in, your opponent sees only that you have locked in, not the move, even if they reload the page.',
-          revealOrder: 'The reveal runs in order: both hands shake and flip together, the round verdict appears, and only then does the score change.',
-          matchResultLast: 'In the deciding round the match result waits until both hands are showing.',
-          timeoutRandomPick: 'If your clock runs out before you pick, a random move is locked in for you and counts like any other.',
+          pickStaysHidden: 'Until both picks are in, your opponent sees only that you locked in, even after a reload.',
+          revealOrder: 'Both hands flip together, then the round verdict appears, and only then does the score change.',
+          timeoutRandomPick: 'If your clock runs out, a random move is locked in for you.',
         },
         modes: {
           matchLength: {
             title: 'Best of three, always',
-            desc: 'There is no length setting: the first to win two rounds takes the match, and draws make it longer without counting.',
+            desc: 'First to two round wins takes the match; draws add rounds without counting.',
           },
           roundClock: {
             title: 'A clock on every round',
-            desc: 'Rooms you create give 60 seconds a round, and the host can choose 30 to 180 before the start. Play vs Bot rounds get 45.',
+            desc: '60 seconds a round by default; the host can choose 30 to 180. Play vs Bot uses 45.',
           },
           botLevels: {
             title: 'Three bot levels',
@@ -1460,11 +1459,11 @@ const en = {
         strategy: {
           readTheRoundList: {
             title: 'Read the round list',
-            desc: 'Every past pair of throws stays in the Rounds panel. Look there for the move your opponent favours.',
+            desc: 'The Rounds panel lists every past pair of throws; find your opponent\'s favourite there.',
           },
           answerARepeat: {
             title: 'Answer a repeat',
-            desc: 'A move thrown twice running often comes a third time. Play the one that beats it.',
+            desc: 'A move thrown twice running often comes again. Beat it.',
           },
           spotACycle: {
             title: 'Spot a cycle',
@@ -1476,7 +1475,7 @@ const en = {
           },
           watchYourOwnCount: {
             title: 'Watch your own count',
-            desc: 'When one move leads your own tally, assume an attentive opponent has noticed.',
+            desc: 'If one move leads your tally, your opponent has likely noticed.',
           },
           exploitMindGambit: {
             title: 'Exploit Mind Gambit',
@@ -1488,7 +1487,7 @@ const en = {
           },
           climbTheLevels: {
             title: 'Climb the levels',
-            desc: 'Tempo Rookie shows plain chance, Mind Gambit rewards a clean read, and Pattern Reader tests both.',
+            desc: 'Tempo Rookie is pure chance, Mind Gambit rewards a clean read, Pattern Reader tests both.',
           },
         },
         mistakes: {
@@ -1498,7 +1497,7 @@ const en = {
           },
           waitingForTheirLockIn: {
             title: 'Waiting for their lock-in',
-            desc: 'It reveals nothing about their move, so waiting for it gains nothing.',
+            desc: 'Their lock-in says nothing about the move they chose.',
           },
           countingDraws: {
             title: 'Counting draws as progress',
@@ -1508,7 +1507,7 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'Play a friend anywhere',
-            desc: 'Send the code or the invite link and play from two devices, with a chat beside the board.',
+            desc: 'Send the code or invite link; a chat sits beside the board.',
           },
           botsAndSolo: {
             title: 'Practise alone',
@@ -1524,7 +1523,7 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'It suits anyone with a spare minute: friends settling who goes first, players on a break, or anyone testing whether they read people better than chance.',
+          whoItSuits: 'Anyone with a spare minute: friends deciding who goes first, players on a break, or anyone out to read a person.',
         },
         history: {
           origin: 'Hand games like it were recorded in China around 1600, and the rock, paper and scissors form took shape in Japan as jan-ken before spreading west. Some Americans call it roshambo.',
