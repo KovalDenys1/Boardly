@@ -989,9 +989,9 @@ const no = {
         step2Title: 'Vend to kort',
         step2Desc: 'Snu to kort med baksiden opp når det er din tur. Begge bildene vises på alle skjermer.',
         step3Title: 'Behold parene',
-        step3Desc: 'Et par som stemmer, blir liggende åpent og gir deg ett poeng. Du får også en tur til.',
+        step3Desc: 'Et par som stemmer, blir liggende åpent og gir ett poeng. Du får også en tur til.',
         step4Title: 'Finn flest par',
-        step4Desc: 'Når alle kortene er matchet, vinner den med flest poeng. Står lederne likt, blir det uavgjort.',
+        step4Desc: 'Når alle kortene er matchet, vinner den med flest poeng. Likt i toppen blir uavgjort.',
         benefitsTitle: 'Hvorfor spille Hukommelse på Boardly?',
         benefit1: 'Tre vanskelighetsgrader for ulike grupper.',
         benefit2: 'Brettet oppdateres live for alle spillere.',
@@ -1000,8 +1000,8 @@ const no = {
         rules: {
           flipTwo: 'På din tur snur du to kort med baksiden opp, ett om gangen; åpne eller tatte kort kan ikke velges.',
           matchKeepsTurn: 'Et par som stemmer, blir liggende åpent, gir ett poeng og lar deg snu igjen med en gang.',
-          missPassesTurn: 'Et bom vises i omtrent ett sekund, så snus begge kortene og neste spiller er på tur.',
-          clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine tilbake, og turen går videre uten poeng.',
+          missPassesTurn: 'Et bom vises i et sekund eller to, så snus begge kortene og neste spiller er på tur.',
+          clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine som ikke ble par, og turen går videre.',
           lastPair: 'Spillet er over i det øyeblikket det siste paret er tatt.',
         },
         scoring: {
@@ -1028,11 +1028,11 @@ const no = {
         modes: {
           boardSize: {
             title: 'Tre brett, verten velger',
-            desc: 'Opprettingsskjemaet tilbyr 16, 20 eller 36 kort (4×4, 5×4 eller 6×6), med det minste forhåndsvalgt.',
+            desc: '16, 20 eller 36 kort (4×4, 5×4 eller 6×6), med det minste forhåndsvalgt.',
           },
           turnClock: {
             title: 'Turklokke',
-            desc: 'Hver tur får 30, 60, 90 eller 120 sekunder, 60 med mindre verten velger noe annet.',
+            desc: 'Hver tur får 30, 60, 90 eller 120 sekunder, 60 som standard; «Spill mot bot» bruker 45.',
           },
           botLevels: {
             title: 'Tre boter',
@@ -1042,7 +1042,7 @@ const no = {
         strategy: {
           flipUnknownFirst: {
             title: 'Nytt kort først',
-            desc: 'Begynn med et kort du ikke har sett; vet du hvor tvillingen ligger, er poenget ditt.',
+            desc: 'Begynn med et kort du ikke har sett; kjenner du tvillingen, er poenget ditt.',
           },
           safeSecondFlip: {
             title: 'Et trygt andrekort',
@@ -1070,7 +1070,7 @@ const no = {
           },
           climbTheBots: {
             title: 'Klatre på bot-stigen',
-            desc: 'Begynn med Memory Scout og gå opp etter hvert som hukommelsen skjerpes.',
+            desc: 'Begynn med Memory Scout og gå opp etter hvert som du blir bedre.',
           },
         },
         mistakes: {
@@ -1080,11 +1080,11 @@ const no = {
           },
           lookingAway: {
             title: 'Å se bort',
-            desc: 'En annen spillers bom vises i omtrent ett sekund, så er det borte.',
+            desc: 'En annen spillers bom vises i et sekund eller to, så er det borte.',
           },
           lettingTheClockRun: {
             title: 'Å la klokken gå ut',
-            desc: 'En tur som går ut på tid, gir ingen poeng, selv med et kjent par.',
+            desc: 'Lar du klokken gå ut, får du ikke flere poeng, selv med et par du kjenner.',
           },
         },
         multiplayer: {
@@ -1094,11 +1094,11 @@ const no = {
           },
           botsAndSolo: {
             title: 'Alene mot en bot',
-            desc: '«Spill mot bot» starter et parti med en gang, eller sett en bot inn i din egen lobby.',
+            desc: '«Spill mot bot» åpner et bord der en bot allerede sitter, klart til start, eller du kan sette en bot inn i din egen lobby.',
           },
           turnTimer: {
             title: 'Ingen holder bordet igjen',
-            desc: 'Alle ser nedtellingen, og en spiller som ikke gjør noe, mister bare turen.',
+            desc: 'Alle spillerne ser nedtellingen; lar du den gå ut, mister du turen.',
           },
           guestNoDownload: {
             title: 'Rett i nettleseren',
@@ -1118,11 +1118,11 @@ const no = {
           },
           worksOnPhone: {
             q: 'Fungerer Hukommelse på mobil?',
-            a: 'Ja, i mobilnettleseren uten noen app. Trekk og chat ligger i faner ved siden av brettet.',
+            a: 'Ja, i mobilnettleseren. Trekkene ligger i en fane ved siden av brettet, og chatten også når to eller flere spiller.',
           },
           timerRunsOut: {
             q: 'Hva skjer hvis turklokken min går ut?',
-            a: 'Du mister den turen, ikke spillet: kortene du hadde snudd, legges tilbake med baksiden opp.',
+            a: 'Du mister den turen, ikke spillet: kort du hadde snudd uten å få par, legges tilbake med baksiden opp.',
           },
           playRemotely: {
             q: 'Hvordan spiller jeg med en venn et annet sted?',
@@ -1138,7 +1138,7 @@ const no = {
           },
           canPeek: {
             q: 'Kan noen tjuvkikke på kortene som ligger med baksiden opp?',
-            a: 'Nei. Bildet på et kort når spillernes nettlesere først når kortet er snudd, aldri før.',
+            a: 'Ingen spiller kan det. Bildet på et kort når spillernes nettlesere først når kortet er snudd, aldri før.',
           },
         },
       },

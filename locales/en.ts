@@ -989,9 +989,9 @@ const en = {
         step2Title: 'Flip two cards',
         step2Desc: 'Reveal two face-down cards on your turn. Both pictures show on every screen.',
         step3Title: 'Keep the matches',
-        step3Desc: 'A matching pair stays open and adds a point to your score. It also earns you another go.',
+        step3Desc: 'A matching pair stays open and scores a point. It also earns you another go.',
         step4Title: 'Find the most pairs',
-        step4Desc: 'When all cards are matched, the highest score wins. Leaders on the same score share a tie.',
+        step4Desc: 'When all cards are matched, the highest score wins. Equal leaders tie.',
         benefitsTitle: 'Why play Memory on Boardly?',
         benefit1: 'Three difficulty levels for different groups.',
         benefit2: 'Live board updates for every player.',
@@ -1000,8 +1000,8 @@ const en = {
         rules: {
           flipTwo: 'On your turn you turn over two face-down cards, one at a time; open or claimed cards cannot be picked.',
           matchKeepsTurn: 'A match stays face up, scores one point and lets you flip again straight away.',
-          missPassesTurn: 'A miss shows for about a second, then both cards turn back and the next player moves.',
-          clockRunsOut: 'If the turn clock reaches zero, your face-up cards turn back and the turn passes without a point.',
+          missPassesTurn: 'A miss shows for a second or two, then both cards turn back and the next player moves.',
+          clockRunsOut: 'If the turn clock reaches zero, your unmatched face-up cards turn back and the turn passes.',
           lastPair: 'The game ends the moment the final pair is claimed.',
         },
         scoring: {
@@ -1028,11 +1028,11 @@ const en = {
         modes: {
           boardSize: {
             title: 'Three boards, the host\'s choice',
-            desc: 'The create form offers 16, 20 or 36 cards (4×4, 5×4 or 6×6), with the smallest preselected.',
+            desc: '16, 20 or 36 cards (4×4, 5×4 or 6×6), with the smallest preselected.',
           },
           turnClock: {
             title: 'Turn clock',
-            desc: 'Each turn gets 30, 60, 90 or 120 seconds, 60 unless the host picks another.',
+            desc: 'Each turn gets 30, 60, 90 or 120 seconds, 60 by default; Play vs Bot uses 45.',
           },
           botLevels: {
             title: 'Three bots',
@@ -1042,7 +1042,7 @@ const en = {
         strategy: {
           flipUnknownFirst: {
             title: 'New card first',
-            desc: 'Open with an unseen card; if you know where its twin lies, the point is yours.',
+            desc: 'Open with an unseen card; if you know its twin, the point is yours.',
           },
           safeSecondFlip: {
             title: 'A safe second flip',
@@ -1070,7 +1070,7 @@ const en = {
           },
           climbTheBots: {
             title: 'Climb the bot ladder',
-            desc: 'Start with Memory Scout and move up as your recall sharpens.',
+            desc: 'Start with Memory Scout and move up as you improve.',
           },
         },
         mistakes: {
@@ -1080,11 +1080,11 @@ const en = {
           },
           lookingAway: {
             title: 'Looking away',
-            desc: 'Another player\'s miss is on screen for about a second, then it is gone.',
+            desc: 'Another player\'s miss is on screen for a second or two, then it is gone.',
           },
           lettingTheClockRun: {
             title: 'Letting the clock run',
-            desc: 'A timed-out turn scores nothing, even with a known pair.',
+            desc: 'Running out the clock scores nothing more, even with a pair you know.',
           },
         },
         multiplayer: {
@@ -1094,11 +1094,11 @@ const en = {
           },
           botsAndSolo: {
             title: 'Solo against a bot',
-            desc: 'Play vs Bot starts a game at once, or seat a bot in your own lobby.',
+            desc: 'Play vs Bot opens a table with a bot already seated, ready to start, or seat a bot in your own lobby.',
           },
           turnTimer: {
             title: 'Nobody stalls the table',
-            desc: 'Everyone sees the countdown, and an idle player just loses the turn.',
+            desc: 'Every player sees the countdown; let it run out and you lose the turn.',
           },
           guestNoDownload: {
             title: 'Straight in the browser',
@@ -1118,11 +1118,11 @@ const en = {
           },
           worksOnPhone: {
             q: 'Does Memory work on a phone?',
-            a: 'Yes, in the mobile browser with no app. Moves and chat sit in tabs beside the board.',
+            a: 'Yes, in the mobile browser. Moves sit in a tab beside the board, plus chat when two or more people play.',
           },
           timerRunsOut: {
             q: 'What if my turn clock runs out?',
-            a: 'You lose that turn, not the game: any card you had turned over flips back face down.',
+            a: 'You lose that turn, not the game: any unmatched card you had turned over flips back face down.',
           },
           playRemotely: {
             q: 'How do I play a friend who is elsewhere?',
@@ -1138,7 +1138,7 @@ const en = {
           },
           canPeek: {
             q: 'Can anyone peek at face-down cards?',
-            a: 'No. A card\'s picture only reaches players\' browsers once it is turned over, never before.',
+            a: 'No player can. A card\'s picture only reaches players\' browsers once it is turned over, never before.',
           },
         },
       },
