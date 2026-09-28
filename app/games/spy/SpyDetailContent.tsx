@@ -66,6 +66,10 @@ export default function SpyDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.spy.detail.modes.tableSize.title'), desc: t('games.spy.detail.modes.tableSize.desc') },
+        { title: t('games.spy.detail.modes.fixedClocks.title'), desc: t('games.spy.detail.modes.fixedClocks.desc') },
+      ]}
     />
   )
 }

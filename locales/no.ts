@@ -872,6 +872,16 @@ const no = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Opprettingsskjemaet tilbyr 3 til 8 plasser, 6 som standard; verten kan øke til 10 før start.',
+          },
+          fixedClocks: {
+            title: 'Faste runder og klokker',
+            desc: 'Tre runder, fem minutters spørreklokke og 60 sekunders nedtelling til avstemning; ingen innstilling endrer dem.',
+          },
+        },
       },
       lobbies: {
         title: 'Gjett spionen',

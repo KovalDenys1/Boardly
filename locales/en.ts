@@ -872,6 +872,16 @@ const en = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Create form: 3 to 8 seats, 6 by default; the host can raise it to 10 before the start.',
+          },
+          fixedClocks: {
+            title: 'Fixed rounds and clocks',
+            desc: 'Three rounds, a five-minute question clock and a 60-second vote countdown; no setting changes them.',
+          },
+        },
       },
       lobbies: {
         title: 'Guess the Spy',
