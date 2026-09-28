@@ -823,6 +823,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Two-player strategy board game on an 8×8 board. Pieces move diagonally, captures are mandatory and chain into multi-jumps, and a piece reaching the far row is crowned a king.',
       questionKey: 'games.checkers.seo.question',
       answerKey: 'games.checkers.seo.answer',
+      // Product questions (#1241). Checkers has no how-to guide, so there is no
+      // guide FAQ to stay disjoint from; the rules live in the page's #rules.
+      faq: [
+        { questionKey: 'games.checkers.detail.faq.isItFree.q', answerKey: 'games.checkers.detail.faq.isItFree.a' },
+        { questionKey: 'games.checkers.detail.faq.needAccount.q', answerKey: 'games.checkers.detail.faq.needAccount.a' },
+        { questionKey: 'games.checkers.detail.faq.worksOnPhone.q', answerKey: 'games.checkers.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.checkers.detail.faq.whichRules.q', answerKey: 'games.checkers.detail.faq.whichRules.a' },
+        { questionKey: 'games.checkers.detail.faq.whoMovesFirst.q', answerKey: 'games.checkers.detail.faq.whoMovesFirst.a' },
+        { questionKey: 'games.checkers.detail.faq.timerRunsOut.q', answerKey: 'games.checkers.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.checkers.detail.faq.undoOrDraw.q', answerKey: 'games.checkers.detail.faq.undoOrDraw.a' },
+      ],
     },
     // In development (#1083). Playable behind ENABLE_IN_DEVELOPMENT_GAMES;
     // featuring it publicly is a separate decision for Denys, like #873's.

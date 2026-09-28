@@ -1711,6 +1711,36 @@ const no = {
           names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. Slektningene har andre regler: i russisk og brasiliansk dam kan vanlige brikker slå bakover og kongene flyr, og internasjonal dam spilles på et 10×10-brett.',
           solved: 'Den engelske varianten er dessuten løst: i 2007 beviste programmet Chinook at perfekt spill fra startstillingen ender uavgjort.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er dam på Boardly gratis?',
+            a: 'Ja. Partier mot venner, alle tre botene og alle klokkeinnstillinger er gratis. Premium gir verten ekstra ting som tilskuere, reprise og lobbytemaer; selve spillet er likt for alle.',
+          },
+          needAccount: {
+            q: 'Trenger jeg en konto for å spille?',
+            a: 'Nei. Et gjestenavn holder for å opprette en lobby, bli med i en med kode eller spille mot en bot. Å registrere seg er valgfritt.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille på mobilen?',
+            a: 'Ja. Brettet kjører i mobilnettleseren uten app å laste ned: trykk på en brikke, så på en av rutene som lyser opp.',
+          },
+          whichRules: {
+            q: 'Hvilke damregler bruker Boardly?',
+            a: 'Engelsk dam: et 8×8-brett, tolv brikker hver, vanlige brikker som bare går og slår fremover, og konger som går én rute om gangen. Russiske, brasilianske og internasjonale regler finnes ikke her.',
+          },
+          whoMovesFirst: {
+            q: 'Hvem trekker først?',
+            a: 'Mørk åpner hvert parti. Den fargen får spilleren i første sete, og «Spill igjen» bytter ikke farger. Mot en bot spiller du alltid Mørk, fordi personer får plass før boter.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden min går ut?',
+            a: 'Du taper partiet, og motstanderen får seieren. Klokka går i din egen nettleser, så lukker du fanen i stedet, markerer serveren deg som borte etter rundt 30 sekunder uten kontakt, og partiet avbrytes uten vinner.',
+          },
+          undoOrDraw: {
+            q: 'Kan jeg angre et trekk eller tilby uavgjort?',
+            a: 'Nei. Det finnes verken angreknapp eller tilbud om uavgjort, så hvert trekk står. Et parti blir bare uavgjort når det går førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',

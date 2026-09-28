@@ -1711,6 +1711,36 @@ const en = {
           names: 'North Americans call the game checkers and the British call it draughts. Its relatives play differently: Russian and Brazilian checkers let men capture backwards and kings fly, and international draughts uses a 10×10 board.',
           solved: 'The English version is also solved: in 2007 the program Chinook proved that perfect play from the opening position ends in a draw.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Checkers on Boardly free?',
+            a: 'Yes. Games against friends, all three bots and every clock setting are free. Premium adds extras such as spectators, replays and lobby themes for the host; the game itself is the same for everyone.',
+          },
+          needAccount: {
+            q: 'Do I need an account to play?',
+            a: 'No. A guest name is enough to create a lobby, join one with a code or play a bot. Signing up is optional.',
+          },
+          worksOnPhone: {
+            q: 'Can I play on my phone?',
+            a: 'Yes. The board runs in the mobile browser with no app to download: tap a piece, then one of the squares that light up.',
+          },
+          whichRules: {
+            q: 'Which checkers rules does Boardly use?',
+            a: 'English draughts: an 8×8 board, twelve men a side, men that move and capture forward only, and kings that move one square at a time. Russian, Brazilian and international rules are not offered.',
+          },
+          whoMovesFirst: {
+            q: 'Who moves first?',
+            a: 'Dark opens every game. The player in the first seat gets Dark, and Play Again does not swap colours. Against a bot you always play Dark, because people are seated before bots.',
+          },
+          timerRunsOut: {
+            q: 'What happens when my time runs out?',
+            a: 'You lose that game and your opponent gets the win. The clock runs in your own browser, so if you close the tab instead, the server marks you gone after about 30 seconds of silence and the game is abandoned with no winner.',
+          },
+          undoOrDraw: {
+            q: 'Can I take back a move or offer a draw?',
+            a: 'No. There is no undo and no draw offer, so every move stands. A game is drawn only when forty moves each pass with no capture and no man moving.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',
