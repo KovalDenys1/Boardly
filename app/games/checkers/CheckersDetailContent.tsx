@@ -69,6 +69,12 @@ export default function CheckersDetailContent() {
         { title: t('games.checkers.detail.mistakes.emptyingBackRow.title'), desc: t('games.checkers.detail.mistakes.emptyingBackRow.desc') },
         { title: t('games.checkers.detail.mistakes.thinkingPastTheClock.title'), desc: t('games.checkers.detail.mistakes.thinkingPastTheClock.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.checkers.detail.multiplayer.withFriends.title'), desc: t('games.checkers.detail.multiplayer.withFriends.desc') },
+        { title: t('games.checkers.detail.multiplayer.botsAndSolo.title'), desc: t('games.checkers.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.checkers.detail.multiplayer.turnTimer.title'), desc: t('games.checkers.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.checkers.detail.multiplayer.guestNoDownload.title'), desc: t('games.checkers.detail.multiplayer.guestNoDownload.desc') },
+      ]}
       playVsBotGameType="checkers"
     />
   )

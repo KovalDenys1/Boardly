@@ -1686,6 +1686,24 @@ const en = {
             desc: 'A timeout loses the game on the spot, even from a winning position.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend anywhere',
+            desc: 'Share the code or the link. Every move shows on both boards as it lands, and a chat opens when two people play.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot above opens a lobby with your chosen bot seated. Press Start and you play Dark.',
+          },
+          turnTimer: {
+            title: 'One clock for both',
+            desc: 'Both players see the same countdown. If it runs out on your move, you lose the game.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'Nothing to install on a phone, tablet or computer, and a guest name is enough.',
+          },
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

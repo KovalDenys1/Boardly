@@ -1686,6 +1686,24 @@ const no = {
             desc: 'Går tiden ut, taper du partiet med en gang, selv fra en vinnende stilling.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn hvor som helst',
+            desc: 'Del koden eller lenken. Hvert trekk vises på begge brettene med en gang, og chatten åpnes når to personer spiller.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: '«Spill mot bot» over åpner en lobby der boten du valgte, allerede sitter. Start spillet, så spiller du Mørk.',
+          },
+          turnTimer: {
+            title: 'Én klokke for begge',
+            desc: 'Begge spillerne ser den samme nedtellingen. Går den ut mens det er ditt trekk, taper du partiet.',
+          },
+          guestNoDownload: {
+            title: 'Rett fra nettleseren',
+            desc: 'Ingenting å installere på mobil, nettbrett eller datamaskin, og et gjestenavn holder.',
+          },
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',
