@@ -1589,7 +1589,7 @@ const no = {
       difficulty: 'Middels',
       seo: {
         question: 'Kan man spille dam gratis på nett med en venn?',
-        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett, spilt live i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og spill mot en bot. Slag er tvungne, hopp kan kjedes, og et gjestenavn er all kontoen du trenger.',
+        answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
         desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
@@ -1600,12 +1600,12 @@ const no = {
         title: 'Spill dam på nett',
         heroDesc: 'Klassisk engelsk dam i nettleseren. Inviter en venn eller legg til en bot, og spill trekk for trekk i sanntid.',
         introTitle: 'Hva er dam?',
-        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett. Hver side starter med tolv brikker og flytter dem diagonalt fremover, én rute om gangen.',
-        intro1: 'Du slår ved å hoppe over en motstanderbrikke, og har du et slag, må du ta det. En brikke som når bakerste rad blir konge og kan også gå bakover. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
+        intro0: 'Dam er et strategispill for to på de mørke rutene på et 8×8-brett, der brikkene går diagonalt og slår ved å hoppe.',
+        intro1: 'Slag er tvunget, og en brikke som når bakerste rad, blir konge. Ta alle brikkene eller la motstanderen stå uten trekk for å vinne.',
         step1Title: 'Opprett eller bli med i en lobby',
-        step1Desc: 'Åpne et rom fra lobbysiden, eller bli med i en venns rom med koden. Hvert rom har plass til to.',
+        step1Desc: 'Åpne et rom, eller bli med i en venns rom med koden. Hvert rom har plass til to.',
         step2Title: 'Velg venn eller bot',
-        step2Desc: 'Send koden eller lenken til én annen person. Er ingen ledig, setter du inn en bot på lett, middels eller vanskelig.',
+        step2Desc: 'Send koden eller lenken. Er ingen ledig, legger du til en bot.',
         step3Title: 'Trykk på en brikke, så en rute',
         step3Desc: 'Lovlige ruter lyser opp. Når et slag er mulig, er brikkene som må slå uthevet.',
         step4Title: 'Kron konger og vinn',
@@ -1616,129 +1616,129 @@ const no = {
         benefit3: 'Tvungne slag og hoppkjeder håndteres for deg.',
         benefit4: 'Gratis å spille som gjest.',
         rules: {
-          board: 'Dere spiller på de 32 mørke rutene på et 8×8-brett, med tolv brikker hver. Mørk trekker først.',
-          menMove: 'En vanlig brikke går én rute diagonalt fremover. Den slår bare fremover, ved å hoppe over en motstanderbrikke ved siden av og lande på den tomme ruten bak.',
-          forcedCapture: 'Slag er tvunget. Har du flere slag å velge mellom, kan du ta hvilket som helst, ikke bare det lengste.',
-          multiJump: 'Etter et hopp må samme brikke hoppe videre så lenge den kan. Slåtte brikker fjernes først når trekket er ferdig, så ingen kan slås to ganger.',
-          crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket selv om et nytt hopp var mulig.',
-          kings: 'En konge går og slår én rute diagonalt i alle retninger. Den kan ikke fly langs en diagonal.',
-          endAndDraw: 'Du vinner når motstanderen ikke har noe lovlig trekk, enten brikkene er borte eller alle er blokkert. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
+          board: 'Tolv brikker hver på de 32 mørke rutene på et 8×8-brett. Mørk trekker først.',
+          menMove: 'En vanlig brikke går én rute diagonalt fremover og slår bare fremover.',
+          forcedCapture: 'Slag er tvunget, men du kan velge hvilket som helst slag, ikke bare det lengste.',
+          multiJump: 'Brikken som hopper, må hoppe videre så lenge den kan; slåtte brikker fjernes når trekket er ferdig.',
+          crowning: 'En brikke som når bakerste rad, blir konge, og det avslutter trekket.',
+          kings: 'En konge går og slår én rute diagonalt i alle retninger; den flyr ikke.',
+          endAndDraw: 'Du vinner når motstanderen ikke kan flytte. Førti trekk hver uten slag og uten at en vanlig brikke flyttes, gir uavgjort.',
         },
         modes: {
           moveClock: {
             title: 'Sekunder per trekk',
-            desc: 'En lobby du oppretter, gir 60 sekunder per trekk. Før spillet starter, kan verten velge fra 30 til 180 i steg på 30 sekunder, og «Spill mot bot» gir 45.',
+            desc: 'En opprettet lobby gir 60 sekunder per trekk, som verten kan endre fra 30 til 180 i steg på 30 sekunder før start. «Spill mot bot» gir 45.',
           },
           botLevels: {
             title: 'Tre botnivåer',
-            desc: 'Checkers Rookie spiller et tilfeldig lovlig trekk. Diagonal Tactician ser ett svar fram, veier det den slår, mot det du kan slå tilbake, og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i opptil omtrent ett sekund.',
+            desc: 'Checkers Rookie trekker tilfeldig. Diagonal Tactician ser ett svar fram og unngår trekk som lar deg vinne med en gang. Kingmaker regner flere trekk fram i omtrent ett sekund.',
           },
           rematches: {
             title: 'Omkamper teller',
-            desc: 'Når et parti er over, starter vertens «Spill igjen» det neste i samme rom. Seirene summeres per spiller, og uavgjort gir ingenting.',
+            desc: 'Vertens «Spill igjen» starter neste parti i samme rom. Seirene summeres, uavgjort gir ingenting.',
           },
         },
         strategy: {
           guardBackRow: {
             title: 'Vokt bakerste rad',
-            desc: 'Brikker på din egen hjemrad hindrer motstanderen i å krone brikker der. Flytt dem sist.',
+            desc: 'Brikker på hjemraden hindrer motstanderen i å få konge. Flytt dem sist.',
           },
           holdTheCentre: {
             title: 'Hold midten',
-            desc: 'En brikke i midten har to ruter å gå til og støtter naboene. På kanten har den bare én.',
+            desc: 'En brikke i midten har to ruter fremover, en kantbrikke bare én.',
           },
           moveInPairs: {
             title: 'Flytt i par',
-            desc: 'En brikke med en egen brikke rett bak seg på diagonalen kan ikke hoppes over langs den linjen: landingsruten er opptatt.',
+            desc: 'En brikke med støtte bak seg på diagonalen kan ikke slås langs den.',
           },
           baitTheForcedCapture: {
             title: 'Bruk slagtvangen',
-            desc: 'Ofre en brikke slik at det tvungne hoppet fører motstanderen dit du slår to tilbake.',
+            desc: 'Ofre en brikke slik at det tvungne hoppet lar deg slå to tilbake.',
           },
           readTheChain: {
             title: 'Les hele kjeden',
-            desc: 'Før du slår, følg hvor hvert hopp lander. En rekke åpne ruter kan gjøre ett slag til tre.',
+            desc: 'Følg hvor hvert hopp lander; åpne ruter kan gjøre ett slag til tre.',
           },
           raceForAKing: {
             title: 'Kappløp om første konge',
-            desc: 'En konge kan også gå bakover, og det avgjør ofte et jevnt sluttspill.',
+            desc: 'En konge går også bakover og avgjør ofte et jevnt sluttspill.',
           },
           tradeWhenAhead: {
             title: 'Bytt når du leder',
-            desc: 'Er du én brikke foran, krymper jevne bytter brettet til et sluttspill du kan vinne.',
+            desc: 'Én brikke foran fører jevne bytter til et sluttspill du kan vinne.',
           },
           crowningStopsTheChain: {
             title: 'Kroning stopper kjeden',
-            desc: 'En brikke som når bakerste rad midt i et slag, blir konge og stopper der, så den hopper ikke videre det trekket.',
+            desc: 'En brikke som kroner midt i et slag, stopper der det trekket.',
           },
         },
         mistakes: {
           ignoringTheLanding: {
             title: 'Å glemme hvor et tvunget hopp lander',
-            desc: 'Motstanderen kan tvinge deg til å slå. Sjekk før hvert trekk hva som kan ofres, og hvor brikken din da havner.',
+            desc: 'Motstanderen kan tvinge deg til å slå. Sjekk hvor brikken din vil lande.',
           },
           emptyingBackRow: {
             title: 'Å tømme bakerste rad for tidlig',
-            desc: 'Da får den første motstanderbrikken som kommer fram, åpne ruter å bli konge på.',
+            desc: 'Det åpner kroningsruter for motstanderen.',
           },
           thinkingPastTheClock: {
             title: 'Å tenke forbi klokka',
-            desc: 'Går tiden ut, taper du partiet med en gang, selv fra en vinnende stilling.',
+            desc: 'Går tiden ut, taper du partiet, selv fra en vinnende stilling.',
           },
         },
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn hvor som helst',
-            desc: 'Del koden eller lenken. Hvert trekk vises på begge brettene med en gang, og chatten åpnes når to personer spiller.',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
           },
           botsAndSolo: {
             title: 'Øv alene',
-            desc: '«Spill mot bot» over åpner en lobby der boten du valgte, allerede sitter. Start spillet, så spiller du Mørk.',
+            desc: '«Spill mot bot» åpner en lobby der boten allerede sitter. Start spillet, så spiller du Mørk.',
           },
           turnTimer: {
             title: 'Én klokke for begge',
-            desc: 'Begge spillerne ser den samme nedtellingen. Går den ut mens det er ditt trekk, taper du partiet.',
+            desc: 'Begge ser den samme nedtellingen. Når den når null på ditt trekk, taper du.',
           },
           guestNoDownload: {
             title: 'Rett fra nettleseren',
-            desc: 'Ingenting å installere på mobil, nettbrett eller datamaskin, og et gjestenavn holder.',
+            desc: 'Ingenting å installere på mobil, nettbrett eller PC; et gjestenavn holder.',
           },
         },
         audience: {
-          whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkens åpningsteori. Reglene læres på et minutt, slagtvangen gir taktikk fra de første trekkene, og det er et godt første strategispill for barn.',
+          whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkteori, og er et godt første strategispill for barn.',
         },
         history: {
-          names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. Slektningene har andre regler: i russisk og brasiliansk dam kan vanlige brikker slå bakover og kongene flyr, og internasjonal dam spilles på et 10×10-brett.',
-          solved: 'Den engelske varianten er dessuten løst: i 2007 beviste programmet Chinook at perfekt spill fra startstillingen ender uavgjort.',
+          names: 'I Nord-Amerika heter spillet checkers, i Storbritannia draughts. I russisk og brasiliansk dam slår vanlige brikker bakover og kongene flyr; internasjonal dam spilles på 10×10.',
+          solved: 'Den engelske varianten er løst: i 2007 beviste programmet Chinook at perfekt spill ender uavgjort.',
         },
         faq: {
           isItFree: {
             q: 'Er dam på Boardly gratis?',
-            a: 'Ja. Partier mot venner, alle tre botene og alle klokkeinnstillinger er gratis. Premium gir verten ekstra ting som tilskuere, reprise og lobbytemaer; selve spillet er likt for alle.',
+            a: 'Ja, også alle tre botene. Premium gir verten ekstra ting som tilskuere, reprise og lobbytemaer; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Trenger jeg en konto for å spille?',
-            a: 'Nei. Et gjestenavn holder for å opprette en lobby, bli med i en med kode eller spille mot en bot. Å registrere seg er valgfritt.',
+            a: 'Nei. Et gjestenavn holder for å opprette eller bli med i en lobby eller spille mot en bot; registrering er valgfritt.',
           },
           worksOnPhone: {
             q: 'Kan jeg spille på mobilen?',
-            a: 'Ja. Brettet kjører i mobilnettleseren uten app å laste ned: trykk på en brikke, så på en av rutene som lyser opp.',
+            a: 'Ja, i mobilnettleseren uten app å installere: trykk på en brikke, så på en uthevet rute.',
           },
           whichRules: {
             q: 'Hvilke damregler bruker Boardly?',
-            a: 'Engelsk dam: et 8×8-brett, tolv brikker hver, vanlige brikker som bare går og slår fremover, og konger som går én rute om gangen. Russiske, brasilianske og internasjonale regler finnes ikke her.',
+            a: 'Engelsk dam, der vanlige brikker bare går fremover og kongene én rute. Russiske, brasilianske og internasjonale regler finnes ikke her.',
           },
           whoMovesFirst: {
             q: 'Hvem trekker først?',
-            a: 'Mørk åpner hvert parti. Den fargen får spilleren i første sete, og «Spill igjen» bytter ikke farger. Mot en bot spiller du alltid Mørk, fordi personer får plass før boter.',
+            a: 'Mørk, som første sete får, og «Spill igjen» bytter ikke farger. Mot en bot spiller du alltid Mørk.',
           },
           timerRunsOut: {
             q: 'Hva skjer når tiden min går ut?',
-            a: 'Du taper partiet, og motstanderen får seieren. Klokka går i din egen nettleser, så lukker du fanen i stedet, markerer serveren deg som borte etter rundt 30 sekunder uten kontakt, og partiet avbrytes uten vinner.',
+            a: 'Du taper partiet. Klokka går i nettleseren din; lukker du fanen, markerer serveren deg som borte etter rundt 30 sekunder, og partiet avbrytes.',
           },
           undoOrDraw: {
             q: 'Kan jeg angre et trekk eller tilby uavgjort?',
-            a: 'Nei. Det finnes verken angreknapp eller tilbud om uavgjort, så hvert trekk står. Et parti blir bare uavgjort når det går førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
+            a: 'Nei, hvert trekk står. Et parti blir bare uavgjort etter førti trekk hver uten slag og uten at en vanlig brikke flyttes.',
           },
         },
       },
