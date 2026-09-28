@@ -897,7 +897,7 @@ const no = {
           },
           moveClock: {
             title: 'Sekunder på hvert trekk',
-            desc: 'Hvert trekk får 60 sekunder i en lobby du oppretter, som verten kan sette til alt fra 30 til 180 i lobbyinnstillingene, og 45 sekunder i et spill startet med «Spill mot bot».',
+            desc: 'Hvert trekk får 60 sekunder i en lobby du oppretter; før spillet starter, kan verten endre det i steg på 30 sekunder fra 30 til 180. Et spill startet med «Spill mot bot» gir 45 sekunder per trekk.',
           },
           botLevels: {
             title: 'Lett, middels og vanskelig robot',
@@ -931,7 +931,7 @@ const no = {
           },
           useYourOpeningRounds: {
             title: 'Gå for seier i rundene du åpner',
-            desc: 'I en serie bytter førstetrekket hver runde. Gå for seier når du starter, og nøy deg med trygg remis når du ikke gjør det.',
+            desc: 'I en serie bytter førstetrekket: gå for seier når du starter, og spill trygt når du ikke gjør det.',
           },
           pickTheRightBot: {
             title: 'Øv mot riktig robot',
@@ -941,11 +941,11 @@ const no = {
         mistakes: {
           edgeOpening: {
             title: 'Å åpne på en kant',
-            desc: 'En kantrute ligger på bare to linjer, så å åpne der kaster bort førstetrekket.',
+            desc: 'En kantrute ligger på bare to linjer. Den holder remis med beste spill, men gir færre vinnersjanser.',
           },
           chasingYourOwnLine: {
             title: 'Å jage din egen linje',
-            desc: 'Å bygge din egen tre-på-rad mens motstanderen har to på rad, taper på neste trekk.',
+            desc: 'Med mindre du kan fullføre din egen linje i dette trekket, taper du runden hvis du bygger på den mens motstanderen har to på rad.',
           },
           thirdCorner: {
             title: 'Å ta det tredje hjørnet',
@@ -975,16 +975,16 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Tre på rad passer for alle som har et minutt til overs: to venner i en pause eller en forelder som lærer et barn å se en trussel. På et så lite brett handler det egentlig om oppmerksomhet, og best av 5 eller 10 belønner den som holder seg skjerpet lengst.',
+          whoItSuits: 'Tre på rad passer for alle som har et minutt til overs, fra to venner i en pause til en forelder som lærer et barn å se en trussel. På et så lite brett avgjør oppmerksomheten de fleste rundene.',
         },
         history: {
           origin: 'Spill med tre på rad er eldre enn noen av navnene sine: noughts and crosses i Storbritannia, tic-tac-toe i USA, der et uavgjort parti kalles et «cat\'s game».',
-          solved: 'Spillet er løst: beste spill fra begge sider gir alltid remis. Av de 255 168 mulige partiene ender likevel de fleste med seier, fordi noen gjorde en feil, og det er nettopp det Grid Grandmaster venter på.',
+          solved: 'Spillet er løst: beste spill fra begge sider gir alltid remis. Likevel ender de fleste av de 255 168 mulige partiene med seier, fordi noen gjorde en feil.',
         },
         faq: {
           isItFree: {
             q: 'Koster Tre på rad på Boardly noe?',
-            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis, og ingenting som påvirker spillet, ligger bak betaling.',
+            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, repriser av partier og egne lobbytemaer; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Må jeg registrere meg først?',
@@ -996,7 +996,7 @@ const no = {
           },
           howManyPlayers: {
             q: 'Hvor mange er med i ett spill?',
-            a: 'To, én X og én O, begge mennesker eller den ene en robot. Tillater verten tilskuere, kan andre bli med bare for å se på.',
+            a: 'To, én X og én O, begge mennesker eller den ene en robot. En vert med Premium kan også åpne lobbyen for tilskuere.',
           },
           timerRunsOut: {
             q: 'Hva skjer når tiden min går ut?',
@@ -1008,7 +1008,7 @@ const no = {
           },
           takeBackOrDraw: {
             q: 'Kan jeg angre et trekk eller bli enig om remis?',
-            a: 'Du kan spørre, og motstanderen bestemmer. En robot godtar hver angring, men remis først når ingen av sidene lenger kan vinne.',
+            a: 'Du kan spørre, og motstanderen bestemmer. En robot godtar hver angring, men remis bare når perfekt spill derfra ville endt likt, og slik er de fleste stillinger til noen gjør en feil.',
           },
         },
       },

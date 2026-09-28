@@ -59,8 +59,10 @@ describe('the Tic Tac Toe series against the create form and the engine (#1235)'
     expect(desc).toMatch(/finish level/)
   })
 
-  it('never says an open lobby plays a single round', () => {
-    for (const text of copy) expect(text).not.toMatch(/single round|one round unless/i)
+  it('never says an open lobby plays a single round, on the page or in the catalog meta', () => {
+    const seo = getCatalogGames().find((game) => game.gameType === 'tic_tac_toe')!.seo!
+    const meta = [seo.title, seo.description, seo.schemaDescription]
+    for (const text of [...copy, ...meta]) expect(text).not.toMatch(/single round|one round/i)
   })
 })
 

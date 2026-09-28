@@ -475,7 +475,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.tictactoe.difficulty',
     seo: {
       title: 'Play Tic Tac Toe Online Free with Friends',
-      description: 'Play Tic Tac Toe online free in the browser. Take the 3×3 grid against a friend or a bot, one round or a best of 3, 5 or 10. No download, no account needed.',
+      description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
       synonyms: [
         'tic tac toe online',
         'tic tac toe online free',

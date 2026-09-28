@@ -897,7 +897,7 @@ const en = {
           },
           moveClock: {
             title: 'Seconds on every move',
-            desc: 'Each move gets 60 seconds in a lobby you create, which the host can set anywhere from 30 to 180 in the lobby settings, and 45 seconds in a Play vs Bot game.',
+            desc: 'Each move gets 60 seconds in a lobby you create; before the game starts, the host can change that in 30-second steps from 30 to 180. A Play vs Bot game gives 45 seconds a move.',
           },
           botLevels: {
             title: 'Easy, medium and hard bots',
@@ -931,7 +931,7 @@ const en = {
           },
           useYourOpeningRounds: {
             title: 'Press in the rounds you open',
-            desc: 'In a series the first move alternates. Push for the win when you start, and settle for a safe draw when you do not.',
+            desc: 'In a series the first move alternates: push for a win when you start, and play safe when you do not.',
           },
           pickTheRightBot: {
             title: 'Practise against the right bot',
@@ -941,11 +941,11 @@ const en = {
         mistakes: {
           edgeOpening: {
             title: 'Opening on an edge',
-            desc: 'An edge square sits on just two lines, so opening there wastes the first move.',
+            desc: 'An edge square sits on just two lines. It still draws with best play, but gives you fewer winning chances.',
           },
           chasingYourOwnLine: {
             title: 'Chasing your own line',
-            desc: 'Building your own three while the opponent has two in a row loses on their next move.',
+            desc: 'Unless you can complete your own line this move, building it while the opponent has two in a row loses the round.',
           },
           thirdCorner: {
             title: 'Taking the third corner',
@@ -975,16 +975,16 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Tic Tac Toe suits anyone with a minute to spare: two friends on a break or a parent teaching a child to spot a threat. On a grid this small the real contest is attention, and a best of 5 or 10 rewards whoever stays sharp longest.',
+          whoItSuits: 'Tic Tac Toe suits anyone with a minute to spare, from two friends on a break to a parent teaching a child to spot a threat. On a grid this small, attention decides most rounds.',
         },
         history: {
           origin: 'Three-in-a-row games are older than any of their names: noughts and crosses in Britain, tic-tac-toe in the United States, where a drawn game is called a cat\'s game.',
-          solved: 'The game is solved: best play from both sides always draws. Of the 255,168 possible games most still end in a win, because somebody slipped, and Grid Grandmaster waits for exactly that.',
+          solved: 'The game is solved: best play from both sides always draws. Yet most of the 255,168 possible games end in a win, because somebody slipped.',
         },
         faq: {
           isItFree: {
             q: 'Does Tic Tac Toe on Boardly cost anything?',
-            a: 'No. Friends, all three bots and every series length are free, and nothing that affects play sits behind a payment.',
+            a: 'No. Friends, all three bots and every series length are free. Premium adds extras such as spectators, replays and custom lobby themes; the game itself is the same.',
           },
           needAccount: {
             q: 'Do I have to register first?',
@@ -996,7 +996,7 @@ const en = {
           },
           howManyPlayers: {
             q: 'How many people take part in one game?',
-            a: 'Two, one X and one O, both people or one of them a bot. If the host allows spectators, others can join just to watch.',
+            a: 'Two, one X and one O, both people or one of them a bot. A Premium host can also open the lobby to spectators.',
           },
           timerRunsOut: {
             q: 'What happens when my time runs out?',
@@ -1008,7 +1008,7 @@ const en = {
           },
           takeBackOrDraw: {
             q: 'Can I undo a move or agree to a draw?',
-            a: 'You can ask, and your opponent decides. A bot accepts every undo, but a draw only once neither side can win any more.',
+            a: 'You can ask, and your opponent decides. A bot accepts every undo, but a draw only when perfect play from there would end level, which is most positions until someone slips.',
           },
         },
       },
