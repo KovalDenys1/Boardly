@@ -2013,6 +2013,36 @@ const en = {
           origin: 'Ludo descends from Pachisi, a cross-shaped race game played in India for centuries with cowrie shells instead of dice. A simplified version with one die was patented in England in 1896 as Ludo, Latin for "I play".',
           relatives: 'Its relatives are played worldwide: Parcheesi in the United States, Mensch ärgere Dich nicht in Germany and Fia med knuff in Sweden.',
         },
+        faq: {
+          isItFree: {
+            q: 'Is Ludo on Boardly free?',
+            a: 'Yes. All four seats, both modes, every bot level and every timer setting are free. Premium only adds extras for the host, such as spectators, replays and lobby themes.',
+          },
+          worksOnPhone: {
+            q: 'Can I play Ludo on my phone?',
+            a: 'Yes, in the mobile browser with no app to install. On a small screen the board, the moves list, the rules and the chat sit in tabs, and you tap a highlighted token to move it.',
+          },
+          pickYourOwnRoll: {
+            q: 'Can a player choose their own dice roll?',
+            a: 'No. The server rolls for every seat and ignores any number a browser sends, and each face comes up one time in six. Every player sees each roll, and the recent ones stay in the roll history.',
+          },
+          timerRunsOut: {
+            q: 'Which token moves if my timer runs out?',
+            a: 'The server rolls for you and, if there is a choice, moves a token that reaches home, else one that captures, else the one furthest along. A 6 rolled this way earns no extra roll.',
+          },
+          howManyPlayers: {
+            q: 'How many players can a Ludo game have?',
+            a: 'Two to four seats, and bots can fill any of them. Two players start in opposite corners and three leave one corner empty. Rooms opened by Quick Play have four seats.',
+          },
+          changeMode: {
+            q: 'Can the host switch between quick and classic later?',
+            a: 'No. The mode is set when the lobby is created, and Play again keeps it. For the other mode, create a new lobby and share its code.',
+          },
+          playAgain: {
+            q: 'Can we play another game with the same people?',
+            a: 'Yes. When a game ends, the host presses Play again and a new game starts in the same lobby with the same seats and mode. Everyone else waits for the host.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

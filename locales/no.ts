@@ -2013,6 +2013,36 @@ const no = {
           origin: 'Ludo stammer fra Pachisi, et korsformet kappløpsspill som er spilt i India i århundrer, med kauriskjell i stedet for terninger. En forenklet utgave med én terning ble patentert i England i 1896 under navnet Ludo, latin for «jeg spiller».',
           relatives: 'Slektningene spilles over hele verden: Parcheesi i USA, Mensch ärgere Dich nicht i Tyskland og Fia med knuff i Sverige.',
         },
+        faq: {
+          isItFree: {
+            q: 'Er Ludo på Boardly gratis?',
+            a: 'Ja. Alle fire plassene, begge modusene, alle robotnivåene og alle tidsinnstillingene er gratis. Premium gir bare verten ekstra funksjoner, som tilskuere, reprise og lobbytemaer.',
+          },
+          worksOnPhone: {
+            q: 'Kan jeg spille Ludo på mobilen?',
+            a: 'Ja, i mobilnettleseren uten noen app å installere. På en liten skjerm ligger brettet, trekklisten, reglene og chatten i faner, og du trykker på en uthevet brikke for å flytte den.',
+          },
+          pickYourOwnRoll: {
+            q: 'Kan en spiller velge sitt eget terningkast?',
+            a: 'Nei. Serveren kaster for alle plassene og ser bort fra tall som nettleseren sender, og hver side kommer opp én gang av seks. Alle spillerne ser hvert kast, og de siste blir liggende i kasthistorikken.',
+          },
+          timerRunsOut: {
+            q: 'Hvilken brikke flyttes hvis tiden min går ut?',
+            a: 'Serveren kaster for deg og flytter, hvis det finnes et valg, en brikke som kommer hjem, ellers en som slår ut, ellers den som har kommet lengst. En sekser som kastes slik, gir ikke ekstrakast.',
+          },
+          howManyPlayers: {
+            q: 'Hvor mange spillere kan være med i et Ludo-spill?',
+            a: 'To til fire plasser, og roboter kan fylle hvilken som helst av dem. To spillere starter i motsatte hjørner, og med tre står ett hjørne tomt. Rom som Rask spill åpner, har fire plasser.',
+          },
+          changeMode: {
+            q: 'Kan verten bytte mellom rask og klassisk senere?',
+            a: 'Nei. Modusen settes når lobbyen opprettes, og Spill igjen beholder den. Vil dere spille den andre modusen, oppretter du en ny lobby og deler koden.',
+          },
+          playAgain: {
+            q: 'Kan vi spille et nytt parti med de samme folkene?',
+            a: 'Ja. Når spillet er over, trykker verten Spill igjen, og et nytt spill starter i samme lobby med de samme plassene og samme modus. De andre venter på verten.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
