@@ -2027,6 +2027,9 @@ const no = {
           turnTimer: { title: 'Én linje per fase', desc: 'Hver spiller ser den samme nedtellingen; ved null går spillet videre.' },
           guestNoDownload: { title: 'Gjest i nettleseren', desc: 'Mobil eller laptop, ingenting å installere, og et gjestenavn holder.' },
         },
+        audience: {
+          whoItSuits: 'Grupper på tre til ti: familier, skoleklasser, venner på videosamtale og bord der flere språk blandes.',
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

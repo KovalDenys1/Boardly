@@ -2027,6 +2027,9 @@ const en = {
           turnTimer: { title: 'One bar per phase', desc: 'Every player sees the same countdown; at zero the game moves on.' },
           guestNoDownload: { title: 'Guest in a browser', desc: 'Phone or laptop, nothing to install, and a guest name is enough.' },
         },
+        audience: {
+          whoItSuits: 'Groups of three to ten: families, classes, friends on a video call, and tables that mix languages.',
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
