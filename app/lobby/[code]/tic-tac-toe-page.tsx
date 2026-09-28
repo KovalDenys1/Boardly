@@ -815,7 +815,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.tictactoe.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.tictactoe.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.tictactoe.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -830,7 +830,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.tictactoe.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.tictactoe.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.tictactoe.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.tictactoe.game.backToGames')}</button>

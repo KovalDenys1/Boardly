@@ -168,7 +168,7 @@ export default function Chat({
         <button
           onClick={onToggleMinimize}
           aria-label={ariaLabel}
-          className="bd-btn bd-btn-primary rounded-2xl border-2 border-bd-ink px-4 py-3 shadow-[0_10px_24px_-14px_rgba(31,27,22,0.5)] focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+          className="bd-btn bd-btn-primary rounded-2xl border-2 border-bd-ink px-4 py-3 shadow-[0_10px_24px_-14px_rgba(31,27,22,0.5)] focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
         >
           <span className="text-xl" aria-hidden="true">💬</span>
           <span className="font-semibold">{t('chat.open')}</span>
@@ -238,7 +238,7 @@ export default function Chat({
             rel="noopener noreferrer"
             aria-label={t('chat.rulesNewTab')}
             title={t('chat.rulesNewTab')}
-            className="chat-rules-link inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink hover:underline focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+            className="chat-rules-link inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink hover:underline focus-visible:ring-2 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
           >
             <Icon name="shield" size={14} />
             <span>{t('chat.rules')}</span>
@@ -249,7 +249,7 @@ export default function Chat({
                 <button
                   onClick={onClearChat}
                   aria-label={t('chat.clear')}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
                   style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                   title={t('chat.clear')}
                 >
@@ -259,7 +259,7 @@ export default function Chat({
               <button
                 onClick={onToggleMinimize}
                 aria-label={t('chat.minimize')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
                 style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                 title={t('chat.minimize')}
               >
@@ -378,7 +378,7 @@ export default function Chat({
                               onClick={() => setReportedMessage(msg)}
                               aria-label={t('report.reportMessage')}
                               title={t('report.reportMessage')}
-                              className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                              className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav-deep"
                             >
                               <Icon name="flag" size={12} />
                             </button>
@@ -396,7 +396,7 @@ export default function Chat({
         {showScrollButton && (
           <button
             onClick={scrollToBottom}
-            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full !p-3 shadow-lg hover:scale-110 active:scale-95 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none animate-[bounce-in_0.3s_ease-out]"
+            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full !p-3 shadow-lg hover:scale-110 active:scale-95 focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none animate-[bounce-in_0.3s_ease-out]"
             aria-label={t('chat.scrollToBottom')}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,7 +455,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input h-full pr-14 text-sm hover:border-[var(--bd-ink)] focus:ring-2 focus:ring-blue-500"
+              className="bd-input h-full pr-14 text-sm hover:border-[var(--bd-ink)] focus:ring-2 focus:ring-bd-lav-deep"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">
@@ -466,7 +466,7 @@ export default function Chat({
             type="submit"
             disabled={!newMessage.trim()}
             aria-label={t('chat.send')}
-            className="bd-btn bd-btn-primary justify-center rounded-2xl px-4 text-xl focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            className="bd-btn bd-btn-primary justify-center rounded-2xl px-4 text-xl focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
             📤
           </button>

@@ -871,21 +871,25 @@ body {
   animation: scale-pulse 0.8s ease-in-out infinite;
 }
 
-/* Form inputs */
+/* Form inputs – bd-* tokens (#1255); they switch with the theme by themselves */
 input, select, textarea {
-  @apply text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700;
+  color: var(--bd-ink);
+  background-color: var(--bd-input-bg);
 }
 
 input::placeholder {
-  @apply text-gray-400 dark:text-gray-500;
+  color: var(--bd-ink-muted);
 }
 
 input:focus, select:focus, textarea:focus {
-  @apply outline-none ring-2 ring-blue-500 dark:ring-blue-400 focus-visible:outline-none;
+  @apply outline-none ring-2 ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .dice {
-  @apply w-16 h-16 bg-white border-2 border-gray-800 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  background: var(--bd-input-bg);
+  border-color: var(--bd-ink);
+  color: var(--bd-ink);
 }
 
 .dice:hover {
@@ -893,16 +897,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dice.held {
-  @apply bg-blue-200 border-blue-500;
+  @apply bg-bd-sun border-bd-sun-deep;
+  color: var(--bd-ink-on-accent);
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none;
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .btn-primary {
   background: var(--bd-ink);
-  color: white;
+  color: var(--bd-bg);
   box-shadow: 0 4px 0 var(--bd-coral);
   @apply hover:shadow-lg hover:-translate-y-0.5;
 }
@@ -918,24 +923,27 @@ input:focus, select:focus, textarea:focus {
   @apply hover:-translate-y-0.5;
 }
 
-.btn-success {
-  @apply bg-green-600 text-white hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:ring-green-500;
-}
-
 .btn:disabled {
   @apply opacity-50 cursor-not-allowed;
 }
 
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition-all duration-200 hover:shadow-xl;
+  background: var(--bd-card-warm);
+  border: 1.5px solid var(--bd-line);
+  color: var(--bd-ink);
 }
 
 .input {
-  @apply w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  border: 1px solid var(--bd-input-border);
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
 }
 
 .label {
-  @apply block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300;
+  @apply block text-sm font-medium mb-2;
+  color: var(--bd-ink-soft);
 }
 
 .oauth-btn {
@@ -943,20 +951,23 @@ input:focus, select:focus, textarea:focus {
 }
 
 .oauth-btn-google {
-  @apply bg-white hover:bg-gray-50 text-gray-900 border-gray-300;
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
+  border-color: var(--bd-input-border);
 }
+.oauth-btn-google:hover { background: var(--bd-bg2); }
 
+/* GitHub's own dark mark: a fixed dark fill in both themes. */
 .oauth-btn-github {
-  @apply bg-gray-900 hover:bg-gray-800 text-white border-gray-900;
+  background: #1F1B16;
+  color: #FFFFFF;
+  /* the input edge, so the dark button still has a boundary on the dark card */
+  border-color: var(--bd-input-border);
 }
+.oauth-btn-github:hover { background: #2B2720; }
 
 .oauth-btn-discord {
   @apply bg-[#5865F2] hover:bg-[#4752C4] text-white border-[#5865F2];
-}
-
-/* Compact card for game UI */
-.card-compact {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
 }
 
 /* Custom Minimal Scrollbar Styles */

@@ -18,7 +18,7 @@ export default function LoadingSpinner({ size = 'md', className = '' }: LoadingS
 
   return (
     <div
-      className={`border-blue-600 border-t-transparent rounded-full animate-spin ${className}`}
+      className={`border-bd-lav-deep border-t-transparent rounded-full animate-spin ${className}`}
       style={sizeStyles[size]}
       role="status"
       aria-label={t('common.loading')}

@@ -85,7 +85,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
         }
         ${isRolling && !held ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-        focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none
+        focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none
         transform-gpu
       `}
       style={{

@@ -882,7 +882,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.connect_four.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.connect_four.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.connect_four.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.connect_four.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -897,7 +897,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.connect_four.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.connect_four.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.connect_four.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games/connect-four/lobbies')} className="btn btn-primary">{t('games.connect_four.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.connect_four.game.backToGames')}</button>

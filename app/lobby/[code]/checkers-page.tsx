@@ -811,7 +811,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.checkers.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.checkers.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.checkers.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.checkers.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -826,7 +826,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.checkers.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.checkers.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.checkers.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games/checkers/lobbies')} className="btn btn-primary">{t('games.checkers.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.checkers.game.backToGames')}</button>

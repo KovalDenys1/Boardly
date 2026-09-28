@@ -134,14 +134,14 @@ export default function FeedbackWidget() {
             if (e.target === e.currentTarget) setIsOpen(false)
           }}
         >
-          <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white text-bd-ink shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] text-bd-ink shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:text-white">
             <div className="dot-grid pointer-events-none absolute inset-0 opacity-30" />
             <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-bd-lav/20" />
             <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-28 rotate-12 rounded-[1.75rem] bg-bd-sun/20" />
 
-            <div className="relative flex items-center justify-between border-b border-bd-line px-5 py-4 dark:border-slate-700">
+            <div className="relative flex items-center justify-between border-b border-bd-line px-5 py-4">
               <div>
-                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-bd-ink-muted">
                   {/* i18n-allow: brand name, identical in all four locales */}
                   Boardly
                 </p>
@@ -152,7 +152,7 @@ export default function FeedbackWidget() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="grid h-10 w-10 place-items-center rounded-xl border border-bd-line bg-bd-card-warm text-xl font-bold leading-none text-bd-ink-soft transition-colors hover:bg-bd-bg2 hover:text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-bd-line bg-bd-card-warm text-xl font-bold leading-none text-bd-ink-soft transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
                 aria-label={t('feedback.closeAriaLabel')}
               >
                 ×
@@ -167,7 +167,7 @@ export default function FeedbackWidget() {
                 <p className="mb-1 font-display text-2xl font-bold text-bd-ink dark:text-white">
                   {t('feedback.successTitle')}
                 </p>
-                <p className="text-sm leading-6 text-bd-ink-muted dark:text-slate-400">
+                <p className="text-sm leading-6 text-bd-ink-muted">
                   {t('feedback.successBody')}
                 </p>
                 <button
@@ -181,7 +181,7 @@ export default function FeedbackWidget() {
             ) : (
               <form onSubmit={handleSubmit} className="relative space-y-4 px-5 py-4">
                 <div>
-                  <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                  <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     {t('feedback.typeLabel')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
@@ -194,7 +194,7 @@ export default function FeedbackWidget() {
                         className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
                           type === opt.type
                             ? 'border-bd-lav-deep bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_3px_0_var(--bd-lav-deep)]'
-                            : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-white hover:text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                            : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                         }`}
                       >
                         {opt.shortLabel}
@@ -204,7 +204,7 @@ export default function FeedbackWidget() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     {t('feedback.messageLabel')} <span className="text-bd-coral-deep">*</span>
                   </label>
                   <textarea
@@ -215,15 +215,15 @@ export default function FeedbackWidget() {
                     required
                     maxLength={2000}
                     rows={4}
-                    className="w-full resize-none rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink placeholder-bd-ink-muted/70 transition-colors focus:border-bd-lav-deep focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
+                    className="w-full resize-none rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink placeholder-bd-ink-muted/70 transition-colors focus:border-bd-lav-deep focus:outline-none dark:text-white"
                   />
-                  <p className="mt-1 text-right text-xs text-bd-ink-muted dark:text-slate-500">
+                  <p className="mt-1 text-right text-xs text-bd-ink-muted">
                     {message.length}/2000
                   </p>
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     {t('feedback.emailLabel')}{' '}
                     <span className="normal-case tracking-normal text-bd-ink-muted/70">
                       ({t('feedback.emailOptional')})
@@ -234,7 +234,7 @@ export default function FeedbackWidget() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('feedback.emailPlaceholder')}
-                    className="w-full rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink placeholder-bd-ink-muted/70 transition-colors focus:border-bd-lav-deep focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
+                    className="w-full rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink placeholder-bd-ink-muted/70 transition-colors focus:border-bd-lav-deep focus:outline-none dark:text-white"
                   />
                 </div>
 
