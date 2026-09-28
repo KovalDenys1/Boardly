@@ -53,12 +53,14 @@ describe('Game Registry', () => {
     })
 
     it('should apply custom config when provided', () => {
+      // Inside Yahtzee's own 1-4; a request beyond it is clamped (#1101,
+      // game-registry-player-limits.test.ts).
       const engine = createGameEngine('yahtzee', 'test-cfg', {
-        maxPlayers: 6,
+        maxPlayers: 3,
         minPlayers: 2,
       })
       const config = engine.getConfig()
-      expect(config.maxPlayers).toBe(6)
+      expect(config.maxPlayers).toBe(3)
       expect(config.minPlayers).toBe(2)
     })
 
@@ -116,7 +118,7 @@ describe('Game Registry', () => {
 
     it('should preserve custom game config when restoring from saved state', () => {
       const original = createGameEngine('yahtzee', 'restore-cfg', {
-        maxPlayers: 6,
+        maxPlayers: 3,
         minPlayers: 2,
         timeLimit: 12,
         rules: { targetRounds: 5, hardMode: true },
@@ -128,7 +130,7 @@ describe('Game Registry', () => {
       const restored = restoreGameEngine('yahtzee', 'restore-cfg', savedState)
 
       expect(restored.getConfig()).toEqual(original.getConfig())
-      expect(restored.getConfig().maxPlayers).toBe(6)
+      expect(restored.getConfig().maxPlayers).toBe(3)
       expect(restored.getConfig().rules).toEqual(
         expect.objectContaining({
           targetRounds: 5,
