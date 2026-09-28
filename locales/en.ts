@@ -1670,6 +1670,24 @@ const en = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'The host opens a room for 4, 6, 8, 10, 12 or 16 seats, with 8 preselected; 12 and 16 need a Premium host.',
+          },
+          turnLength: {
+            title: 'Turn length',
+            desc: 'Describers get 30, 60, 90 or 120 seconds a turn, and the form starts on 60.',
+          },
+          fixedMatch: {
+            title: 'A fixed match',
+            desc: 'Three turns per team are built in, so there is no target score to agree before starting.',
+          },
+          threePlayerMode: {
+            title: 'Three-player mode',
+            desc: 'At exactly three the teams dissolve into one side per player on their own, and come back if a fourth person joins before the start.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias',

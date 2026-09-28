@@ -66,6 +66,12 @@ export default function AliasDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.alias.detail.modes.tableSize.title'), desc: t('games.alias.detail.modes.tableSize.desc') },
+        { title: t('games.alias.detail.modes.turnLength.title'), desc: t('games.alias.detail.modes.turnLength.desc') },
+        { title: t('games.alias.detail.modes.fixedMatch.title'), desc: t('games.alias.detail.modes.fixedMatch.desc') },
+        { title: t('games.alias.detail.modes.threePlayerMode.title'), desc: t('games.alias.detail.modes.threePlayerMode.desc') },
+      ]}
     />
   )
 }

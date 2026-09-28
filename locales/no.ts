@@ -1670,6 +1670,24 @@ const no = {
             },
           },
         },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Verten åpner et rom med 4, 6, 8, 10, 12 eller 16 plasser, med 8 forhåndsvalgt; 12 og 16 krever en vert med Premium.',
+          },
+          turnLength: {
+            title: 'Turlengde',
+            desc: 'Forklarerne får 30, 60, 90 eller 120 sekunder per tur, og skjemaet starter på 60.',
+          },
+          fixedMatch: {
+            title: 'Fast kamplengde',
+            desc: 'Tre turer per lag er innebygd, så det finnes ingen målsum å bli enige om før start.',
+          },
+          threePlayerMode: {
+            title: 'Tremannsmodus',
+            desc: 'Med nøyaktig tre spillere oppløses lagene av seg selv til én side per spiller, og de kommer tilbake om en fjerde blir med før start.',
+          },
+        },
       },
       lobbies: {
         title: 'Alias-spill',
