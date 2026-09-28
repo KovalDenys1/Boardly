@@ -83,7 +83,8 @@ describe('Sketch & Guess detail page (#1036)', () => {
     const faq = buildGameJsonLd('guess-my-drawing').find((schema) => schema['@type'] === 'FAQPage')!
     const entries = faq.mainEntity as { name: string; acceptedAnswer: { text: string } }[]
 
-    expect(entries).toHaveLength(1)
+    // The direct answer first, then the page's #faq (#1239), from one array.
+    expect(entries).toHaveLength(8)
     expect(entries[0].name).toBe(englishText('games.guess_my_drawing.seo.question'))
     expect(entries[0].acceptedAnswer.text).toBe(englishText('games.guess_my_drawing.seo.answer'))
   })
