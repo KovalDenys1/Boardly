@@ -1704,6 +1704,9 @@ const en = {
             desc: 'Nothing to install on a phone, tablet or computer, and a guest name is enough.',
           },
         },
+        audience: {
+          whoItSuits: 'Checkers suits anyone who wants real strategy without chess opening theory. The rules fit in a minute, forced captures bring tactics from the first moves, and it makes a good first strategy game for children.',
+        },
       },
       lobbies: {
         title: 'Checkers Lobbies',

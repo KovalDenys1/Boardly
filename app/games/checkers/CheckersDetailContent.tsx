@@ -75,6 +75,9 @@ export default function CheckersDetailContent() {
         { title: t('games.checkers.detail.multiplayer.turnTimer.title'), desc: t('games.checkers.detail.multiplayer.turnTimer.desc') },
         { title: t('games.checkers.detail.multiplayer.guestNoDownload.title'), desc: t('games.checkers.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.checkers.detail.audience.whoItSuits'),
+      ]}
       playVsBotGameType="checkers"
     />
   )

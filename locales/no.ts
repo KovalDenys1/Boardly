@@ -1704,6 +1704,9 @@ const no = {
             desc: 'Ingenting å installere på mobil, nettbrett eller datamaskin, og et gjestenavn holder.',
           },
         },
+        audience: {
+          whoItSuits: 'Dam passer for alle som vil ha ekte strategi uten sjakkens åpningsteori. Reglene læres på et minutt, slagtvangen gir taktikk fra de første trekkene, og det er et godt første strategispill for barn.',
+        },
       },
       lobbies: {
         title: 'Dam-lobbyer',
