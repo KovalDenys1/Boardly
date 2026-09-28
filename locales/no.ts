@@ -1523,6 +1523,9 @@ const no = {
             desc: 'Mobil, nettbrett eller laptop fungerer, og et gjestenavn er nok.',
           },
         },
+        audience: {
+          whoItSuits: 'Det passer for alle med et ledig minutt: venner som avgjør hvem som starter, spillere på pause, eller alle som vil teste om de leser folk bedre enn tilfeldighetene.',
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

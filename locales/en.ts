@@ -1523,6 +1523,9 @@ const en = {
             desc: 'Any phone, tablet or laptop works, and a guest name is enough.',
           },
         },
+        audience: {
+          whoItSuits: 'It suits anyone with a spare minute: friends settling who goes first, players on a break, or anyone testing whether they read people better than chance.',
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',

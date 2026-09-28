@@ -82,6 +82,9 @@ export default function RockPaperScissorsDetailContent() {
         { title: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.turnTimer.desc') },
         { title: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.title'), desc: t('games.rock_paper_scissors.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.rock_paper_scissors.detail.audience.whoItSuits'),
+      ]}
     />
   )
 }
