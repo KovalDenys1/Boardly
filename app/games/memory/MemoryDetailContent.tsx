@@ -47,6 +47,17 @@ export default function MemoryDetailContent() {
         t('games.memory.detail.rules.clockRunsOut'),
         t('games.memory.detail.rules.lastPair'),
       ]}
+      scoring={[
+        {
+          title: t('games.memory.detail.scoring.title'),
+          note: t('games.memory.detail.scoring.note'),
+          rows: [
+            { name: t('games.memory.detail.scoring.rows.matchedPair.name'), value: t('games.memory.detail.scoring.rows.matchedPair.value'), rule: t('games.memory.detail.scoring.rows.matchedPair.rule') },
+            { name: t('games.memory.detail.scoring.rows.missedPair.name'), value: t('games.memory.detail.scoring.rows.missedPair.value'), rule: t('games.memory.detail.scoring.rows.missedPair.rule') },
+            { name: t('games.memory.detail.scoring.rows.levelAtTop.name'), value: t('games.memory.detail.scoring.rows.levelAtTop.value'), rule: t('games.memory.detail.scoring.rows.levelAtTop.rule') },
+          ],
+        },
+      ]}
       playVsBotGameType="memory"
     />
   )

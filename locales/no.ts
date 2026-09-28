@@ -1004,6 +1004,27 @@ const no = {
           clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine tilbake, og turen går videre uten poeng.',
           lastPair: 'Spillet er over i det øyeblikket det siste paret er tatt.',
         },
+        scoring: {
+          title: 'Bare par gir poeng',
+          note: 'Den som har flest par når brettet er tomt, vinner.',
+          rows: {
+            matchedPair: {
+              name: 'Par som stemmer',
+              value: '1 poeng',
+              rule: 'Telles i det øyeblikket det andre kortet stemmer.',
+            },
+            missedPair: {
+              name: 'Bom',
+              value: '0 poeng',
+              rule: 'Koster ingenting annet enn resten av turen.',
+            },
+            levelAtTop: {
+              name: 'Likt på toppen',
+              value: 'Uavgjort',
+              rule: 'Spillet ender uavgjort, og ingen utropes til vinner.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',

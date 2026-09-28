@@ -1004,6 +1004,27 @@ const en = {
           clockRunsOut: 'If the turn clock reaches zero, your face-up cards turn back and the turn passes without a point.',
           lastPair: 'The game ends the moment the final pair is claimed.',
         },
+        scoring: {
+          title: 'Pairs are the only score',
+          note: 'Whoever holds the most pairs when the board is empty wins.',
+          rows: {
+            matchedPair: {
+              name: 'Matched pair',
+              value: '1 point',
+              rule: 'Scored the instant the second card matches.',
+            },
+            missedPair: {
+              name: 'Missed pair',
+              value: '0 points',
+              rule: 'Costs nothing except the rest of your turn.',
+            },
+            levelAtTop: {
+              name: 'Level at the top',
+              value: 'Tie',
+              rule: 'The game ends in a tie and no winner is named.',
+            },
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',
