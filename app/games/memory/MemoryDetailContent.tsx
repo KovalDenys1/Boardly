@@ -63,6 +63,16 @@ export default function MemoryDetailContent() {
         { title: t('games.memory.detail.modes.turnClock.title'), desc: t('games.memory.detail.modes.turnClock.desc') },
         { title: t('games.memory.detail.modes.botLevels.title'), desc: t('games.memory.detail.modes.botLevels.desc') },
       ]}
+      strategy={[
+        { title: t('games.memory.detail.strategy.flipUnknownFirst.title'), desc: t('games.memory.detail.strategy.flipUnknownFirst.desc') },
+        { title: t('games.memory.detail.strategy.safeSecondFlip.title'), desc: t('games.memory.detail.strategy.safeSecondFlip.desc') },
+        { title: t('games.memory.detail.strategy.nameAndPlace.title'), desc: t('games.memory.detail.strategy.nameAndPlace.desc') },
+        { title: t('games.memory.detail.strategy.coordinatesOnHard.title'), desc: t('games.memory.detail.strategy.coordinatesOnHard.desc') },
+        { title: t('games.memory.detail.strategy.anchorOnCorners.title'), desc: t('games.memory.detail.strategy.anchorOnCorners.desc') },
+        { title: t('games.memory.detail.strategy.rehearseBetweenTurns.title'), desc: t('games.memory.detail.strategy.rehearseBetweenTurns.desc') },
+        { title: t('games.memory.detail.strategy.guessLate.title'), desc: t('games.memory.detail.strategy.guessLate.desc') },
+        { title: t('games.memory.detail.strategy.climbTheBots.title'), desc: t('games.memory.detail.strategy.climbTheBots.desc') },
+      ]}
       playVsBotGameType="memory"
     />
   )

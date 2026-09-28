@@ -1039,6 +1039,40 @@ const no = {
             desc: 'Memory Scout bommer på de fleste forsøkene, Pattern Seeker finner et par omtrent halvparten av gangene, og Recall Master finner ett på de fleste forsøk.',
           },
         },
+        strategy: {
+          flipUnknownFirst: {
+            title: 'Nytt kort først',
+            desc: 'Begynn med et kort du ikke har sett; vet du hvor tvillingen ligger, er poenget ditt.',
+          },
+          safeSecondFlip: {
+            title: 'Et trygt andrekort',
+            desc: 'Vet du ikke hvor tvillingen er? Snu et kort du allerede kjenner, så avslører du ingenting nytt.',
+          },
+          nameAndPlace: {
+            title: 'Gi det navn og plass',
+            desc: 'Alle bildene er frukt, og «banan, øverst til venstre» sitter bedre enn et bilde alene.',
+          },
+          coordinatesOnHard: {
+            title: 'Koordinater på 6×6',
+            desc: 'På det store brettet lagrer du hvert kort etter rad og kolonne.',
+          },
+          anchorOnCorners: {
+            title: 'Start i hjørnene',
+            desc: 'Hjørner og kanter er lettest å huske, så knytt de første funnene til dem.',
+          },
+          rehearseBetweenTurns: {
+            title: 'Repeter mens du venter',
+            desc: 'Mellom turene går du gjennom alle plasseringene du kan.',
+          },
+          guessLate: {
+            title: 'Gjett sent, ikke tidlig',
+            desc: 'Når få ukjente kort er igjen, har et blindt kort reelle sjanser.',
+          },
+          climbTheBots: {
+            title: 'Klatre på bot-stigen',
+            desc: 'Begynn med Memory Scout og gå opp etter hvert som hukommelsen skjerpes.',
+          },
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',

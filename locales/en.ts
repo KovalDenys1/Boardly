@@ -1039,6 +1039,40 @@ const en = {
             desc: 'Memory Scout misses most of its tries, Pattern Seeker finds a pair about half the time, and Recall Master finds one on most tries.',
           },
         },
+        strategy: {
+          flipUnknownFirst: {
+            title: 'New card first',
+            desc: 'Open with an unseen card; if you know where its twin lies, the point is yours.',
+          },
+          safeSecondFlip: {
+            title: 'A safe second flip',
+            desc: 'Cannot place the twin? Turn a card you already know and reveal nothing new.',
+          },
+          nameAndPlace: {
+            title: 'Name it, place it',
+            desc: 'Every face is a fruit, and "banana, top left" sticks better than a picture.',
+          },
+          coordinatesOnHard: {
+            title: 'Coordinates on 6×6',
+            desc: 'On the big board, file each card by row and column.',
+          },
+          anchorOnCorners: {
+            title: 'Start from the corners',
+            desc: 'Corners and edges are easiest to recall, so pin early finds to them.',
+          },
+          rehearseBetweenTurns: {
+            title: 'Rehearse while waiting',
+            desc: 'Between turns, run through every position you know.',
+          },
+          guessLate: {
+            title: 'Guess late, not early',
+            desc: 'With few unknown cards left, a blind flip has real odds.',
+          },
+          climbTheBots: {
+            title: 'Climb the bot ladder',
+            desc: 'Start with Memory Scout and move up as your recall sharpens.',
+          },
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',
