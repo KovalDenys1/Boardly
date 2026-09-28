@@ -3430,6 +3430,7 @@ const ru = {
     outOfTheGame: 'Выбыли из игры: {{names}}',
     roundHistory: 'Прошедшие раунды',
     claimedBy: 'Заявил {{name}}',
+    claimTimedOut: 'У {{name}} вышло время – в этом раунде нет заявления и голосования',
     points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
     phaseWaiting: 'Ожидание',

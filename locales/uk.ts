@@ -3444,6 +3444,7 @@ const uk: TranslationWithPlurals = {
     outOfTheGame: 'Вибули з гри: {{names}}',
     roundHistory: 'Минулі раунди',
     claimedBy: 'Заявив {{name}}',
+    claimTimedOut: 'У {{name}} скінчився час – у цьому раунді немає заяви й голосування',
     points: '{{count}} очк.',
     timeLeft: '{{seconds}}с',
     phaseWaiting: 'Очікування',

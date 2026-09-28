@@ -3311,6 +3311,7 @@ const no = {
     outOfTheGame: 'Ute av spillet: {{names}}',
     roundHistory: 'Runder så langt',
     claimedBy: 'Påstått av {{name}}',
+    claimTimedOut: '{{name}} gikk tom for tid – ingen påstand og ingen avstemning denne runden',
     points: '{{count}} p',
     timeLeft: '{{seconds}}s',
     phaseWaiting: 'Venter',

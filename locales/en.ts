@@ -3323,6 +3323,7 @@ const en = {
     outOfTheGame: 'Out of the game: {{names}}',
     roundHistory: 'Rounds so far',
     claimedBy: 'Claimed by {{name}}',
+    claimTimedOut: '{{name}} ran out of time – no claim, no vote this round',
     points: '{{count}} pts',
     timeLeft: '{{seconds}}s',
     phaseWaiting: 'Waiting',

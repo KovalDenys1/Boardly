@@ -203,17 +203,27 @@ function LiarsRoundHistory({ data, players, rules, t }: {
           <div key={result.round} className="text-sm">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-bd-ink-muted">{t('liarsParty.round', { current: result.round, total: data.maxRounds })}</span>
-              <span
-                className="font-bold"
-                style={{ color: result.wasBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}
-              >
-                {result.wasBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
-              </span>
+              {!result.claimTimedOut && (
+                <span
+                  className="font-bold"
+                  style={{ color: result.wasBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}
+                >
+                  {result.wasBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
+                </span>
+              )}
             </div>
-            <div className="text-bd-ink-soft">
-              {t('liarsParty.claimedBy', { name: playerNameById(players, result.claimantId, t) })}
-            </div>
-            <div className="truncate text-bd-ink" title={result.claimText}>&ldquo;{result.claimText}&rdquo;</div>
+            {result.claimTimedOut ? (
+              <div className="text-bd-ink-soft">
+                {t('liarsParty.claimTimedOut', { name: playerNameById(players, result.claimantId, t) })}
+              </div>
+            ) : (
+              <>
+                <div className="text-bd-ink-soft">
+                  {t('liarsParty.claimedBy', { name: playerNameById(players, result.claimantId, t) })}
+                </div>
+                <div className="truncate text-bd-ink" title={result.claimText}>&ldquo;{result.claimText}&rdquo;</div>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -503,7 +513,14 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
 
   return (
     <>
-      {data.claim && (
+      {data.claim?.autoSubmitted && (
+        // No claim was made, so there is no verdict either (#1202).
+        <LiarsCard testId="liars-claim-timed-out">
+          <div className="liars-claim">{t('liarsParty.claimTimedOut', { name: playerNameById(players, data.claim.playerId, t) })}</div>
+        </LiarsCard>
+      )}
+
+      {data.claim && !data.claim.autoSubmitted && (
         <LiarsCard>
           <blockquote className="liars-claim">&ldquo;{data.claim.text}&rdquo;</blockquote>
           <div
