@@ -38,8 +38,8 @@ export const ROUTE_UPDATED = {
   '/games/rock-paper-scissors': '2026-09-28',
   // #1240 expanded the page to the Track A sections.
   '/games/liars-party': '2026-09-28',
-  // Released by #873 on 2026-09-21, the day it became indexable.
-  '/games/sketch-and-guess': '2026-09-21',
+  // #1239 expanded the page to the Track A sections.
+  '/games/sketch-and-guess': '2026-09-28',
   '/games/checkers': '2026-09-24',
   '/games/ludo': '2026-09-24',
   '/guides': '2026-09-20',

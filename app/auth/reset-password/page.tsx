@@ -8,19 +8,7 @@ import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
-
-const shellClassName = 'relative min-h-[100svh] overflow-x-hidden overflow-y-auto bg-[#070b18]'
-const frameClassName = 'relative mx-auto flex min-h-[100svh] w-full box-border items-center justify-center px-4 py-3 sm:px-6 sm:py-4 lg:px-8'
-const cardClassName = 'w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/30 bg-white/[0.94] text-gray-900 shadow-[0_32px_120px_rgba(2,6,23,0.65)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/[0.94] dark:text-gray-100'
-
-function SceneBackground() {
-  return (
-    <>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.26),transparent_32%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.24),transparent_34%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.18),transparent_28%)]" />
-      <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-    </>
-  )
-}
+import AuthShell, { AuthShellLoading } from '@/components/auth/AuthShell'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -75,162 +63,88 @@ function ResetPasswordForm() {
     }
   }
 
+  // i18n-allow: product name, spelled the same in every locale
+  const kicker = 'Boardly'
+  const linkButtonStyle = {
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+    color: 'var(--bd-coral-deep)', fontWeight: 600, textDecoration: 'underline', fontSize: 14,
+  } as const
+
   if (!token) {
     return (
-      <div className={shellClassName}>
-        <SceneBackground />
-        <div className={frameClassName}>
-          <div className={cardClassName}>
-            <div className="px-5 py-5 sm:px-8 sm:py-6">
-              <div className="mx-auto max-w-2xl text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
-                  {/* i18n-allow: product name, spelled the same in every locale */}
-                  Boardly
-                </p>
-                <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                  {t('auth.resetPassword.invalidTitle')}
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  {t('auth.resetPassword.invalidHelp')}
-                </p>
-              </div>
-
-              <div className="mx-auto mt-5 max-w-xl rounded-[30px] border border-rose-200/80 bg-white/85 p-5 text-center shadow-sm dark:border-rose-900/60 dark:bg-slate-950/35">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-rose-50 text-rose-600 shadow-sm dark:bg-rose-950/40 dark:text-rose-300">
-                  <Icon name="warning" size={30} />
-                </div>
-                <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {t('auth.resetPassword.invalidHelp')}
-                </p>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={navigateToForgotPassword}
-                    className="btn btn-primary w-full text-sm sm:text-base"
-                  >
-                    {t('auth.resetPassword.requestNewLink')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={navigateToLogin}
-                    className="btn btn-secondary w-full text-sm sm:text-base"
-                  >
-                    {t('auth.resetPassword.loginLink')}
-                  </button>
-                </div>
-              </div>
-            </div>
+      <AuthShell kicker={kicker} title={t('auth.resetPassword.invalidTitle')} subtitle={t('auth.resetPassword.invalidHelp')}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="bd-avatar bd-avatar-coral" style={{ width: 56, height: 56, borderRadius: 18, color: 'var(--bd-ink-on-accent)' }}>
+            <Icon name="warning" size={28} />
           </div>
         </div>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={navigateToForgotPassword} className="bd-btn bd-btn-coral" style={{ justifyContent: 'center' }}>
+            {t('auth.resetPassword.requestNewLink')}
+          </button>
+          <button type="button" onClick={navigateToLogin} className="bd-btn bd-btn-ghost" style={{ justifyContent: 'center' }}>
+            {t('auth.resetPassword.loginLink')}
+          </button>
+        </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className={shellClassName}>
-      <SceneBackground />
-      <div className={frameClassName}>
-        <div className={cardClassName}>
-          <div className="px-5 py-5 sm:px-8 sm:py-6">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
-                {/* i18n-allow: product name, spelled the same in every locale */}
-                Boardly
-              </p>
-              <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {t('auth.resetPassword.title')}
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                {t('auth.resetPassword.subtitle')}
-              </p>
-            </div>
+    <AuthShell kicker={kicker} title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.subtitle')}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          label={t('auth.resetPassword.password')}
+          placeholder={t('auth.resetPassword.passwordPlaceholder')}
+          autoComplete="new-password"
+          showStrength={true}
+          showRequirements={false}
+          required={true}
+        />
 
-            <div className="mx-auto mt-5 max-w-xl">
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-4 rounded-[30px] border border-slate-200/80 bg-white/85 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/35 sm:p-5"
-              >
-                <div className="[&_input]:text-base sm:[&_input]:text-sm">
-                  <PasswordInput
-                    value={password}
-                    onChange={setPassword}
-                    label={t('auth.resetPassword.password')}
-                    placeholder={t('auth.resetPassword.passwordPlaceholder')}
-                    autoComplete="new-password"
-                    showStrength={true}
-                    showRequirements={false}
-                    required={true}
-                  />
-                </div>
+        <PasswordInput
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          label={t('auth.resetPassword.confirmPassword')}
+          placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')}
+          autoComplete="new-password"
+          showStrength={false}
+          required={true}
+        />
 
-                <div className="[&_input]:text-base sm:[&_input]:text-sm">
-                  <PasswordInput
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    label={t('auth.resetPassword.confirmPassword')}
-                    placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')}
-                    autoComplete="new-password"
-                    showStrength={false}
-                    required={true}
-                  />
-                </div>
+        {error && (
+          <p role="alert" style={{ margin: 0, padding: '10px 14px', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-deep)', background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)' }}>
+            {error}
+          </p>
+        )}
 
-                {error && (
-                  <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-400">
-                    {error}
-                  </div>
-                )}
+        <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg" style={{ justifyContent: 'center', marginTop: 4 }}>
+          {loading ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <LoadingSpinner size="sm" />
+              <span>{t('auth.resetPassword.resetting')}</span>
+            </span>
+          ) : (
+            t('auth.resetPassword.submit')
+          )}
+        </button>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary w-full text-sm sm:text-base"
-                >
-                  {loading ? (
-                    <span className="flex flex-row items-center justify-center gap-2">
-                      <LoadingSpinner size="sm" />
-                      <span>{t('auth.resetPassword.resetting')}</span>
-                    </span>
-                  ) : (
-                    t('auth.resetPassword.submit')
-                  )}
-                </button>
-                <div className="border-t border-slate-200 pt-4 text-center dark:border-white/10">
-                  <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {t('auth.resetPassword.remember')}
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={navigateToLogin}
-                    className="mt-2 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    {t('auth.resetPassword.loginLink')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        <div style={{ borderTop: '1px solid var(--bd-line)', paddingTop: 14, textAlign: 'center' }}>
+          <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', margin: 0 }}>{t('auth.resetPassword.remember')}</p>
+          <button type="button" onClick={navigateToLogin} style={{ ...linkButtonStyle, marginTop: 6 }}>
+            {t('auth.resetPassword.loginLink')}
+          </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </AuthShell>
   )
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className={shellClassName}>
-        <SceneBackground />
-        <div className={frameClassName}>
-          <div className={cardClassName}>
-            <div className="px-5 py-5 sm:px-8 sm:py-6">
-              <LoadingSpinner />
-            </div>
-          </div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<AuthShellLoading spinner={<LoadingSpinner />} />}>
       <ResetPasswordForm />
     </Suspense>
   )
