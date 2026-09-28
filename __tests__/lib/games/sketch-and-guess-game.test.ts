@@ -25,26 +25,25 @@ const createMove = (playerId: string, type: string, data: Record<string, unknown
 const getData = (game: SketchAndGuessGame): SketchAndGuessGameData =>
   game.getState().data as SketchAndGuessGameData
 
-const addDefaultPlayers = (game: SketchAndGuessGame): void => {
-  game.addPlayer({ id: 'player1', name: 'Player 1' })
-  game.addPlayer({ id: 'player2', name: 'Player 2' })
-  game.addPlayer({ id: 'player3', name: 'Player 3' })
+const addDefaultPlayers = (game: SketchAndGuessGame, count = 3): void => {
+  for (let i = 1; i <= count; i += 1) game.addPlayer({ id: `player${i}`, name: `Player ${i}` })
 }
 
 const DRAWING = '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[{"color":"#000","width":3,"points":[{"x":1,"y":1}]}]}'
 const BLANK_DRAWING = '{"type":"drawing","version":1,"width":480,"height":480,"strokes":[]}'
 const DRAWING_MS = SKETCH_PHASE_SECONDS.drawing * 1000
 
-function newGame(rounds = 2, id = 'sketch-test') {
-  const game = new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, rules: { rounds } })
-  addDefaultPlayers(game)
+/** A started game; it has one round per player (#1266). */
+function newGame(id = 'sketch-test', players = 3) {
+  const game = new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3 })
+  addDefaultPlayers(game, players)
   expect(game.startGame()).toBe(true)
   return game
 }
 
 /** Starts a game and has the drawer pick `wordId` if offered, otherwise the first choice. */
-function drawingGame(rounds = 2, id = 'sketch-test') {
-  const game = newGame(rounds, id)
+function drawingGame(id = 'sketch-test') {
+  const game = newGame(id)
   const round = getData(game).rounds[0]
   const choice = round.wordChoices[0]
   const startAt = Date.now()
@@ -113,7 +112,7 @@ describe('SketchAndGuessGame – choosing (#1082)', () => {
   })
 
   it('never offers a word an earlier round of the same game was played with', () => {
-    const game = newGame(10, 'sketch-no-repeat')
+    const game = newGame('sketch-no-repeat', 10)
     const played: string[] = []
     for (let round = 1; round <= 10; round += 1) {
       const data = getData(game)
@@ -226,7 +225,7 @@ describe('SketchAndGuessGame – guessing while drawing (#1082)', () => {
 
 describe('SketchAndGuessGame – every language counts (#1082)', () => {
   function guessAgainst(wordId: string, guess: string) {
-    const game = newGame(1, `sketch-lang-${wordId}`)
+    const game = newGame(`sketch-lang-${wordId}`)
     withWord(game, wordId)
     game.makeMove(createMove('player1', 'choose-word', { wordId }))
     game.makeMove(createMove('player2', 'submit-guess', { guess }))
@@ -254,7 +253,7 @@ describe('SketchAndGuessGame – every language counts (#1082)', () => {
 
   it('keeps й a letter of its own rather than folding it into и', () => {
     // "чаика" is one letter off nothing in the bank we pick, so it is simply wrong.
-    const game = newGame(1, 'sketch-short-i')
+    const game = newGame('sketch-short-i')
     const tea: SketchWord = { id: 'test-seagull', en: ['seagull'], no: ['måke'], ru: ['чайка'], uk: ['чайка'] }
     getData(game).rounds[0].wordChoices = [tea]
     game.makeMove(createMove('player1', 'choose-word', { wordId: tea.id }))
@@ -389,7 +388,7 @@ describe('SketchAndGuessGame – the drawing and the reveal (#1082)', () => {
   })
 
   it('penalises a blank drawing like a missing one', () => {
-    const { game } = drawingGame(1, 'sketch-blank')
+    const { game } = drawingGame('sketch-blank')
     game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
     game.makeMove(createMove('player1', 'submit-drawing', { content: BLANK_DRAWING }))
     expect(getData(game).rounds[0].drawingAutoSubmitted).toBe(true)
@@ -397,41 +396,90 @@ describe('SketchAndGuessGame – the drawing and the reveal (#1082)', () => {
     expect(getData(game).scoreBreakdown.player1.autoSubmissionPenalty).toBe(20)
   })
 
-  it('runs a whole unattended round out on the clocks and finishes deterministically', () => {
-    const game = newGame(1, 'sketch-timeout')
+  it('runs a whole unattended game out on the clocks and finishes deterministically', () => {
+    const game = newGame('sketch-timeout')
     const startedAt = getData(game).phaseStartedAt as number
-    const elapsed = (SKETCH_PHASE_SECONDS.choosing + SKETCH_PHASE_SECONDS.drawing + SKETCH_PHASE_SECONDS.reveal) * 1000
-    const result = game.applyTimeoutFallback(undefined, startedAt + elapsed)
+    const perRound = (SKETCH_PHASE_SECONDS.choosing + SKETCH_PHASE_SECONDS.drawing + SKETCH_PHASE_SECONDS.reveal) * 1000
+    const result = game.applyTimeoutFallback(undefined, startedAt + 3 * perRound)
     const data = getData(game)
 
+    // Three players, so three rounds, each run out on its three clocks.
     expect(result.changed).toBe(true)
-    expect(result.timeoutWindowsConsumed).toBe(3)
-    expect(result.phaseTransitions).toBe(2)
-    expect(result.revealAdvances).toBe(1)
-    expect(result.autoPickedWords).toBe(1)
-    expect(result.autoSubmittedDrawings).toBe(1)
+    expect(result.timeoutWindowsConsumed).toBe(9)
+    expect(result.phaseTransitions).toBe(6)
+    expect(result.revealAdvances).toBe(3)
+    expect(result.autoPickedWords).toBe(3)
+    expect(result.autoSubmittedDrawings).toBe(3)
     expect(result.autoSubmittedGuesses).toBe(0)
-    expect(result.autoSubmittedPlayerIds).toEqual(['player1'])
+    expect(result.autoSubmittedPlayerIds).toEqual(['player1', 'player2', 'player3'])
     expect(game.getState().status).toBe('finished')
     expect(data.completionReason).toBe('all-rounds-finished')
-    expect(data.scoreBreakdown.player1.autoSubmissionPenalty).toBe(20)
-    expect(data.scoreBreakdown.player2.autoSubmissionPenalty).toBe(0)
-    expect(data.ranking).toEqual(['player2', 'player3', 'player1'])
-    expect(data.winnerId).toBe('player2')
+    for (const id of ['player1', 'player2', 'player3']) {
+      expect(data.scoreBreakdown[id].autoSubmissionPenalty).toBe(20)
+    }
+    // Everyone level: the tie-break keeps seat order.
+    expect(data.ranking).toEqual(['player1', 'player2', 'player3'])
+    expect(data.winnerId).toBe('player1')
   })
 
   it('keeps stable tie-break ordering when scores are equal', () => {
-    const { game } = drawingGame(1, 'sketch-tie')
-    game.makeMove(createMove('player2', 'submit-guess', { guess: 'wrong' }))
-    game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
-    game.makeMove(createMove('player1', 'submit-drawing', { content: DRAWING }))
-    game.makeMove(createMove('player1', 'advance-round', {}))
+    const game = newGame('sketch-tie')
+    for (let round = 1; round <= 3; round += 1) {
+      const drawer = getData(game).currentDrawerId
+      const choice = getData(game).rounds.find((r) => r.round === round)!.wordChoices[0]
+      expect(game.makeMove(createMove(drawer, 'choose-word', { wordId: choice.id }))).toBe(true)
+      const guesser = drawer === 'player2' ? 'player3' : 'player2'
+      game.makeMove(createMove(guesser, 'submit-guess', { guess: 'wrong' }))
+      expect(game.makeMove(createMove(drawer, 'submit-drawing', { content: DRAWING }))).toBe(true)
+      game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
+      expect(game.makeMove(createMove(drawer, 'advance-round', {}))).toBe(true)
+    }
 
     const data = getData(game)
     expect(game.getState().status).toBe('finished')
     expect(data.scores).toEqual({ player1: 0, player2: 0, player3: 0 })
     expect(data.ranking).toEqual(['player1', 'player2', 'player3'])
     expect(data.winnerId).toBe('player1')
+  })
+})
+
+describe('SketchAndGuessGame – one round per player (#1266)', () => {
+  /** Runs every phase out on the clock until the game ends. */
+  function runOut(game: SketchAndGuessGame) {
+    game.applyTimeoutFallback(undefined, Date.now() + 24 * 60 * 60 * 1000)
+    expect(game.getState().status).toBe('finished')
+  }
+
+  it.each([3, 5, 10])('has %i players each draw exactly once', (players) => {
+    const game = newGame(`sketch-each-${players}`, players)
+    expect(getData(game).totalRounds).toBe(players)
+    runOut(game)
+    const drawers = getData(game).rounds.map((r) => r.drawerId)
+    expect(drawers).toHaveLength(players)
+    expect(drawers).toEqual(Array.from({ length: players }, (_, i) => `player${i + 1}`))
+  })
+
+  it('ignores a round count sent in the config', () => {
+    for (const rounds of [1, 2, 3, 10, 99]) {
+      const game = new SketchAndGuessGame(`sketch-rules-${rounds}`, { maxPlayers: 10, minPlayers: 3, rules: { rounds } })
+      addDefaultPlayers(game, 4)
+      expect(game.startGame()).toBe(true)
+      expect(getData(game).totalRounds).toBe(4)
+    }
+  })
+
+  it('counts the rematch from its own roster, not the previous game', () => {
+    const first = newGame('sketch-first', 5)
+    runOut(first)
+    expect(getData(first).rounds).toHaveLength(5)
+
+    // /api/game/create builds a rematch as a fresh engine seated from the lobby.
+    const rematch = new SketchAndGuessGame('sketch-rematch', { maxPlayers: 10, minPlayers: 3, rules: { rounds: 5 } })
+    addDefaultPlayers(rematch, 4)
+    expect(rematch.startGame()).toBe(true)
+    expect(getData(rematch).totalRounds).toBe(4)
+    runOut(rematch)
+    expect(getData(rematch).rounds.map((r) => r.drawerId)).toEqual(['player1', 'player2', 'player3', 'player4'])
   })
 })
 
@@ -745,7 +793,7 @@ describe('Sketch & Guess word hint (#1082)', () => {
   })
 
   it('is given to a guesser in their locked language only, never to the drawer, the broadcast or a spectator', () => {
-    const { game } = drawingGame(1, 'sketch-hint')
+    const { game } = drawingGame('sketch-hint')
     const round = (published: unknown) => (published as { data: SketchAndGuessGameData }).data.rounds[0]
     expect(game.lockHintLocale('player2', 'no')).toBe(true)
     const state = game.getState()
@@ -758,7 +806,7 @@ describe('Sketch & Guess word hint (#1082)', () => {
 
   it('never spells the word out, even at the end of the clock', () => {
     for (const lang of ['en', 'no', 'ru', 'uk'] as const) {
-      const { game, word } = drawingGame(1, `sketch-hint-late-${lang}`)
+      const { game, word } = drawingGame(`sketch-hint-late-${lang}`)
       const startedAt = getData(game).rounds[0].drawingStartedAt as number
       game.lockHintLocale('player2', lang)
       const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2', {
@@ -773,7 +821,7 @@ describe('Sketch & Guess word hint (#1082)', () => {
   })
 
   it('is not given while the word is still being chosen', () => {
-    const game = newGame(1, 'sketch-hint-choosing')
+    const game = newGame('sketch-hint-choosing')
     expect(game.lockHintLocale('player2', 'en')).toBe(false)
     const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), 'player2') as {
       data: SketchAndGuessGameData
@@ -791,7 +839,7 @@ describe('Sketch & Guess word hint (#1082)', () => {
 describe('near-miss redaction (#1082)', () => {
   const HOST = 'player1' // lobby creator; draws round 1
   function roundWithNearMisses() {
-    const game = newGame(2, 'sketch-near-miss')
+    const game = newGame('sketch-near-miss')
     withWord(game, 'elephant')
     game.makeMove(createMove('player1', 'choose-word', { wordId: 'elephant' }))
     const t0 = Date.now()
@@ -841,7 +889,7 @@ describe('near-miss redaction (#1082)', () => {
 
 describe('Sketch & Guess chat rules (#1082)', () => {
   it('mutes a guesser who has the word while the round is drawn, and nobody else', () => {
-    const { game, word } = drawingGame(2, 'sketch-chat-solver')
+    const { game, word } = drawingGame('sketch-chat-solver')
     game.makeMove(createMove('player2', 'submit-guess', { guess: word.en[0] }))
     const params = (userId: string) => ({ gameStatus: 'playing', state: game.getState(), userId })
     expect(isSketchAndGuessSolverMuted(params('player2'))).toBe(true)
@@ -857,7 +905,7 @@ describe('Sketch & Guess chat rules (#1082)', () => {
 /** PR #1100 review, items 1–3 and 5–8. */
 describe('PR #1100 review fixes', () => {
   it('1: ignores a client-supplied authorizedAsHost – authority comes only from authorizeHost()', () => {
-    const { game, startAt } = drawingGame(2, 'review-forgery')
+    const { game, startAt } = drawingGame('review-forgery')
     game.makeMove(createMove('player2', 'submit-guess', { guess: 'not it' }, startAt + 1000))
     const guessId = getData(game).rounds[0].guesses[0].id
     // player3 forges the flag the old engine trusted.
@@ -868,7 +916,7 @@ describe('PR #1100 review fixes', () => {
   })
 
   it('2: shows a host who is guessing (and has not solved it) no near-miss text', () => {
-    const game = newGame(2, 'review-host-guesser')
+    const game = newGame('review-host-guesser')
     withWord(game, 'elephant')
     game.makeMove(createMove('player1', 'choose-word', { wordId: 'elephant' }))
     game.makeMove(createMove('player2', 'submit-guess', { guess: 'elephnat' }))
@@ -882,7 +930,7 @@ describe('PR #1100 review fixes', () => {
   })
 
   it('3: locks the hint language per player per round; a second language is never served', () => {
-    const { game } = drawingGame(2, 'review-hint-lock')
+    const { game } = drawingGame('review-hint-lock')
     const hintFor = (viewer: string) =>
       (sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer).data as SketchAndGuessGameData).rounds[0].wordHint
     expect(hintFor('player2')).toBeUndefined()
@@ -907,7 +955,7 @@ describe('PR #1100 review fixes', () => {
   })
 
   it('6: a drawer-host who accepts a guess earns no drawer points for it', () => {
-    const { game, startAt } = drawingGame(2, 'review-drawer-host')
+    const { game, startAt } = drawingGame('review-drawer-host')
     game.makeMove(createMove('player2', 'submit-guess', { guess: 'close enough' }, startAt + 1000))
     const guessId = getData(game).rounds[0].guesses[0].id
     game.authorizeHost('player1') // player1 created the lobby and draws round 1
@@ -918,7 +966,7 @@ describe('PR #1100 review fixes', () => {
   })
 
   it('7: save-drawing stores the drawing mid-round and the reveal timeout keeps it without a penalty', () => {
-    const { game, startAt } = drawingGame(1, 'review-save')
+    const { game, startAt } = drawingGame('review-save')
     expect(game.makeMove(createMove('player2', 'save-drawing', { content: DRAWING }, startAt + 1000))).toBe(false)
     expect(game.makeMove(createMove('player1', 'save-drawing', { content: DRAWING }, startAt + 6000))).toBe(true)
     expect(getData(game).phase).toBe('drawing')
@@ -931,7 +979,7 @@ describe('PR #1100 review fixes', () => {
   })
 
   it('7: the final submit at the reveal still replaces a saved drawing', () => {
-    const { game, startAt } = drawingGame(1, 'review-save-final')
+    const { game, startAt } = drawingGame('review-save-final')
     game.makeMove(createMove('player1', 'save-drawing', { content: BLANK_DRAWING }, startAt + 6000))
     game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
     expect(game.makeMove(createMove('player1', 'submit-drawing', { content: DRAWING }))).toBe(true)
