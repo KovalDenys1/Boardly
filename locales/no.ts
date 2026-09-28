@@ -816,7 +816,7 @@ const no = {
         step3Title: 'Still smarte spørsmål',
         step3Desc: 'Still spørsmål etter tur. Vanlige spillere prøver å avsløre spionen; spionen prøver å blande seg inn.',
         step4Title: 'Stem eller gjett',
-        step4Desc: 'Gruppen kan kalle en avstemning når som helst. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
+        step4Desc: 'Verten kan starte en avstemning under spørsmålene. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
         benefitsTitle: 'Hvorfor spille Gjett spionen på Boardly?',
         benefit1: 'Enkelt å starte med en delt romlenke.',
         benefit2: 'Perfekt for grupper, fester og korte pauser.',
@@ -825,8 +825,8 @@ const no = {
         rules: {
           askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
           whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
-          howTheVoteEnds: 'Når alle tilkoblede spillere har stemt, avsløres den ene med flest stemmer; uavgjort avslører ingen.',
-          spyMayGuess: 'Før avstemningen kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
+          howTheVoteEnds: 'Når alle spillerne i spillet har stemt, stemmes den ene med flest stemmer ut; uavgjort stemmer ut ingen. Resultatene navngir spionen uansett.',
+          spyMayGuess: 'Mens spørsmålene pågår, kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
         },
         scoring: {
           vote: {
@@ -851,7 +851,7 @@ const no = {
               voteOnOther: {
                 name: 'Stemme på en annen',
                 value: '−10',
-                rule: 'Alltid spionens egen stemme.',
+                rule: 'Til den som stemte; alltid spionens egen stemme.',
               },
             },
           },
@@ -879,7 +879,7 @@ const no = {
           },
           fixedClocks: {
             title: 'Faste runder og klokker',
-            desc: 'Tre runder, fem minutters spørreklokke og 60 sekunders nedtelling til avstemning; ingen innstilling endrer dem.',
+            desc: 'Tre runder og fem minutters spørreklokke; nedtellingen på 60 sekunder til avstemningen er veiledende, og avstemningen lukkes når alle har stemt.',
           },
         },
         strategy: {
@@ -923,7 +923,7 @@ const no = {
           },
           splittingTheVote: {
             title: 'Å splitte stemmene',
-            desc: 'Delt topp avslører ingen og gir spionen 300.',
+            desc: 'Delt topp stemmer ut ingen og gir spionen 300.',
           },
           guessingOnAHunch: {
             title: 'Å gjette på magefølelse',
@@ -941,7 +941,7 @@ const no = {
           },
           secretsStayPrivate: {
             title: 'Hemmeligheter holdes private',
-            desc: 'Rollen din når bare din nettleser; spionen navngis med resultatene.',
+            desc: 'Bare din nettleser får rollen din.',
           },
           guestNoDownload: {
             title: 'Et navn og en nettleser',
@@ -949,7 +949,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, pauser på jobben, videosamtaler.',
+          whoItSuits: 'Grupper på tre til ti som liker å lese folk: fester, klasserom, videosamtaler.',
         },
         history: {
           origin: 'Spyfall av Alexandr Ushan, utgitt i 2014, gjorde formatet med en spion uten sted til en selskapsklassiker.',
@@ -957,11 +957,11 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Gjett spionen på Boardly gratis?',
-            a: 'Ja, for alle, også gjester. Bare tilskuere, reprise og premium-lobbytemaer krever Premium.',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Gjett spionen på mobil?',
-            a: 'Ja, i mobilnettleseren, med runden, spillerlista og chatten i hver sin fane, ett trykk unna.',
+            a: 'Ja, i mobilnettleseren, med runden, spillerlista og chatten i hver sin fane i stående format, ett trykk unna.',
           },
           canOthersSeeSpy: {
             q: 'Kan andre spillere se hvem som er spion?',

@@ -75,7 +75,7 @@ describe('the Guess the Spy table against the catalog and the registry (#1243)',
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toContain('const maxByGameType = Math.min(10, gameMeta?.maxPlayers ?? 10)')
     // The settings route refuses every change once the game is playing.
     expect(source('app/api/lobby/[code]/route.ts')).toContain("'Lobby settings cannot be changed after game start'")
-    expect(detail.modes.tableSize.desc).toMatch(/3 to 8 seats, 6 by default; the host can raise it to 10 before the start/)
+    expect(detail.modes.tableSize.desc).toBe('3 to 8 seats on the create form, 6 by default, up to 10 before the start.')
   })
 
   it('has no bots, as the page says', () => {
@@ -88,7 +88,7 @@ describe('the Guess the Spy table against the catalog and the registry (#1243)',
     expect([initial.totalRounds, initial.questionTimeLimit, initial.votingTimeLimit]).toEqual([3, 300, 60])
     expect(config.turnTimer).toBeUndefined()
     expect(source('app/api/game/[gameId]/spy-init/route.ts')).not.toMatch(/turnTimer|questionTimeLimit|votingTimeLimit/)
-    expect(detail.modes.fixedClocks.desc).toBe('Three rounds, a five-minute question clock and a 60-second vote countdown; no setting changes them.')
+    expect(detail.modes.fixedClocks.desc).toBe('Three rounds and a five-minute question clock; the 60-second vote countdown is a guide, and the vote closes once everyone has voted.')
   })
 
   it('draws from 24 locations in seven categories, each with a role for every non-spy seat', () => {
@@ -112,7 +112,7 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
     expect(spyView.location).toBeUndefined()
     expect(spyView.possibleLocations).toHaveLength(24)
     expect(spyView.possibleCategories).toHaveLength(7)
-    expect(detail.rules.spyMayGuess).toMatch(/all 24 places/)
+    expect(detail.rules.spyMayGuess).toMatch(/^While the questions run, the spy may guess among all 24 places/)
   })
 
   it('opens the vote by itself once the answers reach twice the number of players', () => {
@@ -157,7 +157,21 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
     expect(move(late, data(late).spyPlayerId, 'spy-guess-location', { location: data(late).location })).toBe(false)
   })
 
-  it('scores the vote only once every connected player has voted, and never lets anyone vote for themselves', () => {
+  it('keeps the vote open past its 60-second countdown until the last vote is in', () => {
+    const engine = round(3)
+    allReady(engine)
+    move(engine, 'p1', 'start-voting')
+    data(engine).phaseStartTime = Date.now() - 120_000
+    expect(move(engine, 'p1', 'vote', { targetId: 'p2' })).toBe(true)
+    expect(engine.getPhaseInfo().timeRemaining).toBe(0)
+    expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
+  })
+
+  it('lets only the host call the vote early, as step 4 now says', () => {
+    expect(en.games.spy.detail.step4Desc).toMatch(/^The host can call a vote during the questions\./)
+  })
+
+  it('scores the vote only once every player has voted, and never lets anyone vote for themselves', () => {
     const engine = round(3)
     allReady(engine)
     move(engine, 'p1', 'start-voting')
@@ -167,7 +181,7 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
     expect(data(engine).phase).toBe(SpyGamePhase.VOTING)
     expect(move(engine, 'p3', 'vote', { targetId: 'p1' })).toBe(true)
     expect(data(engine).phase).toBe(SpyGamePhase.RESULTS)
-    expect(detail.rules.howTheVoteEnds).toMatch(/^Once every connected player has voted/)
+    expect(detail.rules.howTheVoteEnds).toMatch(/^Once every player in the game has voted, a single leader is voted out; a tie votes out nobody/)
   })
 
   it('names the overall winner by total points after three rounds, and a shared top as a draw', () => {
@@ -201,7 +215,7 @@ describe('the Guess the Spy scorecard against the engine (#1243)', () => {
     expect(data(engine).scores[civilian]).toBe(points(voteRows.spyCaught.value) + points(voteRows.voteOnSpy.value))
     // The spy cannot vote for themselves, so their vote always costs 10.
     expect(data(engine).scores[spy]).toBe(points(voteRows.voteOnOther.value))
-    expect(voteRows.voteOnOther.rule).toBe("The spy's own vote, always.")
+    expect(voteRows.voteOnOther.rule).toBe("To that voter; the spy's own vote always.")
   })
 
   it('pays the spy 300 when a tie leaves nobody revealed', () => {
@@ -214,7 +228,7 @@ describe('the Guess the Spy scorecard against the engine (#1243)', () => {
     vote(engine, (voter) => (voter === a || voter === spy ? b : a))
     expect(data(engine).scores[spy]).toBe(points(voteRows.spyEscapes.value) + points(voteRows.voteOnOther.value))
     expect(voteRows.spyEscapes.rule).toBe('To the spy, ties included.')
-    expect(detail.mistakes.splittingTheVote.desc).toBe('A tied top reveals nobody and pays the spy 300.')
+    expect(detail.mistakes.splittingTheVote.desc).toBe('A tied top votes out nobody and pays the spy 300.')
   })
 
   it('pays a right guess 500 to the spy and a wrong one 100 to everyone else, with no vote points', () => {
@@ -243,6 +257,8 @@ describe('the Guess the Spy secrets against the broadcast sanitizer (#1243)', ()
     expect(hidden.spyPlayerId).toBeUndefined()
     expect(hidden.playerRoles).toBeUndefined()
     expect(hidden.location).toBeUndefined()
+    // #1262: the category narrowed 24 places to a handful.
+    expect(hidden.locationCategory).toBeUndefined()
 
     move(engine, data(engine).spyPlayerId, 'spy-guess-location', { location: data(engine).location })
     const revealed = sanitizeSpyStateForBroadcast(engine.getState()).data as Partial<SpyGameData>
@@ -262,6 +278,6 @@ describe('the Guess the Spy secrets against the broadcast sanitizer (#1243)', ()
     expect(lobby).toContain("'Premium required to enable spectators'")
     expect(lobby).toContain("'Premium required for custom lobby themes'")
     expect(source('app/api/game/[gameId]/replay/route.ts')).toContain("'Premium required to access replays'")
-    expect(detail.faq.isItFree.a).toMatch(/Only spectators, replays and premium lobby themes need Premium/)
+    expect(detail.faq.isItFree.a).toMatch(/Only letting spectators in \(the host\), replays \(the viewer\) and premium lobby themes need Premium/)
   })
 })
