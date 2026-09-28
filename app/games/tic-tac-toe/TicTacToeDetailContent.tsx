@@ -11,7 +11,7 @@ export default function TicTacToeDetailContent() {
       gameName={t('games.tictactoe.name')}
       title={t('games.tictactoe.detail.title')}
       description={t('games.tictactoe.detail.heroDesc')}
-      iconLabel="Tic Tac Toe board"
+      iconLabel={t('games.tictactoe.name')}
       gameId="tic-tac-toe"
       accentColor="var(--bd-coral)"
       accent="var(--bd-sun)"
