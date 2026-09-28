@@ -1105,6 +1105,9 @@ const no = {
             desc: 'Mobil, nettbrett eller datamaskin uten noe å installere; et gjestenavn gir deg en plass.',
           },
         },
+        audience: {
+          whoItSuits: 'Hukommelse passer for alle aldre og korte pauser. Et skarpt barn kan slå en voksen, 4×4-brettet gir en rask runde, og 6×6-brettet er en skikkelig test for ivrige spillere.',
+        },
       },
       lobbies: {
         title: 'Hukommelse-lobbyer',

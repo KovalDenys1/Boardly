@@ -1105,6 +1105,9 @@ const en = {
             desc: 'Phone, tablet or computer with nothing to install; a guest name gets you a seat.',
           },
         },
+        audience: {
+          whoItSuits: 'Memory suits mixed ages and short breaks. A sharp-eyed child can beat an adult, the 4×4 board makes a quick round, and the 6×6 board gives keen players a real test.',
+        },
       },
       lobbies: {
         title: 'Memory Lobbies',

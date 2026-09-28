@@ -84,6 +84,9 @@ export default function MemoryDetailContent() {
         { title: t('games.memory.detail.multiplayer.turnTimer.title'), desc: t('games.memory.detail.multiplayer.turnTimer.desc') },
         { title: t('games.memory.detail.multiplayer.guestNoDownload.title'), desc: t('games.memory.detail.multiplayer.guestNoDownload.desc') },
       ]}
+      audience={[
+        t('games.memory.detail.audience.whoItSuits'),
+      ]}
       playVsBotGameType="memory"
     />
   )
