@@ -1974,6 +1974,20 @@ const en = {
             desc: 'A token leaving the yard rolls again, so squares just past its start are exposed.',
           },
         },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Stopping just ahead of a rival',
+            desc: 'Parking one to six squares in front of an opponent invites the capture.',
+          },
+          trustingAPairToBlock: {
+            title: 'Trusting a pair to block',
+            desc: 'Two of your tokens on one square stop nobody, and one landing sends both home.',
+          },
+          racingOneTokenAlone: {
+            title: 'Racing one token alone',
+            desc: 'With one token out, any roll but a 6 must move it, however unsafe the landing.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

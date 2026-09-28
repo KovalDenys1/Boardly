@@ -69,6 +69,11 @@ export default function LudoDetailContent() {
         { title: t('games.ludo.detail.strategy.planTheExactFinish.title'), desc: t('games.ludo.detail.strategy.planTheExactFinish.desc') },
         { title: t('games.ludo.detail.strategy.mindRivalStartSquares.title'), desc: t('games.ludo.detail.strategy.mindRivalStartSquares.desc') },
       ]}
+      mistakes={[
+        { title: t('games.ludo.detail.mistakes.stoppingJustAheadOfRival.title'), desc: t('games.ludo.detail.mistakes.stoppingJustAheadOfRival.desc') },
+        { title: t('games.ludo.detail.mistakes.trustingAPairToBlock.title'), desc: t('games.ludo.detail.mistakes.trustingAPairToBlock.desc') },
+        { title: t('games.ludo.detail.mistakes.racingOneTokenAlone.title'), desc: t('games.ludo.detail.mistakes.racingOneTokenAlone.desc') },
+      ]}
       playVsBotGameType="ludo"
     />
   )

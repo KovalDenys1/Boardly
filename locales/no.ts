@@ -1974,6 +1974,20 @@ const no = {
             desc: 'En brikke som kommer ut av gården, kaster igjen, så feltene rett etter startfeltet er utsatt.',
           },
         },
+        mistakes: {
+          stoppingJustAheadOfRival: {
+            title: 'Å stoppe rett foran en motstander',
+            desc: 'Står du ett til seks felt foran en motstander, ber du om å bli slått ut.',
+          },
+          trustingAPairToBlock: {
+            title: 'Å stole på at et par sperrer',
+            desc: 'To av brikkene dine på samme felt stopper ingen, og én landing sender begge hjem.',
+          },
+          racingOneTokenAlone: {
+            title: 'Å løpe med én brikke alene',
+            desc: 'Med bare én brikke ute må alle kast unntatt en sekser flytte den, uansett hvor utrygt den lander.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',
