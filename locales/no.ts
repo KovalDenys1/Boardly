@@ -998,9 +998,9 @@ const no = {
         benefit3: 'Enkle kontroller som fungerer godt på mobil.',
         benefit4: 'Gratis å spille som gjest.',
         rules: {
-          flipTwo: 'På din tur snur du to kort med baksiden opp, ett om gangen. Et kort som allerede ligger åpent eller er tatt, kan ikke velges.',
+          flipTwo: 'På din tur snur du to kort med baksiden opp, ett om gangen; åpne eller tatte kort kan ikke velges.',
           matchKeepsTurn: 'Et par som stemmer, blir liggende åpent, gir ett poeng og lar deg snu igjen med en gang.',
-          missPassesTurn: 'Et bom vises i omtrent ett sekund, så snus begge kortene tilbake og neste spiller er på tur.',
+          missPassesTurn: 'Et bom vises i omtrent ett sekund, så snus begge kortene og neste spiller er på tur.',
           clockRunsOut: 'Går turklokken ut, snus de åpne kortene dine tilbake, og turen går videre uten poeng.',
           lastPair: 'Spillet er over i det øyeblikket det siste paret er tatt.',
         },
@@ -1016,12 +1016,12 @@ const no = {
             missedPair: {
               name: 'Bom',
               value: '0 poeng',
-              rule: 'Koster ingenting annet enn resten av turen.',
+              rule: 'Avslutter bare turen din.',
             },
             levelAtTop: {
               name: 'Likt på toppen',
               value: 'Uavgjort',
-              rule: 'Spillet ender uavgjort, og ingen utropes til vinner.',
+              rule: 'Ingen utropes til vinner.',
             },
           },
         },
@@ -1036,7 +1036,7 @@ const no = {
           },
           botLevels: {
             title: 'Tre boter',
-            desc: 'Memory Scout bommer på de fleste forsøkene, Pattern Seeker finner et par omtrent halvparten av gangene, og Recall Master finner ett på de fleste forsøk.',
+            desc: 'Memory Scout bommer på de fleste forsøk, Pattern Seeker treffer omtrent halvparten, og Recall Master finner par på de fleste.',
           },
         },
         strategy: {
@@ -1076,7 +1076,7 @@ const no = {
         mistakes: {
           gamblingTheSecondFlip: {
             title: 'Å gamble med andrekortet',
-            desc: 'Et tilfeldig ukjent kort, når et kjent kort var tilgjengelig, viser bordet én plassering til gratis.',
+            desc: 'Et tilfeldig ukjent kort i stedet for et kjent viser bordet én plassering til gratis.',
           },
           lookingAway: {
             title: 'Å se bort',
@@ -1094,7 +1094,7 @@ const no = {
           },
           botsAndSolo: {
             title: 'Alene mot en bot',
-            desc: '«Spill mot bot» starter straks på 4×4-brettet; vil du ha et større brett, oppretter du en lobby og setter inn en bot.',
+            desc: '«Spill mot bot» starter et parti med en gang, eller sett en bot inn i din egen lobby.',
           },
           turnTimer: {
             title: 'Ingen holder bordet igjen',
@@ -1106,10 +1106,10 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Hukommelse passer for alle aldre og korte pauser. Et skarpt barn kan slå en voksen, 4×4-brettet gir en rask runde, og 6×6-brettet er en skikkelig test for ivrige spillere.',
+          whoItSuits: 'Hukommelse passer for alle aldre: et skarpt barn kan slå en voksen, 4×4 gir en rask runde, og 6×6 tester ivrige spillere.',
         },
         history: {
-          origin: 'Å finne par er et gammelt selskapsspill med mange navn, blant dem Concentration, Pelmanism og Pexeso. Enhver kortstokk med to av hvert kort fungerer.',
+          origin: 'Å finne par er et gammelt selskapsspill kjent som Concentration, Pelmanism eller Pexeso, og det kan spilles med enhver kortstokk med to av hvert kort.',
           boardlyDeck: 'På Boardly viser kortene fruktbilder, og hvert spill starter med en ny stokking.',
         },
         faq: {

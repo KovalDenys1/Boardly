@@ -998,9 +998,9 @@ const en = {
         benefit3: 'Simple controls that work well on mobile.',
         benefit4: 'Free to play as a guest.',
         rules: {
-          flipTwo: 'On your turn you turn over two face-down cards, one at a time. A card that is already face up or claimed cannot be picked.',
+          flipTwo: 'On your turn you turn over two face-down cards, one at a time; open or claimed cards cannot be picked.',
           matchKeepsTurn: 'A match stays face up, scores one point and lets you flip again straight away.',
-          missPassesTurn: 'A miss stays on show for about a second, then both cards turn face down and the next player moves.',
+          missPassesTurn: 'A miss shows for about a second, then both cards turn back and the next player moves.',
           clockRunsOut: 'If the turn clock reaches zero, your face-up cards turn back and the turn passes without a point.',
           lastPair: 'The game ends the moment the final pair is claimed.',
         },
@@ -1016,12 +1016,12 @@ const en = {
             missedPair: {
               name: 'Missed pair',
               value: '0 points',
-              rule: 'Costs nothing except the rest of your turn.',
+              rule: 'Only ends your turn.',
             },
             levelAtTop: {
               name: 'Level at the top',
               value: 'Tie',
-              rule: 'The game ends in a tie and no winner is named.',
+              rule: 'No winner is named.',
             },
           },
         },
@@ -1036,7 +1036,7 @@ const en = {
           },
           botLevels: {
             title: 'Three bots',
-            desc: 'Memory Scout misses most of its tries, Pattern Seeker finds a pair about half the time, and Recall Master finds one on most tries.',
+            desc: 'Memory Scout misses most tries, Pattern Seeker hits about half, and Recall Master finds a pair on most.',
           },
         },
         strategy: {
@@ -1076,7 +1076,7 @@ const en = {
         mistakes: {
           gamblingTheSecondFlip: {
             title: 'Gambling the second flip',
-            desc: 'A random unknown, when a known card was on offer, shows the table one more position for free.',
+            desc: 'A random unknown instead of a known card shows the table one more position for free.',
           },
           lookingAway: {
             title: 'Looking away',
@@ -1094,7 +1094,7 @@ const en = {
           },
           botsAndSolo: {
             title: 'Solo against a bot',
-            desc: 'Play vs Bot starts at once on the 4×4 board; for a bigger one, make a lobby and seat a bot.',
+            desc: 'Play vs Bot starts a game at once, or seat a bot in your own lobby.',
           },
           turnTimer: {
             title: 'Nobody stalls the table',
@@ -1106,10 +1106,10 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Memory suits mixed ages and short breaks. A sharp-eyed child can beat an adult, the 4×4 board makes a quick round, and the 6×6 board gives keen players a real test.',
+          whoItSuits: 'Memory suits mixed ages: a sharp-eyed child can beat an adult, 4×4 makes a quick round, and 6×6 tests keen players.',
         },
         history: {
-          origin: 'Matching pairs is an old parlour game with many names, among them Concentration, Pelmanism and Pexeso. Any deck holding two of each card will do.',
+          origin: 'Matching pairs is an old parlour game known as Concentration, Pelmanism or Pexeso, playable with any deck holding two of each card.',
           boardlyDeck: 'On Boardly the faces are fruit pictures, and every game starts from a fresh shuffle.',
         },
         faq: {
