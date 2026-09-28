@@ -73,6 +73,12 @@ export default function TicTacToeDetailContent() {
         { title: t('games.tictactoe.detail.mistakes.thirdCorner.title'), desc: t('games.tictactoe.detail.mistakes.thirdCorner.desc') },
         { title: t('games.tictactoe.detail.mistakes.offerAsPause.title'), desc: t('games.tictactoe.detail.mistakes.offerAsPause.desc') },
       ]}
+      multiplayer={[
+        { title: t('games.tictactoe.detail.multiplayer.withFriends.title'), desc: t('games.tictactoe.detail.multiplayer.withFriends.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.botsAndSolo.title'), desc: t('games.tictactoe.detail.multiplayer.botsAndSolo.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.turnTimer.title'), desc: t('games.tictactoe.detail.multiplayer.turnTimer.desc') },
+        { title: t('games.tictactoe.detail.multiplayer.guestNoDownload.title'), desc: t('games.tictactoe.detail.multiplayer.guestNoDownload.desc') },
+      ]}
       playVsBotGameType="tic_tac_toe"
     />
   )

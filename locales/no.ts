@@ -965,6 +965,24 @@ const no = {
             desc: 'Å be om remis eller angre stopper ikke klokka di. Går tiden ut mens du venter på svar, er runden tapt.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Spill mot en venn langt unna',
+            desc: 'Send den firesifrede koden eller lobbylenken og spill fra to forskjellige hjem, eller to forskjellige land. Hvert merke dukker opp på begge skjermene i det øyeblikket det settes, og det finnes en chat når to personer deler brettet.',
+          },
+          botsAndSolo: {
+            title: 'Øv alene',
+            desc: '«Spill mot bot» på denne siden starter et spill på nivået du velger, med en gang. Du kan også sette en robot på den andre plassen i en lobby du har opprettet.',
+          },
+          turnTimer: {
+            title: 'Den samme nedtellingen for begge',
+            desc: 'Begge spillerne ser én felles nedtelling, så en runde blir aldri stående fordi noen har gått fra skjermen. Når den når null, går runden til spilleren som ventet.',
+          },
+          guestNoDownload: {
+            title: 'Rett i nettleseren',
+            desc: 'Ingenting å installere og ingenting å registrere seg for: et gjestenavn tar deg inn i en lobby på mobil, nettbrett eller datamaskin.',
+          },
+        },
       },
       lobbies: {
         title: 'Tre på rad lobbyer',

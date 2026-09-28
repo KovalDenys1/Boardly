@@ -965,6 +965,24 @@ const en = {
             desc: 'Asking for a draw or an undo does not stop your clock. If it runs out while you wait for an answer, the round is gone.',
           },
         },
+        multiplayer: {
+          withFriends: {
+            title: 'Play a friend who is far away',
+            desc: 'Send the four-digit code or the lobby link and play from two different homes, or two different countries. Each mark appears on both screens as soon as it is placed, and there is a chat whenever two people share the board.',
+          },
+          botsAndSolo: {
+            title: 'Practise alone',
+            desc: 'Play vs Bot on this page starts a game on the level you choose right away. You can also put a bot in the second seat of a lobby you created.',
+          },
+          turnTimer: {
+            title: 'The same countdown for both',
+            desc: 'Both players watch one countdown, so a round never stalls on someone who has walked away. When it hits zero, the round goes to the player who was waiting.',
+          },
+          guestNoDownload: {
+            title: 'Straight from the browser',
+            desc: 'There is nothing to install and nothing to sign up for: a guest name gets you into a lobby on a phone, a tablet or a computer.',
+          },
+        },
       },
       lobbies: {
         title: 'Tic-Tac-Toe Lobbies',
