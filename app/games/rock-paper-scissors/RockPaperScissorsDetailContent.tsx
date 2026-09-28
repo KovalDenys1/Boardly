@@ -50,7 +50,6 @@ export default function RockPaperScissorsDetailContent() {
       ]}
       rules={[
         t('games.rock_paper_scissors.detail.rules.noTurns'),
-        t('games.rock_paper_scissors.detail.rules.pickIsFinal'),
         t('games.rock_paper_scissors.detail.rules.pickStaysHidden'),
         t('games.rock_paper_scissors.detail.rules.revealOrder'),
         t('games.rock_paper_scissors.detail.rules.timeoutRandomPick'),

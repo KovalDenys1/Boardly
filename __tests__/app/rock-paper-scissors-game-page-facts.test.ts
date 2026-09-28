@@ -109,16 +109,58 @@ describe('the RPS bots against lib/bots and lib/bot-profiles.ts (#1238)', () => 
     expect(rps.detail.faq.botSeesPick.a).toMatch(/only finished rounds/)
   })
 
-  it('has medium counter the read seven times in ten, as the page says', async () => {
+  it('has every level pick at random in round one', async () => {
+    const engine = startedGame()
+    for (const difficulty of BOT_DIFFICULTIES) {
+      const bot = new RockPaperScissorsBot(engine, difficulty, 'b')
+      jest.spyOn(Math, 'random').mockReturnValue(0)
+      expect((await bot.makeDecision()).choice).toBe('rock')
+      jest.spyOn(Math, 'random').mockReturnValue(0.99)
+      expect((await bot.makeDecision()).choice).toBe('scissors')
+    }
+    expect(rps.detail.modes.botLevels.desc).toMatch(/All three pick at random in round one/)
+  })
+
+  it('guesses your most-played throw with your last one counted twice', async () => {
+    const engine = startedGame()
+    round(engine, 'rock', 'rock')
+    round(engine, 'paper', 'paper') // rock 1, paper 1 + 1 for being last
+    const hard = new RockPaperScissorsBot(engine, 'hard', 'b')
+    expect((await hard.makeDecision()).choice).toBe('scissors') // counters paper
+    expect(rps.detail.modes.botLevels.desc).toMatch(/your last counting twice/)
+  })
+
+  it('has medium counter the guess about eight rounds in ten, as the page says', async () => {
     const engine = startedGame()
     round(engine, 'rock', 'scissors')
     const medium = new RockPaperScissorsBot(engine, 'medium', 'b')
     jest.spyOn(Math, 'random').mockReturnValue(0.69)
     expect((await medium.makeDecision()).choice).toBe('paper')
     jest.spyOn(Math, 'random').mockReturnValue(0.7)
-    // Above the threshold it falls back to a random pick (index 2 of three).
+    // Above the 0.7 threshold it falls back to a random pick (index 2 of three),
+    // which lands on the counter a third of the time: 0.7 + 0.3 / 3 = 0.8.
     expect((await medium.makeDecision()).choice).toBe('scissors')
-    expect(rps.detail.modes.botLevels.desc).toMatch(/about seven rounds in ten/)
+    expect(rps.detail.modes.botLevels.desc).toMatch(/Pattern Reader about eight in ten/)
+  })
+})
+
+describe('best of five is gone from every RPS surface (#1238 review)', () => {
+  const BEST_OF_FIVE = /best[- ]of[- ](5|five)|best[- ]av[- ]5|до 5 побед|Best-of-5/i
+  const localeFiles = ['en', 'no', 'ru', 'uk'].map((loc) => source(`locales/${loc}.ts`))
+
+  it('never appears in the rock_paper_scissors namespace of any locale', () => {
+    for (const file of localeFiles) {
+      const start = file.indexOf('    rock_paper_scissors: {')
+      expect(start).toBeGreaterThan(-1)
+      const namespace = file.slice(start, file.indexOf('\n    },\n', start))
+      expect(namespace).not.toMatch(BEST_OF_FIVE)
+    }
+  })
+
+  // The best-of-five lines in best-2-player-games-online and best-games-to-play-on-zoom
+  // belong to their Tic Tac Toe entries, which really offer best of 3, 5 or 10.
+  it('never appears in the engine rules', () => {
+    expect(startedGame().getGameRules().join(' ')).not.toMatch(BEST_OF_FIVE)
   })
 })
 
@@ -127,11 +169,25 @@ describe('the RPS round clock against the routes (#1238)', () => {
     expect(source('app/api/lobby/route.ts')).toMatch(/turnTimer: z\.number\(\)\.int\(\)\.min\(30\)\.max\(180\)\.default\(60\)/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
-    expect(rps.detail.modes.roundClock.desc).toMatch(/60 seconds a round by default; the host can choose 30 to 180\. Play vs Bot uses 45\./)
+    expect(rps.detail.modes.roundClock.desc).toMatch(/60 seconds a round by default; before the match starts, the host can choose 30 to 180\. Play vs Bot uses 45\./)
   })
 
-  it('submits a random pick at timeout rather than forfeiting the round', () => {
+  it('submits a random pick at timeout from the open page, rather than forfeiting the round', () => {
+    // The pick is made by the player's own client; there is no server fallback.
     expect(source('app/lobby/[code]/rock-paper-scissors-page.tsx')).toMatch(/submitChoice\(randomChoice, \{ isAutoAction: true \}\)/)
-    expect(rps.detail.rules.timeoutRandomPick).toMatch(/a random move is locked in for you/)
+    expect(rps.detail.rules.timeoutRandomPick).toMatch(/while the game is open, a random move is locked in for you/)
+  })
+
+  it('restarts the clock whenever a player locks in', () => {
+    const engine = startedGame()
+    const now = jest.spyOn(Date, 'now').mockReturnValue(1_000)
+    pick(engine, 'a', 'rock')
+    expect(engine.getState().turnStartedAt).toBe(1_000)
+    now.mockReturnValue(5_000)
+    pick(engine, 'b', 'paper')
+    expect(engine.getState().turnStartedAt).toBe(5_000)
+    now.mockRestore()
+    expect(rps.detail.rules.timeoutRandomPick).toMatch(/The clock restarts whenever a player locks in/)
+    expect(rps.detail.multiplayer.turnTimer.desc).toMatch(/restarts it for your opponent/)
   })
 })

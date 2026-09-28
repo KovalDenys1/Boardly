@@ -1414,7 +1414,7 @@ const no = {
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
       rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
       rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',
-      rule_4: 'Best-av-3 eller best-av-5-format (bestemmes ved spillstart)',
+      rule_4: 'Best av tre: den som først vinner to runder, tar kampen',
       rule_5: 'Første spiller som vinner flest runder vinner spillet',
       detail: {
         title: 'Spill Stein, saks, papir på nett',
@@ -1427,7 +1427,7 @@ const no = {
         step2Title: 'Velg trekket ditt',
         step2Desc: 'Velg stein, saks eller papir før tiden går ut. Ett trykk låser det.',
         step3Title: 'Samtidig avsløring',
-        step3Desc: 'Begge hendene snus i det øyeblikket det andre valget kommer inn. Så vises rundens resultat.',
+        step3Desc: 'Når det andre valget er inne, rister begge hendene og snus samtidig. Så vises rundens resultat.',
         step4Title: 'Først til målet vinner',
         step4Desc: 'Spill runder til én spiller har vunnet to. Da kan verten starte en omkamp.',
         benefitsTitle: 'Derfor spiller du Stein, saks, papir på Boardly',
@@ -1437,10 +1437,9 @@ const no = {
         benefit4: 'Gratis å spille som gjest.',
         rules: {
           noTurns: 'Det finnes ingen turer: i hver runde velger begge én gang, i hvilken som helst rekkefølge.',
-          pickIsFinal: 'Et valg låses i det øyeblikket du trykker, og kan ikke endres i den runden.',
           pickStaysHidden: 'Til begge valgene er inne, ser motstanderen bare at du har låst, selv etter ny innlasting.',
-          revealOrder: 'Begge hendene snus samtidig, så vises rundens utfall, og først da endres stillingen.',
-          timeoutRandomPick: 'Går klokken din ut, låses et tilfeldig trekk for deg.',
+          revealOrder: 'Stillingen endres først etter at rundens utfall er vist.',
+          timeoutRandomPick: 'Klokken starter på nytt hver gang en spiller låser. Går din ut mens spillet er åpent, låses et tilfeldig trekk for deg.',
         },
         modes: {
           matchLength: {
@@ -1449,11 +1448,11 @@ const no = {
           },
           roundClock: {
             title: 'En klokke på hver runde',
-            desc: '60 sekunder per runde som standard; verten kan velge 30 til 180. Spill mot bot bruker 45.',
+            desc: '60 sekunder per runde som standard; før kampen starter, kan verten velge 30 til 180. Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre botnivåer',
-            desc: 'Tempo Rookie velger tilfeldig. Pattern Reader kontrer trekket du bruker mest, i omtrent sju av ti runder; Mind Gambit kontrer det i hver runde.',
+            desc: 'Alle tre velger tilfeldig i første runde. Deretter er Tempo Rookie fortsatt tilfeldig; de andre gjetter trekket du bruker mest, der det siste teller dobbelt. Mind Gambit kontrer den gjetningen hver runde, Pattern Reader omtrent åtte av ti.',
           },
         },
         strategy: {
@@ -1479,11 +1478,11 @@ const no = {
           },
           exploitMindGambit: {
             title: 'Utnytt Mind Gambit',
-            desc: 'Den svarer alltid på trekket du bruker mest, så velg det som slår svaret.',
+            desc: 'Fra runde to kontrer den gjetningen sin, så velg det som slår det motsvaret.',
           },
           stayEvenAgainstPatternReader: {
             title: 'Hold det jevnt mot Pattern Reader',
-            desc: 'Fordel trekkene jevnt, så har den ingen favoritt hos deg å sikte på.',
+            desc: 'Fordel trekkene jevnt, så sikter den på ditt siste; velg det som slår motsvaret til det.',
           },
           climbTheLevels: {
             title: 'Gå opp nivåene',
@@ -1514,8 +1513,8 @@ const no = {
             desc: 'Spill mot bot åpner et rom der boten du valgte, allerede sitter.',
           },
           turnTimer: {
-            title: 'Én nedtelling per runde',
-            desc: 'En spiller som ikke har valgt når den når null, får et tilfeldig trekk.',
+            title: 'En nedtelling for hvert valg',
+            desc: 'Når du låser, starter den på nytt for motstanderen, så et raskt valg presser aldri et tregt.',
           },
           guestNoDownload: {
             title: 'Nettleser, ingen registrering',
@@ -1523,7 +1522,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Alle med et ledig minutt: venner som avgjør hvem som starter, spillere på pause, eller alle som vil lese et menneske.',
+          whoItSuits: 'Alle med et ledig minutt: venner som avgjør hvem som starter, eller alle som vil lese et menneske.',
         },
         history: {
           origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',
@@ -1547,7 +1546,7 @@ const no = {
           },
           botSeesPick: {
             q: 'Kan boten se valget mitt?',
-            a: 'Nei. Den velger ofte etter at du har låst, men studerer bare ferdige runder, aldri valget som fortsatt venter.',
+            a: 'Nei. Den velger alltid etter at du har låst, men leser bare ferdige runder, aldri valget som venter på å bli vist.',
           },
           changeTimer: {
             q: 'Kan jeg endre hvor lenge en runde varer?',

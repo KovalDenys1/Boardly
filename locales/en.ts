@@ -1414,7 +1414,7 @@ const en = {
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
       rule_2: 'Rock beats Scissors, Scissors beats Paper, Paper beats Rock',
       rule_3: 'If both choose the same, the round is a draw - replay',
-      rule_4: 'Best-of-3 or Best-of-5 format (decided at game start)',
+      rule_4: 'Best of three: the first to win two rounds takes the match',
       rule_5: 'First to win majority of rounds wins the game',
       detail: {
         title: 'Play Rock Paper Scissors Online',
@@ -1427,7 +1427,7 @@ const en = {
         step2Title: 'Pick your move',
         step2Desc: 'Choose Rock, Paper or Scissors before the timer runs out. One tap locks it in.',
         step3Title: 'Simultaneous reveal',
-        step3Desc: 'Both hands turn over the moment the second pick lands. Then the round result shows.',
+        step3Desc: 'Once the second pick is in, both hands shake and turn over together. Then the round result shows.',
         step4Title: 'First to the target wins',
         step4Desc: 'Play rounds until one player has won two. Then the host can call a rematch.',
         benefitsTitle: 'Why play Rock Paper Scissors on Boardly?',
@@ -1437,10 +1437,9 @@ const en = {
         benefit4: 'Free to play as a guest.',
         rules: {
           noTurns: 'There are no turns: each round, both players pick once, in any order.',
-          pickIsFinal: 'A pick is locked the moment you tap it and cannot be changed for that round.',
           pickStaysHidden: 'Until both picks are in, your opponent sees only that you locked in, even after a reload.',
-          revealOrder: 'Both hands flip together, then the round verdict appears, and only then does the score change.',
-          timeoutRandomPick: 'If your clock runs out, a random move is locked in for you.',
+          revealOrder: 'The score changes only after the round verdict appears.',
+          timeoutRandomPick: 'The clock restarts whenever a player locks in. If yours runs out while the game is open, a random move is locked in for you.',
         },
         modes: {
           matchLength: {
@@ -1449,11 +1448,11 @@ const en = {
           },
           roundClock: {
             title: 'A clock on every round',
-            desc: '60 seconds a round by default; the host can choose 30 to 180. Play vs Bot uses 45.',
+            desc: '60 seconds a round by default; before the match starts, the host can choose 30 to 180. Play vs Bot uses 45.',
           },
           botLevels: {
             title: 'Three bot levels',
-            desc: 'Tempo Rookie throws at random. Pattern Reader counters your most-played move about seven rounds in ten; Mind Gambit counters it every round.',
+            desc: 'All three pick at random in round one. Then Tempo Rookie stays random; the others guess your most-played throw, your last counting twice. Mind Gambit counters that guess every round, Pattern Reader about eight in ten.',
           },
         },
         strategy: {
@@ -1479,11 +1478,11 @@ const en = {
           },
           exploitMindGambit: {
             title: 'Exploit Mind Gambit',
-            desc: 'It always answers your most-played move, so throw whatever beats its answer.',
+            desc: 'From round two it counters its guess, so play what beats that counter.',
           },
           stayEvenAgainstPatternReader: {
             title: 'Stay even against Pattern Reader',
-            desc: 'Spread your throws evenly and it has no favourite of yours to aim at.',
+            desc: 'Keep your throws even and it aims at your last one; play what beats the counter to it.',
           },
           climbTheLevels: {
             title: 'Climb the levels',
@@ -1514,8 +1513,8 @@ const en = {
             desc: 'Play vs Bot opens a room with the bot you chose already seated.',
           },
           turnTimer: {
-            title: 'One countdown per round',
-            desc: 'A player still undecided when it reaches zero gets a random move.',
+            title: 'A countdown on every pick',
+            desc: 'Locking in restarts it for your opponent, so a quick pick never rushes a slow one.',
           },
           guestNoDownload: {
             title: 'Browser, no sign-up',
@@ -1523,10 +1522,10 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Anyone with a spare minute: friends deciding who goes first, players on a break, or anyone out to read a person.',
+          whoItSuits: 'Anyone with a spare minute: friends deciding who goes first, or anyone out to read a person.',
         },
         history: {
-          origin: 'Hand games like it were recorded in China around 1600, and the rock, paper and scissors form took shape in Japan as jan-ken before spreading west. Some Americans call it roshambo.',
+          origin: 'Hand games like it were recorded in China around 1600; the rock, paper and scissors form took shape in Japan as jan-ken and spread west. Some Americans call it roshambo.',
         },
         faq: {
           isItFree: {
@@ -1547,7 +1546,7 @@ const en = {
           },
           botSeesPick: {
             q: 'Can the bot see my pick?',
-            a: 'No. It often chooses after you lock in, but it studies only finished rounds, never the pick still waiting.',
+            a: 'No. It always chooses after you lock in, but it reads only finished rounds, never the pick still waiting to be revealed.',
           },
           changeTimer: {
             q: 'Can I change how long a round lasts?',
