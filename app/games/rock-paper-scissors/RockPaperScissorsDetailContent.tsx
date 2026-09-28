@@ -48,6 +48,14 @@ export default function RockPaperScissorsDetailContent() {
         t('games.rock_paper_scissors.detail.benefit3'),
         t('games.rock_paper_scissors.detail.benefit4'),
       ]}
+      rules={[
+        t('games.rock_paper_scissors.detail.rules.noTurns'),
+        t('games.rock_paper_scissors.detail.rules.pickIsFinal'),
+        t('games.rock_paper_scissors.detail.rules.pickStaysHidden'),
+        t('games.rock_paper_scissors.detail.rules.revealOrder'),
+        t('games.rock_paper_scissors.detail.rules.matchResultLast'),
+        t('games.rock_paper_scissors.detail.rules.timeoutRandomPick'),
+      ]}
     />
   )
 }
