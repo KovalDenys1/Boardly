@@ -72,7 +72,9 @@ describe('Sketch & Guess seats and bots against the catalog and registry (#1239)
     expect(meta.maxPlayers).toBe(10)
     expect(meta.supportsBots).toBe(false)
     expect(detail.modes.roomSize.title).toMatch(/Three to ten/)
-    expect(detail.modes.roomSize.desc).toMatch(/start with six/)
+    expect(detail.modes.roomSize.desc).toMatch(/create form start with six seats; Quick Play rooms open with all ten/)
+    // Quick Play opens a room at the engine's own ceiling.
+    expect(source('app/api/quick-play/route.ts')).toMatch(/const maxPlayers = engine\.getConfig\(\)\.maxPlayers/)
     expect(detail.faq.playAloneOrBot.a).toMatch(/^No\. It needs three people/)
   })
 
@@ -105,7 +107,7 @@ describe('Sketch & Guess rounds and drawers against the engine (#1239)', () => {
     engine.applyTimeoutFallback(undefined, Date.now() + 60 * 60 * 1000)
     const ids = data(engine).rounds.map((r) => r.word!.id)
     expect(new Set(ids).size).toBe(ids.length)
-    expect(detail.rules.wordChoice).toMatch(/after 15 seconds\. No word repeats in a game/)
+    expect(detail.rules.wordChoice).toMatch(/after 15 seconds\. A word that has been drawn is never offered again that game/)
   })
 
   it('quotes the phase clocks the engine enforces', () => {
@@ -133,6 +135,10 @@ describe('Sketch & Guess scoring against the engine (#1239)', () => {
     expect(scores.p2).toBe(50 + 50 + 20)
     expect(scores.p3).toBe(50 + 25)
     expect(scores.p1).toBe(2 * 40)
+    // Live, before any reveal (#1082): the page says points land as each guess does.
+    expect(data(engine).phase).toBe('reveal')
+    expect(round(engine).isScored).toBe(false)
+    expect(detail.step4Desc).toMatch(/points landed as each guess did.*after round three the game ends/)
     const tsx = source('app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx')
     expect(tsx).toMatch(/value: '50'/)
     expect(tsx).toMatch(/value: '\+20'/)
@@ -181,6 +187,13 @@ describe('Sketch & Guess guessing against the word bank (#1239)', () => {
     expect(matchSketchGuess('замок', castle)).toBe('correct')
     expect(matchSketchGuess('slott', castle)).toBe('correct')
     expect(matchSketchGuess('castel', castle)).toBe('close')
+    // Close is one edit from any accepted form, so a neighbouring word can be close too.
+    expect(matchSketchGuess('house', getSketchWord('horse')!)).toBe('close')
+    expect(detail.strategy.trustSoClose.desc).toMatch(/sometimes a neighbouring word/)
+    // Only combining marks are stripped: é folds to e, ø stays its own letter.
+    expect(matchSketchGuess('slött', castle)).toBe('correct')
+    expect(detail.rules.matching).toMatch(/ø, æ and й are letters of their own/)
+    expect(matchSketchGuess('oy', getSketchWord('island')!)).not.toBe('correct')
     expect(detail.faq.guessLanguages.a).toMatch(/^English, Norwegian, Russian and Ukrainian/)
     expect(detail.rules.matching).toMatch(/plural or a synonym/)
   })
@@ -215,9 +228,10 @@ describe('Sketch & Guess guessing against the word bank (#1239)', () => {
 })
 
 describe('Sketch & Guess product answers against the routes (#1239)', () => {
-  it('gates only spectators and bigger rooms behind Premium', () => {
+  it('names spectators as the Premium extra, and no seat perk: the game stops at ten', () => {
     expect(source('app/api/lobby/route.ts')).toMatch(/Premium required to enable spectators/)
-    expect(source('app/api/lobby/route.ts')).toMatch(/const FREE_MAX_PLAYERS = 10\b/)
+    expect(getGameMetadata('sketch_and_guess')!.maxPlayers).toBe(10)
+    for (const text of copy) expect(text).not.toMatch(/more (seats|players)|over ten|beyond ten/i)
     expect(detail.faq.isItFree.a).toMatch(/Premium only adds extras such as spectators/)
   })
 

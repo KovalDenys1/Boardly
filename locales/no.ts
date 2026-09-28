@@ -1973,7 +1973,7 @@ const no = {
         step3Title: 'Gjett før tiden går ut',
         step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
-        step4Desc: 'Ordet avsløres og poengene fordeles. Så er det neste spillers tur til å tegne.',
+        step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter etter runde tre.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
         benefit1: 'Et delt lerret som oppdateres live.',
         benefit2: 'Tre til ti spillere i samme rom.',
@@ -1981,8 +1981,8 @@ const no = {
         benefit4: 'Gratis å spille som gjest.',
         rules: {
           drawOrder: 'Tegnerne går i den rekkefølgen de ble med: den første i rommet tegner runde én, den andre runde to, den tredje runde tre.',
-          wordChoice: 'En tegner som ikke har valgt etter 15 sekunder, får ett av de tre ordene tilfeldig. Ingen ord kommer to ganger i samme spill.',
-          matching: 'Store bokstaver og aksenter ignoreres, og mange ord godtar også flertall eller et synonym.',
+          wordChoice: 'En tegner som ikke har valgt etter 15 sekunder, får ett av de tre ordene tilfeldig. Et ord som er tegnet, blir aldri tilbudt igjen i samme spill.',
+          matching: 'Store bokstaver, apostrofer og de fleste aksenter (é, å, ё) ignoreres; ø, æ og й regnes som egne bokstaver. Mange ord godtar også flertall eller et synonym.',
           wordHint: 'De som gjetter, ser blanke felt på sitt eget språk; ord på tre bokstaver eller mer får én bokstav avdekket halvveis.',
           chatLock: 'Frem til avsløringen kan verken tegneren eller de som har gjettet ordet, skrive i chatten.',
         },
@@ -2004,7 +2004,7 @@ const no = {
         modes: {
           threeRounds: { title: 'Tre runder, hvert spill', desc: 'Én tegning per runde, og det finnes ingen innstilling for antall runder.' },
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
-          roomSize: { title: 'Tre til ti plasser', desc: 'Verten bestemmer romstørrelsen; nye rom starter med seks.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
         },
         strategy: {
           pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
@@ -2012,9 +2012,9 @@ const no = {
           letColourTalk: { title: 'La fargene snakke', desc: 'En blå bølge eller en rød flamme snevrer inn gjettingen raskt.' },
           drawTheScene: { title: 'Tegn omgivelsene', desc: 'En finne i bølgene leses raskere enn en fisk alene.' },
           guessEarly: { title: 'Gjett tidlig', desc: 'Et bom koster ingenting, og venting spiser av bonusen.' },
-          readTheMisses: { title: 'Les bommene', desc: 'Feil gjett blir stående i listen, så stryk dem.' },
+          readTheMisses: { title: 'Les bommene', desc: 'Bom blir stående i listen (nesten-treff ser andre bare som «er nær»); stryk dem.' },
           countTheBlanks: { title: 'Tell de blanke feltene', desc: 'De viser lengden og hvor ordene deler seg.' },
-          trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Det betyr en liten skrivefeil: rett stavingen, ikke ideen.' },
+          trustSoClose: { title: 'Stol på «Nesten!»', desc: 'Du er én bokstav unna et godkjent svar: oftest en skrivefeil, noen ganger et naboord.' },
         },
         mistakes: {
           leavingTheCanvasEmpty: { title: 'Å la lerretet stå tomt', desc: 'Det koster tegneren 20 poeng.' },

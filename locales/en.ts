@@ -1964,8 +1964,8 @@ const en = {
         heroDesc: 'Draw a secret prompt on a shared canvas and race to guess what everyone else is drawing. Three to ten players, live in the browser.',
         groupNotice: 'Sketch & Guess needs at least three players and has no bots – bring a group, or warm up in a game that plays against a bot.',
         introTitle: 'What is Sketch & Guess?',
-        intro0: 'Sketch & Guess is a party game for three to ten people. Each round one player is given a secret prompt and draws it on a shared canvas while everyone else types what they think it is.',
-        intro1: 'Correct guesses score points, the first one in scores the most, and the drawer scores for every player who works it out. When the last round has been revealed, the highest total wins.',
+        intro0: 'Sketch & Guess is a party game for three to ten people. Each round one player draws a secret word on a shared canvas while the others type what they think it is.',
+        intro1: 'Correct guesses score, the first one in scores most, and the drawer scores for every player who gets it. After the last reveal, the highest total wins.',
         step1Title: 'Create or join a lobby',
         step1Desc: 'Open a room and share the code. Three players is the minimum.',
         step2Title: 'Draw your prompt',
@@ -1973,7 +1973,7 @@ const en = {
         step3Title: 'Guess before the clock runs out',
         step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
-        step4Desc: 'The word is revealed and the points are shared out. Then the next player draws.',
+        step4Desc: 'The word is revealed; points landed as each guess did. Then the next player draws, or after round three the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
         benefit1: 'A shared canvas that updates live.',
         benefit2: 'Three to ten players in one room.',
@@ -1981,8 +1981,8 @@ const en = {
         benefit4: 'Free to play as a guest.',
         rules: {
           drawOrder: 'Drawers go in joining order, so the first three players to join draw rounds one, two and three.',
-          wordChoice: 'An undecided drawer gets one of the three words at random after 15 seconds. No word repeats in a game.',
-          matching: 'Capitals and accents are ignored, and many words also accept a plural or a synonym.',
+          wordChoice: 'An undecided drawer gets one of the three words at random after 15 seconds. A word that has been drawn is never offered again that game.',
+          matching: 'Capitals, apostrophes and most accents (é, å, ё) are ignored; ø, æ and й are letters of their own. Many words also accept a plural or a synonym.',
           wordHint: 'Guessers see blanks in their own language; words of three letters or more get a letter uncovered at half time.',
           chatLock: 'Until the reveal, the drawer and anyone who has guessed the word cannot post in chat.',
         },
@@ -1990,7 +1990,7 @@ const en = {
           guessing: {
             title: 'Guessing',
             rightGuess: { name: 'Right guess', rule: 'Any correct answer in time.' },
-            speedBonus: { name: 'Speed bonus', value: 'up to +50', rule: 'Shrinks as the drawing clock runs down.' },
+            speedBonus: { name: 'Speed bonus', value: 'up to +50', rule: 'Shrinks as the clock runs.' },
             firstIn: { name: 'First in', rule: 'Only the round\'s first correct guesser.' },
           },
           drawing: {
@@ -2004,7 +2004,7 @@ const en = {
         modes: {
           threeRounds: { title: 'Three rounds, every game', desc: 'One drawing per round, and there is no round setting.' },
           phaseClocks: { title: 'Fixed phase clocks', desc: '15 seconds to choose, 80 to draw, 8 to reveal. The lobby timer does not apply.' },
-          roomSize: { title: 'Three to ten seats', desc: 'The host sets the room size; new rooms start with six.' },
+          roomSize: { title: 'Three to ten seats', desc: 'Rooms made on the create form start with six seats; Quick Play rooms open with all ten.' },
         },
         strategy: {
           pickTheDrawableWord: { title: 'Pick the drawable word', desc: 'Take the one with the clearest outline.' },
@@ -2012,9 +2012,9 @@ const en = {
           letColourTalk: { title: 'Let colour talk', desc: 'A blue wave or red flame narrows it fast.' },
           drawTheScene: { title: 'Draw the scene', desc: 'A fin in waves beats a lone fish.' },
           guessEarly: { title: 'Guess early', desc: 'A miss costs nothing, and waiting trims the bonus.' },
-          readTheMisses: { title: 'Read the misses', desc: 'Wrong guesses stay in the feed; rule them out.' },
+          readTheMisses: { title: 'Read the misses', desc: 'Misses stay in the feed (near misses show only as “close”); rule them out.' },
           countTheBlanks: { title: 'Count the blanks', desc: 'They show the length and where the words break.' },
-          trustSoClose: { title: 'Trust “So close!”', desc: 'It means a small typo: fix the spelling, not the idea.' },
+          trustSoClose: { title: 'Trust “So close!”', desc: 'You are one letter off an accepted answer: usually a typo, sometimes a neighbouring word.' },
         },
         mistakes: {
           leavingTheCanvasEmpty: { title: 'Leaving the canvas empty', desc: 'It costs the drawer 20 points.' },
