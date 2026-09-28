@@ -2033,6 +2033,15 @@ const no = {
         history: {
           origin: 'Å gjette ut fra en rask skisse er en gammel selskapslek som Pictionary gjorde til brettspill i 1985. Boardly legger til en ordbank på fire språk.',
         },
+        faq: {
+          isItFree: { q: 'Er Tegn og gjett på Boardly gratis?', a: 'Ja. Alle runder, alle ord og alle romstørrelser er gratis; Premium gir bare ekstra, som tilskuere.' },
+          playAloneOrBot: { q: 'Kan jeg spille alene eller mot en bot?', a: 'Nei. Spillet trenger tre personer, fordi en bot ikke kan lese en tegning. Send vennene invitasjonslenken.' },
+          guessLanguages: { q: 'Hvilke språk kan jeg gjette på?', a: 'Engelsk, norsk, russisk og ukrainsk. Et gjett på hvilket som helst av dem teller, uansett språket på skjermen din.' },
+          everyoneDraws: { q: 'Får alle tegne?', a: 'Med tre spillere, ja. Et spill har tre runder, så i større grupper tegner bare de tre første som ble med.' },
+          timeRunsOut: { q: 'Hva skjer når tiden går ut?', a: 'En tegner som ikke har valgt, får et tilfeldig ord, og når tegneklokken er ute, avsløres ordet.' },
+          hostAcceptsGuess: { q: 'Kan verten overstyre et feil gjett?', a: 'Ja. Til runden går videre, kan verten godta en annen spillers bom som et riktig svar.' },
+          playerLeaves: { q: 'Hva om en spiller forlater spillet underveis?', a: 'Spillet fortsetter så lenge tre er igjen; turen til en tegner som er borte, løper bare ut. Under tre avsluttes spillet.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',

@@ -2033,6 +2033,15 @@ const en = {
         history: {
           origin: 'Guessing from a quick sketch is an old parlour game that Pictionary put in a box in 1985. Boardly adds a word bank in four languages.',
         },
+        faq: {
+          isItFree: { q: 'Is Sketch & Guess on Boardly free?', a: 'Yes. Every round, word and room size is free; Premium only adds extras such as spectators.' },
+          playAloneOrBot: { q: 'Can I play alone or against a bot?', a: 'No. It needs three people, because a bot cannot read a drawing. Send friends the invite link.' },
+          guessLanguages: { q: 'Which languages can I guess in?', a: 'English, Norwegian, Russian and Ukrainian. A guess in any of them counts, whatever your screen shows.' },
+          everyoneDraws: { q: 'Does everyone get to draw?', a: 'With three players, yes. Games are three rounds, so in bigger groups only the first three to join draw.' },
+          timeRunsOut: { q: 'What happens when time runs out?', a: 'An undecided drawer gets a random word, and when the drawing clock ends the word is revealed.' },
+          hostAcceptsGuess: { q: 'Can the host overrule a wrong guess?', a: 'Yes. Until the round moves on, the host can accept another player\'s miss as a right answer.' },
+          playerLeaves: { q: 'What if a player leaves mid-game?', a: 'Play goes on while three remain; an absent drawer\'s turn just runs out. Below three, the game ends.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',
