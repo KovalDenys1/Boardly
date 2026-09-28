@@ -113,7 +113,7 @@ describe('Sketch & Guess rounds and drawers against the engine (#1239)', () => {
   it('quotes the phase clocks the engine enforces', () => {
     expect(SKETCH_PHASE_SECONDS).toEqual({ choosing: 15, drawing: 80, reveal: 8 })
     expect(detail.modes.phaseClocks.desc).toMatch(/^15 seconds to choose, 80 to draw, 8 to reveal\./)
-    expect(detail.step2Desc).toMatch(/15 seconds to choose one of three words.*80 seconds/)
+    expect(detail.step2Desc).toMatch(/one of three words within 15 seconds.*up to 80 seconds/)
     // The lobby's turn timer is accepted and ignored (see applyTimeoutFallback).
     expect(source('lib/games/sketch-and-guess-game.ts')).toMatch(/applyTimeoutFallback\(_turnTimerSeconds\?: number/)
   })
@@ -138,7 +138,7 @@ describe('Sketch & Guess scoring against the engine (#1239)', () => {
     // Live, before any reveal (#1082): the page says points land as each guess does.
     expect(data(engine).phase).toBe('reveal')
     expect(round(engine).isScored).toBe(false)
-    expect(detail.step4Desc).toMatch(/points landed as each guess did.*after round three the game ends/)
+    expect(detail.step4Desc).toMatch(/points landed with each guess.*after round three the game ends/)
     const tsx = source('app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx')
     expect(tsx).toMatch(/value: '50'/)
     expect(tsx).toMatch(/value: '\+20'/)
@@ -195,7 +195,7 @@ describe('Sketch & Guess guessing against the word bank (#1239)', () => {
     expect(detail.rules.matching).toMatch(/ø, æ and й are letters of their own/)
     expect(matchSketchGuess('oy', getSketchWord('island')!)).not.toBe('correct')
     expect(detail.faq.guessLanguages.a).toMatch(/^English, Norwegian, Russian and Ukrainian/)
-    expect(detail.rules.matching).toMatch(/plural or a synonym/)
+    expect(detail.rules.matching).toMatch(/Plurals and synonyms often count/)
   })
 
   it('uncovers a letter at half time on words of three letters or more, none on two', () => {
