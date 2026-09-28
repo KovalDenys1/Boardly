@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
-import LeaderboardPage from '@/app/leaderboard/page'
+import LeaderboardPage, { metadata } from '@/app/leaderboard/page'
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
 import { apiLogger } from '@/lib/logger'
 import type { LeaderboardEntry } from '@/lib/leaderboard'
@@ -111,5 +111,11 @@ describe('/leaderboard server render (#922)', () => {
     expect(await screen.findAllByText('Dave')).not.toHaveLength(0)
     // and the failure is not swallowed: the server logs it like the API route does
     expect(apiLogger('/leaderboard').error).toHaveBeenCalledWith('Leaderboard SSR query failed', expect.any(Error))
+  })
+})
+
+describe('/leaderboard metadata (#1234)', () => {
+  it('is noindex, follow while the board is nearly empty', () => {
+    expect(metadata.robots).toEqual({ index: false, follow: true })
   })
 })

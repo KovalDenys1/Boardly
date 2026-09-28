@@ -71,6 +71,9 @@ describe('GET /api/leaderboard', () => {
     const response = await GET(buildRequest())
     const payload = await response.json()
     const sql = mockPrisma.$queryRaw.mock.calls[0][0].strings.join('')
+    // #1234: the owner's test account never ranks publicly
+    expect(sql).toContain('u.id NOT IN (')
+    expect(mockPrisma.$queryRaw.mock.calls[0][0].values).toContain('cmiz488060000isil2lgf6jzk')
 
     expect(response.status).toBe(200)
     expect(payload).toEqual({

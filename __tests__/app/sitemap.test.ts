@@ -109,3 +109,10 @@ describe('sitemap (#922)', () => {
     }
   })
 })
+
+describe('sitemap leaves out noindex pages (#1234)', () => {
+  it('does not list /leaderboard while that page is noindex', () => {
+    const urls = sitemap().map((e) => e.url)
+    expect(urls).not.toContain(`${BASE}/leaderboard`)
+  })
+})

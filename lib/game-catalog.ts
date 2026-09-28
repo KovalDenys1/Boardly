@@ -540,6 +540,17 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       schemaDescription: 'Matching pairs card game for two to four players. Every card starts face down; flip two on your turn and keep the pair when they match. Easy is 4×4, hard is 6×6.',
       questionKey: 'games.memory.seo.question',
       answerKey: 'games.memory.seo.answer',
+      // Product questions only: the how-to guide already answers players,
+      // difficulty, game length, the bot, reshuffling and accounts (#1236).
+      faq: [
+        { questionKey: 'games.memory.detail.faq.isItFree.q', answerKey: 'games.memory.detail.faq.isItFree.a' },
+        { questionKey: 'games.memory.detail.faq.worksOnPhone.q', answerKey: 'games.memory.detail.faq.worksOnPhone.a' },
+        { questionKey: 'games.memory.detail.faq.timerRunsOut.q', answerKey: 'games.memory.detail.faq.timerRunsOut.a' },
+        { questionKey: 'games.memory.detail.faq.playRemotely.q', answerKey: 'games.memory.detail.faq.playRemotely.a' },
+        { questionKey: 'games.memory.detail.faq.botBoard.q', answerKey: 'games.memory.detail.faq.botBoard.a' },
+        { questionKey: 'games.memory.detail.faq.mixBotsAndPeople.q', answerKey: 'games.memory.detail.faq.mixBotsAndPeople.a' },
+        { questionKey: 'games.memory.detail.faq.canPeek.q', answerKey: 'games.memory.detail.faq.canPeek.a' },
+      ],
     },
     availability: 'available',
     route: '/games/memory/lobbies',
