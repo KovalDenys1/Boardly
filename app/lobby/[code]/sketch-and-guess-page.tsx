@@ -117,6 +117,7 @@ function defaultSketchState(): SketchAndGuessGameData {
         phase: 'choosing',
         phaseStartedAt: null,
         currentRound: 1,
+        // The fewest seats a game starts with; the server's count replaces it (#1266).
         totalRounds: 3,
         drawerOrder: [],
         currentDrawerId: '',
@@ -176,7 +177,10 @@ function parseSketchState(state: unknown): SketchAndGuessGameData {
         phase: d.phase === 'choosing' || d.phase === 'reveal' ? d.phase : 'drawing',
         phaseStartedAt: typeof d.phaseStartedAt === 'number' ? d.phaseStartedAt : null,
         currentRound: typeof d.currentRound === 'number' ? d.currentRound : fallback.currentRound,
-        totalRounds: typeof d.totalRounds === 'number' ? d.totalRounds : fallback.totalRounds,
+        // One round per player (#1266), so the drawer order is the next best count.
+        totalRounds: typeof d.totalRounds === 'number'
+            ? d.totalRounds
+            : Array.isArray(d.drawerOrder) && d.drawerOrder.length > 0 ? d.drawerOrder.length : fallback.totalRounds,
         drawerOrder: Array.isArray(d.drawerOrder) ? (d.drawerOrder as string[]) : [],
         currentDrawerId: typeof d.currentDrawerId === 'string' ? d.currentDrawerId : '',
         rounds,

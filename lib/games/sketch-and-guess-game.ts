@@ -1,5 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
-import { resolveBoundedRuleNumber, getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
+import { getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
 import {
   SKETCH_GUESS_MIN_INTERVAL_MS,
@@ -139,9 +139,6 @@ export interface SketchAndGuessGuessOutcome {
 
 export type SketchAndGuessGuessRejection = 'too-fast' | 'limit-reached'
 
-const DEFAULT_TOTAL_ROUNDS = 3
-const MIN_TOTAL_ROUNDS = 1
-const MAX_TOTAL_ROUNDS = 10
 const MIN_DRAWING_CONTENT_LENGTH = 3
 const MAX_DRAWING_CONTENT_LENGTH = 120_000
 const MIN_GUESS_LENGTH = 2
@@ -846,12 +843,16 @@ export class SketchAndGuessGame extends GameEngine {
     return picked.map((word) => ({ ...word, en: [...word.en], no: [...word.no], ru: [...word.ru], uk: [...word.uk] }))
   }
 
+  /**
+   * One round per player, so everyone draws exactly once (#1266). It was a
+   * fixed three with the drawer taken in seat order, so seats four to ten never
+   * drew. Counted from the players seated at the start, never from
+   * `config.rules.rounds`: the create route passes the client's config through,
+   * and a client must not be able to shorten or stretch the game.
+   * `getInitialGameData` runs inside the base constructor, before `state` exists.
+   */
   private resolveTotalRounds(): number {
-    return resolveBoundedRuleNumber(this.config.rules, 'rounds', {
-      min: MIN_TOTAL_ROUNDS,
-      max: MAX_TOTAL_ROUNDS,
-      fallback: DEFAULT_TOTAL_ROUNDS,
-    })
+    return Math.max(1, this.state?.players.length ?? 0)
   }
 
   // #1032: this used to carry `promptHint: prompt`, which nothing ever read - the client
