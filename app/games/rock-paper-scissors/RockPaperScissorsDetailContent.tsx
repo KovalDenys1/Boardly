@@ -85,6 +85,9 @@ export default function RockPaperScissorsDetailContent() {
       audience={[
         t('games.rock_paper_scissors.detail.audience.whoItSuits'),
       ]}
+      history={[
+        t('games.rock_paper_scissors.detail.history.origin'),
+      ]}
     />
   )
 }

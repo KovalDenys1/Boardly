@@ -1526,6 +1526,9 @@ const no = {
         audience: {
           whoItSuits: 'Det passer for alle med et ledig minutt: venner som avgjør hvem som starter, spillere på pause, eller alle som vil teste om de leser folk bedre enn tilfeldighetene.',
         },
+        history: {
+          origin: 'Håndspill av denne typen ble skrevet om i Kina rundt 1600, og formen med stein, saks og papir tok form i Japan som jan-ken før den spredte seg vestover. I USA kalles det noen steder roshambo.',
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

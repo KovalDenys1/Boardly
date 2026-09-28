@@ -1526,6 +1526,9 @@ const en = {
         audience: {
           whoItSuits: 'It suits anyone with a spare minute: friends settling who goes first, players on a break, or anyone testing whether they read people better than chance.',
         },
+        history: {
+          origin: 'Hand games like it were recorded in China around 1600, and the rock, paper and scissors form took shape in Japan as jan-ken before spreading west. Some Americans call it roshambo.',
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',
