@@ -1040,15 +1040,16 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     ? Math.max(0, turnTimerSeconds - Math.floor((Date.now() - lastMoveAt) / 1000))
     : turnTimerSeconds
 
-  const rules = gameEngine
-    ? (gameEngine as LiarsPartyGame).getGameRules()
-    : [
-        t('liarsParty.rule1'),
-        t('liarsParty.rule2'),
-        t('liarsParty.rule3'),
-        t('liarsParty.rule4'),
-        t('liarsParty.rule5'),
-      ]
+  // Always the locale's copy. It used to switch to the engine's getGameRules()
+  // once a game was loaded, which is English only, so every Norwegian, Russian
+  // and Ukrainian table read its rules card in English (#1240).
+  const rules = [
+    t('liarsParty.rule1'),
+    t('liarsParty.rule2'),
+    t('liarsParty.rule3'),
+    t('liarsParty.rule4'),
+    t('liarsParty.rule5'),
+  ]
 
   const claimantId = data?.currentClaimantId ?? ''
   const claimantName = nameOf(claimantId)

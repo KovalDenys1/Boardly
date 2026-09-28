@@ -3542,7 +3542,7 @@ const no = {
     rule1: 'Hver runde blir én aktiv spiller kravstiller og sender inn ett krav.',
     rule2: 'Øvrige aktive spillere sender inn én stemme: utfordre eller tro på.',
     rule3: 'En bløff regnes som avslørt kun når utfordrerne utgjør et strengt flertall.',
-    rule4: 'Feil stemmer mister poeng; riktige leser vinner poeng; gjentatte blotlagte bløffer gir strikes.',
+    rule4: 'Feil stemmer koster poeng; riktige lesninger gir poeng; hver avslørte bløff gir én strike.',
     rule5: 'En spiller er eliminert etter å ha nådd strike-grensen.',
     waitingForPlayers: 'Venter på spillere...',
     roundsCount: '{{count}} runder',

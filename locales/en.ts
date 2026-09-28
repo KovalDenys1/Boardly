@@ -3554,7 +3554,7 @@ const en = {
     rule1: 'Each round, one active player becomes the claimant and submits one claim.',
     rule2: 'Other active players submit one vote: challenge or believe.',
     rule3: 'A bluff is considered caught only when challengers are a strict majority.',
-    rule4: 'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
+    rule4: 'Wrong votes lose points; correct reads gain points; each caught bluff adds a strike.',
     rule5: 'A player is eliminated after reaching strike limit.',
     waitingForPlayers: 'Waiting for players...',
     roundsCount: '{{count}} rounds',
