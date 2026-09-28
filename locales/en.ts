@@ -2032,7 +2032,7 @@ const en = {
         heroDesc: 'Classic Ludo for two to four players in the browser. Invite friends or fill seats with bots.',
         introTitle: 'What is Ludo?',
         intro0: 'Ludo is a race game on a cross-shaped board: each colour has a yard, a lap of track and a home column.',
-        intro1: 'Roll the die, race round the track and send rivals back to their yard. The first to bring every token home wins.',
+        intro1: 'Roll, race round the track and send rivals back to their yard; the first to bring every token home wins.',
         step1Title: 'Create or join a lobby',
         step1Desc: 'Open a room and pick quick or classic. Share the code or link.',
         step2Title: 'Fill the seats',
@@ -2043,9 +2043,9 @@ const en = {
         step4Desc: 'Capture rivals and get every token home first. The game ends then.',
         benefitsTitle: 'Why play Ludo on Boardly?',
         benefit1: 'Fair dice, rolled on the server.',
-        benefit2: 'Bots on three levels for the empty seats.',
+        benefit2: 'Bots on three levels.',
         benefit3: 'Quick mode with two tokens each.',
-        benefit4: 'Free to play as a guest, nothing to install.',
+        benefit4: 'Free as a guest.',
         rules: {
           homeColumn: 'After 50 squares a token enters its own home column, where no rival can land.',
           noBlocks: 'There are no blocks: landing on two rival tokens sends both back, except on a safe square.',
@@ -2058,7 +2058,7 @@ const en = {
           },
           turnClock: {
             title: 'A clock on every turn',
-            desc: 'Lobbies you create default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start. Quick Play and Play vs Bot use 45.',
+            desc: 'Lobbies you create default to 30 seconds; the host can set 30 to 180 before the start. Quick Play and Play vs Bot use 45.',
           },
           botLevels: {
             title: 'Three bot levels',
@@ -2124,7 +2124,7 @@ const en = {
           },
           turnTimer: {
             title: 'When someone leaves',
-            desc: 'A player whose page goes silent for 30 seconds is removed the next time the table checks; their tokens stay, their turns are skipped and play goes on.',
+            desc: 'A player silent for 30 seconds is removed at the next table check; their tokens stay, their turns are skipped and play goes on.',
           },
           guestNoDownload: {
             title: 'No app, no sign-up',
@@ -2132,7 +2132,7 @@ const en = {
           },
         },
         audience: {
-          whoItSuits: 'Families and mixed groups: luck keeps everyone in it, and choosing a token still rewards a sharp eye.',
+          whoItSuits: 'Families and mixed groups: luck keeps everyone in it, while token choice rewards a sharp eye.',
         },
         history: {
           origin: 'Ludo descends from Pachisi, an Indian race game centuries old, and was patented in England in 1896 as Ludo, Latin for "I play".',
@@ -2156,7 +2156,7 @@ const en = {
           },
           howManyPlayers: {
             q: 'How many players can play Ludo?',
-            a: 'Two to four, up to three of them bots. Two players sit in opposite corners, and with three one corner stays empty.',
+            a: 'Two to four, up to three of them bots. Two players sit in opposite corners of the board.',
           },
           whoPicksMode: {
             q: 'Who chooses quick or classic mode?',

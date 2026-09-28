@@ -239,7 +239,7 @@ describe('Ludo timeouts (#1242)', () => {
     // Read as source: importing lib/lobby-presence pulls in the Prisma client.
     expect(source('lib/lobby-presence.ts')).toMatch(/HEARTBEAT_STALE_THRESHOLD_MS = 30_000\b/)
     expect(source('app/api/lobby/[code]/route.ts')).toMatch(/sweepStalePlayers/)
-    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/silent for 30 seconds is removed the next time the table checks; their tokens stay, their turns are skipped/)
+    expect(ludo.detail.multiplayer.turnTimer.desc).toMatch(/silent for 30 seconds is removed at the next table check; their tokens stay, their turns are skipped/)
   })
 })
 
@@ -271,7 +271,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(ludo.detail.modes.turnClock.desc).toMatch(
-      /Lobbies you create default to 30 seconds, with 60, 90 or 120 on offer; the host can set 30 to 180 before the start\. Quick Play and Play vs Bot use 45\./
+      /Lobbies you create default to 30 seconds; the host can set 30 to 180 before the start\. Quick Play and Play vs Bot use 45\./
     )
   })
 

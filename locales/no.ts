@@ -2032,7 +2032,7 @@ const no = {
         heroDesc: 'Klassisk Ludo for to til fire spillere i nettleseren. Inviter venner eller fyll plasser med roboter.',
         introTitle: 'Hva er Ludo?',
         intro0: 'Ludo er et kappløpsspill på et korsformet brett: hver farge har en gård, en runde bane og en hjemmekolonne.',
-        intro1: 'Kast terningen, løp rundt banen og send motstandere tilbake til gården. Den første som får alle brikkene hjem, vinner.',
+        intro1: 'Kast, løp rundt banen og send motstandere tilbake til gården; den første som får alle brikkene hjem, vinner.',
         step1Title: 'Opprett eller bli med i en lobby',
         step1Desc: 'Åpne et rom og velg rask eller klassisk. Del koden eller lenken.',
         step2Title: 'Fyll plassene',
@@ -2043,9 +2043,9 @@ const no = {
         step4Desc: 'Slå ut motstandere og få alle brikkene hjem først. Da er spillet over.',
         benefitsTitle: 'Hvorfor spille Ludo på Boardly?',
         benefit1: 'Rettferdige terninger, kastet på serveren.',
-        benefit2: 'Roboter på tre nivåer til de tomme plassene.',
+        benefit2: 'Roboter på tre nivåer.',
         benefit3: 'Hurtigmodus med to brikker hver.',
-        benefit4: 'Gratis å spille som gjest, ingenting å installere.',
+        benefit4: 'Gratis som gjest.',
         rules: {
           homeColumn: 'Etter 50 felt går brikken inn i sin egen hjemmekolonne, der ingen motstander kan lande.',
           noBlocks: 'Det finnes ingen sperrer: lander du på to motstanderbrikker, går begge tilbake, unntatt på et trygt felt.',
@@ -2058,7 +2058,7 @@ const no = {
           },
           turnClock: {
             title: 'Klokke på hver tur',
-            desc: 'Lobbyer du oppretter, har 30 sekunder som standard, med 60, 90 eller 120 å velge; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre robotnivåer',
@@ -2124,7 +2124,7 @@ const no = {
           },
           turnTimer: {
             title: 'Når noen går',
-            desc: 'En spiller som har vært stille i 30 sekunder, fjernes neste gang bordet sjekker; brikkene blir stående, turene hoppes over og spillet fortsetter.',
+            desc: 'En spiller som er stille i 30 sekunder, fjernes ved neste sjekk av bordet; brikkene blir stående, turene hoppes over og spillet fortsetter.',
           },
           guestNoDownload: {
             title: 'Ingen app, ingen registrering',
@@ -2132,7 +2132,7 @@ const no = {
           },
         },
         audience: {
-          whoItSuits: 'Familier og blandede grupper: flaks holder alle med, og valget av brikke belønner likevel et skarpt blikk.',
+          whoItSuits: 'Familier og blandede grupper: flaks holder alle med, mens valget av brikke belønner et skarpt blikk.',
         },
         history: {
           origin: 'Ludo stammer fra Pachisi, et flere hundre år gammelt indisk kappløpsspill, og ble patentert i England i 1896 som Ludo, latin for «jeg spiller».',
@@ -2156,7 +2156,7 @@ const no = {
           },
           howManyPlayers: {
             q: 'Hvor mange kan spille Ludo?',
-            a: 'To til fire, hvorav opptil tre kan være roboter. To spillere sitter i motsatte hjørner, og med tre står ett hjørne tomt.',
+            a: 'To til fire, hvorav opptil tre kan være roboter. To spillere sitter i motsatte hjørner av brettet.',
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',

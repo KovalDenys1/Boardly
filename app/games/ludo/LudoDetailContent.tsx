@@ -49,7 +49,6 @@ export default function LudoDetailContent() {
         t('games.ludo.detail.rules.noBlocks'),
         t('games.ludo.detail.rules.homeColumn'),
         t('games.ludo.rules.exactHome'),
-        t('games.ludo.rules.winner'),
         t('games.ludo.rules.timer'),
       ]}
       modes={[
