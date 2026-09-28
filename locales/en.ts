@@ -2409,20 +2409,167 @@ const en = {
         heroDesc: 'A social bluffing game where players make claims, read the room, and vote on who is telling the truth.',
         introTitle: "What is Liar's Party?",
         intro0: "Liar's Party is a social bluffing game. One player makes a claim, and everyone else decides whether to believe it or challenge it.",
-        intro1: 'Good reads earn points. Bad reads cost you. Get caught too many times and you are out of the round.',
+        intro1: 'Good reads earn points. Bad reads cost you. Get caught too many times and you are out of the game.',
         step1Title: 'Create a lobby',
-        step1Desc: 'Invite a group and start a round together.',
+        step1Desc: 'Invite a group and start a round together. The host can start once four players are seated.',
         step2Title: 'Make your claim',
-        step2Desc: 'Tell the truth or bluff, then mark it secretly.',
+        step2Desc: 'Tell the truth or bluff, then mark which it is. No screen shows your choice until the reveal.',
         step3Title: 'Vote',
-        step3Desc: 'Other players choose whether to believe or challenge the claim.',
+        step3Desc: 'Other players choose whether to believe or challenge the claim. A counter shows how many have voted.',
         step4Title: 'Reveal and survive',
-        step4Desc: 'The truth comes out and the scoreboard updates.',
+        step4Desc: 'The truth comes out and the scoreboard updates. Any player can open the next round.',
         benefitsTitle: "Why Liar's Party belongs on Boardly",
         benefit1: 'Built for shared room play.',
         benefit2: 'Clear voting and reveal moments.',
         benefit3: 'Great for social groups.',
         benefit4: 'No app download planned.',
+        rules: {
+          floorRotates: 'Each round one player holds the floor, in turn, skipping anyone who is out.',
+          claimAndMark: 'The claimant writes up to 180 characters and marks them truth or bluff.',
+          everyoneElseVotes: 'Every other player still in votes Challenge or Believe, once.',
+          caughtNeedsMore: 'A bluff is caught only when challengers outnumber believers; an even split lets it through.',
+          strikesAndEnd: 'Two caught bluffs put you out. The game ends after ten rounds or when one player is left.',
+        },
+        scoring: {
+          claimant: {
+            title: 'The claimant',
+            note: 'No score drops below zero.',
+            rows: {
+              bluffGetsThrough: { name: 'Bluff gets through', value: '+20', rule: 'Plus 6 per believer.' },
+              bluffCaught: { name: 'Bluff caught', value: '−12', rule: 'Plus a strike.' },
+              truthBelieved: { name: 'Truth believed', value: '+12', rule: 'Believers match or outnumber challengers.' },
+              truthChallenged: { name: 'Truth challenged', value: '+4', rule: 'Challengers outnumber believers.' },
+              noClaimInTime: { name: 'No claim in time', value: '−4', rule: 'No vote that round.' },
+            },
+          },
+          voters: {
+            title: 'Each voter',
+            note: 'Scored on the truth, not on the tally.',
+            rows: {
+              challengeBluff: { name: 'Challenge a bluff', value: '+14', rule: 'You spotted it.' },
+              challengeTruth: { name: 'Challenge a truth', value: '−6', rule: 'An honest claim doubted.' },
+              believeTruth: { name: 'Believe a truth', value: '+10', rule: 'An honest claim trusted.' },
+              believeBluff: { name: 'Believe a bluff', value: '−8', rule: 'You were fooled.' },
+              noVoteInTime: { name: 'No vote in time', value: '−4', rule: 'Also counted as Believe.' },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Table size',
+            desc: 'Rooms of 4 to 12 seats, 8 by default; more than ten needs a Premium host.',
+          },
+          phaseClock: {
+            title: 'Phase clock',
+            desc: 'Each phase gets 60 seconds; before the start, the host can pick 30 to 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Rounds and strikes',
+            desc: 'Ten rounds and two strikes; no lobby setting changes them.',
+          },
+        },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Challenge above 42 percent',
+            desc: 'Challenging beats believing once a bluff looks more than 42 percent likely.',
+          },
+          yourReadScoresAlone: {
+            title: 'Your read scores alone',
+            desc: 'A right challenge earns 14 even if the bluff survives the vote.',
+          },
+          bluffForTheTable: {
+            title: 'Bluff for the whole table',
+            desc: 'A bluff that gets through with five believers is worth 50.',
+          },
+          countYourStrikes: {
+            title: 'Count your strikes',
+            desc: 'On one strike, a caught bluff ends your game; tell the truth.',
+          },
+          stayInToWin: {
+            title: 'Staying in beats points',
+            desc: 'Everyone still playing ranks above anyone knocked out, whatever the scores.',
+          },
+          strangeButTrue: {
+            title: 'Tell truths that sound strange',
+            desc: 'Even if most of the table doubts it, an odd truth still scores 4, while each challenger loses 6.',
+          },
+          specificDetails: {
+            title: 'Give a bluff real detail',
+            desc: 'A place, a year and a consequence read like memory.',
+          },
+          readTheHistory: {
+            title: 'Read the history card',
+            desc: 'Earlier claims and verdicts stay on screen while you vote.',
+          },
+        },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Letting the clock vote',
+            desc: 'A missed vote counts as Believe and costs 4 more points.',
+          },
+          freezingOnYourClaim: {
+            title: 'Freezing on your claim',
+            desc: 'Run out the clock and you lose 4 with nothing to win back.',
+          },
+          challengingEveryClaim: {
+            title: 'Challenging every claim',
+            desc: 'Each wrong challenge costs 6, so blanket doubt bleeds points.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'One room, every screen',
+            desc: "Share the code or invite link; everything updates live on every player's screen.",
+          },
+          botsAndSolo: {
+            title: 'People only',
+            desc: 'A bot has nothing to bluff with, so there are no bots. Short of four? Share the invite link or join an open lobby.',
+          },
+          turnTimer: {
+            title: 'One clock per phase',
+            desc: 'At zero the server fills the gap when an open page in the room checks in, as pages do unprompted.',
+          },
+          guestNoDownload: {
+            title: 'Nothing to install',
+            desc: 'Any browser on a phone or laptop; guests only need a name.',
+          },
+        },
+        audience: {
+          whoItSuits: 'For four to twelve people who enjoy reading each other: parties, video calls, club nights.',
+        },
+        history: {
+          origin: 'Calling a bluff is an old game, from the icebreaker Two Truths and a Lie to the card game Cheat.',
+        },
+        faq: {
+          isItFree: {
+            q: "Is Liar's Party free to play?",
+            a: 'Yes, the whole game is free for up to ten players. Premium adds bigger rooms, spectators, replays and lobby themes.',
+          },
+          worksOnPhone: {
+            q: "Does Liar's Party work on a phone?",
+            a: 'Yes, in any mobile browser: the game sits on one tab, with players and chat one tap away.',
+          },
+          whatCanIClaim: {
+            q: 'What can I claim?',
+            a: 'Anything from 5 to 180 characters, true or invented: a story about you, a fact, a boast.',
+          },
+          timerRunsOut: {
+            q: 'What happens when the clock runs out?',
+            a: 'A silent claimant loses 4 and the vote is skipped; a missing vote counts as Believe, minus 4.',
+          },
+          playerLeaves: {
+            q: 'What if a player leaves mid-game?',
+            a: 'They are out and rank below everyone still in; below four players in the room, the game ends.',
+          },
+          howLong: {
+            q: 'How long does a game last?',
+            a: 'Ten rounds at most, one claim each, and fewer if only one player is left in the game.',
+          },
+          canFriendsWatch: {
+            q: 'Can friends watch without playing?',
+            a: 'Yes, if a Premium host allows spectators; they follow claims, votes and the reveal but cannot vote.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
@@ -3889,7 +4036,7 @@ const en = {
     rule1: 'Each round, one active player becomes the claimant and submits one claim.',
     rule2: 'Other active players submit one vote: challenge or believe.',
     rule3: 'A bluff is considered caught only when challengers are a strict majority.',
-    rule4: 'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
+    rule4: 'Wrong votes lose points; correct reads gain points; each caught bluff adds a strike.',
     rule5: 'A player is eliminated after reaching strike limit.',
     waitingForPlayers: 'Waiting for players...',
     roundsCount: '{{count}} rounds',

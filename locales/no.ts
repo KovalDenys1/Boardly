@@ -2409,20 +2409,167 @@ const no = {
         heroDesc: 'Et sosialt bløffespill der spillerne kommer med påstander, leser rommet og stemmer over hvem som snakker sant.',
         introTitle: 'Hva er Løgnerfest?',
         intro0: 'Løgnerfest er et sosialt bløffespill. Én spiller kommer med en påstand, og resten avgjør om de tror på den eller utfordrer den.',
-        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av runden.',
+        intro1: 'Å lese de andre riktig gir poeng, og å bomme koster deg. Blir du tatt for mange ganger, er du ute av spillet.',
         step1Title: 'Lag en lobby',
-        step1Desc: 'Inviter en gjeng og start en runde sammen.',
+        step1Desc: 'Inviter en gjeng og start en runde sammen. Verten kan starte så snart fire spillere har satt seg.',
         step2Title: 'Kom med påstanden din',
-        step2Desc: 'Snakk sant eller bløff, og marker valget i hemmelighet.',
+        step2Desc: 'Snakk sant eller bløff, og marker hva det er. Ingen skjerm viser valget ditt før avsløringen.',
         step3Title: 'Stem',
-        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den.',
+        step3Desc: 'De andre spillerne velger om de tror på påstanden eller utfordrer den. En teller viser hvor mange som har stemt.',
         step4Title: 'Avslør og overlev',
-        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres.',
+        step4Desc: 'Sannheten kommer fram, og stillingen oppdateres. Hvilken som helst spiller kan åpne neste runde.',
         benefitsTitle: 'Derfor hører Løgnerfest hjemme på Boardly',
         benefit1: 'Laget for spill i samme rom.',
         benefit2: 'Tydelige avstemninger og avsløringer.',
         benefit3: 'Midt i blinken for sosiale gjenger.',
         benefit4: 'Ingen app å laste ned.',
+        rules: {
+          floorRotates: 'Hver runde har én spiller ordet, etter tur, og de som er ute hoppes over.',
+          claimAndMark: 'Den som har ordet skriver opptil 180 tegn og markerer sannhet eller bløff.',
+          everyoneElseVotes: 'Alle andre som fortsatt er med stemmer Utfordre eller Tro, én gang.',
+          caughtNeedsMore: 'En bløff er avslørt bare når utfordrerne er flere enn de som tror; står det likt, slipper den gjennom.',
+          strikesAndEnd: 'To avslørte bløffer, og du er ute. Spillet slutter etter ti runder eller når én spiller er igjen.',
+        },
+        scoring: {
+          claimant: {
+            title: 'Den som har ordet',
+            note: 'Ingen poengsum går under null.',
+            rows: {
+              bluffGetsThrough: { name: 'Bløffen går gjennom', value: '+20', rule: 'Pluss 6 per spiller som trodde.' },
+              bluffCaught: { name: 'Bløffen avslørt', value: '−12', rule: 'Pluss én strike.' },
+              truthBelieved: { name: 'Sannheten trodd', value: '+12', rule: 'Minst like mange tror som utfordrer.' },
+              truthChallenged: { name: 'Sannheten utfordret', value: '+4', rule: 'Flere utfordrer enn tror.' },
+              noClaimInTime: { name: 'Ingen påstand i tide', value: '−4', rule: 'Ingen avstemning den runden.' },
+            },
+          },
+          voters: {
+            title: 'Hver som stemmer',
+            note: 'Poengene følger sannheten, ikke flertallet.',
+            rows: {
+              challengeBluff: { name: 'Utfordre en bløff', value: '+14', rule: 'Du så den.' },
+              challengeTruth: { name: 'Utfordre en sannhet', value: '−6', rule: 'En ærlig påstand betvilt.' },
+              believeTruth: { name: 'Tro på en sannhet', value: '+10', rule: 'En ærlig påstand trodd.' },
+              believeBluff: { name: 'Tro på en bløff', value: '−8', rule: 'Du ble lurt.' },
+              noVoteInTime: { name: 'Ingen stemme i tide', value: '−4', rule: 'Teller også som Tro.' },
+            },
+          },
+        },
+        modes: {
+          tableSize: {
+            title: 'Bordstørrelse',
+            desc: 'Rom med 4 til 12 plasser, 8 som standard; mer enn ti krever en vert med Premium.',
+          },
+          phaseClock: {
+            title: 'Klokke per fase',
+            desc: 'Hver fase får 60 sekunder; før start kan verten velge 30 til 180.',
+          },
+          roundsAndStrikes: {
+            title: 'Runder og strikes',
+            desc: 'Ti runder og to strikes; ingen lobbyinnstilling endrer det.',
+          },
+        },
+        strategy: {
+          challengeAboveFortyTwo: {
+            title: 'Utfordre over 42 prosent',
+            desc: 'Å utfordre slår å tro så snart en bløff virker mer enn 42 prosent sannsynlig.',
+          },
+          yourReadScoresAlone: {
+            title: 'Din lesning teller alene',
+            desc: 'En riktig utfordring gir 14 selv om bløffen overlever avstemningen.',
+          },
+          bluffForTheTable: {
+            title: 'Bløff for hele bordet',
+            desc: 'En bløff som går gjennom med fem som tror, er verdt 50.',
+          },
+          countYourStrikes: {
+            title: 'Tell dine strikes',
+            desc: 'Med én strike avslutter en avslørt bløff spillet ditt; snakk sant.',
+          },
+          stayInToWin: {
+            title: 'Å være med slår poeng',
+            desc: 'Alle som fortsatt spiller, rangeres over dem som er ute, uansett poeng.',
+          },
+          strangeButTrue: {
+            title: 'Fortell sannheter som høres rare ut',
+            desc: 'Selv om de fleste ved bordet tviler, gir en rar sannhet likevel 4, mens hver utfordrer mister 6.',
+          },
+          specificDetails: {
+            title: 'Gi bløffen ekte detaljer',
+            desc: 'Et sted, et år og en konsekvens høres ut som et minne.',
+          },
+          readTheHistory: {
+            title: 'Les historikken',
+            desc: 'Tidligere påstander og dommer står på skjermen mens du stemmer.',
+          },
+        },
+        mistakes: {
+          lettingTheClockVote: {
+            title: 'Å la klokka stemme',
+            desc: 'En stemme som uteblir, teller som Tro og koster 4 poeng ekstra.',
+          },
+          freezingOnYourClaim: {
+            title: 'Å fryse på påstanden',
+            desc: 'Går tiden ut, mister du 4 uten noe å vinne tilbake.',
+          },
+          challengingEveryClaim: {
+            title: 'Å utfordre alt',
+            desc: 'Hver feil utfordring koster 6, så tvil på alt tapper deg for poeng.',
+          },
+        },
+        multiplayer: {
+          withFriends: {
+            title: 'Ett rom, alle skjermer',
+            desc: 'Del koden eller invitasjonslenken; alt oppdateres live på hver spillers skjerm.',
+          },
+          botsAndSolo: {
+            title: 'Bare mennesker',
+            desc: 'En bot har ingenting å bløffe med, så det finnes ingen boter. Færre enn fire? Del invitasjonslenken eller bli med i en åpen lobby.',
+          },
+          turnTimer: {
+            title: 'Én klokke per fase',
+            desc: 'Ved null fyller serveren hullet når en åpen side i rommet sjekker inn, noe sidene gjør av seg selv.',
+          },
+          guestNoDownload: {
+            title: 'Ingenting å installere',
+            desc: 'Hvilken som helst nettleser på mobil eller PC; gjester trenger bare et navn.',
+          },
+        },
+        audience: {
+          whoItSuits: 'Passer best for fire til tolv som liker å lese hverandre: fester, videosamtaler, klubbkvelder.',
+        },
+        history: {
+          origin: 'Å avsløre en bløff er en gammel lek, fra isbryteren To sannheter og en løgn til kortspillet Cheat.',
+        },
+        faq: {
+          isItFree: {
+            q: 'Er Løgnerfest gratis å spille?',
+            a: 'Ja, hele spillet er gratis for opptil ti spillere. Premium gir større rom, tilskuere, repriser og lobbytemaer.',
+          },
+          worksOnPhone: {
+            q: 'Fungerer Løgnerfest på mobil?',
+            a: 'Ja, i hvilken som helst mobilnettleser: spillet ligger på én fane, med spillere og chat ett trykk unna.',
+          },
+          whatCanIClaim: {
+            q: 'Hva kan jeg påstå?',
+            a: 'Hva som helst på 5 til 180 tegn, sant eller oppdiktet: en historie om deg, et faktum, litt skryt.',
+          },
+          timerRunsOut: {
+            q: 'Hva skjer når tiden renner ut?',
+            a: 'Den som ikke skrev noe, mister 4 og avstemningen hoppes over; en manglende stemme teller som Tro, minus 4.',
+          },
+          playerLeaves: {
+            q: 'Hva om en spiller går midt i spillet?',
+            a: 'Spilleren er ute og rangeres under alle som fortsatt er med; under fire spillere i rommet slutter spillet.',
+          },
+          howLong: {
+            q: 'Hvor lenge varer et spill?',
+            a: 'Høyst ti runder med én påstand hver, og færre hvis bare én spiller er igjen i spillet.',
+          },
+          canFriendsWatch: {
+            q: 'Kan venner se på uten å spille?',
+            a: 'Ja, hvis en vert med Premium tillater tilskuere; de følger påstander, stemmer og avsløringen, men kan ikke stemme.',
+          },
+        },
       },
       lobbies: {
         title: 'Liar\'s Party',
@@ -3877,7 +4024,7 @@ const no = {
     rule1: 'Hver runde blir én aktiv spiller kravstiller og sender inn ett krav.',
     rule2: 'Øvrige aktive spillere sender inn én stemme: utfordre eller tro på.',
     rule3: 'En bløff regnes som avslørt kun når utfordrerne utgjør et strengt flertall.',
-    rule4: 'Feil stemmer mister poeng; riktige leser vinner poeng; gjentatte blotlagte bløffer gir strikes.',
+    rule4: 'Feil stemmer koster poeng; riktige lesninger gir poeng; hver avslørte bløff gir én strike.',
     rule5: 'En spiller er eliminert etter å ha nådd strike-grensen.',
     waitingForPlayers: 'Venter på spillere...',
     roundsCount: '{{count}} runder',

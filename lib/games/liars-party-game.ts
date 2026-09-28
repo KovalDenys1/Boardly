@@ -287,7 +287,7 @@ export class LiarsPartyGame extends GameEngine {
       'Each round, one active player becomes the claimant and submits one claim.',
       'Other active players submit one vote: challenge or believe.',
       'A bluff is considered caught only when challengers are a strict majority.',
-      'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
+      'Wrong votes lose points; correct reads gain points; each caught bluff adds a strike.',
       'A player is eliminated after reaching strike limit, and ranking resolves deterministically.',
     ]
   }
