@@ -35,6 +35,8 @@ const CONTENT_FILES = {
   'tic-tac-toe': path.join(root, 'app/games/tic-tac-toe/TicTacToeDetailContent.tsx'),
   // #1239: the same long-form sections, scoring rows included.
   'sketch-and-guess': path.join(root, 'app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx'),
+  // #1242: the same long-form sections.
+  ludo: path.join(root, 'app/games/ludo/LudoDetailContent.tsx'),
 } as const
 
 const PAGE_FILES = {
