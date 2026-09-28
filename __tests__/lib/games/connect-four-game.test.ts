@@ -317,6 +317,61 @@ describe('ConnectFourGame', () => {
       g.makeMove(createMove(forfeiting, 'timeout-forfeit', {}))
       expect((score('p1') ?? 0) + (score('p2') ?? 0)).toBe(2)
     })
+
+    it('cannot be taken back with an undo, by either player (#1246)', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'drop', { col: 1 }))
+      g.makeMove(createMove('p1', 'timeout-forfeit', {}))
+      expect(g.getState().status).toBe('finished')
+
+      expect(g.makeMove(createMove('p1', 'request-undo', {}))).toBe(false)
+      expect(g.makeMove(createMove('p2', 'request-undo', {}))).toBe(false)
+
+      const data = getData(g)
+      expect(data.winner).toBe(2)
+      expect(data.pendingRequest).toBeNull()
+      expect(data.moveCount).toBe(2)
+      expect(g.getState().status).toBe('finished')
+      expect(g.getState().players.find((p) => p.id === 'p2')?.score).toBe(1)
+
+      // The series still moves on.
+      expect(g.makeMove(createMove('p1', 'next-round', {}))).toBe(true)
+      expect(g.getState().status).toBe('playing')
+    })
+
+    it('refuses to accept an undo that a round saved before #1246 still carries', () => {
+      const g = makeReadyGame()
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      g.makeMove(createMove('p2', 'timeout-forfeit', {}))
+      const state = g.getState()
+      g.restoreState({
+        ...state,
+        data: {
+          ...(state.data as ConnectFourGameData),
+          pendingRequest: { type: 'undo', requesterId: 'p2', responderId: 'p1', requestedAt: Date.now() },
+        },
+      })
+
+      expect(g.makeMove(createMove('p1', 'respond-undo', { accept: true }))).toBe(false)
+      expect(g.makeMove(createMove('p1', 'respond-undo', { accept: false }))).toBe(true)
+      expect(getData(g).winner).toBe(1)
+      expect(g.getState().status).toBe('finished')
+    })
+
+    it('leaves the take-back of a winning four-in-a-row alone', () => {
+      const g = makeReadyGame()
+      // p1 stacks column 0, p2 stacks column 1; p1's fourth disc wins.
+      for (let i = 0; i < 3; i += 1) {
+        g.makeMove(createMove('p1', 'drop', { col: 0 }))
+        g.makeMove(createMove('p2', 'drop', { col: 1 }))
+      }
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      expect(getData(g).winningLine).not.toBeNull()
+      expect(g.getState().status).toBe('finished')
+
+      expect(g.makeMove(createMove('p2', 'request-undo', {}))).toBe(true)
+    })
   })
 
   describe('next-round', () => {
@@ -372,8 +427,12 @@ describe('ConnectFourGame', () => {
 
     it('lets either player start the next round while a request hangs', () => {
       const g = makeReadyGame()
+      // p1 wins on the board – a round lost on time cannot be undone (#1246).
+      for (let i = 0; i < 3; i += 1) {
+        g.makeMove(createMove('p1', 'drop', { col: 0 }))
+        g.makeMove(createMove('p2', 'drop', { col: 1 }))
+      }
       g.makeMove(createMove('p1', 'drop', { col: 0 }))
-      g.makeMove(createMove('p2', 'timeout-forfeit', {}))
       expect(g.getState().status).toBe('finished')
 
       // Between rounds there is no clock and no board, so this used to be the
