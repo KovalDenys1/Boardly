@@ -1491,6 +1491,20 @@ const no = {
             desc: 'Tempo Rookie viser ren tilfeldighet, Mind Gambit belønner en klar lesning, og Pattern Reader tester begge deler.',
           },
         },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Å lese Tempo Rookie',
+            desc: 'Den lette boten har ikke noe mønster, så en rekke du ser der, er tilfeldig.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Å vente på at de låser',
+            desc: 'Det avslører ingenting om trekket deres, så du vinner ingenting på å vente.',
+          },
+          countingDraws: {
+            title: 'Å telle uavgjort som fremgang',
+            desc: 'Uavgjort flytter ingen av stillingene; kampen krever fortsatt to rundeseire.',
+          },
+        },
       },
       feature_quick: 'Raske runder',
       feature_players: '2 spillere',

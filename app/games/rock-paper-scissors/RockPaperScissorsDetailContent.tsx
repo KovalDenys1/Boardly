@@ -71,6 +71,11 @@ export default function RockPaperScissorsDetailContent() {
         { title: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.title'), desc: t('games.rock_paper_scissors.detail.strategy.stayEvenAgainstPatternReader.desc') },
         { title: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.title'), desc: t('games.rock_paper_scissors.detail.strategy.climbTheLevels.desc') },
       ]}
+      mistakes={[
+        { title: t('games.rock_paper_scissors.detail.mistakes.readingTempoRookie.title'), desc: t('games.rock_paper_scissors.detail.mistakes.readingTempoRookie.desc') },
+        { title: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.title'), desc: t('games.rock_paper_scissors.detail.mistakes.waitingForTheirLockIn.desc') },
+        { title: t('games.rock_paper_scissors.detail.mistakes.countingDraws.title'), desc: t('games.rock_paper_scissors.detail.mistakes.countingDraws.desc') },
+      ]}
     />
   )
 }

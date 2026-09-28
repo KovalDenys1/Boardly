@@ -1491,6 +1491,20 @@ const en = {
             desc: 'Tempo Rookie shows plain chance, Mind Gambit rewards a clean read, and Pattern Reader tests both.',
           },
         },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Reading Tempo Rookie',
+            desc: 'The easy bot has no pattern, so any streak you see there is chance.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Waiting for their lock-in',
+            desc: 'It reveals nothing about their move, so waiting for it gains nothing.',
+          },
+          countingDraws: {
+            title: 'Counting draws as progress',
+            desc: 'A draw moves neither score; the match still needs two round wins.',
+          },
+        },
       },
       feature_quick: 'Quick Rounds',
       feature_players: '2 Players',

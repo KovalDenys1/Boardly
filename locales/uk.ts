@@ -1543,6 +1543,20 @@ const uk: TranslationWithPlurals = {
             desc: 'Tempo Rookie показує чисту випадковість, Mind Gambit винагороджує точне читання, а Pattern Reader перевіряє і те, і те.',
           },
         },
+        mistakes: {
+          readingTempoRookie: {
+            title: 'Шукати закономірність у Tempo Rookie',
+            desc: 'У легкого бота немає шаблону, тож будь-яка серія в нього – випадковість.',
+          },
+          waitingForTheirLockIn: {
+            title: 'Чекати, доки суперник визначиться',
+            desc: 'Це нічого не каже про його хід, тож чекання нічого не дає.',
+          },
+          countingDraws: {
+            title: 'Вважати нічиї просуванням',
+            desc: 'Нічия не змінює рахунок; для перемоги в матчі все одно потрібні два виграні раунди.',
+          },
+        },
       },
       feature_quick: 'Швидкі раунди',
       feature_players: '2 гравці',
