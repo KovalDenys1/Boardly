@@ -33,14 +33,17 @@ describe('one open lobby per person (#907)', () => {
     await expect(checkOpenLobbyLimit('guest-1')).resolves.toEqual({ kind: 'blocked', lobbyCode: '1704' })
   })
 
-  it('counts both waiting and playing, and nothing else', async () => {
+  it('counts both waiting and playing in an active lobby, and nothing else', async () => {
+    // #1198: a deactivated lobby with a leftover `waiting` game used to count, and the
+    // refusal sent the host back into a room that answers 404.
     findFirst.mockResolvedValue(null)
     await checkOpenLobbyLimit('guest-1')
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           creatorId: 'guest-1',
-          games: { some: { status: { in: ['waiting', 'playing'] } } },
+          isActive: true,
+          games:{ some: { status: { in: ['waiting', 'playing'] } } },
         },
       })
     )

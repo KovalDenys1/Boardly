@@ -17,6 +17,7 @@ jest.mock('@/lib/db', () => ({
     },
     games: {
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     players: {
       findFirst: jest.fn(),
@@ -166,6 +167,7 @@ describe('POST /api/lobby/[code]/leave — host reassignment', () => {
     const game = mockGame('waiting', [mockPlayer(HOST_ID)])
     mockPrisma.lobbies.findUnique.mockResolvedValue(mockLobby(game) as any)
     mockPrisma.players.delete.mockResolvedValue({} as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(0) // remainingPlayers
       .mockResolvedValueOnce(0) // remainingHumanPlayers
@@ -177,6 +179,9 @@ describe('POST /api/lobby/[code]/leave — host reassignment', () => {
     expect(body.lobbyDeactivated).toBe(true)
     expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { isActive: false } })
+    )
+    expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: 'cancelled' } })
     )
   })
 

@@ -281,12 +281,21 @@ export async function performPlayerLeave(
   // Different behavior based on game status
   if (activeGame.status === 'waiting') {
     // In waiting state, just remove player
-    // If no players or no human players left, deactivate the lobby
+    // If no players or no human players left, deactivate the lobby and cancel its game.
+    // A deactivated lobby with a `waiting` game still counted toward the open-lobby limit, so
+    // the host's next create answered 409 and sent them back into the dead room until the
+    // stale-waiting sweep caught up (#1198). Guarded on `waiting` so a start in between stands.
     if (remainingPlayers === 0 || remainingHumanPlayers === 0) {
-      await prisma.lobbies.update({
-        where: { id: lobby.id },
-        data: { isActive: false },
-      })
+      await Promise.all([
+        prisma.lobbies.update({
+          where: { id: lobby.id },
+          data: { isActive: false },
+        }),
+        prisma.games.updateMany({
+          where: { id: activeGame.id, status: 'waiting' },
+          data: { status: 'cancelled' },
+        }),
+      ])
 
       notifyLobbyListUpdate()
 
