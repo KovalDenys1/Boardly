@@ -45,6 +45,13 @@ export default function SketchAndGuessDetailContent() {
         t('games.guess_my_drawing.detail.benefit3'),
         t('games.guess_my_drawing.detail.benefit4'),
       ]}
+      rules={[
+        t('games.guess_my_drawing.detail.rules.drawOrder'),
+        t('games.guess_my_drawing.detail.rules.wordChoice'),
+        t('games.guess_my_drawing.detail.rules.matching'),
+        t('games.guess_my_drawing.detail.rules.wordHint'),
+        t('games.guess_my_drawing.detail.rules.chatLock'),
+      ]}
     />
   )
 }
