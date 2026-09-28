@@ -822,6 +822,12 @@ const en = {
         benefit2: 'Great for groups, parties, and quick breaks.',
         benefit3: 'Works from any modern browser.',
         benefit4: 'Free to play as a guest.',
+        rules: {
+          askInTurn: 'Players take turns typing a question to someone else; answers join the round\'s log.',
+          whenVotingOpens: 'Voting opens when the host says so, after twice as many answers as players, or at the first answer or skip after five minutes.',
+          howTheVoteEnds: 'Once every connected player has voted, a single leader is revealed; a tie reveals nobody.',
+          spyMayGuess: 'Before the vote, the spy may guess among all 24 places; right or wrong, the round ends.',
+        },
       },
       lobbies: {
         title: 'Guess the Spy',

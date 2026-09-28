@@ -40,6 +40,12 @@ export default function SpyDetailContent() {
         t('games.spy.detail.benefit3'),
         t('games.spy.detail.benefit4'),
       ]}
+      rules={[
+        t('games.spy.detail.rules.askInTurn'),
+        t('games.spy.detail.rules.whenVotingOpens'),
+        t('games.spy.detail.rules.howTheVoteEnds'),
+        t('games.spy.detail.rules.spyMayGuess'),
+      ]}
     />
   )
 }

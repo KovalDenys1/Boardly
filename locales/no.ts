@@ -822,6 +822,12 @@ const no = {
         benefit2: 'Perfekt for grupper, fester og korte pauser.',
         benefit3: 'Fungerer i alle moderne nettlesere.',
         benefit4: 'Gratis å spille som gjest.',
+        rules: {
+          askInTurn: 'Etter tur skriver hver spiller et spørsmål til en annen, og svaret havner i rundens logg.',
+          whenVotingOpens: 'Avstemningen åpner når verten vil, etter dobbelt så mange svar som spillere, eller ved første svar eller hopp etter fem minutter.',
+          howTheVoteEnds: 'Når alle tilkoblede spillere har stemt, avsløres den ene med flest stemmer; uavgjort avslører ingen.',
+          spyMayGuess: 'Før avstemningen kan spionen velge stedet blant alle 24; riktig eller feil, det avslutter runden.',
+        },
       },
       lobbies: {
         title: 'Gjett spionen',
