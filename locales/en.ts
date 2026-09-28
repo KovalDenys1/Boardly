@@ -1926,6 +1926,20 @@ const en = {
           noBlocks: 'There are no blocks. A token passes any square, and landing on a pair of rival tokens sends both back unless the square is safe.',
           extraRollOnlyOnSix: 'A 6 you cannot use still earns the extra roll; a capture or a token reaching home earns none.',
         },
+        modes: {
+          quickOrClassic: {
+            title: 'Quick or classic',
+            desc: 'Two tokens each or the full four. The host picks when creating a lobby; rooms opened by Quick Play or Play vs Bot use quick.',
+          },
+          turnClock: {
+            title: 'A clock on every turn',
+            desc: 'New lobbies default to 30 seconds, with 60, 90 or 120 on offer; before the start the host can pick 30 to 180. Play vs Bot uses 45.',
+          },
+          botLevels: {
+            title: 'Three bot levels',
+            desc: 'Token Rookie picks any legal token at random. Token Tactician prefers a capture, then leaving the yard, then heading home. Ludo Grandmaster scores every move, counting rivals up to six squares behind where it lands.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo Lobbies',

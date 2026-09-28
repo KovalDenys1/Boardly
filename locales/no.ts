@@ -1926,6 +1926,20 @@ const no = {
           noBlocks: 'Det finnes ingen sperrer. En brikke kan passere alle felt, og lander den på to motstanderbrikker, går begge tilbake med mindre feltet er trygt.',
           extraRollOnlyOnSix: 'En sekser du ikke kan bruke, gir likevel ekstrakast; å slå ut en brikke eller få en brikke hjem gir det ikke.',
         },
+        modes: {
+          quickOrClassic: {
+            title: 'Rask eller klassisk',
+            desc: 'To brikker hver eller alle fire. Verten velger når lobbyen opprettes; rom som Rask spill eller Spill mot bot åpner, bruker rask.',
+          },
+          turnClock: {
+            title: 'Klokke på hver tur',
+            desc: 'Nye lobbyer har 30 sekunder som standard, med 60, 90 eller 120 å velge mellom; før start kan verten velge 30 til 180. Spill mot bot bruker 45.',
+          },
+          botLevels: {
+            title: 'Tre robotnivåer',
+            desc: 'Token Rookie velger en tilfeldig lovlig brikke. Token Tactician foretrekker å slå ut, deretter å gå ut av gården, deretter å komme hjem. Ludo Grandmaster gir hvert trekk poeng og teller motstandere opptil seks felt bak der brikken lander.',
+          },
+        },
       },
       lobbies: {
         title: 'Ludo-lobbyer',

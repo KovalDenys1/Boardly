@@ -54,6 +54,11 @@ export default function LudoDetailContent() {
         t('games.ludo.rules.modes'),
         t('games.ludo.rules.timer'),
       ]}
+      modes={[
+        { title: t('games.ludo.detail.modes.quickOrClassic.title'), desc: t('games.ludo.detail.modes.quickOrClassic.desc') },
+        { title: t('games.ludo.detail.modes.turnClock.title'), desc: t('games.ludo.detail.modes.turnClock.desc') },
+        { title: t('games.ludo.detail.modes.botLevels.title'), desc: t('games.ludo.detail.modes.botLevels.desc') },
+      ]}
       playVsBotGameType="ludo"
     />
   )
