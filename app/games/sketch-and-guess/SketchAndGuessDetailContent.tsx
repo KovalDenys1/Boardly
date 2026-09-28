@@ -71,6 +71,11 @@ export default function SketchAndGuessDetailContent() {
           ],
         },
       ]}
+      modes={[
+        { title: t('games.guess_my_drawing.detail.modes.threeRounds.title'), desc: t('games.guess_my_drawing.detail.modes.threeRounds.desc') },
+        { title: t('games.guess_my_drawing.detail.modes.phaseClocks.title'), desc: t('games.guess_my_drawing.detail.modes.phaseClocks.desc') },
+        { title: t('games.guess_my_drawing.detail.modes.roomSize.title'), desc: t('games.guess_my_drawing.detail.modes.roomSize.desc') },
+      ]}
     />
   )
 }

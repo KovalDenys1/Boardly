@@ -2001,6 +2001,11 @@ const en = {
             blankCanvas: { name: 'Blank canvas', rule: 'Nothing drawn by the end of the round.' },
           },
         },
+        modes: {
+          threeRounds: { title: 'Three rounds, every game', desc: 'One drawing per round, and there is no round setting.' },
+          phaseClocks: { title: 'Fixed phase clocks', desc: '15 seconds to choose, 80 to draw, 8 for the reveal; the lobby timer changes none of them.' },
+          roomSize: { title: 'Three to ten seats', desc: 'The host sets the room size; new rooms start with six.' },
+        },
       },
       lobbies: {
         title: 'Sketch & Guess',

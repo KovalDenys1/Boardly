@@ -2001,6 +2001,11 @@ const no = {
             blankCanvas: { name: 'Tomt lerret', rule: 'Ingenting tegnet når runden er over.' },
           },
         },
+        modes: {
+          threeRounds: { title: 'Tre runder, hvert spill', desc: 'Én tegning per runde, og det finnes ingen innstilling for antall runder.' },
+          phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Verten bestemmer romstørrelsen; nye rom starter med seks.' },
+        },
       },
       lobbies: {
         title: 'Tegn og gjett',
