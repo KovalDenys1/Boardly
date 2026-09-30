@@ -3089,8 +3089,11 @@ export default function ProfilePage() {
                         title={hasUploadPack ? t(nameKey) : t('profile.customization.premiumRequired')}
                         style={{
                           width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
+                          // Drawn inside the swatch (#1278): a 3px rim in the swatch colour with a
+                          // background-coloured gap inside it, the old outer ring turned inward.
                           outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
-                          outlineOffset: 2, cursor: 'pointer',
+                          outlineOffset: profileAccentColor === hex ? -3 : -2, cursor: 'pointer',
+                          boxShadow: profileAccentColor === hex ? 'inset 0 0 0 5px var(--bd-bg)' : undefined,
                           opacity: hasUploadPack ? 1 : 0.4,
                           transition: 'all 0.15s',
                         }}
@@ -3175,7 +3178,7 @@ export default function ProfilePage() {
                             opacity: hasUploadPack ? 1 : 0.4,
                             cursor: 'pointer',
                             outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
-                            outlineOffset: 2,
+                            outlineOffset: active ? -3 : -2,
                           }}
                           className="relative flex flex-col justify-end rounded-xl px-3 py-5 text-left transition"
                         >

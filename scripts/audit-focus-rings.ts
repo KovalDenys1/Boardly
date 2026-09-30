@@ -11,22 +11,30 @@ import path from 'path'
  * its width (`outline-2 -outline-offset-2`, `outline: 3px …; outline-offset: -3px`).
  *
  * Fails on (comments are ignored):
- *   F1 – `outline-offset: <positive>` in CSS
+ *   F1 – a positive outline offset: `outline-offset: <N>` in CSS, `outlineOffset: <N>` in a
+ *        style object (any positive number literal in the value, so both branches of a ternary)
  *   F2 – a `ring-offset-<N>` or `ring-offset-[…]` width class (colour-only `ring-offset-bd-*` is inert)
- *   F3 – a positive `outline-offset-<N>` / `outline-offset-[…]` class
+ *   F3 – a positive `outline-offset-<N>` / `outline-offset-[…]` / `[outline-offset:<N>]` class
  *   F4 – a ring width (`ring`, `ring-2`, `ring-[3px]`) with no `ring-inset` on the same element:
- *        the same class string, the template literal around it, the other strings of the same
- *        `cn(…)` / `clsx(…)` / `[…].join(' ')`, or the same CSS `@apply`. A plain ring is a
+ *        the same class string, the template literal around it, an unconditional string of the
+ *        same `cn(…)` / `clsx(…)` / `[…].join(' ')`, or the same CSS `@apply`. A `ring-inset` behind
+ *        `&&`, `||` or a ternary only counts for a ring in that same string. A plain ring is a
  *        box-shadow spread outward, so it is clipped exactly like an offset one.
- *   F5 – an outer spread-ring shadow: a `box-shadow` layer `0 0 0 <N>` (N > 0) without `inset` in CSS or
- *        an inline style string, or a `shadow-[0_0_0_…]` class without `inset_`.
+ *   F5 – an outer spread-ring shadow: a `box-shadow` layer `0 0 0 <N>` / `0px 0px 0px <N>`
+ *        (N > 0) without `inset` in CSS or an inline style string, or a `shadow-[0_0_0_…]` /
+ *        `[box-shadow:0_0_0_…]` class without `inset`.
  *
  * Where a child covers the element (an <img>, a full-bleed layer) an inset ring or inset shadow is
  * hidden under it: use an outline with a negative offset there.
  *
- * What it does not see: an outline at the default offset 0 (it still paints outside the box, and
- * nothing here knows whether an outline is set), drop shadows and blurred glows, rings built in
- * JavaScript from variables, and class strings assembled by helpers other than the ones above.
+ * What it does not see:
+ *   - an outline at the default offset 0, which still paints outside the box (nothing here knows
+ *     whether an element has an outline at all);
+ *   - a spread or offset that is not a number literal: `0 0 0 var(--w)`, `calc(…)`, a template
+ *     hole (`0 0 0 ${w}px`), `outlineOffset: gap`, a value passed in as a prop;
+ *   - drop shadows and blurred glows, which also reach past the box;
+ *   - styles in CSS modules or styled-jsx outside app/ and components/, and class strings built by
+ *     helpers other than the ones above or passed through a variable before being joined.
  *
  * Escape hatch, for an effect meant to reach past the element (a pulse, a spotlight): a CSS
  * comment containing `focus-rings-allow` exempts the next rule or at-rule block; in a script,
@@ -66,7 +74,9 @@ function hasOuterSpreadLayer(value: string): boolean {
     if (ch === ',' && parens === 0) layers.push('')
     else layers[layers.length - 1] += ch
   }
-  return layers.some((layer) => /^\s*0 0 0 (?:0*[1-9]|0*\.\d*[1-9])/.test(layer) && !/\binset\b/.test(layer))
+  return layers.some(
+    (layer) => /^\s*0(?:px)? 0(?:px)? 0(?:px)? (?:0*[1-9]|0*\.\d*[1-9])/.test(layer) && !/\binset\b/.test(layer),
+  )
 }
 
 /** Replaces every comment with spaces, keeping line numbers and columns. */
@@ -106,7 +116,7 @@ function blankComments(src: string, isCss: boolean): string {
   return out.join('')
 }
 
-type Literal = { text: string; offset: number; parent: number; group: number }
+type Literal = { text: string; offset: number; parent: number; group: number; conditional: boolean }
 
 /**
  * Every string literal in a comment-free TS/TSX source. A template literal holds only its static
@@ -124,6 +134,8 @@ function stringLiterals(src: string): Literal[] {
   let i = 0
   let last = ''
   const parentIndex = () => (templates.length ? templates[templates.length - 1].index : -1)
+  // An operand of &&, || or a ternary: `a && 'x'`, `a ? 'x' : 'y'`.
+  const isConditional = () => last === '?' || last === ':' || last === '&' || last === '|'
   const readTemplateText = () => {
     const t = templates[templates.length - 1]
     while (i < src.length) {
@@ -138,7 +150,7 @@ function stringLiterals(src: string): Literal[] {
   while (i < src.length) {
     const c = src[i]
     if (c === '`') {
-      out.push({ text: '', offset: i, parent: parentIndex(), group: -1 })
+      out.push({ text: '', offset: i, parent: parentIndex(), group: -1, conditional: isConditional() })
       templates.push({ index: out.length - 1, depth: -1 })
       i++
       readTemplateText()
@@ -147,7 +159,7 @@ function stringLiterals(src: string): Literal[] {
     if ((c === "'" || c === '"') && (last === '' || '=([{,:?+&|!;>}'.includes(last))) {
       let j = i + 1
       while (j < src.length && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1
-      out.push({ text: src.slice(i + 1, j), offset: i, parent: parentIndex(), group: -1 })
+      out.push({ text: src.slice(i + 1, j), offset: i, parent: parentIndex(), group: -1, conditional: isConditional() })
       i = j + 1
       last = c
       continue
@@ -189,19 +201,38 @@ function scanScript(src: string): Finding[] {
     if (k < 0) return false
     if (ownInset(k)) return true
     const g = literals[k].group
-    if (g >= 0 && literals.some((l, m) => l.group === g && ownInset(m))) return true
+    if (g >= 0 && literals.some((l, m) => l.group === g && !l.conditional && ownInset(m))) return true
     return hasInset(literals[k].parent)
   }
   const found: Finding[] = []
+  for (const m of src.matchAll(/outlineOffset\s*:\s*([^,}\n]*)/g)) {
+    const positive = [...m[1].matchAll(/(?<![\w.-])(\d*\.?\d+)/g)].some((n) => parseFloat(n[1]) > 0)
+    if (positive) {
+      found.push({ rule: 'F1', token: m[0].trim(), offset: m.index!, hint: 'use a negative offset equal to the outline width' })
+    }
+  }
   literals.forEach((l, k) => {
     // An inline style value: `boxShadow: '0 0 0 2px var(--bd-ink)'`.
     if (hasOuterSpreadLayer(l.text)) found.push({ rule: 'F5', token: l.text.trim(), offset: l.offset, hint: F5_HINT })
-    // Prose, not a class list ("…, gilded ring"): a capitalised word or trailing punctuation.
-    if (tokens[k].some((t) => /^[A-Z]|[,.;]$/.test(t))) return
+    // Prose ("…, gilded ring"): a capitalised word or trailing punctuation. There the bare word
+    // `ring` is English, not a class; every other token is still checked.
+    const prose = tokens[k].some((t) => /^[A-Z]|[,.;]$/.test(t))
     const inset = hasInset(k)
     for (const raw of tokens[k]) {
       const b = bare(raw)
-      if (!inset && RING_WIDTH_TOKEN.test(b)) found.push({ rule: 'F4', token: raw, offset: l.offset, hint: F4_HINT })
+      if (!inset && RING_WIDTH_TOKEN.test(b) && !(prose && raw === 'ring')) {
+        found.push({ rule: 'F4', token: raw, offset: l.offset, hint: F4_HINT })
+      }
+      // Arbitrary properties: `[box-shadow:0_0_0_2px_red]`, `focus:[outline-offset:2px]`.
+      for (const m of raw.matchAll(/\[(box-shadow|outline-offset):([^\]]*)\]/g)) {
+        const value = m[2].replace(/_/g, ' ')
+        if (m[1] === 'box-shadow' && hasOuterSpreadLayer(value)) {
+          found.push({ rule: 'F5', token: raw, offset: l.offset, hint: F5_HINT })
+        }
+        if (m[1] === 'outline-offset' && parseFloat(value) > 0) {
+          found.push({ rule: 'F3', token: raw, offset: l.offset, hint: 'use a negative offset equal to the outline width' })
+        }
+      }
       const shadow = SHADOW_CLASS_TOKEN.exec(b)
       if (shadow && hasOuterSpreadLayer(shadow[1].replace(/_/g, ' '))) {
         found.push({ rule: 'F5', token: raw, offset: l.offset, hint: F5_HINT })

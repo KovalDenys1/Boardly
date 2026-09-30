@@ -1223,7 +1223,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           borderTop: `6px solid ${accent}`,
           position: 'relative', overflow: 'hidden',
           outline: isMyTeam ? `2px solid ${accent}` : 'none',
-          outlineOffset: 2,
+          outlineOffset: -2,
         }}>
           <div aria-hidden style={{
             position: 'absolute', top: -40, right: -40,
