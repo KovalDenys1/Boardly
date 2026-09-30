@@ -177,7 +177,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 ${!isDeparted && isCurrentTurn ? 'shadow-md' : ''}
                 ${!isDeparted && isCurrentUser ? '!border-green-500' : ''}
                 ${!isDeparted && isSelected ? '!border-[#FFC44D]' : ''}
-                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC44D]' : ''}
+                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
                   background: isDeparted

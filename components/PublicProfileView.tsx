@@ -219,7 +219,7 @@ export default function PublicProfileView({
           type="button"
           onClick={() => setReportOpen(true)}
           aria-haspopup="dialog"
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav-deep ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${className}`}
         >
           <Icon name="flag" size={13} />
           {t('report.reportProfile')}

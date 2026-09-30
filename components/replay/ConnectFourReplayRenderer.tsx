@@ -55,14 +55,14 @@ export default function ConnectFourReplayRenderer({
   function cellClass(cell: CellValue, isWin: boolean, isLast: boolean): string {
     if (cell === 1) {
       return isWin
-        ? 'bg-bd-coral ring-2 ring-white shadow-md'
+        ? 'bg-bd-coral ring-2 ring-inset ring-white shadow-md'
         : isLast
           ? 'bg-bd-coral ring-2 ring-inset ring-bd-sun'
           : 'bg-bd-coral'
     }
     if (cell === 2) {
       return isWin
-        ? 'bg-bd-sun ring-2 ring-white shadow-md'
+        ? 'bg-bd-sun ring-2 ring-inset ring-white shadow-md'
         : isLast
           ? 'bg-bd-sun ring-2 ring-inset ring-bd-coral'
           : 'bg-bd-sun'

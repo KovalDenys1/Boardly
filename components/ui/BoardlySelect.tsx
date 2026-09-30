@@ -56,7 +56,7 @@ export default function BoardlySelect({
       <div className={`relative w-full ${className}`}>
         <ListboxButton
           aria-label={ariaLabel}
-          className="inline-flex w-full items-center gap-3 rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-left text-sm font-medium text-bd-ink shadow-sm transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav-deep dark:shadow-none"
+          className="inline-flex w-full items-center gap-3 rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-left text-sm font-medium text-bd-ink shadow-sm transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep dark:shadow-none"
         >
           <span className="min-w-0 flex-1">
             {renderValue ? (
