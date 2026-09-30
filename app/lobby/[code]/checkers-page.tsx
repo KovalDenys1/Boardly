@@ -811,7 +811,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.checkers.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.checkers.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.checkers.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.checkers.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -826,7 +826,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.checkers.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.checkers.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.checkers.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games/checkers/lobbies')} className="btn btn-primary">{t('games.checkers.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.checkers.game.backToGames')}</button>
@@ -1005,7 +1005,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             turnTimerLimit={turnTimerLimit}
             isYourTurn={!isSpectator && isMyTurn()}
             barColor={SIDE_ACCENT[gameData.currentSide]}
-            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentSide === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)' }} />}
+            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentSide === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }} />}
             isSpectator={isSpectator}
         />
     )
@@ -1030,7 +1030,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>
-                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.side === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: '0 0 0 1.5px var(--bd-ink)' }} />
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.side === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.side === 1 ? p1Name : p2Name}
                             </span>

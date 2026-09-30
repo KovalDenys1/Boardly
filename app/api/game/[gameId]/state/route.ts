@@ -308,6 +308,8 @@ export async function POST(
             code: true,
             gameType: true,
             turnTimer: true,
+            // Who may start the next round (#1277).
+            creatorId: true,
           },
         },
       },
@@ -354,6 +356,19 @@ export async function POST(
     const playerRecord = (game.players as GamePlayer[]).find((p) => p.userId === userId)
     if (!playerRecord) {
       return NextResponse.json({ error: 'Not a player in this game' }, { status: 403 })
+    }
+
+    // Play again is the host's button (#1277). The engines that take next-round
+    // (Tic-Tac-Toe, Checkers, Connect Four) accept it from any seated player,
+    // since an engine does not know who the host is, so the authority is checked
+    // here against the lobby row. The host passes to another player when they
+    // leave (lib/lobby-leave.ts); a lobby with no host at all (its creator's
+    // account deleted) lets anyone seated go on rather than end the series.
+    if (move.type === 'next-round' && game.lobby.creatorId && game.lobby.creatorId !== userId) {
+      return NextResponse.json(
+        { error: 'Only the host can start the next round', code: 'HOST_ONLY_MOVE' },
+        { status: 403 }
+      )
     }
 
     // Recreate game engine from saved state

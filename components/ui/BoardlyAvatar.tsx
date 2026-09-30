@@ -35,8 +35,9 @@ export default function BoardlyAvatar({ name, color = 'coral', size = 36, online
           placeItems: 'center',
           fontWeight: 700,
           fontSize: Math.round(size * 0.42),
-          border: '2px solid white',
-          boxShadow: '0 0 0 2px var(--bd-ink)',
+          // Ink rim, white ring inside it – both inside the box (#1278).
+          border: '2px solid var(--bd-ink)',
+          boxShadow: 'inset 0 0 0 2px white',
           fontFamily: 'var(--bd-font-display)',
           flexShrink: 0,
           userSelect: 'none',

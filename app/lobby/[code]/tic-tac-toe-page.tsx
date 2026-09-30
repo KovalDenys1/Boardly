@@ -13,6 +13,7 @@ import {
     CellValue,
     isTicTacToeMatchComplete,
     isTicTacToeRoundLostOnTime,
+    isTicTacToeRoundDrawnByAgreement,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -815,7 +816,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.tictactoe.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.tictactoe.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.tictactoe.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -830,7 +831,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.tictactoe.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.tictactoe.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.tictactoe.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.tictactoe.game.backToGames')}</button>
@@ -892,9 +893,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const pendingRequesterName = pendingRequest ? getDisplayName(pendingRequest.requesterId) : null
     const isPendingResponder = !!pendingRequest && pendingRequest.responderId === currentUserId
     const isPendingRequester = !!pendingRequest && pendingRequest.requesterId === currentUserId
-    // A round lost on time cannot be taken back (#1246); the engine refuses it.
-    const isRoundLostOnTime = isTicTacToeRoundLostOnTime(gameData, isFinished ? 'finished' : resolvedStatus)
-    const canRequestUndo = !isMoveSubmitting && !pendingRequest && moveHistory.length > 0 && !isRoundLostOnTime
+    // A round lost on time (#1246) or drawn by agreement (#1277) cannot be taken back; the engine refuses it.
+    const roundStatus = isFinished ? 'finished' : resolvedStatus
+    const isRoundLostOnTime = isTicTacToeRoundLostOnTime(gameData, roundStatus)
+    const isRoundDrawnByAgreement = isTicTacToeRoundDrawnByAgreement(gameData, roundStatus)
+    const canRequestUndo = !isMoveSubmitting && !pendingRequest && moveHistory.length > 0 && !isRoundLostOnTime && !isRoundDrawnByAgreement
     const canRequestDraw = !isMoveSubmitting && !pendingRequest && !isFinished && moveHistory.length > 0
 
     // Cell click handler
@@ -1089,7 +1092,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                             width: 56, height: 56, borderRadius: '50%',
                             background: winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
                             display: 'grid', placeItems: 'center',
-                            boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+                            boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)',
                         }}>
                             <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />
                         </div>

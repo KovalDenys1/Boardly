@@ -121,8 +121,8 @@ export default function AvatarPicker({
           textClassName="text-2xl font-bold"
         />
         <div>
-          <p className="text-sm font-semibold text-bd-ink dark:text-white">{t('profile.inline.avatarCaption')}</p>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-semibold text-bd-ink">{t('profile.inline.avatarCaption')}</p>
+          <p className="mt-0.5 text-xs text-bd-ink-soft">
             {currentImage && !currentAvatarUrl
               ? t('profile.avatarPicker.usingConnectedPhoto')
               : t('profile.avatarPicker.pickOrUpload')}
@@ -132,7 +132,7 @@ export default function AvatarPicker({
 
       {/* Avatar grid — all free */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-bd-ink-soft">
           {t('profile.avatarPicker.chooseAvatar')}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -146,8 +146,8 @@ export default function AvatarPicker({
                 disabled={saving}
                 className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
                   isSelected
-                    ? 'border-indigo-500 shadow-[0_0_0_2px_#6366f1]'
-                    : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                    ? 'border-bd-lav-deep outline outline-2 outline-bd-lav -outline-offset-4'
+                    : 'border-transparent hover:border-bd-line'
                 }`}
                 aria-label={t('profile.avatarPicker.avatarAlt', { id })}
               >
@@ -162,7 +162,7 @@ export default function AvatarPicker({
       {/* Upload — premium */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-bd-ink-soft">
             {t('profile.avatarPicker.customPhoto')}
           </p>
           {hasUploadPack ? (
@@ -170,7 +170,7 @@ export default function AvatarPicker({
               {t('profile.avatarPicker.unlocked')}
             </span>
           ) : (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+            <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold text-bd-ink-soft">
               {t('profile.avatarPicker.premiumOnly')}
             </span>
           )}
@@ -183,7 +183,7 @@ export default function AvatarPicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={saving}
-                className="rounded-xl border border-bd-line bg-white px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-card-warm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
+                className="rounded-xl border border-bd-line bg-bd-card-warm px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-bg2 disabled:opacity-50"
               >
                 {saving ? t('profile.avatarPicker.saving') : t('profile.avatarPicker.uploadPhoto')}
               </button>
@@ -192,7 +192,7 @@ export default function AvatarPicker({
                   type="button"
                   onClick={removeAvatar}
                   disabled={saving}
-                  className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                  className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-bd-ink-soft transition hover:text-bd-ink disabled:opacity-50"
                 >
                   {t('profile.friends.remove')}
                 </button>

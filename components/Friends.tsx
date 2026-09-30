@@ -58,21 +58,21 @@ type TabType = 'friends' | 'requests' | 'sent'
 type AddMethod = 'link' | 'code'
 
 const panelClassName =
-  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_4px_14px_rgba(31,27,22,0.07)]'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
 const tileClassName =
-  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+  'rounded-2xl border border-bd-line bg-bd-card-warm'
 const primaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
 const dangerButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-white px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:bg-slate-900/75 dark:text-red-300 dark:hover:bg-red-500/10'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
-  'w-full rounded-2xl border border-bd-line bg-white px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-bd-lav/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500'
+  'w-full rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
 const eyebrowClassName =
-  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
 function CopyIcon() {
   return (
@@ -605,8 +605,8 @@ export default function Friends() {
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
             {icon}
           </div>
-          <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink dark:text-white">{title}</h3>
-          <p className="mt-2 max-w-xl text-sm text-bd-ink-muted dark:text-slate-400 sm:text-base">
+          <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink">{title}</h3>
+          <p className="mt-2 max-w-xl text-sm text-bd-ink-soft sm:text-base">
             {description}
           </p>
           {action ? <div className="mt-5">{action}</div> : null}
@@ -660,14 +660,14 @@ export default function Friends() {
               <button
                 type="button"
                 onClick={copyFriendCode}
-                className={`${warmSurfaceClassName} block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
+                className={`${warmSurfaceClassName} block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-bd-lav-deep hover:bg-bd-card-warm`}
                 title={t('profile.friends.copyCode')}
                 aria-label={t('profile.friends.copyCode')}
               >
-                <p className="font-display text-sm font-bold text-bd-ink-muted dark:text-slate-400">
+                <p className="font-display text-sm font-bold text-bd-ink-soft">
                   {t('profile.friends.shareCodeHint')}
                 </p>
-                <p className="mt-3 text-center font-mono text-4xl font-black tracking-[0.28em] text-bd-ink dark:text-white sm:text-5xl">
+                <p className="mt-3 text-center font-mono text-4xl font-black tracking-[0.28em] text-bd-ink sm:text-5xl">
                   {myFriendCode}
                 </p>
               </button>
@@ -693,10 +693,10 @@ export default function Friends() {
       ) : (
         <div className={`${panelClassName} p-5 sm:p-6`}>
           <p className={eyebrowClassName}>{t('profile.friends.myFriendCode')}</p>
-          <h3 className="mt-4 font-display text-2xl font-bold text-bd-ink dark:text-white">
+          <h3 className="mt-4 font-display text-2xl font-bold text-bd-ink">
             {t('profile.friends.addFriend')}
           </h3>
-          <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+          <p className="mt-2 text-sm text-bd-ink-soft">
             {t('profile.friends.shareCodeHint')}
           </p>
         </div>
@@ -717,7 +717,7 @@ export default function Friends() {
                 className={`flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
                   activeTab === tab.id
                     ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
-                    : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
+                    : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                 }`}
               >
                 <span aria-hidden className="shrink-0">
@@ -727,8 +727,8 @@ export default function Friends() {
                 <span
                   className={`inline-flex min-w-[1.8rem] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold ${
                     activeTab === tab.id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-bd-bg2 text-bd-ink-muted dark:bg-slate-800 dark:text-slate-300'
+                      ? 'bg-white/30 text-[color:var(--bd-ink-on-accent)]'
+                      : 'bg-bd-bg2 text-bd-ink-soft'
                   }`}
                 >
                   {tab.count}
@@ -784,7 +784,7 @@ export default function Friends() {
                         ? 'bg-bd-sun'
                         : presence === 'online'
                           ? 'bg-bd-mint'
-                          : 'bg-bd-bg2 dark:bg-slate-700'
+                          : 'bg-bd-bg2'
 
                   return (
                     <div
@@ -804,7 +804,7 @@ export default function Friends() {
                       }
                       className={`${panelClassName} group relative overflow-hidden ${
                         friend.publicProfileId
-                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-bd-lav/50'
+                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-bd-lav/50'
                           : ''
                       }`}
                     >
@@ -817,13 +817,13 @@ export default function Friends() {
                               {renderAvatar(friend.username || 'Unknown', friend.avatar)}
                             </div>
                             {isOnline && (
-                              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-bd-mint dark:border-slate-900" />
+                              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-bd-card-warm bg-bd-mint" />
                             )}
                           </div>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="flex items-center gap-1.5 truncate text-lg font-bold text-bd-ink dark:text-white">
+                              <h4 className="flex items-center gap-1.5 truncate text-lg font-bold text-bd-ink">
                                 {friend.username || 'Unknown'}
                                 {friend.isPremium && <Icon name="crown" size={15} tone="premium" label="Premium" className="shrink-0" />}
                               </h4>
@@ -834,13 +834,13 @@ export default function Friends() {
                               )}
                             </div>
 
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-bd-ink-muted dark:text-slate-400">
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-bd-ink-soft">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft">
                                 <CalendarIcon />
                                 {formatDate(friend.friendsSince)}
                               </span>
                               {friend.publicProfileId ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-bd-lav-deep dark:bg-slate-900 dark:text-bd-lav">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-bd-card-warm px-3 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav">
                                   {t('leaderboard.viewProfile')}
                                   <ArrowRightIcon />
                                 </span>
@@ -849,7 +849,7 @@ export default function Friends() {
 
                             {friend.statistics && friend.statistics.totalGames > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                                <span className="rounded-full bg-bd-card-warm px-2.5 py-1 font-semibold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-200">
+                                <span className="rounded-full bg-bd-bg2 px-2.5 py-1 font-semibold text-bd-ink-soft">
                                   {t('header.games')} {friend.statistics.totalGames}
                                 </span>
                                 <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
@@ -903,16 +903,16 @@ export default function Friends() {
                         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
-                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bd-lav text-[color:var(--bd-ink-on-accent)] dark:border-slate-900">
+                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-[color:var(--bd-ink-on-accent)]">
                           <MailIcon />
                         </div>
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-lg font-bold text-bd-ink dark:text-white">
+                        <h4 className="text-lg font-bold text-bd-ink">
                           {request.sender?.username || 'Unknown'}
                         </h4>
-                        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
+                        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft">
                           <CalendarIcon />
                           {formatDate(request.createdAt)}
                         </p>
@@ -957,14 +957,14 @@ export default function Friends() {
                         <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.receiver?.username || 'Unknown', request.receiver?.avatar)}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-bd-sun-deep dark:border-slate-900" />
+                        <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-bd-card-warm bg-bd-sun-deep" />
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h4 className="truncate text-lg font-bold text-bd-ink dark:text-white">
+                        <h4 className="truncate text-lg font-bold text-bd-ink">
                           {request.receiver?.username || 'Unknown'}
                         </h4>
-                        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
+                        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-bd-bg2 px-3 py-1 text-xs font-semibold text-bd-ink-soft">
                           <CalendarIcon />
                           {formatDate(request.createdAt)}
                         </p>
@@ -988,7 +988,7 @@ export default function Friends() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="friends-add-dialog-title"
-            className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_12px_40px_-16px_rgba(31,27,22,0.4)] dark:border-slate-700 dark:bg-slate-900"
+            className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_12px_40px_-16px_rgba(31,27,22,0.4)]"
           >
             <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
             <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-bd-lav/15" />
@@ -999,17 +999,17 @@ export default function Friends() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className={eyebrowClassName}>{t('profile.friends.title')}</p>
-                    <h3 id="friends-add-dialog-title" className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
+                    <h3 id="friends-add-dialog-title" className="mt-3 font-display text-3xl font-bold text-bd-ink">
                       {t('profile.friends.addFriend')}
                     </h3>
-                    <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+                    <p className="mt-2 text-sm text-bd-ink-soft">
                       {t('profile.friends.addFriendDescription')}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={closeAddModal}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-bd-bg2 text-bd-ink-soft transition-colors hover:bg-bd-line dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-bd-bg2 text-bd-ink-soft transition-colors hover:bg-bd-line"
                     aria-label={t('common.cancel')}
                   >
                     <CloseIcon />
@@ -1024,7 +1024,7 @@ export default function Friends() {
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'link'
                           ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
-                          : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
+                          : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >
                       <LinkIcon />
@@ -1036,7 +1036,7 @@ export default function Friends() {
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'code'
                           ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
-                          : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
+                          : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >
                       <CodeIcon />
@@ -1048,7 +1048,7 @@ export default function Friends() {
                 {addMethod === 'link' ? (
                   <form onSubmit={handleSendRequest} className="mt-6 space-y-5">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                      <label className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.friends.profileLink')}
                       </label>
                       <input
@@ -1059,7 +1059,7 @@ export default function Friends() {
                         className={inputClassName}
                         required
                       />
-                      <p className="mt-2 text-xs text-bd-ink-muted dark:text-slate-400">
+                      <p className="mt-2 text-xs text-bd-ink-soft">
                         {t('profile.friends.profileLinkHint')}
                       </p>
                     </div>
@@ -1085,7 +1085,7 @@ export default function Friends() {
                 ) : (
                   <form onSubmit={handleSendRequestByCode} className="mt-6 space-y-5">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-bd-ink dark:text-slate-200">
+                      <label className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.friends.friendCode')}
                       </label>
                       <input
@@ -1097,7 +1097,7 @@ export default function Friends() {
                         required
                         maxLength={8}
                       />
-                      <p className="mt-2 text-center text-xs text-bd-ink-muted dark:text-slate-400">
+                      <p className="mt-2 text-center text-xs text-bd-ink-soft">
                         {t('profile.friends.friendCodeHint')}
                       </p>
                     </div>
@@ -1123,17 +1123,17 @@ export default function Friends() {
                 )}
               </div>
 
-              <div className="border-t border-bd-line bg-bd-card-warm/85 p-6 dark:border-slate-700 dark:bg-slate-900/70 sm:p-8 lg:border-l lg:border-t-0">
+              <div className="border-t border-bd-line bg-bd-bg p-6 sm:p-8 lg:border-l lg:border-t-0">
                 <div className={`${tileClassName} p-5`}>
                   <p className={eyebrowClassName}>
                     {addMethod === 'link'
                       ? t('profile.friends.byProfileLink')
                       : t('profile.friends.byFriendCode')}
                   </p>
-                  <h4 className="mt-3 text-lg font-bold text-bd-ink dark:text-white">
+                  <h4 className="mt-3 text-lg font-bold text-bd-ink">
                     {t('profile.friends.sendRequest')}
                   </h4>
-                  <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+                  <p className="mt-2 text-sm text-bd-ink-soft">
                     {addMethod === 'link'
                       ? t('profile.friends.profileLinkHint')
                       : t('profile.friends.friendCodeHint')}
@@ -1146,11 +1146,11 @@ export default function Friends() {
                     <button
                       type="button"
                       onClick={copyFriendCode}
-                      className={`${warmSurfaceClassName} mt-3 block w-full border-dashed px-4 py-4 text-center transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
+                      className={`${warmSurfaceClassName} mt-3 block w-full border-dashed px-4 py-4 text-center transition-colors hover:border-bd-lav-deep hover:bg-bd-card-warm`}
                       title={t('profile.friends.copyCode')}
                       aria-label={t('profile.friends.copyCode')}
                     >
-                      <span className="font-mono text-3xl font-black tracking-[0.28em] text-bd-ink dark:text-white">
+                      <span className="font-mono text-3xl font-black tracking-[0.28em] text-bd-ink">
                         {myFriendCode}
                       </span>
                     </button>

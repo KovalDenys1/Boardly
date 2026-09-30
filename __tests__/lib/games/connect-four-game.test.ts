@@ -286,6 +286,48 @@ describe('ConnectFourGame', () => {
       expect(getData(g).moveCount).toBe(0)
     })
 
+    // #1277: the board rewound but the winner kept the round's point.
+    it('takes the round point back when the winning drop is undone', () => {
+      const g = makeReadyGame()
+      for (let i = 0; i < 3; i += 1) {
+        g.makeMove(createMove('p1', 'drop', { col: 0 }))
+        g.makeMove(createMove('p2', 'drop', { col: 1 }))
+      }
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      expect(g.getState().players.map((p) => p.score)).toEqual([1, 0])
+
+      g.makeMove(createMove('p2', 'request-undo', {}))
+      g.makeMove(createMove('p1', 'respond-undo', { accept: true }))
+
+      expect(g.getState().status).toBe('playing')
+      expect(getData(g).winner).toBeNull()
+      expect(g.getState().players.map((p) => p.score ?? 0)).toEqual([0, 0])
+    })
+
+    it('takes the point back from a round saved before #1277, whose snapshot has no scores', () => {
+      const g = makeReadyGame()
+      for (let i = 0; i < 3; i += 1) {
+        g.makeMove(createMove('p1', 'drop', { col: 0 }))
+        g.makeMove(createMove('p2', 'drop', { col: 1 }))
+      }
+      g.makeMove(createMove('p1', 'drop', { col: 0 }))
+      const state = g.getState()
+      const data = state.data as ConnectFourGameData
+      g.restoreState({
+        ...state,
+        players: state.players.map((p, i) => ({ ...p, score: i === 0 ? 3 : 2 })),
+        data: {
+          ...data,
+          undoSnapshots: data.undoSnapshots.map(({ scores: _scores, ...rest }) => rest),
+        },
+      })
+
+      g.makeMove(createMove('p2', 'request-undo', {}))
+      g.makeMove(createMove('p1', 'respond-undo', { accept: true }))
+
+      expect(g.getState().players.map((p) => p.score)).toEqual([2, 2])
+    })
+
     it('clears pendingRequest without reverting when respond-undo accept=false', () => {
       const g = makeReadyGame()
       g.makeMove(createMove('p1', 'drop', { col: 3 }))

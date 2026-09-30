@@ -84,16 +84,16 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
       <MenuButton
         className={
           isPanelVariant
-            ? 'inline-flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-white px-3.5 py-3 text-left text-bd-ink shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
-            : 'inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-white/92 px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav/50 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+            ? 'inline-flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-3.5 py-3 text-left text-bd-ink shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
+            : 'inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
         }
         aria-label={t('header.language')}
       >
         <span
           className={
             isPanelVariant
-              ? 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:bg-slate-800 dark:text-bd-lav'
-              : 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:bg-slate-800 dark:text-bd-lav'
+              ? 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav'
+              : 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav'
           }
         >
           <GlobeIcon />
@@ -102,17 +102,17 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
         {isPanelVariant ? (
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold">{currentOption.name}</span>
-            <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+            <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
               {currentOption.shortLabel}
             </span>
           </span>
         ) : (
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-ink-soft dark:text-slate-300">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-ink-soft">
             {currentOption.shortLabel}
           </span>
         )}
 
-        <span className="shrink-0 text-bd-ink-muted dark:text-slate-400">
+        <span className="shrink-0 text-bd-ink-muted">
           <ChevronDownIcon />
         </span>
       </MenuButton>
@@ -127,7 +127,7 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
         <MenuItems
-          className={`absolute right-0 z-50 mt-2 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-white p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-none dark:border-slate-700 dark:bg-slate-900 ${
+          className={`absolute right-0 z-50 mt-2 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-none ${
             isPanelVariant ? 'w-full' : 'w-[176px]'
           }`}
         >
@@ -144,15 +144,15 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
                       isSelected
                         ? 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
                         : focus
-                          ? 'bg-bd-card-warm text-bd-ink dark:bg-slate-800 dark:text-slate-100'
-                          : 'text-bd-ink-soft dark:text-slate-300'
+                          ? 'bg-bd-card-warm text-bd-ink'
+                          : 'text-bd-ink-soft'
                     }`}
                   >
                     <span
                       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold uppercase tracking-[0.16em] ${
                         isSelected
                           ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]'
-                          : 'bg-bd-bg2 text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400'
+                          : 'bg-bd-bg2 text-bd-ink-muted'
                       }`}
                     >
                       {option.shortLabel}

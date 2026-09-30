@@ -326,7 +326,7 @@ function TokenDot({ color, size = 16 }: { color: LudoColor; size?: number }) {
             aria-hidden
             style={{
                 width: size, height: size, borderRadius: '50%', background: COLOR_FILL[color], flexShrink: 0,
-                display: 'inline-block', boxShadow: '0 0 0 1.5px var(--bd-ink)',
+                display: 'inline-block', boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)',
             }}
         />
     )
@@ -893,7 +893,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.ludo.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.ludo.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.ludo.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.ludo.game.backToGames')}</button>
                 </div>
             </div>
@@ -908,7 +908,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.ludo.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.ludo.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.ludo.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games/ludo/lobbies')} className="btn btn-primary">{t('games.ludo.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.ludo.game.backToGames')}</button>

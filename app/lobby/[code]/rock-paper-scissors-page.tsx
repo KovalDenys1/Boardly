@@ -855,7 +855,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 <GameResultOverlay
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
-                    icon={<div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}><Icon name={iWon ? 'trophy' : 'rock'} size={28} tone="on-accent" /></div>}
+                    icon={<div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}><Icon name={iWon ? 'trophy' : 'rock'} size={28} tone="on-accent" /></div>}
                     accentColor="var(--bd-coral)"
                     accentShadowColor="var(--bd-coral-deep)"
                     onInspect={() => setOverlayInspecting(true)}

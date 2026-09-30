@@ -90,11 +90,13 @@ export default function WaitingRoom({
         const avatarSrc = p.user?.avatarUrl ?? p.user?.image ?? null
         const canClickProfile = onProfileClick && !isBot
 
-        // Colored ring classes for avatar
+        // Coloured ring for the avatar, drawn inside its ink border: an outer ring is
+        // cut off by the scrolling player list. An outline, not an inset ring, because
+        // an <img> paints over its own inset box-shadow.
         const avatarRingClass = isCurrentUser
-          ? 'ring-2 ring-bd-mint ring-offset-2 ring-offset-bd-card-warm'
+          ? 'outline outline-2 -outline-offset-4 outline-bd-mint'
           : isBot
-            ? 'ring-2 ring-bd-lav ring-offset-2 ring-offset-bd-card-warm'
+            ? 'outline outline-2 -outline-offset-4 outline-bd-lav'
             : ''
 
         return (

@@ -55,7 +55,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push('/')}
               aria-label={t('common.goHome')}
-              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
             >
               <Icon name="home" size={14} /> {t('breadcrumbs.home')}
             </button>
@@ -63,7 +63,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push('/games')}
               aria-label={t('games.title')}
-              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
             >
               <Icon name="gamepad" size={14} /> {t('breadcrumbs.games')}
             </button>
@@ -71,7 +71,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
               aria-label={t('lobby.activeLobbies')}
-              className="min-w-0 truncate rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="min-w-0 truncate rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
             >
               {gameMeta?.name ?? 'Game'}
             </button>
@@ -133,7 +133,7 @@ export default function LobbyInfo({
             <button
               onClick={() => handleCopyInvite('lobby_code_chip')}
               title={t('game.ui.copyInvite')}
-              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30 cursor-pointer"
+              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-ink cursor-pointer"
             >
               {lobby.code}
             </button>

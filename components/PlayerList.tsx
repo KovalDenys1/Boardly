@@ -177,7 +177,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 ${!isDeparted && isCurrentTurn ? 'shadow-md' : ''}
                 ${!isDeparted && isCurrentUser ? '!border-green-500' : ''}
                 ${!isDeparted && isSelected ? '!border-[#FFC44D]' : ''}
-                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC44D]' : ''}
+                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
                   background: isDeparted
@@ -200,11 +200,11 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                   <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(6px, 0.6vw, 10px)' }}>
                     {/* Position Badge - Shows current rank by score */}
                     <div className={`
-                    rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-md text-center
-                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
-                    ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
-                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
-                    ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
+                    rounded-full flex items-center justify-center font-bold shrink-0 shadow-md text-center
+                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
+                    ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
+                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
+                    ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `} style={{ width: 'clamp(24px, 2.4vw, 30px)', height: 'clamp(24px, 2.4vw, 30px)', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
                       {index + 1}
                     </div>
@@ -329,11 +329,11 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     {/* Position Badge */}
                     <div className={`
-                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg shrink-0 shadow-lg
-                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
-                    ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
-                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
-                    ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
+                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 shadow-lg
+                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
+                    ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
+                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
+                    ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `}>
                       {index + 1}
                     </div>

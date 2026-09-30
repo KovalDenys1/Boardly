@@ -122,7 +122,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <button
         onClick={handleProfileNavigation}
         className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
-        style={{ background: 'var(--bd-bg2)', boxShadow: '0 0 0 2px var(--bd-ink)' }}
+        style={{ background: 'var(--bd-bg2)', boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }}
         title={userName || t('header.profile', 'Profile')}
       >
         <UserAvatar

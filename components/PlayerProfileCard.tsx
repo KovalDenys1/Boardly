@@ -291,7 +291,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                 <button
                   type="button"
                   onClick={() => setView('report')}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-[var(--bd-bg2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-[var(--bd-bg2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
                   style={{ color: 'var(--bd-ink-muted)' }}
                 >
                   <Icon name="flag" size={13} />

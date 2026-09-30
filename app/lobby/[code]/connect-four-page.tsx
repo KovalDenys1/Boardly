@@ -121,7 +121,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
                         position: 'absolute', inset: 0,
                         borderRadius: '50%',
                         background: color,
-                        boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+                        boxShadow: isWin ? `inset 0 0 0 3px white, ${shadow}` : shadow,
                         animation: `c4-drop ${durationMs}ms linear both`,
                         '--c4-fall-dist': `${fallDistancePx}px`,
                         '--c4-end-scale': isWin ? '1.12' : '1',
@@ -139,7 +139,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
             height: '100%',
             borderRadius: '50%',
             background: color,
-            boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+            boxShadow: isWin ? `inset 0 0 0 3px white, ${shadow}` : shadow,
             transform: isWin ? 'scale(1.12)' : 'scale(1)',
             transition: 'transform 0.15s, box-shadow 0.15s',
             position: 'relative',
@@ -882,7 +882,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.connect_four.game.lobbyNotFoundTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.connect_four.game.lobbyNotFoundDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.connect_four.game.lobbyNotFoundDescription')}</p>
                     <button onClick={() => router.push('/games')} className="btn btn-primary">{t('games.connect_four.game.backToLobbies')}</button>
                 </div>
             </div>
@@ -897,7 +897,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">{t('games.connect_four.game.gameNotStartedTitle')}</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{t('games.connect_four.game.gameNotStartedDescription')}</p>
+                    <p className="text-bd-ink-soft mb-4">{t('games.connect_four.game.gameNotStartedDescription')}</p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button onClick={() => router.push('/games/connect-four/lobbies')} className="btn btn-primary">{t('games.connect_four.game.backToLobbies')}</button>
                         <button onClick={() => router.push('/games')} className="btn btn-secondary">{t('games.connect_four.game.backToGames')}</button>
@@ -1013,7 +1013,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             turnTimerLimit={turnTimerLimit}
             isYourTurn={!isSpectator && isMyTurn()}
             barColor={gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW}
-            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)', transition: 'background 0.2s' }} />}
+            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 2px var(--bd-ink)', transition: 'background 0.2s' }} />}
             isSpectator={isSpectator}
         />
     )
@@ -1043,7 +1043,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>
-                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: '0 0 0 1.5px var(--bd-ink)' }} />
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.disc === 1 ? p1Name : p2Name}
                             </span>

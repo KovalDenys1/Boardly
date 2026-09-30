@@ -176,7 +176,7 @@ export default function GameResultOverlay({
         background: accentColor,
         display: 'grid',
         placeItems: 'center',
-        boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+        boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)',
       }}
     >
       <Icon name="trophy" size={30} tone="on-accent" />

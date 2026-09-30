@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { SpyGamePhase } from '@/lib/games/spy-game'
+import { SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS, SpyGamePhase } from '@/lib/games/spy-game'
 import SpyRoleReveal from '@/components/SpyRoleReveal'
 import SpyVoting from '@/components/SpyVoting'
 import SpyResults from '@/components/SpyResults'
@@ -251,7 +251,9 @@ export default function SpyGameBoard({
       ? Number(data.questionTimeLimit || 0)
       : phase === SpyGamePhase.VOTING
         ? Number(data.votingTimeLimit || 0)
-        : 0
+        : phase === SpyGamePhase.ROLE_REVEAL
+          ? SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS
+          : 0
 
   const isMyQuestionTurn =
     !!currentUserId && data.currentQuestionerId === currentUserId
@@ -461,6 +463,8 @@ export default function SpyGameBoard({
         limit = Number(data.questionTimeLimit || 0)
       } else if (phase === SpyGamePhase.VOTING) {
         limit = Number(data.votingTimeLimit || 0)
+      } else if (phase === SpyGamePhase.ROLE_REVEAL) {
+        limit = SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS
       } else {
         return 0
       }
@@ -657,7 +661,8 @@ export default function SpyGameBoard({
       finishedMessage={finishedMessage}
       activeTitle={activeTitle}
       meta={statusMeta}
-      // Only the questioning and voting phases run a clock; the others have no
+      // Role reveal, questioning and voting run a clock (the reveal ends on its own
+      // after SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS since #1277); the others have no
       // deadline at all, and a shared banner with no timer to show hides it
       // rather than printing a stopped :00.
       showTimer={phaseLimit > 0}
@@ -1089,7 +1094,7 @@ export default function SpyGameBoard({
           // trophy for the winner and the eye for everyone else.
           icon={
             gameResult.isDraw ? undefined : (
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
                 <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
               </div>
             )

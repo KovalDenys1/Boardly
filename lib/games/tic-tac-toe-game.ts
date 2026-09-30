@@ -42,6 +42,22 @@ export function isTicTacToeRoundLostOnTime(
   return status === 'finished' && (data.winner === 'X' || data.winner === 'O') && !data.winningLine
 }
 
+/**
+ * Whether the round ended in a draw both players agreed to (#1277), as opposed
+ * to one the ninth move produced by filling the board. Taking back that ninth
+ * move is the same casual take-back as undoing a winning move (#387); an agreed
+ * draw is not a move at all, and undoing it popped the snapshot of the last
+ * placement instead – a move nobody asked about – and struck the draw from the
+ * match score. A draw can only be offered while cells are empty, so the move
+ * count tells the two apart without a stored flag, for rounds saved before too.
+ */
+export function isTicTacToeRoundDrawnByAgreement(
+  data: Pick<TicTacToeGameData, 'winner' | 'moveCount'>,
+  status: string | undefined,
+): boolean {
+  return status === 'finished' && data.winner === 'draw' && data.moveCount < 9
+}
+
 export interface TicTacToeMoveRecord {
   playerId: string
   symbol: PlayerSymbol
@@ -161,6 +177,11 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
+      // Nor is a draw both players agreed to (#1277).
+      if (isTicTacToeRoundDrawnByAgreement(gameData, this.state.status)) {
+        return false
+      }
+
       return this.getOpponent(move.playerId) !== null
     }
 
@@ -169,7 +190,11 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
-      if (move.data.accept === true && isTicTacToeRoundLostOnTime(gameData, this.state.status)) {
+      if (
+        move.data.accept === true &&
+        (isTicTacToeRoundLostOnTime(gameData, this.state.status) ||
+          isTicTacToeRoundDrawnByAgreement(gameData, this.state.status))
+      ) {
         return false
       }
 

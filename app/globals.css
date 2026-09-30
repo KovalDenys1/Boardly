@@ -702,7 +702,9 @@ html.dark {
 .btn-social:focus-visible,
 .btn-social-unlink:focus-visible {
   outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
+  /* Inside the box: an outer outline is cut off by any overflow:auto/hidden
+     ancestor (#1278). scripts/audit-focus-rings.ts fails on a positive offset. */
+  outline-offset: -3px;
   border-radius: 0.5rem;
 }
 
@@ -871,21 +873,25 @@ body {
   animation: scale-pulse 0.8s ease-in-out infinite;
 }
 
-/* Form inputs */
+/* Form inputs – bd-* tokens (#1255); they switch with the theme by themselves */
 input, select, textarea {
-  @apply text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700;
+  color: var(--bd-ink);
+  background-color: var(--bd-input-bg);
 }
 
 input::placeholder {
-  @apply text-gray-400 dark:text-gray-500;
+  color: var(--bd-ink-muted);
 }
 
 input:focus, select:focus, textarea:focus {
-  @apply outline-none ring-2 ring-blue-500 dark:ring-blue-400 focus-visible:outline-none;
+  @apply outline-none ring-2 ring-inset ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .dice {
-  @apply w-16 h-16 bg-white border-2 border-gray-800 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  background: var(--bd-input-bg);
+  border-color: var(--bd-ink);
+  color: var(--bd-ink);
 }
 
 .dice:hover {
@@ -893,16 +899,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dice.held {
-  @apply bg-blue-200 border-blue-500;
+  @apply bg-bd-sun border-bd-sun-deep;
+  color: var(--bd-ink-on-accent);
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none;
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .btn-primary {
   background: var(--bd-ink);
-  color: white;
+  color: var(--bd-bg);
   box-shadow: 0 4px 0 var(--bd-coral);
   @apply hover:shadow-lg hover:-translate-y-0.5;
 }
@@ -918,24 +925,27 @@ input:focus, select:focus, textarea:focus {
   @apply hover:-translate-y-0.5;
 }
 
-.btn-success {
-  @apply bg-green-600 text-white hover:bg-green-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:ring-green-500;
-}
-
 .btn:disabled {
   @apply opacity-50 cursor-not-allowed;
 }
 
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition-all duration-200 hover:shadow-xl;
+  background: var(--bd-card-warm);
+  border: 1.5px solid var(--bd-line);
+  color: var(--bd-ink);
 }
 
 .input {
-  @apply w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  border: 1px solid var(--bd-input-border);
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
 }
 
 .label {
-  @apply block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300;
+  @apply block text-sm font-medium mb-2;
+  color: var(--bd-ink-soft);
 }
 
 .oauth-btn {
@@ -943,20 +953,23 @@ input:focus, select:focus, textarea:focus {
 }
 
 .oauth-btn-google {
-  @apply bg-white hover:bg-gray-50 text-gray-900 border-gray-300;
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
+  border-color: var(--bd-input-border);
 }
+.oauth-btn-google:hover { background: var(--bd-bg2); }
 
+/* GitHub's own dark mark: a fixed dark fill in both themes. */
 .oauth-btn-github {
-  @apply bg-gray-900 hover:bg-gray-800 text-white border-gray-900;
+  background: #1F1B16;
+  color: #FFFFFF;
+  /* the input edge, so the dark button still has a boundary on the dark card */
+  border-color: var(--bd-input-border);
 }
+.oauth-btn-github:hover { background: #2B2720; }
 
 .oauth-btn-discord {
   @apply bg-[#5865F2] hover:bg-[#4752C4] text-white border-[#5865F2];
-}
-
-/* Compact card for game UI */
-.card-compact {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
 }
 
 /* Custom Minimal Scrollbar Styles */
@@ -1211,7 +1224,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   margin: -19% 0 0 -19%;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.9);
-  box-shadow: 0 0 0 1px rgba(31,27,22,0.12);
+  box-shadow: inset 0 0 0 1px rgba(31,27,22,0.12);
   pointer-events: none;
 }
 .c4-last-marker--in {
@@ -1234,6 +1247,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+/* focus-rings-allow: a transient "live" ping meant to radiate past the dot. */
 @keyframes bd-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(47,167,135,0.6); }
   70%  { box-shadow: 0 0 0 8px rgba(47,167,135,0); }
@@ -1345,8 +1359,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: grid; place-items: center;
   font-family: var(--bd-font-display); font-weight: 700;
   color: white;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px var(--bd-ink);
+  /* Ink rim, white ring inside it – both inside the box, so a scrolling
+     ancestor cannot clip the rim (#1278). */
+  border: 2px solid var(--bd-ink);
+  box-shadow: inset 0 0 0 2px white;
   flex-shrink: 0;
   font-size: 14px;
 }
@@ -1906,8 +1922,12 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px var(--bd-ink);
+  /* Ink rim with a white ring inside it (#1278). An outline, not an inset
+     shadow, because this is usually an <img>, which paints over its own
+     inset shadow. */
+  border: 2px solid var(--bd-ink);
+  outline: 2px solid white;
+  outline-offset: -4px;
   object-fit: cover;
 }
 .game-player-avatar--initial {
@@ -1935,7 +1955,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .game-player-avatar-button:focus-visible {
   outline: 3px solid var(--bd-coral);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
@@ -2141,7 +2161,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell:disabled { cursor: default; }
 .ttt-cell.ttt-win {
   background: rgba(255,196,77,0.95) !important;
-  box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
+  box-shadow: inset 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
 }
 /* Last move (#1114): a ring on the newest mark that stays until the next move.
    The ring is a pseudo-element faded and scaled in, so only opacity and
@@ -2151,9 +2171,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell--last::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 2px;
   border-radius: inherit;
-  box-shadow: 0 0 0 2px rgba(31,27,22,0.28);
+  box-shadow: inset 0 0 0 2px rgba(31,27,22,0.28);
   pointer-events: none;
   animation: ttt-last-ring-in var(--bd-dur-slow) var(--bd-ease-out) both;
 }
@@ -2439,7 +2459,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-die__pip { width: 62%; height: 62%; border-radius: 999px; background: var(--bd-ink-on-accent); place-self: center; }
 .yz-die:not(.yz-die--held) .yz-die__pip { background: var(--bd-ink); }
 .yz-die:focus-visible, .yz-tile:focus-visible, .yz-pill:focus-visible, .yz-roll:focus-visible {
-  outline: 3px solid var(--bd-sky); outline-offset: 2px;
+  outline: 3px solid var(--bd-sky); outline-offset: -3px;
 }
 
 .yz-roll {
@@ -3131,7 +3151,7 @@ html.dark .liars-phase-card { background: var(--bd-card-warm); }
   border-radius: 50%;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.15);
 }
 
 /* The players panel: the roster before the game, the standings during it. Top
@@ -3542,7 +3562,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-tile--selected {
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent);
   animation: rps-lock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 .rps-tile--dimmed { opacity: 0.4; }
@@ -3865,10 +3885,22 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: 0 7px 0 rgba(31,27,22,0.18), 0 12px 24px -16px rgba(31,27,22,0.45);
 }
 
+/* The ring sits inside the tile (#1278): an outer outline is cut off by the
+   board's overflow. Not an outline with a negative offset, because the flipping
+   .memory-tile-inner is its own 3D layer and would paint over it; ::after is
+   taken by the match cue. The transparent outline keeps a ring in forced-colors mode. */
 .memory-tile:focus-visible {
-  outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
-  border-radius: 16px;
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+}
+.memory-tile:focus-visible::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: clamp(10px, 2vw, 18px);
+  box-shadow: inset 0 0 0 3px var(--bd-sky);
+  pointer-events: none;
 }
 
 .memory-tile-inner {
@@ -3939,9 +3971,9 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .memory-tile-match-cue::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: clamp(12px, 2.2vw, 20px);
-  box-shadow: 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
+  inset: 0;
+  border-radius: clamp(10px, 2vw, 18px);
+  box-shadow: inset 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
   pointer-events: none;
   opacity: 0;
   animation: memory-match-glow 0.6s var(--bd-ease-out) 0.4s both;
