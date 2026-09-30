@@ -372,6 +372,7 @@ export function TourOverlay() {
             left: targetRect.left - SPOTLIGHT_PADDING,
             width: targetRect.width + SPOTLIGHT_PADDING * 2,
             height: targetRect.height + SPOTLIGHT_PADDING * 2,
+            // focus-rings-allow: the spotlight dims the whole page with a 9999px spread.
             boxShadow: '0 0 0 9999px rgba(31,27,22,0.7)',
           }}
         />

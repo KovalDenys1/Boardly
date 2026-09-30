@@ -77,15 +77,17 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       disabled={disabled}
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
+      // No ring utilities here: the inline boxShadow below replaces Tailwind's ring shadow,
+      // so a ring never rendered on this button. Focus is an inset outline instead (#1278).
       className={`
         relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-12 lg:h-12 max-w-[64px] max-h-[64px] rounded-[18px] sm:rounded-[20px] lg:rounded-[16px] transition-all duration-200
         ${held 
-          ? 'scale-95 ring-4 ring-[rgba(255,196,77,0.35)]'
+          ? 'scale-95'
           : 'hover:-translate-y-0.5 active:scale-95'
         }
         ${isRolling && !held ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-        focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none
+        focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-bd-lav-deep
         transform-gpu
       `}
       style={{

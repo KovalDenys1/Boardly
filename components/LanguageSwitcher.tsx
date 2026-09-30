@@ -84,8 +84,8 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
       <MenuButton
         className={
           isPanelVariant
-            ? 'inline-flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-3.5 py-3 text-left text-bd-ink shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav/50 dark:shadow-none'
-            : 'inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-bd-lav/50 dark:shadow-none'
+            ? 'inline-flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-3.5 py-3 text-left text-bd-ink shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
+            : 'inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
         }
         aria-label={t('header.language')}
       >

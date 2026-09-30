@@ -146,7 +146,7 @@ export default function AvatarPicker({
                 disabled={saving}
                 className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
                   isSelected
-                    ? 'border-bd-lav-deep shadow-[0_0_0_2px_var(--bd-lav)]'
+                    ? 'border-bd-lav-deep outline outline-2 outline-bd-lav -outline-offset-4'
                     : 'border-transparent hover:border-bd-line'
                 }`}
                 aria-label={t('profile.avatarPicker.avatarAlt', { id })}

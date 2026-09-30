@@ -1910,7 +1910,7 @@ export default function ProfilePage() {
                           image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
-                          className="h-28 w-28 border-4 border-white bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
+                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-[color:var(--bd-ink-on-accent)] outline outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
                         <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
@@ -3089,8 +3089,11 @@ export default function ProfilePage() {
                         title={hasUploadPack ? t(nameKey) : t('profile.customization.premiumRequired')}
                         style={{
                           width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
+                          // Drawn inside the swatch (#1278): a 3px rim in the swatch colour with a
+                          // background-coloured gap inside it, the old outer ring turned inward.
                           outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
-                          outlineOffset: 2, cursor: 'pointer',
+                          outlineOffset: profileAccentColor === hex ? -3 : -2, cursor: 'pointer',
+                          boxShadow: profileAccentColor === hex ? 'inset 0 0 0 5px var(--bd-bg)' : undefined,
                           opacity: hasUploadPack ? 1 : 0.4,
                           transition: 'all 0.15s',
                         }}
@@ -3175,7 +3178,7 @@ export default function ProfilePage() {
                             opacity: hasUploadPack ? 1 : 0.4,
                             cursor: 'pointer',
                             outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
-                            outlineOffset: 2,
+                            outlineOffset: active ? -3 : -2,
                           }}
                           className="relative flex flex-col justify-end rounded-xl px-3 py-5 text-left transition"
                         >

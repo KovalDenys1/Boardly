@@ -55,16 +55,16 @@ export default function ConnectFourReplayRenderer({
   function cellClass(cell: CellValue, isWin: boolean, isLast: boolean): string {
     if (cell === 1) {
       return isWin
-        ? 'bg-bd-coral ring-2 ring-white shadow-md'
+        ? 'bg-bd-coral ring-2 ring-inset ring-white shadow-md'
         : isLast
-          ? 'bg-bd-coral ring-2 ring-bd-sun ring-offset-2 ring-offset-transparent'
+          ? 'bg-bd-coral ring-2 ring-inset ring-bd-sun'
           : 'bg-bd-coral'
     }
     if (cell === 2) {
       return isWin
-        ? 'bg-bd-sun ring-2 ring-white shadow-md'
+        ? 'bg-bd-sun ring-2 ring-inset ring-white shadow-md'
         : isLast
-          ? 'bg-bd-sun ring-2 ring-bd-coral ring-offset-2 ring-offset-transparent'
+          ? 'bg-bd-sun ring-2 ring-inset ring-bd-coral'
           : 'bg-bd-sun'
     }
     return 'bg-white/10'
@@ -100,13 +100,13 @@ export default function ConnectFourReplayRenderer({
         {/* Status */}
         <div className="flex-1 space-y-2 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 shrink-0 rounded-full bg-bd-coral shadow-[0_0_0_1.5px_var(--bd-ink)]" />
+            <div className="h-4 w-4 shrink-0 rounded-full bg-bd-coral shadow-[inset_0_0_0_1.5px_var(--bd-ink)]" />
             <span className="truncate text-sm font-medium text-bd-ink">
               {p1Name}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 shrink-0 rounded-full bg-bd-sun shadow-[0_0_0_1.5px_var(--bd-ink)]" />
+            <div className="h-4 w-4 shrink-0 rounded-full bg-bd-sun shadow-[inset_0_0_0_1.5px_var(--bd-ink)]" />
             <span className="truncate text-sm font-medium text-bd-ink">
               {p2Name}
             </span>

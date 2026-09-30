@@ -1092,7 +1092,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                             width: 56, height: 56, borderRadius: '50%',
                             background: winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
                             display: 'grid', placeItems: 'center',
-                            boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+                            boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)',
                         }}>
                             <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />
                         </div>

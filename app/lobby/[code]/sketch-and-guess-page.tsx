@@ -1135,7 +1135,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     accentColor={SKETCH_ACCENT}
                     accentShadowColor={SKETCH_ACCENT_DEEP}
                     icon={
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? SKETCH_ACCENT_DEEP : SKETCH_ACCENT, display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? SKETCH_ACCENT_DEEP : SKETCH_ACCENT, display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
                             <Icon name={iWon ? 'trophy' : 'palette'} size={28} tone="on-accent" />
                         </div>
                     }

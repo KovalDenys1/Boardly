@@ -2309,7 +2309,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="bd-btn bd-btn-soft bd-btn-icon sm:!w-auto sm:!aspect-auto sm:!px-3 sm:!py-1.5 !rounded-xl flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                        className="bd-btn bd-btn-soft bd-btn-icon sm:!w-auto sm:!aspect-auto sm:!px-3 sm:!py-1.5 !rounded-xl flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
                       >
                         <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={18} />
                         <span className="hidden sm:inline text-xs">{t('game.ui.sound')}</span>
@@ -2320,7 +2320,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
-                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
                       >
                         <LeaveIcon />
                         <span>{t('game.ui.leave')}</span>

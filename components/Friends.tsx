@@ -70,7 +70,7 @@ const secondaryButtonClassName =
 const dangerButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
-  'w-full rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-bd-lav/20'
+  'w-full rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
@@ -804,7 +804,7 @@ export default function Friends() {
                       }
                       className={`${panelClassName} group relative overflow-hidden ${
                         friend.publicProfileId
-                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-bd-lav/50'
+                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-bd-lav/50'
                           : ''
                       }`}
                     >

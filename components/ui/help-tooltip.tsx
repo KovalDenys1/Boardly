@@ -55,7 +55,7 @@ export default function HelpTooltip({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         onFocus={() => setOpen(true)}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] text-bd-ink-soft transition-colors hover:border-bd-lav-deep hover:text-bd-lav-deep focus:outline-none focus:ring-2 focus:ring-bd-lav-deep/30"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] text-bd-ink-soft transition-colors hover:border-bd-lav-deep hover:text-bd-lav-deep focus:outline-none focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep/30"
       >
         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fillRule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zM9 8a1 1 0 112 0v4a1 1 0 11-2 0V8zm1-3a1.25 1.25 0 100 2.5A1.25 1.25 0 0010 5z" clipRule="evenodd" />

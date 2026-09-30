@@ -702,7 +702,9 @@ html.dark {
 .btn-social:focus-visible,
 .btn-social-unlink:focus-visible {
   outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
+  /* Inside the box: an outer outline is cut off by any overflow:auto/hidden
+     ancestor (#1278). scripts/audit-focus-rings.ts fails on a positive offset. */
+  outline-offset: -3px;
   border-radius: 0.5rem;
 }
 
@@ -882,7 +884,7 @@ input::placeholder {
 }
 
 input:focus, select:focus, textarea:focus {
-  @apply outline-none ring-2 ring-bd-lav-deep focus-visible:outline-none;
+  @apply outline-none ring-2 ring-inset ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .dice {
@@ -902,7 +904,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-bd-lav-deep focus-visible:outline-none;
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none;
 }
 
 .btn-primary {
@@ -935,7 +937,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .input {
-  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition-all;
   border: 1px solid var(--bd-input-border);
   background: var(--bd-input-bg);
   color: var(--bd-ink);
@@ -1222,7 +1224,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   margin: -19% 0 0 -19%;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.9);
-  box-shadow: 0 0 0 1px rgba(31,27,22,0.12);
+  box-shadow: inset 0 0 0 1px rgba(31,27,22,0.12);
   pointer-events: none;
 }
 .c4-last-marker--in {
@@ -1245,6 +1247,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+/* focus-rings-allow: a transient "live" ping meant to radiate past the dot. */
 @keyframes bd-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(47,167,135,0.6); }
   70%  { box-shadow: 0 0 0 8px rgba(47,167,135,0); }
@@ -1356,8 +1359,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: grid; place-items: center;
   font-family: var(--bd-font-display); font-weight: 700;
   color: white;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px var(--bd-ink);
+  /* Ink rim, white ring inside it – both inside the box, so a scrolling
+     ancestor cannot clip the rim (#1278). */
+  border: 2px solid var(--bd-ink);
+  box-shadow: inset 0 0 0 2px white;
   flex-shrink: 0;
   font-size: 14px;
 }
@@ -1917,8 +1922,12 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px var(--bd-ink);
+  /* Ink rim with a white ring inside it (#1278). An outline, not an inset
+     shadow, because this is usually an <img>, which paints over its own
+     inset shadow. */
+  border: 2px solid var(--bd-ink);
+  outline: 2px solid white;
+  outline-offset: -4px;
   object-fit: cover;
 }
 .game-player-avatar--initial {
@@ -1946,7 +1955,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .game-player-avatar-button:focus-visible {
   outline: 3px solid var(--bd-coral);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
@@ -2152,7 +2161,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell:disabled { cursor: default; }
 .ttt-cell.ttt-win {
   background: rgba(255,196,77,0.95) !important;
-  box-shadow: 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
+  box-shadow: inset 0 0 0 3px #E5A82E, 0 5px 0 #E5A82E;
 }
 /* Last move (#1114): a ring on the newest mark that stays until the next move.
    The ring is a pseudo-element faded and scaled in, so only opacity and
@@ -2162,9 +2171,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-cell--last::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 2px;
   border-radius: inherit;
-  box-shadow: 0 0 0 2px rgba(31,27,22,0.28);
+  box-shadow: inset 0 0 0 2px rgba(31,27,22,0.28);
   pointer-events: none;
   animation: ttt-last-ring-in var(--bd-dur-slow) var(--bd-ease-out) both;
 }
@@ -2450,7 +2459,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-die__pip { width: 62%; height: 62%; border-radius: 999px; background: var(--bd-ink-on-accent); place-self: center; }
 .yz-die:not(.yz-die--held) .yz-die__pip { background: var(--bd-ink); }
 .yz-die:focus-visible, .yz-tile:focus-visible, .yz-pill:focus-visible, .yz-roll:focus-visible {
-  outline: 3px solid var(--bd-sky); outline-offset: 2px;
+  outline: 3px solid var(--bd-sky); outline-offset: -3px;
 }
 
 .yz-roll {
@@ -3142,7 +3151,7 @@ html.dark .liars-phase-card { background: var(--bd-card-warm); }
   border-radius: 50%;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.15);
 }
 
 /* The players panel: the roster before the game, the standings during it. Top
@@ -3553,7 +3562,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-tile--selected {
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent);
   animation: rps-lock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 .rps-tile--dimmed { opacity: 0.4; }
@@ -3876,10 +3885,22 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: 0 7px 0 rgba(31,27,22,0.18), 0 12px 24px -16px rgba(31,27,22,0.45);
 }
 
+/* The ring sits inside the tile (#1278): an outer outline is cut off by the
+   board's overflow. Not an outline with a negative offset, because the flipping
+   .memory-tile-inner is its own 3D layer and would paint over it; ::after is
+   taken by the match cue. The transparent outline keeps a ring in forced-colors mode. */
 .memory-tile:focus-visible {
-  outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
-  border-radius: 16px;
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+}
+.memory-tile:focus-visible::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: clamp(10px, 2vw, 18px);
+  box-shadow: inset 0 0 0 3px var(--bd-sky);
+  pointer-events: none;
 }
 
 .memory-tile-inner {
@@ -3950,9 +3971,9 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .memory-tile-match-cue::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: clamp(12px, 2.2vw, 20px);
-  box-shadow: 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
+  inset: 0;
+  border-radius: clamp(10px, 2vw, 18px);
+  box-shadow: inset 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
   pointer-events: none;
   opacity: 0;
   animation: memory-match-glow 0.6s var(--bd-ease-out) 0.4s both;

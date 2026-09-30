@@ -1156,7 +1156,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <span style={{
                 width: 10, height: 10, borderRadius: 999,
                 background: ready ? 'var(--bd-mint)' : 'var(--bd-sun)',
-                boxShadow: `0 0 0 4px ${ready ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.18)'}`,
+                boxShadow: `inset 0 0 0 4px ${ready ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.18)'}`,
               }} />
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
                 {ready
@@ -1223,7 +1223,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           borderTop: `6px solid ${accent}`,
           position: 'relative', overflow: 'hidden',
           outline: isMyTeam ? `2px solid ${accent}` : 'none',
-          outlineOffset: 2,
+          outlineOffset: -2,
         }}>
           <div aria-hidden style={{
             position: 'absolute', top: -40, right: -40,
@@ -1379,7 +1379,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <span style={{
                 width: 10, height: 10, borderRadius: 999,
                 background: teamsValid ? 'var(--bd-mint)' : 'var(--bd-sun)',
-                boxShadow: `0 0 0 4px ${teamsValid ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.18)'}`,
+                boxShadow: `inset 0 0 0 4px ${teamsValid ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.18)'}`,
               }} />
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
                 {teamsValid
@@ -1927,7 +1927,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                         background: isActive ? 'var(--bd-surface-raised)' : 'var(--bd-surface-raised)',
                         border: `1.5px solid ${isActive ? accent : 'var(--bd-line)'}`,
                       }}>
-                        <span style={{ width: 14, height: 14, borderRadius: 999, background: accent, boxShadow: isActive ? `0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}` : 'none' }} />
+                        <span style={{ width: 14, height: 14, borderRadius: 999, background: accent, boxShadow: isActive ? `inset 0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}` : 'none' }} />
                         <div>
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
                           {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>{t('alias.justPlayed')}</BdLabel>}

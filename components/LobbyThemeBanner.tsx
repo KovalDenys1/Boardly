@@ -118,7 +118,7 @@ function NeonCityBanner() {
       <div style={{
         width: 52, height: 52, borderRadius: 14, flexShrink: 0,
         background: 'linear-gradient(140deg, #2B0A3D, #1B0F36)',
-        boxShadow: '0 0 0 1px #FF3FA4, 0 0 20px rgba(255,63,164,0.55), inset 0 0 14px rgba(255,63,164,0.3)',
+        boxShadow: 'inset 0 0 0 1px #FF3FA4, 0 0 20px rgba(255,63,164,0.55), inset 0 0 14px rgba(255,63,164,0.3)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 26, color: style.accent, position: 'relative', zIndex: 1,
         textShadow: '0 0 10px rgba(255,63,164,0.9)',
