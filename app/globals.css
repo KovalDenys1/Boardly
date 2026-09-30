@@ -702,7 +702,9 @@ html.dark {
 .btn-social:focus-visible,
 .btn-social-unlink:focus-visible {
   outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
+  /* Inside the box: an outer outline is cut off by any overflow:auto/hidden
+     ancestor (#1278). scripts/audit-focus-rings.ts fails on a positive offset. */
+  outline-offset: -3px;
   border-radius: 0.5rem;
 }
 
@@ -1946,7 +1948,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .game-player-avatar-button:focus-visible {
   outline: 3px solid var(--bd-coral);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
    avatar, so at 390 and in the 300px landscape side column the name, subline
@@ -2450,7 +2452,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-die__pip { width: 62%; height: 62%; border-radius: 999px; background: var(--bd-ink-on-accent); place-self: center; }
 .yz-die:not(.yz-die--held) .yz-die__pip { background: var(--bd-ink); }
 .yz-die:focus-visible, .yz-tile:focus-visible, .yz-pill:focus-visible, .yz-roll:focus-visible {
-  outline: 3px solid var(--bd-sky); outline-offset: 2px;
+  outline: 3px solid var(--bd-sky); outline-offset: -3px;
 }
 
 .yz-roll {
@@ -3876,10 +3878,22 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: 0 7px 0 rgba(31,27,22,0.18), 0 12px 24px -16px rgba(31,27,22,0.45);
 }
 
+/* The ring sits inside the tile (#1278): an outer outline is cut off by the
+   board's overflow. Not an outline with a negative offset, because the flipping
+   .memory-tile-inner is its own 3D layer and would paint over it; ::after is
+   taken by the match cue. The transparent outline keeps a ring in forced-colors mode. */
 .memory-tile:focus-visible {
-  outline: 3px solid var(--bd-sky);
-  outline-offset: 3px;
-  border-radius: 16px;
+  outline: 3px solid transparent;
+  outline-offset: -3px;
+}
+.memory-tile:focus-visible::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: clamp(10px, 2vw, 18px);
+  box-shadow: inset 0 0 0 3px var(--bd-sky);
+  pointer-events: none;
 }
 
 .memory-tile-inner {

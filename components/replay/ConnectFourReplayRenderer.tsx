@@ -57,14 +57,14 @@ export default function ConnectFourReplayRenderer({
       return isWin
         ? 'bg-bd-coral ring-2 ring-white shadow-md'
         : isLast
-          ? 'bg-bd-coral ring-2 ring-bd-sun ring-offset-2 ring-offset-transparent'
+          ? 'bg-bd-coral ring-2 ring-inset ring-bd-sun'
           : 'bg-bd-coral'
     }
     if (cell === 2) {
       return isWin
         ? 'bg-bd-sun ring-2 ring-white shadow-md'
         : isLast
-          ? 'bg-bd-sun ring-2 ring-bd-coral ring-offset-2 ring-offset-transparent'
+          ? 'bg-bd-sun ring-2 ring-inset ring-bd-coral'
           : 'bg-bd-sun'
     }
     return 'bg-white/10'

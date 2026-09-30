@@ -239,7 +239,7 @@ export default function YahtzeeResults({
                 <div
                   key={player.playerId}
                   className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
-                    isCurrentUser ? 'ring-2 ring-[var(--bd-sky)] ring-offset-2 ring-offset-[var(--bd-bg)]' : ''
+                    isCurrentUser ? 'ring-2 ring-inset ring-[var(--bd-sky)]' : ''
                   }`}
                   style={{
                     borderColor:

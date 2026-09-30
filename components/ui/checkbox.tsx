@@ -36,7 +36,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       lg: { width: '18px', height: '18px' },
     }
 
-    const baseClasses = 'peer relative shrink-0 rounded border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer appearance-none'
+    const baseClasses = 'peer relative shrink-0 rounded border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer appearance-none'
 
     return (
       <div className="relative inline-flex items-center justify-center">
