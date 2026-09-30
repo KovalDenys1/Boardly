@@ -236,6 +236,91 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
   })
 
+  // #1277: Play again is the host's button in every game that has it, but the
+  // engines accept next-round from any seated player and this route never
+  // asked who the host was, so the other player could start the next round.
+  describe('next-round is the host\'s (#1277)', () => {
+    const finishedEngine = () => {
+      const engineState = { ...persistedState, status: 'playing', lastMoveAt: Date.now() }
+      return {
+        makeMove: jest.fn().mockReturnValue(true),
+        getState: jest.fn(() => engineState),
+        getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+        getPlayers: jest.fn(() => [
+          { id: 'player-1', score: 1 },
+          { id: 'player-2', score: 0 },
+        ]),
+        getScorecard: jest.fn(() => ({})),
+      }
+    }
+
+    it.each(['tic_tac_toe', 'checkers', 'connect_four'])(
+      'refuses next-round from a player who is not the host in %s, before the engine sees it',
+      async (gameType) => {
+        const engine = finishedEngine()
+        mockGetRequestAuthUser.mockResolvedValue({ ...mockAuthUser, id: 'player-2' })
+        mockPrisma.games.findUnique.mockResolvedValueOnce({
+          ...dbGame,
+          status: 'finished',
+          lobby: { ...dbGame.lobby, gameType, creatorId: 'player-1' },
+        } as any)
+        mockRestoreGameEngine.mockReturnValue(engine as any)
+
+        const response = await POST(buildRequest({ move: { type: 'next-round', data: {} } }), {
+          params: Promise.resolve({ gameId: 'game-123' }),
+        })
+
+        expect(response.status).toBe(403)
+        expect((await response.json()).code).toBe('HOST_ONLY_MOVE')
+        expect(engine.makeMove).not.toHaveBeenCalled()
+        expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+      }
+    )
+
+    it('still lets the host start the next round', async () => {
+      const engine = finishedEngine()
+      mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+      mockPrisma.games.findUnique.mockResolvedValueOnce({
+        ...dbGame,
+        status: 'finished',
+        lobby: { ...dbGame.lobby, gameType: 'tic_tac_toe', creatorId: 'player-1' },
+      } as any)
+      mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+      mockRestoreGameEngine.mockReturnValue(engine as any)
+
+      const response = await POST(buildRequest({ move: { type: 'next-round', data: {} } }), {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      })
+
+      expect(response.status).toBe(200)
+      expect(engine.makeMove).toHaveBeenCalledWith(expect.objectContaining({ type: 'next-round', playerId: 'player-1' }))
+    })
+
+    it('reads the host from the lobby row, not from anything the client sends', async () => {
+      const engine = finishedEngine()
+      mockGetRequestAuthUser.mockResolvedValue({ ...mockAuthUser, id: 'player-2' })
+      mockPrisma.games.findUnique.mockResolvedValueOnce({
+        ...dbGame,
+        status: 'finished',
+        lobby: { ...dbGame.lobby, gameType: 'checkers', creatorId: 'player-1' },
+      } as any)
+      mockRestoreGameEngine.mockReturnValue(engine as any)
+
+      await POST(buildRequest({ move: { type: 'next-round', data: {} }, userId: 'player-1' }), {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      })
+
+      expect(engine.makeMove).not.toHaveBeenCalled()
+      expect(mockPrisma.games.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({
+            lobby: { select: expect.objectContaining({ creatorId: true }) },
+          }),
+        })
+      )
+    })
+  })
+
   it('returns 500 on corrupted persisted game state', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
     mockPrisma.games.findUnique.mockResolvedValueOnce({
