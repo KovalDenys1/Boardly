@@ -1910,7 +1910,7 @@ export default function ProfilePage() {
                           image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
-                          className="h-28 w-28 border-4 border-white bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
+                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-[color:var(--bd-ink-on-accent)] outline outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
                         <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">

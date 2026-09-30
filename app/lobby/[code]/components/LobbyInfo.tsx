@@ -133,7 +133,7 @@ export default function LobbyInfo({
             <button
               onClick={() => handleCopyInvite('lobby_code_chip')}
               title={t('game.ui.copyInvite')}
-              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-ink/30 cursor-pointer"
+              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-bg cursor-pointer"
             >
               {lobby.code}
             </button>

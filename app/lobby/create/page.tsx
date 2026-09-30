@@ -891,7 +891,7 @@ function CreateLobbyPage() {
                         width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                         background: theme.bg,
                         border: isSelected ? `3px solid ${theme.accent}` : '2px solid var(--bd-line)',
-                        boxShadow: isSelected ? `0 0 0 2px ${theme.accent}40` : undefined,
+                        boxShadow: isSelected ? `inset 0 0 0 2px ${theme.accent}40` : undefined,
                         cursor: isLocked ? 'not-allowed' : 'pointer',
                         opacity: isLocked ? 0.5 : 1,
                         overflow: 'hidden',

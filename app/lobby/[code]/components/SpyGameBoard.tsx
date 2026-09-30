@@ -1089,7 +1089,7 @@ export default function SpyGameBoard({
           // trophy for the winner and the eye for everyone else.
           icon={
             gameResult.isDraw ? undefined : (
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
                 <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
               </div>
             )

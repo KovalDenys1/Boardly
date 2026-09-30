@@ -326,7 +326,7 @@ function TokenDot({ color, size = 16 }: { color: LudoColor; size?: number }) {
             aria-hidden
             style={{
                 width: size, height: size, borderRadius: '50%', background: COLOR_FILL[color], flexShrink: 0,
-                display: 'inline-block', boxShadow: '0 0 0 1.5px var(--bd-ink)',
+                display: 'inline-block', boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)',
             }}
         />
     )
