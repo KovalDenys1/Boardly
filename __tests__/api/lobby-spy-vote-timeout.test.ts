@@ -123,3 +123,52 @@ describe('GET /api/lobby/[code] closes an expired Guess the Spy vote (#1263)', (
     expect(updates[0][2].payload.state.data.phase).toBe(SpyGamePhase.RESULTS)
   })
 })
+
+/**
+ * #1277: the role reveal had no clock. A seat whose leave lost its conflict
+ * check twice stays marked active and never readies, and the round waited on it
+ * for good. The lobby GET starts the questions once the reveal's minute is up.
+ */
+describe('GET /api/lobby/[code] ends an expired Guess the Spy role reveal (#1277)', () => {
+  function revealState(openedAgoMs: number) {
+    const game = new SpyGame('game-1')
+    for (const id of IDS) game.addPlayer({ id, name: id })
+    game.startGame()
+    game.initializeRound([{ name: 'Airport', category: 'Travel', roles: ['Pilot', 'Passenger', 'Guard'] }])
+    // user-3 never readies.
+    for (const id of ['user-1', 'user-2']) {
+      game.makeMove({ playerId: id, type: 'player-ready', data: {}, timestamp: new Date() })
+    }
+    ;(game.getState().data as any).phaseStartTime = Date.now() - openedAgoMs
+    return game.getState()
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(getRequestAuthUser as jest.Mock).mockResolvedValue({ id: 'user-2', username: 'user-2', isGuest: true })
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
+  })
+
+  it('keeps waiting within the minute', async () => {
+    seed(revealState(30_000))
+    const state = await read()
+    expect(state.data.phase).toBe(SpyGamePhase.ROLE_REVEAL)
+    expect(writtenStates().filter((s) => s?.data?.phase === SpyGamePhase.QUESTIONING)).toHaveLength(0)
+  })
+
+  it('starts the questions once it has run out, and broadcasts them without the spy', async () => {
+    seed(revealState(61_000))
+    const state = await read()
+    expect(state.data.phase).toBe(SpyGamePhase.QUESTIONING)
+    const written = writtenStates().find((s) => s?.data?.phase === SpyGamePhase.QUESTIONING)
+    expect(written).toBeDefined()
+    expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: 'game-1', updatedAt: new Date('2026-09-28T10:00:00.000Z') }) })
+    )
+    const updates = (broadcastToLobby as jest.Mock).mock.calls.filter(([, event]) => event === 'game-update')
+    expect(updates.length).toBeGreaterThan(0)
+    expect(updates[0][2].payload.state.data.phase).toBe(SpyGamePhase.QUESTIONING)
+    expect(updates[0][2].payload.state.data.spyPlayerId).toBeUndefined()
+  })
+})
