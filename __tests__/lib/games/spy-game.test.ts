@@ -1,4 +1,9 @@
-import { SpyGame, SpyGamePhase, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
+import {
+  SpyGame,
+  SpyGamePhase,
+  SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS,
+  sanitizeSpyStateForBroadcast,
+} from '@/lib/games/spy-game'
 
 const mockLocations = [
   {
@@ -831,5 +836,54 @@ describe('SpyGame.applyVotingTimeout (#1263)', () => {
     const game = votingRound()
     game.applyVotingTimeout(d(game).phaseStartTime + 60_000)
     expect(game.applyVotingTimeout(Date.now() + 600_000)).toBe(false)
+  })
+})
+
+describe('SpyGame.applyRoleRevealTimeout (#1277)', () => {
+  const LOCATIONS = [
+    { name: 'Airport', category: 'Travel', roles: ['Pilot', 'Passenger', 'Security Guard'] },
+  ]
+  const d = (game: SpyGame) => game.getState().data as any
+
+  function revealRound(): SpyGame {
+    const game = new SpyGame('spy-reveal-clock')
+    for (const id of ['p1', 'p2', 'p3']) game.addPlayer({ id, name: id })
+    game.startGame()
+    game.initializeRound(LOCATIONS)
+    expect(d(game).phase).toBe(SpyGamePhase.ROLE_REVEAL)
+    return game
+  }
+
+  it('is a minute, like the vote', () => {
+    expect(SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS).toBe(60)
+  })
+
+  it('waits for the players until its clock runs out', () => {
+    const game = revealRound()
+    const opened = d(game).phaseStartTime
+    game.makeMove({ playerId: 'p1', type: 'player-ready', data: {}, timestamp: new Date() })
+    expect(game.applyRoleRevealTimeout(opened + 59_999)).toBe(false)
+    expect(d(game).phase).toBe(SpyGamePhase.ROLE_REVEAL)
+  })
+
+  // A seat whose leave lost its conflict check twice is still marked active and
+  // never readies, so without this the round waited on it for good.
+  it('starts the questions at the limit, whoever is still not ready', () => {
+    const game = revealRound()
+    const opened = d(game).phaseStartTime
+    game.makeMove({ playerId: 'p1', type: 'player-ready', data: {}, timestamp: new Date() })
+    game.makeMove({ playerId: 'p2', type: 'player-ready', data: {}, timestamp: new Date() })
+    expect(game.applyRoleRevealTimeout(opened + 60_000)).toBe(true)
+    expect(d(game).phase).toBe(SpyGamePhase.QUESTIONING)
+    expect(d(game).phaseStartTime).toBe(opened + 60_000)
+    expect(d(game).currentQuestionerId).toBe('p1')
+    expect(game.getState().lastMoveAt).toBe(opened + 60_000)
+  })
+
+  it('does nothing outside the reveal', () => {
+    const game = revealRound()
+    game.applyRoleRevealTimeout(d(game).phaseStartTime + 60_000)
+    expect(game.applyRoleRevealTimeout(Date.now() + 600_000)).toBe(false)
+    expect(d(game).phase).toBe(SpyGamePhase.QUESTIONING)
   })
 })

@@ -46,6 +46,15 @@ export interface SpyGameData {
   playersReady: string[] // For role reveal phase
 }
 
+/**
+ * How long the role reveal waits for every player to press ready (#1277). The
+ * reveal had no clock, so one seat that never readied – a player whose leave
+ * lost its conflict check twice stays marked active – held the round for good.
+ * A minute, like the vote: reading one card takes seconds, and the card stays
+ * on screen through the questions.
+ */
+export const SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS = 60
+
 export class SpyGame extends GameEngine {
   constructor(gameId: string) {
     super(gameId, 'guess_the_spy', {
@@ -402,6 +411,25 @@ export class SpyGame extends GameEngine {
 
     this.calculateResults()
     this.state.lastMoveAt = nowMs
+    return true
+  }
+
+  /**
+   * #1277: the role reveal closes on its clock too, not only once everyone
+   * still here is ready. Applied by the lobby GET next to the vote's clock.
+   * Returns whether the state changed.
+   */
+  applyRoleRevealTimeout(nowMs: number = Date.now()): boolean {
+    const data = this.state.data as SpyGameData
+    if (this.state.status !== 'playing' || data?.phase !== SpyGamePhase.ROLE_REVEAL) return false
+    const startedAt = Number(data.phaseStartTime)
+    if (!Number.isFinite(startedAt)) return false
+    if (nowMs - startedAt < SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS * 1000) return false
+
+    this.startQuestioningPhase()
+    data.phaseStartTime = nowMs
+    this.state.lastMoveAt = nowMs
+    this.state.updatedAt = new Date()
     return true
   }
 

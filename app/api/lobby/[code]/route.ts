@@ -514,6 +514,7 @@ export async function GET(
       // #1263: the vote's own clock (votingTimeLimit), not the lobby's turn
       // timer, so no `turnTimerSeconds > 0` gate. Without this the countdown was
       // display-only and one player who never voted held the round open for good.
+      // The role reveal has the same kind of clock since #1277.
       try {
         const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
         const spyGame = new SpyGame(activeGame.id)
@@ -524,6 +525,16 @@ export async function GET(
             activeGame,
             nextState: spyGame.getState(),
             actionType: 'spy:vote-timeout',
+            actionPayload: {},
+            lobbyCode: safeLobby.code,
+            gameType: 'guess_the_spy',
+          })
+        } else if (spyGame.applyRoleRevealTimeout()) {
+          // #1277: the reveal's clock, for a seat that never readies.
+          await commitTimeoutFallback({
+            activeGame,
+            nextState: spyGame.getState(),
+            actionType: 'spy:reveal-timeout',
             actionPayload: {},
             lobbyCode: safeLobby.code,
             gameType: 'guess_the_spy',

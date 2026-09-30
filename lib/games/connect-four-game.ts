@@ -23,6 +23,11 @@ export interface ConnectFourUndoSnapshot {
   status: 'playing' | 'finished'
   lastDroppedRow: number | null
   lastDroppedCol: number | null
+  /**
+   * `players[i].score` before the drop, so taking back a winning four-in-a-row
+   * takes the round's point back too (#1277). Absent on snapshots saved earlier.
+   */
+  scores?: number[]
 }
 
 export interface ConnectFourPendingRequest {
@@ -323,12 +328,26 @@ export class ConnectFourGame extends GameEngine {
       status: 'playing',
       lastDroppedRow: gameData.lastDroppedRow,
       lastDroppedCol: gameData.lastDroppedCol,
+      scores: this.state.players.map((p) => p.score ?? 0),
     }
   }
 
   private undoLastMove(gameData: ConnectFourGameData): void {
     const snapshot = gameData.undoSnapshots?.pop()
     if (!snapshot) return
+
+    // The round's point goes with the drop that won it (#1277). A snapshot saved
+    // before scores were captured still has the winner in the live data, and the
+    // drop being undone is the one that gave them their point.
+    if (Array.isArray(snapshot.scores)) {
+      snapshot.scores.forEach((score, index) => {
+        const player = this.state.players[index]
+        if (player && typeof score === 'number') player.score = score
+      })
+    } else if (gameData.winner === 1 || gameData.winner === 2) {
+      const winnerPlayer = this.state.players[gameData.winner === 1 ? 0 : 1]
+      if (winnerPlayer) winnerPlayer.score = Math.max(0, (winnerPlayer.score ?? 0) - 1)
+    }
 
     gameData.board = snapshot.board.map((row) => [...row])
     gameData.currentDisc = snapshot.currentDisc

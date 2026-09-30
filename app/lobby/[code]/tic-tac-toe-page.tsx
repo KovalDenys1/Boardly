@@ -13,6 +13,7 @@ import {
     CellValue,
     isTicTacToeMatchComplete,
     isTicTacToeRoundLostOnTime,
+    isTicTacToeRoundDrawnByAgreement,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -892,9 +893,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const pendingRequesterName = pendingRequest ? getDisplayName(pendingRequest.requesterId) : null
     const isPendingResponder = !!pendingRequest && pendingRequest.responderId === currentUserId
     const isPendingRequester = !!pendingRequest && pendingRequest.requesterId === currentUserId
-    // A round lost on time cannot be taken back (#1246); the engine refuses it.
-    const isRoundLostOnTime = isTicTacToeRoundLostOnTime(gameData, isFinished ? 'finished' : resolvedStatus)
-    const canRequestUndo = !isMoveSubmitting && !pendingRequest && moveHistory.length > 0 && !isRoundLostOnTime
+    // A round lost on time (#1246) or drawn by agreement (#1277) cannot be taken back; the engine refuses it.
+    const roundStatus = isFinished ? 'finished' : resolvedStatus
+    const isRoundLostOnTime = isTicTacToeRoundLostOnTime(gameData, roundStatus)
+    const isRoundDrawnByAgreement = isTicTacToeRoundDrawnByAgreement(gameData, roundStatus)
+    const canRequestUndo = !isMoveSubmitting && !pendingRequest && moveHistory.length > 0 && !isRoundLostOnTime && !isRoundDrawnByAgreement
     const canRequestDraw = !isMoveSubmitting && !pendingRequest && !isFinished && moveHistory.length > 0
 
     // Cell click handler
