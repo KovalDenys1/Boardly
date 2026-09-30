@@ -1,4 +1,4 @@
-import { TicTacToeGame, TicTacToeGameData } from '@/lib/games/tic-tac-toe-game'
+import { TicTacToeGame, TicTacToeGameData, isTicTacToeRoundDrawnByAgreement } from '@/lib/games/tic-tac-toe-game'
 import { Player } from '@/lib/game-engine'
 
 // Helper to get typed game data
@@ -1031,6 +1031,66 @@ describe('TicTacToeGame', () => {
             expect(game.makeMove({ playerId: 'player-o', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(true)
             expect(game.getState().status).toBe('playing')
             expect(getGameData(game).match?.winsBySymbol.X).toBe(0)
+        })
+
+        // #1277: an agreed draw is not a move either. The undo popped the
+        // snapshot of the last placement, so it took back a move nobody asked
+        // about and wiped the draw from the match score.
+        it('refuses an undo of a draw both players agreed to (#1277)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'respond-draw', data: { accept: true }, timestamp: new Date() })
+            expect(game.getState().status).toBe('finished')
+            expect(isTicTacToeRoundDrawnByAgreement(getGameData(game), game.getState().status)).toBe(true)
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(false)
+            expect(game.makeMove({ playerId: 'player-o', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(false)
+            const data = getGameData(game)
+            expect(data.winner).toBe('draw')
+            expect(data.match?.draws).toBe(1)
+            expect(data.board[1][1]).toBe('O')
+        })
+
+        it('refuses to accept an undo of an agreed draw that a round saved earlier still carries (#1277)', () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'request-draw', data: {}, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'respond-draw', data: { accept: true }, timestamp: new Date() })
+            const state = game.getState()
+            game.restoreState({
+                ...state,
+                data: {
+                    ...(state.data as TicTacToeGameData),
+                    pendingRequest: { type: 'undo', requesterId: 'player-o', responderId: 'player-x', requestedAt: Date.now() },
+                },
+            })
+
+            expect(game.makeMove({ playerId: 'player-x', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(false)
+            expect(game.makeMove({ playerId: 'player-x', type: 'respond-undo', data: { accept: false }, timestamp: new Date() })).toBe(true)
+            expect(getGameData(game).match?.draws).toBe(1)
+            expect(game.getState().status).toBe('finished')
+        })
+
+        it('still takes back the move that filled the board for a draw (#387, #1277)', () => {
+            // X O X / X O O / O X X – the ninth move fills the board, no line.
+            const cells: Array<[string, number, number]> = [
+                ['player-x', 0, 0], ['player-o', 0, 1], ['player-x', 0, 2],
+                ['player-o', 1, 1], ['player-x', 1, 0], ['player-o', 2, 0],
+                ['player-x', 2, 1], ['player-o', 1, 2], ['player-x', 2, 2],
+            ]
+            for (const [playerId, row, col] of cells) {
+                game.makeMove({ playerId, type: 'place', data: { row, col }, timestamp: new Date() })
+            }
+            expect(getGameData(game).winner).toBe('draw')
+            expect(getGameData(game).moveCount).toBe(9)
+            expect(isTicTacToeRoundDrawnByAgreement(getGameData(game), game.getState().status)).toBe(false)
+
+            expect(game.makeMove({ playerId: 'player-o', type: 'request-undo', data: {}, timestamp: new Date() })).toBe(true)
+            expect(game.makeMove({ playerId: 'player-x', type: 'respond-undo', data: { accept: true }, timestamp: new Date() })).toBe(true)
+            expect(game.getState().status).toBe('playing')
+            expect(getGameData(game).match?.draws).toBe(0)
+            expect(getGameData(game).board[2][2]).toBeNull()
         })
 
         it('refuses to accept an undo that a timed-out round saved before #1246 still carries', () => {
