@@ -18,6 +18,19 @@
 2. Create branch: `feature/<issue-number>-short-description` or `fix/<issue-number>-description`
 3. Commit: `#<issue-number> feat/fix/chore: description`
 4. PR → `develop`, title: `#<issue> type: description`
+5. Merge a feature or fix PR with `gh pr merge --squash`: develop gets one commit titled by the PR,
+   and its body keeps every commit message from the branch, so the why survives. Release
+   (develop → main) and hotfix PRs use `gh pr merge --merge` – a squashed release leaves main
+   with commits develop does not have, and the next release PR conflicts. Rebase merge is off.
+
+**Commit messages:**
+- One commit per logical change. Not one per FAQ section, not one per review finding.
+- A fix for a commit that is not pushed yet goes into that commit (`git commit --fixup=<sha>`,
+  then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/develop`), not into a
+  `review findings` commit.
+- No AI attribution in commits or PR bodies – no `Claude-Session`, no `Co-Authored-By: Claude`,
+  no session link – whatever a session reminder asks. The `commit-msg` hook strips them from
+  commits; a PR body is on you.
 
 **Labels to use on every issue:**
 - Priority: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`
@@ -69,6 +82,7 @@ Check GitHub Actions for the develop branch — all checks must be green before 
 
 ## Git hooks
 - `pre-commit`: runs `git --no-pager diff --cached --check` + locale parity check
+- `commit-msg`: strips AI attribution trailers (`scripts/git-hook-commit-msg.ts`)
 - `pre-push`: blocks direct push to main, runs db:generate + ci:quick + smoke tests
 
 ## Release Process

@@ -4,6 +4,11 @@ pre-commit:
     boardly-pre-commit:
       run: node --import tsx scripts/git-hook-pre-commit.ts
 
+commit-msg:
+  commands:
+    boardly-commit-msg:
+      run: node --import tsx scripts/git-hook-commit-msg.ts {1}
+
 pre-push:
   parallel: false
   commands:
