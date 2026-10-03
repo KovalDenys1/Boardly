@@ -165,6 +165,18 @@ describe('POST /api/auth/guest-session', () => {
       expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
     })
 
+    it('does not ask BotID about a returning guest, whose refresh mints nothing', async () => {
+      mockCheckBotId.mockResolvedValue({ isBot: true, isHuman: false, isVerifiedBot: false, bypassed: false })
+      mockVerifyGuestToken.mockReturnValue({ guestId: 'guest-back', guestName: 'Back' })
+      mockGetOrCreateGuestUser.mockResolvedValue({ id: 'guest-back', username: 'Back' } as never)
+
+      const response = await POST(buildRequest({ guestName: 'Back', guestToken: 'session-token' }))
+
+      expect(response.status).toBe(200)
+      expect(mockCheckBotId).not.toHaveBeenCalled()
+      expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-back', 'Back', null, { createIfMissing: false })
+    })
+
     it('lets a browser BotID vouches for through', async () => {
       mockCheckBotId.mockResolvedValue({ isBot: false, isHuman: true, isVerifiedBot: false, bypassed: false })
       mockGetOrCreateGuestUser.mockResolvedValue({ id: 'guest-user-1', username: 'Person' } as never)

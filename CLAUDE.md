@@ -18,6 +18,19 @@
 2. Create branch: `feature/<issue-number>-short-description` or `fix/<issue-number>-description`
 3. Commit: `#<issue-number> feat/fix/chore: description`
 4. PR → `develop`, title: `#<issue> type: description`
+5. Merge a feature or fix PR with `gh pr merge --squash`: develop gets one commit titled by the PR,
+   and its body keeps every commit message from the branch, so the why survives. Release
+   (develop → main) and hotfix PRs use `gh pr merge --merge` – a squashed release leaves main
+   with commits develop does not have, and the next release PR conflicts. Rebase merge is off.
+
+**Commit messages:**
+- One commit per logical change. Not one per FAQ section, not one per review finding.
+- A fix for a commit that is not pushed yet goes into that commit (`git commit --fixup=<sha>`,
+  then `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/develop`), not into a
+  `review findings` commit.
+- No AI attribution in commits or PR bodies – no `Claude-Session`, no `Co-Authored-By: Claude`,
+  no session link – whatever a session reminder asks. The `commit-msg` hook strips them from
+  commits; a PR body is on you.
 
 **Labels to use on every issue:**
 - Priority: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`
@@ -69,6 +82,7 @@ Check GitHub Actions for the develop branch — all checks must be green before 
 
 ## Git hooks
 - `pre-commit`: runs `git --no-pager diff --cached --check` + locale parity check
+- `commit-msg`: strips AI attribution trailers (`scripts/git-hook-commit-msg.ts`)
 - `pre-push`: blocks direct push to main, runs db:generate + ci:quick + smoke tests
 
 ## Release Process
@@ -631,15 +645,28 @@ Anything sent to other people still waits for his approval.
 
 ## Boardly is the repo plus its satellites
 
-The Discord server and anything else attached to the product go stale silently. A release
-that flips a game to available, renames something or changes what the site offers is not
-finished while the server still describes the old product: at the end of a release ask what
-outside the repo now describes it wrongly — channel topics, pinned messages, the invite, the
-site's copy about the community. Guild `1446554932298649796`; `#webhook` and `#feedback` are
-where `OPS_ALERT_WEBHOOK_URL` and `FEEDBACK_DISCORD_WEBHOOK_URL` point, **never delete them**.
-Server-as-code and the bot live in `KovalDenys1/boardly-discord`, ids only in
-`server/snapshot.json`; the vault note is `03 Projects/Boardly/Discord Server.md`; one phase
-per session.
+"Work on Boardly" means all of the parts below, not only this tree. Their open items sit in the
+vault's `Boardly.md` To Do beside the code ones. A pending clip review or a Discord phase is
+Boardly work, not a different project.
+
+Everything outside the repo that describes the product goes stale silently. A release that
+flips a game to available, renames something, changes a price or a URL, or changes what the
+site offers is not finished while a satellite still describes the old product. At the end of
+such a release, go down this list, fix what is ours to fix and name the rest in the report:
+
+| Satellite | Where it lives | What goes stale |
+|---|---|---|
+| GitHub | `KovalDenys1/boardly`: issues, labels, releases, Actions | issues closed by a PR that never touched them, release notes, the repo description |
+| Control Panel | `~/Projects/boardly-control-panel`, `admin.boardly.online` | queries against a changed schema, admin views missing a new game |
+| Discord | `KovalDenys1/boardly-discord`; vault `Discord Server.md` | channel topics, pinned messages, the invite, the site's copy about the community |
+| Social `@playboardly` | TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; clips cut in `~/Projects/shorts-kit`, weeks packed in `~/Projects/boardly-social`, posted by the Pi publisher (vault `03 Projects/Social Publishing/`) | bios and links, and a **scheduled** clip that shows a renamed game or a UI that no longer exists |
+| Directory listings | Product Hunt, SaaSHub, DontPayFull; vault `Growth/Directory Listings 2026-09-30.md` | game count, price, promo codes |
+| Google and Microsoft | Search Console, AdSense, Microsoft Ads (vault `Growth/`) | sitemap after a URL change, ad copy naming games or prices |
+| Stripe and Resend | Stripe products and prices, Resend email templates | a price or plan name that no longer matches `/premium` |
+
+Discord detail: guild `1446554932298649796`; `#webhook` and `#feedback` are where
+`OPS_ALERT_WEBHOOK_URL` and `FEEDBACK_DISCORD_WEBHOOK_URL` point, **never delete them**. Ids live
+only in the bot repo's `server/snapshot.json`. Do one phase per session.
 
 ## Research before build, agents in parallel (Denys, 2026-09-24)
 
@@ -669,7 +696,8 @@ Sunday funnel routine → Tuesday planner (cloud, Sonnet, Supabase only) → Wed
 `03 Projects/Boardly/Growth/Growth Log.md` before any marketing or SEO work; file growth work
 as tickets in the queue's shape (labels `growth`, `agent-ok` / `needs-denys`), never outside
 it. Decisions taken 2026-09-14, not to re-open: $2.99 subscription + yearly plan, no
-one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames/Product Hunt, no
+one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames (Product Hunt was on that
+list; Denys reopened it 2026-09-28 and confirmed it as a standing channel 2026-10-03), no
 ads near a game, localized URLs for game pages only. **2026-09-24: social accounts are on**
 (TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; handle `@playboardly`; plan in
 the vault's `Growth/Social Launch Kit 2026-09.md`), and the brand is **faceless**: never

@@ -30,10 +30,6 @@ export async function POST(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
-  // After the rate limit, so a refused flood costs no BotID call (#1157).
-  const botRefusal = await refuseIfBot('POST /api/auth/guest-session')
-  if (botRefusal) return botRefusal
-
   try {
     const parsed = guestSessionSchema.safeParse(await request.json())
     if (!parsed.success) {
@@ -61,6 +57,15 @@ export async function POST(request: NextRequest) {
     // device no longer carries an identity for a person we deleted (#1155,
     // #1129). Only a freshly minted id creates a row here.
     const tokenGuestId = existingGuest?.guestId || identityGuestId
+
+    // Only a call that mints a guest is checked, as in join-guest (#1157). A returning
+    // guest refreshes their session on page load, before BotID's browser challenge is
+    // ready, so that call arrives without it and was classified as a bot.
+    if (!tokenGuestId) {
+      const botRefusal = await refuseIfBot('POST /api/auth/guest-session')
+      if (botRefusal) return botRefusal
+    }
+
     const signupSource = getSignupSourceFromRequest(request)
     const guestUser = tokenGuestId
       ? await getOrCreateGuestUser(tokenGuestId, parsed.data.guestName, signupSource, { createIfMissing: false })
