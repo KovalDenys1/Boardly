@@ -68,6 +68,11 @@ interface GamePlayer {
   user?: { username?: string; isPremium?: boolean }
 }
 
+// Guests reach Players with `name` empty; their display name is on the user row.
+function playerDisplayName(player: GamePlayer | undefined): string | undefined {
+  return player?.user?.username || player?.name || undefined
+}
+
 interface Game {
   id: string
   status: string
@@ -1052,9 +1057,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               padding: '8px 12px 8px 8px', borderRadius: 999,
               background: 'var(--bd-surface-raised)', border: '1.5px solid var(--bd-line)',
             }}>
-              <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
+              <BdAvatar name={playerDisplayName(p)} color={i === 0 ? accent : undefined} />
               <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
-                {p.name}
+                {playerDisplayName(p) ?? t('game.ui.playerFallback')}
                 {p.user?.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" style={{ marginLeft: 4 }} />}
                 {p.userId === currentUserId && (
                   <span style={{
@@ -1131,7 +1136,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <TeamCard
                   key={player.id}
                   side={i === 0 ? 'left' : 'right'}
-                  name={player.name}
+                  name={playerDisplayName(player) ?? t('game.ui.playerFallback')}
                   accent={['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)'][i] ?? 'var(--bd-lav)'}
                   accentDeep={['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)'][i] ?? '#7A6AE8'}
                   list={[player]}
@@ -1209,7 +1214,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const myTeamId = data.teams.find(t => t.playerIds.includes(currentUserId ?? ''))?.id
 
     const getPlayerName = (userId: string) =>
-      players.find(p => p.userId === userId)?.name ?? userId.slice(0, 8)
+      playerDisplayName(players.find(p => p.userId === userId)) ?? t('game.ui.playerFallback')
 
     const teamsValid = data.teams.every(t => t.playerIds.length >= 1)
 
@@ -1450,11 +1455,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const teamAccent = teamIndex === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)'
   const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : '#7A6AE8'
   const describerPlayer = players.find(p => p.userId === describerId)
-  // Guests reach Players with `name` null and their display name on the user
-  // row, which is what every other board reads. Alias read only `name`, so the
-  // status line came out as " is describing for Team 1".
-  const describerDisplayName =
-    describerPlayer?.user?.username || describerPlayer?.name || t('game.ui.playerFallback')
+  const describerDisplayName = playerDisplayName(describerPlayer) ?? t('game.ui.playerFallback')
 
   // A turn is one describer's run at one card list, so it changes when the team
   // changes, the describer changes, or the clock restarts. The override is
@@ -1843,7 +1844,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
+                  <BdLabel>{playerDisplayName(describerPlayer) ? t('alias.describerWords', { name: describerDisplayName }) : t('alias.wordsThisTurn')}</BdLabel>
                   <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 28, margin: 0 }}>
                     {t('alias.wordsCount', { count: wordResults.length })}
                   </h2>

@@ -489,6 +489,20 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
     await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
     expect(screen.getByText('alias.guesses')).toBeTruthy()
   })
+
+  it('names guests on the team screen, not by a cut user id (#1283)', async () => {
+    const response = buildTurnResponse({ meDescribing: false })
+    response.activeGame.state.data.phase = 'team_assignment'
+    response.activeGame.state.data.turnStartedAt = null
+    response.activeGame.state.data.currentCard = null
+    mountWith(response)
+    await waitFor(() => expect(screen.getByTestId('alias-team-assignment')).toBeTruthy())
+
+    for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {
+      expect(screen.getAllByText(name).length).toBeGreaterThan(0)
+    }
+    expect(screen.queryByText('user-2')).toBeNull()
+  })
 })
 
 describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
