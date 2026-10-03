@@ -779,6 +779,12 @@ Chrome passed once and was then classified as a bot, and with no other guest tra
 was no way to show that real people pass. After a week, compare `botid_flagged` with real guest
 sign-ups; if real players are not flagged, remove `BOTID_MODE` and redeploy to enforce.
 
+**Read-out 2026-10-03: not enforced.** All 29 flags in the first week were on guest-session, none
+minted a guest, and 9 sat right after `invite_opened`: they were returning guests, whose session
+refresh on page load runs before the browser challenge is ready. guest-session now checks only a
+call that mints a guest, as join-guest does. Read `botid_flagged` again a week after that release;
+what is left should be token-less calls only.
+
 
 Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
 token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
