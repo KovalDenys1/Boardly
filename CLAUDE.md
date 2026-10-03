@@ -645,15 +645,28 @@ Anything sent to other people still waits for his approval.
 
 ## Boardly is the repo plus its satellites
 
-The Discord server and anything else attached to the product go stale silently. A release
-that flips a game to available, renames something or changes what the site offers is not
-finished while the server still describes the old product: at the end of a release ask what
-outside the repo now describes it wrongly — channel topics, pinned messages, the invite, the
-site's copy about the community. Guild `1446554932298649796`; `#webhook` and `#feedback` are
-where `OPS_ALERT_WEBHOOK_URL` and `FEEDBACK_DISCORD_WEBHOOK_URL` point, **never delete them**.
-Server-as-code and the bot live in `KovalDenys1/boardly-discord`, ids only in
-`server/snapshot.json`; the vault note is `03 Projects/Boardly/Discord Server.md`; one phase
-per session.
+"Work on Boardly" means all of the parts below, not only this tree. Their open items sit in the
+vault's `Boardly.md` To Do beside the code ones. A pending clip review or a Discord phase is
+Boardly work, not a different project.
+
+Everything outside the repo that describes the product goes stale silently. A release that
+flips a game to available, renames something, changes a price or a URL, or changes what the
+site offers is not finished while a satellite still describes the old product. At the end of
+such a release, go down this list, fix what is ours to fix and name the rest in the report:
+
+| Satellite | Where it lives | What goes stale |
+|---|---|---|
+| GitHub | `KovalDenys1/boardly`: issues, labels, releases, Actions | issues closed by a PR that never touched them, release notes, the repo description |
+| Control Panel | `~/Projects/boardly-control-panel`, `admin.boardly.online` | queries against a changed schema, admin views missing a new game |
+| Discord | `KovalDenys1/boardly-discord`; vault `Discord Server.md` | channel topics, pinned messages, the invite, the site's copy about the community |
+| Social `@playboardly` | TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; clips cut in `~/Projects/shorts-kit`, weeks packed in `~/Projects/boardly-social`, posted by the Pi publisher (vault `03 Projects/Social Publishing/`) | bios and links, and a **scheduled** clip that shows a renamed game or a UI that no longer exists |
+| Directory listings | Product Hunt, SaaSHub, DontPayFull; vault `Growth/Directory Listings 2026-09-30.md` | game count, price, promo codes |
+| Google and Microsoft | Search Console, AdSense, Microsoft Ads (vault `Growth/`) | sitemap after a URL change, ad copy naming games or prices |
+| Stripe and Resend | Stripe products and prices, Resend email templates | a price or plan name that no longer matches `/premium` |
+
+Discord detail: guild `1446554932298649796`; `#webhook` and `#feedback` are where
+`OPS_ALERT_WEBHOOK_URL` and `FEEDBACK_DISCORD_WEBHOOK_URL` point, **never delete them**. Ids live
+only in the bot repo's `server/snapshot.json`. Do one phase per session.
 
 ## Research before build, agents in parallel (Denys, 2026-09-24)
 
