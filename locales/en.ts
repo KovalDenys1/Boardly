@@ -4775,7 +4775,7 @@ const en = {
         title: 'Your account',
         data: 'Username, email address, your password stored only as a one-way bcrypt hash, profile picture, bio, accent colour and preferences, the sign-in providers you linked, the time of your last password reset or email change (used only to sign out older sessions), the site or campaign you arrived from when you signed up, and when you accepted the Terms and confirmed that you are 13 or older.',
         basis: 'Contract: your account rests on the Terms you accept when you create it, not on consent, and we need this to run it. The sign-up source: our legitimate interest in knowing which channels bring new players.',
-        retention: 'Until you delete the account. We do not delete an account because it has not been used; if we ever decide to, we will tell you by email and on this page at least 30 days before it applies. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it or it has Premium or has ever started a Premium purchase. An account that signs in with Google, GitHub or Discord is kept until you delete it.',
+        retention: 'Until you delete the account. From {{inactiveFrom}} we also delete an account that has not been used for {{inactiveMonths}} months: we email you {{inactiveWarningDays}} days before, and signing in once keeps the account. An account that has or has had Premium, has ever started a Premium purchase or is suspended is not deleted for that reason. If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, unless you have linked Google, GitHub or Discord to it or it has Premium or has ever started a Premium purchase.',
         extra: 'Your username, your picture and your leaderboard results are visible to everyone, whatever your settings: the public leaderboard lists them for every account with enough finished games, and your profile page always shows your username and picture, with a note that the profile is private when it is. The rest of your profile (bio, game statistics, achievements, Premium status, and online status, which you can also switch off on its own) follows its visibility setting: everyone can see it if the profile is public, only your friends if it is friends-only, and nobody but you if it is private. In lobbies and games you shared, the other players also see your Premium badge and the game results, including on your player card there, whatever the setting. A new account starts friends-only, with online status hidden. When you first sign in we offer to make the profile public, and you can change both at any time in your profile settings. Accounts created before this change keep the settings they had: a public profile and online status shown, unless changed.',
       },
       guest: {
@@ -4798,7 +4798,7 @@ const en = {
       },
       email: {
         title: 'Emails we send you',
-        data: 'Your email address and the message: verification and password-reset links, security notices, game invites from friends, the notifications you choose, purchase confirmations and, while a Premium subscription runs, a reminder at least every six months that it is running and how to end it. When someone asks to change an account\'s email address, we send a security notice to the old address with the new one partly hidden. To stop floods of verification and reset emails we keep a shortened one-way hash of the address for 10 minutes and a daily counter for 26 hours.',
+        data: 'Your email address and the message: verification and password-reset links, security notices, game invites from friends, the notifications you choose, purchase confirmations, notices of changes to our Terms, a warning before an account that has not been used is deleted and, while a Premium subscription runs, a reminder at least every six months that it is running and how to end it. When someone asks to change an account\'s email address, we send a security notice to the old address with the new one partly hidden. To stop floods of verification and reset emails we keep a shortened one-way hash of the address for 10 minutes and a daily counter for 26 hours.',
         basis: 'Contract. The subscription reminder: a legal obligation (the Norwegian act on digital services, digitalytelsesloven § 33). Security notices and the email limits: our legitimate interest in protecting accounts and preventing abuse.',
         retention: 'Notification records: {{notificationsMonths}} months. Resend, which delivers the emails, keeps its own delivery log for the period its service sets.',
       },
@@ -5124,6 +5124,7 @@ const en = {
       },
       responsible: 'You are responsible for what happens on your account, unless someone got into it without it being your fault.',
       unverified: 'If you sign up with an email address and password and never verify the address, the account is deleted after {{unverifiedDays}} days, as our privacy policy describes.',
+      inactive: 'From {{inactiveFrom}}, an account that has not been used for {{inactiveMonths}} months is deleted. We email you {{inactiveWarningDays}} days before, at the address on the account, and signing in once before that day keeps the account. No account is deleted under this rule without that email. The rule does not apply to an account that has or has had Premium or has ever started a Premium purchase, or to an account that is suspended.',
     },
     conduct: {
       title: '4. Community rules',
@@ -5193,6 +5194,7 @@ const en = {
       body: 'Questions about these Terms, notices about content and complaints go to',
     },
     updated: 'Last updated: {{date}}',
+    changeNote: 'New in this version: the rule in section 2 on accounts that are not used, which applies from {{inactiveFrom}}. Nothing else has changed.',
     premium: {
       title: '3. Boardly Premium: subscription and right of withdrawal',
       price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars and is the full price: any VAT or sales tax due in your country is included in it, and Link collects it at checkout. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',

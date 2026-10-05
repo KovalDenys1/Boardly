@@ -78,6 +78,11 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
       provider: 'discord',
       linkedAt: new Date('2026-10-04T12:00:00Z'),
     }),
+  sendTermsChangeNoticeEmail: (m) =>
+    m.sendTermsChangeNoticeEmail('player@example.com', {
+      username: 'Ola',
+      appliesFrom: new Date('2027-01-01T00:00:00Z'),
+    }),
 }
 
 const OTHER_SENDS = Object.keys(sends).filter((name) => name !== CONFIRMATION)

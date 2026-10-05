@@ -59,10 +59,18 @@ describe('inactive accounts (#1130)', () => {
     enforceInactiveAccounts({ now: NOW, override: null, sendEmail, deleteAccount, termsAllowInactivityDeletion: true, ...overrides })
 
   describe('while the Terms do not allow it', () => {
-    // Terms sections 2 and 10 list why we close an account, and inactivity is not there.
-    // Flipping this needs a Terms clause announced 30 days ahead (Terms section 11).
-    it('stays off until the Terms clause ships', () => {
+    it('stays off until the Terms section 11 email has gone out', () => {
       expect(TERMS_ALLOW_INACTIVITY_DELETION).toBe(false)
+    })
+
+    it('does nothing before the day the Terms give for the rule, even when switched on', async () => {
+      candidates([account('due', 740, { claimed: 31, delivered: 31 })], [account('fresh', 705)])
+
+      const result = await run({ now: new Date('2026-12-31T23:59:59.000Z') })
+
+      expect(result).toMatchObject({ termsAllow: false, enforced: false, warned: 0, deleted: 0 })
+      expect(sendEmail).not.toHaveBeenCalled()
+      expect(deleteAccount).not.toHaveBeenCalled()
     })
 
     it('warns nobody and deletes nobody, even with RETENTION_ENFORCE=true, and only counts', async () => {
@@ -79,7 +87,7 @@ describe('inactive accounts (#1130)', () => {
       expect(prisma.users.updateMany).not.toHaveBeenCalled()
     })
 
-    it('leaves no locale of the privacy notice promising inactivity deletion', () => {
+    it('states the rule in every locale of the privacy notice and the Terms only with its start date', () => {
       const locales = {
         en: require('@/locales/en').default,
         no: require('@/locales/no').default,
@@ -87,9 +95,14 @@ describe('inactive accounts (#1130)', () => {
         uk: require('@/locales/uk').default,
       }
       for (const [name, locale] of Object.entries(locales)) {
-        const text = JSON.stringify(locale.privacyPolicy)
-        for (const placeholder of ['{{inactiveMonths}}', '{{inactiveWarningDays}}']) {
-          expect({ name, placeholder, found: text.includes(placeholder) }).toEqual({ name, placeholder, found: false })
+        const texts = {
+          privacy: locale.privacyPolicy.purposes.account.retention,
+          terms: locale.terms.accounts.inactive,
+        }
+        for (const [where, text] of Object.entries(texts)) {
+          for (const placeholder of ['{{inactiveFrom}}', '{{inactiveMonths}}', '{{inactiveWarningDays}}']) {
+            expect({ name, where, placeholder, found: text.includes(placeholder) }).toEqual({ name, where, placeholder, found: true })
+          }
         }
       }
     })

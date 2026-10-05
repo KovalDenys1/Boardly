@@ -8,6 +8,7 @@ import { authorizeCronRequest } from '@/lib/cron-auth'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { enforceRetention } from '@/lib/data-retention'
 import { enforceInactiveAccounts, type InactiveAccountRunResult } from '@/lib/inactive-accounts'
+import { sendTermsChangeNotices, type TermsChangeNoticeResult } from '@/lib/terms-change-notice'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
@@ -73,6 +74,24 @@ async function handleCronRequest(request: NextRequest) {
               inactive_accounts_delete_due: inactiveAccounts.deleteDue,
             }
 
+    let termsNotice: TermsChangeNoticeResult | { error: string }
+    try {
+      termsNotice = await sendTermsChangeNotices({ deadlineMs: 20_000 })
+    } catch (error) {
+      log.error('Terms change notice failed', error as Error)
+      termsNotice = { error: error instanceof Error ? error.message.slice(0, 200) : 'unknown' }
+    }
+    const termsNoticeSummary: Record<string, number | boolean> =
+      'error' in termsNotice
+        ? { terms_notice_due: -1 }
+        : {
+            terms_notice_approved: termsNotice.approved,
+            terms_notice_in_time: termsNotice.inTime,
+            terms_notice_due: termsNotice.due,
+            terms_notice_sent: termsNotice.sent,
+            terms_notice_failed: termsNotice.failed,
+          }
+
     await recordCronRun({
       cron: 'maintenance',
       success: true,
@@ -83,6 +102,7 @@ async function handleCronRequest(request: NextRequest) {
         cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
         ...retentionSummary,
         ...inactiveSummary,
+        ...termsNoticeSummary,
       },
     })
 
@@ -103,6 +123,7 @@ async function handleCronRequest(request: NextRequest) {
       oversizedReplayGames: replayOverflowResult.affectedGames,
       retention: retentionResult,
       inactiveAccounts,
+      termsNotice,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

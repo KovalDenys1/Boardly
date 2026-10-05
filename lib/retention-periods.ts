@@ -40,8 +40,7 @@ export const RETENTION_DAYS = {
   /**
    * Registered accounts, from their last activity (#1130). Never one that has a
    * subscription or ever went to checkout, never a bot, an admin or a suspended account.
-   * Not enforced, and not printed on /privacy, until the Terms allow it
-   * (TERMS_ALLOW_INACTIVITY_DELETION in lib/inactive-accounts.ts).
+   * Not enforced until TERMS_ALLOW_INACTIVITY_DELETION in lib/inactive-accounts.ts is on.
    */
   inactiveAccounts: 730,
   /** How long before that deletion the warning email goes out. */

@@ -1,4 +1,4 @@
-import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from './retention-periods'
+import { CHAT_RETENTION_HOURS, RETENTION_DAYS, retentionMonths } from './retention-periods'
 
 /**
  * The version of the legal text a Premium buyer agrees to at checkout (#1162).
@@ -19,8 +19,12 @@ import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from './retention-periods'
  * When the current Terms of Service took effect.
  * 2026-09-27: the whole of /terms rewritten and translated (#1166), the community
  * rules and moderation (#1173) and the content-notice address (#1172) added.
+ * 2026-10-05: section 2 gains the rule on accounts that are not used (#1224).
  */
-export const TERMS_VERSION = '2026-09-27'
+export const TERMS_VERSION = '2026-10-05'
+
+/** Printed in the Terms and the privacy notice, so moving it is a change of terms. */
+export const INACTIVITY_RULE_STARTS = '2027-01-01'
 
 /**
  * The numbers the Terms print (#1166), from the module the cleanup jobs read, so
@@ -33,6 +37,8 @@ export const TERMS_FIGURES = {
   guestPlayed: RETENTION_DAYS.guestPlayedIdle,
   unverifiedDays: RETENTION_DAYS.unverifiedAccounts,
   chatHours: CHAT_RETENTION_HOURS,
+  inactiveMonths: retentionMonths(RETENTION_DAYS.inactiveAccounts),
+  inactiveWarningDays: RETENTION_DAYS.inactiveAccountWarning,
 } as const
 
 /**
@@ -47,8 +53,9 @@ export const TERMS_FIGURES = {
  * are visible to everyone whatever the visibility setting; bio, statistics, achievements,
  * Premium status and online status follow it, except that players in lobbies and games
  * you shared see the Premium badge and the game results there.
+ * 2026-10-05 (#1224): the inactive-account rule and its start date; two more kinds of email.
  */
-export const PRIVACY_UPDATED = '2026-09-27'
+export const PRIVACY_UPDATED = '2026-10-05'
 
 /**
  * When the current withdrawal information on /premium and /withdrawal took effect.

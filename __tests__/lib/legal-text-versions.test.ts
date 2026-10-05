@@ -3,7 +3,7 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
-import { TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
+import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
 
 /**
  * TERMS_VERSION and WITHDRAWAL_INFO_VERSION are bumped by hand, and the
@@ -61,7 +61,7 @@ function termsText() {
       rules: Object.fromEntries(Object.entries(locale.rules).filter(([key]) => key !== 'breadcrumb')),
       priceNoteTax: locale.premium.priceNoteTax,
     })),
-    figures: TERMS_FIGURES,
+    figures: { ...TERMS_FIGURES, inactivityRuleStarts: INACTIVITY_RULE_STARTS },
   }
 }
 
@@ -94,6 +94,8 @@ const TERMS_DIGESTS: Record<string, string> = {
   // moderation (#1173), the content-notice address (#1172). The first digest over
   // all four locales.
   '2026-09-27': '0653967b2bfde28a',
+  // Section 2: accounts not used for 24 months, from INACTIVITY_RULE_STARTS (#1224).
+  '2026-10-05': 'd1cb3214d28d9538',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {

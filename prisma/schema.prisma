@@ -31,6 +31,8 @@ model Users {
   missingStripeSubscriptionId String? // The stripeSubscriptionId Stripe answered "no such subscription" for (#1165): the notice job skips it quietly, instead of failing on it daily, until the webhook stores another id
   inactivityWarningSentAt DateTime? @db.Timestamptz(3) // The claim on the "deleted in 30 days for inactivity" email (#1130): lib/inactive-accounts.ts moves it with a compare-and-set before sending and puts it back if the email is refused. NULL until the first attempt
   inactivityWarningDeliveredAt DateTime? @db.Timestamptz(3) // When Resend accepted that email (#1130). Deletion requires one later than lastActiveAt and at least 30 days old, so a crash between claim and send never deletes anyone unwarned. NULL until the first delivery
+  termsNoticeVersion    String? // The Terms version whose change the owner was last emailed about (Terms section 11)
+  termsNoticeSentAt     DateTime? @db.Timestamptz(3) // When Resend accepted that email
   totpSecret            String?
   totpEnabled           Boolean   @default(false)
   totpPendingSecret     String?

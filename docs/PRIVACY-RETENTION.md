@@ -24,7 +24,7 @@ enforces it. Change a period there and here together, and bump `PRIVACY_UPDATED`
 | `AdminAuditLogs` | 24 months | the admin action | Accountability for Control Panel actions | `adminAuditLogs` |
 | `GameStateSnapshots` (replays) | 90 days | the snapshot | Game replays | `lib/cleanup-replays.ts`, `REPLAY_RETENTION_DAYS` |
 | Unverified accounts | 7 days | sign-up | Email verification | `lib/cleanup-unverified.ts` |
-| Inactive registered accounts | **Not enforced**: built for 24 months with a warning email 30 days before, switched off until the Terms allow it | last activity (`Users.lastActiveAt`) | The account itself | `lib/inactive-accounts.ts` (`TERMS_ALLOW_INACTIVITY_DELETION = false`), deleting through `lib/account-deletion.ts` |
+| Inactive registered accounts | **Not enforced yet**: 24 months with a warning email 30 days before, in the Terms from 2027-01-01, switched off until the notice has gone out | last activity (`Users.lastActiveAt`) | The account itself | `lib/inactive-accounts.ts` (`TERMS_ALLOW_INACTIVITY_DELETION = false`), deleting through `lib/account-deletion.ts` |
 | Guest accounts | 3 days idle; 90 days idle for a guest who played | last activity | Playing without an account | `scripts/cleanup-old-guests.ts`, `CLEANUP_GUEST_DAYS` |
 | Lobby chat | 24 hours | the message | In-game chat | Redis TTL, `lib/chat-history.ts` |
 
@@ -93,20 +93,32 @@ shape, ignoring age: 566 lobbies hold only cancelled games, 1,364 held a real ga
 has no game, none inactive still holds a waiting or playing game, and no lobby code starts
 with `~`.
 
-## Inactive accounts (decision 2026-09-27): built, not enforced
+## Inactive accounts (decision 2026-09-27): in the Terms, not enforced yet
 
-The decision was to delete a registered account nobody has used for 24 months, after a
-warning email 30 days before. The Terms do not allow it yet: section 10 lists the only
-reasons we close an account and section 2 names only idle guests and unverified
-accounts. So `lib/inactive-accounts.ts` is gated on `TERMS_ALLOW_INACTIVITY_DELETION =
-false`: while it is false the rule sends no warning and deletes nothing, whatever
-`RETENTION_ENFORCE` says, and only counts. The privacy notice says registered accounts are
-kept until their owner deletes them, and that a change would be announced by email and on
-the page at least 30 days ahead; a test fails if any locale promises inactivity deletion
-while the constant is false. Switching it on needs, in one change: a Terms clause (with a
-new `TERMS_VERSION` and the section 11 email to every account holder 30 days before it
-applies), the privacy text (a draft in all four locales is in commit `5821d1e5`), and the
-constant.
+A registered account nobody has used for 24 months is deleted, after a warning email 30
+days before. Terms section 2 says so since the version of 2026-10-05, for the time from
+`INACTIVITY_RULE_STARTS` (2027-01-01, `lib/terms-version.ts`); section 10 already excepts
+"the deletions described in section 2". The privacy notice states the same rule with the
+same date, and a test fails if any locale states it without the date.
+
+Three steps are left, in this order:
+
+1. **The section 11 email.** Terms section 11 owes every account holder an email at least
+   30 days before the change applies. `lib/terms-change-notice.ts` sends it from the
+   maintenance cron, 20 a night (Resend allows 100 emails a day), to every registered
+   account with a verified address created by the end of 2026-10-05, and writes
+   `Users.termsNoticeVersion` and `termsNoticeSentAt` once Resend has accepted each one.
+   It is switched off by `TERMS_CHANGE_NOTICE_SEND = false` until the text is approved;
+   until then it only counts, as `terms_notice_due` in the `cron_run` heartbeat. It refuses
+   to send after 2026-12-02, when 30 days of notice can no longer be given: the date in
+   the Terms then has to move, which is a new Terms version.
+2. **The start date.** `lib/inactive-accounts.ts` does nothing before
+   `INACTIVITY_RULE_STARTS`, whatever its constant says.
+3. **The constant.** `TERMS_ALLOW_INACTIVITY_DELETION` goes to true only after
+   `terms_notice_due` has been 0 since 2026-12-02 at the latest. While it is false the
+   rule sends no warning and deletes nothing, whatever `RETENTION_ENFORCE` says, and only
+   counts. Counted on production on 2026-09-27, the first warning falls on 2027-11-19 at
+   the earliest, so the constant has until then.
 
 What the rule does once it is on:
 

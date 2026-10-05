@@ -5,6 +5,7 @@ import { majorUnitAmount, type PremiumPlan } from './premium-plans'
 import { formatSellerAddress, getSellerIdentity } from './seller-identity'
 import { LINK_SUPPORT_URL } from './sold-through-link'
 import { maskEmail } from './redact'
+import { TERMS_FIGURES } from './terms-version'
 
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -1222,6 +1223,143 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
   } catch (error) {
     await noteEmailSendFailure('sendInactiveAccountWarningEmail', error)
     logger.error('Failed to send inactive account warning email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export type TermsChangeNoticeDetails = {
+  idempotencyKey?: string
+  username?: string | null
+  appliesFrom: Date
+}
+
+type TermsChangeNoticeLinks = { terms: string; privacy: string; profile: string }
+
+function englishTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChangeNoticeLinks): ConfirmationCopy {
+  const day = formatDay(d.appliesFrom, 'en-US')
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro: `We have updated the Boardly Terms of Service. One thing changes, and it applies from ${day}.`,
+    sections: [
+      {
+        heading: 'What changes',
+        paragraphs: [
+          `From ${day}, an account that has not been used for ${TERMS_FIGURES.inactiveMonths} months is deleted. We email the address on the account ${TERMS_FIGURES.inactiveWarningDays} days before, and signing in once before that day keeps the account. Nothing else in the Terms has changed.`,
+          'The rule does not apply to an account that has or has had Premium or has ever started a Premium purchase, or to an account that is suspended.',
+        ],
+      },
+      {
+        heading: 'What you need to do',
+        paragraphs: [
+          'Nothing, if you want to keep playing: an account you sign in to is never affected.',
+          `If you do not accept the change, you can delete your account from your profile page before ${day}: ${links.profile}. If you have Premium, you can also end the subscription free of charge before that day, and we refund the part of the period you have paid for that falls after it.`,
+        ],
+      },
+      {
+        heading: 'Where to read it',
+        paragraphs: [
+          `The rule is in section 2 of the Terms: ${links.terms}. Our privacy policy says how long we keep what: ${links.privacy}.`,
+        ],
+      },
+    ],
+  }
+}
+
+function norwegianTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChangeNoticeLinks): ConfirmationCopy {
+  const day = formatDay(d.appliesFrom, 'nb-NO')
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro: `Vi har oppdatert Boardlys vilkår for bruk. Én ting endres, og den gjelder fra ${day}.`,
+    sections: [
+      {
+        heading: 'Hva som endres',
+        paragraphs: [
+          `Fra ${day} slettes en konto som ikke har vært brukt på ${TERMS_FIGURES.inactiveMonths} måneder. Vi sender en e-post til adressen på kontoen ${TERMS_FIGURES.inactiveWarningDays} dager før, og logger du inn én gang før den dagen, beholder du kontoen. Ingenting annet i vilkårene er endret.`,
+          'Regelen gjelder ikke for en konto som har eller har hatt Premium eller noen gang har startet et Premium-kjøp, og heller ikke for en konto som er suspendert.',
+        ],
+      },
+      {
+        heading: 'Hva du må gjøre',
+        paragraphs: [
+          'Ingenting, hvis du vil fortsette å spille: en konto du logger inn på, blir aldri berørt.',
+          `Godtar du ikke endringen, kan du slette kontoen fra profilsiden din før ${day}: ${links.profile}. Har du Premium, kan du også si opp abonnementet kostnadsfritt før den dagen, og vi betaler tilbake den delen av perioden du har betalt for, som faller etter den.`,
+        ],
+      },
+      {
+        heading: 'Hvor du kan lese det',
+        paragraphs: [
+          `Regelen står i punkt 2 i vilkårene: ${links.terms}. I personvernerklæringen står det hvor lenge vi lagrer hva: ${links.privacy}.`,
+        ],
+      },
+    ],
+  }
+}
+
+export async function sendTermsChangeNoticeEmail(email: string, details: TermsChangeNoticeDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const links: TermsChangeNoticeLinks = {
+    terms: `${BOARDLY_URL}/terms`,
+    privacy: `${BOARDLY_URL}/privacy`,
+    profile: `${BOARDLY_URL}/profile`,
+  }
+  const english = englishTermsChangeCopy(details, links)
+  const norwegian = norwegianTermsChangeCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+  const signature = 'The Boardly team'
+
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}\n${signature}`,
+  ].join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: 'An update to the Boardly Terms of Service / Boardlys vilkår er oppdatert',
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}<br>
+                ${signature}
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    await noteEmailSendFailure('sendTermsChangeNoticeEmail', error)
+    logger.error('Failed to send Terms change notice email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

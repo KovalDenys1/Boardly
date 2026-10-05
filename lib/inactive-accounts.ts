@@ -6,24 +6,14 @@ import { neverCustomerWhere } from './cleanup-unverified'
 import { sendInactiveAccountWarningEmail } from './email'
 import { deleteUserAccount } from './account-deletion'
 import { resolveRetentionEnforceOverride, type RetentionEnforceOverride } from './data-retention'
+import { INACTIVITY_RULE_STARTS } from './terms-version'
 
 const log = apiLogger('inactive-accounts')
 
 /**
- * Whether the Terms of Service allow us to close an account for inactivity.
- *
- * They do not, yet. Terms section 10 lists the only reasons we close an account and section
- * 2 names only idle guests and unverified accounts; inactivity is in neither. Until a Terms
- * version with that clause is in force – published, and emailed to every account holder at
- * least 30 days before it applies (Terms section 11) – this rule sends no warning and deletes
- * nothing, whatever RETENTION_ENFORCE says. It still counts, so the cron heartbeat shows what
- * it would do. The privacy notice says accounts are kept until their owner deletes them, and
- * __tests__/lib/inactive-accounts.test.ts fails if a locale promises otherwise while this is
- * false.
- *
- * Flip it in the same change that ships the Terms clause, the privacy-notice text (a draft in
- * all four locales is in commit 5821d1e5, "the privacy notice and the retention table state
- * pseudonymised games and the inactive-account rule") and a new TERMS_VERSION.
+ * Stays false until the Terms section 11 email (lib/terms-change-notice.ts) has reached every
+ * account holder at least 30 days before INACTIVITY_RULE_STARTS; before that day the rule
+ * does nothing whatever this says.
  */
 export const TERMS_ALLOW_INACTIVITY_DELETION = false
 
@@ -185,7 +175,9 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
   const now = options.now ?? new Date()
   const override =
     options.override === undefined ? resolveRetentionEnforceOverride(process.env.RETENTION_ENFORCE) : options.override
-  const termsAllow = options.termsAllowInactivityDeletion ?? TERMS_ALLOW_INACTIVITY_DELETION
+  const termsAllow =
+    (options.termsAllowInactivityDeletion ?? TERMS_ALLOW_INACTIVITY_DELETION) &&
+    now.getTime() >= Date.parse(`${INACTIVITY_RULE_STARTS}T00:00:00.000Z`)
   const wanted = override === 'enforce' ? true : override === 'report' ? false : INACTIVE_ACCOUNTS_ENFORCE_BY_DEFAULT
   // The Terms gate beats every override: RETENTION_ENFORCE=true cannot switch it on.
   const enforced = termsAllow && wanted
