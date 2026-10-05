@@ -104,7 +104,7 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
         >
           <Icon name="check" size={24} tone="on-accent" />
         </div>
-        <p ref={resultRef} tabIndex={-1} className="text-base font-bold text-bd-ink focus:outline-none">
+        <p ref={resultRef} tabIndex={-1} className="text-base font-bold text-bd-ink focus:outline-hidden">
           {t('report.successTitle')}
         </p>
         <p className="text-sm text-bd-ink-soft">
@@ -123,7 +123,7 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
         ref={headingRef}
         id={`${formId}-title`}
         tabIndex={-1}
-        className="flex items-center gap-2 text-base font-bold text-bd-ink focus:outline-none"
+        className="flex items-center gap-2 text-base font-bold text-bd-ink focus:outline-hidden"
       >
         <Icon name="flag" size={18} tone="coral" />
         {t('report.title')}
@@ -134,17 +134,17 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
           <figcaption className="text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted">
             {t('report.quoted')}
           </figcaption>
-          <blockquote className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-sm text-bd-ink">{quote}</blockquote>
+          <blockquote className="mt-1 line-clamp-3 whitespace-pre-wrap wrap-break-word text-sm text-bd-ink">{quote}</blockquote>
         </figure>
       )}
 
       {targets.length > 1 && (
-        <fieldset className="space-y-1.5">
+        <fieldset className="stack-y-1.5">
           <legend className="mb-1.5 text-sm font-semibold text-bd-ink">{t('report.targetLabel')}</legend>
           {targets.map((option, index) => (
             <label
               key={option.targetType}
-              className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-bd-line px-3 py-2 text-sm text-bd-ink has-[:checked]:border-bd-ink has-[:checked]:bg-bd-bg2"
+              className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-bd-line px-3 py-2 text-sm text-bd-ink has-checked:border-bd-ink has-checked:bg-bd-bg2"
             >
               <input
                 type="radio"
@@ -159,12 +159,12 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
         </fieldset>
       )}
 
-      <fieldset className="space-y-1.5">
+      <fieldset className="stack-y-1.5">
         <legend className="mb-1.5 text-sm font-semibold text-bd-ink">{t('report.reasonLabel')}</legend>
         {REPORT_REASONS.map((option) => (
           <label
             key={option}
-            className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-bd-line px-3 py-2 text-sm text-bd-ink has-[:checked]:border-bd-ink has-[:checked]:bg-bd-bg2"
+            className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-bd-line px-3 py-2 text-sm text-bd-ink has-checked:border-bd-ink has-checked:bg-bd-bg2"
           >
             <input
               type="radio"
@@ -215,7 +215,7 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
         <button
           type="submit"
           disabled={!reason || submitting}
-          className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+          className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none!"
         >
           {submitting ? t('report.submitting') : t('report.submit')}
         </button>

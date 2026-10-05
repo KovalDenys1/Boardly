@@ -183,9 +183,9 @@ export default function LoginForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
           <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
@@ -253,7 +253,7 @@ export default function LoginForm() {
     if (!showChip || !lastAccount) return null
 
     const chipClassName = tone === 'dark'
-      ? 'border-white/15 bg-white/8 hover:border-white/25 hover:bg-white/12'
+      ? 'border-white/15 hover:border-white/25'
       : ''
 
     const chipStyle = tone === 'light'
@@ -289,7 +289,7 @@ export default function LoginForm() {
             setShowChip(false)
             setTimeout(() => passwordRef.current?.focus(), 0)
           }}
-          className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition-colors ${chipClassName}`}
+          className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-xs transition-colors ${chipClassName}`}
           style={chipStyle}
         >
           <UserAvatar

@@ -168,7 +168,7 @@ export default function Chat({
         <button
           onClick={onToggleMinimize}
           aria-label={ariaLabel}
-          className="bd-btn bd-btn-primary rounded-2xl border-2 border-bd-ink px-4 py-3 shadow-[0_10px_24px_-14px_rgba(31,27,22,0.5)] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+          className="bd-btn bd-btn-primary rounded-2xl border-2 border-bd-ink px-4 py-3 shadow-[0_10px_24px_-14px_rgba(31,27,22,0.5)] focus-visible:ring-4! focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
         >
           <span className="text-xl" aria-hidden="true">💬</span>
           <span className="font-semibold">{t('chat.open')}</span>
@@ -185,7 +185,7 @@ export default function Chat({
   return (
     <div
       ref={chatRef}
-      className={`bd-card flex flex-col overflow-hidden ${fullScreen ? 'h-full rounded-none border-0 shadow-none' : 'fixed z-50 rounded-[24px]'}`}
+      className={`bd-card flex flex-col overflow-hidden ${fullScreen ? 'h-full rounded-none border-0 shadow-none' : 'fixed z-50 rounded-bd-lg'}`}
       style={fullScreen ? {
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {
@@ -202,7 +202,7 @@ export default function Chat({
           `overflow-hidden` then ate the composer outright (#902). What is left
           over goes to the messages, which scroll. */}
       <div
-        className={`chat-titlebar flex shrink-0 items-center justify-between border-b px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-[24px]'}`}
+        className={`chat-titlebar flex shrink-0 items-center justify-between border-b px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-bd-lg'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -216,7 +216,7 @@ export default function Chat({
             </h3>
           </div>
           {messages.length > 0 && (
-            <span className="bd-chip flex-shrink-0 px-2 py-0.5 text-xs" aria-label={t('chat.messageCount', { count: messages.length })}>
+            <span className="bd-chip shrink-0 px-2 py-0.5 text-xs" aria-label={t('chat.messageCount', { count: messages.length })}>
               {messages.length}
             </span>
           )}
@@ -238,7 +238,7 @@ export default function Chat({
             rel="noopener noreferrer"
             aria-label={t('chat.rulesNewTab')}
             title={t('chat.rulesNewTab')}
-            className="chat-rules-link inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink hover:underline focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+            className="chat-rules-link inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink hover:underline focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
           >
             <Icon name="shield" size={14} />
             <span>{t('chat.rules')}</span>
@@ -249,7 +249,7 @@ export default function Chat({
                 <button
                   onClick={onClearChat}
                   aria-label={t('chat.clear')}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
                   style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                   title={t('chat.clear')}
                 >
@@ -259,7 +259,7 @@ export default function Chat({
               <button
                 onClick={onToggleMinimize}
                 aria-label={t('chat.minimize')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
                 style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                 title={t('chat.minimize')}
               >
@@ -272,7 +272,7 @@ export default function Chat({
 
       <div
         ref={messagesContainerRef}
-        className="chat-messages relative min-h-0 flex-1 space-y-2.5 overflow-y-auto p-4 scroll-smooth"
+        className="chat-messages relative min-h-0 flex-1 stack-y-2.5 overflow-y-auto p-4 scroll-smooth"
         style={{
           background:
             'radial-gradient(circle at 14% 8%, rgba(255,196,77,0.08), transparent 28%), radial-gradient(circle at 88% 12%, rgba(155,140,255,0.08), transparent 32%), linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
@@ -308,7 +308,7 @@ export default function Chat({
                 >
                   {msg.type !== 'system' && (
                     <div
-                      className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'} ${!isCurrentUser && onProfileClick && msg.userId !== 'system' ? 'cursor-pointer' : ''}`}
+                      className={`shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'} ${!isCurrentUser && onProfileClick && msg.userId !== 'system' ? 'cursor-pointer' : ''}`}
                       onClick={!isCurrentUser && onProfileClick && msg.userId !== 'system' ? () => onProfileClick(msg.userId) : undefined}
                     >
                       {avatarUrl ? (
@@ -337,11 +337,11 @@ export default function Chat({
                     )}
 
                     <div
-                      className={`max-w-[280px] rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md sm:max-w-xs ${
+                      className={`max-w-[280px] rounded-2xl px-4 py-2.5 shadow-xs transition-all hover:shadow-md sm:max-w-xs ${
                         msg.type === 'system'
                           ? 'text-center text-xs italic'
                           : isCurrentUser
-                            ? 'rounded-br-md text-[var(--bd-bg)]'
+                            ? 'rounded-br-md text-(--bd-bg)'
                             : 'rounded-bl-md text-bd-ink'
                       }`}
                       style={
@@ -362,7 +362,7 @@ export default function Chat({
                               }
                       }
                     >
-                      <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      <div className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed">
                         {msg.message}
                       </div>
                       {msg.type !== 'system' && (
@@ -378,7 +378,7 @@ export default function Chat({
                               onClick={() => setReportedMessage(msg)}
                               aria-label={t('report.reportMessage')}
                               title={t('report.reportMessage')}
-                              className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                              className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
                             >
                               <Icon name="flag" size={12} />
                             </button>
@@ -396,7 +396,7 @@ export default function Chat({
         {showScrollButton && (
           <button
             onClick={scrollToBottom}
-            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full !p-3 shadow-lg hover:scale-110 active:scale-95 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none animate-[bounce-in_0.3s_ease-out]"
+            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full p-3! shadow-lg hover:scale-110 active:scale-95 active:transform-none! focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden animate-[bounce-in_0.3s_ease-out]"
             aria-label={t('chat.scrollToBottom')}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,7 +442,7 @@ export default function Chat({
       {!readOnly && (
       <form
         onSubmit={handleSubmit}
-        className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
+        className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex items-stretch gap-2.5">
@@ -455,7 +455,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input h-full pr-14 text-sm hover:border-[var(--bd-ink)] focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
+              className="bd-input h-full pr-14 text-sm hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">
@@ -466,7 +466,7 @@ export default function Chat({
             type="submit"
             disabled={!newMessage.trim()}
             aria-label={t('chat.send')}
-            className="bd-btn bd-btn-primary justify-center rounded-2xl px-4 text-xl focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            className="bd-btn bd-btn-primary justify-center rounded-2xl px-4 text-xl focus-visible:ring-4! focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none!"
           >
             📤
           </button>

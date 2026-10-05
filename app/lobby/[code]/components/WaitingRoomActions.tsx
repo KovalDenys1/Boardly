@@ -36,7 +36,7 @@ export default function WaitingRoomActions({
 
   if (startingGame) {
     return (
-      <div className="flex-shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-5 pb-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] sm:px-6">
+      <div className="shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-5 pb-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] sm:px-6">
         <div className="flex items-center justify-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun shadow-[2px_2px_0_var(--bd-ink)]">
             <LoadingSpinner size="sm" />
@@ -54,7 +54,7 @@ export default function WaitingRoomActions({
 
   if (!canStartGame) {
     return (
-      <div className="flex-shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
+      <div className="shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
         <div className="flex items-center gap-3 rounded-xl border border-bd-sun/40 bg-bd-sun/10 px-4 py-3.5">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-bd-sun opacity-60" />
@@ -74,7 +74,7 @@ export default function WaitingRoomActions({
   // Host view — invite/add-bot live inline in the player list's empty slots
   // (WaitingRoom.tsx); this bar only carries lobby status + Start Game.
   return (
-    <div className="flex-shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
+    <div className="shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
       {!canAddMorePlayers && (
         <div className="flex items-center justify-between rounded-xl border border-bd-mint/45 bg-bd-mint/15 px-4 py-2.5">
           <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function WaitingRoomActions({
           onStartGame()
         }}
         disabled={!canStartImmediately}
-        className="bd-btn bd-btn-primary w-full justify-center px-5 py-3.5 text-base transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+        className="bd-btn bd-btn-primary w-full justify-center px-5 py-3.5 text-base transition-transform active:scale-[0.98] active:transform-none! disabled:cursor-not-allowed disabled:opacity-40"
       >
         <span className="inline-flex items-center justify-center gap-2">
           <Icon name="play" size={18} />

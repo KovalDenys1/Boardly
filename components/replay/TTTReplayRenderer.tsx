@@ -76,12 +76,12 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
                   }`}
                 >
                   {cell === 'X' && (
-                    <span className={isWinCell ? 'text-[color:var(--bd-ink-on-accent)]' : 'text-bd-coral-deep'}>
+                    <span className={isWinCell ? 'text-(--bd-ink-on-accent)' : 'text-bd-coral-deep'}>
                       X
                     </span>
                   )}
                   {cell === 'O' && (
-                    <span className={isWinCell ? 'text-[color:var(--bd-ink-on-accent)]' : 'text-bd-lav-deep'}>
+                    <span className={isWinCell ? 'text-(--bd-ink-on-accent)' : 'text-bd-lav-deep'}>
                       ○
                     </span>
                   )}

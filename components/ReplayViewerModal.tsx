@@ -944,7 +944,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       >
                         {index + 1}
                       </span>
-                      <span className="max-w-[8rem] truncate text-sm font-medium" style={{ color: 'var(--bd-ink)' }}>
+                      <span className="max-w-32 truncate text-sm font-medium" style={{ color: 'var(--bd-ink)' }}>
                         {entry.name}
                       </span>
                       <span className="text-base font-bold" style={{ color: 'var(--bd-ink)' }}>
@@ -996,7 +996,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('profile.gameReplay.timeline')}
               </p>
-              <div className="max-h-[20rem] space-y-1 overflow-auto pr-1 sm:max-h-[24rem] xl:max-h-[42rem]">
+              <div className="max-h-80 space-y-1 overflow-auto pr-1 sm:max-h-96 xl:max-h-168">
                 {snapshots.map((snapshot, index) => {
                   const snapshotActor = snapshot.playerId
                     ? playerNameById.get(snapshot.playerId) || snapshot.playerId

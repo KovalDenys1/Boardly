@@ -80,14 +80,14 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       // No ring utilities here: the inline boxShadow below replaces Tailwind's ring shadow,
       // so a ring never rendered on this button. Focus is an inset outline instead (#1278).
       className={`
-        relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-12 lg:h-12 max-w-[64px] max-h-[64px] rounded-[18px] sm:rounded-[20px] lg:rounded-[16px] transition-all duration-200
+        relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-12 lg:h-12 max-w-[64px] max-h-[64px] rounded-[18px] sm:rounded-[20px] lg:rounded-bd-md transition-all duration-200
         ${held 
           ? 'scale-95'
           : 'hover:-translate-y-0.5 active:scale-95'
         }
         ${isRolling && !held ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-        focus-visible:outline focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-bd-lav-deep
+        focus-visible:outline-solid focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-bd-lav-deep
         transform-gpu
       `}
       style={{
@@ -109,14 +109,14 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       {getDotPositions(value).map((position, index) => (
         <div
           key={`${position}-${index}`}
-          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 lg:w-2 lg:h-2 rounded-full shadow-sm bg-[#1F1B16] ${dotClasses[position]}`}
+          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 lg:w-2 lg:h-2 rounded-full shadow-xs bg-[#1F1B16] ${dotClasses[position]}`}
         />
       ))}
       
       {/* Held indicator */}
       {held && (
         <div
-          className="absolute -top-2 -right-2 min-w-[28px] h-7 rounded-full flex items-center justify-center px-1.5 text-white text-[11px] font-bold uppercase shadow-sm border-2 border-white"
+          className="absolute -top-2 -right-2 min-w-[28px] h-7 rounded-full flex items-center justify-center px-1.5 text-white text-[11px] font-bold uppercase shadow-xs border-2 border-white"
           style={{ background: 'var(--bd-coral)' }}
         >
           {t('yahtzee.actions.hold')}

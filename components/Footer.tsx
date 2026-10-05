@@ -71,7 +71,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                 href="https://launchstag.com"
                 target="_blank"
                 rel="noopener"
-                className="mt-5 inline-block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bd-lav-deep"
+                className="mt-5 inline-block rounded-[14px] focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bd-lav-deep"
               >
                 {(['light', 'dark'] as const).map((theme) => (
                   // eslint-disable-next-line @next/next/no-img-element

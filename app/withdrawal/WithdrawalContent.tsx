@@ -165,7 +165,7 @@ export default function WithdrawalContent() {
                     <div key={field.key} className="flex flex-wrap items-baseline gap-x-2">
                       <dt>{field.label}:</dt>
                       {/* The blank the consumer fills in; the copied text carries WITHDRAWAL_BLANK in its place. */}
-                      <dd className="min-w-[8rem] flex-1" style={{ borderBottom: '1px solid var(--bd-ink-muted)' }} />
+                      <dd className="min-w-32 flex-1" style={{ borderBottom: '1px solid var(--bd-ink-muted)' }} />
                     </div>
                   ))}
                 </dl>
@@ -184,7 +184,7 @@ export default function WithdrawalContent() {
                     below the 4.5:1 AA minimum (#1171) — bd-ink for both,
                     the "status" role plus the message text itself still
                     carries the copied/failed meaning. */}
-                <p className="mt-3 min-h-[1.25rem] text-xs" role="status" aria-live="polite" style={{ color: 'var(--bd-ink)' }}>
+                <p className="mt-3 min-h-5 text-xs" role="status" aria-live="polite" style={{ color: 'var(--bd-ink)' }}>
                   {copyState === 'copied' && t('withdrawal.copied', { email: SUPPORT_EMAIL })}
                   {copyState === 'failed' && t('withdrawal.copyFailed')}
                 </p>

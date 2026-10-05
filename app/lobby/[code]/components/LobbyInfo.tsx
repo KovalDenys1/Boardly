@@ -46,7 +46,7 @@ export default function LobbyInfo({
   }
 
   return (
-    <div className="flex-shrink-0 border-b border-bd-line bg-bd-card-warm">
+    <div className="shrink-0 border-b border-bd-line bg-bd-card-warm">
       <div className="px-4 py-3 sm:px-5">
         {/* Utility bar: breadcrumbs left, action buttons right — same on all sizes */}
         <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push('/')}
               aria-label={t('common.goHome')}
-              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded-sm px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-inset"
             >
               <Icon name="home" size={14} /> {t('breadcrumbs.home')}
             </button>
@@ -63,7 +63,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push('/games')}
               aria-label={t('games.title')}
-              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded-sm px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-inset"
             >
               <Icon name="gamepad" size={14} /> {t('breadcrumbs.games')}
             </button>
@@ -71,7 +71,7 @@ export default function LobbyInfo({
             <button
               onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
               aria-label={t('lobby.activeLobbies')}
-              className="min-w-0 truncate rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-bd-ink/30"
+              className="min-w-0 truncate rounded-sm px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-inset"
             >
               {gameMeta?.name ?? 'Game'}
             </button>
@@ -85,7 +85,7 @@ export default function LobbyInfo({
                 title={t('game.ui.settings')}
                 aria-label={t('game.ui.settings')}
                 aria-expanded={settingsOpen}
-                className={`bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3 ${settingsOpen ? 'bg-bd-bg2' : ''}`}
+                className={`bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3! ${settingsOpen ? 'bg-bd-bg2' : ''}`}
               >
                 <Icon name="gear" size={16} />
               </button>
@@ -93,7 +93,7 @@ export default function LobbyInfo({
             <button
               onClick={() => handleCopyInvite('lobby_header_button')}
               title={t('game.ui.copyInvite')}
-              className="bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3"
+              className="bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3!"
             >
               <Icon name="link" size={14} />
               <span className="hidden sm:inline">{t('game.ui.copyInvite')}</span>
@@ -101,7 +101,7 @@ export default function LobbyInfo({
             <button
               onClick={onLeave}
               aria-label={t('game.ui.leave')}
-              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-2.5 py-2 text-xs font-semibold text-bd-coral-deep transition-all hover:border-bd-coral hover:bg-bd-coral hover:text-[color:var(--bd-ink-on-accent)] active:scale-95 sm:px-3 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-2.5 py-2 text-xs font-semibold text-bd-coral-deep transition-all hover:border-bd-coral hover:bg-bd-coral hover:text-(--bd-ink-on-accent) active:scale-95 sm:px-3 sm:text-sm"
             >
               <LeaveIcon />
               <span className="hidden sm:inline">{t('game.ui.leave')}</span>
@@ -124,7 +124,7 @@ export default function LobbyInfo({
 
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
             <h1
-              className="truncate text-xl font-extrabold leading-tight tracking-tight text-bd-ink sm:text-2xl"
+              className="truncate text-xl font-extrabold leading-tight tracking-tight text-bd-ink sm:text-2xl sm:leading-8"
               style={{ fontFamily: 'var(--bd-font-display)' }}
             >
               {displayName}
@@ -133,7 +133,7 @@ export default function LobbyInfo({
             <button
               onClick={() => handleCopyInvite('lobby_code_chip')}
               title={t('game.ui.copyInvite')}
-              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-ink cursor-pointer"
+              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-ink cursor-pointer"
             >
               {lobby.code}
             </button>

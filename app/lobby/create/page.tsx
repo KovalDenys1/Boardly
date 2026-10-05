@@ -610,7 +610,7 @@ function CreateLobbyPage() {
     <div className="page-shell bd-page bd-screen flex flex-col">
 
       {/* Top bar: back + game selector */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-5 py-3">
+      <div className="flex shrink-0 items-center gap-3 border-b border-(--bd-line) bg-(--bd-card-warm) px-5 py-3">
         <button
           type="button"
           onClick={() => router.push('/games')}
@@ -618,8 +618,8 @@ function CreateLobbyPage() {
         >
           ← {t('lobby.create.cancel')}
         </button>
-        <div className="h-4 w-px shrink-0 bg-[var(--bd-line)]" />
-        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="h-4 w-px shrink-0 bg-(--bd-line)" />
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))
             .sort(([, a], [, b]) => t(a.nameKey as TranslationKeys).localeCompare(t(b.nameKey as TranslationKeys), undefined, { sensitivity: 'base' }))
@@ -745,7 +745,7 @@ function CreateLobbyPage() {
 
             {/* Max players */}
             {gameInfo.allowedPlayers.length > 1 ? (
-              <div className="space-y-3">
+              <div className="stack-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.create.maxPlayers')}</label>
                   <span className="text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>

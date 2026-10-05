@@ -98,7 +98,7 @@ export default function ConnectFourReplayRenderer({
         </div>
 
         {/* Status */}
-        <div className="flex-1 space-y-2 min-w-0">
+        <div className="flex-1 stack-y-2 min-w-0">
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 shrink-0 rounded-full bg-bd-coral shadow-[inset_0_0_0_1.5px_var(--bd-ink)]" />
             <span className="truncate text-sm font-medium text-bd-ink">

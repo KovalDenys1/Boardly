@@ -78,7 +78,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
           return (
             <div
               key={entry.id}
-              className="rounded-2xl border p-3 shadow-sm"
+              className="rounded-2xl border p-3 shadow-xs"
               style={{
                 background:
                   entryType === 'score'

@@ -219,7 +219,7 @@ export default function BotMoveOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs animate-fade-in">
       <div
         className="rounded-2xl shadow-2xl mx-4 animate-scale-in"
         style={{

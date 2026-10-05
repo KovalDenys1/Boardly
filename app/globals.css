@@ -1,6 +1,205 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss' source(none);
+@source '../app/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../components/**/*.{js,ts,jsx,tsx,mdx}';
+
+@custom-variant dark (&:is(.dark *));
+/* Touch browsers report hover: none; v4 would stop applying hover: styles on tap there. */
+@custom-variant hover (&:hover);
+@custom-variant group-hover (&:is(:where(.group):hover *));
+
+@theme {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
+  --breakpoint-desk: 1024px;
+
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-bd-coral: #FF6B5B;
+  --color-bd-coral-deep: #E04B3B;
+  --color-bd-mint: #4FC9A6;
+  --color-bd-mint-deep: #2FA787;
+  --color-bd-sun: #FFC44D;
+  --color-bd-sun-deep: #E5A82E;
+  --color-bd-lav: #9B8CFF;
+  --color-bd-lav-mid: #8B7DFF;
+  --color-bd-lav-deep: #7867E8;
+  --color-bd-sky: #6BC1F0;
+  --color-bd-ink: var(--bd-ink);
+  --color-bd-ink-soft: var(--bd-ink-soft);
+  --color-bd-ink-muted: var(--bd-ink-muted);
+  --color-bd-line: var(--bd-line);
+  --color-bd-bg: var(--bd-bg);
+  --color-bd-bg2: var(--bd-bg2);
+  --color-bd-card-warm: var(--bd-card-warm);
+  --color-bd-danger-border: #F0B3AC;
+  --color-bd-danger-bg: #FFF2EF;
+  --color-bd-danger-text: #A6554A;
+
+  --font-display: var(--bd-font-display), Georgia, serif;
+
+  --default-ring-color: rgb(59 130 246 / 0.5);
+
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  --shadow-bd-soft: 0 4px 14px rgba(31,27,22,0.07);
+  --shadow-bd-card: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
+  --shadow-bd-pop: 0 8px 0 0 rgba(31,27,22,0.85);
+  --shadow-bd-ink-4: 0 4px 0 #1F1B16;
+  --shadow-bd-ink-5: 0 5px 0 #1F1B16;
+  --shadow-bd-coral-4: 0 4px 0 #E04B3B;
+
+  --radius-bd-sm: 10px;
+  --radius-bd-md: 16px;
+  --radius-bd-lg: 24px;
+  --radius-bd-xl: 36px;
+
+  /* The sRGB palette of Tailwind 3; v4's oklch defaults render more saturated on P3 screens. */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-gray-950: #030712;
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  --color-orange-950: #431407;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-amber-950: #451a03;
+  --color-yellow-50: #fefce8;
+  --color-yellow-100: #fef9c3;
+  --color-yellow-200: #fef08a;
+  --color-yellow-300: #fde047;
+  --color-yellow-400: #facc15;
+  --color-yellow-500: #eab308;
+  --color-yellow-600: #ca8a04;
+  --color-yellow-700: #a16207;
+  --color-yellow-800: #854d0e;
+  --color-yellow-900: #713f12;
+  --color-yellow-950: #422006;
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+  --color-green-950: #052e16;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  --color-teal-50: #f0fdfa;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+  --color-teal-300: #5eead4;
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-800: #115e59;
+  --color-teal-900: #134e4a;
+  --color-teal-950: #042f2e;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-800: #9f1239;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  dialog {
+    margin: auto;
+  }
+}
+
+/* Tailwind 3's space-y; v4's lays out differently when a child is out of flow or has its own margin. */
+@utility stack-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    margin-top: --spacing(--value(number));
+    margin-bottom: 0;
+  }
+}
+
+/* In the utilities layer on purpose: an unlayered rule beats every Tailwind utility, whatever its specificity. */
+@layer utilities {
 
 /* ============ BOARDLY DESIGN SYSTEM (Claude Design handoff) ============ */
 :root {
@@ -606,6 +805,8 @@ html.dark {
   }
 }
 
+}
+
 @layer utilities {
   .animate-scale-fade-in {
     @apply opacity-100;
@@ -617,6 +818,8 @@ html.dark {
     animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
+
+@layer utilities {
 
 @keyframes scaleFadeIn {
   from {
@@ -884,7 +1087,7 @@ input::placeholder {
 }
 
 input:focus, select:focus, textarea:focus {
-  @apply outline-none ring-2 ring-inset ring-bd-lav-deep focus-visible:outline-none;
+  @apply outline-hidden ring-2 ring-inset ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .dice {
@@ -904,7 +1107,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none;
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .btn-primary {
@@ -1279,6 +1482,8 @@ input[type="range"].slider-thumb::-moz-range-track {
    utilities, so an unlayered .bd-page { min-height } beat every
    min-h-[var(--game-h)] utility on the same element and the lobby's loading
    and error states collapsed to the spinner's height. */
+}
+
 @layer components {
   .bd-page {
     min-height: 100%;
@@ -1289,6 +1494,8 @@ input[type="range"].slider-thumb::-moz-range-track {
       var(--bd-bg);
   }
 }
+
+@layer utilities {
 
 /* Card */
 .bd-card {
@@ -1377,7 +1584,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 20px; border-radius: 14px;
   font-weight: 600; font-size: 15px; font-family: inherit;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform 0.1s, scale 0.1s, box-shadow 0.1s;
   white-space: nowrap; cursor: pointer; border: none;
   line-height: 1;
 }
@@ -4855,4 +5062,5 @@ html.dark .spy-board-card { background: var(--bd-card-warm); }
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
 }

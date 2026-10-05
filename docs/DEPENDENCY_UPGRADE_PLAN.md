@@ -33,11 +33,14 @@ The previous high-risk framework and ORM upgrades have landed:
 
 ## Remaining upgrade tracks
 
-### Tailwind CSS 4
+### Tailwind CSS 4 (migrated, #1216)
 
-- Current project still uses `tailwind.config.ts`, `postcss.config.js`, and `@tailwind base/components/utilities` in `app/globals.css`.
-- Tailwind 4 changes the CSS/config/PostCSS model, so keep it separate from app runtime changes.
-- Verification should include representative desktop/mobile screenshots for lobby, games, auth pages, admin pages, and shared UI primitives.
+- Config lives in `app/globals.css`: `@theme` (breakpoints in px, brand tokens, the Tailwind 3 sRGB palette and line-heights), `@custom-variant` for `dark`, `hover` and `group-hover`, and a `@layer base` block with the Tailwind 3 defaults for border colour, placeholder colour, button cursor and dialog margin. `tailwind.config.ts` and `autoprefixer` are gone; PostCSS runs `@tailwindcss/postcss`.
+- Tailwind scans `app/` and `components/` only, as it did before (`source(none)` plus two `@source` lines). A class written anywhere else is not generated.
+- The stylesheet's own rules sit in `@layer utilities`, after Tailwind's. A rule there beats a variant utility of equal specificity (`sm:px-3` against `.bd-btn`); Tailwind 3 emitted variant utilities last, so it was the other way round. Mark the utility important (`sm:px-3!`) where it has to win.
+- `space-y-*` now puts the margin on every child but the last and has no specificity. Use `stack-y-*` where a child is absolutely positioned, hidden, or carries its own vertical margin.
+- A text-size variant no longer resets `leading-*`; add the matching `sm:leading-*` where the old line-height is wanted.
+- Browser floor: Safari 16.4, Chrome 111, Firefox 128.
 
 ### Zod 4
 

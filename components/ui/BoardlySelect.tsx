@@ -56,7 +56,7 @@ export default function BoardlySelect({
       <div className={`relative w-full ${className}`}>
         <ListboxButton
           aria-label={ariaLabel}
-          className="inline-flex w-full items-center gap-3 rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-left text-sm font-medium text-bd-ink shadow-sm transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep dark:shadow-none"
+          className="inline-flex w-full items-center gap-3 rounded-2xl border border-(--bd-input-border) bg-(--bd-input-bg) px-4 py-3 text-left text-sm font-medium text-bd-ink shadow-xs transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep dark:shadow-none"
         >
           <span className="min-w-0 flex-1">
             {renderValue ? (
@@ -80,7 +80,7 @@ export default function BoardlySelect({
           leaveFrom="opacity-100 translate-y-0 scale-100"
           leaveTo="opacity-0 translate-y-1 scale-[0.98]"
         >
-          <ListboxOptions className="absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-auto rounded-[1.25rem] border-[1.5px] border-bd-line bg-[var(--bd-input-bg)] p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-none">
+          <ListboxOptions className="absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-auto rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
             {options.map((option) => (
               <ListboxOption
                 key={option.value}
@@ -102,7 +102,7 @@ export default function BoardlySelect({
                       <span
                         className={`inline-flex h-7 min-w-[2.4rem] shrink-0 items-center justify-center rounded-full px-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
                           selected
-                            ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]'
+                            ? 'bg-bd-lav text-(--bd-ink-on-accent)'
                             : 'bg-bd-bg2 text-bd-ink-soft'
                         }`}
                       >

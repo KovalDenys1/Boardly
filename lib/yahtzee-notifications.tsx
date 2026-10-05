@@ -69,7 +69,7 @@ function BoardlyMomentToast({
 
   return (
     <div
-      className={`pointer-events-auto w-[min(92vw,360px)] rounded-[20px] border px-3.5 py-3 shadow-[0_14px_36px_rgba(41,37,36,0.14)] backdrop-blur-sm transition-all duration-200 ${
+      className={`pointer-events-auto w-[min(92vw,360px)] rounded-[20px] border px-3.5 py-3 shadow-[0_14px_36px_rgba(41,37,36,0.14)] backdrop-blur-xs transition-all duration-200 ${
         toastState.visible ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
       } ${toneClasses.shell}`}
       style={{ color: 'var(--bd-ink)' }}

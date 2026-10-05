@@ -124,27 +124,27 @@ export default function SpyResults({
         <div className="text-center">
           <p className="bd-kicker">{t('spy.phases.results')}</p>
           <h2
-            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'} ${rise(0, 'social-reveal').className}`}
+            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'} ${rise(0, 'social-reveal').className}`}
             style={rise(0, 'social-reveal').style}
           >
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
           {wasGuessRound ? (
-            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
               {guessWasCorrect
                 ? t('spy.guessCorrect', { player: spyPlayer?.name })
                 : t('spy.guessWrong', { player: spyPlayer?.name, guess: spyGuessedLocation })}
             </p>
           ) : !noElimination ? (
-            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
                 : t('spy.wasSpy', { player: spyPlayer?.name })}
             </p>
           ) : (
-            <p className={`mt-2 text-base font-semibold text-[var(--bd-ink-soft)] ${rise(2).className}`} style={rise(2).style}>{t('spy.tieNoElimination')}</p>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>{t('spy.tieNoElimination')}</p>
           )}
-          <div style={rise(3).style} className={`mx-auto mt-4 inline-flex ${rise(3).className} rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-[var(--bd-ink)]`}>
+          <div style={rise(3).style} className={`mx-auto mt-4 inline-flex ${rise(3).className} rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-(--bd-ink)`}>
             {t('spy.locationRevealed', { location })}
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function SpyResults({
                         {player.name.charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0">
-                        <p className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
+                        <p className="flex items-center gap-1 truncate font-bold text-(--bd-ink)">
                           {player.name}
                           {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                         </p>
@@ -181,7 +181,7 @@ export default function SpyResults({
                         </div>
                       </div>
                     </div>
-                    <span className="rounded-lg bg-[var(--bd-bg2)] px-2.5 py-1 text-sm font-black text-[var(--bd-ink)]">
+                    <span className="rounded-lg bg-(--bd-bg2) px-2.5 py-1 text-sm font-black text-(--bd-ink)">
                       {voteCount} {voteCount === 1 ? t('spy.voteLabel') : t('spy.votesLabel')}
                     </span>
                   </div>
@@ -201,15 +201,15 @@ export default function SpyResults({
                   onAnimationEnd={reveal && onRevealEnd && index === sortedByScore.length - 1 ? onOwnAnimationEnd(onRevealEnd) : undefined}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bd-ink)] text-xs font-black text-[var(--bd-bg)]">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-(--bd-ink) text-xs font-black text-(--bd-bg)">
                       {index + 1}
                     </span>
-                    <span className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
+                    <span className="flex items-center gap-1 truncate font-bold text-(--bd-ink)">
                       {player.name}
                       {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                     </span>
                   </div>
-                  <span className="text-lg font-black text-[var(--bd-mint-deep)]">
+                  <span className="text-lg font-black text-(--bd-mint-deep)">
                     {scores[player.id] || 0} {t('profile.gameResults.points')}
                   </span>
                 </div>
@@ -219,7 +219,7 @@ export default function SpyResults({
         </div>
 
         {!isGameOver && (
-          <p className="mt-5 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
+          <p className="mt-5 text-center text-sm font-semibold text-(--bd-ink-muted)">
             {t('spy.round', { current: currentRound, total: totalRounds })}
           </p>
         )}
@@ -227,7 +227,7 @@ export default function SpyResults({
         {isGameOver && (
           <div
             data-testid="spy-game-result"
-            className="mx-auto mt-5 flex w-full max-w-md items-center justify-center gap-2 rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-3 text-center text-base font-black text-[var(--bd-ink)]"
+            className="mx-auto mt-5 flex w-full max-w-md items-center justify-center gap-2 rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-base font-black text-(--bd-ink)"
           >
             <Icon name={gameResult.isDraw ? 'handshake' : 'trophy'} size={18} />
             {gameResult.isDraw ? t('spy.gameTie') : t('spy.gameWinner', { player: gameWinnerName })}
@@ -249,7 +249,7 @@ export default function SpyResults({
                     {t('spy.playAgain')}
                   </button>
                 ) : (
-                  <div className="flex-1 rounded-2xl border border-[var(--bd-line)] px-4 py-3 text-center text-sm font-semibold text-bd-ink-muted">
+                  <div className="flex-1 rounded-2xl border border-(--bd-line) px-4 py-3 text-center text-sm font-semibold text-bd-ink-muted">
                     {t('game.ui.waitingForHost')}
                   </div>
                 )
