@@ -8,7 +8,7 @@ import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
 import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
 
-export default function Footer() {
+export default function Footer({ listingBadge = false }: { listingBadge?: boolean }) {
   const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
   // The adsbygoogle loader — which is also what delivers Google's consent
@@ -65,6 +65,29 @@ export default function Footer() {
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('footer.tagline')}
             </p>
+            {listingBadge && (
+              // Launchstag publishes the listing once it finds this link on the home page; the image is a local copy, so no visitor request reaches them.
+              <a
+                href="https://launchstag.com"
+                target="_blank"
+                rel="noopener"
+                className="mt-5 inline-block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bd-lav-deep"
+              >
+                {(['light', 'dark'] as const).map((theme) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={theme}
+                    src={`/launchstag/badge-${theme}.svg`}
+                    alt={t('footer.launchstagBadge')}
+                    width={198}
+                    height={62}
+                    loading="lazy"
+                    decoding="async"
+                    className={theme === 'light' ? 'block dark:hidden' : 'hidden dark:block'}
+                  />
+                ))}
+              </a>
+            )}
           </div>
 
           {/* Games */}

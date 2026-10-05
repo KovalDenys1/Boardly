@@ -4868,6 +4868,7 @@ const uk: TranslationWithPlurals = {
     sendFeedback: 'Залишити відгук',
     allRightsReserved: '© {{year}} Boardly · Усі права захищені',
     builtWith: 'Створено з Next.js, Supabase та Prisma',
+    launchstagBadge: 'Boardly у каталозі Launchstag',
   },
   about: {
     breadcrumb: 'Про проєкт',

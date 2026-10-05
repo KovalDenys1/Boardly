@@ -4854,6 +4854,7 @@ const ru = {
     sendFeedback: 'Оставить отзыв',
     allRightsReserved: '© {{year}} Boardly · Все права защищены',
     builtWith: 'Создано с Next.js, Supabase и Prisma',
+    launchstagBadge: 'Boardly в каталоге Launchstag',
   },
   about: {
     breadcrumb: 'О проекте',

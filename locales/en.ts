@@ -4735,6 +4735,7 @@ const en = {
     sendFeedback: 'Send Feedback',
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
     builtWith: 'Built with Next.js, Supabase & Prisma',
+    launchstagBadge: 'Featured on Launchstag',
   },
   about: {
     breadcrumb: 'About',

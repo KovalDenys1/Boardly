@@ -77,7 +77,7 @@ export default async function HomePage() {
         <FaqSection facts={buildFaqFacts(pricing.monthly?.label)} />
       </div>
 
-      <Footer />
+      <Footer listingBadge />
     </div>
   )
 }

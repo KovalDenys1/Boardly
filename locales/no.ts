@@ -4723,6 +4723,7 @@ const no = {
     sendFeedback: 'Send tilbakemelding',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Supabase og Prisma',
+    launchstagBadge: 'Omtalt på Launchstag',
   },
   about: {
     breadcrumb: 'Om',
