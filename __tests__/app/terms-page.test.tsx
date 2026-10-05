@@ -105,6 +105,21 @@ describe('/terms (#1166)', () => {
     expect(TERMS_FIGURES.unverifiedDays).toBe(RETENTION_DAYS.unverifiedAccounts)
   })
 
+  it('says from when an unused account is deleted, with the warning and who is left out (#1224)', () => {
+    render(<TermsContent seller={null} />)
+    const accounts = screen.getByTestId('terms-accounts')
+    expect(accounts).toHaveTextContent(
+      'From January 1, 2027, an account that has not been used for 24 months is deleted. We email you 30 days before, at the address on the account, and signing in once before that day keeps the account.'
+    )
+    expect(accounts).toHaveTextContent('No account is deleted under this rule without that email.')
+    expect(accounts).toHaveTextContent('has or has had Premium or has ever started a Premium purchase, or to an account that is suspended')
+    expect(TERMS_FIGURES.inactiveMonths * 365).toBe(RETENTION_DAYS.inactiveAccounts * 12)
+    expect(TERMS_FIGURES.inactiveWarningDays).toBe(RETENTION_DAYS.inactiveAccountWarning)
+    expect(screen.getByTestId('terms-change-note')).toHaveTextContent(
+      'New in this version: the rule in section 2 on accounts that are not used, which applies from January 1, 2027. Nothing else has changed.'
+    )
+  })
+
   it('lists the community rules and moderation actions from the shared lists, and links /rules', () => {
     render(<TermsContent seller={null} />)
     const conduct = screen.getByTestId('terms-conduct')

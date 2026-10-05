@@ -92,19 +92,18 @@ describe('privacy notice (#1126)', () => {
     expect(text).toContain(`${RETENTION_DAYS.guestIdentityToken} days from your last visit`)
   })
 
-  // #1130, decision 2026-09-27: games are pseudonymised, not deleted; a lobby in which no
-  // game started goes with its games. Inactive accounts are NOT deleted while the Terms do
-  // not allow it (TERMS_ALLOW_INACTIVITY_DELETION), so the notice must not say they are.
-  it('says games lose their names but keep their results, and that unused accounts are kept', () => {
+  it('says games lose their names but keep their results, and from when unused accounts are deleted', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''
     expect(text).toContain('the scores and results stay, tied to a player id instead of a name')
     expect(text).toContain('an inactive lobby in which no game ever started is deleted together with those games')
     expect(text).toContain('its code is released for new lobbies')
-    expect(text).toContain('We do not delete an account because it has not been used')
-    expect(text).toContain('at least 30 days before it applies')
-    expect(text).toContain('is kept until you delete it')
-    expect(text).not.toMatch(/inactivity|24 months: we then delete/)
+    expect(text).toContain(
+      'From January 1, 2027 we also delete an account that has not been used for 24 months: we email you 30 days before, and signing in once keeps the account.'
+    )
+    expect(text).toContain('or is suspended is not deleted for that reason')
+    expect(text).not.toContain('is kept until you delete it')
+    expect(text).toContain('notices of changes to our Terms, a warning before an account that has not been used is deleted')
 
     const locales = {
       en: require('@/locales/en').default,
@@ -115,7 +114,7 @@ describe('privacy notice (#1126)', () => {
     for (const [name, locale] of Object.entries(locales)) {
       const { account, games } = locale.privacyPolicy.purposes
       for (const [field, value, needle] of [
-        ['account.retention', account.retention, '30'],
+        ['account.retention', account.retention, '{{inactiveFrom}}'],
         ['games.retention', games.retention, '{{gamesMonths}}'],
         ['games.retention', games.retention, '{{lobbiesMonths}}'],
       ]) {

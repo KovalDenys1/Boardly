@@ -4723,6 +4723,7 @@ const no = {
     sendFeedback: 'Send tilbakemelding',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Supabase og Prisma',
+    launchstagBadge: 'Omtalt på Launchstag',
   },
   about: {
     breadcrumb: 'Om',
@@ -4762,7 +4763,7 @@ const no = {
         title: 'Kontoen din',
         data: 'Brukernavn, e-postadresse, passordet ditt lagret bare som en enveis bcrypt-hash, profilbilde, bio, aksentfarge og innstillinger, innloggingstjenestene du har koblet til, tidspunktet for siste tilbakestilling av passord eller endring av e-post (brukes bare til å logge ut eldre økter), nettstedet eller kampanjen du kom fra da du registrerte deg, og når du godtok vilkårene og bekreftet at du er 13 år eller eldre.',
         basis: 'Avtale: kontoen din bygger på vilkårene du godtar når du oppretter den, ikke på samtykke, og vi trenger dette for å drive den. Registreringskilden: vår berettigede interesse i å vite hvilke kanaler som bringer nye spillere.',
-        retention: 'Til du sletter kontoen. Vi sletter ikke en konto fordi den ikke er brukt; bestemmer vi oss for det, sier vi fra på e-post og på denne siden minst 30 dager før det gjelder. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har Premium eller noen gang har startet et Premium-kjøp. En konto som logger inn med Google, GitHub eller Discord, beholdes til du sletter den.',
+        retention: 'Til du sletter kontoen. Fra {{inactiveFrom}} sletter vi også en konto som ikke har vært brukt på {{inactiveMonths}} måneder: vi sender deg en e-post {{inactiveWarningDays}} dager før, og logger du inn én gang, beholder du kontoen. En konto som har eller har hatt Premium, noen gang har startet et Premium-kjøp eller er suspendert, slettes ikke av den grunn. Hvis du registrerer deg med e-postadresse og passord og aldri bekrefter adressen, sletter vi kontoen etter {{unverifiedDays}} dager, med mindre du har koblet Google, GitHub eller Discord til den eller den har Premium eller noen gang har startet et Premium-kjøp.',
         extra: 'Brukernavnet ditt, bildet ditt og resultatene dine på topplisten er synlige for alle, uansett innstillinger: den offentlige topplisten viser dem for alle kontoer med nok fullførte spill, og profilsiden din viser alltid brukernavnet og bildet ditt, med en merknad om at profilen er privat når den er det. Resten av profilen (bio, spillstatistikk, prestasjoner, Premium-status og påloggingsstatus, som du også kan slå av for seg) følger synlighetsinnstillingen: alle kan se det hvis profilen er offentlig, bare vennene dine hvis den bare er for venner, og ingen andre enn deg hvis den er privat. I lobbyer og spill dere har delt, ser de andre spillerne også Premium-merket ditt og spillresultatene, også på spillerkortet ditt der, uansett innstilling. En ny konto starter med profil bare for venner og skjult påloggingsstatus. Første gang du logger inn, tilbyr vi å gjøre profilen offentlig, og du kan endre begge deler når som helst i profilinnstillingene. Kontoer opprettet før denne endringen beholder innstillingene de hadde: offentlig profil og synlig påloggingsstatus, med mindre de er endret.',
       },
       guest: {
@@ -4785,7 +4786,7 @@ const no = {
       },
       email: {
         title: 'E-post vi sender deg',
-        data: 'E-postadressen din og meldingen: lenker for bekreftelse og tilbakestilling av passord, sikkerhetsvarsler, spillinvitasjoner fra venner, varslene du velger, kjøpsbekreftelser og, så lenge et Premium-abonnement løper, en påminnelse minst hver sjette måned om at det løper, og om hvordan du sier det opp. Når noen ber om å endre e-postadressen på en konto, sender vi et sikkerhetsvarsel til den gamle adressen med den nye delvis skjult. For å stoppe flom av bekreftelses- og tilbakestillings-e-post lagrer vi en forkortet enveis hash av adressen i 10 minutter og en daglig teller i 26 timer.',
+        data: 'E-postadressen din og meldingen: lenker for bekreftelse og tilbakestilling av passord, sikkerhetsvarsler, spillinvitasjoner fra venner, varslene du velger, kjøpsbekreftelser, varsler om endringer i vilkårene, et varsel før en konto som ikke har vært brukt, slettes, og, så lenge et Premium-abonnement løper, en påminnelse minst hver sjette måned om at det løper, og om hvordan du sier det opp. Når noen ber om å endre e-postadressen på en konto, sender vi et sikkerhetsvarsel til den gamle adressen med den nye delvis skjult. For å stoppe flom av bekreftelses- og tilbakestillings-e-post lagrer vi en forkortet enveis hash av adressen i 10 minutter og en daglig teller i 26 timer.',
         basis: 'Avtale. Abonnementspåminnelsen: en rettslig forpliktelse (digitalytelsesloven § 33). Sikkerhetsvarsler og e-postbegrensningene: vår berettigede interesse i å beskytte kontoer og hindre misbruk.',
         retention: 'Varselposter: {{notificationsMonths}} måneder. Resend, som leverer e-posten, har sin egen leveringslogg så lenge tjenesten deres fastsetter.',
       },
@@ -5111,6 +5112,7 @@ const no = {
       },
       responsible: 'Du er ansvarlig for det som skjer på kontoen din, med mindre noen har tatt seg inn i den uten at det var din skyld.',
       unverified: 'Registrerer du deg med e-postadresse og passord og aldri bekrefter adressen, slettes kontoen etter {{unverifiedDays}} dager, slik personvernerklæringen beskriver.',
+      inactive: 'Fra {{inactiveFrom}} slettes en konto som ikke har vært brukt på {{inactiveMonths}} måneder. Vi sender deg en e-post {{inactiveWarningDays}} dager før, til adressen som er registrert på kontoen, og logger du inn én gang før den dagen, beholder du kontoen. Ingen konto slettes etter denne regelen uten den e-posten. Regelen gjelder ikke for en konto som har eller har hatt Premium eller noen gang har startet et Premium-kjøp, og heller ikke for en konto som er suspendert.',
     },
     conduct: {
       title: '4. Fellesskapsregler',
@@ -5180,6 +5182,7 @@ const no = {
       body: 'Spørsmål om vilkårene, meldinger om innhold og klager sender du til',
     },
     updated: 'Sist oppdatert: {{date}}',
+    changeNote: 'Nytt i denne versjonen: regelen i punkt 2 om kontoer som ikke brukes, som gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
     premium: {
       title: '3. Boardly Premium: abonnement og angrerett',
       price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar og er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',

@@ -7,7 +7,7 @@ import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS, retentionMonths } from '@/lib/retention-periods'
-import { PRIVACY_UPDATED } from '@/lib/terms-version'
+import { INACTIVITY_RULE_STARTS, PRIVACY_UPDATED } from '@/lib/terms-version'
 
 /**
  * The privacy notice (#1126, GDPR Art. 13).
@@ -88,8 +88,19 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
   const { t, i18n } = useTranslation()
   const email = SUPPORT_EMAIL
 
+  const longDate = (day: string) =>
+    new Date(`${day}T00:00:00Z`).toLocaleDateString(i18n.language || 'en', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+
   const retention = {
     unverifiedDays: RETENTION_DAYS.unverifiedAccounts,
+    inactiveMonths: retentionMonths(RETENTION_DAYS.inactiveAccounts),
+    inactiveWarningDays: RETENTION_DAYS.inactiveAccountWarning,
+    inactiveFrom: longDate(INACTIVITY_RULE_STARTS),
     guestIdle: RETENTION_DAYS.guestIdle,
     guestPlayed: RETENTION_DAYS.guestPlayedIdle,
     gamesMonths: retentionMonths(RETENTION_DAYS.games),
@@ -105,12 +116,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
   }
 
   // A hand-bumped constant, never the render date (#1126 acceptance).
-  const updated = new Date(`${PRIVACY_UPDATED}T00:00:00Z`).toLocaleDateString(i18n.language || 'en', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  const updated = longDate(PRIVACY_UPDATED)
 
   const strong = { color: 'var(--bd-ink)' }
 

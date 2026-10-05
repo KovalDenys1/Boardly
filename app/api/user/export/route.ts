@@ -103,6 +103,8 @@ export async function GET(request: NextRequest) {
           signupSource: true,
           termsAcceptedAt: true,
           ageConfirmedAt: true,
+          termsNoticeVersion: true,
+          termsNoticeSentAt: true,
           role: true,
           suspended: true,
           banReason: true,

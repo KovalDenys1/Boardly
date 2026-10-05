@@ -12,6 +12,7 @@ import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { enforceRetention } from '@/lib/data-retention'
 import { enforceInactiveAccounts } from '@/lib/inactive-accounts'
+import { sendTermsChangeNotices } from '@/lib/terms-change-notice'
 import { recordCronRun } from '@/lib/cron-heartbeat'
 
 jest.mock('@/lib/cleanup-unverified', () => ({
@@ -38,6 +39,10 @@ jest.mock('@/lib/data-retention', () => ({
 
 jest.mock('@/lib/inactive-accounts', () => ({
   enforceInactiveAccounts: jest.fn(),
+}))
+
+jest.mock('@/lib/terms-change-notice', () => ({
+  sendTermsChangeNotices: jest.fn(),
 }))
 
 jest.mock('@/lib/cron-heartbeat', () => ({
@@ -76,6 +81,14 @@ describe('GET /api/cron/maintenance', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockAuthorizeCronRequest.mockReturnValue(null)
+    sendTermsChangeNotices.mockResolvedValue({
+      version: '2026-10-05',
+      approved: false,
+      inTime: true,
+      due: 142,
+      sent: 0,
+      failed: 0,
+    })
   })
 
   it('returns auth error when cron request is unauthorized', async () => {
@@ -168,6 +181,39 @@ describe('GET /api/cron/maintenance', () => {
     expect(heartbeat.inactive_accounts_warned).toBe(2)
     expect(heartbeat.inactive_accounts_warn_failed).toBe(1)
     expect(heartbeat.inactive_accounts_deleted).toBe(1)
+
+    expect(sendTermsChangeNotices).toHaveBeenCalledTimes(1)
+    expect(payload.termsNotice.due).toBe(142)
+    expect(heartbeat).toMatchObject({
+      terms_notice_approved: false,
+      terms_notice_in_time: true,
+      terms_notice_due: 142,
+      terms_notice_sent: 0,
+      terms_notice_failed: 0,
+    })
+  })
+
+  it('reports a failed Terms notice run without failing the other cleanups', async () => {
+    mockWarnUnverifiedAccounts.mockResolvedValue({ warned: 0 })
+    mockCleanupUnverifiedAccounts.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldGuests.mockResolvedValue({ deleted: 0 })
+    mockCleanupOldReplaySnapshots.mockResolvedValue({ deleted: 0, retentionDays: 90, cutoffDate: 'c' })
+    mockCleanupOversizedReplaySnapshots.mockResolvedValue({ deletedSnapshots: 0, affectedGames: 0 })
+    mockCleanupStaleLobbiesAndGames.mockResolvedValue({
+      deactivatedLobbies: 0,
+      cancelledWaitingGames: 0,
+      abandonedPlayingGames: 0,
+    })
+    enforceRetention.mockResolvedValue({})
+    enforceInactiveAccounts.mockResolvedValue({ termsAllow: false, enforced: false, warnDue: 0, deleteDue: 0 })
+    sendTermsChangeNotices.mockRejectedValue(new Error('db down'))
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/cron/maintenance'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.termsNotice).toEqual({ error: 'db down' })
+    expect(recordCronRun.mock.calls[0][0].payload.terms_notice_due).toBe(-1)
   })
 
   it('reports a failed inactive-account run without failing the other cleanups', async () => {

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { COMMUNITY_RULES_BANNED, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
-import { TERMS_FIGURES, TERMS_VERSION } from '@/lib/terms-version'
+import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION } from '@/lib/terms-version'
 import PremiumTerms from './PremiumTerms'
 
 /**
@@ -53,12 +53,15 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
 
   // A hand-bumped constant, never the render date (#1166 acceptance: the date
   // changes only when the text does).
-  const updated = new Date(`${TERMS_VERSION}T00:00:00Z`).toLocaleDateString(i18n.language || 'en', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  const longDate = (day: string) =>
+    new Date(`${day}T00:00:00Z`).toLocaleDateString(i18n.language || 'en', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+  const updated = longDate(TERMS_VERSION)
+  const inactiveFrom = longDate(INACTIVITY_RULE_STARTS)
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -112,6 +115,7 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             </ul>
             <p className="mt-3">{t('terms.accounts.responsible')}</p>
             <p className="mt-3">{t('terms.accounts.unverified', TERMS_FIGURES)}</p>
+            <p className="mt-3">{t('terms.accounts.inactive', { ...TERMS_FIGURES, inactiveFrom })}</p>
           </Section>
 
           {/* Section 3, the part a Premium buyer agrees to at checkout (#1179). */}
@@ -209,9 +213,10 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             </p>
           </Section>
 
-          <p className="pt-4 text-xs" style={{ color: 'var(--bd-ink-soft)', borderTop: '1px solid var(--bd-line)' }}>
-            {t('terms.updated', { date: updated })}
-          </p>
+          <div className="pt-4 text-xs" style={{ color: 'var(--bd-ink-soft)', borderTop: '1px solid var(--bd-line)' }}>
+            <p>{t('terms.updated', { date: updated })}</p>
+            <p className="mt-1" data-testid="terms-change-note">{t('terms.changeNote', { inactiveFrom })}</p>
+          </div>
         </div>
       </div>
     </div>
