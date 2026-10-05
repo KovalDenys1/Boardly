@@ -82,13 +82,12 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       className={`
         relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-12 lg:h-12 max-w-[64px] max-h-[64px] rounded-[18px] sm:rounded-[20px] lg:rounded-bd-md transition-all duration-200
         ${held 
-          ? 'scale-95'
-          : 'hover:-translate-y-0.5 active:scale-95'
+          ? '[transform:translateZ(0)_scale(0.95)]'
+          : 'transform-gpu hover:-translate-y-0.5 active:scale-95'
         }
         ${isRolling && !held ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         focus-visible:outline-solid focus-visible:outline-4 focus-visible:-outline-offset-4 focus-visible:outline-bd-lav-deep
-        transform-gpu
       `}
       style={{
         ...(held

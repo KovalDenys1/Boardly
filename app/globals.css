@@ -7,6 +7,18 @@
 @custom-variant hover (&:hover);
 @custom-variant group-hover (&:is(:where(.group):hover *));
 
+/* inline: a lobby theme overrides --bd-* on a container, and a theme variable resolved on :root would not follow it. */
+@theme inline {
+  --color-bd-ink: var(--bd-ink);
+  --color-bd-ink-soft: var(--bd-ink-soft);
+  --color-bd-ink-muted: var(--bd-ink-muted);
+  --color-bd-line: var(--bd-line);
+  --color-bd-bg: var(--bd-bg);
+  --color-bd-bg2: var(--bd-bg2);
+  --color-bd-card-warm: var(--bd-card-warm);
+  --font-display: var(--bd-font-display), Georgia, serif;
+}
+
 @theme {
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -28,18 +40,9 @@
   --color-bd-lav-mid: #8B7DFF;
   --color-bd-lav-deep: #7867E8;
   --color-bd-sky: #6BC1F0;
-  --color-bd-ink: var(--bd-ink);
-  --color-bd-ink-soft: var(--bd-ink-soft);
-  --color-bd-ink-muted: var(--bd-ink-muted);
-  --color-bd-line: var(--bd-line);
-  --color-bd-bg: var(--bd-bg);
-  --color-bd-bg2: var(--bd-bg2);
-  --color-bd-card-warm: var(--bd-card-warm);
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
   --color-bd-danger-text: #A6554A;
-
-  --font-display: var(--bd-font-display), Georgia, serif;
 
   --default-ring-color: rgb(59 130 246 / 0.5);
 
@@ -187,6 +190,21 @@
 
   dialog {
     margin: auto;
+  }
+
+  td,
+  th,
+  option {
+    padding: revert-layer;
+  }
+
+  button,
+  input,
+  select,
+  optgroup,
+  textarea {
+    border-radius: revert-layer;
+    opacity: revert-layer;
   }
 }
 

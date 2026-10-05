@@ -136,7 +136,7 @@ const headerOffsetCalcPattern = /calc\(\s*100[dsl]?vh\s*[-+]\s*(?:64px|4rem)/g
 const mediaPreludePattern = /@media[^{]*/g
 const mediaWidthConditionPattern = /\(\s*(?:min|max)-width:\s*([\d.]+)px/g
 const tailwindArbitraryWidthPattern = /\b(?:min|max)-\[([\d.]+)px\]:/g
-const deskBreakpointPattern = /--breakpoint-desk:\s*([\d.]+)px/g
+const deskBreakpointPattern = /--breakpoint-desk:\s*([^;]+);/g
 const matchMediaWidthPattern = /matchMedia\(\s*[`'"][^`'"]*\(\s*(?:min|max)-width/g
 const fixedTopOffsetPattern = /top:\s*['"`]?(?:64px|4rem)/g
 const inlineViewportHeightPattern = /(?:height|minHeight|maxHeight)\s*:\s*[`'"][^`'"]*calc\([^)]*\b100[dsl]?vh/g
@@ -176,10 +176,14 @@ function collectViolations(relativeFile: string, source: string): Violation[] {
         }
       }
     }
-    for (const match of findAll(source, deskBreakpointPattern)) {
-      if (Number(match[1]) !== DESKTOP_MIN_WIDTH_PX) {
+    const deskBreakpoints = findAll(source, deskBreakpointPattern)
+    for (const match of deskBreakpoints) {
+      if (match[1].trim() !== `${DESKTOP_MIN_WIDTH_PX}px`) {
         report('R2', match.index, match[0])
       }
+    }
+    if (relativeFile === 'app/globals.css' && deskBreakpoints.length === 0) {
+      report('R2', 0, '--breakpoint-desk is not declared')
     }
   }
   if (isTsx) {

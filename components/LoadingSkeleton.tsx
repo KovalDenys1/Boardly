@@ -40,7 +40,7 @@ export default function LoadingSkeleton({
   }
 
   if (type === 'avatar') {
-    return <div className={`${baseClass} w-12 h-12 rounded-full ${className}`} style={baseStyle} />
+    return <div className={`animate-pulse w-12 h-12 rounded-full ${className}`} style={baseStyle} />
   }
 
   if (type === 'button') {
