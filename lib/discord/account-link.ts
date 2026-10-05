@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { AdapterAccount } from 'next-auth/adapters'
 import { CustomPrismaAdapter } from '@/lib/custom-prisma-adapter'
 import { prisma } from '@/lib/db'
+import { sendProviderLinkedNoticeEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { constantTimeEqual } from '@/lib/secret-compare'
 import { AccountSuspendedError, getOptionalSessionUser } from '@/lib/session-user'
@@ -248,7 +249,7 @@ export async function linkDiscordAccountToUser(
   userId: string,
   providerAccountId: string,
   tokens: DiscordTokens
-): Promise<'linked' | 'taken' | 'otherDiscord'> {
+): Promise<'linked' | 'refreshed' | 'taken' | 'otherDiscord'> {
   const existing = await prisma.accounts.findUnique({
     where: { provider_providerAccountId: { provider: 'discord', providerAccountId } },
     select: { id: true, userId: true },
@@ -267,7 +268,7 @@ export async function linkDiscordAccountToUser(
         ...(tokens.token_type ? { token_type: tokens.token_type } : {}),
       },
     })
-    return 'linked'
+    return 'refreshed'
   }
 
   const otherDiscord = await prisma.accounts.findFirst({
@@ -295,6 +296,29 @@ export async function linkDiscordAccountToUser(
     throw error
   }
   return 'linked'
+}
+
+async function notifyOwnerOfLink(userId: string): Promise<void> {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { email: true, username: true, isGuest: true, bot: { select: { id: true } } },
+    })
+    if (!user?.email || user.isGuest || user.bot) return
+    const notice = await sendProviderLinkedNoticeEmail(user.email, {
+      username: user.username,
+      provider: 'discord',
+      linkedAt: new Date(),
+    })
+    if (!notice.success) {
+      log.warn('Discord link notice to the owner was not sent', { userId, error: notice.error })
+    }
+  } catch (error) {
+    log.warn('Discord link notice to the owner was not sent', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 function finish(request: NextRequest, redirectUri: string, target: { linked: true } | { error: DiscordLinkError }) {
@@ -366,11 +390,12 @@ export async function handleDiscordLinkCallback(request: NextRequest): Promise<N
     const tokens = await exchangeCode(code, redirectUri)
     const discordUserId = await fetchDiscordUserId(tokens.access_token)
     const result = await linkDiscordAccountToUser(sessionUserId, discordUserId, tokens)
-    if (result !== 'linked') {
+    if (result === 'taken' || result === 'otherDiscord') {
       log.warn('Discord link refused', { userId: sessionUserId, reason: result })
       return finish(request, redirectUri, { error: result })
     }
     log.info('Discord account linked to the signed-in user', { userId: sessionUserId })
+    if (result === 'linked') await notifyOwnerOfLink(sessionUserId)
     return finish(request, redirectUri, { linked: true })
   } catch (error) {
     log.error('Discord link failed', error instanceof Error ? error : new Error(String(error)), {

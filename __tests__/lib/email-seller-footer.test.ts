@@ -72,6 +72,12 @@ const sends: Record<string, (m: EmailModule) => Promise<unknown>> = {
       reason: 'Spam in lobby chat',
       expiresAt: new Date('2026-10-04T12:00:00Z'),
     }),
+  sendProviderLinkedNoticeEmail: (m) =>
+    m.sendProviderLinkedNoticeEmail('player@example.com', {
+      username: 'Ola',
+      provider: 'discord',
+      linkedAt: new Date('2026-10-04T12:00:00Z'),
+    }),
 }
 
 const OTHER_SENDS = Object.keys(sends).filter((name) => name !== CONFIRMATION)
