@@ -35,6 +35,7 @@ describe('proxy matcher', () => {
     '/_next/static/chunks/main.js',
     '/_next/image',
     '/favicon.ico',
+    '/email/logo.png',
   ])('skips %s – a file for crawlers and browsers, never a session', (route) => {
     expect(runsOn(route)).toBe(false)
   })
@@ -58,6 +59,7 @@ describe('proxy matcher', () => {
     expect(runsOn('/sitemapping')).toBe(true)
     expect(runsOn('/robots-guide')).toBe(true)
     expect(runsOn('/adsense-policy')).toBe(true)
+    expect(runsOn('/email-preferences')).toBe(true)
   })
 
   it('skips the IndexNow key file by shape, not by its current value', () => {
