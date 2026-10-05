@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { prefersReducedMotion } from '@/lib/motion'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
@@ -12,7 +14,7 @@ type TFn = ReturnType<typeof useTranslation>['t']
  *   ┌──────── stage ────────┐   two hands in the players' colours, with
  *   │  hand  1:0  hand      │   "choosing / locked in", the match score and
  *   │  Denys  ●○·○○  Pattern│   round pips between them, and the reveal of
- *   ├──────── tiles ────────┤   the latest round played as a shake-and-flip;
+ *   ├──────── tiles ────────┤   the latest round played as a fist shake, then a flip;
  *   │  rock  paper  sciss.  │   three same-sized choice tiles.
  *   └───────────────────────┘
  *
@@ -85,11 +87,13 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
 
 type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
 
+/** Must equal the `rps-shake` duration in app/globals.css. */
+export const RPS_SHAKE_MS = 750
 /**
- * When the reveal has finished: `.rps-hand--reveal` shakes for 0.75 s, then
- * flips the choice in over 0.35 s (app/globals.css). The score waits for this.
+ * When the reveal has finished: the fists shake, then the throw flips in over
+ * 0.35 s (app/globals.css). The score waits for this.
  */
-export const RPS_REVEAL_MS = 1100
+export const RPS_REVEAL_MS = RPS_SHAKE_MS + 350
 /**
  * The final round's result overlay waits for the reveal plus a beat to read it.
  * It was 1300, which left the revealed hands 200 ms before they were covered (#1200).
@@ -209,9 +213,15 @@ export default function RockPaperScissorsGameBoard({
 
 function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
   const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
+  const [shaking, setShaking] = useState(() => reveal && !prefersReducedMotion())
+  useEffect(() => {
+    if (!shaking) return
+    const timer = setTimeout(() => setShaking(false), RPS_SHAKE_MS)
+    return () => clearTimeout(timer)
+  }, [shaking])
   return (
-    <div className={`rps-hand rps-hand--${tone}${reveal ? ' rps-hand--reveal' : ''}`} style={{ '--hand-accent': accent } as React.CSSProperties}>
-      <span className="rps-hand__emoji" aria-hidden><Icon name={icon} size={44} /></span>
+    <div className={`rps-hand rps-hand--${tone}${reveal ? ' rps-hand--reveal' : ''}${shaking ? ' rps-hand--shaking' : ''}`} style={{ '--hand-accent': accent } as React.CSSProperties}>
+      <span className="rps-hand__emoji" aria-hidden><Icon name={shaking ? 'rock' : icon} size={44} /></span>
       <span className="rps-hand__who">
         {player?.avatarSrc
           // eslint-disable-next-line @next/next/no-img-element

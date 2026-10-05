@@ -3449,9 +3449,9 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-hand--locked { border-color: var(--hand-accent); }
 .rps-hand--locked .rps-hand__state { color: var(--hand-accent); }
 .rps-hand--locked .rps-hand__emoji { animation: rps-lock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
-/* Reveal: both hands shake three times, then the throw flips in and the
-   winner lights up. The delays make it a sequence, not a jump. */
-.rps-hand--reveal .rps-hand__emoji { animation: rps-shake 0.75s ease-in-out both, rps-flip 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) 0.75s both; }
+/* Reveal: fists shake three times, then the throw flips in. 0.75s must equal RPS_SHAKE_MS, which swaps the icon. */
+.rps-hand--reveal .rps-hand__emoji { animation: rps-flip 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.rps-hand--reveal.rps-hand--shaking .rps-hand__emoji { animation: rps-shake 0.75s ease-in-out both; }
 /* The verdict waits for the flip. A new result remounts the hands (revealKey),
    and a transition never runs on a freshly mounted element, so the old
    `transition-delay: 1s` did nothing: WIN/LOSS and the winner's tint were up
