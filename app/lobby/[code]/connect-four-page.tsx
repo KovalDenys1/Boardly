@@ -39,6 +39,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
+import { nextDropKey, type DropKey } from '@/lib/connect-four-drop-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
@@ -859,7 +860,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
     const lastC4MoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null
     // The newest disc falls once; a remount shows it landed, marker and all (#1114).
-    const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(gameEngine ? (lastC4Move ? lastC4MoveSignature : null) : undefined)
+    const dropKeyRef = React.useRef<DropKey | null>(null)
+    dropKeyRef.current = nextDropKey(dropKeyRef.current, Array.isArray(earlyMoveHistory) ? earlyMoveHistory : undefined)
+    const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(gameEngine ? (dropKeyRef.current?.key ?? null) : undefined)
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastC4MoveSignature,
