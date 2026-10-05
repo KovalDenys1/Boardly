@@ -357,13 +357,17 @@ export async function proxy(request: NextRequest) {
  * source and asks it about real paths, because a typo in it fails open or
  * closed with nothing else noticing.
  *
+ * `email/` is `public/email/`, the images a mail loads (#1293). A mail client shows
+ * them from another site, which the proxy's `Cross-Origin-Resource-Policy: same-site`
+ * forbids, so they must be served without it.
+ *
  * Excluded, in order: Next's own static and image routes, the favicon, the
- * public folder, `robots.txt`, `sitemap.xml`, `ads.txt`, `manifest.json`,
+ * public folder, the mail images, `robots.txt`, `sitemap.xml`, `ads.txt`, `manifest.json`,
  * `sw.js`, `offline.html`, the IndexNow key file (32 hex characters at the site
  * root, fetched by Bing to verify a submission) and `.well-known`.
  */
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|public/|robots\\.txt|sitemap\\.xml|ads\\.txt|manifest\\.json|sw\\.js|offline\\.html|[0-9a-f]{32}\\.txt|\\.well-known/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|public/|email/|robots\\.txt|sitemap\\.xml|ads\\.txt|manifest\\.json|sw\\.js|offline\\.html|[0-9a-f]{32}\\.txt|\\.well-known/).*)',
   ],
 }

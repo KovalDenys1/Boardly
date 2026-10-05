@@ -452,6 +452,16 @@ in Resend and production sends from `noreply@boardly.online`. `RESEND_API_KEY` l
 forwarding for `support@` exists. **Never send a Boardly user email from his personal or
 Comono mailbox.**
 
+**Every mail is drawn by `lib/email-layout.ts` (#1293).** A template in `lib/email.ts` describes
+its content as blocks and gets the HTML part and the text part back; never write mail HTML in a
+template. `npx tsx scripts/preview-emails.ts` renders all of them with sample data into
+`tmp/email-preview/`, and `--send-samples` mails each one to `support@boardly.online` only. A new
+mail needs an entry in `emailTemplates` and in `scripts/email-samples.ts`, which
+`__tests__/lib/email-layout.test.ts` checks. The one image is `public/email/logo.png`
+(`node scripts/generate-email-logo.mjs`); a mail loads nothing from any other host, and
+`public/email/` skips the proxy because its `Cross-Origin-Resource-Policy: same-site` would stop
+a mail client from showing the image.
+
 ## Boardly and the Control Panel are one database
 
 - **Shared database.** Both connect to the same Supabase Postgres. The Control Panel reads

@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { renderEmail, type EmailBlock, type EmailLayout } from './email-layout'
 import { logger } from './logger'
 import { BOARDLY_URL, SUPPORT_EMAIL } from './organization-json-ld'
 import { majorUnitAmount, type PremiumPlan } from './premium-plans'
@@ -38,31 +39,11 @@ async function noteEmailSendFailure(kind: string, error: unknown): Promise<void>
   }
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
 // The seller's name and geographic address (#1227, decision 2026-09-27): only the
 // Premium purchase confirmation carries them, because angrerettloven section 18 is
 // the one place a Boardly email has to repeat the section 8 information on a
 // durable medium. An empty string until both NEXT_PUBLIC_SELLER_* variables are
 // set, so the confirmation never ends in a line with the name missing.
-function sellerFooterHtml(): string {
-  const seller = getSellerIdentity()
-  if (!seller) {
-    return ''
-  }
-  const email = escapeHtml(seller.email)
-  return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">${escapeHtml(seller.legalName)}, ${escapeHtml(formatSellerAddress(seller))}, Norway. Email: <a href="mailto:${email}" style="color: #999;">${email}</a></p>`
-}
-
-// The plain-text counterpart, for the purchase confirmation's text part; a
-// text-only client never sees sellerFooterHtml().
 function sellerFooterText(): string {
   const seller = getSellerIdentity()
   if (!seller) {
@@ -71,11 +52,54 @@ function sellerFooterText(): string {
   return `${seller.legalName}, ${formatSellerAddress(seller)}, Norway. Email: ${seller.email}`
 }
 
+const TEAM_SIGNATURE = 'The Boardly team'
+
 // The sign-off under every other email (#1227): the company voice and the one
 // support address, never a private person's name or home address. Unlike the
 // seller footer this needs no configuration, so it never renders empty.
-function companyFooterHtml(): string {
-  return `<p style="color: #999; font-size: 12px; margin: 20px 0 0;">The Boardly team &middot; <a href="mailto:${SUPPORT_EMAIL}" style="color: #999;">${SUPPORT_EMAIL}</a></p>`
+const COMPANY_SIGN_OFF = `${TEAM_SIGNATURE} · ${SUPPORT_EMAIL}`
+
+export type EmailMessage = { subject: string; html: string; text: string }
+
+function singleSheetEmail(mail: {
+  subject: string
+  title: string
+  preheader: string
+  blocks: EmailBlock[]
+}): EmailMessage {
+  return {
+    subject: mail.subject,
+    ...renderEmail({
+      preheader: mail.preheader,
+      sheets: [{ lang: 'en', title: mail.title, blocks: mail.blocks }],
+      footer: [[COMPANY_SIGN_OFF]],
+    }),
+  }
+}
+
+function verificationEmail(token: string, username?: string): EmailMessage {
+  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
+  const intro =
+    'Thanks for signing up for Boardly! Please click the button below to verify your email address and activate your account.'
+  return singleSheetEmail({
+    subject: 'Verify your email - Boardly',
+    title: 'Verify your email',
+    preheader: intro,
+    blocks: [
+      { type: 'paragraph', content: `Hi ${username || 'there'}!` },
+      { type: 'paragraph', content: intro },
+      { type: 'button', label: 'Verify Email', href: verifyUrl },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, copy and paste this link into your browser:",
+        href: verifyUrl,
+      },
+      {
+        type: 'note',
+        content: "This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.",
+      },
+    ],
+  })
 }
 
 export async function sendVerificationEmail(email: string, token: string, username?: string) {
@@ -84,44 +108,13 @@ export async function sendVerificationEmail(email: string, token: string, userna
     return { success: false, error: 'Email service not configured' }
   }
 
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
-  const displayName = username || 'there'
+  const message = verificationEmail(token, username)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Verify your email - Boardly',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Hi ${displayName}! 👋</h2>
-              <p>Thanks for signing up for Boardly! Please click the button below to verify your email address and activate your account.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  ✓ Verify Email
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -132,6 +125,25 @@ export async function sendVerificationEmail(email: string, token: string, userna
     logger.error('Failed to send verification email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
+}
+
+function unverifiedAccountWarningEmail(token: string, username: string, daysUntilDeletion: number): EmailMessage {
+  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
+  const deadline = `${daysUntilDeletion} ${daysUntilDeletion === 1 ? 'day' : 'days'}`
+  const subject = `Action required: verify your Boardly account in ${deadline}`
+  return singleSheetEmail({
+    subject,
+    title: subject,
+    preheader: `Your account email is still not verified. To keep your account, please verify your email within ${deadline}.`,
+    blocks: [
+      { type: 'paragraph', content: `Hi ${username || 'there'}!` },
+      { type: 'paragraph', content: 'Your account email is still not verified.' },
+      { type: 'paragraph', content: ['To keep your account, please verify your email within ', { strong: deadline }, '.'] },
+      { type: 'callout', tone: 'warning', text: 'Accounts that remain unverified will be automatically deleted.' },
+      { type: 'button', label: 'Verify Email Now', href: verifyUrl },
+      { type: 'fallbackLink', text: 'If the button does not work, open this link manually:', href: verifyUrl },
+    ],
+  })
 }
 
 export async function sendUnverifiedAccountWarningEmail(
@@ -145,49 +157,13 @@ export async function sendUnverifiedAccountWarningEmail(
     return { success: false, error: 'Email service not configured' }
   }
 
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
-  const pluralizedDays = daysUntilDeletion === 1 ? 'day' : 'days'
+  const message = unverifiedAccountWarningEmail(token, username, daysUntilDeletion)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: `Action required: verify your Boardly account in ${daysUntilDeletion} ${pluralizedDays}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #FFC44D; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #1F1B16; margin: 0; font-size: 28px; font-weight: 900;">⚠️ boardly</h1>
-            </div>
-            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #111827; margin-top: 0;">Hi ${username || 'there'}!</h2>
-              <p>Your account email is still not verified.</p>
-              <p>
-                To keep your account, please verify your email within
-                <strong>${daysUntilDeletion} ${pluralizedDays}</strong>.
-              </p>
-              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 14px; margin: 18px 0;">
-                <p style="margin: 0; color: #92400e;">
-                  Accounts that remain unverified will be automatically deleted.
-                </p>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                  Verify Email Now
-                </a>
-              </div>
-              <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
-              <p style="color: #dc2626; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -202,48 +178,42 @@ export async function sendUnverifiedAccountWarningEmail(
   }
 }
 
+function passwordResetEmail(token: string): EmailMessage {
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
+  const intro = 'We received a request to reset your password. Click the button below to create a new password.'
+  return singleSheetEmail({
+    subject: 'Reset your password - Boardly',
+    title: 'Reset your password',
+    preheader: intro,
+    blocks: [
+      { type: 'paragraph', content: intro },
+      { type: 'button', label: 'Reset Password', href: resetUrl },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, copy and paste this link into your browser:",
+        href: resetUrl,
+      },
+      {
+        type: 'note',
+        content: "This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.",
+      },
+    ],
+  })
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
+  const message = passwordResetEmail(token)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Reset your password - Boardly',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <p style="margin-top: 0;">We received a request to reset your password. Click the button below to create a new password.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  Reset Password
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -254,6 +224,35 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     logger.error('Failed to send password reset email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
+}
+
+function securityPasswordResetEmail(username?: string | null): EmailMessage {
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
+  const subject = 'Please set a new Boardly password'
+  const intro =
+    'For security reasons we have reset the password on your Boardly account. Your old password no longer works, and setting a new one takes a minute:'
+  return singleSheetEmail({
+    subject,
+    title: subject,
+    preheader: intro,
+    blocks: [
+      { type: 'paragraph', content: username ? `Hi ${username},` : 'Hi,' },
+      { type: 'paragraph', content: intro },
+      { type: 'button', label: 'Set a new password', href: resetUrl },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, open this link and enter the email address of your Boardly account:",
+        href: resetUrl,
+      },
+      { type: 'paragraph', content: 'If you sign in with Google, GitHub or Discord, nothing changes for you.' },
+      {
+        type: 'paragraph',
+        content:
+          'Your games, friends and Premium are exactly as you left them. Sorry for the interruption, and thanks for playing.',
+      },
+      { type: 'note', content: 'Questions? Just reply to this email.' },
+    ],
+  })
 }
 
 /**
@@ -268,48 +267,14 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
     return { success: false, error: 'Email service not configured' }
   }
 
-  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
-  const greeting = username ? `Hi ${escapeHtml(username)},` : 'Hi,'
+  const message = securityPasswordResetEmail(username)
 
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: 'support@boardly.online',
-      subject: 'Please set a new Boardly password',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <p style="margin-top: 0;">${greeting}</p>
-              <p>For security reasons we have reset the password on your Boardly account. Your old password no longer works, and setting a new one takes a minute:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  Set a new password
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, open this link and enter the email address of your Boardly account:</p>
-              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
-              <p>If you sign in with Google, GitHub or Discord, nothing changes for you.</p>
-              <p>Your games, friends and Premium are exactly as you left them. Sorry for the interruption, and thanks for playing.</p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                Questions? Just reply to this email.<br>
-                The Boardly team
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -327,6 +292,42 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
 // masking rule lives in lib/redact.ts, which the logger uses too (#1132).
 export const maskEmailAddress = maskEmail
 
+function emailChangeNoticeEmail(newEmail: string, username?: string | null): EmailMessage {
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
+  const maskedNewEmail = maskEmailAddress(newEmail)
+  const subject = 'Your Boardly email address is being changed'
+  return singleSheetEmail({
+    subject,
+    title: subject,
+    preheader: `We received a request to change the email address on your Boardly account to ${maskedNewEmail}. The change takes effect once the new address is confirmed.`,
+    blocks: [
+      { type: 'paragraph', content: username ? `Hi ${username},` : 'Hi,' },
+      {
+        type: 'paragraph',
+        content: [
+          'We received a request to change the email address on your Boardly account to ',
+          { strong: maskedNewEmail },
+          '. The change takes effect once the new address is confirmed.',
+        ],
+      },
+      { type: 'paragraph', content: 'If this was you, there is nothing more to do.' },
+      {
+        type: 'paragraph',
+        content:
+          'If it was not you, please reset your password now, even if you usually sign in with Google, GitHub or Discord. A reset signs out every other session on your account and cancels the pending change:',
+      },
+      { type: 'button', label: 'Reset my password', href: resetUrl },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, open this link and enter this email address:",
+        href: resetUrl,
+      },
+      { type: 'paragraph', content: 'Then reply to this email and we will help you check your account.' },
+      { type: 'note', content: 'Questions? Just reply to this email.' },
+    ],
+  })
+}
+
 // Sent to the address being replaced when someone asks to change the account's
 // email (#1136). Until this existed only the new address was mailed, so a
 // session thief could move the account to their own mailbox without the owner
@@ -342,50 +343,14 @@ export async function sendEmailChangeNoticeEmail(
     return { success: false, error: 'Email service not configured' }
   }
 
-  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
-  const greeting = username ? `Hi ${escapeHtml(username)},` : 'Hi,'
-  const maskedNewEmail = escapeHtml(maskEmailAddress(newEmail))
+  const message = emailChangeNoticeEmail(newEmail, username)
 
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: previousEmail,
       replyTo: 'support@boardly.online',
-      subject: 'Your Boardly email address is being changed',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <p style="margin-top: 0;">${greeting}</p>
-              <p>We received a request to change the email address on your Boardly account to <strong>${maskedNewEmail}</strong>. The change takes effect once the new address is confirmed.</p>
-              <p>If this was you, there is nothing more to do.</p>
-              <p>If it was not you, please reset your password now, even if you usually sign in with Google, GitHub or Discord. A reset signs out every other session on your account and cancels the pending change:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  Reset my password
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, open this link and enter this email address:</p>
-              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
-              <p>Then reply to this email and we will help you check your account.</p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                Questions? Just reply to this email.<br>
-                The Boardly team
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -397,52 +362,50 @@ export async function sendEmailChangeNoticeEmail(
   }
 }
 
+function welcomeEmail(name: string): EmailMessage {
+  const intro = "Your email has been verified successfully. You're all set to start playing!"
+  return singleSheetEmail({
+    subject: 'Welcome to Boardly! 🎲',
+    title: `Welcome, ${name}!`,
+    preheader: intro,
+    blocks: [
+      { type: 'paragraph', content: intro },
+      { type: 'heading', text: "What's next?" },
+      {
+        type: 'list',
+        items: [
+          'Create your first lobby and invite friends',
+          'Join existing games with lobby codes',
+          'Play Yahtzee in real-time',
+          'Customize your profile',
+        ],
+      },
+      { type: 'button', label: 'Start Playing', href: `${process.env.NEXTAUTH_URL}/games` },
+      {
+        type: 'note',
+        content: [
+          'Need help? Check out our ',
+          { text: 'website', href: `${process.env.NEXTAUTH_URL}` },
+          ' or reply to this email.',
+        ],
+      },
+    ],
+  })
+}
+
 export async function sendWelcomeEmail(email: string, name: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
+  const message = welcomeEmail(name)
+
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Welcome to Boardly! 🎲',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Welcome, ${name}! 🎉</h2>
-              <p>Your email has been verified successfully. You're all set to start playing!</p>
-              <h3 style="color: #FF6B5B;">What's next?</h3>
-              <ul style="color: #666;">
-                <li>Create your first lobby and invite friends</li>
-                <li>Join existing games with lobby codes</li>
-                <li>Play Yahtzee in real-time</li>
-                <li>Customize your profile</li>
-              </ul>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL}/games" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  Start Playing
-                </a>
-              </div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                Need help? Check out our <a href="${process.env.NEXTAUTH_URL}" style="color: #FF6B5B;">website</a> or reply to this email.
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -453,6 +416,37 @@ export async function sendWelcomeEmail(email: string, name: string) {
     logger.error('Failed to send welcome email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
+}
+
+function gameInviteEmail(
+  recipientName: string,
+  senderName: string,
+  lobbyName: string,
+  gameType: string,
+  inviteUrl: string
+): EmailMessage {
+  const game = gameType.replace(/_/g, ' ')
+  const subject = `${senderName} invited you to play ${game} on Boardly`
+  return singleSheetEmail({
+    subject,
+    title: subject,
+    preheader: `${senderName} has invited you to join a game of ${game}.`,
+    blocks: [
+      { type: 'paragraph', content: `Hey ${recipientName}!` },
+      { type: 'paragraph', content: [{ strong: senderName }, ' has invited you to join a game of ', { strong: game }, '.'] },
+      ...(lobbyName ? [{ type: 'paragraph' as const, content: ['Lobby: ', { strong: lobbyName }] }] : []),
+      { type: 'button', label: 'Join Game', href: inviteUrl },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, copy and paste this link into your browser:",
+        href: inviteUrl,
+      },
+      {
+        type: 'note',
+        content: `You received this email because ${senderName} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.`,
+      },
+    ],
+  })
 }
 
 export async function sendGameInviteEmail(
@@ -468,47 +462,13 @@ export async function sendGameInviteEmail(
     return { success: false, error: 'Email service not configured' }
   }
 
-  const displayGameType = escapeHtml(gameType.replace(/_/g, ' '))
-  const safeRecipient = escapeHtml(recipientName)
-  const safeSender = escapeHtml(senderName)
-  const safeLobby = lobbyName ? escapeHtml(lobbyName) : ''
+  const message = gameInviteEmail(recipientName, senderName, lobbyName, gameType, inviteUrl)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipientEmail,
-      subject: `${senderName} invited you to play ${gameType.replace(/_/g, ' ')} on Boardly`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Hey ${safeRecipient}! 🎲</h2>
-              <p><strong>${safeSender}</strong> has invited you to join a game of <strong>${displayGameType}</strong>.</p>
-              ${safeLobby ? `<p style="color: #666;">Lobby: <strong>${safeLobby}</strong></p>` : ''}
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${inviteUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  Join Game
-                </a>
-              </div>
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${inviteUrl}</p>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                You received this email because ${safeSender} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -521,67 +481,56 @@ export async function sendGameInviteEmail(
   }
 }
 
+function accountDeletionEmail(token: string, username: string): EmailMessage {
+  const deleteUrl = `${process.env.NEXTAUTH_URL}/auth/delete-account?token=${token}`
+  const intro = 'We received a request to delete your Boardly account.'
+  return singleSheetEmail({
+    subject: 'Confirm Account Deletion - Boardly',
+    title: 'Confirm Account Deletion',
+    preheader: intro,
+    blocks: [
+      { type: 'paragraph', content: `Hi ${username},` },
+      { type: 'paragraph', content: intro },
+      { type: 'callout', tone: 'danger', text: 'This action is permanent and cannot be undone!' },
+      { type: 'paragraph', content: [{ strong: 'What will be deleted:' }] },
+      {
+        type: 'list',
+        items: [
+          'Your profile and all personal information',
+          'All game history and statistics',
+          'Friend connections and requests',
+          'Any unlocked achievements',
+        ],
+      },
+      { type: 'paragraph', content: "If you're sure you want to proceed, click the button below:" },
+      { type: 'button', label: 'Confirm Account Deletion', href: deleteUrl, tone: 'danger' },
+      {
+        type: 'fallbackLink',
+        text: "If the button doesn't work, copy and paste this link into your browser:",
+        href: deleteUrl,
+      },
+      {
+        type: 'note',
+        content:
+          "This link will expire in 1 hour. If you didn't request account deletion, please ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.",
+      },
+    ],
+  })
+}
+
 export async function sendAccountDeletionEmail(email: string, token: string, username: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const deleteUrl = `${process.env.NEXTAUTH_URL}/auth/delete-account?token=${token}`
+  const message = accountDeletionEmail(token, username)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Confirm Account Deletion - Boardly',
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #FF6B5B; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 900;">⚠️ boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Hi ${username},</h2>
-              <p>We received a request to delete your Boardly account.</p>
-
-              <div style="background: #fee; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; color: #991b1b; font-weight: bold;">⚠️ This action is permanent and cannot be undone!</p>
-              </div>
-
-              <p><strong>What will be deleted:</strong></p>
-              <ul style="color: #666;">
-                <li>Your profile and all personal information</li>
-                <li>All game history and statistics</li>
-                <li>Friend connections and requests</li>
-                <li>Any unlocked achievements</li>
-              </ul>
-
-              <p>If you're sure you want to proceed, click the button below:</p>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${deleteUrl}" target="_blank" rel="noopener noreferrer" style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                  ⚠️ Confirm Account Deletion
-                </a>
-              </div>
-
-              <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #dc2626; word-break: break-all; font-size: 12px;">${deleteUrl}</p>
-
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                This link will expire in 1 hour. If you didn't request account deletion, please ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -787,35 +736,59 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
   }
 }
 
-// Every paragraph is escaped whole, then the site links the message names, Link's
-// support page and the support address are turned back into anchors by exact match.
-// Copy therefore never carries markup, and the username cannot smuggle any in.
-function linkify(escaped: string, links: Readonly<Record<string, string>>): string {
-  let html = escaped
-  for (const url of [...Object.values(links), LINK_SUPPORT_URL]) {
-    const safe = escapeHtml(url)
-    html = html.split(safe).join(`<a href="${safe}" style="color: #FF6B5B;">${safe}</a>`)
+const NOTICE_CLOSING = [
+  `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
+  `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`,
+]
+
+function copyBlocks(copy: ConfirmationCopy): EmailBlock[] {
+  return [
+    { type: 'paragraph', content: copy.greeting },
+    { type: 'paragraph', content: copy.intro },
+    ...copy.sections.flatMap((section): EmailBlock[] => [
+      { type: 'heading', text: section.heading },
+      ...section.paragraphs.map((text): EmailBlock => ({ type: 'paragraph', content: text })),
+    ]),
+  ]
+}
+
+function noticeEmail(notice: {
+  titles: [english: string, norwegian: string]
+  english: ConfirmationCopy
+  norwegian: ConfirmationCopy
+  links: Readonly<Record<string, string>>
+  footer: EmailLayout['footer']
+}): EmailMessage {
+  const [englishTitle, norwegianTitle] = notice.titles
+  return {
+    subject: `${englishTitle} / ${norwegianTitle}`,
+    ...renderEmail({
+      preheader: notice.english.intro,
+      sheets: [
+        { lang: 'en', title: englishTitle, blocks: copyBlocks(notice.english) },
+        { lang: 'nb', title: norwegianTitle, blocks: copyBlocks(notice.norwegian) },
+      ],
+      footer: notice.footer,
+      links: [...Object.values(notice.links), LINK_SUPPORT_URL],
+    }),
   }
-  return html
-    .split(SUPPORT_EMAIL)
-    .join(`<a href="mailto:${SUPPORT_EMAIL}" style="color: #FF6B5B;">${SUPPORT_EMAIL}</a>`)
 }
 
-function confirmationCopyHtml(copy: ConfirmationCopy, links: Readonly<Record<string, string>>): string {
-  const paragraph = (text: string) => `<p>${linkify(escapeHtml(text), links)}</p>`
-  const sections = copy.sections
-    .map(
-      (section) =>
-        `<h3 style="color: #FF6B5B; font-size: 16px; margin: 24px 0 6px;">${escapeHtml(section.heading)}</h3>` +
-        section.paragraphs.map(paragraph).join('')
-    )
-    .join('')
-  return `<p style="margin-top: 0;">${escapeHtml(copy.greeting)}</p>${paragraph(copy.intro)}${sections}`
-}
-
-function confirmationCopyText(copy: ConfirmationCopy): string {
-  const sections = copy.sections.map((section) => [section.heading.toUpperCase(), ...section.paragraphs].join('\n'))
-  return [copy.greeting, copy.intro, ...sections].join('\n\n')
+function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMessage {
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ConfirmationLinks = {
+    profile: `${base}/profile`,
+    withdrawal: `${base}/withdrawal`,
+    terms: `${base}/terms`,
+  }
+  const seller = sellerFooterText()
+  return noticeEmail({
+    titles: ['Your Boardly Premium confirmation', 'Bekreftelse på Boardly Premium'],
+    english: englishConfirmationCopy(details, links),
+    norwegian: norwegianConfirmationCopy(details, links),
+    links,
+    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE], seller ? [seller] : []],
+  })
 }
 
 /**
@@ -837,63 +810,14 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
     return { success: false, error: 'Email service not configured' }
   }
 
-  const base = process.env.NEXTAUTH_URL ?? ''
-  const links: ConfirmationLinks = {
-    profile: `${base}/profile`,
-    withdrawal: `${base}/withdrawal`,
-    terms: `${base}/terms`,
-  }
-  const english = englishConfirmationCopy(details, links)
-  const norwegian = norwegianConfirmationCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-  const signature = 'The Boardly team'
-  const footerText = sellerFooterText()
-
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}\n${signature}`,
-    footerText,
-  ]
-    .filter((part) => part.length > 0)
-    .join('\n\n')
+  const message = premiumConfirmationEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: 'Your Boardly Premium confirmation / Bekreftelse på Boardly Premium',
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}<br>
-                ${signature}
-              </p>
-              ${sellerFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -991,6 +915,25 @@ function norwegianNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLi
   }
 }
 
+function subscriptionNoticeEmail(details: SubscriptionNoticeDetails): EmailMessage {
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ConfirmationLinks = {
+    profile: `${base}/profile?tab=premium`,
+    withdrawal: `${base}/withdrawal`,
+    terms: `${base}/terms`,
+  }
+  return noticeEmail({
+    titles: [
+      'Your Boardly Premium subscription is still running',
+      'Boardly Premium-abonnementet ditt løper fortsatt',
+    ],
+    english: englishNoticeCopy(details, links),
+    norwegian: norwegianNoticeCopy(details, links),
+    links,
+    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+  })
+}
+
 /**
  * The running-subscription notice (#1165). digitalytelsesloven § 33 fourth
  * paragraph: "Ved løpende levering av digitale ytelser skal leverandøren minst en
@@ -1014,63 +957,14 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
     return { success: false, error: 'Email service not configured' }
   }
 
-  const base = process.env.NEXTAUTH_URL ?? ''
-  const links: ConfirmationLinks = {
-    profile: `${base}/profile?tab=premium`,
-    withdrawal: `${base}/withdrawal`,
-    terms: `${base}/terms`,
-  }
-  const english = englishNoticeCopy(details, links)
-  const norwegian = norwegianNoticeCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-  const signature = 'The Boardly team'
-
-  // No seller footer here (#1227): the closing lines above already carry the
-  // company sign-off and a linkified support@boardly.online, in both the text
-  // and the HTML part, so nothing more needs to be appended below it.
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}\n${signature}`,
-  ]
-    .filter((part) => part.length > 0)
-    .join('\n\n')
+  const message = subscriptionNoticeEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: 'Your Boardly Premium subscription is still running / Boardly Premium-abonnementet ditt løper fortsatt',
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}<br>
-                ${signature}
-              </p>
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -1145,6 +1039,22 @@ function norwegianInactiveWarningCopy(d: InactiveAccountWarningDetails, links: I
   }
 }
 
+function inactiveAccountWarningEmail(details: InactiveAccountWarningDetails): EmailMessage {
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: InactiveWarningLinks = {
+    login: `${base}/auth/login`,
+    profile: `${base}/profile`,
+    privacy: `${base}/privacy`,
+  }
+  return noticeEmail({
+    titles: ['Your Boardly account will be deleted', 'Boardly-kontoen din blir slettet'],
+    english: englishInactiveWarningCopy(details, links),
+    norwegian: norwegianInactiveWarningCopy(details, links),
+    links,
+    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+  })
+}
+
 /**
  * The warning before an inactive account is deleted (#1130, decision 2026-09-27): a
  * registered account nobody has signed in to for 24 months is deleted, and its owner hears
@@ -1158,63 +1068,14 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
     return { success: false, error: 'Email service not configured' }
   }
 
-  const base = process.env.NEXTAUTH_URL ?? ''
-  const links: InactiveWarningLinks = {
-    login: `${base}/auth/login`,
-    profile: `${base}/profile`,
-    privacy: `${base}/privacy`,
-  }
-  const english = englishInactiveWarningCopy(details, links)
-  const norwegian = norwegianInactiveWarningCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-  const signature = 'The Boardly team'
-
-  // No seller footer here (#1227): the closing lines above already carry the
-  // company sign-off and a linkified support@boardly.online, in both the text
-  // and the HTML part, so nothing more needs to be appended below it.
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}\n${signature}`,
-  ]
-    .filter((part) => part.length > 0)
-    .join('\n\n')
+  const message = inactiveAccountWarningEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: 'Your Boardly account will be deleted / Boardly-kontoen din blir slettet',
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}<br>
-                ${signature}
-              </p>
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -1295,63 +1156,35 @@ function norwegianTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChang
   }
 }
 
+function termsChangeNoticeEmail(details: TermsChangeNoticeDetails): EmailMessage {
+  const links: TermsChangeNoticeLinks = {
+    terms: `${BOARDLY_URL}/terms`,
+    privacy: `${BOARDLY_URL}/privacy`,
+    profile: `${BOARDLY_URL}/profile`,
+  }
+  return noticeEmail({
+    titles: ['An update to the Boardly Terms of Service', 'Boardlys vilkår er oppdatert'],
+    english: englishTermsChangeCopy(details, links),
+    norwegian: norwegianTermsChangeCopy(details, links),
+    links,
+    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+  })
+}
+
 export async function sendTermsChangeNoticeEmail(email: string, details: TermsChangeNoticeDetails) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const links: TermsChangeNoticeLinks = {
-    terms: `${BOARDLY_URL}/terms`,
-    privacy: `${BOARDLY_URL}/privacy`,
-    profile: `${BOARDLY_URL}/profile`,
-  }
-  const english = englishTermsChangeCopy(details, links)
-  const norwegian = norwegianTermsChangeCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-  const signature = 'The Boardly team'
-
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}\n${signature}`,
-  ].join('\n\n')
+  const message = termsChangeNoticeEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: 'An update to the Boardly Terms of Service / Boardlys vilkår er oppdatert',
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}<br>
-                ${signature}
-              </p>
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -1436,6 +1269,17 @@ function norwegianSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNo
   }
 }
 
+function suspensionNoticeEmail(details: SuspensionNoticeDetails): EmailMessage {
+  const links: SuspensionNoticeLinks = { appeal: SUSPENSION_APPEAL_URL }
+  return noticeEmail({
+    titles: ['Your Boardly account has been suspended', 'Boardly-kontoen din er suspendert'],
+    english: englishSuspensionCopy(details, links),
+    norwegian: norwegianSuspensionCopy(details, links),
+    links,
+    footer: [NOTICE_CLOSING, [COMPANY_SIGN_OFF]],
+  })
+}
+
 /**
  * The email a suspended account's owner gets (Control Panel #120). The Terms promise it
  * (section 5): "When we suspend or close an account, we email the owner the reason and, for
@@ -1450,54 +1294,14 @@ export async function sendSuspensionNoticeEmail(email: string, details: Suspensi
     return { success: false, error: 'Email service not configured' }
   }
 
-  const links: SuspensionNoticeLinks = { appeal: SUSPENSION_APPEAL_URL }
-  const english = englishSuspensionCopy(details, links)
-  const norwegian = norwegianSuspensionCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-
-  // The plain company footer (#1227), no seller address: it signs the mail as the team.
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}`,
-    `The Boardly team · ${SUPPORT_EMAIL}`,
-  ].join('\n\n')
+  const message = suspensionNoticeEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: 'Your Boardly account has been suspended / Boardly-kontoen din er suspendert',
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     }, details.idempotencyKey ? { idempotencyKey: details.idempotencyKey } : undefined)
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -1558,6 +1362,25 @@ function norwegianProviderLinkedCopy(d: ProviderLinkedNoticeDetails, links: Prov
   }
 }
 
+function providerLinkedNoticeEmail(details: ProviderLinkedNoticeDetails): EmailMessage {
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ProviderLinkedLinks = {
+    profile: `${base}/profile`,
+    reset: `${base}/auth/forgot-password`,
+  }
+  const provider = LINKABLE_PROVIDER_NAMES[details.provider]
+  return noticeEmail({
+    titles: [
+      `A ${provider} account was linked to your Boardly account`,
+      `En ${provider}-konto ble koblet til Boardly-kontoen din`,
+    ],
+    english: englishProviderLinkedCopy(details, links),
+    norwegian: norwegianProviderLinkedCopy(details, links),
+    links,
+    footer: [NOTICE_CLOSING, [COMPANY_SIGN_OFF]],
+  })
+}
+
 /**
  * The notice an account's owner gets when a sign-in provider is linked to the account
  * (#1223): a linked provider is a way to sign in, so the owner hears about a new one.
@@ -1570,58 +1393,14 @@ export async function sendProviderLinkedNoticeEmail(email: string, details: Prov
     return { success: false, error: 'Email service not configured' }
   }
 
-  const base = process.env.NEXTAUTH_URL ?? ''
-  const links: ProviderLinkedLinks = {
-    profile: `${base}/profile`,
-    reset: `${base}/auth/forgot-password`,
-  }
-  const provider = LINKABLE_PROVIDER_NAMES[details.provider]
-  const english = englishProviderLinkedCopy(details, links)
-  const norwegian = norwegianProviderLinkedCopy(details, links)
-  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
-  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
-
-  const text = [
-    confirmationCopyText(english),
-    '----',
-    confirmationCopyText(norwegian),
-    '----',
-    `${closingEn}\n${closingNo}`,
-    `The Boardly team · ${SUPPORT_EMAIL}`,
-  ].join('\n\n')
+  const message = providerLinkedNoticeEmail(details)
 
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       replyTo: SUPPORT_EMAIL,
-      subject: `A ${provider} account was linked to your Boardly account / En ${provider}-konto ble koblet til Boardly-kontoen din`,
-      text,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <div lang="en">${confirmationCopyHtml(english, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                ${linkify(escapeHtml(closingEn), links)}<br>
-                ${linkify(escapeHtml(closingNo), links)}
-              </p>
-              ${companyFooterHtml()}
-            </div>
-          </body>
-        </html>
-      `,
+      ...message,
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -1632,4 +1411,22 @@ export async function sendProviderLinkedNoticeEmail(email: string, details: Prov
     logger.error('Failed to send provider linked notice email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
+}
+
+/** Every mail as subject, HTML and text without sending it, keyed by the function that sends it. */
+export const emailTemplates = {
+  sendVerificationEmail: verificationEmail,
+  sendUnverifiedAccountWarningEmail: unverifiedAccountWarningEmail,
+  sendPasswordResetEmail: passwordResetEmail,
+  sendSecurityPasswordResetEmail: securityPasswordResetEmail,
+  sendEmailChangeNoticeEmail: emailChangeNoticeEmail,
+  sendWelcomeEmail: welcomeEmail,
+  sendGameInviteEmail: gameInviteEmail,
+  sendAccountDeletionEmail: accountDeletionEmail,
+  sendPremiumConfirmationEmail: premiumConfirmationEmail,
+  sendSubscriptionNoticeEmail: subscriptionNoticeEmail,
+  sendInactiveAccountWarningEmail: inactiveAccountWarningEmail,
+  sendTermsChangeNoticeEmail: termsChangeNoticeEmail,
+  sendSuspensionNoticeEmail: suspensionNoticeEmail,
+  sendProviderLinkedNoticeEmail: providerLinkedNoticeEmail,
 }
