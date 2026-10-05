@@ -1371,3 +1371,127 @@ export async function sendSuspensionNoticeEmail(email: string, details: Suspensi
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
+
+const LINKABLE_PROVIDER_NAMES = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
+
+export type ProviderLinkedNoticeDetails = {
+  username?: string | null
+  provider: keyof typeof LINKABLE_PROVIDER_NAMES
+  linkedAt: Date
+}
+
+type ProviderLinkedLinks = { profile: string; reset: string }
+
+function englishProviderLinkedCopy(d: ProviderLinkedNoticeDetails, links: ProviderLinkedLinks): ConfirmationCopy {
+  const provider = LINKABLE_PROVIDER_NAMES[d.provider]
+  return {
+    greeting: d.username ? `Hi ${d.username},` : 'Hi,',
+    intro: `A ${provider} account was linked to your Boardly account on ${formatMoment(d.linkedAt, 'en-US')}. Whoever holds that ${provider} account can now sign in to your Boardly account with it.`,
+    sections: [
+      { heading: 'If this was you', paragraphs: ['There is nothing more to do.'] },
+      {
+        heading: 'If this was not you',
+        paragraphs: [
+          `Sign in at ${links.profile}, find ${provider} under "Connected Accounts" and choose "Unlink".`,
+          `Then set a new password at ${links.reset}, even if you usually sign in with Google, GitHub or Discord. That signs out every other session on your account.`,
+          'After that, reply to this email and we will help you check your account.',
+        ],
+      },
+    ],
+  }
+}
+
+function norwegianProviderLinkedCopy(d: ProviderLinkedNoticeDetails, links: ProviderLinkedLinks): ConfirmationCopy {
+  const provider = LINKABLE_PROVIDER_NAMES[d.provider]
+  return {
+    greeting: d.username ? `Hei ${d.username},` : 'Hei,',
+    intro: `En ${provider}-konto ble koblet til Boardly-kontoen din ${formatMoment(d.linkedAt, 'nb-NO')}. Den som har den ${provider}-kontoen, kan nå logge inn på Boardly-kontoen din med den.`,
+    sections: [
+      { heading: 'Hvis dette var deg', paragraphs: ['Da trenger du ikke å gjøre noe mer.'] },
+      {
+        heading: 'Hvis dette ikke var deg',
+        paragraphs: [
+          `Logg inn på ${links.profile}, finn ${provider} under «Tilkoblede kontoer» og velg «Koble fra».`,
+          `Lag deretter et nytt passord på ${links.reset}, også hvis du vanligvis logger inn med Google, GitHub eller Discord. Da logges alle andre økter på kontoen din ut.`,
+          'Svar så på denne e-posten, så hjelper vi deg med å sjekke kontoen.',
+        ],
+      },
+    ],
+  }
+}
+
+/**
+ * The notice an account's owner gets when a sign-in provider is linked to the account
+ * (#1223): a linked provider is a way to sign in, so the owner hears about a new one.
+ * English first, then Norwegian bokmål, like the other notices: no language is stored
+ * per user. The caller decides who is told; this only renders and sends.
+ */
+export async function sendProviderLinkedNoticeEmail(email: string, details: ProviderLinkedNoticeDetails) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const base = process.env.NEXTAUTH_URL ?? ''
+  const links: ProviderLinkedLinks = {
+    profile: `${base}/profile`,
+    reset: `${base}/auth/forgot-password`,
+  }
+  const provider = LINKABLE_PROVIDER_NAMES[details.provider]
+  const english = englishProviderLinkedCopy(details, links)
+  const norwegian = norwegianProviderLinkedCopy(details, links)
+  const closingEn = `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`
+  const closingNo = `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`
+
+  const text = [
+    confirmationCopyText(english),
+    '----',
+    confirmationCopyText(norwegian),
+    '----',
+    `${closingEn}\n${closingNo}`,
+    `The Boardly team · ${SUPPORT_EMAIL}`,
+  ].join('\n\n')
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      replyTo: SUPPORT_EMAIL,
+      subject: `A ${provider} account was linked to your Boardly account / En ${provider}-konto ble koblet til Boardly-kontoen din`,
+      text,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <div lang="en">${confirmationCopyHtml(english, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <div lang="nb">${confirmationCopyHtml(norwegian, links)}</div>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                ${linkify(escapeHtml(closingEn), links)}<br>
+                ${linkify(escapeHtml(closingNo), links)}
+              </p>
+              ${companyFooterHtml()}
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    await noteEmailSendFailure('sendProviderLinkedNoticeEmail', error)
+    logger.error('Failed to send provider linked notice email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
