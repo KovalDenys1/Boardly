@@ -5,9 +5,9 @@
  * The same values exist in three coordinated carriers (CSS custom properties
  * cannot appear inside @media conditions, so raw px literals in media queries
  * are unavoidable — the audit fails CI when a literal drifts from these):
- * - this file (TS constants for client code, tailwind config, and the audit)
+ * - this file (TS constants for client code and the audit)
  * - `--bd-header-h` in app/globals.css `:root` (for calc())
- * - the `desk:` screen in tailwind.config.ts and px literals in @media queries
+ * - `--breakpoint-desk` (the `desk:` screen) in app/globals.css `@theme` and px literals in @media queries
  */
 
 export const HEADER_HEIGHT_PX = 64

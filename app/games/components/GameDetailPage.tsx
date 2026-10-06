@@ -133,7 +133,7 @@ export default function GameDetailPage({
   // answer the visitor cannot read (#923).
   const faq = seo?.faq ?? []
   return (
-    <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto text-bd-ink">
+    <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label={t('breadcrumbs.label')}>
           <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
@@ -157,7 +157,7 @@ export default function GameDetailPage({
               <h1 className="font-display text-[clamp(40px,6vw,70px)] font-black leading-[0.95] text-bd-ink">
                 {title}
               </h1>
-              <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg">
+              <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg sm:leading-7">
                 {description}
               </p>
               <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
@@ -185,7 +185,7 @@ export default function GameDetailPage({
             </div>
 
             {hasScreenshot(gameId) ? (
-              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-[26rem]">
+              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-104">
                 <GameScreenshot gameId={gameId} gameName={gameName} />
                 <div className="absolute -left-4 -top-4">
                   <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={72} label={iconLabel} />
@@ -206,7 +206,7 @@ export default function GameDetailPage({
             <h2 className="font-display text-2xl font-black text-bd-ink sm:text-3xl">
               {t(seo.questionKey)}
             </h2>
-            <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base">
+            <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base sm:leading-6">
               {t(seo.answerKey)}
             </p>
           </section>
@@ -224,7 +224,7 @@ export default function GameDetailPage({
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_0.9fr]">
           <section className="bd-card p-6 sm:p-8">
             <h2 className="font-display text-3xl font-black text-bd-ink">{introTitle}</h2>
-            <div className="mt-4 space-y-4 text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base">
+            <div className="mt-4 space-y-4 text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base sm:leading-6">
               {intro.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
@@ -346,7 +346,7 @@ export default function GameDetailPage({
               {faq.map(({ questionKey, answerKey }) => (
                 <div key={questionKey} className="py-4 first:pt-0 last:pb-0">
                   <dt className="text-base font-black text-bd-ink">{t(questionKey)}</dt>
-                  <dd className="mt-1 max-w-3xl text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base">{t(answerKey)}</dd>
+                  <dd className="mt-1 max-w-3xl text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base sm:leading-6">{t(answerKey)}</dd>
                 </div>
               ))}
             </dl>
@@ -428,7 +428,7 @@ function DetailProseSection({ id, heading, paragraphs }: { id: string; heading: 
   return (
     <section id={id} className="bd-card mt-8 scroll-mt-24 p-6 sm:p-8">
       <SectionHeading>{heading}</SectionHeading>
-      <div className="mt-4 max-w-3xl space-y-4 text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base">
+      <div className="mt-4 max-w-3xl space-y-4 text-sm font-medium leading-relaxed text-bd-ink-soft sm:text-base sm:leading-6">
         {paragraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}

@@ -146,7 +146,7 @@ const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
   loading: () => (
-    <div className="h-full min-h-[280px] rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)]">
+    <div className="h-full min-h-[280px] rounded-xl border border-(--bd-line) bg-(--bd-bg2)">
       <div className="flex h-full items-center justify-center">
         <LoadingSpinner size="md" />
       </div>
@@ -2003,10 +2003,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })() : null
 
   return (
-    <div className={`${!showGameSurface ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+    <div className={`${!showGameSurface ? 'bd-page bd-screen min-h-(--game-h)' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
       <div id="bd-lobby-portal" className="contents" />
-     <div className={!showGameSurface ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
+     <div className={!showGameSurface ? 'mx-auto max-w-7xl flex min-h-(--game-h) flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
       {showJoinPrompt ? (
         /* Join Prompt - centered in full height */
@@ -2110,7 +2110,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Icon name={tab === 'players' ? 'users' : 'chat'} size={16} />
                 <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-[color:var(--bd-ink-on-accent)]">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-(--bd-ink-on-accent)">
                     {unreadMessageCount}
                   </span>
                 )}
@@ -2216,7 +2216,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
           {/* Spectator banner */}
           {isSpectator && (
-            <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
+            <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b">
               <div className="flex items-center gap-2">
                 <Icon name="eye" size={16} />
                 <span>{t('lobby.spectatingBanner')}</span>
@@ -2225,7 +2225,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <button
                   type="button"
                   onClick={() => router.push(`/lobby/${code}/spectate`)}
-                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-[var(--bd-bg2)] px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-(--bd-bg2) px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
                 >
                   {t('lobby.spectatingOpenView')}
                 </button>
@@ -2258,13 +2258,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   Leave, then the shared status banner (#1187). Hidden in phone
                   landscape, where the side pane carries the same header
                   (yahtzee-top-status-bar, #751). */}
-              <div className="desk:hidden flex-shrink-0 yahtzee-top-status-bar">
+              <div className="desk:hidden shrink-0 yahtzee-top-status-bar">
                 {yahtzeeView?.header}
               </div>
 
               {/* Top Status Bar — desktop only; below the desk breakpoint the
                   pill header above replaces it (#1187). */}
-              <div className="hidden desk:block flex-shrink-0 pt-2 mb-3 px-2 sm:px-4 yahtzee-top-status-bar">
+              <div className="hidden desk:block shrink-0 pt-2 mb-3 px-2 sm:px-4 yahtzee-top-status-bar">
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
@@ -2309,7 +2309,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="bd-btn bd-btn-soft bd-btn-icon sm:!w-auto sm:!aspect-auto sm:!px-3 sm:!py-1.5 !rounded-xl flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                        className="bd-btn bd-btn-soft bd-btn-icon sm:w-auto! sm:aspect-auto! sm:px-3! sm:py-1.5! rounded-xl! flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
                       >
                         <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={18} />
                         <span className="hidden sm:inline text-xs">{t('game.ui.sound')}</span>
@@ -2320,7 +2320,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
-                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-none"
+                        className="bd-btn bd-btn-coral rounded-xl! px-3! py-1.5! text-xs! flex items-center gap-1.5 focus-visible:ring-2! focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
                       >
                         <LeaveIcon />
                         <span>{t('game.ui.leave')}</span>
@@ -2506,7 +2506,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
 
               {/* Mobile Bottom Navigation */}
-              <div className="yahtzee-mobile-layout flex-shrink-0">
+              <div className="yahtzee-mobile-layout shrink-0">
                 <MobileTabs
                   activeTab={mobileActiveTab}
                   onTabChange={(tab) => {
@@ -2582,7 +2582,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-[var(--bd-bg2)] border border-[var(--bd-line)] rounded-2xl p-8 text-center">
+              <div className="w-full max-w-2xl bg-(--bd-bg2) border border-(--bd-line) rounded-2xl p-8 text-center">
                 <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">{t('lobby.gameStartedTitle')}</h2>
                 {/* The game type is interpolated into the sentence rather than
                     wrapped in its own <code> chip: every locale needs to place

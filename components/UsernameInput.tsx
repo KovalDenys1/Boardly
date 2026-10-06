@@ -128,7 +128,7 @@ export default function UsernameInput({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label htmlFor={inputId} className="!mb-0 text-sm font-semibold text-bd-ink">
+        <label htmlFor={inputId} className="mb-0! text-sm font-semibold text-bd-ink">
           {t('auth.register.username')}
         </label>
         <HelpTooltip
@@ -142,7 +142,7 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-[var(--bd-input-bg)] px-4 py-3 pr-10 text-base text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted sm:text-sm ${
+          className={`w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted sm:text-sm ${
             status === 'available'
               ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500/20'
               : status === 'taken' || status === 'invalid'
@@ -191,7 +191,7 @@ export default function UsernameInput({
 
       {/* Suggestions */}
       {status === 'taken' && suggestions.length > 0 && (
-        <div className="mt-2 rounded-2xl border border-bd-line bg-bd-card-warm/90 p-3">
+        <div className="mt-2 rounded-2xl border border-bd-line p-3">
           <p className="mb-2 text-xs font-semibold text-bd-lav-deep">
             {t('auth.username.suggestions', 'Try these available usernames')}:
           </p>
@@ -201,7 +201,7 @@ export default function UsernameInput({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-xl border border-bd-line bg-[var(--bd-card-warm)] px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
+                className="rounded-xl border border-bd-line bg-(--bd-card-warm) px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
               >
                 {suggestion}
               </button>

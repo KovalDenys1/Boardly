@@ -76,8 +76,8 @@ export default function RegisterForm() {
     3
   )
   const passwordStrengthLevels = [
-    { label: t('auth.password.weak', 'Weak'), color: 'bg-[#FF6B5B]', textColor: 'text-[#FF6B5B]' },
-    { label: t('auth.password.fair', 'Fair'), color: 'bg-[#FFC44D]', textColor: 'text-[#D97706]' },
+    { label: t('auth.password.weak', 'Weak'), color: 'bg-bd-coral', textColor: 'text-bd-coral' },
+    { label: t('auth.password.fair', 'Fair'), color: 'bg-bd-sun', textColor: 'text-[#D97706]' },
     { label: t('auth.password.good', 'Good'), color: 'bg-[#1F1B16]', textColor: 'text-[#1F1B16]' },
     { label: t('auth.password.strong', 'Strong'), color: 'bg-green-500', textColor: 'text-green-600' },
   ] as const
@@ -208,9 +208,9 @@ export default function RegisterForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
           <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">

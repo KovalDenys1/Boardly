@@ -743,7 +743,7 @@ export default function SpectatorLobbyPage() {
   const players = activeGamePlayers
 
   return (
-    <div className="bd-page bd-screen min-h-[var(--game-h)] text-bd-ink">
+    <div className="bd-page bd-screen min-h-(--game-h) text-bd-ink">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {isAdminView && (
@@ -757,7 +757,7 @@ export default function SpectatorLobbyPage() {
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="bd-kicker mb-1">{t('spectate.modeKicker')}</p>
-            <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl">{data.lobby.name}</h1>
+            <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl sm:leading-9">{data.lobby.name}</h1>
             <p className="mt-1 text-sm font-medium text-bd-ink-muted">
               {t('game.ui.code')} <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
               {data.activeGame?.status && (

@@ -882,7 +882,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[100dvh]">
+            <div className="flex justify-center items-center min-h-dvh">
                 <LoadingSpinner size="lg" />
             </div>
         )

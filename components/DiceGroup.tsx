@@ -57,9 +57,9 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
       {!compact && (
       <div className="text-center px-2">
         {!isMyTurn ? (
-          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2! justify-center">
             <Icon name="hourglass" size={16} />
-            <span className="break-words">{t('yahtzee.ui.waitTurnHint')}</span>
+            <span className="wrap-break-word">{t('yahtzee.ui.waitTurnHint')}</span>
           </p>
         ) : disabled && canRoll && onRollDice ? (
           <button
@@ -68,20 +68,20 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
               sounds.play('click', { force: true })
               onRollDice()
             }}
-            className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center w-full cursor-pointer transition-transform active:scale-[0.98]"
+            className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2! justify-center w-full cursor-pointer transition-transform active:scale-[0.98]"
           >
             <Icon name="dice" size={16} />
-            <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
+            <span className="wrap-break-word">{t('yahtzee.ui.rollFirstHint')}</span>
           </button>
         ) : disabled ? (
-          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2! justify-center">
             <Icon name="dice" size={16} />
-            <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
+            <span className="wrap-break-word">{t('yahtzee.ui.rollFirstHint')}</span>
           </p>
         ) : (
-          <p className="bd-chip bd-chip-lav px-3 py-2 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip bd-chip-lav px-3 py-2 text-xs sm:text-sm! font-medium flex items-center gap-1 sm:gap-2! justify-center">
             <Icon name="point" size={16} />
-            <span className="break-words">{t('yahtzee.ui.holdHint')}</span>
+            <span className="wrap-break-word">{t('yahtzee.ui.holdHint')}</span>
           </p>
         )}
       </div>

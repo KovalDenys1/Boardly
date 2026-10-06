@@ -35,42 +35,42 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           border: 'rgba(255,196,77,0.34)',
           gradient: 'linear-gradient(135deg,rgba(255,196,77,0.2),var(--bd-bg))',
           icon: 'bg-[rgba(255,196,77,0.24)]',
-          badge: 'bg-[rgba(255,196,77,0.22)] text-[var(--bd-coral-deep)]',
+          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-deep)',
         }
       case 'largeStraight':
         return {
           border: 'rgba(155,140,255,0.28)',
           gradient: 'linear-gradient(135deg,rgba(155,140,255,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(155,140,255,0.18)]',
-          badge: 'bg-[rgba(155,140,255,0.18)] text-[var(--bd-lav-deep)]',
+          badge: 'bg-[rgba(155,140,255,0.18)] text-(--bd-lav-deep)',
         }
       case 'fullHouse':
         return {
           border: 'rgba(79,201,166,0.28)',
           gradient: 'linear-gradient(135deg,rgba(79,201,166,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(79,201,166,0.18)]',
-          badge: 'bg-[rgba(79,201,166,0.18)] text-[var(--bd-mint-deep)]',
+          badge: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-deep)',
         }
       case 'highScore':
         return {
           border: 'rgba(255,107,91,0.28)',
           gradient: 'linear-gradient(135deg,rgba(255,107,91,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(255,107,91,0.16)]',
-          badge: 'bg-[rgba(255,107,91,0.18)] text-[var(--bd-coral-deep)]',
+          badge: 'bg-[rgba(255,107,91,0.18)] text-(--bd-coral-deep)',
         }
       case 'perfectRoll':
         return {
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-[var(--bd-sky-deep)]',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
         }
       default:
         return {
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-[var(--bd-sky-deep)]',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
         }
     }
   }
@@ -85,17 +85,17 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
       `}
     >
       <div
-        className="w-[min(92vw,460px)] rounded-[24px] border px-4 py-3 shadow-[0_18px_40px_rgba(41,37,36,0.18)] backdrop-blur-sm"
+        className="w-[min(92vw,460px)] rounded-bd-lg border px-4 py-3 shadow-[0_18px_40px_rgba(41,37,36,0.18)] backdrop-blur-xs"
         style={{ borderColor: tone.border, background: tone.gradient }}
       >
         <div className="flex items-center gap-3">
-          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] text-[30px] shadow-sm ${tone.icon}`}>
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] text-[30px] shadow-xs ${tone.icon}`}>
             {event.emoji}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="bd-kicker">{t('yahtzee.ui.hotHand')}</div>
-            <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl">
+            <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl sm:leading-7">
               {event.title}
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-bd-ink-soft">

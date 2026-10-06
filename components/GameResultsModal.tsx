@@ -189,7 +189,7 @@ export default function GameResultsModal({
 
         <div className="p-5 sm:p-6">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] border-collapse text-sm">
+            <table className="w-full min-w-160 border-collapse text-sm">
               <thead>
                 <tr style={{ background: 'var(--bd-bg2)' }}>
                   <th

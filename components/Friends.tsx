@@ -58,19 +58,19 @@ type TabType = 'friends' | 'requests' | 'sent'
 type AddMethod = 'link' | 'code'
 
 const panelClassName =
-  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_4px_14px_rgba(31,27,22,0.07)]'
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
+  'rounded-3xl border border-bd-line bg-bd-bg'
 const tileClassName =
   'rounded-2xl border border-bd-line bg-bd-card-warm'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
 const dangerButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
-  'w-full rounded-2xl border border-[var(--bd-input-border)] bg-[var(--bd-input-bg)] px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
+  'w-full rounded-2xl border border-(--bd-input-border) bg-(--bd-input-bg) px-4 py-3 text-sm font-medium text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
@@ -624,7 +624,7 @@ export default function Friends() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       {!session?.user?.emailVerified && (
         <div className="overflow-hidden rounded-[1.75rem] border-[1.5px] border-bd-sun/50 bg-bd-sun/15 shadow-[0_4px_14px_rgba(31,27,22,0.05)] dark:border-amber-500/30 dark:bg-amber-500/10">
           <div className="border-l-4 border-bd-sun px-5 py-5 sm:px-6">
@@ -653,7 +653,7 @@ export default function Friends() {
         <div className={`${panelClassName} relative overflow-hidden`}>
           <div className="dot-grid pointer-events-none absolute inset-0 opacity-30" />
           <div className="absolute -right-12 top-4 h-24 w-24 rounded-full bg-bd-lav/15" />
-          <div className="absolute -bottom-8 left-10 h-20 w-20 rotate-12 rounded-[1.5rem] bg-bd-mint/15" />
+          <div className="absolute -bottom-8 left-10 h-20 w-20 rotate-12 rounded-3xl bg-bd-mint/15" />
           <div className="relative p-5 sm:p-6">
             <p className={eyebrowClassName}>{t('profile.friends.myFriendCode')}</p>
             <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
@@ -716,7 +716,7 @@ export default function Friends() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
+                    ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
                     : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                 }`}
               >
@@ -727,7 +727,7 @@ export default function Friends() {
                 <span
                   className={`inline-flex min-w-[1.8rem] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold ${
                     activeTab === tab.id
-                      ? 'bg-white/30 text-[color:var(--bd-ink-on-accent)]'
+                      ? 'bg-white/30 text-(--bd-ink-on-accent)'
                       : 'bg-bd-bg2 text-bd-ink-soft'
                   }`}
                 >
@@ -804,7 +804,7 @@ export default function Friends() {
                       }
                       className={`${panelClassName} group relative overflow-hidden ${
                         friend.publicProfileId
-                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-bd-lav/50'
+                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-bd-lav/50'
                           : ''
                       }`}
                     >
@@ -813,7 +813,7 @@ export default function Friends() {
                       <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                           <div className="relative shrink-0">
-                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[2px_2px_0_var(--bd-ink)]">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-(--bd-ink-on-accent) shadow-[2px_2px_0_var(--bd-ink)]">
                               {renderAvatar(friend.username || 'Unknown', friend.avatar)}
                             </div>
                             {isOnline && (
@@ -903,7 +903,7 @@ export default function Friends() {
                         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
-                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-[color:var(--bd-ink-on-accent)]">
+                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-(--bd-ink-on-accent)">
                           <MailIcon />
                         </div>
                       </div>
@@ -983,16 +983,16 @@ export default function Friends() {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(31,27,22,0.55)] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(31,27,22,0.55)] p-4 backdrop-blur-xs">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="friends-add-dialog-title"
-            className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_12px_40px_-16px_rgba(31,27,22,0.4)]"
+            className="relative w-full max-w-5xl overflow-hidden rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm shadow-[0_12px_40px_-16px_rgba(31,27,22,0.4)]"
           >
             <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
             <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-bd-lav/15" />
-            <div className="absolute bottom-6 left-8 h-20 w-20 rotate-12 rounded-[1.5rem] bg-bd-mint/12" />
+            <div className="absolute bottom-6 left-8 h-20 w-20 rotate-12 rounded-3xl" />
 
             <div className="relative grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
               <div className="p-6 sm:p-8">
@@ -1023,7 +1023,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('link')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'link'
-                          ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >
@@ -1035,7 +1035,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('code')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'code'
-                          ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >

@@ -46,7 +46,7 @@ export default function SpyVoting({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
-            <h2 className="mt-1 text-2xl font-black text-[var(--bd-ink)]">{t('spy.voteFor')}</h2>
+            <h2 className="mt-1 text-2xl font-black text-(--bd-ink)">{t('spy.voteFor')}</h2>
           </div>
           <div className="spy-timer-pill">
             {t('spy.timeRemaining', { time: formatTime(timeRemaining) })}
@@ -79,13 +79,13 @@ export default function SpyVoting({
         </div>
 
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase text-[var(--bd-ink-muted)]">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase text-(--bd-ink-muted)">
             <span>{t('spy.votes')}</span>
             <ScorePop value={votesSubmitted} style={{ display: 'inline-block' }}>{votesSubmitted}/{players.length}</ScorePop>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
+          <div className="h-2 overflow-hidden rounded-full bg-(--bd-bg2)">
             <div
-              className="social-meter-fill bg-[var(--bd-lav)]"
+              className="social-meter-fill bg-(--bd-lav)"
               style={{ transform: `scaleX(${players.length > 0 ? votesSubmitted / players.length : 0})` }}
             />
           </div>
@@ -100,7 +100,7 @@ export default function SpyVoting({
             {t('spy.confirmVote')}
           </button>
         ) : (
-          <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-3 text-center text-sm font-bold text-[var(--bd-mint-deep)]">
+          <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-sm font-bold text-(--bd-mint-deep)">
             {t('spy.confirmVote')}
           </div>
         )}

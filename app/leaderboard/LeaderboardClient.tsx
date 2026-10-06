@@ -41,7 +41,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
   const isTop3 = entry.rank <= 3
   const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
-  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-[var(--bd-card-warm)]' : 'bg-[var(--bd-bg)]'}`
+  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-(--bd-card-warm)' : 'bg-(--bd-bg)'}`
 
   const content = (
     <>
@@ -52,7 +52,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
         >
           {entry.rank}
         </span>
-        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.rank')}</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-bd-ink-muted md:hidden">{t('leaderboard.rank')}</span>
       </div>
       <div className="flex min-w-0 items-center gap-3">
         {entry.avatarUrl ? (
@@ -78,22 +78,22 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
       </div>
       <div className="grid grid-cols-2 gap-2 md:contents">
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.gamesPlayed')}</span>
+          <span className="block text-[10px] uppercase tracking-widest text-bd-ink-muted md:hidden">{t('leaderboard.gamesPlayed')}</span>
           {entry.gamesPlayed}
         </span>
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.wins')}</span>
+          <span className="block text-[10px] uppercase tracking-widest text-bd-ink-muted md:hidden">{t('leaderboard.wins')}</span>
           {entry.wins}
         </span>
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.losses')}</span>
+          <span className="block text-[10px] uppercase tracking-widest text-bd-ink-muted md:hidden">{t('leaderboard.losses')}</span>
           {entry.losses}
         </span>
         <span
           className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold md:bg-transparent md:p-0 md:text-right"
           style={{ color: winRateColor(entry.winRate) }}
         >
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.winRate')}</span>
+          <span className="block text-[10px] uppercase tracking-widest text-bd-ink-muted md:hidden">{t('leaderboard.winRate')}</span>
           {entry.winRate}%
         </span>
       </div>
@@ -179,7 +179,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                     key={p}
                     onClick={() => setPeriod(p)}
                     className={`bd-chip px-4 py-2 text-sm transition-all ${
-                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-[var(--bd-card-warm)]'
+                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-(--bd-card-warm)'
                     }`}
                   >
                     {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
@@ -194,7 +194,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                     aria-haspopup="listbox"
                     aria-expanded={gameMenuOpen}
                     onClick={() => setGameMenuOpen((open) => !open)}
-                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-[var(--bd-card-warm)] px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition-all sm:w-auto ${
+                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-(--bd-card-warm) px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition-all sm:w-auto ${
                       gameMenuOpen
                         ? 'border-bd-ink shadow-[0_5px_0_var(--bd-ink)]'
                         : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_var(--bd-ink)]'
@@ -223,7 +223,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
 
                   {gameMenuOpen && (
                     <div
-                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-[var(--bd-card-warm)] shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-(--bd-card-warm) shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
                       role="listbox"
                       aria-label={t('leaderboard.gameFilter')}
                     >
@@ -243,7 +243,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                               aria-selected={selected}
                               onClick={() => handleGameFilterSelect(f.value)}
                               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                                selected ? 'bg-bd-lav text-[color:var(--bd-ink-on-accent)]' : 'text-bd-ink hover:bg-bd-card-warm'
+                                selected ? 'bg-bd-lav text-(--bd-ink-on-accent)' : 'text-bd-ink hover:bg-bd-card-warm'
                               }`}
                             >
                               <span className="flex min-w-0 items-center gap-3">
@@ -253,7 +253,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>
                               {selected && (
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--bd-bg)] text-bd-lav-deep">
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-(--bd-bg) text-bd-lav-deep">
                                   <Icon name="check" size={14} weight="bold" />
                                 </span>
                               )}
@@ -291,7 +291,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
 
             {/* Table */}
             <div className="bd-card overflow-hidden">
-              <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:grid">
+              <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-widest text-bd-ink-muted md:grid">
                 <span>{t('leaderboard.rank')}</span>
                 <span>{t('leaderboard.player', 'Player')}</span>
                 <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>

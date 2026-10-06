@@ -291,7 +291,7 @@ export function MobileMenu({
                       image={userImage}
                       userName={userName}
                       userEmail={userEmail}
-                      className="bg-bd-lav text-[color:var(--bd-ink-on-accent)]"
+                      className="bg-bd-lav text-(--bd-ink-on-accent)"
                       textClassName="font-bold"
                       style={{ width: 44, height: 44, fontSize: 18, flexShrink: 0 }}
                     />

@@ -19,7 +19,7 @@ The only legitimate exception is `app/layout.tsx` — the `<style dangerouslySet
 
 ## Color tokens
 
-All tokens are defined in `app/globals.css` (`:root`) and mirrored in `tailwind.config.ts`.
+All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@theme` block.
 
 | Token | CSS variable | Tailwind class | Hex |
 |---|---|---|---|

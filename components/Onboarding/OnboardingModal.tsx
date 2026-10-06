@@ -117,7 +117,7 @@ export function OnboardingModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      className="fixed inset-0 z-100 flex items-end justify-center sm:items-center sm:p-4"
       style={{ background: 'rgba(31,27,22,0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div

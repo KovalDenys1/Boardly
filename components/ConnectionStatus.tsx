@@ -50,7 +50,7 @@ export function ConnectionStatus({
           }}
         >
           <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <svg
                 className="animate-spin h-5 w-5"
                 style={{ color: '#D97706' }}
@@ -95,7 +95,7 @@ export function ConnectionStatus({
         }}
       >
         <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <svg
               className="h-5 w-5"
               style={{ color: 'var(--bd-coral)' }}

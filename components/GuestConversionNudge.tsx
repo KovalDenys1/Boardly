@@ -49,7 +49,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
   if (!visible) return null
 
   return (
-    <div className="mt-6 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 shadow-sm dark:border-emerald-700/50 dark:from-emerald-900/20 dark:to-teal-900/20 sm:p-5">
+    <div className="mt-6 rounded-2xl border border-emerald-200 bg-linear-to-br/srgb from-emerald-50 to-teal-50 p-4 shadow-xs dark:border-emerald-700/50 dark:from-emerald-900/20 dark:to-teal-900/20 sm:p-5">
       <div className="flex items-start gap-3">
         <div className="shrink-0"><Icon name="party" size={24} /></div>
         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
             <a
               href={registerUrl}
               onClick={() => trackSignupPrompt('clicked')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors sm:text-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors sm:text-sm"
             >
               <Icon name="sparkle" size={14} />
               <span>{t('auth.guestConversion.cta')}</span>

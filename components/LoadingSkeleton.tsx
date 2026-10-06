@@ -9,7 +9,7 @@ export default function LoadingSkeleton({
   type = 'text',
   lines = 1
 }: LoadingSkeletonProps) {
-  const baseClass = 'animate-pulse rounded'
+  const baseClass = 'animate-pulse rounded-sm'
   const baseStyle = { background: 'var(--bd-line)' }
   const darkerStyle = { background: '#D4C9B0' }
 
@@ -30,17 +30,17 @@ export default function LoadingSkeleton({
   if (type === 'card') {
     return (
       <div className={`${baseClass} p-6 ${className}`} style={baseStyle}>
-        <div className="h-6 rounded w-1/3 mb-4" style={darkerStyle} />
+        <div className="h-6 rounded-sm w-1/3 mb-4" style={darkerStyle} />
         <div className="space-y-2">
-          <div className="h-4 rounded w-full" style={darkerStyle} />
-          <div className="h-4 rounded w-5/6" style={darkerStyle} />
+          <div className="h-4 rounded-sm w-full" style={darkerStyle} />
+          <div className="h-4 rounded-sm w-5/6" style={darkerStyle} />
         </div>
       </div>
     )
   }
 
   if (type === 'avatar') {
-    return <div className={`${baseClass} w-12 h-12 rounded-full ${className}`} style={baseStyle} />
+    return <div className={`animate-pulse w-12 h-12 rounded-full ${className}`} style={baseStyle} />
   }
 
   if (type === 'button') {

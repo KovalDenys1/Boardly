@@ -223,8 +223,8 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     const { container } = render(<SketchAndGuessLobbyPage code="ABCD" />)
 
     const root = container.firstChild as HTMLElement | null
-    expect(root?.className).toContain('min-h-[var(--game-h)]')
-    expect(container.innerHTML).not.toContain('min-h-[100dvh]')
+    expect(root?.className).toContain('min-h-(--game-h)')
+    expect(container.innerHTML).not.toContain('min-h-dvh')
     expect(container.innerHTML).not.toContain('from-sky-50')
 
     // Let the pending load settle so the state updates it schedules happen inside the test.
@@ -242,7 +242,7 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
       expect(screen.queryByText('games.tictactoe.game.errorTitle')).not.toBeNull()
     })
     expect(toast.error).toHaveBeenCalledWith('errors.failedToLoad', undefined, undefined, { id: 'sketch-load-failed' })
-    expect(container.innerHTML).not.toContain('min-h-[100dvh]')
+    expect(container.innerHTML).not.toContain('min-h-dvh')
   })
 
   // The other half of that split: a network blip is not a dead lobby, so the round survives it.
@@ -287,8 +287,8 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     await waitFor(() => {
       expect(screen.queryByText('lobby.game.notPartOfMatch')).not.toBeNull()
     })
-    expect(container.innerHTML).toContain('h-[var(--game-h)]')
-    expect(container.innerHTML).not.toContain('min-h-[100dvh]')
+    expect(container.innerHTML).toContain('h-(--game-h)')
+    expect(container.innerHTML).not.toContain('min-h-dvh')
     // The card above it uses the same key, so the two screens read as one action.
     expect(screen.getByRole('button', { name: 'game.ui.backToLobby' })).not.toBeNull()
   })

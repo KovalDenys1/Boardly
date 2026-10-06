@@ -80,25 +80,25 @@ function DeleteAccountContent() {
 
   if (loading) {
     return (
-      <div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center overflow-y-auto">
+      <div className="page-shell-full bg-(--bd-bg) flex items-center justify-center overflow-y-auto">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center overflow-y-auto p-4">
-      <div className="max-w-md w-full bg-[var(--bd-card-warm)] border border-[var(--bd-line)] rounded-2xl shadow-2xl p-8">
+    <div className="page-shell-full bg-(--bd-bg) flex items-center justify-center overflow-y-auto p-4">
+      <div className="max-w-md w-full bg-(--bd-card-warm) border border-(--bd-line) rounded-2xl shadow-2xl p-8">
         {error ? (
           <>
             <div className="text-center mb-6">
               <div className="mb-4 flex justify-center">
                 <Icon name="warning" size={56} tone="coral" />
               </div>
-              <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
+              <h1 className="text-2xl font-bold text-(--bd-ink) mb-2">
                 {t('deleteAccount.error')}
               </h1>
-              <p className="text-[var(--bd-ink-soft)]">{error}</p>
+              <p className="text-(--bd-ink-soft)">{error}</p>
             </div>
             <button
               onClick={() => router.push('/')}
@@ -113,10 +113,10 @@ function DeleteAccountContent() {
               <div className="mb-4 flex justify-center">
                 <Icon name="check" size={56} tone="mint" />
               </div>
-              <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
+              <h1 className="text-2xl font-bold text-(--bd-ink) mb-2">
                 {t('deleteAccount.success')}
               </h1>
-              <p className="text-[var(--bd-ink-soft)]">{t('deleteAccount.successMessage')}</p>
+              <p className="text-(--bd-ink-soft)">{t('deleteAccount.successMessage')}</p>
             </div>
             <LoadingSpinner size="md" />
           </>
@@ -129,7 +129,7 @@ function DeleteAccountContent() {
               <h1 className="text-2xl font-bold text-red-600 mb-2">
                 {t('deleteAccount.title')}
               </h1>
-              <p className="text-[var(--bd-ink-soft)] mb-4">
+              <p className="text-(--bd-ink-soft) mb-4">
                 {t('deleteAccount.confirmation')}
               </p>
             </div>
@@ -147,7 +147,7 @@ function DeleteAccountContent() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[var(--bd-ink-soft)] mb-2">
+              <label className="block text-sm font-medium text-(--bd-ink-soft) mb-2">
                 {t('deleteAccount.typeDelete')}
               </label>
               <input
@@ -155,7 +155,7 @@ function DeleteAccountContent() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder={t('deleteAccount.confirmPlaceholder')}
-                className="w-full px-4 py-3 border-2 border-[var(--bd-line)] bg-[var(--bd-input-bg)] text-[var(--bd-ink)] rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 focus:border-transparent text-center font-mono text-lg"
+                className="w-full px-4 py-3 border-2 border-(--bd-line) bg-(--bd-input-bg) text-(--bd-ink) rounded-lg focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-red-500 focus:border-transparent text-center font-mono text-lg"
                 disabled={deleting}
               />
             </div>
@@ -192,7 +192,7 @@ function DeleteAccountContent() {
 
 export default function DeleteAccountPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell-full bg-(--bd-bg) flex items-center justify-center"><LoadingSpinner /></div>}>
       <DeleteAccountContent />
     </Suspense>
   )

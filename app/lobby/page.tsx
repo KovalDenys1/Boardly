@@ -55,7 +55,7 @@ function LobbyListPageContent() {
     {authGateDest && (
       <AuthGateModal dest={authGateDest} onClose={() => setAuthGateDest(null)} />
     )}
-    <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto">
+    <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
         {activeLobby && (
@@ -107,7 +107,7 @@ function LobbyListPageContent() {
               type="button"
               data-tour-step="create-lobby"
               onClick={handleCreateLobby}
-              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-[color:var(--bd-ink-on-accent)] shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
+              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-(--bd-ink-on-accent) shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
               <Icon name="sparkle" size={34} />
               <span

@@ -59,7 +59,7 @@ export default function WaitingRoomGuide({
   const removed = onUnkickPlayer ? (kickedPlayers ?? []) : []
 
   return (
-    <section className="flex flex-1 flex-col rounded-xl border border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4">
+    <section className="flex flex-1 flex-col rounded-xl border border-bd-line px-3 py-3 sm:px-4">
       {/* The steps take the slack, so the panel reads as a filled region at any
           height instead of a small card floating in one. */}
       <div className="flex flex-1 flex-col justify-center">

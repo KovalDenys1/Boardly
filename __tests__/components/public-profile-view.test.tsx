@@ -70,7 +70,7 @@ describe('PublicProfileView', () => {
 
     const root = container.firstElementChild as HTMLElement
 
-    expect(root.className).toContain('min-h-[var(--game-h)]')
+    expect(root.className).toContain('min-h-(--game-h)')
     expect(root.className).not.toContain('mobile-vh-100')
     expect(root.getAttribute('style')).toContain('min-height: var(--game-h);')
   })

@@ -91,7 +91,7 @@ export default function BoardlyErrorState({
               <summary className="cursor-pointer text-sm font-semibold text-bd-ink-soft">
                 {t('errorPage.devDetails')}
               </summary>
-              <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-bd-ink-soft">
+              <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap wrap-break-word text-xs leading-5 text-bd-ink-soft">
                 {error.stack || error.message}
               </pre>
             </details>
