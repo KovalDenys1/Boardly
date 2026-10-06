@@ -16,7 +16,7 @@ export const persistedGameStateSchema = z.object({
   players: z.array(playerSchema),
   currentPlayerIndex: z.number().int().min(0),
   status: z.enum(['waiting', 'playing', 'finished']),
-  data: z.unknown(),
+  data: z.unknown().optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   winner: z.string().optional(),
@@ -26,7 +26,7 @@ export const persistedGameStateSchema = z.object({
     maxPlayers: z.number(),
     minPlayers: z.number(),
     timeLimit: z.number().optional(),
-    rules: z.record(z.unknown()).optional(),
+    rules: z.record(z.string(), z.unknown()).optional(),
   }).optional(),
 })
 

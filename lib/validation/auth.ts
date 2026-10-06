@@ -39,10 +39,10 @@ export const registerSchema = z.object({
   // when. Literal true rather than a boolean, so a caller that omits them is refused
   // instead of creating an account nobody agreed to.
   termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: 'You must agree to the Terms of Service and Privacy Policy' }),
+    error: 'You must agree to the Terms of Service and Privacy Policy',
   }),
   ageConfirmed: z.literal(true, {
-    errorMap: () => ({ message: 'You must be 13 or older to create an account' }),
+    error: 'You must be 13 or older to create an account',
   }),
 })
 
