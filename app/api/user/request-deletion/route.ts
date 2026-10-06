@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUserOrThrow } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendAccountDeletionEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { issueRandomHexToken } from '@/lib/auth-tokens'
@@ -66,7 +67,7 @@ async function requestDeletionHandler(req: NextRequest) {
   })
 
   // Send deletion confirmation email
-  await sendAccountDeletionEmail(user.email, token, user.username || 'User')
+  await sendAccountDeletionEmail(user.email, token, user.username || 'User', emailLanguageFromRequest(req))
 
   // The plan clears the Discord Linked Roles metadata at the request, not only at the
   // confirmed deletion: the person has said they are leaving, and the roles are the one

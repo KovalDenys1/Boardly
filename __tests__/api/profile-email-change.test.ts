@@ -143,8 +143,8 @@ describe('PATCH /api/user/profile - email change on a password account', () => {
 
     expect(response.status).toBe(200)
     expect(payload.emailChangePending).toBe(true)
-    expect(mockVerification).toHaveBeenCalledWith('new@example.com', 'verification-token', 'PlayerOne')
-    expect(mockNotice).toHaveBeenCalledWith('old@example.com', 'new@example.com', 'PlayerOne')
+    expect(mockVerification).toHaveBeenCalledWith('new@example.com', 'verification-token', 'PlayerOne', undefined)
+    expect(mockNotice).toHaveBeenCalledWith('old@example.com', 'new@example.com', 'PlayerOne', undefined)
   })
 
   it('tells the client the account has a password, never the hash', async () => {
@@ -188,7 +188,7 @@ describe('PATCH /api/user/profile - email change on an account without a passwor
 
     expect(response.status).toBe(200)
     expect(mockCompare).not.toHaveBeenCalled()
-    expect(mockNotice).toHaveBeenCalledWith('old@example.com', 'new@example.com', 'PlayerOne')
+    expect(mockNotice).toHaveBeenCalledWith('old@example.com', 'new@example.com', 'PlayerOne', undefined)
   })
 })
 

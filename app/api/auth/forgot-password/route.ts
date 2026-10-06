@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
+import type { EmailLanguage } from '@/lib/email-layout'
 import { apiLogger } from '@/lib/logger'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { insensitiveEquals } from '@/lib/username-match'
@@ -25,7 +27,11 @@ const GENERIC_RESPONSE = {
  * address answer measurably later than an unknown one, and a database error here
  * answered 500 where an unknown address never could. Never throws.
  */
-async function issuePasswordReset(user: { id: string; email: string | null }, requestedEmail: string) {
+async function issuePasswordReset(
+  user: { id: string; email: string | null },
+  requestedEmail: string,
+  language: EmailLanguage | undefined
+) {
   const log = apiLogger('POST /api/auth/forgot-password')
   const address = user.email ?? requestedEmail
   try {
@@ -56,7 +62,7 @@ async function issuePasswordReset(user: { id: string; email: string | null }, re
       },
     })
 
-    const result = await sendPasswordResetEmail(address, token)
+    const result = await sendPasswordResetEmail(address, token, language)
     if (!result.success) {
       // For local/dev environments the email provider may not be configured.
       log.warn('Password reset email not sent', { userId: user.id, error: result.error })
@@ -108,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Both branches now answer right after the one lookup; the work that only an
     // existing account triggers happens after the response (#1142).
-    runAfterResponse(issuePasswordReset(user, email))
+    runAfterResponse(issuePasswordReset(user, email, emailLanguageFromRequest(request)))
 
     return NextResponse.json(GENERIC_RESPONSE)
   } catch (error) {
