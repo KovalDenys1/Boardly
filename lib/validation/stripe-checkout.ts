@@ -52,7 +52,7 @@ export const checkoutRequestSchema = z.object({
   // The plan keeps the leniency it had before this schema existed (#926): an
   // unknown or missing value is monthly, never an error, so nothing that used
   // to charge the monthly price starts charging something else.
-  plan: z.unknown().transform((value): PremiumPlan => (isPremiumPlan(value) ? value : 'monthly')),
+  plan: z.unknown().optional().transform((value): PremiumPlan => (isPremiumPlan(value) ? value : 'monthly')),
   consent: checkoutConsentSchema,
 })
 

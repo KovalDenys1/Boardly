@@ -22,7 +22,7 @@ const spyActionSchema = z.object({
     'vote',
     'spy-guess-location',
   ]),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
 })
 
 const limiter = rateLimit(rateLimitPresets.game)
