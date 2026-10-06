@@ -800,7 +800,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[100dvh]">
+            <div className="flex justify-center items-center min-h-dvh">
                 <LoadingSpinner size="lg" />
             </div>
         )

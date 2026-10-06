@@ -168,8 +168,8 @@ export default function PublicProfileView({
     eyebrow:      'text-white/55',
     handle:       'text-white/55',
     body:         'text-white/80',
-    back:         'text-white/65 hover:bg-white/[0.08]',
-    statCard:     'border-white/[0.07] bg-white/[0.05]',
+    back:         'text-white/65 hover:bg-white/8',
+    statCard:     'border-white/[0.07] bg-white/5',
     statLabel:    'text-white/55',
     statValueAlt: 'text-white/90',
     badge:        'border-white/10 bg-white/[0.07] text-white/80',
@@ -219,7 +219,7 @@ export default function PublicProfileView({
           type="button"
           onClick={() => setReportOpen(true)}
           aria-haspopup="dialog"
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${className}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${className}`}
         >
           <Icon name="flag" size={13} />
           {t('report.reportProfile')}
@@ -336,7 +336,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -423,7 +423,7 @@ export default function PublicProfileView({
   const renderAvatar = (sizeClassName = 'h-48 w-48 sm:h-56 sm:w-56') => (
     <div className="relative">
       <div
-        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-[color:var(--bd-ink-on-accent)] shadow-[6px_6px_0_var(--bd-ink)]`}
+        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-4xl border-[3px] border-bd-ink bg-bd-lav text-(--bd-ink-on-accent) shadow-[6px_6px_0_var(--bd-ink)]`}
       >
         {(profile.avatarUrl || profile.image) ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -439,7 +439,7 @@ export default function PublicProfileView({
       </div>
       {profile.isPremium && (
         <div
-          className="absolute -top-3 -left-4 z-10 -rotate-[8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
+          className="absolute -top-3 -left-4 z-10 rotate-[-8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
           style={{ background: '#FBBF24' }}
         >
           {t('common.premium')}
@@ -455,7 +455,7 @@ export default function PublicProfileView({
   const renderRestrictedState = () => (
     <div
       data-testid="restricted-profile"
-      className="mx-auto flex w-full max-w-xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-8 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] sm:px-10 sm:py-10"
+      className="mx-auto flex w-full max-w-xl flex-col items-center rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-8 text-center shadow-bd-card sm:px-10 sm:py-10"
     >
       <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.75rem] border-[3px] border-bd-ink bg-bd-bg2 text-bd-ink-muted shadow-[5px_5px_0_var(--bd-ink)] sm:h-32 sm:w-32">
         {(profile.avatarUrl || profile.image) ? (
@@ -468,7 +468,7 @@ export default function PublicProfileView({
       <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-soft">
         {t('profile.publicProfile.eyebrow')}
       </p>
-      <h1 className="mt-2 max-w-full break-words font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink">
+      <h1 className="mt-2 max-w-full wrap-break-word font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink">
         {displayName}
       </h1>
       <p className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-bd-ink bg-bd-sun px-4 py-1.5 text-sm font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
@@ -501,8 +501,8 @@ export default function PublicProfileView({
     <div
       className={`relative overflow-hidden text-bd-ink ${
         isEmbeddedPreview
-          ? 'rounded-[2rem] border-[1.5px] border-bd-line bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)]'
-          : 'flex min-h-[var(--game-h)] items-center safe-left safe-right'
+          ? 'rounded-4xl border-[1.5px] border-bd-line bg-bd-bg shadow-bd-card'
+          : 'flex min-h-(--game-h) items-center safe-left safe-right'
       } ${isDark ? 'text-white' : 'bg-bd-bg'}`}
       style={{
         ...(isEmbeddedPreview ? undefined : { minHeight: 'var(--game-h)' }),
@@ -514,8 +514,8 @@ export default function PublicProfileView({
         className="pointer-events-none absolute inset-0"
         style={{ background: pageTheme ? pageTheme.decorBg : 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14) 0, transparent 50%)' }}
       />
-      <div className={`pointer-events-none absolute right-[-4rem] top-20 h-44 w-44 rounded-full ${isDark ? 'bg-bd-mint/5' : 'bg-bd-lav/10'}`} />
-      <div className={`pointer-events-none absolute left-[-3rem] bottom-20 h-36 w-36 rotate-12 rounded-[2rem] ${isDark ? 'bg-bd-mint/5' : 'bg-bd-mint/10'}`} />
+      <div className={`pointer-events-none absolute -right-16 top-20 h-44 w-44 rounded-full ${isDark ? 'bg-bd-mint/5' : 'bg-bd-lav/10'}`} />
+      <div className={`pointer-events-none absolute -left-12 bottom-20 h-36 w-36 rotate-12 rounded-4xl ${isDark ? 'bg-bd-mint/5' : 'bg-bd-mint/10'}`} />
 
       <div
         className={`relative ${
@@ -528,7 +528,7 @@ export default function PublicProfileView({
           renderRestrictedState()
         ) : (
           <div
-            className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px]"
+            className="relative w-full overflow-hidden rounded-4xl border-[1.5px]"
             style={{
               background: pageTheme?.cardBg ?? 'var(--bd-input-bg)',
               borderColor: pageTheme?.cardBorder ?? 'var(--bd-line)',
@@ -691,7 +691,7 @@ export default function PublicProfileView({
                         onClick={() => void handleCopyProfileLink()}
                         disabled={copiedProfileLink}
                         aria-label={copiedProfileLink ? t('profile.publicProfile.linkCopied') : t('profile.publicProfile.copyLink')}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                       >
                         {copiedProfileLink ? (
                           <>

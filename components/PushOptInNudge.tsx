@@ -236,7 +236,7 @@ export default function PushOptInNudge({ source, gameType }: PushOptInNudgeProps
   if (!eligible || phase !== 'open') return null
 
   return (
-    <div className="mt-2 w-full rounded-2xl border border-bd-line bg-bd-card-warm p-4 shadow-sm">
+    <div className="mt-2 w-full rounded-2xl border border-bd-line bg-bd-card-warm p-4 shadow-xs">
       <div className="flex items-start gap-3">
         <div className="shrink-0 text-bd-ink-soft">
           <Icon name="clock" size={22} />
@@ -252,7 +252,7 @@ export default function PushOptInNudge({ source, gameType }: PushOptInNudgeProps
             <button
               onClick={() => void accept()}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-bd-ink px-4 py-2 text-xs font-bold text-bd-bg shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-bd-ink px-4 py-2 text-xs font-bold text-bd-bg shadow-xs transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
             >
               {t('game.ui.pushAskAccept')}
             </button>

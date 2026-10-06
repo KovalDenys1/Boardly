@@ -33,11 +33,11 @@ const STATUS_FILTER_OPTIONS = ['all', 'finished', 'playing', 'abandoned', 'cance
 const panelClassName =
   'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
+  'rounded-3xl border border-bd-line bg-bd-bg'
 const tileClassName =
   'rounded-2xl border border-bd-line bg-bd-card-warm'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-[color:var(--bd-ink-on-accent)] shadow-[0_4px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-transform hover:-translate-y-0.5 hover:bg-bd-bg2 disabled:cursor-not-allowed disabled:opacity-50'
 const eyebrowClassName =
@@ -268,7 +268,7 @@ export default function GameHistory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       <GameResultsModal
         gameId={selectedGameId}
         onClose={() => setSelectedGameId(null)}
@@ -348,7 +348,7 @@ export default function GameHistory() {
           </div>
 
           {error ? (
-            <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10">
+            <div className="overflow-hidden rounded-3xl border border-bd-coral/40 bg-bd-coral/10">
               <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
                 <p className="text-sm font-semibold text-bd-ink">{error}</p>
               </div>
@@ -380,7 +380,7 @@ export default function GameHistory() {
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                             <BoardIcon />
                           </div>
                           <div className="min-w-0">
@@ -422,7 +422,7 @@ export default function GameHistory() {
                           >
                             <span className="flex items-center gap-1">
                               <span
-                                className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-[14rem]"
+                                className="max-w-40 truncate text-sm font-semibold sm:max-w-56"
                                 title={player.username || `Player ${index + 1}`}
                               >
                                 {player.username || `Player ${index + 1}`}
@@ -442,7 +442,7 @@ export default function GameHistory() {
                               </span>
                             ) : null}
                             {player.isWinner ? (
-                              <span className="rounded-full bg-bd-sun px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--bd-ink-on-accent)]">
+                              <span className="rounded-full bg-bd-sun px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-(--bd-ink-on-accent)">
                                 {t('lobby.game.win')}
                               </span>
                             ) : null}

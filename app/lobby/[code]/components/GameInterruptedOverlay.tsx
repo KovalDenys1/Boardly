@@ -52,7 +52,7 @@ export default function GameInterruptedOverlay({ playerName, reason, onRedirect 
 
         <button
           onClick={onRedirect}
-          className="bd-btn bd-btn-primary w-full !rounded-2xl !py-3 font-semibold"
+          className="bd-btn bd-btn-primary w-full rounded-2xl! py-3! font-semibold"
         >
           {t('lobby.gameInterrupted.returnNow')}
         </button>

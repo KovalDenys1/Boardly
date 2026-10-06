@@ -70,7 +70,7 @@ export default function GameBoard({
     // than empty card. Centring is safe because the card shrinks before it
     // overflows - `flex: 0 1 auto` plus min-h-0 plus its own scroll.
     <div className="h-full flex flex-col justify-center gap-3">
-      {statusBanner && <div className="flex-shrink-0">{statusBanner}</div>}
+      {statusBanner && <div className="shrink-0">{statusBanner}</div>}
       {/* Dice Area with Timer + Controls. overflow-y-auto (not hidden) is
           load-bearing: on a real iPhone with Safari's address bar expanded,
           measured real-device math shows timer(~59px) + dice's own
@@ -118,9 +118,9 @@ export default function GameBoard({
         </div>
 
         {/* Controls pinned to bottom of card */}
-        <div className="flex-shrink-0 p-2.5 space-y-1.5 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+        <div className="shrink-0 p-2.5 space-y-1.5 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {isStateReverting && (
-            <div className="text-center px-3 py-1.5 rounded-2xl shadow-sm border text-red-700 animate-pulse" style={{ background: 'rgba(255,107,91,0.14)', borderColor: 'rgba(255,107,91,0.24)' }}>
+            <div className="text-center px-3 py-1.5 rounded-2xl shadow-xs border text-red-700 animate-pulse" style={{ background: 'rgba(255,107,91,0.14)', borderColor: 'rgba(255,107,91,0.24)' }}>
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <Icon name="arrow-left" size={18} />
                 <p className="text-xs sm:text-sm font-semibold">{t('yahtzee.ui.moveReverted')}</p>
@@ -145,7 +145,7 @@ export default function GameBoard({
             className={`w-full overflow-hidden px-3 sm:px-5 py-3 min-h-[52px] sm:min-h-[56px] rounded-2xl font-bold text-sm sm:text-base transition-all duration-200
               ${!isMyTurn || rollsLeft === 0 || heldCount === 5 || isMoveInProgress || isRolling
                 ? 'text-bd-ink-muted cursor-not-allowed'
-                : 'text-[var(--bd-bg)] active:translate-y-[2px]'
+                : 'text-(--bd-bg) active:translate-y-[2px]'
               }`}
             style={
               !isMyTurn || rollsLeft === 0 || heldCount === 5 || isMoveInProgress || isRolling

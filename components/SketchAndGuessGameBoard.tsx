@@ -520,7 +520,7 @@ function DrawerCanvasView({
             aria-label={swatch}
             onClick={() => onDraftChange({ color: swatch, isEraser: false })}
             className={`h-7 w-7 rounded-full border-2 transition ${
-              !isEraser && color === swatch ? 'scale-110 border-bd-ink' : 'border-[var(--bd-line)]'
+              !isEraser && color === swatch ? 'scale-110 border-bd-ink' : 'border-(--bd-line)'
             }`}
             style={{ backgroundColor: swatch }}
           />
@@ -529,7 +529,7 @@ function DrawerCanvasView({
           type="button"
           onClick={() => onDraftChange({ isEraser: !isEraser })}
           className={`rounded-full border-2 px-2.5 py-1 text-xs font-semibold ${
-            isEraser ? 'border-bd-ink bg-[var(--bd-bg2)]' : 'border-[var(--bd-line)]'
+            isEraser ? 'border-bd-ink bg-(--bd-bg2)' : 'border-(--bd-line)'
           }`}
         >
           <Icon name="eraser" size={13} /> {t('games.guess_my_drawing.game.eraser')}
@@ -537,7 +537,7 @@ function DrawerCanvasView({
         <button
           type="button"
           onClick={() => onDraftChange({ isThick: !isThick })}
-          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold"
+          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold"
         >
           <span
             aria-hidden
@@ -550,7 +550,7 @@ function DrawerCanvasView({
           type="button"
           onClick={() => setStrokes(strokes.slice(0, -1))}
           disabled={strokes.length === 0}
-          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
         >
           <Icon name="arrow-left" size={13} /> {t('games.guess_my_drawing.game.undo')}
         </button>
@@ -558,7 +558,7 @@ function DrawerCanvasView({
           type="button"
           onClick={() => setStrokes([])}
           disabled={strokes.length === 0}
-          className="rounded-full border-2 border-[var(--bd-line)] px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
+          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
         >
           <Icon name="trash" size={13} /> {t('games.guess_my_drawing.game.clear')}
         </button>
@@ -668,7 +668,7 @@ function GuesserDrawingView({
               maxLength={80}
               enterKeyHint="send"
               autoComplete="off"
-              className="min-w-0 flex-1 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-2 text-base font-semibold text-bd-ink"
+              className="min-w-0 flex-1 rounded-xl border border-(--bd-line) bg-(--bd-bg) px-3 py-2 text-base font-semibold text-bd-ink"
             />
             {/* An arrow rather than a word: the row has to leave the box most of
                 a 320px screen, and "Отправить ответ" alone would take half. */}

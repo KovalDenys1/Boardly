@@ -786,7 +786,7 @@ export default function ThemePanel(): React.JSX.Element {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ['--sticky-top' as any]: 'calc(var(--bd-header-h) + 1rem)',
             }}
-            className="flex flex-col gap-5 desk:top-[var(--sticky-top)] desk:max-h-[calc(100dvh_-_var(--sticky-top)_-_1rem)] desk:sticky desk:col-start-2 desk:row-start-1 desk:row-span-2 desk:overflow-y-auto desk:pr-1">
+            className="flex flex-col gap-5 desk:top-(--sticky-top) desk:max-h-[calc(100dvh-var(--sticky-top)-1rem)] desk:sticky desk:col-start-2 desk:row-start-1 desk:row-span-2 desk:overflow-y-auto desk:pr-1">
             {/* No heading of our own: the preview labels itself, and stacking a
                 second kicker on top of its own only reads as a mistake. */}
             <div className="min-w-0">

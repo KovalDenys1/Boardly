@@ -58,7 +58,7 @@ export default function SpyRoleReveal({
 
               <div className="text-center">
                 <p className="bd-kicker">{t('spy.yourRole')}</p>
-                <h2 className={`spy-role-title ${isSpy ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
+                <h2 className={`spy-role-title ${isSpy ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'}`}>
                   {t(isSpy ? 'spy.roles.spy' : 'spy.roles.regular')}
                 </h2>
               </div>
@@ -75,7 +75,7 @@ export default function SpyRoleReveal({
                       </span>
                     ))}
                   </div>
-                  <p className="mt-4 text-sm font-medium text-[var(--bd-ink-muted)]">
+                  <p className="mt-4 text-sm font-medium text-(--bd-ink-muted)">
                     {t('spy.rules.spyBlends')}
                   </p>
                 </div>
@@ -83,13 +83,13 @@ export default function SpyRoleReveal({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="spy-secret-tile">
                     <p className="bd-kicker">{t('spy.location')}</p>
-                    <p className="mt-1 text-2xl font-black text-[var(--bd-ink)]">{location}</p>
+                    <p className="mt-1 text-2xl font-black text-(--bd-ink)">{location}</p>
                   </div>
                   <div className="spy-secret-tile">
                     <p className="bd-kicker">{t('spy.roleAtLocation')}</p>
-                    <p className="mt-1 text-xl font-black text-[var(--bd-mint-deep)]">{locationRole}</p>
+                    <p className="mt-1 text-xl font-black text-(--bd-mint-deep)">{locationRole}</p>
                   </div>
-                  <p className="sm:col-span-2 text-sm font-medium text-[var(--bd-ink-muted)]">
+                  <p className="sm:col-span-2 text-sm font-medium text-(--bd-ink-muted)">
                     {t('spy.rules.identifySpy')}
                   </p>
                 </div>
@@ -107,11 +107,11 @@ export default function SpyRoleReveal({
 
               <div className="spy-ready-meter">
                 <div
-                  className="social-meter-fill bg-[var(--bd-mint)]"
+                  className="social-meter-fill bg-(--bd-mint)"
                   style={{ transform: `scaleX(${totalPlayers > 0 ? playersReady / totalPlayers : 0})` }}
                 />
               </div>
-              <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
+              <p className="text-center text-sm font-semibold text-(--bd-ink-muted)">
                 {t('spy.playersReady', { count: playersReady, total: totalPlayers })}
               </p>
             </div>

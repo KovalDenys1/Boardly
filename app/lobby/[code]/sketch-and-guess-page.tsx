@@ -918,7 +918,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     if (!game) {
         return (
-            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+            <div className="bd-page flex h-(--game-h) items-center justify-center px-4" style={themeStyle}>
                 <div className="bd-card w-full max-w-md p-8 text-center">
                     <h1 className="mb-3 text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
                         {t('games.tictactoe.game.gameNotStartedTitle')}
@@ -937,7 +937,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     if (!currentPlayer && !isSpectator) {
         return (
-            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+            <div className="bd-page flex h-(--game-h) items-center justify-center px-4" style={themeStyle}>
                 <div className="bd-card w-full max-w-md p-8 text-center">
                     <p className="mb-6 text-sm text-bd-ink-soft">{t('lobby.game.notPartOfMatch')}</p>
                     {/* Same key as the card above and as rock-paper-scissors: `lobby.game.back_to_lobby`

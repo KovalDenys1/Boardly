@@ -136,7 +136,7 @@ export default function Modal({
       {/* Backdrop — presentational; Escape and the close button are the
           keyboard-accessible ways out, so this isn't a focusable control. */}
       <div
-        className="absolute inset-0 z-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 z-0 bg-black/50 backdrop-blur-xs"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -150,7 +150,7 @@ export default function Modal({
         tabIndex={-1}
         className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
           mobileFullscreen
-            ? 'h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border'
+            ? 'h-dvh max-h-dvh rounded-none border-0 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border'
             : 'max-h-[90dvh] rounded-2xl border'
         }`}
         style={{
@@ -163,7 +163,7 @@ export default function Modal({
         {/* Header */}
         {title && (
           <div
-            className={`flex flex-shrink-0 items-center justify-between border-b ${
+            className={`flex shrink-0 items-center justify-between border-b ${
               mobileFullscreen ? 'px-4 py-4 sm:px-6 sm:py-5' : ''
             }`}
             style={mobileFullscreen ? { borderColor: 'var(--bd-line)' } : { padding: `clamp(12px, 1.2vh, 20px)`, borderColor: 'var(--bd-line)' }}

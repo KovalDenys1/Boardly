@@ -38,7 +38,7 @@ function RankIcon({ rank }: { rank: number }) {
 
 function getPlacementCardClass(rank: number) {
   if (rank === 0) {
-    return 'shadow-sm'
+    return 'shadow-xs'
   }
   if (rank === 1) {
     return ''
@@ -153,14 +153,14 @@ export default function YahtzeeResults({
 
           <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
             <section
-              className="rounded-[24px] border p-4 sm:p-5"
+              className="rounded-bd-lg border p-4 sm:p-5"
               style={{
                 borderColor: 'rgba(255,196,77,0.32)',
                 background:
                   'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, var(--bd-bg) 100%)',
               }}
             >
-              <div className="flex items-center gap-2 text-[var(--bd-coral-deep)]">
+              <div className="flex items-center gap-2 text-(--bd-coral-deep)">
                 <Icon name="crown" size={20} />
                 <span className="bd-kicker">{t('yahtzee.results.winnerLabel')}</span>
               </div>
@@ -186,7 +186,7 @@ export default function YahtzeeResults({
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
                     {winner.bonusAchieved && (
-                      <span className="ml-1 text-sm font-semibold text-[var(--bd-mint-deep)]">+{winner.bonusPoints}</span>
+                      <span className="ml-1 text-sm font-semibold text-(--bd-mint-deep)">+{winner.bonusPoints}</span>
                     )}
                   </div>
                 </div>
@@ -223,7 +223,7 @@ export default function YahtzeeResults({
                   <button
                     type="button"
                     onClick={onReturnToLobbyRoom}
-                    className="bd-btn bd-btn-soft !rounded-xl !px-3 !py-2 !text-xs"
+                    className="bd-btn bd-btn-soft rounded-xl! px-3! py-2! text-xs!"
                   >
                     {t('game.ui.returnToLobby')}
                   </button>
@@ -239,7 +239,7 @@ export default function YahtzeeResults({
                 <div
                   key={player.playerId}
                   className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
-                    isCurrentUser ? 'ring-2 ring-inset ring-[var(--bd-sky)]' : ''
+                    isCurrentUser ? 'ring-2 ring-inset ring-(--bd-sky)' : ''
                   }`}
                   style={{
                     borderColor:
@@ -288,7 +288,7 @@ export default function YahtzeeResults({
                   <div className="mb-2 h-2 w-full overflow-hidden rounded-full" style={{ background: 'rgba(41,37,36,0.08)' }}>
                     <div
                       className={`h-full rounded-full ${
-                        player.rank === 0 ? 'bg-[var(--bd-sun-deep)]' : player.rank === 1 ? 'bg-[var(--bd-lav-deep)]' : player.rank === 2 ? 'bg-[var(--bd-coral)]' : 'bg-[var(--bd-sky)]'
+                        player.rank === 0 ? 'bg-(--bd-sun-deep)' : player.rank === 1 ? 'bg-(--bd-lav-deep)' : player.rank === 2 ? 'bg-(--bd-coral)' : 'bg-(--bd-sky)'
                       }`}
                       style={{ width: `${scorePercent}%` }}
                     />
@@ -301,7 +301,7 @@ export default function YahtzeeResults({
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
                       <span className="font-semibold text-bd-ink">{player.upperSectionScore}</span>
                       {player.bonusAchieved && (
-                        <span className="ml-1 text-[var(--bd-mint-deep)]">
+                        <span className="ml-1 text-(--bd-mint-deep)">
                           {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                         </span>
                       )}

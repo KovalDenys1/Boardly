@@ -22,27 +22,27 @@ function getToneClasses(tone: MomentTone) {
     case 'mint':
       return {
         shell: 'border-[rgba(79,201,166,0.28)] bg-[linear-gradient(135deg,rgba(79,201,166,0.18),rgba(255,255,255,0.98))]',
-        icon: 'bg-[rgba(79,201,166,0.18)] text-[var(--bd-mint-deep)]',
-        badge: 'bg-[rgba(79,201,166,0.18)] text-[var(--bd-mint-deep)]',
+        icon: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-deep)',
+        badge: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-deep)',
       }
     case 'sun':
       return {
         shell: 'border-[rgba(255,196,77,0.34)] bg-[linear-gradient(135deg,rgba(255,196,77,0.2),rgba(255,255,255,0.98))]',
-        icon: 'bg-[rgba(255,196,77,0.22)] text-[var(--bd-coral-deep)]',
-        badge: 'bg-[rgba(255,196,77,0.22)] text-[var(--bd-coral-deep)]',
+        icon: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-deep)',
+        badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-deep)',
       }
     case 'lav':
       return {
         shell: 'border-[rgba(155,140,255,0.28)] bg-[linear-gradient(135deg,rgba(155,140,255,0.16),rgba(255,255,255,0.98))]',
-        icon: 'bg-[rgba(155,140,255,0.16)] text-[var(--bd-lav-deep)]',
-        badge: 'bg-[rgba(155,140,255,0.16)] text-[var(--bd-lav-deep)]',
+        icon: 'bg-[rgba(155,140,255,0.16)] text-(--bd-lav-deep)',
+        badge: 'bg-[rgba(155,140,255,0.16)] text-(--bd-lav-deep)',
       }
     case 'coral':
     default:
       return {
         shell: 'border-[rgba(255,107,91,0.28)] bg-[linear-gradient(135deg,rgba(255,107,91,0.16),rgba(255,255,255,0.98))]',
-        icon: 'bg-[rgba(255,107,91,0.16)] text-[var(--bd-coral-deep)]',
-        badge: 'bg-[rgba(255,107,91,0.18)] text-[var(--bd-coral-deep)]',
+        icon: 'bg-[rgba(255,107,91,0.16)] text-(--bd-coral-deep)',
+        badge: 'bg-[rgba(255,107,91,0.18)] text-(--bd-coral-deep)',
       }
   }
 }
@@ -69,7 +69,7 @@ function BoardlyMomentToast({
 
   return (
     <div
-      className={`pointer-events-auto w-[min(92vw,360px)] rounded-[20px] border px-3.5 py-3 shadow-[0_14px_36px_rgba(41,37,36,0.14)] backdrop-blur-sm transition-all duration-200 ${
+      className={`pointer-events-auto w-[min(92vw,360px)] rounded-[20px] border px-3.5 py-3 shadow-[0_14px_36px_rgba(41,37,36,0.14)] backdrop-blur-xs transition-all duration-200 ${
         toastState.visible ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
       } ${toneClasses.shell}`}
       style={{ color: 'var(--bd-ink)' }}

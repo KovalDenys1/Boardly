@@ -94,9 +94,9 @@ export default function WaitingRoom({
         // cut off by the scrolling player list. An outline, not an inset ring, because
         // an <img> paints over its own inset box-shadow.
         const avatarRingClass = isCurrentUser
-          ? 'outline outline-2 -outline-offset-4 outline-bd-mint'
+          ? 'outline-solid outline-2 -outline-offset-4 outline-bd-mint'
           : isBot
-            ? 'outline outline-2 -outline-offset-4 outline-bd-lav'
+            ? 'outline-solid outline-2 -outline-offset-4 outline-bd-lav'
             : ''
 
         return (
@@ -140,7 +140,7 @@ export default function WaitingRoom({
                 </span>
               )}
               {isBot && (
-                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-[color:var(--bd-ink-on-accent)]">
+                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-(--bd-ink-on-accent)">
                   {t('game.ui.botBadge')}
                 </span>
               )}
@@ -192,7 +192,7 @@ export default function WaitingRoom({
         return (
           <Fragment key={`empty-${i}`}>
             <div
-              className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
+              className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line px-3 py-3 sm:px-4"
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
                 isPulse

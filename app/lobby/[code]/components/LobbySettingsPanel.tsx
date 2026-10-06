@@ -173,7 +173,7 @@ export default function LobbySettingsPanel({
       key: 'theme',
       icon: (
         <span
-          className="inline-block h-3 w-3 shrink-0 rounded-full border border-bd-line/40"
+          className="inline-block h-3 w-3 shrink-0 rounded-full border"
           style={{ background: currentTheme.accent }}
         />
       ),
@@ -229,7 +229,7 @@ export default function LobbySettingsPanel({
                (chip clicks bubble here harmlessly, closing is the X / label). */
             onClick={canEditLobbySettings && !isActive ? () => openEditor(row.key) : undefined}
             className={`flex-[1_0_auto] rounded-xl border px-3 py-3 transition-colors sm:px-4 ${
-              isActive ? 'border-bd-mint/60 bg-bd-mint/12' : 'border-bd-line bg-bd-card-warm'
+              isActive ? 'border-bd-mint/60' : 'border-bd-line bg-bd-card-warm'
             } ${canEditLobbySettings && !isActive ? 'cursor-pointer hover:border-bd-ink' : ''}`}
           >
             {/* min-h keeps the row height identical between the value state
@@ -374,7 +374,7 @@ export default function LobbySettingsPanel({
                         >
                           <span
                             aria-hidden
-                            className="inline-block h-3 w-3 shrink-0 rounded-full border border-bd-line/50"
+                            className="inline-block h-3 w-3 shrink-0 rounded-full border"
                             style={{ background: theme.accent }}
                           />
                           <span>{theme.name}</span>
@@ -453,7 +453,7 @@ export default function LobbySettingsPanel({
                 onClick={() => g.gameType && void applySettingUpdate('gameType', { gameType: g.gameType })}
                 className={`flex w-full flex-[1_0_auto] items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors disabled:opacity-100 sm:px-4 ${
                   isGameActive
-                    ? 'border-bd-mint/60 bg-bd-mint/12 cursor-default'
+                    ? 'border-bd-mint/60 cursor-default'
                     : 'border-bd-line bg-bd-card-warm hover:border-bd-ink'
                 } ${updatingSetting === 'gameType' && !isGameActive ? 'opacity-50' : ''}`}
               >

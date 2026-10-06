@@ -19,7 +19,7 @@ double-render bug class. Tracking issue: #733.
 | `HEADER_HEIGHT_PX` | `lib/responsive-tokens.ts` | live (#734) |
 | `DESKTOP_MIN_WIDTH_PX` = 1024 | `lib/responsive-tokens.ts` | live (#734) |
 | `MOBILE_MAX_MEDIA_QUERY` | `lib/responsive-tokens.ts` | live (#734) |
-| `desk:` Tailwind screen | `tailwind.config.ts` (imported from tokens) | live (#734) |
+| `desk:` Tailwind screen | `--breakpoint-desk` in `app/globals.css` `@theme` (checked against the token by the audit) | live (#734) |
 | `useIsMobileViewport()` | `hooks/useIsMobileViewport.ts` | live (#734), consumers migrate in later phases |
 
 **Why three carriers for one value:** CSS custom properties cannot appear inside

@@ -54,10 +54,10 @@ const RING_OFFSET_CLASS = /(?<![\w-])(?:[\w-]+:)*ring-offset-(?:\d*[1-9]|\[)[^\s
 const OUTLINE_OFFSET_CLASS = /(?<![\w-])(?:[\w-]+:)*outline-offset-(?:\d*[1-9]|\[(?!-))[^\s'"`;]*/g
 
 // A ring width: `ring` (3px), `ring-2`, `ring-[3px]`. `ring-0` draws nothing; colours
-// (`ring-bd-lav`, `ring-[#FFC44D]`, `ring-[var(--x)]`) and `ring-inset` carry no width.
-const RING_WIDTH_TOKEN = /^!?ring(?:-[1-9]\d*|-\[\d*\.?\d+(?:px|rem|em)\])?$/
-const RING_INSET_TOKEN = /^!?ring-inset$/
-const SHADOW_CLASS_TOKEN = /^!?shadow-\[(.*)\]$/
+// (`ring-bd-lav`, `ring-[#FFC44D]`, `ring-(--x)`) and `ring-inset` carry no width.
+const RING_WIDTH_TOKEN = /^!?ring(?:-[1-9]\d*|-\[\d*\.?\d+(?:px|rem|em)\])?!?$/
+const RING_INSET_TOKEN = /^!?ring-inset!?$/
+const SHADOW_CLASS_TOKEN = /^!?shadow-\[(.*)\]!?$/
 const VARIANTS = /^(?:[\w\-[\]&>*.@/]+:)+/
 const CLASS_HELPERS = new Set(['cn', 'clsx', 'classNames', 'twMerge', 'cx'])
 

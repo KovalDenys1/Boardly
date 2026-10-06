@@ -43,7 +43,7 @@ interface GuideLayoutProps {
 export function GuideSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section
-      className="mb-6 rounded-[1.5rem] border p-7"
+      className="mb-6 rounded-3xl border p-7"
       style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}
     >
       <h2
@@ -346,7 +346,7 @@ export default function GuideLayout({
 
         {/* The direct answer, before any section */}
         <section
-          className="mb-6 rounded-[1.5rem] border p-7"
+          className="mb-6 rounded-3xl border p-7"
           style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}
         >
           <h2
@@ -365,7 +365,7 @@ export default function GuideLayout({
 
         {/* CTA */}
         <div
-          className="mb-8 rounded-[1.5rem] border p-8 text-center"
+          className="mb-8 rounded-3xl border p-8 text-center"
           style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}
         >
           <p className="mb-5 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>{cta.detail}</p>
@@ -385,7 +385,7 @@ export default function GuideLayout({
 
         {/* Related guides */}
         <div
-          className="rounded-[1.5rem] border p-6"
+          className="rounded-3xl border p-6"
           style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}
         >
           <h3

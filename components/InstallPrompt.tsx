@@ -86,7 +86,7 @@ export default function InstallPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-[70] sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
+    <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-70 sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
       <div
         className="rounded-2xl p-4 shadow-2xl"
         style={{

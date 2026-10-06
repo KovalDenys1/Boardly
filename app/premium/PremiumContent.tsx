@@ -199,7 +199,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             setConsented(event.target.checked)
             if (event.target.checked && failure === 'consent') setFailure('none')
           }}
-          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded focus-visible:!outline focus-visible:!outline-2 focus-visible:!-outline-offset-2 focus-visible:!outline-bd-coral"
+          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded-sm focus-visible:outline-solid! focus-visible:outline-2! focus-visible:-outline-offset-2! focus-visible:outline-bd-coral!"
           style={{ accentColor: 'var(--bd-coral)' }}
         />
         <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed" style={{ color: 'var(--bd-ink)' }}>

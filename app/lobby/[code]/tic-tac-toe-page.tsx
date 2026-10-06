@@ -805,7 +805,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[100dvh]">
+            <div className="flex justify-center items-center min-h-dvh">
                 <LoadingSpinner size="lg" />
             </div>
         )

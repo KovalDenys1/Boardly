@@ -117,7 +117,7 @@ export default function AvatarPicker({
           image={displayAvatar}
           userName={username}
           userEmail={email}
-          className="h-16 w-16 shrink-0 bg-bd-lav text-[color:var(--bd-ink-on-accent)]"
+          className="h-16 w-16 shrink-0 bg-bd-lav text-(--bd-ink-on-accent)"
           textClassName="text-2xl font-bold"
         />
         <div>
@@ -146,7 +146,7 @@ export default function AvatarPicker({
                 disabled={saving}
                 className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
                   isSelected
-                    ? 'border-bd-lav-deep outline outline-2 outline-bd-lav -outline-offset-4'
+                    ? 'border-bd-lav-deep outline-solid outline-2 outline-bd-lav -outline-offset-4'
                     : 'border-transparent hover:border-bd-line'
                 }`}
                 aria-label={t('profile.avatarPicker.avatarAlt', { id })}
@@ -183,7 +183,7 @@ export default function AvatarPicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={saving}
-                className="rounded-xl border border-bd-line bg-bd-card-warm px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-bg2 disabled:opacity-50"
+                className="rounded-xl border border-bd-line bg-bd-card-warm px-4 py-2 text-sm font-medium text-bd-ink shadow-xs transition hover:bg-bd-bg2 disabled:opacity-50"
               >
                 {saving ? t('profile.avatarPicker.saving') : t('profile.avatarPicker.uploadPhoto')}
               </button>
@@ -209,7 +209,7 @@ export default function AvatarPicker({
             <button
               type="button"
               onClick={onUnlockUpload}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95"
             >
               <Icon name="star" size={14} />
               <span>{t('profile.avatarPicker.getPremium')}</span>

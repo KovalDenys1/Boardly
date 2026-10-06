@@ -131,10 +131,10 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
-      <div className="p-5 space-y-4 relative">
+      <div className="p-5 stack-y-4 relative">
         <button
           onClick={onClose}
-          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-[var(--bd-bg2)]"
+          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-(--bd-bg2)"
           style={{ color: 'var(--bd-ink-soft)' }}
           aria-label={t('common.close')}
         >
@@ -147,8 +147,8 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-full shrink-0" style={{ background: 'var(--bd-line)' }} />
               <div className="space-y-2 flex-1">
-                <div className="h-4 rounded w-2/3" style={{ background: 'var(--bd-line)' }} />
-                <div className="h-3 rounded w-1/3" style={{ background: 'var(--bd-line)' }} />
+                <div className="h-4 rounded-sm w-2/3" style={{ background: 'var(--bd-line)' }} />
+                <div className="h-3 rounded-sm w-1/3" style={{ background: 'var(--bd-line)' }} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -185,7 +185,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                   <h2
                     ref={nameRef}
                     tabIndex={-1}
-                    className={`font-bold text-base truncate focus:outline-none ${data.isPremium ? 'text-amber-500' : ''}`}
+                    className={`font-bold text-base truncate focus:outline-hidden ${data.isPremium ? 'text-amber-500' : ''}`}
                     style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}
                   >
                     {data.username ?? t('game.ui.playerFallback')}
@@ -291,7 +291,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                 <button
                   type="button"
                   onClick={() => setView('report')}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-[var(--bd-bg2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
                   style={{ color: 'var(--bd-ink-muted)' }}
                 >
                   <Icon name="flag" size={13} />

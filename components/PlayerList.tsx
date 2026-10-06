@@ -130,7 +130,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             sounds.play('click', { force: true })
             setIsModalOpen(true)
           }}
-          className="mb-3 flex w-full flex-shrink-0 items-center gap-2 text-left text-sm font-bold transition-opacity hover:opacity-70 cursor-pointer"
+          className="mb-3 flex w-full shrink-0 items-center gap-2 text-left text-sm font-bold transition-opacity hover:opacity-70 cursor-pointer"
         >
           <Icon name="users" size={18} />
           <span className="truncate">{t('lobby.players.title', 'Players')}</span>
@@ -172,12 +172,12 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 role={isClickable ? 'button' : undefined}
                 tabIndex={isClickable ? 0 : undefined}
                 className={`
-                w-full text-left p-2.5 rounded-2xl transition-all duration-200 shadow-sm snap-start border
+                w-full text-left p-2.5 rounded-2xl transition-all duration-200 shadow-xs snap-start border
                 ${isDeparted ? 'opacity-45' : ''}
                 ${!isDeparted && isCurrentTurn ? 'shadow-md' : ''}
-                ${!isDeparted && isCurrentUser ? '!border-green-500' : ''}
-                ${!isDeparted && isSelected ? '!border-[#FFC44D]' : ''}
-                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFC44D]' : ''}
+                ${!isDeparted && isCurrentUser ? 'border-green-500!' : ''}
+                ${!isDeparted && isSelected ? 'border-bd-sun!' : ''}
+                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
                   background: isDeparted
@@ -201,9 +201,9 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Position Badge - Shows current rank by score */}
                     <div className={`
                     rounded-full flex items-center justify-center font-bold shrink-0 shadow-md text-center
-                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
+                    ${index === 0 ? 'bg-linear-to-br/srgb from-yellow-400 to-yellow-600 text-white' : ''}
                     ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
-                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
+                    ${index === 2 ? 'bg-linear-to-br/srgb from-orange-400 to-orange-600 text-white' : ''}
                     ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `} style={{ width: 'clamp(24px, 2.4vw, 30px)', height: 'clamp(24px, 2.4vw, 30px)', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
                       {index + 1}
@@ -222,17 +222,17 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />
                         )}
                         {isBot && (
-                          <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
+                          <span className="bd-chip bd-chip-lav shrink-0 shadow-xs" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             {t('game.ui.botBadge')}
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
-                          <span className="bd-chip shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
+                          <span className="bd-chip shrink-0 shadow-xs" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span className="bd-chip bd-chip-mint shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
+                          <span className="bd-chip bd-chip-mint shrink-0 shadow-xs" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             {t('game.ui.you')}
                           </span>
                         )}
@@ -330,9 +330,9 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Position Badge */}
                     <div className={`
                     w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 shadow-lg
-                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' : ''}
+                    ${index === 0 ? 'bg-linear-to-br/srgb from-yellow-400 to-yellow-600 text-white' : ''}
                     ${index === 1 ? 'bg-bd-line text-bd-ink' : ''}
-                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : ''}
+                    ${index === 2 ? 'bg-linear-to-br/srgb from-orange-400 to-orange-600 text-white' : ''}
                     ${index >= 3 ? 'border border-bd-line bg-bd-card-warm text-bd-ink' : ''}
                   `}>
                       {index + 1}
@@ -348,17 +348,17 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           <Icon name="crown" size={16} tone="premium" label="Premium" className="shrink-0" />
                         )}
                         {isBot && (
-                          <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-xs font-semibold">
                             {t('game.ui.botBadge')}
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
-                          <span className="bd-chip text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip text-xs px-2 py-1 rounded-full shrink-0 shadow-xs font-semibold">
                             {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span className="bd-chip bd-chip-mint text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip bd-chip-mint text-xs px-2 py-1 rounded-full shrink-0 shadow-xs font-semibold">
                             {t('game.ui.you')}
                           </span>
                         )}
@@ -398,7 +398,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           onProfileClick(player.userId)
                           setIsModalOpen(false)
                         }}
-                        className="px-4 py-2 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
+                        className="px-4 py-2 rounded-xl font-semibold transition-all shadow-xs hover:shadow-md"
                         style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink)', border: '1.5px solid var(--bd-line)' }}
                       >
                         <Icon name="user" size={16} /> {t('header.profile')}

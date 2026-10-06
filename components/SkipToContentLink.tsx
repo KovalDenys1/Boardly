@@ -16,7 +16,7 @@ export default function SkipToContentLink() {
   return (
     <a
       href="#main"
-      className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[999] focus:rounded-bd-sm focus:bg-bd-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-bd-bg focus:shadow-bd-pop"
+      className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-999 focus:rounded-bd-sm focus:bg-bd-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-bd-bg focus:shadow-bd-pop"
     >
       {t('common.skipToContent')}
     </a>

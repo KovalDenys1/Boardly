@@ -67,7 +67,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   const detailHref = (game: Game) => (game.route ? game.route.replace(/\/lobbies$/, '') : null)
 
   return (
-    <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto">
+    <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
         {/* Page header */}
@@ -138,7 +138,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
                   >
                     {t(game.nameKey)}
                   </h3>
-                  <p className="text-sm leading-[1.5] text-bd-ink-soft">
+                  <p className="text-sm leading-normal text-bd-ink-soft">
                     {t(game.descriptionKey)}
                   </p>
                 </div>

@@ -684,7 +684,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     if (!game || (game.status !== 'playing' && game.status !== 'finished')) {
         return (
-            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+            <div className="bd-page flex h-(--game-h) items-center justify-center px-4" style={themeStyle}>
                 <div className="bd-card w-full max-w-md p-8 text-center">
                     <h1 className="mb-3 text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
                         {t('games.tictactoe.game.gameNotStartedTitle')}
@@ -703,7 +703,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     if (!isParticipant && !isSpectator) {
         return (
-            <div className="bd-page flex h-[var(--game-h)] items-center justify-center px-4" style={themeStyle}>
+            <div className="bd-page flex h-(--game-h) items-center justify-center px-4" style={themeStyle}>
                 <div className="bd-card w-full max-w-md p-8 text-center">
                     <p className="mb-6 text-sm text-bd-ink-soft">{t('lobby.game.notPartOfMatch')}</p>
                     <button onClick={() => router.push(`/lobby/${code}`)} className="bd-btn bd-btn-primary mx-auto">

@@ -682,7 +682,7 @@ export default function SpyGameBoard({
   const roleCard = showRoleCard && roleInfo ? (
     <section className="spy-panel p-4">
       <p className="bd-kicker">{t('spy.yourRole')}</p>
-      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
+      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'}`}>
         {t(roleInfo.role === 'Spy' ? 'spy.roles.spy' : 'spy.roles.regular')}
       </h3>
       {roleInfo.role === 'Spy' ? (
@@ -695,7 +695,7 @@ export default function SpyGameBoard({
           {/* The engine accepts a guess only while questioning (#1263): during
               the vote the button would only earn a 400. */}
           {phase === SpyGamePhase.QUESTIONING && roleInfo.possibleLocations && roleInfo.possibleLocations.length > 0 && (
-            <div className="mt-4 border-t border-[var(--bd-line)] pt-4">
+            <div className="mt-4 border-t border-(--bd-line) pt-4">
               {!showGuessConfirm ? (
                 <button
                   type="button"
@@ -706,7 +706,7 @@ export default function SpyGameBoard({
                 </button>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">
+                  <p className="text-xs font-semibold text-(--bd-ink-muted)">
                     {t('spy.guessLocationWarning')}
                   </p>
                   <div className="relative">
@@ -748,9 +748,9 @@ export default function SpyGameBoard({
           )}
         </>
       ) : (
-        <div className="mt-3 space-y-2 text-sm font-semibold text-[var(--bd-ink-soft)]">
-          <p><span className="text-[var(--bd-ink-muted)]">{t('spy.location')}:</span> {roleInfo.location}</p>
-          <p><span className="text-[var(--bd-ink-muted)]">{t('spy.roleAtLocation')}:</span> {roleInfo.locationRole}</p>
+        <div className="mt-3 space-y-2 text-sm font-semibold text-(--bd-ink-soft)">
+          <p><span className="text-(--bd-ink-muted)">{t('spy.location')}:</span> {roleInfo.location}</p>
+          <p><span className="text-(--bd-ink-muted)">{t('spy.roleAtLocation')}:</span> {roleInfo.locationRole}</p>
         </div>
       )}
     </section>
@@ -829,8 +829,8 @@ export default function SpyGameBoard({
         {phase === SpyGamePhase.WAITING && (
           <div className="spy-panel bd-screen p-6 text-center">
             <p className="bd-kicker">{t('spy.phases.waiting')}</p>
-            <h3 className="mt-2 text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h3>
-            <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
+            <h3 className="mt-2 text-2xl font-black text-(--bd-ink)">{t('spy.gameTitle')}</h3>
+            <p className="mt-2 text-sm font-semibold text-(--bd-ink-muted)">
               {isSpectator
                 ? t('spy.waitingForCreator')
                 : isCreator
@@ -867,7 +867,7 @@ export default function SpyGameBoard({
 
         {phase === SpyGamePhase.ROLE_REVEAL && (isSpectator || !roleInfo) && (
           <div className="spy-panel p-6 text-center">
-            <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">
+            <p className="text-sm font-semibold text-(--bd-ink-muted)">
               {isSpectator
                 ? `${seatedReadyCount}/${seatedPlayers.length} ${t('spy.phases.roleReveal').toLowerCase()}`
                 : isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}
@@ -884,7 +884,7 @@ export default function SpyGameBoard({
 
                 {isMyQuestionTurn && !data.currentTargetId && !isSpectator && (
                   <div className="mt-5 space-y-3">
-                    <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.targetPlayer')}</label>
+                    <label className="block text-sm font-bold text-(--bd-ink)">{t('spy.targetPlayer')}</label>
                     <div className="relative">
                       <select
                         value={questionTargetId}
@@ -904,7 +904,7 @@ export default function SpyGameBoard({
                       </div>
                     </div>
 
-                    <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.questionLabel')}</label>
+                    <label className="block text-sm font-bold text-(--bd-ink)">{t('spy.questionLabel')}</label>
                     <textarea
                       value={questionText}
                       onChange={(event) => setQuestionText(event.target.value)}
@@ -940,8 +940,8 @@ export default function SpyGameBoard({
 
                 {shouldAnswerNow && !isSpectator && (
                   <div className="mt-5 space-y-3">
-                    <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-soft)]">
-                      <strong className="text-[var(--bd-ink)]">{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
+                    <div className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-soft)">
+                      <strong className="text-(--bd-ink)">{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
                     </div>
                     <textarea
                       value={answerText}
@@ -967,7 +967,7 @@ export default function SpyGameBoard({
 
                 {(!isMyQuestionTurn || isSpectator) && !shouldAnswerNow && (
                   // Keyed on the questioner, so the turn passing slides the line in again.
-                  <div key={data.currentQuestionerId || 'none'} className="game-status-cue mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
+                  <div key={data.currentQuestionerId || 'none'} className="game-status-cue mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
                     {currentQuestioner
                       ? t('spy.decidingQuestion', { player: currentQuestioner.name })
                       : t('spy.waitingForQuestioner')}
@@ -976,7 +976,7 @@ export default function SpyGameBoard({
                 )}
 
                 {isMyQuestionTurn && data.currentTargetId && !isSpectator && (
-                  <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
+                  <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
                     {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
                   </div>
                 )}
@@ -1000,21 +1000,21 @@ export default function SpyGameBoard({
                 <h3 className="spy-section-title">{t('spy.conversation')}</h3>
                 <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto pr-1">
                   {questionHistory.length === 0 && (
-                    <p className="rounded-xl bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">{t('spy.noQuestionsYet')}</p>
+                    <p className="rounded-xl bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">{t('spy.noQuestionsYet')}</p>
                   )}
                   {questionHistory.map((entry, index) => {
                     const isNewest = index === questionHistory.length - 1 && latestEntryFresh
                     return (
                     <div
                       key={`${entry.timestamp}-${entry.askerId}`}
-                      className={`rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-3 text-sm ${isNewest ? 'social-entry-in' : ''}`}
+                      className={`rounded-xl border border-(--bd-line) bg-(--bd-bg) p-3 text-sm ${isNewest ? 'social-entry-in' : ''}`}
                       onAnimationEnd={isNewest ? onOwnAnimationEnd(settleLatestEntry) : undefined}
                     >
-                      <p className="font-black text-[var(--bd-ink)]">
+                      <p className="font-black text-(--bd-ink)">
                         {entry.askerName} - {entry.targetName}
                       </p>
-                      <p className="mt-2 text-[var(--bd-ink-soft)]"><strong>{t('spy.questionPrefix')}</strong> {entry.question}</p>
-                      <p className="mt-1 text-[var(--bd-ink-soft)]"><strong>{t('spy.answerPrefix')}</strong> {entry.answer}</p>
+                      <p className="mt-2 text-(--bd-ink-soft)"><strong>{t('spy.questionPrefix')}</strong> {entry.question}</p>
+                      <p className="mt-1 text-(--bd-ink-soft)"><strong>{t('spy.answerPrefix')}</strong> {entry.answer}</p>
                     </div>
                     )
                   })}
@@ -1037,7 +1037,7 @@ export default function SpyGameBoard({
         {phase === SpyGamePhase.VOTING && isSpectator && (
           <div className="spy-panel bd-screen p-5 text-center">
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
-            <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
+            <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-(--bd-ink-muted)">
               {votesSubmitted}/{seatedPlayers.length} {t('spy.phases.voting').toLowerCase()}
             </ScorePop>
           </div>

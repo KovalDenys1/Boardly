@@ -50,7 +50,7 @@ interface StatsResponse {
 const panelClassName =
   'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
-  'rounded-[1.5rem] border border-bd-line bg-bd-bg'
+  'rounded-3xl border border-bd-line bg-bd-bg'
 const tileClassName =
   'rounded-2xl border border-bd-line bg-bd-card-warm'
 const eyebrowClassName =
@@ -506,7 +506,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       </div>
 
       {error ? (
-        <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10">
+        <div className="overflow-hidden rounded-3xl border border-bd-coral/40 bg-bd-coral/10">
           <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
             <p className="text-sm font-semibold text-bd-ink">{error}</p>
           </div>
