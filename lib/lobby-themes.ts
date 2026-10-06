@@ -33,6 +33,7 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-ink-muted': t.textMuted,
     '--bd-line': t.border,
     '--bd-card-warm': t.bg2,
+    '--bd-card': t.dark ? t.bg2 : '#ffffff',
     // A lobby theme replaces the surfaces under the raised plates, so it has to
     // move the plate too: the light value on Midnight or Neon City is the same
     // washed-out overlay html.dark was fixed for (#904).

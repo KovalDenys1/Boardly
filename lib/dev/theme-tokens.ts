@@ -2,8 +2,8 @@
  * The design tokens the dev theme panel can move, and the maths it moves them
  * with (`/dev/theme`).
  *
- * Boardly's whole visual language is 21 colour custom properties in `:root`,
- * eight of which `html.dark` redefines. There are no radius, shadow or spacing
+ * Boardly's whole visual language is 22 colour custom properties in `:root`,
+ * nine of which `html.dark` redefines. There are no radius, shadow or spacing
  * tokens — those are written into the rules — so the panel is a colour tool,
  * and the useful control is HSL rather than a hex field: hue and saturation
  * are what you move to make a palette feel like a different product, and a hex
@@ -59,6 +59,7 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-bg', group: 'surface', note: 'Page background', light: '#FBF6EE', dark: '#1E1B17' },
   { name: 'bd-bg2', group: 'surface', note: 'Recessed surfaces: chips, wells', light: '#F2E9D8', dark: '#2B2720' },
   { name: 'bd-card-warm', group: 'surface', note: 'Card background', light: '#FFF8EC', dark: '#242018' },
+  { name: 'bd-card', group: 'surface', note: 'Plain card plate: move history, chat, side panels', light: '#ffffff', dark: '#242018' },
   { name: 'bd-input-bg', group: 'surface', note: 'Input and field background', light: '#ffffff', dark: '#2B2720' },
   { name: 'bd-line', group: 'surface', note: 'Hairline borders and dividers', light: '#E8DDC8', dark: '#3A3530' },
 ]
