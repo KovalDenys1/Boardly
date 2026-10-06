@@ -3841,6 +3841,28 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 @container (max-height: 420px) {
   .rps-board { overflow-y: auto; }
 }
+/* 320×568, worse with the idle nudge above it: the stacked hands alone fill the
+   card, so they lie down into one row and the tiles drop their hint line. */
+@container (max-height: 260px) {
+  .rps-board {
+    gap: 4px;
+    --rps-emoji-xl: 30px;
+    --rps-tile: clamp(56px, min(30cqh, calc((100cqw - 72px) / 3)), 72px);
+  }
+  .rps-stage__result { width: auto; }
+  .rps-hand {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: center;
+    justify-items: start;
+    column-gap: 8px;
+    row-gap: 2px;
+    padding: 6px 8px;
+  }
+  .rps-hand__emoji { grid-row: 1 / 3; }
+  .rps-tile { padding: 6px; }
+  .rps-tile__beats { display: none; }
+}
 /* Narrow card (phones): the hands keep their width and the centre block
    moves under them, so names are not squeezed by the round result. */
 @container (max-width: 440px) {
