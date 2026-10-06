@@ -8,6 +8,8 @@
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import { EMAIL_LOGO, escapeHtml, renderEmail, type EmailContent, type EmailLayout } from '@/lib/email-layout'
+import { EMAIL_ART_BASE, EMAIL_ART_SCALE, EMAIL_HERO_SIZE, EMAIL_ICON_SIZE, EMAIL_LOGO_SIZE, allEmailArtFiles } from '@/lib/email-art'
+import { NOTIFICATION_SETTINGS_SECTION_ID } from '@/lib/public-profile'
 import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import { emailSamples } from '../../scripts/email-samples'
 
@@ -109,15 +111,37 @@ describe('the shared email layout (#1293)', () => {
     )
   })
 
-  it('points the logo at a PNG under public/ that is three times the size it is drawn at', () => {
-    const file = path.join(process.cwd(), 'public', new URL(EMAIL_LOGO.src).pathname)
+  it('keeps every picture a mail can show under public/email/, as a PNG drawn at its scale (#1298)', () => {
+    expect(new URL(EMAIL_ART_BASE).origin).toBe('https://boardly.online')
+    for (const name of allEmailArtFiles()) {
+      const file = path.join(process.cwd(), 'public', 'email', name)
+      expect(existsSync(file)).toBe(true)
+      const png = readFileSync(file)
+      expect(png.subarray(1, 4).toString('latin1')).toBe('PNG')
+      const [size, scale] = name.startsWith('logo')
+        ? [EMAIL_LOGO_SIZE, EMAIL_ART_SCALE.logo]
+        : name.startsWith('hero')
+          ? [EMAIL_HERO_SIZE, EMAIL_ART_SCALE.hero]
+          : [EMAIL_ICON_SIZE, EMAIL_ART_SCALE.icon]
+      expect([name, png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([name, size.width * scale, size.height * scale])
+      expect(png.length).toBeLessThan(40 * 1024)
+    }
+  })
 
-    expect(new URL(EMAIL_LOGO.src).origin).toBe('https://boardly.online')
-    expect(existsSync(file)).toBe(true)
-    const png = readFileSync(file)
-    expect(png.subarray(1, 4).toString('latin1')).toBe('PNG')
-    expect(png.readUInt32BE(16)).toBe(EMAIL_LOGO.width * 3)
-    expect(png.readUInt32BE(20)).toBe(EMAIL_LOGO.height * 3)
+  it('shows the light logo to every client and the dark one only in dark mode (#1298)', () => {
+    const { html } = renderEmail(notice)
+    const body = html.slice(html.indexOf('<body'))
+
+    const light = body.indexOf(`src="${EMAIL_LOGO.light}"`)
+    const dark = body.indexOf(`src="${EMAIL_LOGO.dark}"`)
+    expect(light).toBeGreaterThan(-1)
+    expect(dark).toBeGreaterThan(light)
+    const darkTag = body.slice(body.lastIndexOf('<img', dark), body.indexOf('>', dark) + 1)
+    expect(darkTag).toContain('class="bd-img-dark" style="display: none;')
+    const darkMedia = html.slice(html.indexOf('@media (prefers-color-scheme: dark)'), html.indexOf('\n}\n', html.indexOf('@media (prefers-color-scheme: dark)')))
+    expect(darkMedia).toContain('.bd-img-light { display: none !important; }')
+    expect(darkMedia).toContain('.bd-img-dark { display: block !important;')
+    expect(body.match(/<!--\[if !mso\]><!-->/g)).toHaveLength(1)
   })
 })
 
@@ -129,18 +153,25 @@ type SentMail = { to: string; replyTo?: string; subject: string; html: string; t
 const SENDERS = Object.keys(emailSamples) as SenderName[]
 const GMAIL_CLIP_BYTES = 102 * 1024
 
-// The eight mails in one language have no suite of their own, so what they hand to Resend
-// besides the body is pinned here.
+// The eight mails that have no suite of their own, so what they hand to Resend besides the
+// body is pinned here.
 const SINGLE_LANGUAGE_MAILS: [SenderName, { subject: string; replyTo?: string; result: object }][] = [
-  ['sendVerificationEmail', { subject: 'Verify your email - Boardly', result: { success: true } }],
+  ['sendVerificationEmail', { subject: 'Confirm your email for Boardly', result: { success: true } }],
   [
     'sendUnverifiedAccountWarningEmail',
-    { subject: 'Action required: verify your Boardly account in 3 days', result: { success: true } },
+    {
+      subject: 'Action required: verify your Boardly account in 3 days / Handling kreves: bekreft Boardly-kontoen din innen 3 dager',
+      result: { success: true },
+    },
   ],
-  ['sendPasswordResetEmail', { subject: 'Reset your password - Boardly', result: { success: true } }],
+  ['sendPasswordResetEmail', { subject: 'Reset your Boardly password', result: { success: true } }],
   [
     'sendSecurityPasswordResetEmail',
-    { subject: 'Please set a new Boardly password', replyTo: 'support@boardly.online', result: { success: true, id: 'email_1' } },
+    {
+      subject: 'Please set a new Boardly password / Lag et nytt passord for Boardly',
+      replyTo: 'support@boardly.online',
+      result: { success: true, id: 'email_1' },
+    },
   ],
   [
     'sendEmailChangeNoticeEmail',
@@ -150,9 +181,15 @@ const SINGLE_LANGUAGE_MAILS: [SenderName, { subject: string; replyTo?: string; r
       result: { success: true, id: 'email_1' },
     },
   ],
-  ['sendWelcomeEmail', { subject: 'Welcome to Boardly! 🎲', result: { success: true } }],
-  ['sendGameInviteEmail', { subject: 'Kari invited you to play guess the spy on Boardly', result: { success: true } }],
-  ['sendAccountDeletionEmail', { subject: 'Confirm Account Deletion - Boardly', result: { success: true } }],
+  ['sendWelcomeEmail', { subject: 'Welcome to Boardly, Ola!', result: { success: true } }],
+  [
+    'sendGameInviteEmail',
+    {
+      subject: 'Kari invited you to play Guess the Spy on Boardly / Kari inviterte deg til å spille Gjett spionen',
+      result: { success: true },
+    },
+  ],
+  ['sendAccountDeletionEmail', { subject: 'Confirm deleting your Boardly account', result: { success: true } }],
 ]
 
 const HOSTILE = `"><img src=x onerror=1><script>alert(1)</script>'`
@@ -253,7 +290,7 @@ describe('every mail lib/email sends (#1293)', () => {
       expect(mail.text).toContain(sheet.title)
       for (const block of sheet.blocks) {
         const said =
-          block.type === 'paragraph' || block.type === 'note'
+          block.type === 'paragraph' || block.type === 'note' || block.type === 'lead'
             ? plain(block.content)
             : block.type === 'list'
               ? block.items
@@ -263,11 +300,19 @@ describe('every mail lib/email sends (#1293)', () => {
                   ? [block.label, block.href]
                   : block.type === 'callout'
                     ? [block.text]
-                    : [block.text, block.href]
+                    : block.type === 'facts'
+                      ? block.rows.map((row) => `${row.label}: ${row.value}`)
+                      : block.type === 'details'
+                        ? block.sections.flatMap((section) => [
+                            section.heading.toUpperCase(),
+                            ...(section.paragraphs ?? []).flatMap(plain),
+                            ...(section.items ?? []),
+                          ])
+                        : [block.text, block.href]
         for (const piece of said) expect(mail.text).toContain(piece)
       }
     }
-    for (const line of described.footer.flat()) expect(mail.text).toContain(line)
+    for (const line of described.footer.flat()) for (const piece of plain(line)) expect(mail.text).toContain(piece)
     expect(mail.text).not.toMatch(/<\/?(?:p|div|table|a|h\d|br)\b/)
   })
 
@@ -283,7 +328,7 @@ describe('every mail lib/email sends (#1293)', () => {
   it.each(SENDERS)('%s lets no argument become markup', async (name) => {
     const mail = await send(name, hostile(emailSamples[name]) as unknown[])
 
-    expect(mail.html.match(/<img\b/g)).toHaveLength(1)
+    for (const image of mail.html.match(/<img\b[^>]*>/g) ?? []) expect(image).toContain(`src="${EMAIL_ART_BASE}`)
     expect(mail.html).not.toContain('<script')
     expect(mail.html).not.toContain('onerror=1>')
     expect(mail.html).not.toMatch(/href="[^"]*"[^>]*"[^>]*onerror/)
@@ -302,7 +347,11 @@ describe('every mail lib/email sends (#1293)', () => {
     const mail = await send(name)
 
     const sources = [...mail.html.matchAll(/\ssrc="([^"]*)"/g)].map((match) => match[1])
-    expect(sources).toEqual([EMAIL_LOGO.src])
+    expect(sources.slice(0, 2)).toEqual([EMAIL_LOGO.light, EMAIL_LOGO.dark])
+    for (const source of sources) {
+      expect(source.startsWith(EMAIL_ART_BASE)).toBe(true)
+      expect(allEmailArtFiles()).toContain(source.slice(EMAIL_ART_BASE.length))
+    }
     expect(mail.html).not.toMatch(/url\(|@import|<link\b|<script\b|<iframe\b|<video\b|<object\b|\sbackground="/i)
 
     const linkSupportHost = new URL(LINK_SUPPORT_URL).host
@@ -311,15 +360,79 @@ describe('every mail lib/email sends (#1293)', () => {
     expect([...hosts].filter((host) => !allowed.includes(host))).toEqual([])
   })
 
-  it.each(SENDERS)('%s gives its image alt text and fixed dimensions', async (name) => {
+  it.each(SENDERS)('%s gives every image alt text and fixed dimensions, and a picture beside the logo', async (name) => {
     const mail = await send(name)
 
     const images = mail.html.match(/<img\b[^>]*>/g) ?? []
-    expect(images).toHaveLength(1)
+    expect(images.length).toBeGreaterThanOrEqual(4)
+    expect(images.filter((image) => image.includes('class="bd-img-light"'))).toHaveLength(images.length / 2)
     for (const image of images) {
       expect(image).toMatch(/\salt="[^"]+"/)
       expect(image).toMatch(/\swidth="\d+"/)
       expect(image).toMatch(/\sheight="\d+"/)
     }
+  })
+
+  it.each(SENDERS)('%s links to the email settings in both parts, and says why it came (#1298)', async (name) => {
+    const mail = await send(name)
+    const settings = `https://boardly.online/profile?tab=settings#${NOTIFICATION_SETTINGS_SECTION_ID}`
+
+    expect(mail.html).toContain(`href="${escapeHtml(settings)}"`)
+    expect(mail.html).toContain('>Email settings</a>')
+    expect(mail.text).toContain(`Email settings (${settings})`)
+    if (name === 'sendGameInviteEmail') {
+      expect(mail.text).toContain('You get this because you and Kari are friends on Boardly.')
+      expect(mail.text).not.toContain('We always send this email')
+    } else {
+      expect(mail.text).toMatch(/We (always send this email because|send this email once)/)
+      expect(mail.text).not.toContain('unsubscribe')
+    }
+  })
+
+  it.each(SENDERS.filter((name) => name !== 'sendGameInviteEmail'))('%s carries no List-Unsubscribe header', async (name) => {
+    const mail = (await send(name)) as SentMail & { headers?: Record<string, string> }
+
+    expect(mail.headers?.['List-Unsubscribe']).toBeUndefined()
+  })
+
+  it('gives the invite a signed one-click unsubscribe link and the RFC 8058 headers (#1298)', async () => {
+    process.env.NEXTAUTH_SECRET = 'test-secret'
+    const [recipientName, senderName, lobbyName, gameType, inviteUrl] = emailSamples.sendGameInviteEmail
+    const mail = (await send('sendGameInviteEmail', [recipientName, senderName, lobbyName, gameType, inviteUrl, { userId: 'friend-1' }])) as SentMail & {
+      headers: Record<string, string>
+    }
+
+    const url = mail.headers['List-Unsubscribe'].slice(1, -1)
+    expect(mail.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+    expect(url.startsWith('https://boardly.online/api/notifications/unsubscribe?token=')).toBe(true)
+    const { verifyNotificationUnsubscribeToken } = jest.requireActual('@/lib/unsubscribe-token')
+    expect(verifyNotificationUnsubscribeToken(new URL(url).searchParams.get('token'))).toMatchObject({
+      userId: 'friend-1',
+      type: 'gameInvites',
+    })
+    expect(mail.html).toContain(`href="${escapeHtml(url)}"`)
+    expect(mail.text).toContain(`Stop game invite emails (${url})`)
+  })
+
+  it('writes in the one language it is given, and in English then Norwegian without one (#1298)', async () => {
+    const norwegian = await send('sendWelcomeEmail', ['Ola', 'nb'])
+    expect(norwegian.subject).toBe('Velkommen til Boardly, Ola!')
+    expect(norwegian.html).toContain('<div lang="nb">')
+    expect(norwegian.html).not.toContain('<div lang="en">')
+    expect(norwegian.text).toContain('E-postinnstillinger')
+    expect(norwegian.text).not.toContain('Email settings')
+
+    const english = await send('sendPasswordResetEmail', ['token', 'en'])
+    expect(english.html).toContain('<div lang="en">')
+    expect(english.html).not.toContain('<div lang="nb">')
+
+    const both = await send('sendWelcomeEmail', ['Ola'])
+    expect(both.subject).toBe('Welcome to Boardly, Ola! / Velkommen til Boardly, Ola!')
+    expect(both.html.indexOf('<div lang="en">')).toBeLessThan(both.html.indexOf('<div lang="nb">'))
+    expect(both.html.match(/class="bd-img-light"/g)).toHaveLength(2)
+
+    const notice = await send('sendSuspensionNoticeEmail', [{ ...emailSamples.sendSuspensionNoticeEmail[0], language: 'nb' }])
+    expect(notice.subject).toBe('Boardly-kontoen din er suspendert')
+    expect(notice.text).not.toContain('Questions?')
   })
 })

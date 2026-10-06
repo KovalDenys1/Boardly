@@ -1,5 +1,13 @@
 import { Resend } from 'resend'
-import { renderEmail, type EmailBlock, type EmailLayout } from './email-layout'
+import { heroImage, inviteHeroImage, noticeIconImage, type EmailImage } from './email-art'
+import {
+  renderEmail,
+  type EmailBlock,
+  type EmailContent,
+  type EmailDetailSection,
+  type EmailLanguage,
+  type EmailLayout,
+} from './email-layout'
 import { logger } from './logger'
 import { BOARDLY_URL, SUPPORT_EMAIL } from './organization-json-ld'
 import { majorUnitAmount, type PremiumPlan } from './premium-plans'
@@ -7,6 +15,7 @@ import { formatSellerAddress, getSellerIdentity } from './seller-identity'
 import { LINK_SUPPORT_URL } from './sold-through-link'
 import { maskEmail } from './redact'
 import { TERMS_FIGURES } from './terms-version'
+import { notificationUnsubscribeUrl, unsubscribeHeaders } from './unsubscribe-token'
 
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -61,54 +70,160 @@ const COMPANY_SIGN_OFF = `${TEAM_SIGNATURE} · ${SUPPORT_EMAIL}`
 
 export type EmailMessage = { subject: string; html: string; text: string }
 
-function singleSheetEmail(mail: {
+type Localized<T> = Record<EmailLanguage, T>
+
+/** English then Norwegian when the reader's language is unknown, otherwise that one only. */
+function languagesFor(language?: EmailLanguage | null): EmailLanguage[] {
+  return language === 'en' || language === 'nb' ? [language] : ['en', 'nb']
+}
+
+function siteUrl(): string {
+  return process.env.NEXTAUTH_URL || BOARDLY_URL
+}
+
+/** The notifications section of the profile's settings tab, where a user picks which mails they get. */
+export function emailSettingsUrl(): string {
+  return `${siteUrl()}/profile?tab=settings#notifications`
+}
+
+const EMAIL_SETTINGS_LABEL: Localized<string> = { en: 'Email settings', nb: 'E-postinnstillinger' }
+
+/** Why a mail nobody can turn off is sent anyway, said in the footer of every such mail. */
+type AlwaysSentReason = 'security' | 'legal' | 'payment' | 'once'
+
+const ALWAYS_SENT: Record<AlwaysSentReason, Localized<string>> = {
+  security: {
+    en: "We always send this email because it concerns your account's security.",
+    nb: 'Denne e-posten sender vi alltid, fordi den gjelder sikkerheten til kontoen din.',
+  },
+  legal: {
+    en: 'We always send this email because it is a legal notice about your account.',
+    nb: 'Denne e-posten sender vi alltid, fordi den er et juridisk varsel om kontoen din.',
+  },
+  payment: {
+    en: 'We always send this email because it concerns a payment or your subscription.',
+    nb: 'Denne e-posten sender vi alltid, fordi den gjelder en betaling eller abonnementet ditt.',
+  },
+  once: {
+    en: 'We send this email once, when an account is confirmed.',
+    nb: 'Denne e-posten sender vi én gang, når en konto er bekreftet.',
+  },
+}
+
+/** The preference line: why the mail came, then the way to change what arrives. */
+type Preference = { always: AlwaysSentReason } | { optional: (lang: EmailLanguage) => EmailContent }
+
+function preferenceLine(preference: Preference, lang: EmailLanguage): EmailContent {
+  const settings = { text: EMAIL_SETTINGS_LABEL[lang], href: emailSettingsUrl() }
+  if ('always' in preference) return [`${ALWAYS_SENT[preference.always][lang]} `, settings]
+  const lead = preference.optional(lang)
+  return [...(typeof lead === 'string' ? [lead] : lead), ' · ', settings]
+}
+
+const NOTICE_CLOSING: Localized<string> = {
+  en: `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
+  nb: `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`,
+}
+
+type SheetCopy = {
   subject: string
   title: string
   preheader: string
   blocks: EmailBlock[]
+  hero?: EmailImage
+  icon?: EmailImage
+}
+
+function composeEmail(mail: {
+  language?: EmailLanguage | null
+  copy: (lang: EmailLanguage) => SheetCopy
+  preference: Preference
+  /** Footer paragraphs after the preference line, given the languages the mail is in. */
+  closing: (languages: EmailLanguage[]) => EmailLayout['footer']
+  links?: readonly string[]
 }): EmailMessage {
+  const languages = languagesFor(mail.language)
+  const copies = languages.map((lang) => ({ lang, ...mail.copy(lang) }))
   return {
-    subject: mail.subject,
+    subject: copies.map((copy) => copy.subject).join(' / '),
     ...renderEmail({
-      preheader: mail.preheader,
-      sheets: [{ lang: 'en', title: mail.title, blocks: mail.blocks }],
-      footer: [[COMPANY_SIGN_OFF]],
+      preheader: copies[0].preheader,
+      sheets: copies.map((copy, index) => ({
+        lang: copy.lang,
+        title: copy.title,
+        blocks: copy.blocks,
+        hero: index === 0 ? copy.hero : undefined,
+        icon: copy.icon,
+      })),
+      footer: [languages.map((lang) => preferenceLine(mail.preference, lang)), ...mail.closing(languages)],
+      links: mail.links,
     }),
   }
 }
 
-function verificationEmail(token: string, username?: string): EmailMessage {
+const signOff = (): EmailLayout['footer'] => [[COMPANY_SIGN_OFF]]
+const noticeSignOff = (languages: EmailLanguage[]): EmailLayout['footer'] => [
+  languages.map((lang) => NOTICE_CLOSING[lang]),
+  [COMPANY_SIGN_OFF],
+]
+
+const BUTTON_FALLBACK: Localized<string> = {
+  en: "Button not working? Open this link:",
+  nb: 'Virker ikke knappen? Åpne denne lenken:',
+}
+
+const greeting = (lang: EmailLanguage, name?: string | null) =>
+  lang === 'nb' ? (name ? `Hei ${name},` : 'Hei,') : name ? `Hi ${name},` : 'Hi,'
+
+function verificationEmail(token: string, username?: string, language?: EmailLanguage | null): EmailMessage {
   const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
-  const intro =
-    'Thanks for signing up for Boardly! Please click the button below to verify your email address and activate your account.'
-  return singleSheetEmail({
-    subject: 'Verify your email - Boardly',
-    title: 'Verify your email',
-    preheader: intro,
-    blocks: [
-      { type: 'paragraph', content: `Hi ${username || 'there'}!` },
-      { type: 'paragraph', content: intro },
-      { type: 'button', label: 'Verify Email', href: verifyUrl },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, copy and paste this link into your browser:",
-        href: verifyUrl,
-      },
-      {
-        type: 'note',
-        content: "This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.",
-      },
-    ],
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: signOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: 'Bekreft e-postadressen din for Boardly',
+            title: 'Bekreft e-postadressen din',
+            preheader: 'Trykk på knappen for å bekrefte adressen og gjøre ferdig Boardly-kontoen din.',
+            icon: noticeIconImage('verify', 'Konvolutt'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              { type: 'paragraph', content: 'Trykk på knappen for å bekrefte adressen og gjøre ferdig Boardly-kontoen din.' },
+              { type: 'button', label: 'Bekreft e-post', href: verifyUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.nb, href: verifyUrl },
+              { type: 'note', content: 'Lenken virker i 24 timer. Har du ikke opprettet en konto, kan du se bort fra denne e-posten.' },
+            ],
+          }
+        : {
+            subject: 'Confirm your email for Boardly',
+            title: 'Confirm your email',
+            preheader: 'Tap the button to confirm this address and finish setting up your Boardly account.',
+            icon: noticeIconImage('verify', 'Envelope'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              { type: 'paragraph', content: 'Tap the button to confirm this address and finish setting up your Boardly account.' },
+              { type: 'button', label: 'Confirm email', href: verifyUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.en, href: verifyUrl },
+              { type: 'note', content: "The link works for 24 hours. If you didn't create an account, you can ignore this email." },
+            ],
+          },
   })
 }
 
-export async function sendVerificationEmail(email: string, token: string, username?: string) {
+export async function sendVerificationEmail(
+  email: string,
+  token: string,
+  username?: string,
+  language?: EmailLanguage | null
+) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = verificationEmail(token, username)
+  const message = verificationEmail(token, username, language)
 
   try {
     const { error } = await resend.emails.send({
@@ -127,22 +242,61 @@ export async function sendVerificationEmail(email: string, token: string, userna
   }
 }
 
-function unverifiedAccountWarningEmail(token: string, username: string, daysUntilDeletion: number): EmailMessage {
+function unverifiedAccountWarningEmail(
+  token: string,
+  username: string,
+  daysUntilDeletion: number,
+  language?: EmailLanguage | null
+): EmailMessage {
   const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
-  const deadline = `${daysUntilDeletion} ${daysUntilDeletion === 1 ? 'day' : 'days'}`
-  const subject = `Action required: verify your Boardly account in ${deadline}`
-  return singleSheetEmail({
-    subject,
-    title: subject,
-    preheader: `Your account email is still not verified. To keep your account, please verify your email within ${deadline}.`,
-    blocks: [
-      { type: 'paragraph', content: `Hi ${username || 'there'}!` },
-      { type: 'paragraph', content: 'Your account email is still not verified.' },
-      { type: 'paragraph', content: ['To keep your account, please verify your email within ', { strong: deadline }, '.'] },
-      { type: 'callout', tone: 'warning', text: 'Accounts that remain unverified will be automatically deleted.' },
-      { type: 'button', label: 'Verify Email Now', href: verifyUrl },
-      { type: 'fallbackLink', text: 'If the button does not work, open this link manually:', href: verifyUrl },
-    ],
+  const days = (lang: EmailLanguage) =>
+    lang === 'nb'
+      ? `${daysUntilDeletion} ${daysUntilDeletion === 1 ? 'dag' : 'dager'}`
+      : `${daysUntilDeletion} ${daysUntilDeletion === 1 ? 'day' : 'days'}`
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: signOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: `Handling kreves: bekreft Boardly-kontoen din innen ${days(lang)}`,
+            title: 'Bekreft e-posten for å beholde kontoen',
+            preheader: `E-postadressen på kontoen din er fortsatt ikke bekreftet. Bekreft den innen ${days(lang)}.`,
+            icon: noticeIconImage('unverified', 'Timeglass'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: [
+                  'E-postadressen på kontoen din er fortsatt ikke bekreftet. Bekreft den innen ',
+                  { strong: days(lang) },
+                  ', ellers slettes kontoen automatisk.',
+                ],
+              },
+              { type: 'button', label: 'Bekreft e-post', href: verifyUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.nb, href: verifyUrl },
+            ],
+          }
+        : {
+            subject: `Action required: verify your Boardly account in ${days(lang)}`,
+            title: 'Verify your email to keep your account',
+            preheader: `Your account's email address is still not verified. Verify it within ${days(lang)}.`,
+            icon: noticeIconImage('unverified', 'Hourglass'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: [
+                  "Your account's email address is still not verified. Verify it within ",
+                  { strong: days(lang) },
+                  ', or the account is deleted automatically.',
+                ],
+              },
+              { type: 'button', label: 'Verify email', href: verifyUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.en, href: verifyUrl },
+            ],
+          },
   })
 }
 
@@ -150,14 +304,15 @@ export async function sendUnverifiedAccountWarningEmail(
   email: string,
   token: string,
   username: string,
-  daysUntilDeletion: number
+  daysUntilDeletion: number,
+  language?: EmailLanguage | null
 ) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = unverifiedAccountWarningEmail(token, username, daysUntilDeletion)
+  const message = unverifiedAccountWarningEmail(token, username, daysUntilDeletion, language)
 
   try {
     const { error } = await resend.emails.send({
@@ -178,36 +333,60 @@ export async function sendUnverifiedAccountWarningEmail(
   }
 }
 
-function passwordResetEmail(token: string): EmailMessage {
+function passwordResetEmail(token: string, language?: EmailLanguage | null): EmailMessage {
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
-  const intro = 'We received a request to reset your password. Click the button below to create a new password.'
-  return singleSheetEmail({
-    subject: 'Reset your password - Boardly',
-    title: 'Reset your password',
-    preheader: intro,
-    blocks: [
-      { type: 'paragraph', content: intro },
-      { type: 'button', label: 'Reset Password', href: resetUrl },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, copy and paste this link into your browser:",
-        href: resetUrl,
-      },
-      {
-        type: 'note',
-        content: "This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.",
-      },
-    ],
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: signOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: 'Tilbakestill passordet ditt på Boardly',
+            title: 'Tilbakestill passordet',
+            preheader: 'Vi har fått en forespørsel om å tilbakestille passordet på Boardly-kontoen din.',
+            icon: noticeIconImage('reset', 'Hengelås'),
+            blocks: [
+              {
+                type: 'paragraph',
+                content: 'Vi har fått en forespørsel om å tilbakestille passordet på Boardly-kontoen din. Velg et nytt med knappen nedenfor.',
+              },
+              { type: 'button', label: 'Velg nytt passord', href: resetUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.nb, href: resetUrl },
+              {
+                type: 'note',
+                content: 'Lenken virker i 1 time. Har du ikke bedt om dette, kan du se bort fra e-posten, så forblir passordet det samme.',
+              },
+            ],
+          }
+        : {
+            subject: 'Reset your Boardly password',
+            title: 'Reset your password',
+            preheader: 'We received a request to reset the password on your Boardly account.',
+            icon: noticeIconImage('reset', 'Padlock'),
+            blocks: [
+              {
+                type: 'paragraph',
+                content: 'We received a request to reset the password on your Boardly account. Choose a new one with the button below.',
+              },
+              { type: 'button', label: 'Choose a new password', href: resetUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.en, href: resetUrl },
+              {
+                type: 'note',
+                content: "The link works for 1 hour. If you didn't ask for this, ignore this email and your password stays the same.",
+              },
+            ],
+          },
   })
 }
 
-export async function sendPasswordResetEmail(email: string, token: string) {
+export async function sendPasswordResetEmail(email: string, token: string, language?: EmailLanguage | null) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = passwordResetEmail(token)
+  const message = passwordResetEmail(token, language)
 
   try {
     const { error } = await resend.emails.send({
@@ -226,32 +405,80 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   }
 }
 
-function securityPasswordResetEmail(username?: string | null): EmailMessage {
+function securityPasswordResetEmail(username?: string | null, language?: EmailLanguage | null): EmailMessage {
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
-  const subject = 'Please set a new Boardly password'
-  const intro =
-    'For security reasons we have reset the password on your Boardly account. Your old password no longer works, and setting a new one takes a minute:'
-  return singleSheetEmail({
-    subject,
-    title: subject,
-    preheader: intro,
-    blocks: [
-      { type: 'paragraph', content: username ? `Hi ${username},` : 'Hi,' },
-      { type: 'paragraph', content: intro },
-      { type: 'button', label: 'Set a new password', href: resetUrl },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, open this link and enter the email address of your Boardly account:",
-        href: resetUrl,
-      },
-      { type: 'paragraph', content: 'If you sign in with Google, GitHub or Discord, nothing changes for you.' },
-      {
-        type: 'paragraph',
-        content:
-          'Your games, friends and Premium are exactly as you left them. Sorry for the interruption, and thanks for playing.',
-      },
-      { type: 'note', content: 'Questions? Just reply to this email.' },
-    ],
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: noticeSignOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: 'Lag et nytt passord for Boardly',
+            title: 'Lag et nytt passord',
+            preheader: 'Av sikkerhetshensyn har vi tilbakestilt passordet på Boardly-kontoen din.',
+            icon: noticeIconImage('security', 'Skjold'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content:
+                  'Av sikkerhetshensyn har vi tilbakestilt passordet på Boardly-kontoen din. Det gamle passordet virker ikke lenger, og det tar et minutt å lage et nytt.',
+              },
+              { type: 'button', label: 'Lag nytt passord', href: resetUrl },
+              {
+                type: 'fallbackLink',
+                text: 'Virker ikke knappen? Åpne denne lenken og skriv inn e-postadressen til Boardly-kontoen din:',
+                href: resetUrl,
+              },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'Innlogging med Google, GitHub eller Discord',
+                    paragraphs: ['Logger du inn med Google, GitHub eller Discord, endres ingenting for deg.'],
+                  },
+                  {
+                    heading: 'Kontoen din',
+                    paragraphs: ['Spillene, vennene og Premium er akkurat slik du forlot dem. Beklager avbruddet, og takk for at du spiller.'],
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            subject: 'Please set a new Boardly password',
+            title: 'Set a new password',
+            preheader: 'For security reasons we have reset the password on your Boardly account.',
+            icon: noticeIconImage('security', 'Shield'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content:
+                  'For security reasons we have reset the password on your Boardly account. Your old password no longer works, and setting a new one takes a minute.',
+              },
+              { type: 'button', label: 'Set a new password', href: resetUrl },
+              {
+                type: 'fallbackLink',
+                text: 'Button not working? Open this link and enter the email address of your Boardly account:',
+                href: resetUrl,
+              },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'Signing in with Google, GitHub or Discord',
+                    paragraphs: ['If you sign in with Google, GitHub or Discord, nothing changes for you.'],
+                  },
+                  {
+                    heading: 'Your account',
+                    paragraphs: ['Your games, friends and Premium are exactly as you left them. Sorry for the interruption, and thanks for playing.'],
+                  },
+                ],
+              },
+            ],
+          },
   })
 }
 
@@ -261,13 +488,17 @@ function securityPasswordResetEmail(username?: string | null): EmailMessage {
  * caller; this mail tells the person, in plain words, that the password was reset for
  * security reasons and how to set a new one. Company voice, replies go to support@.
  */
-export async function sendSecurityPasswordResetEmail(email: string, username?: string | null) {
+export async function sendSecurityPasswordResetEmail(
+  email: string,
+  username?: string | null,
+  language?: EmailLanguage | null
+) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = securityPasswordResetEmail(username)
+  const message = securityPasswordResetEmail(username, language)
 
   try {
     const { data, error } = await resend.emails.send({
@@ -292,39 +523,79 @@ export async function sendSecurityPasswordResetEmail(email: string, username?: s
 // masking rule lives in lib/redact.ts, which the logger uses too (#1132).
 export const maskEmailAddress = maskEmail
 
-function emailChangeNoticeEmail(newEmail: string, username?: string | null): EmailMessage {
+function emailChangeNoticeEmail(newEmail: string, username?: string | null, language?: EmailLanguage | null): EmailMessage {
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password`
-  const maskedNewEmail = maskEmailAddress(newEmail)
-  const subject = 'Your Boardly email address is being changed'
-  return singleSheetEmail({
-    subject,
-    title: subject,
-    preheader: `We received a request to change the email address on your Boardly account to ${maskedNewEmail}. The change takes effect once the new address is confirmed.`,
-    blocks: [
-      { type: 'paragraph', content: username ? `Hi ${username},` : 'Hi,' },
-      {
-        type: 'paragraph',
-        content: [
-          'We received a request to change the email address on your Boardly account to ',
-          { strong: maskedNewEmail },
-          '. The change takes effect once the new address is confirmed.',
-        ],
-      },
-      { type: 'paragraph', content: 'If this was you, there is nothing more to do.' },
-      {
-        type: 'paragraph',
-        content:
-          'If it was not you, please reset your password now, even if you usually sign in with Google, GitHub or Discord. A reset signs out every other session on your account and cancels the pending change:',
-      },
-      { type: 'button', label: 'Reset my password', href: resetUrl },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, open this link and enter this email address:",
-        href: resetUrl,
-      },
-      { type: 'paragraph', content: 'Then reply to this email and we will help you check your account.' },
-      { type: 'note', content: 'Questions? Just reply to this email.' },
-    ],
+  const masked = maskEmailAddress(newEmail)
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: noticeSignOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: 'E-postadressen på Boardly-kontoen din blir endret',
+            title: 'E-postadressen din blir endret',
+            preheader: `Vi har fått en forespørsel om å endre e-postadressen på Boardly-kontoen din til ${masked}.`,
+            icon: noticeIconImage('email-change', 'Konvolutt'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: [
+                  'Vi har fått en forespørsel om å endre e-postadressen på Boardly-kontoen din til ',
+                  { strong: masked },
+                  '. Endringen trer i kraft når den nye adressen er bekreftet.',
+                ],
+              },
+              { type: 'paragraph', content: 'Var det deg, trenger du ikke gjøre noe mer.' },
+              { type: 'button', label: 'Ikke deg? Tilbakestill passordet', href: resetUrl },
+              { type: 'fallbackLink', text: 'Virker ikke knappen? Åpne denne lenken og skriv inn denne e-postadressen:', href: resetUrl },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'Hvis det ikke var deg',
+                    paragraphs: [
+                      'Tilbakestill passordet nå, også hvis du vanligvis logger inn med Google, GitHub eller Discord. En tilbakestilling logger ut alle andre økter på kontoen din og avbryter endringen.',
+                      'Svar så på denne e-posten, så hjelper vi deg med å sjekke kontoen.',
+                    ],
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            subject: 'Your Boardly email address is being changed',
+            title: 'Your email address is being changed',
+            preheader: `We received a request to change the email address on your Boardly account to ${masked}.`,
+            icon: noticeIconImage('email-change', 'Envelope'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: [
+                  'We received a request to change the email address on your Boardly account to ',
+                  { strong: masked },
+                  '. The change takes effect once the new address is confirmed.',
+                ],
+              },
+              { type: 'paragraph', content: 'If this was you, there is nothing more to do.' },
+              { type: 'button', label: 'Not you? Reset your password', href: resetUrl },
+              { type: 'fallbackLink', text: 'Button not working? Open this link and enter this email address:', href: resetUrl },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'If it was not you',
+                    paragraphs: [
+                      'Reset your password now, even if you usually sign in with Google, GitHub or Discord. A reset signs out every other session on your account and cancels the pending change.',
+                      'Then reply to this email and we will help you check your account.',
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
   })
 }
 
@@ -336,14 +607,15 @@ function emailChangeNoticeEmail(newEmail: string, username?: string | null): Ema
 export async function sendEmailChangeNoticeEmail(
   previousEmail: string,
   newEmail: string,
-  username?: string | null
+  username?: string | null,
+  language?: EmailLanguage | null
 ) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = emailChangeNoticeEmail(newEmail, username)
+  const message = emailChangeNoticeEmail(newEmail, username, language)
 
   try {
     const { data, error } = await resend.emails.send({
@@ -362,44 +634,46 @@ export async function sendEmailChangeNoticeEmail(
   }
 }
 
-function welcomeEmail(name: string): EmailMessage {
-  const intro = "Your email has been verified successfully. You're all set to start playing!"
-  return singleSheetEmail({
-    subject: 'Welcome to Boardly! 🎲',
-    title: `Welcome, ${name}!`,
-    preheader: intro,
-    blocks: [
-      { type: 'paragraph', content: intro },
-      { type: 'heading', text: "What's next?" },
-      {
-        type: 'list',
-        items: [
-          'Create your first lobby and invite friends',
-          'Join existing games with lobby codes',
-          'Play Yahtzee in real-time',
-          'Customize your profile',
-        ],
-      },
-      { type: 'button', label: 'Start Playing', href: `${process.env.NEXTAUTH_URL}/games` },
-      {
-        type: 'note',
-        content: [
-          'Need help? Check out our ',
-          { text: 'website', href: `${process.env.NEXTAUTH_URL}` },
-          ' or reply to this email.',
-        ],
-      },
-    ],
+function welcomeEmail(name: string, language?: EmailLanguage | null): EmailMessage {
+  const gamesUrl = `${process.env.NEXTAUTH_URL}/games`
+  return composeEmail({
+    language,
+    preference: { always: 'once' },
+    closing: signOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: `Velkommen til Boardly, ${name}!`,
+            title: `Velkommen, ${name}!`,
+            preheader: 'Kontoen din er klar. Velg et spill og send lenken til vennene dine.',
+            hero: heroImage('welcome', 'Spillbrikker fra Boardly: terninger, tre på rad, en spion og memorykort'),
+            blocks: [
+              { type: 'lead', content: 'Kontoen din er klar. Velg et spill, lag et rom og send lenken til vennene dine.' },
+              { type: 'button', label: 'Begynn å spille', href: gamesUrl },
+              { type: 'note', content: 'Spørsmål? Bare svar på denne e-posten.' },
+            ],
+          }
+        : {
+            subject: `Welcome to Boardly, ${name}!`,
+            title: `Welcome, ${name}!`,
+            preheader: 'Your account is ready. Pick a game and send the link to your friends.',
+            hero: heroImage('welcome', 'Boardly game tiles: dice, tic-tac-toe, a spy and memory cards'),
+            blocks: [
+              { type: 'lead', content: 'Your account is ready. Pick a game, create a room and send the link to your friends.' },
+              { type: 'button', label: 'Start playing', href: gamesUrl },
+              { type: 'note', content: 'Questions? Just reply to this email.' },
+            ],
+          },
   })
 }
 
-export async function sendWelcomeEmail(email: string, name: string) {
+export async function sendWelcomeEmail(email: string, name: string, language?: EmailLanguage | null) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = welcomeEmail(name)
+  const message = welcomeEmail(name, language)
 
   try {
     const { error } = await resend.emails.send({
@@ -418,57 +692,128 @@ export async function sendWelcomeEmail(email: string, name: string) {
   }
 }
 
+/** A game's name as the site shows it in each mail language; __tests__/lib/email-art.test.ts checks it against the locales. */
+export const EMAIL_GAME_NAMES: Record<string, Localized<string>> = {
+  yahtzee: { en: 'Yahtzee', nb: 'Yatzy' },
+  guess_the_spy: { en: 'Guess the Spy', nb: 'Gjett spionen' },
+  tic_tac_toe: { en: 'Tic-Tac-Toe', nb: 'Tre på rad' },
+  memory: { en: 'Memory', nb: 'Hukommelse' },
+  connect_four: { en: 'Connect Four', nb: 'Fire på rad' },
+  alias: { en: 'Alias', nb: 'Alias-spill' },
+  liars_party: { en: "Liar's Party", nb: 'Løgnerfest' },
+  rock_paper_scissors: { en: 'Rock Paper Scissors', nb: 'Stein, saks, papir' },
+  sketch_and_guess: { en: 'Sketch & Guess', nb: 'Tegn og gjett' },
+  checkers: { en: 'Checkers', nb: 'Dam' },
+  ludo: { en: 'Ludo', nb: 'Ludo-spill' },
+  fake_artist: { en: 'Fake Artist', nb: 'Falsk kunstner' },
+  telephone_doodle: { en: 'Telephone Doodle', nb: 'Tegnet telefon' },
+}
+
+function gameName(gameType: string, lang: EmailLanguage): string {
+  return Object.prototype.hasOwnProperty.call(EMAIL_GAME_NAMES, gameType) ? EMAIL_GAME_NAMES[gameType][lang] : gameType.replace(/_/g, ' ')
+}
+
+export type GameInviteOptions = {
+  /** The signed one-click link that turns game invite mails off for this recipient. */
+  unsubscribeUrl?: string | null
+  language?: EmailLanguage | null
+}
+
 function gameInviteEmail(
   recipientName: string,
   senderName: string,
   lobbyName: string,
   gameType: string,
-  inviteUrl: string
+  inviteUrl: string,
+  options: GameInviteOptions = {}
 ): EmailMessage {
-  const game = gameType.replace(/_/g, ' ')
-  const subject = `${senderName} invited you to play ${game} on Boardly`
-  return singleSheetEmail({
-    subject,
-    title: subject,
-    preheader: `${senderName} has invited you to join a game of ${game}.`,
-    blocks: [
-      { type: 'paragraph', content: `Hey ${recipientName}!` },
-      { type: 'paragraph', content: [{ strong: senderName }, ' has invited you to join a game of ', { strong: game }, '.'] },
-      ...(lobbyName ? [{ type: 'paragraph' as const, content: ['Lobby: ', { strong: lobbyName }] }] : []),
-      { type: 'button', label: 'Join Game', href: inviteUrl },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, copy and paste this link into your browser:",
-        href: inviteUrl,
-      },
-      {
-        type: 'note',
-        content: `You received this email because ${senderName} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.`,
-      },
-    ],
+  const stop: Localized<string> = { en: 'Stop game invite emails', nb: 'Slå av e-post om spillinvitasjoner' }
+  const why: Localized<string> = {
+    en: `You get this because you and ${senderName} are friends on Boardly.`,
+    nb: `Du får denne fordi du og ${senderName} er venner på Boardly.`,
+  }
+  return composeEmail({
+    language: options.language,
+    preference: {
+      optional: (lang) =>
+        options.unsubscribeUrl ? [`${why[lang]} `, { text: stop[lang], href: options.unsubscribeUrl }] : why[lang],
+    },
+    closing: signOff,
+    copy: (lang) => {
+      const game = gameName(gameType, lang)
+      return lang === 'nb'
+        ? {
+            subject: `${senderName} inviterte deg til å spille ${game}`,
+            title: `${senderName} inviterte deg til å spille ${game}`,
+            preheader: lobbyName ? `Lobby: ${lobbyName}. Bli med via knappen nedenfor.` : 'Bli med via knappen nedenfor.',
+            hero: inviteHeroImage(gameType, `Spillbrikken for ${game} og tre spillere`),
+            blocks: [
+              { type: 'paragraph', content: `Hei ${recipientName}!` },
+              {
+                type: 'lead',
+                content: lobbyName
+                  ? ['Lobby: ', { strong: lobbyName }, '. Bli med via knappen nedenfor.']
+                  : 'Bli med via knappen nedenfor.',
+              },
+              { type: 'button', label: 'Bli med', href: inviteUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.nb, href: inviteUrl },
+            ],
+          }
+        : {
+            subject: `${senderName} invited you to play ${game} on Boardly`,
+            title: `${senderName} invited you to play ${game}`,
+            preheader: lobbyName ? `Lobby: ${lobbyName}. Join with the button below.` : 'Join with the button below.',
+            hero: inviteHeroImage(gameType, `The ${game} game tile and three players`),
+            blocks: [
+              { type: 'paragraph', content: `Hey ${recipientName}!` },
+              {
+                type: 'lead',
+                content: lobbyName ? ['Lobby: ', { strong: lobbyName }, '. Join with the button below.'] : 'Join with the button below.',
+              },
+              { type: 'button', label: 'Join the game', href: inviteUrl },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.en, href: inviteUrl },
+            ],
+          }
+    },
   })
 }
 
+export type GameInviteRecipient = {
+  /** Signs the one-click unsubscribe link; without it the mail carries only the settings link. */
+  userId?: string | null
+  language?: EmailLanguage | null
+}
+
+/**
+ * The one mail a user can turn off (profile → settings → notifications, or the link in its
+ * footer). The caller checks the preference before sending; this adds the signed unsubscribe
+ * link and the RFC 8058 headers that let a mail client offer its own one-click unsubscribe.
+ */
 export async function sendGameInviteEmail(
   recipientEmail: string,
   recipientName: string,
   senderName: string,
   lobbyName: string,
   gameType: string,
-  inviteUrl: string
+  inviteUrl: string,
+  recipient: GameInviteRecipient = {}
 ) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = gameInviteEmail(recipientName, senderName, lobbyName, gameType, inviteUrl)
-
   try {
+    const unsubscribeUrl = recipient.userId ? notificationUnsubscribeUrl(recipient.userId, 'gameInvites') : null
+    const message = gameInviteEmail(recipientName, senderName, lobbyName, gameType, inviteUrl, {
+      unsubscribeUrl,
+      language: recipient.language,
+    })
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: recipientEmail,
       ...message,
+      ...(unsubscribeUrl ? { headers: unsubscribeHeaders(unsubscribeUrl) } : {}),
     })
     if (error) {
       throw new Error((error as { message?: string }).message || 'Unknown error')
@@ -481,50 +826,99 @@ export async function sendGameInviteEmail(
   }
 }
 
-function accountDeletionEmail(token: string, username: string): EmailMessage {
+function accountDeletionEmail(token: string, username: string, language?: EmailLanguage | null): EmailMessage {
   const deleteUrl = `${process.env.NEXTAUTH_URL}/auth/delete-account?token=${token}`
-  const intro = 'We received a request to delete your Boardly account.'
-  return singleSheetEmail({
-    subject: 'Confirm Account Deletion - Boardly',
-    title: 'Confirm Account Deletion',
-    preheader: intro,
-    blocks: [
-      { type: 'paragraph', content: `Hi ${username},` },
-      { type: 'paragraph', content: intro },
-      { type: 'callout', tone: 'danger', text: 'This action is permanent and cannot be undone!' },
-      { type: 'paragraph', content: [{ strong: 'What will be deleted:' }] },
-      {
-        type: 'list',
-        items: [
-          'Your profile and all personal information',
-          'All game history and statistics',
-          'Friend connections and requests',
-          'Any unlocked achievements',
-        ],
-      },
-      { type: 'paragraph', content: "If you're sure you want to proceed, click the button below:" },
-      { type: 'button', label: 'Confirm Account Deletion', href: deleteUrl, tone: 'danger' },
-      {
-        type: 'fallbackLink',
-        text: "If the button doesn't work, copy and paste this link into your browser:",
-        href: deleteUrl,
-      },
-      {
-        type: 'note',
-        content:
-          "This link will expire in 1 hour. If you didn't request account deletion, please ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.",
-      },
-    ],
+  return composeEmail({
+    language,
+    preference: { always: 'security' },
+    closing: signOff,
+    copy: (lang) =>
+      lang === 'nb'
+        ? {
+            subject: 'Bekreft sletting av Boardly-kontoen din',
+            title: 'Bekreft sletting av kontoen',
+            preheader: 'Vi har fått en forespørsel om å slette Boardly-kontoen din.',
+            icon: noticeIconImage('deletion', 'Søppelbøtte'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: 'Vi har fått en forespørsel om å slette Boardly-kontoen din. Det er permanent og kan ikke angres.',
+              },
+              { type: 'button', label: 'Slett kontoen min', href: deleteUrl, tone: 'danger' },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.nb, href: deleteUrl },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'Dette slettes',
+                    items: [
+                      'Profilen din og alle personopplysninger',
+                      'All spillhistorikk og statistikk',
+                      'Venner og venneforespørsler',
+                      'Prestasjoner du har låst opp',
+                    ],
+                  },
+                  {
+                    heading: 'Har du ikke bedt om dette?',
+                    paragraphs: [
+                      'Lenken virker i 1 time. Har du ikke bedt om å slette kontoen, kan du se bort fra denne e-posten, så forblir kontoen aktiv. Vurder å endre passordet hvis du er bekymret for sikkerheten til kontoen.',
+                    ],
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            subject: 'Confirm deleting your Boardly account',
+            title: 'Confirm deleting your account',
+            preheader: 'We received a request to delete your Boardly account.',
+            icon: noticeIconImage('deletion', 'Bin'),
+            blocks: [
+              { type: 'paragraph', content: greeting(lang, username) },
+              {
+                type: 'lead',
+                content: 'We received a request to delete your Boardly account. This is permanent and cannot be undone.',
+              },
+              { type: 'button', label: 'Delete my account', href: deleteUrl, tone: 'danger' },
+              { type: 'fallbackLink', text: BUTTON_FALLBACK.en, href: deleteUrl },
+              {
+                type: 'details',
+                sections: [
+                  {
+                    heading: 'What will be deleted',
+                    items: [
+                      'Your profile and all personal information',
+                      'All game history and statistics',
+                      'Friend connections and requests',
+                      'Any unlocked achievements',
+                    ],
+                  },
+                  {
+                    heading: "Didn't ask for this?",
+                    paragraphs: [
+                      "The link expires in 1 hour. If you didn't request account deletion, ignore this email and your account will remain active. Consider changing your password if you're concerned about account security.",
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
   })
 }
 
-export async function sendAccountDeletionEmail(email: string, token: string, username: string) {
+export async function sendAccountDeletionEmail(
+  email: string,
+  token: string,
+  username: string,
+  language?: EmailLanguage | null
+) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
-  const message = accountDeletionEmail(token, username)
+  const message = accountDeletionEmail(token, username, language)
 
   try {
     const { error } = await resend.emails.send({
@@ -544,6 +938,8 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
 }
 
 export type PremiumConfirmationDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   /** Resend idempotency key; one per checkout session so a retried send cannot double-deliver. */
   idempotencyKey?: string
   username?: string | null
@@ -566,12 +962,12 @@ export type PremiumConfirmationDetails = {
   termsVersion: string
 }
 
-type ConfirmationSection = { heading: string; paragraphs: string[] }
-
 type ConfirmationCopy = {
   greeting: string
   intro: string
-  sections: ConfirmationSection[]
+  /** The figures the intro rests on, shown as a small table above the action. */
+  facts?: { label: string; value: string }[]
+  sections: (EmailDetailSection & { paragraphs: string[] })[]
 }
 
 // ICU puts a narrow no-break space before "PM" and between a number and "kr".
@@ -625,6 +1021,11 @@ function englishConfirmationCopy(d: PremiumConfirmationDetails, links: Confirmat
     greeting: d.username ? `Hi ${d.username},` : 'Hi,',
     intro:
       'Thanks for subscribing to Boardly Premium. This email confirms your purchase and repeats the information you were given before you paid, so please keep it.',
+    facts: [
+      { label: 'Plan', value: yearly ? 'Premium, yearly' : 'Premium, monthly' },
+      { label: 'Charged', value: amount },
+      ...(d.renewsAt ? [{ label: 'Next renewal', value: formatDay(d.renewsAt, locale) }] : []),
+    ],
     sections: [
       {
         heading: 'What you bought',
@@ -690,6 +1091,11 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
     greeting: d.username ? `Hei ${d.username},` : 'Hei,',
     intro:
       'Takk for at du abonnerer på Boardly Premium. Denne e-posten bekrefter kjøpet og gjentar opplysningene du fikk før du betalte, så ta vare på den.',
+    facts: [
+      { label: 'Abonnement', value: yearly ? 'Premium, årsabonnement' : 'Premium, månedsabonnement' },
+      { label: 'Belastet', value: amount },
+      ...(d.renewsAt ? [{ label: 'Neste fornyelse', value: formatDay(d.renewsAt, locale) }] : []),
+    ],
     sections: [
       {
         heading: 'Hva du kjøpte',
@@ -736,43 +1142,50 @@ function norwegianConfirmationCopy(d: PremiumConfirmationDetails, links: Confirm
   }
 }
 
-const NOTICE_CLOSING = [
-  `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
-  `Spørsmål? Svar på denne e-posten eller skriv til ${SUPPORT_EMAIL}.`,
-]
-
-function copyBlocks(copy: ConfirmationCopy): EmailBlock[] {
+function noticeBlocks(copy: ConfirmationCopy, action: NoticeAction): EmailBlock[] {
   return [
     { type: 'paragraph', content: copy.greeting },
-    { type: 'paragraph', content: copy.intro },
-    ...copy.sections.flatMap((section): EmailBlock[] => [
-      { type: 'heading', text: section.heading },
-      ...section.paragraphs.map((text): EmailBlock => ({ type: 'paragraph', content: text })),
-    ]),
+    { type: 'lead', content: copy.intro },
+    ...(copy.facts?.length ? [{ type: 'facts' as const, rows: copy.facts }] : []),
+    { type: 'button', ...action },
+    { type: 'details', sections: copy.sections },
   ]
 }
 
+type NoticeAction = { label: string; href: string; tone?: 'danger' | 'quiet' }
+
+/**
+ * A notice that carries obligations: the summary and the one action first, then every fact
+ * the notice has to state, in smaller type below.
+ */
 function noticeEmail(notice: {
-  titles: [english: string, norwegian: string]
-  english: ConfirmationCopy
-  norwegian: ConfirmationCopy
+  language?: EmailLanguage | null
+  titles: Localized<string>
+  copy: Localized<ConfirmationCopy>
+  action: Localized<NoticeAction>
+  art: (lang: EmailLanguage) => Pick<SheetCopy, 'hero' | 'icon'>
+  always: AlwaysSentReason
   links: Readonly<Record<string, string>>
-  footer: EmailLayout['footer']
+  closing: (languages: EmailLanguage[]) => EmailLayout['footer']
 }): EmailMessage {
-  const [englishTitle, norwegianTitle] = notice.titles
-  return {
-    subject: `${englishTitle} / ${norwegianTitle}`,
-    ...renderEmail({
-      preheader: notice.english.intro,
-      sheets: [
-        { lang: 'en', title: englishTitle, blocks: copyBlocks(notice.english) },
-        { lang: 'nb', title: norwegianTitle, blocks: copyBlocks(notice.norwegian) },
-      ],
-      footer: notice.footer,
-      links: [...Object.values(notice.links), LINK_SUPPORT_URL],
+  return composeEmail({
+    language: notice.language,
+    preference: { always: notice.always },
+    closing: notice.closing,
+    links: [...Object.values(notice.links), LINK_SUPPORT_URL],
+    copy: (lang) => ({
+      subject: notice.titles[lang],
+      title: notice.titles[lang],
+      preheader: notice.copy[lang].intro,
+      blocks: noticeBlocks(notice.copy[lang], notice.action[lang]),
+      ...notice.art(lang),
     }),
-  }
+  })
 }
+
+const teamClosing = (languages: EmailLanguage[]): EmailLayout['footer'] => [
+  [...languages.map((lang) => NOTICE_CLOSING[lang]), TEAM_SIGNATURE],
+]
 
 function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMessage {
   const base = process.env.NEXTAUTH_URL ?? ''
@@ -782,12 +1195,18 @@ function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMes
     terms: `${base}/terms`,
   }
   const seller = sellerFooterText()
+  const manage = `${base}/profile?tab=premium`
   return noticeEmail({
-    titles: ['Your Boardly Premium confirmation', 'Bekreftelse på Boardly Premium'],
-    english: englishConfirmationCopy(details, links),
-    norwegian: norwegianConfirmationCopy(details, links),
+    language: details.language,
+    titles: { en: 'Your Boardly Premium confirmation', nb: 'Bekreftelse på Boardly Premium' },
+    copy: { en: englishConfirmationCopy(details, links), nb: norwegianConfirmationCopy(details, links) },
+    action: { en: { label: 'Open Premium', href: manage }, nb: { label: 'Åpne Premium', href: manage } },
+    art: (lang) => ({
+      hero: heroImage('premium', lang === 'nb' ? 'Boardly-merket med en krone' : 'The Boardly mark wearing a crown'),
+    }),
+    always: 'payment',
     links,
-    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE], seller ? [seller] : []],
+    closing: (languages) => [...teamClosing(languages), seller ? [seller] : []],
   })
 }
 
@@ -831,6 +1250,8 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
 }
 
 export type SubscriptionNoticeDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   /** Resend idempotency key; one per notice, so a retried send cannot double-deliver. */
   idempotencyKey?: string
   username?: string | null
@@ -859,6 +1280,13 @@ function englishNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLink
     greeting: d.username ? `Hi ${d.username},` : 'Hi,',
     intro:
       'Your Boardly Premium subscription is still running. While it runs, we send you this reminder at least every six months, so you always know what you are paying for and how to stop it.',
+    facts: [
+      { label: 'Plan', value: yearly ? 'Premium, yearly' : 'Premium, monthly' },
+      ...(d.unitAmount !== null && d.currency
+        ? [{ label: 'Price', value: `${formatChargedAmount(d.unitAmount, d.currency, locale)} per ${period}` }]
+        : []),
+      ...(d.renewsAt ? [{ label: 'Next renewal', value: formatDay(d.renewsAt, locale) }] : []),
+    ],
     sections: [
       {
         heading: 'Your subscription',
@@ -895,6 +1323,13 @@ function norwegianNoticeCopy(d: SubscriptionNoticeDetails, links: ConfirmationLi
     greeting: d.username ? `Hei ${d.username},` : 'Hei,',
     intro:
       'Boardly Premium-abonnementet ditt løper fortsatt. Så lenge det løper, sender vi deg denne påminnelsen minst hver sjette måned, slik at du alltid vet hva du betaler for, og hvordan du stopper det.',
+    facts: [
+      { label: 'Abonnement', value: yearly ? 'Premium, årsabonnement' : 'Premium, månedsabonnement' },
+      ...(d.unitAmount !== null && d.currency
+        ? [{ label: 'Pris', value: `${formatChargedAmount(d.unitAmount, d.currency, locale)} per ${yearly ? 'år' : 'måned'}` }]
+        : []),
+      ...(d.renewsAt ? [{ label: 'Neste fornyelse', value: formatDay(d.renewsAt, locale) }] : []),
+    ],
     sections: [
       {
         heading: 'Abonnementet ditt',
@@ -923,14 +1358,20 @@ function subscriptionNoticeEmail(details: SubscriptionNoticeDetails): EmailMessa
     terms: `${base}/terms`,
   }
   return noticeEmail({
-    titles: [
-      'Your Boardly Premium subscription is still running',
-      'Boardly Premium-abonnementet ditt løper fortsatt',
-    ],
-    english: englishNoticeCopy(details, links),
-    norwegian: norwegianNoticeCopy(details, links),
+    language: details.language,
+    titles: {
+      en: 'Your Boardly Premium subscription is still running',
+      nb: 'Boardly Premium-abonnementet ditt løper fortsatt',
+    },
+    copy: { en: englishNoticeCopy(details, links), nb: norwegianNoticeCopy(details, links) },
+    action: {
+      en: { label: 'Manage subscription', href: links.profile },
+      nb: { label: 'Administrer abonnementet', href: links.profile },
+    },
+    art: (lang) => ({ icon: noticeIconImage('subscription', lang === 'nb' ? 'Krone' : 'Crown') }),
+    always: 'payment',
     links,
-    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+    closing: teamClosing,
   })
 }
 
@@ -978,6 +1419,8 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
 }
 
 export type InactiveAccountWarningDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   /** Resend idempotency key; one per warning, so a retried send cannot double-deliver. */
   idempotencyKey?: string
   username?: string | null
@@ -992,6 +1435,7 @@ function englishInactiveWarningCopy(d: InactiveAccountWarningDetails, links: Ina
   return {
     greeting: d.username ? `Hi ${d.username},` : 'Hi,',
     intro: `Nobody has signed in to your Boardly account for almost two years. We do not keep accounts that are no longer used, so we will delete yours on ${day} or shortly after, unless you sign in before then.`,
+    facts: [{ label: 'Sign in before', value: day }],
     sections: [
       {
         heading: 'Keeping your account',
@@ -1018,6 +1462,7 @@ function norwegianInactiveWarningCopy(d: InactiveAccountWarningDetails, links: I
   return {
     greeting: d.username ? `Hei ${d.username},` : 'Hei,',
     intro: `Ingen har logget inn på Boardly-kontoen din på nesten to år. Vi tar ikke vare på kontoer som ikke lenger brukes, så vi sletter din ${day} eller kort tid etter, hvis du ikke logger inn før det.`,
+    facts: [{ label: 'Logg inn før', value: day }],
     sections: [
       {
         heading: 'Slik beholder du kontoen',
@@ -1047,11 +1492,17 @@ function inactiveAccountWarningEmail(details: InactiveAccountWarningDetails): Em
     privacy: `${base}/privacy`,
   }
   return noticeEmail({
-    titles: ['Your Boardly account will be deleted', 'Boardly-kontoen din blir slettet'],
-    english: englishInactiveWarningCopy(details, links),
-    norwegian: norwegianInactiveWarningCopy(details, links),
+    language: details.language,
+    titles: { en: 'Your Boardly account will be deleted', nb: 'Boardly-kontoen din blir slettet' },
+    copy: { en: englishInactiveWarningCopy(details, links), nb: norwegianInactiveWarningCopy(details, links) },
+    action: {
+      en: { label: 'Sign in to keep it', href: links.login },
+      nb: { label: 'Logg inn og behold den', href: links.login },
+    },
+    art: (lang) => ({ icon: noticeIconImage('inactive', lang === 'nb' ? 'Klokke' : 'Clock') }),
+    always: 'legal',
     links,
-    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+    closing: teamClosing,
   })
 }
 
@@ -1089,6 +1540,8 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
 }
 
 export type TermsChangeNoticeDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   idempotencyKey?: string
   username?: string | null
   appliesFrom: Date
@@ -1101,6 +1554,9 @@ function englishTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChangeN
   return {
     greeting: d.username ? `Hi ${d.username},` : 'Hi,',
     intro: `We have updated the Boardly Terms of Service. One thing changes, and it applies from ${day}.`,
+    facts: [
+      { label: 'Applies from', value: day },
+    ],
     sections: [
       {
         heading: 'What changes',
@@ -1131,6 +1587,9 @@ function norwegianTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChang
   return {
     greeting: d.username ? `Hei ${d.username},` : 'Hei,',
     intro: `Vi har oppdatert Boardlys vilkår for bruk. Én ting endres, og den gjelder fra ${day}.`,
+    facts: [
+      { label: 'Gjelder fra', value: day },
+    ],
     sections: [
       {
         heading: 'Hva som endres',
@@ -1163,11 +1622,17 @@ function termsChangeNoticeEmail(details: TermsChangeNoticeDetails): EmailMessage
     profile: `${BOARDLY_URL}/profile`,
   }
   return noticeEmail({
-    titles: ['An update to the Boardly Terms of Service', 'Boardlys vilkår er oppdatert'],
-    english: englishTermsChangeCopy(details, links),
-    norwegian: norwegianTermsChangeCopy(details, links),
+    language: details.language,
+    titles: { en: 'An update to the Boardly Terms of Service', nb: 'Boardlys vilkår er oppdatert' },
+    copy: { en: englishTermsChangeCopy(details, links), nb: norwegianTermsChangeCopy(details, links) },
+    action: {
+      en: { label: 'Read the Terms', href: links.terms, tone: 'quiet' },
+      nb: { label: 'Les vilkårene', href: links.terms, tone: 'quiet' },
+    },
+    art: (lang) => ({ icon: noticeIconImage('terms', lang === 'nb' ? 'Dokument' : 'Document') }),
+    always: 'legal',
     links,
-    footer: [[...NOTICE_CLOSING, TEAM_SIGNATURE]],
+    closing: teamClosing,
   })
 }
 
@@ -1198,6 +1663,8 @@ export async function sendTermsChangeNoticeEmail(email: string, details: TermsCh
 }
 
 export type SuspensionNoticeDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   /** Resend idempotency key, so a retried request cannot deliver the same notice twice. */
   idempotencyKey?: string
   username?: string | null
@@ -1225,6 +1692,7 @@ function englishSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNoti
   return {
     greeting: d.username ? `Hi ${d.username},` : 'Hi,',
     intro: 'We have suspended your Boardly account. While it is suspended, you cannot sign in to it.',
+    facts: [{ label: 'Suspended until', value: d.expiresAt ? formatMoment(d.expiresAt, 'en-US') : 'Further notice' }],
     sections: [
       { heading: 'Reason', paragraphs: reasonParagraphs(d.reason) },
       {
@@ -1249,6 +1717,7 @@ function norwegianSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNo
   return {
     greeting: d.username ? `Hei ${d.username},` : 'Hei,',
     intro: 'Vi har suspendert Boardly-kontoen din. Så lenge den er suspendert, kan du ikke logge inn på den.',
+    facts: [{ label: 'Suspendert til', value: d.expiresAt ? formatMoment(d.expiresAt, 'nb-NO') : 'Inntil videre' }],
     sections: [
       { heading: 'Begrunnelse', paragraphs: reasonParagraphs(d.reason) },
       {
@@ -1272,11 +1741,17 @@ function norwegianSuspensionCopy(d: SuspensionNoticeDetails, links: SuspensionNo
 function suspensionNoticeEmail(details: SuspensionNoticeDetails): EmailMessage {
   const links: SuspensionNoticeLinks = { appeal: SUSPENSION_APPEAL_URL }
   return noticeEmail({
-    titles: ['Your Boardly account has been suspended', 'Boardly-kontoen din er suspendert'],
-    english: englishSuspensionCopy(details, links),
-    norwegian: norwegianSuspensionCopy(details, links),
+    language: details.language,
+    titles: { en: 'Your Boardly account has been suspended', nb: 'Boardly-kontoen din er suspendert' },
+    copy: { en: englishSuspensionCopy(details, links), nb: norwegianSuspensionCopy(details, links) },
+    action: {
+      en: { label: 'Appeal the suspension', href: links.appeal, tone: 'quiet' },
+      nb: { label: 'Klag på suspensjonen', href: links.appeal, tone: 'quiet' },
+    },
+    art: (lang) => ({ icon: noticeIconImage('suspension', lang === 'nb' ? 'Flagg' : 'Flag') }),
+    always: 'legal',
     links,
-    footer: [NOTICE_CLOSING, [COMPANY_SIGN_OFF]],
+    closing: noticeSignOff,
   })
 }
 
@@ -1317,6 +1792,8 @@ export async function sendSuspensionNoticeEmail(email: string, details: Suspensi
 const LINKABLE_PROVIDER_NAMES = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
 export type ProviderLinkedNoticeDetails = {
+  /** The one language to write in; English then Norwegian when unknown. */
+  language?: EmailLanguage | null
   username?: string | null
   provider: keyof typeof LINKABLE_PROVIDER_NAMES
   linkedAt: Date
@@ -1370,14 +1847,20 @@ function providerLinkedNoticeEmail(details: ProviderLinkedNoticeDetails): EmailM
   }
   const provider = LINKABLE_PROVIDER_NAMES[details.provider]
   return noticeEmail({
-    titles: [
-      `A ${provider} account was linked to your Boardly account`,
-      `En ${provider}-konto ble koblet til Boardly-kontoen din`,
-    ],
-    english: englishProviderLinkedCopy(details, links),
-    norwegian: norwegianProviderLinkedCopy(details, links),
+    language: details.language,
+    titles: {
+      en: `A ${provider} account was linked to your Boardly account`,
+      nb: `En ${provider}-konto ble koblet til Boardly-kontoen din`,
+    },
+    copy: { en: englishProviderLinkedCopy(details, links), nb: norwegianProviderLinkedCopy(details, links) },
+    action: {
+      en: { label: 'Check connected accounts', href: links.profile, tone: 'quiet' },
+      nb: { label: 'Se tilkoblede kontoer', href: links.profile, tone: 'quiet' },
+    },
+    art: (lang) => ({ icon: noticeIconImage('provider', lang === 'nb' ? 'Lenke' : 'Link') }),
+    always: 'security',
     links,
-    footer: [NOTICE_CLOSING, [COMPANY_SIGN_OFF]],
+    closing: noticeSignOff,
   })
 }
 

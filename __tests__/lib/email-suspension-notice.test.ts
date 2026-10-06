@@ -124,7 +124,7 @@ describe('sendSuspensionNoticeEmail (#1231)', () => {
     const { mail } = await send({ reason: 'First line\n\n<script>alert(1)</script> & more' })
 
     expect(mail.html).not.toContain('<script>')
-    expect(mail.html).toContain('<p>First line</p><p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; more</p>')
+    expect(mail.html).toMatch(/<p [^>]*>First line<\/p><p [^>]*>&lt;script&gt;alert\(1\)&lt;\/script&gt; &amp; more<\/p>/)
     expect(mail.text).toContain('First line\n<script>alert(1)</script> & more')
   })
 

@@ -161,7 +161,8 @@ describe('POST /api/auth/resend-verification', () => {
     expect(mockSendVerificationEmail).toHaveBeenCalledWith(
       'pending@example.com',
       'mock-verification-token',
-      'pending-user'
+      'pending-user',
+      undefined
     )
   })
 
@@ -239,7 +240,8 @@ describe('POST /api/auth/resend-verification', () => {
     expect(mockSendVerificationEmail).toHaveBeenCalledWith(
       'new@example.com',
       'mock-verification-token',
-      'player-four'
+      'player-four',
+      undefined
     )
   })
 

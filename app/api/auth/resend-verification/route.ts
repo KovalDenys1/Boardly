@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { issueVerificationToken } from '@/lib/auth-tokens'
 import { apiLogger } from '@/lib/logger'
@@ -114,7 +115,12 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        await sendVerificationEmail(verificationTarget, token, user.username || 'User')
+        await sendVerificationEmail(
+          verificationTarget,
+          token,
+          user.username || 'User',
+          emailLanguageFromRequest(request)
+        )
 
         log.info('Verification email resent', {
           userId: user.id,

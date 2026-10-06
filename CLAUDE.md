@@ -452,15 +452,32 @@ in Resend and production sends from `noreply@boardly.online`. `RESEND_API_KEY` l
 forwarding for `support@` exists. **Never send a Boardly user email from his personal or
 Comono mailbox.**
 
-**Every mail is drawn by `lib/email-layout.ts` (#1293).** A template in `lib/email.ts` describes
-its content as blocks and gets the HTML part and the text part back; never write mail HTML in a
-template. `npx tsx scripts/preview-emails.ts` renders all of them with sample data into
-`tmp/email-preview/`, and `--send-samples` mails each one to `support@boardly.online` only. A new
-mail needs an entry in `emailTemplates` and in `scripts/email-samples.ts`, which
-`__tests__/lib/email-layout.test.ts` checks. The one image is `public/email/logo.png`
-(`node scripts/generate-email-logo.mjs`); a mail loads nothing from any other host, and
-`public/email/` skips the proxy because its `Cross-Origin-Resource-Policy: same-site` would stop
-a mail client from showing the image.
+**Every mail is drawn by `lib/email-layout.ts` (#1293, #1298).** A template in `lib/email.ts`
+describes its content as blocks and gets the HTML part and the text part back; never write mail
+HTML in a template. A friendly mail is a headline, a sentence or two, a button and one line of fine
+print; a notice with obligations leads with a summary, a few facts and one action, and keeps every
+sentence it must state below in `details`.
+
+- **Pictures.** Every picture is in `public/email/`, in a light and a dark version, and
+  `lib/email-art.ts` names each one with its size and alt text. `npx tsx scripts/generate-email-art.tsx`
+  draws them all from `GameGlyph`, `Icon` and the B tile inside the live home page. A mail loads
+  nothing from any other host. `public/email/` skips the proxy, because its
+  `Cross-Origin-Resource-Policy: same-site` would stop a mail client from showing the image.
+- **Language.** The site language lives only in the browser, so a mail sent while answering a request
+  takes `emailLanguageFromRequest` (Accept-Language). Norwegian tags get Norwegian, anything else
+  English. A mail sent from a cron, a webhook or the Control Panel has no language to go on and shows
+  English, then Norwegian.
+- **Footer.** Every footer links to `/profile?tab=settings#notifications`. A mail nobody can turn
+  off says why it is always sent. Only the game invite can be turned off: it carries a signed
+  unsubscribe link (`lib/unsubscribe-token.ts`) and the RFC 8058 `List-Unsubscribe` headers, and the
+  invite route checks the preference first.
+- **Preview.** `npx tsx scripts/preview-emails.ts` renders every mail into `tmp/email-preview/`.
+  `--screenshots <dir>` photographs each one at 375 and 600 px in both themes.
+  `--send-samples <address>` mails each one to that address only, and there is no default: send
+  samples to Denys's Gmail, never to support@, whose forwarder (#1121) turns the HTML into an
+  attachment.
+- **New mail.** It needs an entry in `emailTemplates` and in `scripts/email-samples.ts`, which
+  `__tests__/lib/email-layout.test.ts` checks.
 
 ## Boardly and the Control Panel are one database
 
