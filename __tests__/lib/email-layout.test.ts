@@ -5,10 +5,10 @@
  * what was handed over.
  */
 
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, readdirSync } from 'fs'
 import path from 'path'
 import { EMAIL_LOGO, escapeHtml, renderEmail, type EmailContent, type EmailLayout } from '@/lib/email-layout'
-import { EMAIL_ART_BASE, EMAIL_ART_SCALE, EMAIL_HERO_SIZE, EMAIL_ICON_SIZE, EMAIL_LOGO_SIZE, allEmailArtFiles } from '@/lib/email-art'
+import { EMAIL_ART_BASE, EMAIL_ART_SCALE, EMAIL_HERO_SIZE, EMAIL_LOGO_SIZE, allEmailArtFiles } from '@/lib/email-art'
 import { NOTIFICATION_SETTINGS_SECTION_ID } from '@/lib/public-profile'
 import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import { emailSamples } from '../../scripts/email-samples'
@@ -120,12 +120,11 @@ describe('the shared email layout (#1293)', () => {
       expect(png.subarray(1, 4).toString('latin1')).toBe('PNG')
       const [size, scale] = name.startsWith('logo')
         ? [EMAIL_LOGO_SIZE, EMAIL_ART_SCALE.logo]
-        : name.startsWith('hero')
-          ? [EMAIL_HERO_SIZE, EMAIL_ART_SCALE.hero]
-          : [EMAIL_ICON_SIZE, EMAIL_ART_SCALE.icon]
+        : [EMAIL_HERO_SIZE, EMAIL_ART_SCALE.hero]
       expect([name, png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([name, size.width * scale, size.height * scale])
       expect(png.length).toBeLessThan(40 * 1024)
     }
+    expect(readdirSync(path.join(process.cwd(), 'public', 'email')).sort()).toEqual([...allEmailArtFiles()].sort())
   })
 
   it('shows the light logo to every client and the dark one only in dark mode (#1298)', () => {
@@ -360,8 +359,12 @@ describe('every mail lib/email sends (#1293)', () => {
     expect([...hosts].filter((host) => !allowed.includes(host))).toEqual([])
   })
 
-  it.each(SENDERS)('%s gives every image alt text and fixed dimensions, and a picture beside the logo', async (name) => {
+  it.each(SENDERS)('%s gives every image alt text and fixed dimensions, and opens with a full-width hero (#1301)', async (name) => {
     const mail = await send(name)
+    const heroes = [...mail.html.matchAll(/<img src="([^"]*\/hero-[^"]*-light\.png)" width="(\d+)" height="(\d+)"/g)]
+    expect(heroes).toHaveLength(1)
+    expect([Number(heroes[0][2]), Number(heroes[0][3])]).toEqual([EMAIL_HERO_SIZE.width, EMAIL_HERO_SIZE.height])
+    expect(mail.html).not.toContain('/icon-')
 
     const images = mail.html.match(/<img\b[^>]*>/g) ?? []
     expect(images.length).toBeGreaterThanOrEqual(4)

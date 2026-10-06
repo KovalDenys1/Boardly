@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { heroImage, inviteHeroImage, noticeIconImage, type EmailImage } from './email-art'
+import { heroImage, inviteHeroImage, type EmailImage } from './email-art'
 import {
   renderEmail,
   type EmailBlock,
@@ -131,7 +131,6 @@ type SheetCopy = {
   preheader: string
   blocks: EmailBlock[]
   hero?: EmailImage
-  icon?: EmailImage
 }
 
 function composeEmail(mail: {
@@ -153,7 +152,6 @@ function composeEmail(mail: {
         title: copy.title,
         blocks: copy.blocks,
         hero: index === 0 ? copy.hero : undefined,
-        icon: copy.icon,
       })),
       footer: [languages.map((lang) => preferenceLine(mail.preference, lang)), ...mail.closing(languages)],
       links: mail.links,
@@ -187,7 +185,7 @@ function verificationEmail(token: string, username?: string, language?: EmailLan
             subject: 'Bekreft e-postadressen din for Boardly',
             title: 'Bekreft e-postadressen din',
             preheader: 'Trykk på knappen for å bekrefte adressen og gjøre ferdig Boardly-kontoen din.',
-            icon: noticeIconImage('verify', 'Konvolutt'),
+            hero: heroImage('verify', 'En konvolutt med en hake'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               { type: 'paragraph', content: 'Trykk på knappen for å bekrefte adressen og gjøre ferdig Boardly-kontoen din.' },
@@ -200,7 +198,7 @@ function verificationEmail(token: string, username?: string, language?: EmailLan
             subject: 'Confirm your email for Boardly',
             title: 'Confirm your email',
             preheader: 'Tap the button to confirm this address and finish setting up your Boardly account.',
-            icon: noticeIconImage('verify', 'Envelope'),
+            hero: heroImage('verify', 'An envelope with a tick'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               { type: 'paragraph', content: 'Tap the button to confirm this address and finish setting up your Boardly account.' },
@@ -263,7 +261,7 @@ function unverifiedAccountWarningEmail(
             subject: `Handling kreves: bekreft Boardly-kontoen din innen ${days(lang)}`,
             title: 'Bekreft e-posten for å beholde kontoen',
             preheader: `E-postadressen på kontoen din er fortsatt ikke bekreftet. Bekreft den innen ${days(lang)}.`,
-            icon: noticeIconImage('unverified', 'Timeglass'),
+            hero: heroImage('unverified', 'En konvolutt med en klokke'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -282,7 +280,7 @@ function unverifiedAccountWarningEmail(
             subject: `Action required: verify your Boardly account in ${days(lang)}`,
             title: 'Verify your email to keep your account',
             preheader: `Your account's email address is still not verified. Verify it within ${days(lang)}.`,
-            icon: noticeIconImage('unverified', 'Hourglass'),
+            hero: heroImage('unverified', 'An envelope with a clock'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -345,7 +343,7 @@ function passwordResetEmail(token: string, language?: EmailLanguage | null): Ema
             subject: 'Tilbakestill passordet ditt på Boardly',
             title: 'Tilbakestill passordet',
             preheader: 'Vi har fått en forespørsel om å tilbakestille passordet på Boardly-kontoen din.',
-            icon: noticeIconImage('reset', 'Hengelås'),
+            hero: heroImage('reset', 'En nøkkel og en hengelås'),
             blocks: [
               {
                 type: 'paragraph',
@@ -363,7 +361,7 @@ function passwordResetEmail(token: string, language?: EmailLanguage | null): Ema
             subject: 'Reset your Boardly password',
             title: 'Reset your password',
             preheader: 'We received a request to reset the password on your Boardly account.',
-            icon: noticeIconImage('reset', 'Padlock'),
+            hero: heroImage('reset', 'A key and a padlock'),
             blocks: [
               {
                 type: 'paragraph',
@@ -417,7 +415,7 @@ function securityPasswordResetEmail(username?: string | null, language?: EmailLa
             subject: 'Lag et nytt passord for Boardly',
             title: 'Lag et nytt passord',
             preheader: 'Av sikkerhetshensyn har vi tilbakestilt passordet på Boardly-kontoen din.',
-            icon: noticeIconImage('security', 'Skjold'),
+            hero: heroImage('security', 'En hengelås med et skjold'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -450,7 +448,7 @@ function securityPasswordResetEmail(username?: string | null, language?: EmailLa
             subject: 'Please set a new Boardly password',
             title: 'Set a new password',
             preheader: 'For security reasons we have reset the password on your Boardly account.',
-            icon: noticeIconImage('security', 'Shield'),
+            hero: heroImage('security', 'A padlock with a shield'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -536,7 +534,7 @@ function emailChangeNoticeEmail(newEmail: string, username?: string | null, lang
             subject: 'E-postadressen på Boardly-kontoen din blir endret',
             title: 'E-postadressen din blir endret',
             preheader: `Vi har fått en forespørsel om å endre e-postadressen på Boardly-kontoen din til ${masked}.`,
-            icon: noticeIconImage('email-change', 'Konvolutt'),
+            hero: heroImage('email-change', 'To konvolutter med piler mellom seg'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -568,7 +566,7 @@ function emailChangeNoticeEmail(newEmail: string, username?: string | null, lang
             subject: 'Your Boardly email address is being changed',
             title: 'Your email address is being changed',
             preheader: `We received a request to change the email address on your Boardly account to ${masked}.`,
-            icon: noticeIconImage('email-change', 'Envelope'),
+            hero: heroImage('email-change', 'Two envelopes with arrows between them'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -646,7 +644,7 @@ function welcomeEmail(name: string, language?: EmailLanguage | null): EmailMessa
             subject: `Velkommen til Boardly, ${name}!`,
             title: `Velkommen, ${name}!`,
             preheader: 'Kontoen din er klar. Velg et spill og send lenken til vennene dine.',
-            hero: heroImage('welcome', 'Spillbrikker fra Boardly: terninger, tre på rad, en spion og memorykort'),
+            hero: heroImage('welcome', 'Boardly-merket blant spillbrikker: terninger, tre på rad, en spion og memorykort'),
             blocks: [
               { type: 'lead', content: 'Kontoen din er klar. Velg et spill, lag et rom og send lenken til vennene dine.' },
               { type: 'button', label: 'Begynn å spille', href: gamesUrl },
@@ -657,7 +655,7 @@ function welcomeEmail(name: string, language?: EmailLanguage | null): EmailMessa
             subject: `Welcome to Boardly, ${name}!`,
             title: `Welcome, ${name}!`,
             preheader: 'Your account is ready. Pick a game and send the link to your friends.',
-            hero: heroImage('welcome', 'Boardly game tiles: dice, tic-tac-toe, a spy and memory cards'),
+            hero: heroImage('welcome', 'The Boardly mark among game tiles: dice, tic-tac-toe, a spy and memory cards'),
             blocks: [
               { type: 'lead', content: 'Your account is ready. Pick a game, create a room and send the link to your friends.' },
               { type: 'button', label: 'Start playing', href: gamesUrl },
@@ -838,7 +836,7 @@ function accountDeletionEmail(token: string, username: string, language?: EmailL
             subject: 'Bekreft sletting av Boardly-kontoen din',
             title: 'Bekreft sletting av kontoen',
             preheader: 'Vi har fått en forespørsel om å slette Boardly-kontoen din.',
-            icon: noticeIconImage('deletion', 'Søppelbøtte'),
+            hero: heroImage('deletion', 'En lukket arkivboks'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -873,7 +871,7 @@ function accountDeletionEmail(token: string, username: string, language?: EmailL
             subject: 'Confirm deleting your Boardly account',
             title: 'Confirm deleting your account',
             preheader: 'We received a request to delete your Boardly account.',
-            icon: noticeIconImage('deletion', 'Bin'),
+            hero: heroImage('deletion', 'A closed archive box'),
             blocks: [
               { type: 'paragraph', content: greeting(lang, username) },
               {
@@ -1163,7 +1161,7 @@ function noticeEmail(notice: {
   titles: Localized<string>
   copy: Localized<ConfirmationCopy>
   action: Localized<NoticeAction>
-  art: (lang: EmailLanguage) => Pick<SheetCopy, 'hero' | 'icon'>
+  art: (lang: EmailLanguage) => Pick<SheetCopy, 'hero'>
   always: AlwaysSentReason
   links: Readonly<Record<string, string>>
   closing: (languages: EmailLanguage[]) => EmailLayout['footer']
@@ -1368,7 +1366,9 @@ function subscriptionNoticeEmail(details: SubscriptionNoticeDetails): EmailMessa
       en: { label: 'Manage subscription', href: links.profile },
       nb: { label: 'Administrer abonnementet', href: links.profile },
     },
-    art: (lang) => ({ icon: noticeIconImage('subscription', lang === 'nb' ? 'Krone' : 'Crown') }),
+    art: (lang) => ({
+      hero: heroImage('subscription', lang === 'nb' ? 'En kalender med Boardly-merket' : 'A calendar with the Boardly mark'),
+    }),
     always: 'payment',
     links,
     closing: teamClosing,
@@ -1499,7 +1499,7 @@ function inactiveAccountWarningEmail(details: InactiveAccountWarningDetails): Em
       en: { label: 'Sign in to keep it', href: links.login },
       nb: { label: 'Logg inn og behold den', href: links.login },
     },
-    art: (lang) => ({ icon: noticeIconImage('inactive', lang === 'nb' ? 'Klokke' : 'Clock') }),
+    art: (lang) => ({ hero: heroImage('inactive', lang === 'nb' ? 'Et timeglass' : 'An hourglass') }),
     always: 'legal',
     links,
     closing: teamClosing,
@@ -1629,7 +1629,7 @@ function termsChangeNoticeEmail(details: TermsChangeNoticeDetails): EmailMessage
       en: { label: 'Read the Terms', href: links.terms, tone: 'quiet' },
       nb: { label: 'Les vilkårene', href: links.terms, tone: 'quiet' },
     },
-    art: (lang) => ({ icon: noticeIconImage('terms', lang === 'nb' ? 'Dokument' : 'Document') }),
+    art: (lang) => ({ hero: heroImage('terms', lang === 'nb' ? 'Et dokument og en penn' : 'A document and a pen') }),
     always: 'legal',
     links,
     closing: teamClosing,
@@ -1748,7 +1748,7 @@ function suspensionNoticeEmail(details: SuspensionNoticeDetails): EmailMessage {
       en: { label: 'Appeal the suspension', href: links.appeal, tone: 'quiet' },
       nb: { label: 'Klag på suspensjonen', href: links.appeal, tone: 'quiet' },
     },
-    art: (lang) => ({ icon: noticeIconImage('suspension', lang === 'nb' ? 'Flagg' : 'Flag') }),
+    art: (lang) => ({ hero: heroImage('suspension', lang === 'nb' ? 'Et skjold med et pausetegn' : 'A shield with a pause sign') }),
     always: 'legal',
     links,
     closing: noticeSignOff,
@@ -1857,7 +1857,12 @@ function providerLinkedNoticeEmail(details: ProviderLinkedNoticeDetails): EmailM
       en: { label: 'Check connected accounts', href: links.profile, tone: 'quiet' },
       nb: { label: 'Se tilkoblede kontoer', href: links.profile, tone: 'quiet' },
     },
-    art: (lang) => ({ icon: noticeIconImage('provider', lang === 'nb' ? 'Lenke' : 'Link') }),
+    art: (lang) => ({
+      hero: heroImage(
+        `provider-${details.provider}`,
+        lang === 'nb' ? `Et kjedeledd og ${provider}-merket` : `A chain link and the ${provider} mark`
+      ),
+    }),
     always: 'security',
     links,
     closing: noticeSignOff,
