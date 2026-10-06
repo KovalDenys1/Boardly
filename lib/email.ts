@@ -376,7 +376,7 @@ function welcomeEmail(name: string): EmailMessage {
         items: [
           'Create your first lobby and invite friends',
           'Join existing games with lobby codes',
-          'Play Yahtzee in real-time',
+          'Play board games with friends in real time',
           'Customize your profile',
         ],
       },
