@@ -6,6 +6,7 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -14,9 +15,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # ts-jest (<7) and typescript-eslint (<6.1) do not accept TypeScript 7 yet.
+      - dependency-name: "typescript"
+        versions: [">=7"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
