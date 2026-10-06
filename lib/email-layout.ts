@@ -29,10 +29,8 @@ export type EmailSheet = {
   lang: EmailLanguage
   title: string
   blocks: EmailBlock[]
-  /** A wide picture under the logo. */
+  /** The wide picture under the logo that says what the mail is about. */
   hero?: EmailImage
-  /** A small icon above the title, for notices. */
-  icon?: EmailImage
 }
 
 export type EmailLayout = {
@@ -270,16 +268,12 @@ function sheetHtml(sheet: EmailSheet, index: number, layout: EmailLayout): strin
   const hero = sheet.hero
     ? `<div style="margin: 0 0 22px;">${imageHtml(sheet.hero, `width: 100%; max-width: ${sheet.hero.width}px; height: auto; border-radius: 22px;`)}</div>`
     : ''
-  const icon = sheet.icon
-    ? `<div style="margin: 0 0 14px;">${imageHtml(sheet.icon, `width: ${sheet.icon.width}px; height: ${sheet.icon.height}px;`)}</div>`
-    : ''
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="bd-card" bgcolor="${CARD}" style="background: ${CARD}; border: 2px solid ${INK}; border-bottom: 6px solid ${INK}; border-radius: 24px; border-collapse: separate;"><tr>` +
     `<td class="bd-sheet bd-ink" style="padding: 24px 28px 14px; font-family: ${BODY_FONT}; font-size: 16px; line-height: 1.6; color: ${INK}; word-break: break-word; overflow-wrap: anywhere;">` +
     sheetHeader(sheet, index, languages) +
     `<div lang="${sheet.lang}">` +
     hero +
-    icon +
     `<h1 class="bd-title bd-ink" style="margin: 0 0 14px; font-family: ${DISPLAY_FONT}; font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; color: ${INK};">${escapeHtml(sheet.title)}</h1>` +
     sheet.blocks.map((block) => blockHtml(block, links)).join('') +
     `</div></td></tr></table>`

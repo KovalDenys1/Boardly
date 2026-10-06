@@ -1,4 +1,3 @@
-import type { IconName } from '../components/icons/names'
 import { BOARDLY_URL } from './organization-json-ld'
 
 /** Every picture a mail shows lives here, under https://boardly.online/email/. */
@@ -6,36 +5,29 @@ export const EMAIL_ART_BASE = `${BOARDLY_URL}/email/`
 
 export const EMAIL_LOGO_SIZE = { width: 132, height: 40 } as const
 export const EMAIL_HERO_SIZE = { width: 540, height: 200 } as const
-export const EMAIL_ICON_SIZE = { width: 56, height: 56 } as const
 /** Device pixels per drawn pixel in each PNG. */
-export const EMAIL_ART_SCALE = { logo: 3, hero: 2, icon: 3 } as const
+export const EMAIL_ART_SCALE = { logo: 3, hero: 2 } as const
 
-export type EmailNoticeIcon =
-  | 'verify'
-  | 'reset'
-  | 'security'
-  | 'email-change'
-  | 'unverified'
-  | 'deletion'
-  | 'subscription'
-  | 'inactive'
-  | 'terms'
-  | 'suspension'
-  | 'provider'
+/** The hero at the top of each mail; an invite's hero is its game's, see INVITE_HERO_GAMES. */
+export const EMAIL_HEROES = [
+  'welcome',
+  'premium',
+  'verify',
+  'reset',
+  'security',
+  'email-change',
+  'unverified',
+  'deletion',
+  'subscription',
+  'inactive',
+  'terms',
+  'suspension',
+  'provider-discord',
+  'provider-google',
+  'provider-github',
+] as const
 
-export const EMAIL_NOTICE_ICONS: Record<EmailNoticeIcon, { name: IconName; accent: string }> = {
-  verify: { name: 'mail', accent: 'var(--bd-sky)' },
-  reset: { name: 'lock', accent: 'var(--bd-mint)' },
-  security: { name: 'shield', accent: 'var(--bd-lav)' },
-  'email-change': { name: 'mail', accent: 'var(--bd-lav)' },
-  unverified: { name: 'hourglass', accent: 'var(--bd-sun)' },
-  deletion: { name: 'trash', accent: 'var(--bd-coral)' },
-  subscription: { name: 'crown', accent: 'var(--bd-sun)' },
-  inactive: { name: 'clock', accent: 'var(--bd-sun)' },
-  terms: { name: 'clipboard', accent: 'var(--bd-sky)' },
-  suspension: { name: 'flag', accent: 'var(--bd-coral)' },
-  provider: { name: 'link', accent: 'var(--bd-lav)' },
-}
+export type EmailHero = (typeof EMAIL_HEROES)[number]
 
 /**
  * The games an invite can be for, with the glyph and accent the catalog gives each one
@@ -66,7 +58,7 @@ function pair(file: string, size: { width: number; height: number }, alt: string
 
 export const EMAIL_LOGO_IMAGE = pair('logo', EMAIL_LOGO_SIZE, 'Boardly')
 
-export function heroImage(kind: 'welcome' | 'premium', alt: string): EmailImage {
+export function heroImage(kind: EmailHero, alt: string): EmailImage {
   return pair(`hero-${kind}`, EMAIL_HERO_SIZE, alt)
 }
 
@@ -76,18 +68,12 @@ export function inviteHeroImage(gameType: string, alt: string): EmailImage {
   return svgId ? pair(`hero-invite-${svgId}`, EMAIL_HERO_SIZE, alt) : heroImage('welcome', alt)
 }
 
-export function noticeIconImage(kind: EmailNoticeIcon, alt: string): EmailImage {
-  return pair(`icon-${kind}`, EMAIL_ICON_SIZE, alt)
-}
-
 /** Every file name the mails can reference, for the generator's check and the tests. */
 export function allEmailArtFiles(): string[] {
   const stems = [
     'logo',
-    'hero-welcome',
-    'hero-premium',
+    ...EMAIL_HEROES.map((kind) => `hero-${kind}`),
     ...Object.values(INVITE_HERO_GAMES).map((game) => `hero-invite-${game.svgId}`),
-    ...(Object.keys(EMAIL_NOTICE_ICONS) as EmailNoticeIcon[]).map((kind) => `icon-${kind}`),
   ]
   return stems.flatMap((stem) => [`${stem}-light.png`, `${stem}-dark.png`])
 }

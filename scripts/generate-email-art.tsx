@@ -1,31 +1,55 @@
-// Regenerates every image a Boardly mail shows, into public/email/: the logo lockup, the
-// hero pictures and the notice icons, each in a light and a dark version. They are drawn
-// from the product's own pieces (GameGlyph, Icon, the B tile) inside the live home page,
-// so the fonts and the --bd-* tokens are boardly.online's, and html.dark gives the dark
-// set. Sizes come from lib/email-art.ts, which the mails read too.
+// Regenerates every image a Boardly mail shows, into public/email/: the logo lockup and one
+// hero per mail, each in a light and a dark version. They are drawn from the product's own
+// pieces (GameGlyph, Icon, the B tile, Phosphor glyphs in the fill weight Icon uses) inside
+// the live home page, so the fonts and the --bd-* tokens are boardly.online's, and html.dark
+// gives the dark set. Sizes come from lib/email-art.ts, which the mails read too.
 //   npx tsx scripts/generate-email-art.tsx
-import type { ReactElement } from 'react'
+import type { ComponentType, ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
-import { mkdirSync, statSync } from 'fs'
+import { mkdirSync, readdirSync, statSync, unlinkSync } from 'fs'
 import path from 'path'
+import {
+  Archive,
+  ArrowRight,
+  ArrowsLeftRight,
+  CalendarBlank,
+  Check,
+  Clock,
+  DiscordLogo,
+  EnvelopeSimple,
+  FileText,
+  GithubLogo,
+  GoogleLogo,
+  Hourglass,
+  Key,
+  LinkSimple,
+  LockKey,
+  Pause,
+  PencilSimple,
+  Shield,
+  ShieldCheck,
+  User,
+} from '@phosphor-icons/react/dist/ssr'
 import { GameGlyph } from '../components/GameIcon'
 import { Icon } from '../components/icons'
 import {
   EMAIL_ART_SCALE,
   EMAIL_HERO_SIZE,
-  EMAIL_ICON_SIZE,
   EMAIL_LOGO_SIZE,
-  EMAIL_NOTICE_ICONS,
   INVITE_HERO_GAMES,
-  type EmailNoticeIcon,
+  allEmailArtFiles,
+  type EmailHero,
 } from '../lib/email-art'
 
 const OUT_DIR = path.join(process.cwd(), 'public', 'email')
 type Theme = 'light' | 'dark'
+type Glyph = ComponentType<{ size?: number; weight?: 'fill' | 'bold'; color?: string }>
 
 const html = (element: ReactElement) => renderToStaticMarkup(element)
+const phosphor = (G: Glyph, size: number, color: string, weight: 'fill' | 'bold' = 'fill') =>
+  html(<G size={size} weight={weight} color={color} />)
 
 function glyph(svgId: string, size: number, color: string, detail: string, outline = 'transparent') {
   return html(
@@ -40,12 +64,25 @@ function sticker(svgId: string, accent: string, glyphSize: number, rotate: numbe
   return `<div style="position:absolute;left:${x}px;top:${y}px;width:${box}px;height:${box}px;border-radius:${Math.round(box * 0.27)}px;background:${accent};border:2.5px solid var(--bd-ink);box-shadow:${lift}px ${lift}px 0 var(--bd-ink);transform:rotate(${rotate}deg);display:flex;align-items:center;justify-content:center">${glyph(svgId, glyphSize, 'var(--bd-ink-on-accent)', accent)}</div>`
 }
 
+/** A motif tile: a rounded square with the ink border and hard shadow of the B tile and the stickers. */
+function tile(o: { x: number; y: number; size: number; fill: string; inner: string; rotate?: number; shadow?: string; round?: boolean }) {
+  const lift = Math.max(3, Math.round(o.size * 0.06))
+  return `<div style="position:absolute;left:${o.x}px;top:${o.y}px;width:${o.size}px;height:${o.size}px;box-sizing:border-box;border-radius:${o.round ? '50%' : `${Math.round(o.size * 0.27)}px`};background:${o.fill};border:2.5px solid var(--bd-ink);box-shadow:${lift}px ${lift}px 0 ${o.shadow ?? 'var(--bd-ink)'};transform:rotate(${o.rotate ?? 0}deg);display:grid;place-items:center">${o.inner}</div>`
+}
+
 function confetti(x: number, y: number, size: number, color: string, rotate: number) {
   return `<span style="position:absolute;left:${x}px;top:${y}px;width:${size}px;height:${size}px;border-radius:${Math.round(size / 3.5)}px;background:${color};border:2px solid var(--bd-ink);transform:rotate(${rotate}deg)"></span>`
 }
 
 function squiggle(x: number, y: number, color: string) {
   return `<svg style="position:absolute;left:${x}px;top:${y}px" width="74" height="18" viewBox="0 0 74 18"><path d="M3 9c6-8 12-8 17 0s11 8 17 0 11-8 17 0 11 8 17 0" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round"/></svg>`
+}
+
+/** Quiet shapes for the calm notices: soft rings in the line colour, nothing that moves the eye. */
+function rings() {
+  const ring = (x: number, y: number, size: number) =>
+    `<span style="position:absolute;left:${x}px;top:${y}px;width:${size}px;height:${size}px;border-radius:50%;border:3px solid color-mix(in srgb, var(--bd-ink) 9%, transparent)"></span>`
+  return ring(-40, 96, 150) + ring(430, -50, 160) + ring(176, 28, 188)
 }
 
 function bTile(size: number, rotate = 0, x = 0, y = 0, positioned = false) {
@@ -55,9 +92,9 @@ function bTile(size: number, rotate = 0, x = 0, y = 0, positioned = false) {
   return `<span style="${place}width:${size}px;height:${size}px;border-radius:${Math.round(size * 0.28)}px;background:var(--bd-ink);color:var(--bd-sun);display:grid;place-items:center;font-family:var(--bd-font-display);font-weight:800;font-size:${font}px;line-height:1;box-shadow:${shadow}px ${shadow}px 0 var(--bd-coral);transform:rotate(${rotate}deg);flex-shrink:0">B</span>`
 }
 
-function panel(tint: string, inner: string) {
+function panel(tint: string, inner: string, strength = 22) {
   const { width, height } = EMAIL_HERO_SIZE
-  return `<div id="art" style="position:relative;overflow:hidden;width:${width}px;height:${height}px;border-radius:22px;background:color-mix(in srgb, ${tint} 22%, var(--bd-card-warm))">${inner}</div>`
+  return `<div id="art" style="position:relative;overflow:hidden;width:${width}px;height:${height}px;border-radius:22px;background:color-mix(in srgb, ${tint} ${strength}%, var(--bd-card-warm))">${inner}</div>`
 }
 
 function logo() {
@@ -66,17 +103,62 @@ function logo() {
   return `<div id="art" style="box-sizing:border-box;width:${width}px;height:${height}px;display:flex;align-items:center;gap:9px;padding-bottom:3px;font-family:var(--bd-font-display);font-weight:800;font-size:24px;letter-spacing:-0.03em;line-height:1;color:var(--bd-ink)">${bTile(36)}boardly</div>`
 }
 
+/** Confetti, a squiggle and a sparkle around the centre: the friendly mails' frame, as on the Premium hero. */
+function party(squiggleColor: string, squiggleAt: [number, number] = [380, 40]) {
+  return (
+    confetti(60, 34, 16, 'var(--bd-coral)', 20) +
+    confetti(456, 138, 18, 'var(--bd-lav)', -12) +
+    confetti(110, 140, 12, 'var(--bd-mint)', 35) +
+    confetti(470, 34, 12, 'var(--bd-sun)', 28) +
+    squiggle(squiggleAt[0], squiggleAt[1], squiggleColor)
+  )
+}
+
+/** The friendly motif: one big accent tile in the middle and a small badge on its corner. */
+function friendly(o: {
+  tint: string
+  fill: string
+  main: string
+  badge?: { fill: string; inner: string }
+  extra?: string
+  squiggle: string
+  sparkle?: boolean
+}) {
+  return panel(
+    o.tint,
+    party(o.squiggle) +
+      (o.extra ?? '') +
+      tile({ x: 216, y: 44, size: 108, fill: o.fill, inner: o.main, rotate: -6 }) +
+      (o.badge ? tile({ x: 296, y: 104, size: 50, fill: o.badge.fill, inner: o.badge.inner, rotate: 8, round: true }) : '') +
+      (o.sparkle === false
+        ? ''
+        : `<div style="position:absolute;left:150px;top:92px;color:var(--bd-sun-deep)">${html(<Icon name="sparkle" size={30} />)}</div>`)
+  )
+}
+
+/** The calm motif: a quiet tile, no tilt, no confetti, the accent kept to the small badge. */
+function calm(o: { tint: string; main: string; badge?: { fill: string; inner: string } }) {
+  return panel(
+    o.tint,
+    rings() +
+      tile({ x: 216, y: 42, size: 108, fill: 'var(--bd-card-warm)', inner: o.main }) +
+      (o.badge ? tile({ x: 298, y: 106, size: 48, fill: o.badge.fill, inner: o.badge.inner, round: true }) : ''),
+    16
+  )
+}
+
+const INK = 'var(--bd-ink)'
+const ON_ACCENT = 'var(--bd-ink-on-accent)'
+
 function welcomeHero() {
   return panel(
     'var(--bd-sky)',
-    confetti(38, 26, 18, 'var(--bd-lav)', 18) +
-      confetti(488, 140, 16, 'var(--bd-coral)', -14) +
-      confetti(470, 30, 12, 'var(--bd-mint)', 30) +
-      squiggle(222, 162, 'var(--bd-lav-deep)') +
-      sticker('yahtzee', 'var(--bd-sky)', 58, -8, 54, 64) +
-      sticker('tic-tac-toe', 'var(--bd-coral)', 58, 6, 158, 40) +
-      sticker('spy', 'var(--bd-lav)', 58, -4, 262, 70) +
-      sticker('memory', 'var(--bd-mint)', 58, 9, 366, 44)
+    party('var(--bd-lav-deep)') +
+      sticker('yahtzee', 'var(--bd-sky)', 34, -10, 104, 26) +
+      sticker('tic-tac-toe', 'var(--bd-coral)', 34, 8, 128, 112) +
+      sticker('spy', 'var(--bd-lav)', 34, -6, 360, 24) +
+      sticker('memory', 'var(--bd-mint)', 34, 10, 338, 110) +
+      bTile(100, -6, 220, 50, true)
   )
 }
 
@@ -96,45 +178,96 @@ function premiumHero() {
 
 function inviteHero(svgId: string, accent: string) {
   const token = (x: number, y: number, color: string) =>
-    `<div style="position:absolute;left:${x}px;top:${y}px;width:46px;height:46px;border-radius:50%;background:${color};border:2.5px solid var(--bd-ink);box-shadow:3px 3px 0 var(--bd-ink);display:grid;place-items:center;color:var(--bd-ink-on-accent)">${html(<Icon name="user" size={24} />)}</div>`
+    `<div style="position:absolute;left:${x}px;top:${y}px;width:46px;height:46px;border-radius:50%;background:${color};border:2.5px solid var(--bd-ink);box-shadow:3px 3px 0 var(--bd-ink);display:grid;place-items:center">${phosphor(User, 24, ON_ACCENT)}</div>`
   return panel(
     accent,
-    confetti(40, 30, 16, 'var(--bd-sun)', 18) +
-      confetti(486, 146, 16, 'var(--bd-coral)', -12) +
-      squiggle(48, 150, 'var(--bd-lav-deep)') +
-      sticker(svgId, accent, 84, -6, 202, 32) +
-      token(370, 46, 'var(--bd-sun)') +
-      token(400, 100, 'var(--bd-mint)') +
-      token(352, 116, 'var(--bd-lav)')
+    party('var(--bd-lav-deep)', [222, 170]) +
+      tile({ x: 106, y: 74, size: 54, fill: 'var(--bd-coral)', inner: phosphor(ArrowRight, 30, ON_ACCENT, 'bold'), round: true }) +
+      sticker(svgId, accent, 96, -6, 196, 30) +
+      token(366, 46, 'var(--bd-sun)') +
+      token(398, 102, 'var(--bd-mint)') +
+      token(350, 120, 'var(--bd-lav)')
   )
 }
 
-const CALM_ICONS = new Set<EmailNoticeIcon>(['suspension', 'deletion', 'inactive', 'terms', 'security', 'unverified'])
+const PROVIDER_GLYPHS: Record<string, Glyph> = { discord: DiscordLogo, google: GoogleLogo, github: GithubLogo }
 
-function noticeIcon(kind: EmailNoticeIcon) {
-  const { name, accent } = EMAIL_NOTICE_ICONS[kind]
-  const { width } = EMAIL_ICON_SIZE
-  // Calm notices: a quiet tile, ink glyph, no tilt and no shadow. The rest: the accent tile.
-  const calm = CALM_ICONS.has(kind)
-  const fill = calm ? 'var(--bd-bg2)' : accent
-  const ink = calm ? 'var(--bd-ink)' : 'var(--bd-ink-on-accent)'
-  const shadow = calm ? 'none' : '3px 3px 0 var(--bd-ink)'
-  return `<div id="art" style="box-sizing:border-box;width:${width}px;height:${width}px;padding:0 4px 4px 0"><div style="width:${width - 4}px;height:${width - 4}px;box-sizing:border-box;border-radius:15px;background:${fill};border:2px solid var(--bd-ink);box-shadow:${shadow};display:grid;place-items:center;color:${ink}">${html(<Icon name={name} size={26} />)}</div></div>`
+function hero(kind: EmailHero): string {
+  switch (kind) {
+    case 'welcome':
+      return welcomeHero()
+    case 'premium':
+      return premiumHero()
+    case 'verify':
+      return friendly({
+        tint: 'var(--bd-sky)',
+        fill: 'var(--bd-sky)',
+        main: phosphor(EnvelopeSimple, 64, ON_ACCENT),
+        badge: { fill: 'var(--bd-mint)', inner: phosphor(Check, 28, ON_ACCENT, 'bold') },
+        squiggle: 'var(--bd-lav-deep)',
+      })
+    case 'reset':
+      return friendly({
+        tint: 'var(--bd-mint)',
+        fill: 'var(--bd-mint)',
+        main: phosphor(Key, 64, ON_ACCENT),
+        badge: { fill: 'var(--bd-sun)', inner: phosphor(LockKey, 26, ON_ACCENT) },
+        squiggle: 'var(--bd-coral-deep)',
+      })
+    case 'email-change':
+      return friendly({
+        tint: 'var(--bd-lav)',
+        fill: 'var(--bd-lav)',
+        main: phosphor(EnvelopeSimple, 64, ON_ACCENT),
+        badge: { fill: 'var(--bd-sun)', inner: phosphor(ArrowsLeftRight, 28, ON_ACCENT, 'bold') },
+        extra: `<div style="position:absolute;left:150px;top:54px;opacity:.5">${tile({ x: 0, y: 0, size: 70, fill: 'var(--bd-sky)', inner: phosphor(EnvelopeSimple, 40, ON_ACCENT), rotate: -14 })}</div>`,
+        squiggle: 'var(--bd-coral-deep)',
+        sparkle: false,
+      })
+    case 'subscription':
+      return friendly({
+        tint: 'var(--bd-sun)',
+        fill: 'var(--bd-sun)',
+        main: phosphor(CalendarBlank, 64, ON_ACCENT),
+        badge: { fill: 'var(--bd-ink-on-accent)', inner: `<span style="font-family:var(--bd-font-display);font-weight:800;font-size:26px;line-height:1;color:var(--bd-sun)">B</span>` },
+        squiggle: 'var(--bd-coral-deep)',
+      })
+    case 'security':
+      return calm({ tint: 'var(--bd-lav)', main: phosphor(LockKey, 62, INK), badge: { fill: 'var(--bd-lav)', inner: phosphor(ShieldCheck, 26, ON_ACCENT) } })
+    case 'unverified':
+      return calm({ tint: 'var(--bd-sun)', main: phosphor(EnvelopeSimple, 62, INK), badge: { fill: 'var(--bd-sun)', inner: phosphor(Clock, 28, ON_ACCENT) } })
+    case 'deletion':
+      return calm({ tint: 'var(--bd-ink-muted)', main: phosphor(Archive, 62, INK) })
+    case 'inactive':
+      return calm({ tint: 'var(--bd-sun)', main: phosphor(Hourglass, 62, INK) })
+    case 'terms':
+      return calm({ tint: 'var(--bd-sky)', main: phosphor(FileText, 62, INK), badge: { fill: 'var(--bd-sky)', inner: phosphor(PencilSimple, 26, ON_ACCENT) } })
+    case 'suspension':
+      return calm({
+        tint: 'var(--bd-ink-muted)',
+        main: `<div style="position:relative;width:64px;height:64px">${phosphor(Shield, 64, INK)}<div style="position:absolute;left:18px;top:16px">${phosphor(Pause, 28, 'var(--bd-card-warm)')}</div></div>`,
+      })
+    case 'provider-discord':
+    case 'provider-google':
+    case 'provider-github': {
+      const provider = PROVIDER_GLYPHS[kind.slice('provider-'.length)]
+      return calm({ tint: 'var(--bd-lav)', main: phosphor(LinkSimple, 62, INK), badge: { fill: 'var(--bd-card-warm)', inner: phosphor(provider, 28, INK) } })
+    }
+  }
 }
 
 type Piece = { file: string; markup: string; scale: number }
 
 function pieces(): Piece[] {
-  const list: Piece[] = [
-    { file: 'logo', markup: logo(), scale: EMAIL_ART_SCALE.logo },
-    { file: 'hero-welcome', markup: welcomeHero(), scale: EMAIL_ART_SCALE.hero },
-    { file: 'hero-premium', markup: premiumHero(), scale: EMAIL_ART_SCALE.hero },
-  ]
+  const list: Piece[] = [{ file: 'logo', markup: logo(), scale: EMAIL_ART_SCALE.logo }]
+  for (const kind of [
+    'welcome', 'premium', 'verify', 'reset', 'security', 'email-change', 'unverified', 'deletion',
+    'subscription', 'inactive', 'terms', 'suspension', 'provider-discord', 'provider-google', 'provider-github',
+  ] as EmailHero[]) {
+    list.push({ file: `hero-${kind}`, markup: hero(kind), scale: EMAIL_ART_SCALE.hero })
+  }
   for (const game of Object.values(INVITE_HERO_GAMES)) {
     list.push({ file: `hero-invite-${game.svgId}`, markup: inviteHero(game.svgId, game.accent), scale: EMAIL_ART_SCALE.hero })
-  }
-  for (const kind of Object.keys(EMAIL_NOTICE_ICONS) as EmailNoticeIcon[]) {
-    list.push({ file: `icon-${kind}`, markup: noticeIcon(kind), scale: EMAIL_ART_SCALE.icon })
   }
   return list
 }
@@ -164,13 +297,21 @@ async function main() {
           const raw = await page.locator('#art').screenshot({ omitBackground: true, animations: 'disabled' })
           const file = path.join(OUT_DIR, `${piece.file}-${theme}.png`)
           await sharp(raw).png({ palette: true, quality: 95, effort: 10, compressionLevel: 9 }).toFile(file)
-          console.log(`${path.relative(process.cwd(), file).padEnd(48)} ${(statSync(file).size / 1024).toFixed(1)} KB`)
+          console.log(`${path.relative(process.cwd(), file).padEnd(52)} ${(statSync(file).size / 1024).toFixed(1)} KB`)
         }
       }
       await page.close()
     }
   } finally {
     await browser.close()
+  }
+
+  const wanted = new Set(allEmailArtFiles())
+  for (const name of readdirSync(OUT_DIR)) {
+    if (name.endsWith('.png') && !wanted.has(name)) {
+      unlinkSync(path.join(OUT_DIR, name))
+      console.log(`removed public/email/${name}, which no mail uses`)
+    }
   }
 }
 
