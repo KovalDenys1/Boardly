@@ -252,6 +252,10 @@
   --bd-lav-deep: #7867E8;
   --bd-sky: #6BC1F0;
   --bd-card-warm: #FFF8EC;
+  /* The plain card plate (move history, chat, side panels). A token rather than
+     `white` because a lobby theme can only reach a surface through a token: it
+     sets --bd-* on its container and cannot switch html.dark on (#1307). */
+  --bd-card: #ffffff;
   --bd-input-bg: #ffffff;
   /* 3.6:1 on the input and 3.35:1 on the page: WCAG 1.4.11 asks 3:1 for a field's
      boundary, and --bd-line gave 1.3:1 (#1171). */
@@ -277,6 +281,7 @@ html.dark {
   --bd-ink-muted: #7A6E62;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
+  --bd-card:      #242018;
   --bd-input-bg:  #2B2720;
   --bd-input-border: #7A7065;
   --bd-surface-raised: rgba(255, 255, 255, 0.06);
@@ -1786,7 +1791,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Cards */
 .ttt-card {
-  background: white;
+  background: var(--bd-card);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -1836,7 +1841,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    `overflow: hidden` clips the pill to the board it sits on, which is what
    keeps it from reaching back out over bare page at any viewport. */
 .ttt-board-surface {
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   display: flex;
@@ -1871,7 +1876,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    border would change the size container's content box, and --c4-cell reads it,
    so the board would shift a pixel at the moment the game ends. */
 .ttt-board-card--result {
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
 }
 /* Checkers (#1083). Same rule as --c4-cell: the square is the min() of a
@@ -2043,7 +2048,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex-direction: column;
   max-height: 220px;
   overflow: hidden;
-  background: white;
+  background: var(--bd-card);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -2325,7 +2330,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fff;
+  background: var(--bd-card);
   border: 1.5px solid var(--bd-line);
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -2958,7 +2963,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 .game-tabs {
   display: flex;
   gap: 4px;
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   border: 1px solid var(--bd-line);
   border-radius: 14px;
   padding: 4px;
@@ -3159,7 +3164,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 .spy-role-card,
 .spy-vote-card,
 .spy-results-card {
-  background: #fff;
+  background: var(--bd-card);
   border: 1.5px solid var(--bd-line);
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -3299,12 +3304,11 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   min-width: 0;
   overflow: hidden;
   box-sizing: border-box;
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   padding: 12px;
 }
-html.dark .liars-phase-card { background: var(--bd-card-warm); }
 /* Flex-sized by whichever of the three trees is on screen, exactly as
    .ttt-board-card is – it only needs saying separately because the selectors
    name the class. */
@@ -3388,7 +3392,7 @@ html.dark .liars-phase-card { background: var(--bd-card-warm); }
   gap: 8px;
   max-height: 280px;
   overflow: hidden;
-  background: white;
+  background: var(--bd-card);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -3396,7 +3400,6 @@ html.dark .liars-phase-card { background: var(--bd-card-warm); }
   box-sizing: border-box;
   min-height: 0;
 }
-html.dark .liars-panel { background: var(--bd-card-warm); }
 .ttt-mobile-content .liars-panel { flex: 1; min-height: 0; max-height: none; }
 .liars-panel__head {
   display: flex;
@@ -3937,7 +3940,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .spy-secret-tile {
   border: 1.5px solid var(--bd-line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--bd-card);
   padding: 14px;
 }
 
@@ -3965,7 +3968,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   gap: 10px;
   border: 1.5px solid var(--bd-line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--bd-card);
   color: var(--bd-ink);
   padding: 10px;
   min-height: 60px;
@@ -4056,7 +4059,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   flex-direction: column;
   max-height: 220px;
   overflow: hidden;
-  background: white;
+  background: var(--bd-card);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -4176,7 +4179,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .memory-tile-face {
   transform: rotateY(180deg);
   border: 2px solid var(--bd-line);
-  background: #fff;
+  background: var(--bd-card);
   box-shadow: inset 0 -4px 0 rgba(31,27,22,0.05);
 }
 
@@ -4431,17 +4434,6 @@ html.dark .btn-social-unlink:hover {
   color: var(--bd-coral-deep);
 }
 
-html.dark .ttt-card,
-html.dark .ttt-history-card,
-html.dark .game-chat-panel {
-  background: var(--bd-card-warm);
-}
-
-html.dark .ttt-board-surface,
-html.dark .ttt-board-card--result {
-  background: var(--bd-card-warm);
-}
-
 html.dark .ttt-cell:not(:disabled):hover {
   background: var(--bd-bg2);
 }
@@ -4450,32 +4442,10 @@ html.dark .game-tabs {
   background: var(--bd-bg2);
 }
 
-html.dark .spy-header,
-html.dark .memory-history-card { background: var(--bd-card-warm); }
-
-html.dark .memory-header,
-html.dark .spy-panel,
-html.dark .memory-score-panel,
-html.dark .spy-role-card,
-html.dark .spy-vote-card,
-html.dark .spy-results-card {
-  background: var(--bd-card-warm);
-}
+html.dark .spy-header { background: var(--bd-card-warm); }
 
 html.dark .spy-secret-tile {
   background: var(--bd-bg2);
-}
-
-html.dark .spy-vote-option,
-html.dark .spy-result-row,
-html.dark .spy-score-row,
-html.dark .spy-player-row,
-html.dark .memory-score-row {
-  background: var(--bd-card-warm);
-}
-
-html.dark .memory-tile-face {
-  background: var(--bd-card-warm);
 }
 
 /* ===== Sketch & Guess (#1034) =====
@@ -4496,7 +4466,7 @@ html.dark .memory-tile-face {
 
 .sketch-board-card {
   container-type: size;
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   display: flex;
@@ -4698,7 +4668,7 @@ html.dark .memory-tile-face {
   gap: 10px;
   max-height: 260px;
   overflow: hidden;
-  background: white;
+  background: var(--bd-card);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
@@ -4748,8 +4718,6 @@ html.dark .memory-tile-face {
   text-align: center;
 }
 
-html.dark .sketch-board-card,
-html.dark .sketch-panel { background: var(--bd-card-warm); }
 html.dark .sketch-score-row { background: var(--bd-bg2); }
 
 /* The board card is flex-sized by whichever of the three layout trees is on
@@ -4830,7 +4798,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    board, a phase here is a form – a target select, a textarea, a send button –
    and there is no smaller version of a textarea that still takes an answer. */
 .spy-board-card {
-  background: #FFF8EC;
+  background: var(--bd-card-warm);
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
   display: flex;
@@ -4891,8 +4859,6 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   min-height: 0;
 }
 .ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
-
-html.dark .spy-board-card { background: var(--bd-card-warm); }
 
 /* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
    switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
