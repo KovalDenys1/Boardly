@@ -458,9 +458,12 @@ HTML in a template. A friendly mail is a headline, a sentence or two, a button a
 print; a notice with obligations leads with a summary, a few facts and one action, and keeps every
 sentence it must state below in `details`.
 
-- **Pictures.** Every picture is in `public/email/`, in a light and a dark version, and
-  `lib/email-art.ts` names each one with its size and alt text. `npx tsx scripts/generate-email-art.tsx`
-  draws them all from `GameGlyph`, `Icon` and the B tile inside the live home page. A mail loads
+- **Pictures.** Every mail opens with one full-width hero (#1301) whose motif says what the mail is
+  about. Friendly mails get the full palette and confetti; suspension, deletion, security and the
+  legal notices get a calm panel with no confetti. Every picture is in `public/email/`, in a light
+  and a dark version, and `lib/email-art.ts` names each one. `npx tsx scripts/generate-email-art.tsx`
+  draws them all from `GameGlyph`, `Icon`, Phosphor glyphs and the B tile inside the live home page,
+  and deletes any file no mail uses. A mail loads
   nothing from any other host. `public/email/` skips the proxy, because its
   `Cross-Origin-Resource-Policy: same-site` would stop a mail client from showing the image.
 - **Language.** The site language lives only in the browser, so a mail sent while answering a request
