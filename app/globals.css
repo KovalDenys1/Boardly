@@ -1861,9 +1861,10 @@ input[type="range"].slider-thumb::-moz-range-track {
    the card's own container height. Hugging it on both axes collapsed the stage
    from 640px to 387px at 1280x800 and left 491px of horizontal slack around a
    413x290 card - a smaller composition in a larger empty region than #903 was
-   filed about. So this surface takes the card's width and only its own height. */
+   filed about. So this surface takes the card's whole box. */
 .ttt-board-surface--wide {
   width: 100%;
+  height: 100%;
 }
 /* The overlay mount point paints for exactly as long as the result overlay is
    mounted (#903 review). GameResultOverlay is `position:absolute; inset:0` on
@@ -3578,26 +3579,30 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 /* Rock Paper Scissors board, composed as a duel: an arena (glow + watermark),
    a stage with two hands in the players' colours, the match score between
    them, and three same-sized tiles. One scale for everything, from the board
-   card's container height (the card is still the size container), with hard
-   caps so a tall window does not inflate the composition. It takes its own
-   height and the card centres it, which is what `.ttt-board-surface--wide`
-   above is for; `height: 100%` and `justify-content: space-evenly` used to
-   spread it down a stretched card and were the 120-200px bands #903 measured.
-   Animations: transform and opacity. */
+   card's container size (the card is still the size container), with caps so
+   a tall window does not inflate the tiles. The hands stretch over the height
+   the tiles leave, so there is no slack to centre or spread. Animations:
+   transform and opacity. */
 .rps-board {
   position: relative;
   width: 100%;
+  height: 100%;
   min-height: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(8px, 2cqh, 20px);
+  justify-content: flex-start;
+  gap: clamp(8px, 3cqh, 24px);
   overflow: hidden;
-  --rps-emoji-xl: clamp(48px, 12cqh, 96px);
-  --rps-emoji-md: clamp(28px, 6cqh, 44px);
-  --rps-tile: clamp(96px, 20cqh, 150px);
+  --rps-emoji-xl: clamp(48px, 20cqh, 128px);
+  --rps-tile: clamp(76px, min(32cqh, calc((100cqw - 72px) / 3)), 200px);
+  --rps-emoji-md: calc(var(--rps-tile) * 0.4);
+}
+.rps-hand__emoji > svg,
+.rps-tile__emoji > svg {
+  width: 1em;
+  height: 1em;
 }
 /* Arena glow behind the stage. */
 .rps-board::before {
@@ -3613,16 +3618,18 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-board > * { position: relative; z-index: 1; }
 
 .rps-stage {
+  flex: 1 1 auto;
   width: min(100%, 640px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  align-items: stretch;
   gap: clamp(8px, 2cqw, 20px);
 }
 .rps-hand {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: clamp(10px, 2cqh, 18px) 8px;
   border-radius: 18px;
@@ -3703,6 +3710,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 
 .rps-stage__center {
   position: relative;
+  align-self: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3737,7 +3745,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   align-items: baseline;
   font-family: var(--bd-font-display);
   font-weight: 800;
-  font-size: clamp(28px, 6cqh, 44px);
+  font-size: clamp(28px, 8cqh, 56px);
   line-height: 1;
   color: var(--bd-ink);
   animation: rps-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
@@ -3836,7 +3844,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 /* Narrow card (phones): the hands keep their width and the centre block
    moves under them, so names are not squeezed by the round result. */
 @container (max-width: 440px) {
-  .rps-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 6px; }
+  .rps-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr auto; row-gap: 6px; }
   .rps-stage__center { grid-column: 1 / -1; order: 3; max-width: none; padding: 2px 0 0; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
   .rps-stage__center::before, .rps-stage__center::after { display: none; }
   .rps-stage__vs { display: none; }

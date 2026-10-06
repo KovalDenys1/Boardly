@@ -793,17 +793,27 @@ describe('the board card does not paint the space the board leaves (#903)', () =
       }
     })
 
-    it('stops the RPS composition being laid out down a card it no longer fills', () => {
-      const blocks = allBlocksFor('.rps-board')
-      expect(blocks.length).toBeGreaterThan(0)
-      for (const block of blocks) {
-        // Its parent is `.ttt-board-surface--wide`, which has no definite
-        // height, so a percentage height resolves to nothing and
-        // `space-evenly` has no free space to spread into. Both were dead.
-        expect(block).not.toMatch(/(^|[;\s])height\s*:\s*100%/)
-        expect(block).not.toMatch(/justify-content:\s*space-evenly/)
+    it('fills the RPS card: the hands stretch over the height the tiles leave', () => {
+      const surface = allBlocksFor('.ttt-board-surface--wide')
+      expect(surface.some((b) => /width:\s*100%/.test(b))).toBe(true)
+      expect(surface.some((b) => /(^|[;\s])height:\s*100%/.test(b))).toBe(true)
+
+      const board = allBlocksFor('.rps-board')
+      expect(board.some((b) => /(^|[;\s])height:\s*100%/.test(b))).toBe(true)
+      // Spreading the parts apart left 120-200px bands of empty card (#903),
+      // and centring a capped composition left one above the board (#1308).
+      for (const block of board) {
+        expect(block).not.toMatch(/justify-content:\s*(space-evenly|center)/)
       }
-      expect(allBlocksFor('.ttt-board-surface--wide').some((b) => /width:\s*100%/.test(b))).toBe(true)
+      expect(allBlocksFor('.rps-stage').some((b) => /flex:\s*1 1 auto/.test(b))).toBe(true)
+    })
+
+    it('sizes the RPS icons from the board scale, not at a fixed px size', () => {
+      const icons = allBlocksFor('.rps-hand__emoji > svg')
+      expect(icons.some((b) => /width:\s*1em/.test(b) && /height:\s*1em/.test(b))).toBe(true)
+      const board = allBlocksFor('.rps-board').join('\n')
+      expect(board).toMatch(/--rps-emoji-xl:\s*clamp\([^;]*cqh/)
+      expect(board).toMatch(/--rps-emoji-md:[^;]*var\(--rps-tile\)/)
     })
   })
 })
