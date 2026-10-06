@@ -97,7 +97,7 @@
     "react-dom": "^19.3.0",
     "react-hot-toast": "^2.6.1",
     "react-i18next": "^17.0.15",
-    "resend": "^6.31.0",
+    "resend": "^6.32.0",
     "stripe": "^22.1.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
