@@ -112,6 +112,20 @@ describe('POST /api/auth/forgot-password', () => {
     expect(payload.message).toBe(genericSuccessMessage)
   })
 
+  it('writes the reset mail in Norwegian when the request asks for Norwegian (#1298)', async () => {
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@example.com' } as any)
+    const request = new NextRequest('http://localhost:3000/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept-Language': 'nb-NO,nb;q=0.9,en;q=0.6' },
+      body: JSON.stringify({ email: 'user@example.com' }),
+    })
+
+    await POST(request)
+    await flushAfterResponse()
+
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), 'nb')
+  })
+
   it('creates a new reset token and sends email for existing users', async () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-1',
@@ -128,7 +142,7 @@ describe('POST /api/auth/forgot-password', () => {
     expect(mockPrisma.passwordResetTokens.deleteMany).toHaveBeenCalledWith({
       where: passwordResetTokensOf('user-1', 'reset'),
     })
-    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String))
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), undefined)
 
     // The row holds the hash of the emailed token and nothing that matches it (#1141).
     const emailedToken = mockSendPasswordResetEmail.mock.calls[0][1]

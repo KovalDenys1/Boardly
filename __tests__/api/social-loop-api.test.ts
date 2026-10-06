@@ -9,6 +9,8 @@ import { POST as REQUEST_REMATCH } from '@/app/api/lobby/[code]/rematch/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToUser } from '@/lib/supabase-server'
+import { sendGameInviteEmail } from '@/lib/email'
+import { getNotificationPreferences } from '@/lib/notification-preferences'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -117,6 +119,54 @@ describe('Social loop APIs', () => {
           invitedById: 'user-1',
         })
       )
+    })
+
+    function inviteFriendWithEmail() {
+      mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'Host', isGuest: false })
+      mockPrisma.lobbies.findUnique.mockResolvedValue({
+        id: 'lobby-1',
+        code: 'ABCD',
+        name: 'Lobby',
+        gameType: 'yahtzee',
+      } as any)
+      mockPrisma.players.findFirst.mockResolvedValue({ id: 'player-1' } as any)
+      mockPrisma.friendships.findMany.mockResolvedValue([
+        {
+          user1Id: 'user-1',
+          user2Id: 'friend-1',
+          user1: { id: 'user-1', username: 'Host', email: null },
+          user2: { id: 'friend-1', username: 'Friend', email: 'friend@example.com' },
+        },
+      ] as any)
+      mockPrisma.lobbyInvites.createMany.mockResolvedValue({ count: 1 } as any)
+      const request = new NextRequest('http://localhost:3000/api/lobby/ABCD/invite', {
+        method: 'POST',
+        body: JSON.stringify({ friendIds: ['friend-1'] }),
+      })
+      return SEND_INVITE(request, { params: Promise.resolve({ code: 'ABCD' }) })
+    }
+
+    it('sends no invite mail to a friend who turned invite mails off (#1298)', async () => {
+      const prefs = getNotificationPreferences as jest.Mock
+      prefs.mockResolvedValue({ unsubscribedAll: false, gameInvites: false })
+
+      try {
+        const response = await inviteFriendWithEmail()
+
+        expect(response.status).toBe(200)
+        expect(sendGameInviteEmail).not.toHaveBeenCalled()
+      } finally {
+        prefs.mockResolvedValue({ unsubscribedAll: false, gameInvites: true })
+      }
+    })
+
+    it("mails a friend who allows invites, with their id for the one-click unsubscribe link (#1298)", async () => {
+      const response = await inviteFriendWithEmail()
+
+      expect(response.status).toBe(200)
+      expect(sendGameInviteEmail).toHaveBeenCalledTimes(1)
+      expect((sendGameInviteEmail as jest.Mock).mock.calls[0][0]).toBe('friend@example.com')
+      expect((sendGameInviteEmail as jest.Mock).mock.calls[0][6]).toEqual({ userId: 'friend-1' })
     })
 
     it('rejects guest users for friend invites', async () => {

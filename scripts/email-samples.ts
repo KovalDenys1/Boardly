@@ -4,16 +4,27 @@ type Samples = { [Name in keyof typeof emailTemplates]: Parameters<(typeof email
 
 const TOKEN = 'sample'.padEnd(64, '0')
 
-/** One realistic set of arguments per mail, for the preview and for the layout tests. */
+/**
+ * One realistic set of arguments per mail, for the preview and for the layout tests. The mails
+ * sent while answering a request carry that request's language ('en' here); the rest have no
+ * language to go on and show English then Norwegian.
+ */
 export const emailSamples: Samples = {
-  sendVerificationEmail: [TOKEN, 'Ola'],
+  sendVerificationEmail: [TOKEN, 'Ola', 'en'],
   sendUnverifiedAccountWarningEmail: [TOKEN, 'Ola', 3],
-  sendPasswordResetEmail: [TOKEN],
+  sendPasswordResetEmail: [TOKEN, 'en'],
   sendSecurityPasswordResetEmail: ['Ola'],
-  sendEmailChangeNoticeEmail: ['kari.nordmann@example.com', 'Ola'],
-  sendWelcomeEmail: ['Ola'],
-  sendGameInviteEmail: ['Ola', 'Kari', 'Friday night', 'guess_the_spy', 'https://boardly.online/lobby/K7QX2M'],
-  sendAccountDeletionEmail: [TOKEN, 'Ola'],
+  sendEmailChangeNoticeEmail: ['kari.nordmann@example.com', 'Ola', 'en'],
+  sendWelcomeEmail: ['Ola', 'en'],
+  sendGameInviteEmail: [
+    'Ola',
+    'Kari',
+    'Friday night',
+    'guess_the_spy',
+    'https://boardly.online/lobby/K7QX2M',
+    { unsubscribeUrl: 'https://boardly.online/api/notifications/unsubscribe?token=sample' },
+  ],
+  sendAccountDeletionEmail: [TOKEN, 'Ola', 'en'],
   sendPremiumConfirmationEmail: [
     {
       username: 'Ola',

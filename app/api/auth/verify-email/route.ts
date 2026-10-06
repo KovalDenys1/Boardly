@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendWelcomeEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
 import { apiLogger } from '@/lib/logger'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
 import { normalizeProfileEmail } from '@/lib/profile-email'
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email after first successful verification (non-blocking)
     if (!hasPendingEmailChange && !user.emailVerified && user.email) {
-      sendWelcomeEmail(user.email, user.username || 'Player')
+      sendWelcomeEmail(user.email, user.username || 'Player', emailLanguageFromRequest(request))
         .catch((error) => {
           const log = apiLogger('POST /api/auth/verify-email')
           log.warn('Failed to send welcome email (non-critical)', { error })

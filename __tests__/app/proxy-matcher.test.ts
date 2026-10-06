@@ -35,7 +35,7 @@ describe('proxy matcher', () => {
     '/_next/static/chunks/main.js',
     '/_next/image',
     '/favicon.ico',
-    '/email/logo.png',
+    '/email/logo-light.png',
   ])('skips %s – a file for crawlers and browsers, never a session', (route) => {
     expect(runsOn(route)).toBe(false)
   })

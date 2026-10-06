@@ -240,7 +240,8 @@ export async function POST(
           requestUser.username || 'A friend',
           lobby.name || '',
           lobby.gameType,
-          inviteUrl
+          inviteUrl,
+          { userId: friend.id }
         )
 
         if (!emailResult.success) {

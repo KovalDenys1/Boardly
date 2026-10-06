@@ -21,7 +21,8 @@ import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
 import PublicProfileView from '@/components/PublicProfileView'
-import { PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
+import { buildAuthUrl } from '@/lib/auth-redirect'
+import { NOTIFICATION_SETTINGS_SECTION_ID, PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
 import { prefersReducedMotion } from '@/lib/motion'
 import {
   getStoredAppearancePreferences,
@@ -243,6 +244,7 @@ const SETTINGS_LANGUAGE_OPTIONS = [
   { value: 'ru', label: 'Russian', badge: 'RU' },
 ]
 
+const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID]
 export default function ProfilePage() {
   const { t, i18n } = useTranslation()
   const { data: session, update, status } = useSession()
@@ -250,7 +252,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   // Bumped to ask for a scroll to the Privacy section once the settings tab is on
   // screen (#1226): from the hero's Privacy settings button, or a link to #privacy.
-  const [privacyScrollRequest, setPrivacyScrollRequest] = useState(0)
+  const [settingsScrollRequest, setSettingsScrollRequest] = useState(0)
+  const settingsScrollTargetRef = useRef<string>(PRIVACY_SETTINGS_SECTION_ID)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -525,7 +528,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/auth/login')
+      // Keeps ?tab and the #section, so a mail's "Email settings" link lands there after sign-in.
+      const { pathname, search, hash } = window.location
+      router.replace(buildAuthUrl('login', `${pathname}${search}${hash}`))
     }
   }, [status, router])
 
@@ -591,10 +596,13 @@ export default function ProfilePage() {
 
     const currentUrl = new URL(window.location.href)
     const tabFromQuery = currentUrl.searchParams.get('tab')
-    if (currentUrl.hash === `#${PRIVACY_SETTINGS_SECTION_ID}`) {
-      // /profile?tab=settings#privacy, the link on your own public profile (#1226)
+    const sectionInHash = SETTINGS_SECTION_IDS.find((id) => currentUrl.hash === `#${id}`)
+    if (sectionInHash) {
+      // /profile?tab=settings#privacy, the link on your own public profile (#1226), and
+      // /profile?tab=settings#notifications, the link in every mail's footer
+      settingsScrollTargetRef.current = sectionInHash
       setActiveTab('settings')
-      setPrivacyScrollRequest((request) => request + 1)
+      setSettingsScrollRequest((request) => request + 1)
     } else if (isTabType(tabFromQuery)) {
       setActiveTab(tabFromQuery)
     }
@@ -602,18 +610,18 @@ export default function ProfilePage() {
 
   // A request stays pending until the section is on the page: a deep link arrives
   // while the session is still loading, when the page is only a spinner.
-  const handledPrivacyScrollRequestRef = useRef(0)
+  const handledSettingsScrollRequestRef = useRef(0)
   useEffect(() => {
-    if (privacyScrollRequest === handledPrivacyScrollRequestRef.current) return
+    if (settingsScrollRequest === handledSettingsScrollRequestRef.current) return
     if (activeTab !== 'settings' || status !== 'authenticated') return
-    const section = document.getElementById(PRIVACY_SETTINGS_SECTION_ID)
+    const section = document.getElementById(settingsScrollTargetRef.current)
     if (!section) return
-    handledPrivacyScrollRequestRef.current = privacyScrollRequest
+    handledSettingsScrollRequestRef.current = settingsScrollRequest
     section.scrollIntoView({
       behavior: prefersReducedMotion() ? 'auto' : 'smooth',
       block: 'start',
     })
-  }, [activeTab, privacyScrollRequest, status])
+  }, [activeTab, settingsScrollRequest, status])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1565,7 +1573,8 @@ export default function ProfilePage() {
 
   const openPrivacySettings = () => {
     handleTabChange('settings')
-    setPrivacyScrollRequest((request) => request + 1)
+    settingsScrollTargetRef.current = PRIVACY_SETTINGS_SECTION_ID
+    setSettingsScrollRequest((request) => request + 1)
   }
 
   const profileVisibilitySummary = accountPreferencesLoaded
@@ -2561,10 +2570,14 @@ export default function ProfilePage() {
                   </div>
                 </section>
 
-                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
+                <section
+                  id={NOTIFICATION_SETTINGS_SECTION_ID}
+                  aria-labelledby="profile-settings-notifications-title"
+                  className={`scroll-mt-4 xl:col-span-12 ${settingsSectionClassName}`}
+                >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-bold text-bd-ink">
+                      <h3 id="profile-settings-notifications-title" className="text-lg font-bold text-bd-ink">
                         {t('profile.settings.notifications.title')}
                       </h3>
                       <span className={settingsScopeBadgeClassName}>

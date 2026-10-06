@@ -1,5 +1,11 @@
-import jwt from 'jsonwebtoken'
 import { prisma } from './db'
+import type { NotificationPreferenceKey } from './unsubscribe-token'
+
+export {
+  buildMarketingUnsubscribeHeaders,
+  createNotificationUnsubscribeToken,
+  verifyNotificationUnsubscribeToken,
+} from './unsubscribe-token'
 
 export type NotificationPreferenceSnapshot = {
   inAppNotifications: boolean
@@ -16,13 +22,6 @@ export type NotificationPreferenceSnapshot = {
   marketingConsent: boolean
   marketingConsentAt: Date | null
 }
-
-type NotificationPreferenceKey =
-  | 'gameInvites'
-  | 'turnReminders'
-  | 'friendRequests'
-  | 'friendAccepted'
-  | 'marketingConsent'
 
 export async function getNotificationPreferences(userId: string): Promise<NotificationPreferenceSnapshot> {
   const prefs = await prisma.notificationPreferences.findUnique({
@@ -87,67 +86,6 @@ export async function upsertNotificationPreferences(
   })
 
   return prefs
-}
-
-function getNotificationSecret(): string {
-  if (!process.env.NEXTAUTH_SECRET) {
-    throw new Error('NEXTAUTH_SECRET is required for notification unsubscribe tokens')
-  }
-  return process.env.NEXTAUTH_SECRET
-}
-
-type UnsubscribeTokenPayload = {
-  userId: string
-  type: NotificationPreferenceKey | 'all'
-}
-
-export function createNotificationUnsubscribeToken(payload: UnsubscribeTokenPayload): string {
-  return jwt.sign(payload, getNotificationSecret(), {
-    expiresIn: '30d',
-    issuer: 'boardly.notifications',
-    audience: 'boardly.unsubscribe',
-  })
-}
-
-export function verifyNotificationUnsubscribeToken(token: string): UnsubscribeTokenPayload | null {
-  try {
-    const decoded = jwt.verify(token, getNotificationSecret(), {
-      issuer: 'boardly.notifications',
-      audience: 'boardly.unsubscribe',
-    }) as UnsubscribeTokenPayload
-
-    if (!decoded?.userId || !decoded?.type) {
-      return null
-    }
-    return decoded
-  } catch {
-    return null
-  }
-}
-
-/**
- * `List-Unsubscribe` (RFC 2369) plus the one-click variant, RFC 8058: mail clients that see
- * both headers show their own "Unsubscribe" action and, for List-Unsubscribe-Post, POST
- * `List-Unsubscribe=One-Click` straight to the URL with no page load and no further click —
- * `POST /api/notifications/unsubscribe` performs the same preference change as the existing
- * GET link for exactly that reason.
- *
- * No marketing template calls this yet (#1154 ships the consent capture and the unsubscribe
- * path with nothing sending marketing mail); every future one must, so the header is never
- * missing on the first send.
- */
-export function buildMarketingUnsubscribeHeaders(userId: string): {
-  'List-Unsubscribe': string
-  'List-Unsubscribe-Post': string
-} {
-  const token = createNotificationUnsubscribeToken({ userId, type: 'marketingConsent' })
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://boardly.online'
-  const unsubscribeUrl = `${baseUrl}/api/notifications/unsubscribe?token=${token}`
-
-  return {
-    'List-Unsubscribe': `<${unsubscribeUrl}>`,
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-  }
 }
 
 export async function isNotificationEnabled(

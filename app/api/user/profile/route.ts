@@ -3,6 +3,7 @@ import { issueVerificationToken } from '@/lib/auth-tokens'
 import { prisma } from '@/lib/db'
 import { comparePassword } from '@/lib/auth'
 import { sendEmailChangeNoticeEmail, sendVerificationEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
 import { apiLogger } from '@/lib/logger'
 import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
 import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
@@ -457,7 +458,8 @@ async function patchProfileHandler(req: NextRequest) {
     await sendVerificationEmail(
       updateResult.user.pendingEmail,
       updateResult.verificationToken,
-      updateResult.user.username || currentUser.username || 'User'
+      updateResult.user.username || currentUser.username || 'User',
+      emailLanguageFromRequest(req)
     )
 
     // The address being replaced hears about it too (#1136). Before this, only
@@ -468,7 +470,8 @@ async function patchProfileHandler(req: NextRequest) {
       const notice = await sendEmailChangeNoticeEmail(
         currentUser.email,
         updateResult.user.pendingEmail,
-        updateResult.user.username || currentUser.username
+        updateResult.user.username || currentUser.username,
+        emailLanguageFromRequest(req)
       )
       if (!notice.success) {
         log.warn('Email change notice to the previous address was not sent', {

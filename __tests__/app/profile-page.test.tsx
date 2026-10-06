@@ -206,6 +206,19 @@ describe('ProfilePage', () => {
     })
   })
 
+  it('sends a signed-out reader to sign-in and back to the same settings section (#1298)', async () => {
+    window.history.replaceState({}, '', '/profile?tab=settings#notifications')
+    mockUseSession.mockReturnValue({ status: 'unauthenticated', data: null, update: mockSessionUpdate } as any)
+
+    render(<ProfilePage />)
+
+    await waitFor(() =>
+      expect(mockRouterReplace).toHaveBeenCalledWith(
+        `/auth/login?returnUrl=${encodeURIComponent('/profile?tab=settings#notifications')}`
+      )
+    )
+  })
+
   it('opens tab from query string', async () => {
     window.history.replaceState({}, '', '/profile?tab=stats')
 
@@ -662,6 +675,17 @@ describe('ProfilePage', () => {
       rerender(<ProfilePage />)
 
       const section = await screen.findByRole('region', { name: 'profile.settings.privacy.title' })
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(scrollIntoView.mock.instances[0]).toBe(section)
+    })
+
+    it("opens the settings tab at the Notifications section from a mail's Email settings link (#1298)", async () => {
+      window.history.replaceState({}, '', '/profile?tab=settings#notifications')
+
+      render(<ProfilePage />)
+
+      const section = await screen.findByRole('region', { name: 'profile.settings.notifications.title' })
+      expect(section.id).toBe('notifications')
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
       expect(scrollIntoView.mock.instances[0]).toBe(section)
     })

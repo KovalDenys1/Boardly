@@ -113,5 +113,8 @@ export function presentProfileParty<T extends ProfileParty>(
 /** Id of the Privacy section in the profile settings tab, and the hash that scrolls to it. */
 export const PRIVACY_SETTINGS_SECTION_ID = 'privacy'
 
+/** Id of the Notifications section in the profile settings tab; every mail's footer links to it. */
+export const NOTIFICATION_SETTINGS_SECTION_ID = 'notifications'
+
 /** The profile settings tab, scrolled to its Privacy section. */
 export const PRIVACY_SETTINGS_HREF = `/profile?tab=settings#${PRIVACY_SETTINGS_SECTION_ID}`

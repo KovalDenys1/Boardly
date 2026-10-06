@@ -4,6 +4,7 @@ import { hashPassword } from '@/lib/auth'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { refuseIfBot } from '@/lib/bot-protection'
 import { sendVerificationEmail } from '@/lib/email'
+import { emailLanguageFromRequest } from '@/lib/email-language'
 import { reserveTransactionalMailSend } from '@/lib/email-send-guard'
 import { upsertNotificationPreferences } from '@/lib/notification-preferences'
 import { issueVerificationToken } from '@/lib/auth-tokens'
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
         reason: mailDecision.reason,
       })
     } else {
-      const emailResult = await sendVerificationEmail(email, verificationToken)
+      const emailResult = await sendVerificationEmail(email, verificationToken, undefined, emailLanguageFromRequest(request))
 
       if (!emailResult.success) {
         const log = apiLogger('POST /api/auth/register')
