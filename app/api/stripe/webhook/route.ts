@@ -5,6 +5,7 @@ import { apiLogger } from '@/lib/logger'
 import Stripe from 'stripe'
 import { pushRoleConnection } from '@/lib/discord/role-connection'
 import { sendPremiumConfirmationEmail } from '@/lib/email'
+import { emailLanguageFromLocale } from '@/lib/email-language'
 import type { PremiumPlan } from '@/lib/premium-plans'
 
 const log = apiLogger('/api/stripe/webhook')
@@ -211,13 +212,13 @@ function planFromSubscription(subscription: Stripe.Subscription): PremiumPlan {
   return PREMIUM_PRICE_ID_YEARLY !== '' && priceId === PREMIUM_PRICE_ID_YEARLY ? 'yearly' : 'monthly'
 }
 
-type Purchaser = { id: string; email: string | null; username: string | null }
+type Purchaser = { id: string; email: string | null; username: string | null; language: string | null }
 
 // The buyer, by the customer id first. updateSubscriptionState has already
 // repaired a stale stripeCustomerId by the time this runs, so the customer id
 // resolves in the recovery case too; the metadata userId is the last resort.
 async function resolvePurchaser(customerId: string, fallbackUserId: string | null): Promise<Purchaser | null> {
-  const select = { id: true, email: true, username: true } as const
+  const select = { id: true, email: true, username: true, language: true } as const
   const byCustomer = await prisma.users.findUnique({ where: { stripeCustomerId: customerId }, select })
   if (byCustomer) return byCustomer
   if (!fallbackUserId) return null
@@ -364,6 +365,7 @@ async function recordPurchaseConsent(
     {
     idempotencyKey: `purchase-confirmation:${checkoutSessionId}`,
     username: purchaser.username,
+    language: emailLanguageFromLocale(purchaser.language),
     plan,
     // What was actually charged, which Adaptive Pricing may have converted;
     // the price's own amount is only a fallback for a session without a total.

@@ -2,6 +2,7 @@ import type { Prisma } from '@/prisma/client'
 import { apiLogger } from './logger'
 import { prisma } from './db'
 import { sendUnverifiedAccountWarningEmail } from './email'
+import { emailLanguageFromLocale } from './email-language'
 import { issueVerificationToken } from './auth-tokens'
 import { RETENTION_DAYS } from './retention-periods'
 
@@ -178,7 +179,8 @@ export async function warnUnverifiedAccounts(
         id: true,
         email: true,
         username: true,
-        createdAt: true
+        createdAt: true,
+        language: true
       }
     })
 
@@ -238,7 +240,8 @@ export async function warnUnverifiedAccounts(
             user.email,
             token,
             safeUsername,
-            daysUntilDeletion
+            daysUntilDeletion,
+            emailLanguageFromLocale(user.language)
           )
 
           return {

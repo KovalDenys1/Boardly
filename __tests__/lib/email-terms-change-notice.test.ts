@@ -55,15 +55,20 @@ describe('Terms change notice email (#1224)', () => {
   })
 
   async function send(overrides: Partial<Details> = {}) {
+    mockSend.mockClear()
     const result = await loadEmailModule().sendTermsChangeNoticeEmail('player@example.com', { ...details, ...overrides })
     expect(result).toEqual({ success: true })
     return { mail: mockSend.mock.calls[0][0] as SentMail, options: mockSend.mock.calls[0][1] }
   }
 
-  it('says what changes, from when, and what the owner can do, in English and Norwegian', async () => {
-    const { mail } = await send()
+  it('says what changes, from when, and what the owner can do, in English or in Norwegian (#1331)', async () => {
+    const en = (await send({ language: 'en' })).mail
+    const nb = (await send({ language: 'nb' })).mail
+    expect(nb.subject).toBe('Boardlys vilkår er oppdatert')
+    expect(en.text).not.toContain('Hei Ola,')
+    expect(nb.text).not.toContain('Hi Ola,')
 
-    for (const body of [mail.text, visibleText(mail.html)]) {
+    for (const body of [`${en.text}\n${nb.text}`, visibleText(en.html + nb.html)]) {
       expect(body).toContain('Hi Ola,')
       expect(body).toContain('One thing changes, and it applies from January 1, 2027.')
       expect(body).toContain(
@@ -84,7 +89,7 @@ describe('Terms change notice email (#1224)', () => {
 
     expect(mail.to).toBe('player@example.com')
     expect(mail.replyTo).toBe('support@boardly.online')
-    expect(mail.subject).toBe('An update to the Boardly Terms of Service / Boardlys vilkår er oppdatert')
+    expect(mail.subject).toBe('An update to the Boardly Terms of Service')
     expect(mail.text).toContain('Hi,\n')
     expect(options).toEqual({ idempotencyKey: 'terms-change-notice/2026-10-05/user_1' })
   })

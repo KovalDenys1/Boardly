@@ -18,6 +18,7 @@ import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
+import { runAfterResponse } from '@/lib/after-response'
 import {
   extractCarriedGameConfig,
   extractGameMode,
@@ -463,30 +464,37 @@ export async function POST(request: NextRequest) {
         internalSecret,
         authorization: request.headers.get('authorization'),
         guestToken: request.headers.get('X-Guest-Token'),
+        cookie: request.headers.get('cookie'),
       })
 
-      // Add timeout to prevent hanging
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      fetch(botApiUrl, {
-        method: 'POST',
-        headers: botTurnHeaders,
-        body: JSON.stringify({
-          botUserId: dbCurrentPlayer.userId,
-          lobbyCode: lobby.code,
-        }),
-        signal: controller.signal,
-      })
-        .then(() => clearTimeout(timeoutId))
-        .catch(error => {
-          clearTimeout(timeoutId)
-          if (error.name === 'AbortError') {
-            log.error('Bot turn timeout - request aborted after 30s')
-          } else {
-            log.error('Failed to trigger bot turn', error)
-          }
+      // Kept alive past the response with after(): a bare fetch here could be frozen
+      // with the instance once the response left, and a bot that moves first then
+      // waited for the client's fallback - the freeze #985 fixed in the state route.
+      runAfterResponse(
+        fetch(botApiUrl, {
+          method: 'POST',
+          headers: botTurnHeaders,
+          body: JSON.stringify({
+            botUserId: dbCurrentPlayer.userId,
+            lobbyCode: lobby.code,
+            triggerSource: 'game-create',
+            triggeredAt: Date.now(),
+          }),
+          signal: controller.signal,
         })
+          .then(() => clearTimeout(timeoutId))
+          .catch(error => {
+            clearTimeout(timeoutId)
+            if (error.name === 'AbortError') {
+              log.error('Bot turn timeout - request aborted after 30s')
+            } else {
+              log.error('Failed to trigger bot turn', error)
+            }
+          })
+      )
 
       log.info('Bot turn request sent', { botApiUrl })
     }

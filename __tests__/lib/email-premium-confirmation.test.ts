@@ -58,6 +58,14 @@ async function send(overrides: Partial<Details> = {}): Promise<SentMail> {
   return mockSend.mock.calls[0][0] as SentMail
 }
 
+// The English mail and the Norwegian one (#1331), with both bodies joined for the facts each
+// of them has to state.
+async function sendEach(overrides: Partial<Details> = {}) {
+  const en = await send({ ...overrides, language: 'en' })
+  const nb = await send({ ...overrides, language: 'nb' })
+  return { en, nb, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` }
+}
+
 // The text a reader sees, without the markup: tags gone, entities decoded,
 // whitespace collapsed. Sentences are asserted on this so an anchor inside
 // one does not break the match.
@@ -104,45 +112,38 @@ describe('sendPremiumConfirmationEmail', () => {
     restore('NEXTAUTH_URL', originalEnv.nextauth)
   })
 
-  it('goes to the buyer with the bilingual subject and replies to support', async () => {
+  it('goes to the buyer in the language given, English without one, and replies to support (#1331)', async () => {
     const mail = await send()
 
     expect(mail.to).toBe('buyer@example.com')
-    expect(mail.subject).toBe('Your Boardly Premium confirmation / Bekreftelse på Boardly Premium')
+    expect(mail.subject).toBe('Your Boardly Premium confirmation')
     expect(mail.replyTo).toBe('support@boardly.online')
     expect(mail.from).toBeTruthy()
+    expect(mail.html).not.toContain('<div lang="nb">')
+
+    const { nb } = await sendEach()
+    expect(nb.subject).toBe('Bekreftelse på Boardly Premium')
   })
 
-  it('carries both languages, English first, in the HTML and in the text part', async () => {
-    const mail = await send()
+  it('carries every section in each language, one language per mail', async () => {
+    const { en, nb } = await sendEach()
+    const sections = {
+      en: ['Hi Ola,', 'What you bought', 'Receipt, invoice and payment', 'How to cancel', 'Right of withdrawal', 'Your request at checkout', 'Terms'],
+      nb: ['Hei Ola,', 'Hva du kjøpte', 'Kvittering, faktura og betaling', 'Slik sier du opp', 'Angrerett', 'Det du ba om i kassen', 'Vilkår'],
+    }
 
-    for (const part of [visibleText(mail.html), mail.text]) {
-      expect(part).toContain('Hi Ola,')
-      expect(part).toContain('Hei Ola,')
-      expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
-      for (const heading of [
-        'What you bought',
-        'Receipt, invoice and payment',
-        'How to cancel',
-        'Right of withdrawal',
-        'Your request at checkout',
-        'Terms',
-        'Hva du kjøpte',
-        'Kvittering, faktura og betaling',
-        'Slik sier du opp',
-        'Angrerett',
-        'Det du ba om i kassen',
-        'Vilkår',
-      ]) {
-        expect(part.toLowerCase()).toContain(heading.toLowerCase())
+    for (const [mail, own, other] of [[en, sections.en, sections.nb], [nb, sections.nb, sections.en]] as const) {
+      for (const part of [visibleText(mail.html), mail.text]) {
+        for (const heading of own) expect(part.toLowerCase()).toContain(heading.toLowerCase())
+        expect(part).not.toContain(other[0])
       }
     }
-    expect(mail.html).toContain('<div lang="en">')
-    expect(mail.html).toContain('<div lang="nb">')
+    expect(en.html).toContain('<div lang="en">')
+    expect(nb.html).toContain('<div lang="nb">')
   })
 
   it('states what was bought: plan, the charged amount in both formats, renewal and the next date', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain('Boardly Premium, monthly plan, purchased on September 24, 2026 at 2:00 PM UTC.')
@@ -160,7 +161,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('formats the charged currency by its own minor unit and names the converted source amount', async () => {
-    const mail = await send({
+    const mail = await sendEach({
       plan: 'yearly',
       amountTotal: 32900,
       currency: 'nok',
@@ -184,7 +185,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('says the purchase is sold through Link, which sends the receipt and invoice (#1179)', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
@@ -199,7 +200,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('explains cancellation: one click in the profile, end of the paid period, yearly refunds whole months on request', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
@@ -212,7 +213,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('promises the end of the paid period only for the profile, and leaves a Link cancellation to Link (#1179)', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).not.toContain('or in your Link account at link.com. The cancellation takes effect')
@@ -225,7 +226,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('repeats the right of withdrawal: 14 days, full refund within 14 days of notice, email or the form', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
@@ -239,7 +240,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('keeps our own refund promise next to the Link channel, in both languages (#1179)', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain('The refund goes through Link, which emails you the refund notice.')
@@ -251,7 +252,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('states the request to start at once, with its date, and that the right of withdrawal still applies', async () => {
-    const mail = await send()
+    const mail = await sendEach()
     const text = visibleText(mail.html)
 
     expect(text).toContain(
@@ -264,7 +265,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('links the terms with the version that was agreed to', async () => {
-    const mail = await send({ termsVersion: '2026-08-01' })
+    const mail = await sendEach({ termsVersion: '2026-08-01' })
     const text = visibleText(mail.html)
 
     expect(text).toContain('The Boardly Terms of Service, version 2026-08-01, apply to this subscription: https://boardly.test/terms.')
@@ -272,12 +273,12 @@ describe('sendPremiumConfirmationEmail', () => {
     expect(mail.html).toContain('<a href="https://boardly.test/terms"')
   })
 
-  it('signs as the company, after both languages', async () => {
+  it('signs as the company, after the copy', async () => {
     const mail = await send()
 
     const text = visibleText(mail.html)
     expect(text).toContain('The Boardly team')
-    expect(text.indexOf('The Boardly team')).toBeGreaterThan(text.indexOf('Vilkår'))
+    expect(text.indexOf('The Boardly team')).toBeGreaterThan(text.indexOf('Terms of Service'))
     expect(mail.text.trimEnd().endsWith('The Boardly team')).toBe(true)
     expect(mail.text).not.toContain('—')
     expect(mail.html).not.toContain('—')
@@ -312,7 +313,7 @@ describe('sendPremiumConfirmationEmail', () => {
   })
 
   it('greets without a name when the account has none', async () => {
-    const mail = await send({ username: null })
+    const mail = await sendEach({ username: null })
 
     expect(mail.text).toContain('Hi,\n')
     expect(mail.text).toContain('Hei,\n')

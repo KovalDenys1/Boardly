@@ -126,6 +126,25 @@ describe('POST /api/auth/forgot-password', () => {
     expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), 'nb')
   })
 
+  it('writes the reset mail in the language stored on the account, over Accept-Language (#1331)', async () => {
+    const requestIn = (acceptLanguage: string) =>
+      new NextRequest('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept-Language': acceptLanguage },
+        body: JSON.stringify({ email: 'user@example.com' }),
+      })
+
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@example.com', language: 'no' } as any)
+    await POST(requestIn('en-US,en;q=0.9'))
+    await flushAfterResponse()
+    expect(mockSendPasswordResetEmail).toHaveBeenLastCalledWith('user@example.com', expect.any(String), 'nb')
+
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@example.com', language: 'ru' } as any)
+    await POST(requestIn('nb-NO,nb;q=0.9'))
+    await flushAfterResponse()
+    expect(mockSendPasswordResetEmail).toHaveBeenLastCalledWith('user@example.com', expect.any(String), 'en')
+  })
+
   it('creates a new reset token and sends email for existing users', async () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-1',
@@ -142,7 +161,7 @@ describe('POST /api/auth/forgot-password', () => {
     expect(mockPrisma.passwordResetTokens.deleteMany).toHaveBeenCalledWith({
       where: passwordResetTokensOf('user-1', 'reset'),
     })
-    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), undefined)
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), 'en')
 
     // The row holds the hash of the emailed token and nothing that matches it (#1141).
     const emailedToken = mockSendPasswordResetEmail.mock.calls[0][1]

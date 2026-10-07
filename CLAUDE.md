@@ -466,10 +466,13 @@ sentence it must state below in `details`.
   and deletes any file no mail uses. A mail loads
   nothing from any other host. `public/email/` skips the proxy, because its
   `Cross-Origin-Resource-Policy: same-site` would stop a mail client from showing the image.
-- **Language.** The site language lives only in the browser, so a mail sent while answering a request
-  takes `emailLanguageFromRequest` (Accept-Language). Norwegian tags get Norwegian, anything else
-  English. A mail sent from a cron, a webhook or the Control Panel has no language to go on and shows
-  English, then Norwegian.
+- **Language (#1331).** Every mail is in one language: the site locale stored on the account in
+  `Users.language`, which `components/AccountLanguageSync.tsx` writes through `PUT /api/user/language`
+  after sign-in and on every language switch. `no` gets Norwegian; `en`, `ru`, `uk` and none get
+  English, because mail copy exists only in English and Norwegian. A mail sent while answering a
+  request takes `emailLanguageFor(user.language, request)`, which falls back to Accept-Language only
+  when nothing is stored (no account yet, or the browser has not written it). A cron, webhook or
+  Control Panel mail selects `language` with the row and passes `emailLanguageFromLocale(...)`.
 - **Footer.** Every footer links to `/profile?tab=settings#notifications`. A mail nobody can turn
   off says why it is always sent. Only the game invite can be turned off: it carries a signed
   unsubscribe link (`lib/unsubscribe-token.ts`) and the RFC 8058 `List-Unsubscribe` headers, and the

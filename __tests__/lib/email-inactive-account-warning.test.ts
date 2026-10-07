@@ -48,6 +48,14 @@ async function send(overrides: Partial<Details> = {}): Promise<{ mail: SentMail;
   return { mail: mockSend.mock.calls[0][0] as SentMail, options: mockSend.mock.calls[0][1] }
 }
 
+// The English mail and the Norwegian one (#1331), with both bodies joined for the facts each
+// of them has to state.
+async function sendEach(overrides: Partial<Details> = {}) {
+  const en = (await send({ ...overrides, language: 'en' })).mail
+  const nb = (await send({ ...overrides, language: 'nb' })).mail
+  return { en, nb, mail: { ...en, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` } }
+}
+
 function visibleText(html: string): string {
   return html
     .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
@@ -86,26 +94,31 @@ describe('sendInactiveAccountWarningEmail (#1130)', () => {
     restore('NEXTAUTH_URL', originalEnv.nextauth)
   })
 
-  it('names the day, how to keep the account, in English then Norwegian, from the team', async () => {
+  it('names the day, how to keep the account, in English or in Norwegian, from the team (#1331)', async () => {
     const { mail, options } = await send()
 
     expect(mail.to).toBe('player@example.com')
     expect(mail.replyTo).toBe('support@boardly.online')
-    expect(mail.subject).toBe('Your Boardly account will be deleted / Boardly-kontoen din blir slettet')
+    expect(mail.subject).toBe('Your Boardly account will be deleted')
     expect(options).toEqual({ idempotencyKey: 'inactive-account-warning/user_1/2025-12-18' })
+    expect(mail.text).not.toContain('Hei Ola,')
 
-    for (const part of [visibleText(mail.html), mail.text]) {
+    const { nb, mail: both } = await sendEach()
+    expect(nb.subject).toBe('Boardly-kontoen din blir slettet')
+    expect(nb.text).not.toContain('Hi Ola,')
+    for (const part of [visibleText(both.html), both.text]) {
       expect(part).toContain('we will delete yours on December 18, 2027 or shortly after, unless you sign in before then.')
       expect(part).toContain('Sign in at https://boardly.test/auth/login before December 18, 2027 and we keep the account.')
       expect(part).toContain('så vi sletter din 18. desember 2027 eller kort tid etter, hvis du ikke logger inn før det.')
       expect(part).toContain('Logg inn på https://boardly.test/auth/login før 18. desember 2027, så beholder vi kontoen.')
-      expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
+      expect(part).toContain('Hi Ola,')
+      expect(part).toContain('Hei Ola,')
       expect(part).toContain('The Boardly team')
     }
   })
 
   it('says what goes, what stays, and where to get a copy first', async () => {
-    const { mail } = await send()
+    const { mail } = await sendEach()
 
     expect(mail.text).toContain('your name is replaced with "Deleted player"')
     expect(mail.text).toContain('Feedback you sent stays, without your email address and account.')

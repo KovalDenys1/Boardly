@@ -1,6 +1,7 @@
 import type { Prisma } from '@/prisma/client'
 import { prisma } from './db'
 import { sendTermsChangeNoticeEmail } from './email'
+import { emailLanguageFromLocale } from './email-language'
 import { apiLogger } from './logger'
 import { INACTIVITY_RULE_STARTS } from './terms-version'
 
@@ -77,7 +78,7 @@ export async function sendTermsChangeNotices(options: TermsChangeNoticeOptions =
 
   const batch = await prisma.users.findMany({
     where,
-    select: { id: true, email: true, username: true },
+    select: { id: true, email: true, username: true, language: true },
     orderBy: { createdAt: 'asc' },
     take: maxSends,
   })
@@ -88,7 +89,7 @@ export async function sendTermsChangeNotices(options: TermsChangeNoticeOptions =
 
     const sent = await sendEmail(account.email, {
       username: account.username,
-      language: 'en',
+      language: emailLanguageFromLocale(account.language),
       appliesFrom: startOfDay(TERMS_CHANGE_NOTICE.appliesFrom),
       idempotencyKey: `terms-change-notice/${TERMS_CHANGE_NOTICE.version}/${account.id}`,
     })

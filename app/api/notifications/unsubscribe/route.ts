@@ -73,7 +73,7 @@ async function applyUnsubscribe(token: string): Promise<{ ok: true; type: TokenT
  * never clicked. The button POSTs back here with `confirm=1`.
  */
 export async function GET(request: NextRequest) {
-  const lang = emailLanguageFromRequest(request) ?? 'en'
+  const lang = emailLanguageFromRequest(request)
   const token = request.nextUrl.searchParams.get('token') || ''
   const payload = verifyNotificationUnsubscribeToken(token)
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
   const result = await applyUnsubscribe(token)
 
   if (fromPage) {
-    const lang = emailLanguageFromRequest(request) ?? 'en'
+    const lang = emailLanguageFromRequest(request)
     return result.ok
       ? page(lang, COPY[lang].doneTitle, COPY[lang].done(KIND[result.type][lang]))
       : page(lang, COPY[lang].invalidTitle, COPY[lang].invalid, '', 400)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { optionalSessionUser } from '@/lib/session-user'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
-import { emailLanguageFromRequest } from '@/lib/email-language'
+import { emailLanguageFor } from '@/lib/email-language'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
 import { issueVerificationToken } from '@/lib/auth-tokens'
 import { apiLogger } from '@/lib/logger'
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       pendingEmail: string | null
       emailVerified: Date | null
       username: string | null
+      language: string | null
     } | null = null
 
     if (session?.user?.id) {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
           pendingEmail: true,
           emailVerified: true,
           username: true,
+          language: true,
         },
       })
     } else {
@@ -76,6 +78,7 @@ export async function POST(request: NextRequest) {
           pendingEmail: true,
           emailVerified: true,
           username: true,
+          language: true,
         },
       })
     }
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
           verificationTarget,
           token,
           user.username || 'User',
-          emailLanguageFromRequest(request)
+          emailLanguageFor(user.language, request)
         )
 
         log.info('Verification email resent', {

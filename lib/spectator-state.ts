@@ -1,3 +1,4 @@
+import { stripSketchCustomWords } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 type JsonObject = Record<string, unknown>
@@ -73,7 +74,8 @@ export function sanitizeGameStateForSpectator(
   // state blob itself, so apply it once up front rather than relying on each
   // sanitizer to find it.
   if (gameStatus === 'finished') {
-    return parsed
+    // The one secret that outlives a game: the host's word list is the next game's answers.
+    return gameType === 'sketch_and_guess' ? stripSketchCustomWords(parsed as { data?: unknown }) : parsed
   }
 
   // Spy keeps its own key-name scrubber because it also has to reach spy

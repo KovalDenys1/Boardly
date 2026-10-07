@@ -1,3 +1,4 @@
+import { stripSketchCustomWords } from '@/lib/games/sketch-and-guess-game'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
@@ -134,7 +135,10 @@ export async function GET(
       },
       replay: {
         count: replaySnapshots.length,
-        snapshots: replaySnapshots,
+        snapshots:
+          resolvedGameType === 'sketch_and_guess'
+            ? replaySnapshots.map((snapshot) => ({ ...snapshot, state: stripSketchCustomWords(snapshot.state as { data?: unknown }) }))
+            : replaySnapshots,
       },
     }
 

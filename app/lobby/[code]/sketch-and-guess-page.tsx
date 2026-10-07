@@ -1,5 +1,6 @@
 'use client'
 
+import { sketchCustomWordsRules } from '@/lib/sketch-custom-words'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -668,7 +669,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 body: JSON.stringify({
                     gameType: 'sketch_and_guess',
                     lobbyId: lobby.id,
-                    config: { maxPlayers: 10, minPlayers: minPlayersRequired },
+                    config: { maxPlayers: 10, minPlayers: minPlayersRequired, rules: sketchCustomWordsRules() },
                 }),
             })
             const data = await res.json().catch(() => null)

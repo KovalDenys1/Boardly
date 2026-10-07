@@ -45,6 +45,14 @@ async function send(overrides: Partial<Details> = {}): Promise<SentMail> {
   return mockSend.mock.calls[0][0] as SentMail
 }
 
+// The English mail and the Norwegian one (#1331), with both bodies joined for the facts each
+// of them has to state.
+async function sendEach(overrides: Partial<Details> = {}) {
+  const en = await send({ ...overrides, language: 'en' })
+  const nb = await send({ ...overrides, language: 'nb' })
+  return { en, nb, mail: { ...en, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` } }
+}
+
 function visibleText(html: string): string {
   return html
     .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
@@ -75,23 +83,26 @@ describe('sendProviderLinkedNoticeEmail (#1223)', () => {
     restore('NEXTAUTH_URL', originalEnv.nextauth)
   })
 
-  it('names the provider, the time and what to do if it was someone else, in English then Norwegian', async () => {
+  it('names the provider, the time and what to do if it was someone else, in English or in Norwegian (#1331)', async () => {
     const mail = await send()
 
     expect(mail.to).toBe('player@example.com')
     expect(mail.replyTo).toBe('support@boardly.online')
-    expect(mail.subject).toBe(
-      'A Discord account was linked to your Boardly account / En Discord-konto ble koblet til Boardly-kontoen din'
-    )
+    expect(mail.subject).toBe('A Discord account was linked to your Boardly account')
+    expect(mail.text).not.toContain('Hei Ola,')
 
-    for (const part of [visibleText(mail.html), mail.text]) {
+    const { nb, mail: both } = await sendEach()
+    expect(nb.subject).toBe('En Discord-konto ble koblet til Boardly-kontoen din')
+    expect(nb.text).not.toContain('Hi Ola,')
+    for (const part of [visibleText(both.html), both.text]) {
       expect(part).toContain('A Discord account was linked to your Boardly account on October 4, 2026 at 12:30 PM UTC.')
       expect(part).toContain('En Discord-konto ble koblet til Boardly-kontoen din 4. oktober 2026 kl. 12:30 UTC.')
       expect(part).toContain('Sign in at https://boardly.test/profile, find Discord under "Connected Accounts" and choose "Unlink".')
       expect(part).toContain('Logg inn på https://boardly.test/profile, finn Discord under «Tilkoblede kontoer» og velg «Koble fra».')
       expect(part).toContain('set a new password at https://boardly.test/auth/forgot-password')
       expect(part).toContain('et nytt passord på https://boardly.test/auth/forgot-password')
-      expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
+      expect(part).toContain('Hi Ola,')
+      expect(part).toContain('Hei Ola,')
       expect(part).toContain('The Boardly team · support@boardly.online')
     }
     expect(mail.html).toContain('<a href="https://boardly.test/profile"')
@@ -102,9 +113,9 @@ describe('sendProviderLinkedNoticeEmail (#1223)', () => {
     ['google', 'A Google account was linked', 'En Google-konto ble koblet'],
     ['github', 'A GitHub account was linked', 'En GitHub-konto ble koblet'],
   ] as const)('names %s by its own name', async (provider, english, norwegian) => {
-    const mail = await send({ provider })
+    const { en, mail } = await sendEach({ provider })
 
-    expect(mail.subject).toContain(english)
+    expect(en.subject).toContain(english)
     expect(mail.text).toContain(english)
     expect(mail.text).toContain(norwegian)
     expect(mail.text).not.toContain('find Discord')

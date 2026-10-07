@@ -31,10 +31,10 @@ export class RockPaperScissorsBotExecutor {
       message: `${botPlayer.name} is thinking...`,
     })
 
-    await botDelay(difficulty, 200)
-
+    const thinkingStartedAt = Date.now()
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
+    await botDelay(difficulty, 200, Date.now() - thinkingStartedAt)
     await onMove(move)
 
     onBotAction?.({

@@ -50,6 +50,14 @@ async function send(overrides: Partial<Details> = {}): Promise<{ mail: SentMail;
   return { mail: mockSend.mock.calls[0][0] as SentMail, options: mockSend.mock.calls[0][1] }
 }
 
+// The English mail and the Norwegian one (#1331), with both bodies joined for the facts each
+// of them has to state.
+async function sendEach(overrides: Partial<Details> = {}) {
+  const en = (await send({ ...overrides, language: 'en' })).mail
+  const nb = (await send({ ...overrides, language: 'nb' })).mail
+  return { en, nb, mail: { ...en, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` } }
+}
+
 function visibleText(html: string): string {
   return html
     .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
@@ -90,22 +98,27 @@ describe('sendSuspensionNoticeEmail (#1231)', () => {
     restore('NEXTAUTH_URL', originalEnv.nextauth)
   })
 
-  it('gives the reason, the end date and the appeal link, in English then Norwegian', async () => {
+  it('gives the reason, the end date and the appeal link, in English or in Norwegian (#1331)', async () => {
     const { mail, options } = await send()
 
     expect(mail.to).toBe('player@example.com')
     expect(mail.replyTo).toBe('support@boardly.online')
-    expect(mail.subject).toBe('Your Boardly account has been suspended / Boardly-kontoen din er suspendert')
+    expect(mail.subject).toBe('Your Boardly account has been suspended')
     expect(options).toEqual({ idempotencyKey: 'suspension-notice/user_1/abc' })
+    expect(mail.text).not.toContain('Hei Ola,')
 
-    for (const part of [visibleText(mail.html), mail.text]) {
+    const { nb, mail: both } = await sendEach()
+    expect(nb.subject).toBe('Boardly-kontoen din er suspendert')
+    expect(nb.text).not.toContain('Hi Ola,')
+    for (const part of [visibleText(both.html), both.text]) {
       expect(part).toContain('We have suspended your Boardly account.')
       expect(part).toContain('Repeated insults in lobby chat')
       expect(part).toContain('The suspension ends on October 4, 2026 at 12:30 PM UTC.')
       expect(part).toContain('Suspensjonen varer til 4. oktober 2026 kl. 12:30 UTC.')
       expect(part).toContain('appeal with the form at https://boardly.online/suspended')
       expect(part).toContain('klage med skjemaet på https://boardly.online/suspended')
-      expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
+      expect(part).toContain('Hi Ola,')
+      expect(part).toContain('Hei Ola,')
       expect(part).toContain('The Boardly team · support@boardly.online')
     }
     expect(mail.html).toContain('<a href="https://boardly.online/suspended"')
@@ -113,7 +126,7 @@ describe('sendSuspensionNoticeEmail (#1231)', () => {
   })
 
   it('says "until further notice" when the suspension has no end date', async () => {
-    const { mail } = await send({ expiresAt: null })
+    const { mail } = await sendEach({ expiresAt: null })
 
     expect(mail.text).toContain('The suspension lasts until further notice.')
     expect(mail.text).toContain('Suspensjonen gjelder inntil videre.')

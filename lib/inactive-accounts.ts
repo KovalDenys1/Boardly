@@ -4,6 +4,7 @@ import { apiLogger } from './logger'
 import { RETENTION_DAYS } from './retention-periods'
 import { neverCustomerWhere } from './cleanup-unverified'
 import { sendInactiveAccountWarningEmail } from './email'
+import { emailLanguageFromLocale } from './email-language'
 import { deleteUserAccount } from './account-deletion'
 import { resolveRetentionEnforceOverride, type RetentionEnforceOverride } from './data-retention'
 import { INACTIVITY_RULE_STARTS } from './terms-version'
@@ -102,6 +103,7 @@ type Candidate = {
   id: string
   email: string | null
   username: string | null
+  language: string | null
   lastActiveAt: Date
   inactivityWarningSentAt: Date | null
   inactivityWarningDeliveredAt: Date | null
@@ -111,6 +113,7 @@ const CANDIDATE_SELECT = {
   id: true,
   email: true,
   username: true,
+  language: true,
   lastActiveAt: true,
   inactivityWarningSentAt: true,
   inactivityWarningDeliveredAt: true,
@@ -270,6 +273,7 @@ export async function enforceInactiveAccounts(options: InactiveAccountRunOptions
 
     const sent = await sendEmail(candidate.email, {
       username: candidate.username,
+      language: emailLanguageFromLocale(candidate.language),
       deleteOn: inactiveDeletionDate(candidate.lastActiveAt, now),
       idempotencyKey: `inactive-account-warning/${candidate.id}/${candidate.lastActiveAt.toISOString().slice(0, 10)}`,
     })

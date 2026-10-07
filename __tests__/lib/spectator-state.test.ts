@@ -105,3 +105,12 @@ describe('spectator state sanitization', () => {
     expect(sanitized.data.playerChoices).toEqual({ p1: 'rock', p2: 'scissors' })
   })
 })
+
+describe('sanitizeGameStateForSpectator – Sketch & Guess word list (#1086)', () => {
+  it('drops the host\'s word list even from a finished game, which is otherwise returned as is', () => {
+    const state = { status: 'finished', data: { rounds: [], customWords: ['office plant'], customWordsOnly: true } }
+    const out = JSON.stringify(sanitizeGameStateForSpectator('sketch_and_guess', state, 'finished'))
+    expect(out).not.toContain('office plant')
+    expect(out).not.toContain('customWordsOnly')
+  })
+})

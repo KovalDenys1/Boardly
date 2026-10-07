@@ -30,8 +30,15 @@ function parseNonNegativeInt(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
 }
 
-export function botDelay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, resolveBotUxDelayMs(difficulty, baseMs)))
+/**
+ * The bot's pause. `alreadyElapsedMs` is time the bot has already spent on this
+ * step - its search - which the pause absorbs instead of adding to: a hard bot
+ * that thought for 300 ms of a 250 ms pause moves at once.
+ */
+export function botDelay(difficulty: BotDifficulty, baseMs: number, alreadyElapsedMs = 0): Promise<void> {
+  const remainingMs = resolveBotUxDelayMs(difficulty, baseMs) - Math.max(0, alreadyElapsedMs)
+  if (remainingMs <= 0) return Promise.resolve()
+  return new Promise((resolve) => setTimeout(resolve, remainingMs))
 }
 
 export function resolveBotUxDelayMs(difficulty: BotDifficulty, baseDelayMs: number): number {

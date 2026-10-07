@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { sendSuspensionNoticeEmail } from '@/lib/email'
+import { emailLanguageFromLocale } from '@/lib/email-language'
 import {
   controlPanelJson,
   guardControlPanelRequest,
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
       username: true,
       isGuest: true,
       suspended: true,
+      language: true,
       bot: { select: { id: true } },
     },
   })
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
   const noticeHash = createHash('sha256').update(`${reason}\n${expiresAt ?? ''}`).digest('hex').slice(0, 24)
   const result = await sendSuspensionNoticeEmail(user.email, {
     username: user.username,
+    language: emailLanguageFromLocale(user.language),
     reason,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
     idempotencyKey: `suspension-notice/${user.id}/${noticeHash}`,

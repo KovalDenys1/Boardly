@@ -97,7 +97,8 @@ describe('cleanup-unverified', () => {
       'pending@example.com',
       'warning-token-123',
       'pending-user',
-      expect.any(Number)
+      expect.any(Number),
+      'en'
     )
   })
 

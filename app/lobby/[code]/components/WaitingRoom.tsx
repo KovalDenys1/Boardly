@@ -12,6 +12,7 @@ import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBan
 import TryBotGamesBanner from './TryBotGamesBanner'
 import WaitingRoomDiscordHint from './WaitingRoomDiscordHint'
 import WaitingRoomGuide, { type KickedPlayer } from './WaitingRoomGuide'
+import SketchCustomWords from './SketchCustomWords'
 import { toAnalyticsGameType } from '@/lib/analytics'
 
 const BOT_DIFFICULTY_ICON: Record<BotDifficulty, IconName> = {
@@ -307,6 +308,8 @@ export default function WaitingRoom({
       {showTryBotGames && game?.createdAt && (
         <TryBotGamesBanner waitingSinceMs={new Date(game.createdAt).getTime()} />
       )}
+
+      {lobby?.gameType === 'sketch_and_guess' && !!lobby.creatorId && getCurrentUserId() === lobby.creatorId && <SketchCustomWords />}
 
       <WaitingRoomGuide
         gameType={lobby?.gameType}

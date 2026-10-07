@@ -13,6 +13,10 @@ jest.mock('@/lib/db', () => ({
   prisma: { users: { count: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() } },
 }))
 jest.mock('@/lib/email', () => ({ sendTermsChangeNoticeEmail: jest.fn() }))
+const mockResendSend = jest.fn()
+jest.mock('resend', () => ({
+  Resend: jest.fn().mockImplementation(() => ({ emails: { send: mockResendSend } })),
+}))
 jest.mock('@/lib/logger', () => ({
   apiLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }))
@@ -106,5 +110,32 @@ describe('Terms change notice (#1224)', () => {
 
     expect(result).toMatchObject({ approved: true, inTime: false, due: 2, sent: 0 })
     expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('writes the mail to each account in its stored language only: Norwegian for no, English for ru and for none (#1331)', async () => {
+    process.env.RESEND_API_KEY = 're_test'
+    mockResendSend.mockReset()
+    mockResendSend.mockResolvedValue({ data: { id: 'email_1' }, error: null })
+    const { sendTermsChangeNoticeEmail } = jest.requireActual('@/lib/email')
+    prisma.users.count.mockResolvedValue(3)
+    prisma.users.findMany.mockResolvedValue([
+      { id: 'u1', email: 'no@example.com', username: 'Kari', language: 'no' },
+      { id: 'u2', email: 'ru@example.com', username: 'Ivan', language: 'ru' },
+      { id: 'u3', email: 'none@example.com', username: 'Sam', language: null },
+    ])
+
+    await run({ sendEmail: sendTermsChangeNoticeEmail })
+
+    const mails = Object.fromEntries(mockResendSend.mock.calls.map(([mail]) => [mail.to, mail]))
+    expect(mails['no@example.com'].subject).toBe('Boardlys vilkår er oppdatert')
+    expect(mails['no@example.com'].text).toContain('Hei Kari,')
+    expect(mails['no@example.com'].text).not.toContain('Hi Kari,')
+    expect(mails['no@example.com'].html).not.toContain('<div lang="en">')
+    for (const [address, name] of [['ru@example.com', 'Ivan'], ['none@example.com', 'Sam']]) {
+      expect(mails[address].subject).toBe('An update to the Boardly Terms of Service')
+      expect(mails[address].text).toContain(`Hi ${name},`)
+      expect(mails[address].text).not.toContain('Hei ')
+      expect(mails[address].html).not.toContain('<div lang="nb">')
+    }
   })
 })
