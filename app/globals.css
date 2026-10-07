@@ -4573,6 +4573,63 @@ html.dark .spy-secret-tile {
   touch-action: auto;
   user-select: auto;
 }
+.sketch-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@container (min-width: 480px) {
+  .sketch-gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (min-width: 760px) {
+  .sketch-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.sketch-gallery__item { min-width: 0; }
+/* A 320px phone keeps the title on one line and the button to its icon. */
+@container (max-width: 360px) {
+  .sketch-gallery-save__label { display: none; }
+}
+.sketch-gallery__frame {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 27, 22, 0.16);
+  background: #ffffff;
+  overflow: hidden;
+}
+.sketch-gallery__canvas { width: 100%; height: 100%; display: block; }
+.sketch-gallery__empty {
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b6358;
+  text-align: center;
+}
+.sketch-gallery__word {
+  margin: 6px 0 0;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--bd-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sketch-gallery__by {
+  margin: 0;
+  font-size: 12px;
+  color: var(--bd-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sketch-canvas-corner {
   position: absolute;
   top: 6px;

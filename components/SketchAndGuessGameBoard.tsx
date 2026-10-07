@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import SketchGallery, { buildSketchGalleryEntries } from '@/components/SketchGallery'
 import type {
   SketchAndGuessGameData,
   SketchAndGuessGuess,
@@ -984,9 +985,18 @@ export default function SketchAndGuessGameBoard({
     />
   )
 
-  // A finished game keeps the last round on the board: the result overlay sits
-  // over it and "View Board" dismisses the overlay to show exactly this.
-  if (isFinished || gameData.phase === 'reveal') {
+  // A finished game shows every round's drawing under the result overlay, and
+  // "View Board" dismisses the overlay onto it (#1087).
+  if (isFinished) {
+    return (
+      <SketchGallery
+        entries={buildSketchGalleryEntries(gameData.rounds, (round) => sketchWordDisplay(roundWord(round), locale), nameOf)}
+        t={t}
+      />
+    )
+  }
+
+  if (gameData.phase === 'reveal') {
     return (
       <RevealView
         round={currentRound}
