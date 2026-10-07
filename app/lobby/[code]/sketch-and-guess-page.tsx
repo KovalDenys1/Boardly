@@ -99,7 +99,7 @@ const SKETCH_ACCENT_DEEP = 'var(--bd-mint-deep)'
 /** The engine's three phases, as a number the turn timer can hang a signature off. */
 const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { choosing: 0, drawing: 1, reveal: 2 }
 
-type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-guess' | 'advance-round'
+type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-guess' | 'hide-drawing' | 'advance-round'
 
 /**
  * What a round starts with, and what a page shows for any round the draft below
@@ -409,12 +409,21 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             playerName?: string
             remainingPlayers?: number
             gameTerminal?: boolean
+            nextCreatorId?: string
+            nextCreatorName?: string
         }) => {
             clientLogger.log('📡 Sketch & Guess player left:', data)
             if (isLeavingLobbyRef.current) return
 
             const departedPlayerName = data.username || data.playerName
             if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+            if (data.nextCreatorId) {
+                if (data.nextCreatorId === getCurrentUserId()) {
+                    showToast.success('toast.youAreNowHost')
+                } else if (data.nextCreatorName) {
+                    showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
+                }
+            }
 
             if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
                 triggerLifecycleRedirect('player-left:insufficient-players')
@@ -422,7 +431,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             }
             void loadLobbyData()
         },
-        [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect, isLeavingLobbyRef]
+        [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect, isLeavingLobbyRef, getCurrentUserId]
     )
 
     useEffect(() => {
@@ -616,6 +625,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const handleAdvanceRound = useCallback(async () => { await submitAction('advance-round', {}) }, [submitAction])
     const handleChooseWord = useCallback(async (wordId: string) => { await submitAction('choose-word', { wordId }) }, [submitAction])
     const handleAcceptGuess = useCallback(async (guessId: string) => { await submitAction('accept-guess', { guessId }) }, [submitAction])
+    const handleHideDrawing = useCallback(async () => { await submitAction('hide-drawing', {}) }, [submitAction])
 
     const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
@@ -1120,6 +1130,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 onAdvanceRound={handleAdvanceRound}
                 onChooseWord={handleChooseWord}
                 onAcceptGuess={handleAcceptGuess}
+                onHideDrawing={handleHideDrawing}
                 isSubmitting={isSubmitting}
                 isSpectator={isSpectator}
                 isHost={isCreator}

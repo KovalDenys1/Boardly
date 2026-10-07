@@ -159,7 +159,7 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
    multi-row board sized purely from `100vw` can come out taller than the usable
    viewport and be silently clipped (#688 again).
 
-## In-game layout — Definition of Done (rule from 2026-09-06)
+## In-game layout — Definition of Done
 
 Every in-game screen must look **finished at every viewport** (320 / 390 / 768 / 1280,
 plus 844×390 landscape). Check before calling it done:

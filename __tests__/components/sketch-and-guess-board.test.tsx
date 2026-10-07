@@ -329,3 +329,67 @@ describe('SketchAndGuessGameBoard for a spectator', () => {
     expect(screen.queryByText('games.guess_my_drawing.game.spectatorNotice')).not.toBeNull()
   })
 })
+
+describe('SketchAndGuessGameBoard host hides a drawing (#1088)', () => {
+  const hideButton = () => screen.queryByRole('button', { name: 'games.guess_my_drawing.game.hideDrawing' })
+
+  it('offers Hide to the host only, and sends it', () => {
+    const onHideDrawing = jest.fn(async () => {})
+    const { unmount } = render(<SketchAndGuessGameBoard {...buildProps({ isHost: true, onHideDrawing })} />)
+    fireEvent.click(hideButton()!)
+    expect(onHideDrawing).toHaveBeenCalledTimes(1)
+    unmount()
+
+    render(<SketchAndGuessGameBoard {...buildProps({ onHideDrawing })} />)
+    expect(hideButton()).toBeNull()
+  })
+
+  it('blanks the canvas with a notice for guessers, the drawer and the reveal, and offers Hide no more', () => {
+    const hidden = { drawingHiddenByHost: true }
+    const { unmount } = render(<SketchAndGuessGameBoard {...buildProps({ isHost: true, onHideDrawing: jest.fn(), gameData: buildGameData({}, hidden) })} />)
+    expect(screen.getByTestId('sketch-drawing-hidden')).toBeTruthy()
+    expect(hideButton()).toBeNull()
+    unmount()
+
+    const drawer = render(<SketchAndGuessGameBoard {...buildProps({ playerId: 'user-2', gameData: buildGameData({}, { ...hidden, word: CASTLE }) })} />)
+    expect(screen.getByTestId('sketch-drawing-hidden')).toBeTruthy()
+    drawer.unmount()
+
+    render(<SketchAndGuessGameBoard {...buildProps({ gameData: buildGameData({ phase: 'reveal' }, { ...hidden, word: CASTLE, drawingContent: '{"strokes":[]}' }) })} />)
+    expect(screen.getByTestId('sketch-drawing-hidden')).toBeTruthy()
+  })
+})
+
+describe('SketchAndGuessGameBoard finished gallery (#1087)', () => {
+  const drawing = (strokes: unknown[], extra = {}) => JSON.stringify({ type: 'drawing', version: 1, width: 480, height: 480, strokes, ...extra })
+  const line = { color: '#1F1B16', width: 3, points: [{ x: 1, y: 1 }, { x: 40, y: 40 }] }
+
+  it("shows every round's drawing with its word and drawer, and says why one is missing", () => {
+    const base = buildGameData({ phase: 'reveal', currentRound: 3 })
+    const round = base.rounds[0]
+    const gameData = {
+      ...base,
+      rounds: [
+        { ...round, round: 1, drawerId: 'user-2', word: CASTLE, drawingContent: drawing([line]) },
+        { ...round, round: 2, drawerId: 'user-1', word: CAT, drawingContent: drawing([line]), drawingHiddenByHost: true },
+        { ...round, round: 3, drawerId: 'user-3', word: DOG, drawingContent: drawing([line], { autoSubmitted: true }) },
+      ],
+    }
+    const { container } = render(<SketchAndGuessGameBoard {...buildProps({ gameData, gameStatus: 'finished' })} />)
+
+    expect(screen.getByTestId('sketch-gallery')).toBeTruthy()
+    expect(screen.getByText('castle')).toBeTruthy()
+    expect(screen.getByText('cat')).toBeTruthy()
+    expect(screen.getByText('dog')).toBeTruthy()
+    expect(container.querySelectorAll('.sketch-gallery__canvas')).toHaveLength(1)
+    expect(screen.getByText('games.guess_my_drawing.game.drawingHidden')).toBeTruthy()
+    expect(screen.getByText('games.guess_my_drawing.game.galleryNoDrawing')).toBeTruthy()
+    expect(screen.getByRole('button', { name: "games.guess_my_drawing.game.saveGallery" })).toBeTruthy()
+  })
+
+  it('offers no Save when there is nothing to save', () => {
+    const base = buildGameData({ phase: 'reveal' }, { word: CASTLE, drawingContent: null })
+    render(<SketchAndGuessGameBoard {...buildProps({ gameData: base, gameStatus: 'finished' })} />)
+    expect(screen.queryByRole('button', { name: "games.guess_my_drawing.game.saveGallery" })).toBeNull()
+  })
+})

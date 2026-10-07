@@ -51,6 +51,7 @@ describe('i18n UI smoke checks', () => {
           onPlayAgain={() => {}}
           onRequestRematch={() => {}}
           onBackToLobby={() => {}}
+          faceCounts={[11, 9, 12, 10, 8, 10]}
         />
       )
 
@@ -63,6 +64,12 @@ describe('i18n UI smoke checks', () => {
       expect(screen.queryByText(i18n.t('yahtzee.results.requestRematch'))).not.toBeNull()
       expect(screen.queryByText(i18n.t('yahtzee.results.backToLobbies'))).not.toBeNull()
       expect(screen.queryByText(i18n.t('yahtzee.results.hostCanStartNextRound'))).not.toBeNull()
+
+      // #1085: the face tally, translated, with every face's count from the server.
+      expect(screen.queryByText(i18n.t('yahtzee.results.diceTally'))).not.toBeNull()
+      expect(screen.queryByText(i18n.t('yahtzee.results.diceRolled', { count: 60 }))).not.toBeNull()
+      expect(screen.queryByText('Dice tally')).toBeNull()
+      expect(screen.getByLabelText(i18n.t('yahtzee.results.faceCount', { face: 3, count: 12 }))).toBeTruthy()
 
       // The after-game block renders here with no SessionProvider in the tree, which is
       // why it takes `isRegistered` as a prop instead of calling useSession() (#982).

@@ -213,3 +213,36 @@ describe('Chat community rules link (#1173)', () => {
     expect(panel.children).toHaveLength(3)
   })
 })
+
+// #1088: a mute is the viewer's own, per lobby, and survives a reload on this device.
+describe('Chat mute action (#1088)', () => {
+  beforeEach(() => window.localStorage.clear())
+
+  it("hides a player's messages, keeps the mute for this lobby, and lets the viewer undo it", () => {
+    const { unmount } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
+    )
+    expect(screen.queryByRole('button', { name: 'chat.mutePlayer' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'chat.mutePlayer' }))
+    expect(screen.queryByText('hi back')).toBeNull()
+    expect(screen.getByText('hello there')).toBeTruthy()
+    unmount()
+
+    // Reload: still hidden in this lobby, visible in another.
+    const { unmount: unmount2 } = render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
+    )
+    expect(screen.queryByText('hi back')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'chat.unmuteAll' }))
+    expect(screen.getByText('hi back')).toBeTruthy()
+    unmount2()
+
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="9999" fullScreen />)
+    expect(screen.getByText('hi back')).toBeTruthy()
+  })
+
+  it('offers no mute on your own message or without a lobby', () => {
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u2" fullScreen />)
+    expect(screen.queryByRole('button', { name: 'chat.mutePlayer' })).toBeNull()
+  })
+})

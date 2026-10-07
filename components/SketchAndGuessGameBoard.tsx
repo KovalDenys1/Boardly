@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import SketchGallery, { buildSketchGalleryEntries } from '@/components/SketchGallery'
 import type {
   SketchAndGuessGameData,
   SketchAndGuessGuess,
@@ -38,6 +39,8 @@ interface SketchAndGuessGameBoardProps {
   onChooseWord?: (wordId: string) => Promise<void>
   /** Host only: mark another player's wrong guess correct (#1082). */
   onAcceptGuess?: (guessId: string) => Promise<void>
+  /** Host only: blank this round's drawing for everyone (#1088). */
+  onHideDrawing?: () => Promise<void>
   isSubmitting: boolean
   isSpectator?: boolean
   /** Whether the viewer created the lobby, which is who may accept a guess. */
@@ -169,9 +172,12 @@ function SketchCanvas({
   activeColor,
   activeWidth,
   overlay,
+  corner,
 }: {
   /** Laid over the canvas inside its frame – the word choices, or who is choosing. */
   overlay?: ReactNode
+  /** A small control in the frame's top corner that leaves the canvas drawable – the host's Hide (#1088). */
+  corner?: ReactNode
   strokes: Stroke[]
   onStrokesChange?: (strokes: Stroke[]) => void
   /** The stroke being drawn right now, on every point; null when it ends. */
@@ -324,6 +330,7 @@ function SketchCanvas({
           onPointerLeave={finishStroke}
         />
         {overlay && <div className="sketch-canvas-overlay">{overlay}</div>}
+        {corner && <div className="sketch-canvas-corner">{corner}</div>}
       </div>
     </div>
   )
@@ -482,15 +489,31 @@ function ChoosingView({
 // No submit button since #1082: the round ends when the clock does or when the
 // last guesser has it, and the page sends the canvas as the reveal opens.
 
+/** What the host's Hide does to a canvas: blank it, say why, or offer the control (#1088). */
+interface CanvasMask {
+  hidden: boolean
+  corner?: ReactNode
+}
+
+function hiddenOverlay(t: TFn) {
+  return (
+    <p className="sketch-choices__wait" data-testid="sketch-drawing-hidden">
+      <Icon name="eye-off" size={16} tone="muted" /> {t('games.guess_my_drawing.game.drawingHidden')}
+    </p>
+  )
+}
+
 function DrawerCanvasView({
   word,
   draft,
   onDraftChange,
   onLiveStroke,
   feed,
+  mask,
   t,
 }: {
   word: string
+  mask: CanvasMask
   draft: SketchAndGuessDraft
   onDraftChange: (patch: Partial<SketchAndGuessDraft>) => void
   onLiveStroke?: (stroke: Stroke | null) => void
@@ -510,7 +533,11 @@ function DrawerCanvasView({
         <span className="sketch-word-chip__word">{word}</span>
       </div>
 
-      <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} onLiveStroke={onLiveStroke} interactive activeColor={activeColor} activeWidth={activeWidth} />
+      {mask.hidden ? (
+        <SketchCanvas strokes={[]} interactive={false} overlay={hiddenOverlay(t)} />
+      ) : (
+        <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} onLiveStroke={onLiveStroke} interactive activeColor={activeColor} activeWidth={activeWidth} corner={mask.corner} />
+      )}
 
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {BRUSH_COLORS.map((swatch) => (
@@ -602,8 +629,10 @@ function GuesserDrawingView({
   onSubmitGuess,
   isSubmitting,
   feed,
+  mask,
   t,
 }: {
+  mask: CanvasMask
   hint: SketchWordHint | null
   liveView: SketchLiveView | null
   canGuess: boolean
@@ -637,7 +666,11 @@ function GuesserDrawingView({
   return (
     <div className="sketch-phase">
       {hint && <WordHint hint={hint} t={t} />}
-      <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} />
+      {mask.hidden ? (
+        <SketchCanvas strokes={[]} interactive={false} overlay={hiddenOverlay(t)} />
+      ) : (
+        <SketchCanvas strokes={liveView?.strokes ?? []} liveStroke={liveView?.live ?? null} interactive={false} corner={mask.corner} />
+      )}
 
       {feed}
 
@@ -711,8 +744,10 @@ function RevealView({
   isLastRound,
   feed,
   animate = false,
+  mask,
   t,
 }: {
+  mask: CanvasMask
   round: SketchAndGuessRound
   word: string
   nameOf: (id: string) => string
@@ -767,7 +802,11 @@ function RevealView({
         )}
       </div>
 
-      <SketchCanvas strokes={strokes} interactive={false} />
+      {mask.hidden ? (
+        <SketchCanvas strokes={[]} interactive={false} overlay={hiddenOverlay(t)} />
+      ) : (
+        <SketchCanvas strokes={strokes} interactive={false} corner={mask.corner} />
+      )}
 
       {feed}
     </div>
@@ -836,6 +875,7 @@ export default function SketchAndGuessGameBoard({
   onAdvanceRound,
   onChooseWord,
   onAcceptGuess,
+  onHideDrawing,
   isSubmitting,
   isSpectator = false,
   isHost = false,
@@ -915,6 +955,24 @@ export default function SketchAndGuessGameBoard({
     return <div className="sketch-phase items-center justify-center text-sm text-bd-ink-muted">{t('common.loading')}</div>
   }
 
+  const isHidden = currentRound.drawingHiddenByHost === true
+  const mask: CanvasMask = {
+    hidden: isHidden,
+    corner:
+      isHost && !isSpectator && !isFinished && !isHidden && onHideDrawing && (gameData.phase === 'drawing' || gameData.phase === 'reveal') ? (
+        <button
+          type="button"
+          className="sketch-hide-btn"
+          onClick={() => void onHideDrawing()}
+          disabled={isSubmitting}
+          aria-label={t('games.guess_my_drawing.game.hideDrawing')}
+          title={t('games.guess_my_drawing.game.hideDrawing')}
+        >
+          <Icon name="eye-off" size={16} />
+        </button>
+      ) : undefined,
+  }
+
   const feed = (
     <GuessFeed
       guesses={currentRound.guesses ?? []}
@@ -927,9 +985,18 @@ export default function SketchAndGuessGameBoard({
     />
   )
 
-  // A finished game keeps the last round on the board: the result overlay sits
-  // over it and "View Board" dismisses the overlay to show exactly this.
-  if (isFinished || gameData.phase === 'reveal') {
+  // A finished game shows every round's drawing under the result overlay, and
+  // "View Board" dismisses the overlay onto it (#1087).
+  if (isFinished) {
+    return (
+      <SketchGallery
+        entries={buildSketchGalleryEntries(gameData.rounds, (round) => sketchWordDisplay(roundWord(round), locale), nameOf)}
+        t={t}
+      />
+    )
+  }
+
+  if (gameData.phase === 'reveal') {
     return (
       <RevealView
         round={currentRound}
@@ -943,6 +1010,7 @@ export default function SketchAndGuessGameBoard({
         isLastRound={gameData.currentRound >= gameData.totalRounds}
         feed={feed}
         animate={revealFresh && !isFinished}
+        mask={mask}
         t={t}
       />
     )
@@ -969,6 +1037,7 @@ export default function SketchAndGuessGameBoard({
       onDraftChange={patchDraft}
       onLiveStroke={onLiveStroke}
       feed={feed}
+      mask={mask}
       t={t}
     />
   ) : (
@@ -982,6 +1051,7 @@ export default function SketchAndGuessGameBoard({
       onSubmitGuess={onSubmitGuess}
       isSubmitting={isSubmitting}
       feed={feed}
+      mask={mask}
       t={t}
     />
   )

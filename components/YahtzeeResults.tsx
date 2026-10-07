@@ -27,6 +27,8 @@ interface YahtzeeResultsProps {
   lobbyCode?: string
   /** `status === 'authenticated' && !isGuest`, decided by the caller (#982). */
   isRegistered?: boolean
+  /** Times each face 1–6 came up this game, from the server's state; null hides the tally (#1085). */
+  faceCounts?: number[] | null
 }
 
 function RankIcon({ rank }: { rank: number }) {
@@ -66,6 +68,7 @@ export default function YahtzeeResults({
   lobbyCode,
   isRegistered = false,
   mode = 'classic',
+  faceCounts = null,
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
   const totalRounds = getActiveCategories(mode).length
@@ -95,6 +98,8 @@ export default function YahtzeeResults({
   const secondPlace = results[1] ?? null
   const winnerMargin = secondPlace ? winner.totalScore - secondPlace.totalScore : winner.totalScore
   const winnerScoreBase = Math.max(1, winner.totalScore)
+  const diceRolled = faceCounts ? faceCounts.reduce((sum, n) => sum + n, 0) : 0
+  const mostCommonFace = faceCounts ? Math.max(1, ...faceCounts) : 1
   const autoReturnSeconds = autoReturnAt ? Math.max(0, Math.ceil((autoReturnAt - now) / 1000)) : null
 
   return (
@@ -152,6 +157,7 @@ export default function YahtzeeResults({
           </div>
 
           <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
+            <div className="flex min-w-0 flex-col gap-4">
             <section
               className="rounded-bd-lg border p-4 sm:p-5"
               style={{
@@ -210,6 +216,45 @@ export default function YahtzeeResults({
                 </div>
               )}
             </section>
+
+            {faceCounts && diceRolled > 0 && (
+              <section
+                className="rounded-bd-lg border p-4 sm:p-5"
+                style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}
+                data-testid="yahtzee-face-tally"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="bd-kicker">{t('yahtzee.results.diceTally')}</span>
+                  <span className="text-xs font-semibold text-bd-ink-soft">{t('yahtzee.results.diceRolled', { count: diceRolled })}</span>
+                </div>
+                <ul className="mt-3 grid grid-cols-6 gap-2">
+                  {faceCounts.map((count, index) => (
+                    <li
+                      key={index}
+                      className="flex flex-col items-center gap-1.5"
+                      aria-label={t('yahtzee.results.faceCount', { face: index + 1, count })}
+                    >
+                      <span className="text-xs font-bold text-bd-ink">{count}</span>
+                      <div className="flex h-14 w-full items-end overflow-hidden rounded-lg" style={{ background: 'var(--bd-bg2)' }}>
+                        <div
+                          className="h-full w-full origin-bottom rounded-lg"
+                          style={{ background: 'var(--bd-sun)', transform: `scaleY(${count / mostCommonFace})` }}
+                        />
+                      </div>
+                      <span
+                        className="grid h-7 w-7 place-items-center rounded-md border text-sm font-extrabold text-bd-ink"
+                        style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-card-warm)' }}
+                        aria-hidden="true"
+                      >
+                        {index + 1}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs text-bd-ink-soft">{t('yahtzee.results.tallyNote')}</p>
+              </section>
+            )}
+            </div>
 
             <section>
               <div className="mb-3 flex items-center justify-between gap-3">

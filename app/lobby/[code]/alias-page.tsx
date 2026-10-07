@@ -738,15 +738,22 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     triggerLifecycleRedirect('alias-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean; nextCreatorId?: string; nextCreatorName?: string }) => {
     clientLogger.log('📡 Alias player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
+    if (payload.nextCreatorId) {
+      if (payload.nextCreatorId === getCurrentUserId()) {
+        showToast.success('toast.youAreNowHost')
+      } else if (payload.nextCreatorName) {
+        showToast.info('toast.hostReassigned', undefined, { player: payload.nextCreatorName })
+      }
+    }
     if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('alias-lifecycle-redirect')
       return
     }
     void loadLobby()
-  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
+  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, getCurrentUserId])
 
   // Guesses arrive as server-signed `chat-message` broadcasts from
   // POST /api/lobby/[code]/alias-guess, so the name on each is the sender's own.
@@ -1828,6 +1835,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const nextTeamIdx = (data.currentTeamIndex + 1) % data.teams.length
     const nextTeam = data.teams[nextTeamIdx]
     const isNextTeamPlayer = !!nextTeam?.playerIds.includes(currentUserId ?? '')
+    const lastDescriberName = playerDisplayName(players.find(p => p.userId === result.describerId))
     // Only while this turn's result is fresh (#1115): a reload shows it settled.
     const countIn = turnResultsFresh
     // Words, then the turn score, then the team total, in that order however
@@ -1844,7 +1852,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <section style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignSelf: 'start' }} className="p-4 md:p-7">
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <BdLabel>{playerDisplayName(describerPlayer) ? t('alias.describerWords', { name: describerDisplayName }) : t('alias.wordsThisTurn')}</BdLabel>
+                  <BdLabel>{lastDescriberName ? t('alias.describerWords', { name: lastDescriberName }) : t('alias.wordsThisTurn')}</BdLabel>
                   <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: isMobile ? 22 : 28, margin: 0 }}>
                     {t('alias.wordsCount', { count: wordResults.length })}
                   </h2>

@@ -788,10 +788,17 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     triggerLifecycleRedirect('liars-party-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean; nextCreatorId?: string; nextCreatorName?: string }) => {
     clientLogger.log('📡 LiarsParty player left', payload)
     if (isLeavingLobbyRef.current) return
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
+    if (payload.nextCreatorId) {
+      if (payload.nextCreatorId === getCurrentUserId()) {
+        showToast.success('toast.youAreNowHost')
+      } else if (payload.nextCreatorName) {
+        showToast.info('toast.hostReassigned', undefined, { player: payload.nextCreatorName })
+      }
+    }
     // Only a match in progress dies when the roster falls under the minimum.
     // This game seats four before it can start, so a waiting room of three is an
     // ordinary state – one more person walks in and it starts. Without the status
@@ -803,7 +810,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       return
     }
     void loadLobby()
-  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, isLeavingLobbyRef])
+  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, isLeavingLobbyRef, getCurrentUserId])
 
   const handleGameReset = useCallback(() => {
     if (onGameReset) onGameReset()

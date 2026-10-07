@@ -414,6 +414,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
         { questionKey: 'games.yahtzee.detail.faq.isThereABot.q', answerKey: 'games.yahtzee.detail.faq.isThereABot.a' },
         { questionKey: 'games.yahtzee.detail.faq.timerRunsOut.q', answerKey: 'games.yahtzee.detail.faq.timerRunsOut.a' },
         { questionKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.q', answerKey: 'games.yahtzee.detail.faq.yatzyOrYahtzee.a' },
+        { questionKey: 'games.yahtzee.detail.faq.serverRolls.q', answerKey: 'games.yahtzee.detail.faq.serverRolls.a' },
         { questionKey: 'games.yahtzee.detail.faq.needAccount.q', answerKey: 'games.yahtzee.detail.faq.needAccount.a' },
         { questionKey: 'games.yahtzee.detail.faq.worksOnPhone.q', answerKey: 'games.yahtzee.detail.faq.worksOnPhone.a' },
         { questionKey: 'games.yahtzee.detail.faq.howManyPlayers.q', answerKey: 'games.yahtzee.detail.faq.howManyPlayers.a' },

@@ -253,6 +253,33 @@ describe('AliasLobbyPage', () => {
     })
     expect(mockReplace).not.toHaveBeenCalled()
   })
+
+  it('tells the player who inherits the room that they are now the host (#1089)', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-1', nextCreatorName: 'Alice' },
+      })
+    })
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('toast.youAreNowHost'))
+  })
+
+  it('names the new host to everyone else (#1089)', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-3', nextCreatorName: 'Carol' },
+      })
+    })
+
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith('toast.hostReassigned', undefined, { player: 'Carol' }))
+    expect(toast.success).not.toHaveBeenCalledWith('toast.youAreNowHost')
+  })
 })
 
 // #770 — the turn timer effect used to call clearInterval(id) from a
@@ -482,6 +509,27 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
     const line = screen.getByText(/alias\.describerTurnLine/)
     expect(line.textContent).toContain('"name":"Bob"')
     expect(line.textContent).toContain('"team":"Team 1"')
+  })
+
+  it('names the player who just described on the turn results, not the next describer (#1330)', async () => {
+    const response = buildTurnResponse({ meDescribing: false })
+    const data = response.activeGame.state.data as Record<string, unknown> & typeof response.activeGame.state.data
+    data.phase = 'turn_results'
+    data.currentCard = null
+    // _endTurn has already moved team 1 on to its next describer, Alice.
+    data.teams[0].describerIndex = 1
+    data.lastTurnResult = {
+      teamId: 'team-1',
+      describerId: 'user-2',
+      wordResults: [{ word: 'apple', result: 'guessed' }],
+      scoreDelta: 1,
+      turnIndex: 0,
+    } as never
+    mountWith(response)
+    await waitFor(() => expect(screen.getByTestId('alias-turn-results-screen')).toBeTruthy())
+
+    const label = screen.getByText(/alias\.describerWords/)
+    expect(label.textContent).toContain('"name":"Bob"')
   })
 
   it('keeps the guess feed reachable on the describer screen', async () => {

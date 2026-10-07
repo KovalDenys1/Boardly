@@ -2056,6 +2056,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <YahtzeeResults
             mode={finishedYahtzeeEngine!.getMode()}
+            faceCounts={finishedYahtzeeEngine!.getFaceCounts()}
             results={analyzeResults(
               finishedYahtzeeEngine!.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
               (id) => finishedYahtzeeEngine!.getScorecard(id)
@@ -2235,6 +2236,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
             <YahtzeeResults
               mode={gameEngine.getMode()}
+              faceCounts={gameEngine.getFaceCounts()}
               results={analyzeResults(
                 gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
                 (id) => gameEngine.getScorecard(id)

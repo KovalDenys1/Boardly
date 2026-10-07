@@ -41,10 +41,12 @@ describe('Terms change notice (#1224)', () => {
     expect(termsChangeNoticeDeadline().toISOString()).toBe('2026-12-02T00:00:00.000Z')
   })
 
-  it('only counts while the send is not approved', async () => {
-    expect(TERMS_CHANGE_NOTICE_SEND).toBe(false)
+  it('is approved to send', () => {
+    expect(TERMS_CHANGE_NOTICE_SEND).toBe(true)
+  })
 
-    const result = await sendTermsChangeNotices({ now: NOW, sendEmail })
+  it('only counts while the send is not approved', async () => {
+    const result = await sendTermsChangeNotices({ now: NOW, approved: false, sendEmail })
 
     expect(result).toEqual({ version: '2026-10-05', approved: false, inTime: true, due: 2, sent: 0, failed: 0 })
     expect(sendEmail).not.toHaveBeenCalled()
@@ -52,7 +54,7 @@ describe('Terms change notice (#1224)', () => {
     expect(prisma.users.updateMany).not.toHaveBeenCalled()
   })
 
-  it('owes it to registered people with a verified address who had an account when the version was published', () => {
+  it('owes it to registered people with a real verified address who had an account when the version was published', () => {
     expect(termsChangeNoticeWhere()).toEqual({
       isGuest: false,
       bot: null,
@@ -60,6 +62,10 @@ describe('Terms change notice (#1224)', () => {
       emailVerified: { not: null },
       createdAt: { lt: new Date('2026-10-06T00:00:00.000Z') },
       OR: [{ termsNoticeVersion: null }, { termsNoticeVersion: { not: '2026-10-05' } }],
+      NOT: [
+        { email: { endsWith: '@example.com', mode: 'insensitive' } },
+        { email: { endsWith: '@test.com', mode: 'insensitive' } },
+      ],
     })
   })
 
@@ -68,8 +74,8 @@ describe('Terms change notice (#1224)', () => {
 
     expect(result).toMatchObject({ approved: true, inTime: true, due: 2, sent: 2, failed: 0 })
     expect(sendEmail.mock.calls).toEqual([
-      ['one@example.com', { username: 'one', appliesFrom: new Date('2027-01-01T00:00:00.000Z'), idempotencyKey: 'terms-change-notice/2026-10-05/u1' }],
-      ['two@example.com', { username: null, appliesFrom: new Date('2027-01-01T00:00:00.000Z'), idempotencyKey: 'terms-change-notice/2026-10-05/u2' }],
+      ['one@example.com', { username: 'one', language: 'en', appliesFrom: new Date('2027-01-01T00:00:00.000Z'), idempotencyKey: 'terms-change-notice/2026-10-05/u1' }],
+      ['two@example.com', { username: null, language: 'en', appliesFrom: new Date('2027-01-01T00:00:00.000Z'), idempotencyKey: 'terms-change-notice/2026-10-05/u2' }],
     ])
     expect(prisma.users.updateMany.mock.calls.map(([call]) => call)).toEqual([
       { where: { id: 'u1' }, data: { termsNoticeVersion: '2026-10-05', termsNoticeSentAt: NOW } },

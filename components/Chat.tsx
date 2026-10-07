@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import ReportDialog from '@/components/ReportDialog'
 import { REPORT_QUOTED_TEXT_MAX_CHARS } from '@/lib/content-reports'
+import { readLocal, writeLocal, removeLocal } from '@/lib/safe-storage'
 
 interface ChatMessage {
   id: string
@@ -37,9 +38,24 @@ interface ChatProps {
   readOnly?: boolean
   /**
    * The lobby the messages belong to. With it (and a signed-in or guest viewer), every
-   * other player's message carries a Report action (#1172); without it there is none.
+   * other player's message carries a Report action (#1172) and a Mute action (#1088);
+   * without it there is neither.
    */
   lobbyCode?: string
+}
+
+function mutedStorageKey(lobbyCode: string) {
+  return `boardly_chat_muted_${lobbyCode}`
+}
+
+function readMuted(lobbyCode: string | undefined): string[] {
+  if (!lobbyCode) return []
+  try {
+    const parsed: unknown = JSON.parse(readLocal(mutedStorageKey(lobbyCode)) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
 }
 
 export default function Chat({
@@ -60,6 +76,17 @@ export default function Chat({
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const [reportedMessage, setReportedMessage] = useState<ChatMessage | null>(null)
+  // A mute is the viewer's own: it hides that player's messages on this device, in
+  // this lobby, and tells nobody (#1088).
+  const [muted, setMuted] = useState<{ lobbyCode?: string; ids: string[] }>(() => ({ lobbyCode, ids: readMuted(lobbyCode) }))
+  const mutedIds = muted.lobbyCode === lobbyCode ? muted.ids : readMuted(lobbyCode)
+  const setMutedIds = (ids: string[]) => {
+    setMuted({ lobbyCode, ids })
+    if (!lobbyCode) return
+    if (ids.length > 0) writeLocal(mutedStorageKey(lobbyCode), JSON.stringify(ids))
+    else removeLocal(mutedStorageKey(lobbyCode))
+  }
+  const visibleMessages = mutedIds.length > 0 ? messages.filter((msg) => !mutedIds.includes(msg.userId)) : messages
   const [showScrollButton, setShowScrollButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
@@ -97,7 +124,7 @@ export default function Chat({
     if (!showScrollButton) {
       scrollToBottom()
     }
-  }, [messages, showScrollButton])
+  }, [visibleMessages.length, showScrollButton])
 
   useEffect(() => {
     if (!isMinimized && !fullScreen) {
@@ -215,14 +242,26 @@ export default function Chat({
               {t('chat.title')}
             </h3>
           </div>
-          {messages.length > 0 && (
-            <span className="bd-chip shrink-0 px-2 py-0.5 text-xs" aria-label={t('chat.messageCount', { count: messages.length })}>
-              {messages.length}
+          {visibleMessages.length > 0 && (
+            <span className="bd-chip shrink-0 px-2 py-0.5 text-xs" aria-label={t('chat.messageCount', { count: visibleMessages.length })}>
+              {visibleMessages.length}
             </span>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {mutedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setMutedIds([])}
+              aria-label={t('chat.unmuteAll', { count: mutedIds.length })}
+              title={t('chat.unmuteAll', { count: mutedIds.length })}
+              className="chat-unmute-button inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+            >
+              <Icon name="eye-off" size={14} />
+              <span>{mutedIds.length}</span>
+            </button>
+          )}
           {/* The community rules (#1173), in the title strip's right-hand side, which
               is empty in the game dock (fullScreen has no controls): no new row on a
               game screen. A short visible label, so the strip keeps the title on one
@@ -282,7 +321,7 @@ export default function Chat({
         aria-labelledby="chat-title"
         aria-label={t('chat.title')}
       >
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="mb-4 grid h-16 w-16 place-items-center rounded-[1.25rem] border-2 border-bd-ink bg-bd-sun text-3xl shadow-[4px_4px_0_var(--bd-ink)]">💬</div>
             <p className="mb-2 text-lg font-semibold text-bd-ink">{t('chat.noMessages')}</p>
@@ -290,13 +329,13 @@ export default function Chat({
           </div>
         ) : (
           <>
-            {messages.map((msg, index) => {
+            {visibleMessages.map((msg, index) => {
               const isCurrentUser = msg.userId === currentUserId
               // Another player's message, seen by someone who can report: a guest or a
               // signed-in player (both have a currentUserId), in a known lobby.
               const canReport =
                 !!lobbyCode && !!currentUserId && !isCurrentUser && msg.type !== 'system' && msg.userId !== 'system'
-              const showAvatar = msg.type !== 'system' && (index === 0 || messages[index - 1].userId !== msg.userId)
+              const showAvatar = msg.type !== 'system' && (index === 0 || visibleMessages[index - 1].userId !== msg.userId)
               const profile = playerProfiles?.get(msg.userId)
               const avatarUrl = profile?.avatarUrl
               const isPremium = profile?.isPremium
@@ -381,6 +420,17 @@ export default function Chat({
                               className="chat-report-button -my-1.5 ml-auto grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
                             >
                               <Icon name="flag" size={12} />
+                            </button>
+                          )}
+                          {canReport && (
+                            <button
+                              type="button"
+                              onClick={() => setMutedIds([...mutedIds, msg.userId])}
+                              aria-label={t('chat.mutePlayer', { player: msg.username })}
+                              title={t('chat.mutePlayer', { player: msg.username })}
+                              className="chat-mute-button -my-1.5 grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                            >
+                              <Icon name="eye-off" size={12} />
                             </button>
                           )}
                         </div>

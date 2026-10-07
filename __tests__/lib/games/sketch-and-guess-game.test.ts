@@ -1008,3 +1008,35 @@ describe('PR #1100 review fixes', () => {
     expect(getData(game).rounds[0].drawingStartedAt).toBe(now - 50_000)
   })
 })
+
+describe('SketchAndGuessGame – host hides a drawing (#1088)', () => {
+  it('needs the route to vouch for the host, then marks the round hidden', () => {
+    const { game } = drawingGame('hide-1')
+    expect(game.makeMove(createMove('player1', 'hide-drawing', {}))).toBe(false)
+    game.authorizeHost('player1')
+    expect(game.makeMove(createMove('player2', 'hide-drawing', {}))).toBe(false)
+    expect(game.makeMove(createMove('player1', 'hide-drawing', {}))).toBe(true)
+    expect(getData(game).rounds[0].drawingHiddenByHost).toBe(true)
+  })
+
+  it('never sends a hidden drawing out again, in any phase, while the server keeps it for a report', () => {
+    const { game, startAt } = drawingGame('hide-2')
+    const drawerId = getData(game).currentDrawerId
+    game.makeMove(createMove(drawerId, 'save-drawing', { content: 'secret-strokes-payload' }, startAt + 5000))
+    game.authorizeHost('player1')
+    game.makeMove(createMove('player1', 'hide-drawing', {}))
+
+    for (const viewer of [null, drawerId, 'player3']) {
+      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer)
+      expect(JSON.stringify(published)).not.toContain('secret-strokes-payload')
+    }
+    expect(getData(game).rounds[0].drawingContent).toBe('secret-strokes-payload')
+
+    game.applyTimeoutFallback(undefined, (getData(game).phaseStartedAt as number) + DRAWING_MS)
+    expect(getData(game).phase).toBe('reveal')
+    const revealed = sanitizeSketchAndGuessStateForBroadcast(game.getState(), null)
+    expect(JSON.stringify(revealed)).not.toContain('secret-strokes-payload')
+    // Not null: the drawer's page reads null as "not sent yet" and would send it again.
+    expect((revealed.data as { rounds: Array<{ drawingContent: string | null }> }).rounds[0].drawingContent).not.toBeNull()
+  })
+})

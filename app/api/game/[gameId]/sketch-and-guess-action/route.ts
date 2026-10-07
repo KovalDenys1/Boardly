@@ -312,6 +312,13 @@ export async function POST(
       // client writes (PR #1100 review).
       sketchGame.authorizeHost(userId)
       move = { playerId: userId, type: 'accept-guess', data: { guessId: body.data.guessId }, timestamp: now }
+    } else if (body.action === 'hide-drawing') {
+      // #1088: the host blanks a drawing for everyone, the same host check as accept-guess.
+      if (!game.lobby?.creatorId || game.lobby.creatorId !== userId) {
+        return NextResponse.json({ error: 'Only the host can hide a drawing', code: 'NOT_HOST' }, { status: 403 })
+      }
+      sketchGame.authorizeHost(userId)
+      move = { playerId: userId, type: 'hide-drawing', data: {}, timestamp: now }
     } else {
       move = { playerId: userId, type: 'submit-guess', data: { guess: body.data.guess.trim() }, timestamp: now }
     }
