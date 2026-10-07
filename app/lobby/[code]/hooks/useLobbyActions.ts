@@ -1,3 +1,4 @@
+import { sketchCustomWordsRules } from '@/lib/sketch-custom-words'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { toAnalyticsGameType } from '@/lib/analytics-game-types'
@@ -711,6 +712,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           config: {
             maxPlayers: readFiniteNumber(effectiveLobby.maxPlayers, 4),
             minPlayers: requiredMinPlayers,
+            ...(gameType === 'sketch_and_guess' ? { rules: sketchCustomWordsRules() } : {}),
           }
         }),
       })

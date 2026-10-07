@@ -7,6 +7,7 @@ import {
   isSketchNearMiss,
   sanitizeSketchAndGuessActionEventForBroadcast,
   sanitizeSketchAndGuessStateForBroadcast,
+  stripSketchCustomWords,
 } from '@/lib/games/sketch-and-guess-game'
 import {
   SKETCH_GUESS_MIN_INTERVAL_MS,
@@ -1038,5 +1039,72 @@ describe('SketchAndGuessGame – host hides a drawing (#1088)', () => {
     expect(JSON.stringify(revealed)).not.toContain('secret-strokes-payload')
     // Not null: the drawer's page reads null as "not sent yet" and would send it again.
     expect((revealed.data as { rounds: Array<{ drawingContent: string | null }> }).rounds[0].drawingContent).not.toBeNull()
+  })
+})
+
+describe('SketchAndGuessGame – the host\'s own words (#1086)', () => {
+  const twelve = ['pizza night', 'office plant', 'grandma', 'the red car', 'tuesday', 'karaoke', 'lost keys', 'big dog', 'coffee', 'sunburn', 'bad wifi', 'hat']
+
+  function customGame(rules: Record<string, unknown>) {
+    const game = new SketchAndGuessGame('custom', { maxPlayers: 10, minPlayers: 3, rules } as never)
+    addDefaultPlayers(game, 3)
+    expect(game.startGame()).toBe(true)
+    return game
+  }
+
+  it('offers only the host\'s words when asked to, and a guess matches exactly as typed', () => {
+    const game = customGame({ customWords: twelve, customWordsOnly: true })
+    const choices = getData(game).rounds[0].wordChoices
+    expect(choices).toHaveLength(3)
+    for (const choice of choices) expect(twelve).toContain(choice.en[0])
+
+    const startAt = Date.now()
+    game.makeMove(createMove('player1', 'choose-word', { wordId: choices[0].id }, startAt))
+    game.makeMove(createMove('player2', 'submit-guess', { guess: choices[0].en[0] }, startAt + 1000))
+    expect(getData(game).rounds[0].guesses[0].isCorrect).toBe(true)
+  })
+
+  it('plays the bank when the list is under the minimum', () => {
+    const game = customGame({ customWords: twelve.slice(0, 9), customWordsOnly: true })
+    expect(getData(game).customWords).toBeUndefined()
+    for (const choice of getData(game).rounds[0].wordChoices) expect(choice.id.startsWith('custom-')).toBe(false)
+  })
+
+  it('never publishes the list, to anyone, in data or in the config copy', () => {
+    const game = customGame({ customWords: twelve, customWordsOnly: false })
+    expect(getData(game).customWords).toHaveLength(12)
+    for (const viewer of [null, 'player1', 'player2']) {
+      const published = JSON.stringify(sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer))
+      expect(published).not.toContain('office plant')
+      expect(published).not.toContain('customWords')
+    }
+    expect(JSON.stringify(stripSketchCustomWords(game.getState()))).not.toContain('office plant')
+  })
+
+  it('mixed: one of the three choices is always the host\'s, and a bank word they repeat is not offered twice', () => {
+    for (let i = 0; i < 20; i++) {
+      const game = customGame({ customWords: [...twelve.slice(0, 9), 'cat'], customWordsOnly: false })
+      const choices = getData(game).rounds[0].wordChoices
+      expect(choices.filter((c) => c.id.startsWith('custom-'))).toHaveLength(1)
+      expect(choices.filter((c) => c.en.includes('cat')).length).toBeLessThanOrEqual(1)
+    }
+  })
+})
+
+describe('SketchAndGuessGame – the list ends with the game (#1086)', () => {
+  it('deletes the host\'s list from state when the game finishes', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => `word ${i}`)
+    const game = new SketchAndGuessGame('custom-end', { maxPlayers: 10, minPlayers: 3, rules: { customWords: twelve } } as never)
+    addDefaultPlayers(game, 3)
+    game.startGame()
+    expect(getData(game).customWords).toHaveLength(12)
+    let now = Date.now()
+    for (let i = 0; i < 40 && game.getState().status !== 'finished'; i++) {
+      now += 10 * 60_000
+      game.applyTimeoutFallback(undefined, now)
+    }
+    expect(game.getState().status).toBe('finished')
+    expect(getData(game).customWords).toBeUndefined()
+    expect(getData(game).customWordsOnly).toBeUndefined()
   })
 })

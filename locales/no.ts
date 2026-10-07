@@ -2632,6 +2632,23 @@ const no = {
       difficulty: 'Middels'
     },
     guess_my_drawing: {
+      customWords: {
+        title: 'Dine egne ord',
+        summaryOff: 'Av: spillet bruker sin egen ordliste',
+        summaryMixed: '{{count}} ord, blandet med våre',
+        summaryMixed_other: '{{count}} ord, blandet med våre',
+        summaryOnly: '{{count}} ord, bare dine',
+        summaryOnly_other: '{{count}} ord, bare dine',
+        help: 'Lim inn minst {{min}} ord eller korte uttrykk, skilt med komma eller linjeskift. Opptil 32 tegn hver. De lagres på denne enheten og gjettes nøyaktig slik de er skrevet.',
+        placeholder: 'pizzakveld, kontorplanten, bestemor',
+        count: '{{count}} ord blir brukt',
+        count_other: '{{count}} ord blir brukt',
+        tooFew: '{{count}} av {{min}} ord: legg til noen flere, ellers bruker spillet sin egen liste',
+        tooFew_other: '{{count}} av {{min}} ord: legg til noen flere, ellers bruker spillet sin egen liste',
+        only: 'Bruk bare mine ord',
+        clear: 'Tøm',
+        save: 'Lagre',
+      },
       name: 'Tegn og gjett',
       description: 'Tegn en hemmelig ledetråd og gjett hverandres skisser så raskt du kan!',
       difficulty: 'Middels',
