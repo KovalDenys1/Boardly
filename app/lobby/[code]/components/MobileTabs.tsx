@@ -3,7 +3,7 @@
 import { sounds } from '@/lib/sounds'
 import { Icon, type IconName } from '@/components/icons'
 
-export type TabId = 'game' | 'scorecard' | 'players' | 'chat'
+export type TabId = 'game' | 'players' | 'chat'
 
 interface Tab {
   id: TabId

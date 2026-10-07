@@ -4,12 +4,12 @@ import MobileTabPanel from '@/app/lobby/[code]/components/MobileTabPanel'
 describe('MobileTabPanel', () => {
   it('keeps inactive panels hidden without moving them off-canvas', () => {
     render(
-      <MobileTabPanel id="scorecard" activeTab="game">
-        <div>Scorecard content</div>
+      <MobileTabPanel id="players" activeTab="game">
+        <div>Players content</div>
       </MobileTabPanel>
     )
 
-    const panel = screen.getByText('Scorecard content').parentElement?.parentElement as HTMLElement
+    const panel = screen.getByText('Players content').parentElement?.parentElement as HTMLElement
 
     const style = panel.getAttribute('style') ?? ''
 

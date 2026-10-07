@@ -47,9 +47,6 @@ const LOWER_ICON: Partial<Record<YahtzeeCategory, IconName>> = {
   chance: 'dice',
 }
 
-/** How long an armed 0-point tile waits for its confirming second tap. */
-const ZERO_CONFIRM_MS = 3000
-
 function TileGlyph({ category }: { category: YahtzeeCategory }) {
   const face = UPPER_FACE[category]
   if (face !== undefined) return <Die value={face} size={16} />
@@ -72,18 +69,14 @@ export default function YahtzeeTileGrid({
   const model = buildScorecardTiles({ scorecard, mode, dice, canScore })
 
   // A 0-point tile is armed by the first tap and scored by the second. Any
-  // change to the roll or the card disarms it, so a stale arm never scores.
+  // change to the roll, the card or the turn disarms it, so a stale arm never
+  // scores; nothing else does (WCAG 2.2.1).
   const [armed, setArmed] = React.useState<YahtzeeCategory | null>(null)
   // Keys, not identities: the engine may hand over a fresh array or object
   // on every render, which must not count as a change.
   const diceKey = dice.join('')
   const scorecardKey = JSON.stringify(scorecard)
   React.useEffect(() => { setArmed(null) }, [diceKey, scorecardKey, canScore])
-  React.useEffect(() => {
-    if (!armed) return
-    const timeout = setTimeout(() => setArmed(null), ZERO_CONFIRM_MS)
-    return () => clearTimeout(timeout)
-  }, [armed])
 
   // The box that was just filled gets a brief flash.
   const [justScored, setJustScored] = React.useState<YahtzeeCategory | null>(null)
@@ -239,7 +232,7 @@ export default function YahtzeeTileGrid({
       ) : (
         <b className="yz-footer__total">{model.total}</b>
       )}
-      {otherPlayerName && onBackToMine && !inGrid && (
+      {otherPlayerName && onBackToMine && (
         <button
           type="button"
           className="yz-footer__back"
@@ -254,12 +247,19 @@ export default function YahtzeeTileGrid({
     </div>
   )
 
+  const armedAnnouncement = (
+    <span className="sr-only" aria-live="polite">
+      {armed ? t('yahtzee.ui.tileConfirmZeroAria', { category: label(armed) }) : ''}
+    </span>
+  )
+
   if (variant === 'card') {
     return (
       <div className="yz-card">
         {children}
         {grid(null)}
         {footer(false)}
+        {armedAnnouncement}
       </div>
     )
   }
@@ -268,6 +268,7 @@ export default function YahtzeeTileGrid({
     <>
       {grid(footer(true))}
       {footer(false)}
+      {armedAnnouncement}
     </>
   )
 }

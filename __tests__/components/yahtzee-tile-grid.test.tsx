@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import YahtzeeTileGrid from '@/components/yahtzee/YahtzeeTileGrid'
 
 jest.mock('@/lib/i18n-helpers', () => ({
@@ -71,6 +71,62 @@ describe('YahtzeeTileGrid (#1187)', () => {
     rerender(<YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={[3, 3, 3, 5, 5]} canScore onScore={onScore} />)
     fireEvent.click(tile(container, 'yahtzee'))
     expect(onScore).not.toHaveBeenCalled()
+  })
+
+  it('keeps a 0 tile armed until the roll or the turn changes, with no timeout', () => {
+    jest.useFakeTimers()
+    try {
+      const onScore = jest.fn()
+      const { container } = render(
+        <YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={mockupDice} canScore onScore={onScore} />,
+      )
+      fireEvent.click(tile(container, 'yahtzee'))
+      act(() => { jest.advanceTimersByTime(60_000) })
+      expect(tile(container, 'yahtzee').classList.contains('yz-tile--armed')).toBe(true)
+      fireEvent.click(tile(container, 'yahtzee'))
+      expect(onScore).toHaveBeenCalledWith('yahtzee')
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('disarms a 0 tile when the turn passes', () => {
+    const { container, rerender } = render(
+      <YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={mockupDice} canScore onScore={jest.fn()} />,
+    )
+    fireEvent.click(tile(container, 'yahtzee'))
+    rerender(<YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={mockupDice} canScore={false} onScore={jest.fn()} />)
+    expect(tile(container, 'yahtzee').classList.contains('yz-tile--armed')).toBe(false)
+  })
+
+  it('announces the armed 0 tile in a live region', () => {
+    const { container } = render(
+      <YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={mockupDice} canScore onScore={jest.fn()} />,
+    )
+    const live = container.querySelector('[aria-live="polite"]') as HTMLElement
+    expect(live).not.toBeNull()
+    expect(live.textContent).toBe('')
+    fireEvent.click(tile(container, 'yahtzee'))
+    expect(live.textContent).toContain('yahtzee.ui.tileConfirmZeroAria')
+  })
+
+  it('offers My card in the in-grid footer that phone landscape shows', () => {
+    const onBackToMine = jest.fn()
+    const { container } = render(
+      <YahtzeeTileGrid
+        scorecard={mockupCard}
+        mode="classic"
+        dice={mockupDice}
+        canScore={false}
+        onScore={jest.fn()}
+        otherPlayerName="Anna"
+        onBackToMine={onBackToMine}
+      />,
+    )
+    const back = container.querySelector('.yz-footer--in-grid .yz-footer__back') as HTMLElement
+    expect(back).not.toBeNull()
+    fireEvent.click(back)
+    expect(onBackToMine).toHaveBeenCalledTimes(1)
   })
 
   it('is read-only on someone else\'s card and names whose it is', () => {
