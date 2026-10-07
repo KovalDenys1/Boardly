@@ -567,7 +567,7 @@ describe('POST /api/auth/register', () => {
       },
     })
     expect(JSON.stringify(mockPrisma.emailVerificationTokens.create.mock.calls)).not.toContain('"verification-token"')
-    expect(mockSendVerificationEmail).toHaveBeenCalledWith('new@example.com', 'verification-token', undefined, undefined)
+    expect(mockSendVerificationEmail).toHaveBeenCalledWith('new@example.com', 'verification-token', undefined, 'en')
     expect(payload.user).toEqual({
       id: REAL_USER_ID,
       email: 'new@example.com',

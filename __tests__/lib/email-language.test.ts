@@ -1,4 +1,4 @@
-import { emailLanguageFromRequest } from '@/lib/email-language'
+import { emailLanguageFor, emailLanguageFromLocale, emailLanguageFromRequest } from '@/lib/email-language'
 
 const request = (acceptLanguage?: string) => ({
   headers: new Headers(acceptLanguage === undefined ? {} : { 'accept-language': acceptLanguage }),
@@ -18,7 +18,34 @@ describe('emailLanguageFromRequest (#1298)', () => {
     expect(emailLanguageFromRequest(request(header))).toBe(expected)
   })
 
-  it.each([undefined, '', '*', 'nb;q=0'])('knows no language from %p, so the mail keeps both', (header) => {
-    expect(emailLanguageFromRequest(request(header))).toBeUndefined()
+  it.each([undefined, '', '*', 'nb;q=0'])('writes in English when %p names no language (#1331)', (header) => {
+    expect(emailLanguageFromRequest(request(header))).toBe('en')
+  })
+})
+
+describe('emailLanguageFromLocale (#1331)', () => {
+  it.each([
+    ['no', 'nb'],
+    ['en', 'en'],
+    ['ru', 'en'],
+    ['uk', 'en'],
+    [null, 'en'],
+    [undefined, 'en'],
+    ['xx', 'en'],
+  ])('writes a mail to an account stored as %p in %s', (locale, expected) => {
+    expect(emailLanguageFromLocale(locale)).toBe(expected)
+  })
+})
+
+describe('emailLanguageFor (#1331)', () => {
+  it('prefers the stored language over Accept-Language', () => {
+    expect(emailLanguageFor('en', request('nb-NO,nb;q=0.9'))).toBe('en')
+    expect(emailLanguageFor('no', request('en-US,en;q=0.9'))).toBe('nb')
+    expect(emailLanguageFor('ru', request('nb-NO'))).toBe('en')
+  })
+
+  it('falls back to Accept-Language when the account has no stored language', () => {
+    expect(emailLanguageFor(null, request('nb-NO'))).toBe('nb')
+    expect(emailLanguageFor(undefined, request('de-DE'))).toBe('en')
   })
 })

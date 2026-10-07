@@ -4,6 +4,7 @@ import type { AdapterAccount } from 'next-auth/adapters'
 import { CustomPrismaAdapter } from '@/lib/custom-prisma-adapter'
 import { prisma } from '@/lib/db'
 import { sendProviderLinkedNoticeEmail } from '@/lib/email'
+import { emailLanguageFromLocale } from '@/lib/email-language'
 import { apiLogger } from '@/lib/logger'
 import { constantTimeEqual } from '@/lib/secret-compare'
 import { AccountSuspendedError, getOptionalSessionUser } from '@/lib/session-user'
@@ -302,11 +303,12 @@ async function notifyOwnerOfLink(userId: string): Promise<void> {
   try {
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      select: { email: true, username: true, isGuest: true, bot: { select: { id: true } } },
+      select: { email: true, username: true, isGuest: true, language: true, bot: { select: { id: true } } },
     })
     if (!user?.email || user.isGuest || user.bot) return
     const notice = await sendProviderLinkedNoticeEmail(user.email, {
       username: user.username,
+      language: emailLanguageFromLocale(user.language),
       provider: 'discord',
       linkedAt: new Date(),
     })

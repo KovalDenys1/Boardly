@@ -191,6 +191,7 @@ describe('/api/internal/admin', () => {
       await expect(response.json()).resolves.toEqual({ sent: true })
       expect(sendSuspensionNoticeEmail).toHaveBeenCalledWith('player@example.com', {
         username: 'Ola',
+        language: 'en',
         reason: 'Spam in lobby chat',
         expiresAt: new Date('2026-10-04T12:00:00.000Z'),
         idempotencyKey: expect.stringMatching(/^suspension-notice\/user-1\/[0-9a-f]{24}$/),

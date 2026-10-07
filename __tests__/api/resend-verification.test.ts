@@ -162,7 +162,7 @@ describe('POST /api/auth/resend-verification', () => {
       'pending@example.com',
       'mock-verification-token',
       'pending-user',
-      undefined
+      'en'
     )
   })
 
@@ -241,7 +241,7 @@ describe('POST /api/auth/resend-verification', () => {
       'new@example.com',
       'mock-verification-token',
       'player-four',
-      undefined
+      'en'
     )
   })
 
