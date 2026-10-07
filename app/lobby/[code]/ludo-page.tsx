@@ -1327,7 +1327,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                 <GameTabs
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
-                        { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${data.eventCount})` },
+                        { id: 'history' as const, label: t('game.ui.tabMoves') },
                         { id: 'rules' as const, label: t('games.ludo.game.rulesTab') },
                         ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
                     ]}

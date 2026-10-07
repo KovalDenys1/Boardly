@@ -479,7 +479,7 @@ export default function MemoryGameBoard({
       className="memory-grid"
       style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
     >
-      {cards.map((card) => {
+      {cards.map((card, cardIndex) => {
         const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
         const isDisabled =
@@ -499,6 +499,13 @@ export default function MemoryGameBoard({
             type="button"
             onClick={() => handleCardClick(card.id)}
             disabled={isDisabled}
+            aria-label={
+              card.isMatched && card.value
+                ? t('games.memory.game.cardMatched', { num: cardIndex + 1, value: card.value })
+                : isFaceUp && card.value
+                  ? t('games.memory.game.cardFaceUp', { num: cardIndex + 1, value: card.value })
+                  : t('games.memory.game.cardFaceDown', { num: cardIndex + 1 })
+            }
             className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}${justMatchedIds.includes(card.id) ? ' memory-tile-match-cue' : ''}${pendingMismatchCardIds.includes(card.id) ? ' memory-tile-mismatch-cue' : ''}`}
           >
             <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
@@ -821,7 +828,7 @@ export default function MemoryGameBoard({
           {headerSection}
           {statusSection}
 
-          <main className="memory-layout">
+          <div className="memory-layout">
             <section className={`memory-board-panel${desktopShowsResultOverlay ? ' memory-board-panel--result' : ''}`} style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               <div className="ttt-board-surface">
                 {cardGrid}
@@ -870,7 +877,7 @@ export default function MemoryGameBoard({
               {historyPanel}
               {chatSection}
             </aside>
-          </main>
+          </div>
         </div>
       </div>
 

@@ -5252,8 +5252,14 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   box-sizing: border-box;
 }
 .ludo-actions__text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
-.ludo-actions__title,
-.ludo-actions__hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-actions__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-actions__hint {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-height: 1.3;
+}
 .ludo-actions__title { font-weight: 700; font-size: 13px; color: var(--bd-ink); }
 .ludo-actions__hint { font-size: 11px; color: var(--bd-ink-muted); }
 .ludo-roll-button {
