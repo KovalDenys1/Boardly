@@ -1153,14 +1153,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     )
 
+    // A bot accepts every undo and then replays its move, so a bot game has no undo.
+    const hasBotPlayer = players.some((p) => !!p.user?.bot || !!p.bot)
+
     // Leave and the spectator's way back live in the header (layout DoD).
-    const actionsSection = isSpectator ? null : (
+    const actionsSection = isSpectator || hasBotPlayer ? null : (
         <div className="flex flex-col md:flex-row gap-2">
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
                 className="w-full md:w-auto"
-                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
+                style={{ minHeight: 44, padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
             </button>
