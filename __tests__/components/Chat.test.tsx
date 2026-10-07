@@ -241,6 +241,18 @@ describe('Chat mute action (#1088)', () => {
     expect(screen.getByText('hi back')).toBeTruthy()
   })
 
+  it('hides the player in every chat on the page, as one per layout tree is mounted', () => {
+    render(
+      <>
+        <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
+        <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
+      </>
+    )
+    expect(screen.getAllByText('hi back')).toHaveLength(2)
+    fireEvent.click(screen.getAllByRole('button', { name: 'chat.mutePlayer' })[0])
+    expect(screen.queryAllByText('hi back')).toHaveLength(0)
+  })
+
   it('offers no mute on your own message or without a lobby', () => {
     render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u2" fullScreen />)
     expect(screen.queryByRole('button', { name: 'chat.mutePlayer' })).toBeNull()

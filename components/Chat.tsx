@@ -44,6 +44,8 @@ interface ChatProps {
   lobbyCode?: string
 }
 
+const MUTED_EVENT = 'boardly:chat-muted'
+
 function mutedStorageKey(lobbyCode: string) {
   return `boardly_chat_muted_${lobbyCode}`
 }
@@ -85,7 +87,17 @@ export default function Chat({
     if (!lobbyCode) return
     if (ids.length > 0) writeLocal(mutedStorageKey(lobbyCode), JSON.stringify(ids))
     else removeLocal(mutedStorageKey(lobbyCode))
+    window.dispatchEvent(new CustomEvent(MUTED_EVENT, { detail: lobbyCode }))
   }
+  // A game page mounts one Chat per layout tree; the others must hide the same players.
+  useEffect(() => {
+    if (!lobbyCode) return
+    const onMuted = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === lobbyCode) setMuted({ lobbyCode, ids: readMuted(lobbyCode) })
+    }
+    window.addEventListener(MUTED_EVENT, onMuted)
+    return () => window.removeEventListener(MUTED_EVENT, onMuted)
+  }, [lobbyCode])
   const visibleMessages = mutedIds.length > 0 ? messages.filter((msg) => !mutedIds.includes(msg.userId)) : messages
   const [showScrollButton, setShowScrollButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
