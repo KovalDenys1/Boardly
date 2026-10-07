@@ -156,7 +156,7 @@ export default function YahtzeeResults({
             </div>
           </div>
 
-          <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
+          <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
             <div className="flex min-w-0 flex-col gap-4">
             <section
               className="rounded-bd-lg border p-4 sm:p-5"

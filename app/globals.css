@@ -2006,6 +2006,25 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/* Idle turn (#1343): a ring on the banner's own box pulses, so the nudge adds
+   no block and the board never moves. */
+.game-status-banner { position: relative; }
+.game-status-banner--idle::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  border: 2px solid var(--bd-sun);
+  pointer-events: none;
+  animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+}
+@keyframes status-idle-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.012); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-status-banner--idle::after { animation: none; opacity: 1; }
+}
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
 .score-pop {
@@ -2032,6 +2051,115 @@ input[type="range"].slider-thumb::-moz-range-track {
 @keyframes result-panel-in {
   from { opacity: 0; transform: translateY(10px) scale(0.94); }
   to { opacity: 1; transform: none; }
+}
+/* Layout (#1341). The overlay covers the board card exactly, so it is a size
+   container: a ~274px phone-landscape board drops the icon and tightens the
+   type instead of pushing Leave below the fold. The scroller, not the scrim,
+   carries the bottom fade, so the scrim stays opaque to the edge. */
+.game-result-overlay { container: game-result / size; }
+.game-result-overlay__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.game-result-overlay__scroll[data-more-below='true'] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
+.game-result-overlay__panel {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  width: 100%;
+}
+.game-result-overlay__icon { display: flex; justify-content: center; }
+.game-result-overlay__kicker {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-family: ui-monospace, monospace;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+.game-result-overlay__title {
+  font-family: var(--bd-font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 4vw, 28px);
+  color: #fff;
+  text-align: center;
+  margin: 0 0 14px;
+  line-height: 1.1;
+}
+.game-result-overlay__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 300px;
+}
+.game-result-overlay__primary {
+  min-height: 48px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.game-result-overlay__primary:disabled { cursor: not-allowed; opacity: 0.65; }
+.game-result-overlay__plate {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  text-align: center;
+}
+/* View board, Return to lobby and Leave: one row of equal tiles; a long label
+   wraps inside its tile rather than adding a row. */
+.game-result-overlay__secondary {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.game-result-overlay__ghost {
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.15;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  font-family: inherit;
+  overflow-wrap: anywhere;
+}
+.game-result-overlay__ghost:disabled { cursor: not-allowed; opacity: 0.65; }
+.game-result-overlay__more { margin-top: 6px; }
+@container game-result (max-height: 420px) {
+  .game-result-overlay__panel { padding: 12px 14px; gap: 4px; }
+  .game-result-overlay__kicker { margin-top: 0; }
+  .game-result-overlay__title { font-size: 20px; margin-bottom: 8px; }
+  .game-result-overlay__primary { min-height: 44px; padding: 8px 16px; }
+}
+@container game-result (max-height: 320px) {
+  .game-result-overlay__icon { display: none; }
 }
 .ttt-board-overlay {
   position: absolute;
@@ -2972,7 +3100,8 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 }
 .game-tab {
   flex: 1;
-  padding: 10px 8px;
+  min-height: 44px;
+  padding: 8px 8px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 13px;
@@ -3108,6 +3237,47 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
     transform: translate(-50%, -50%);
     z-index: 1;
   }
+
+  /* --- Two-player header in this column (#1342). ------------------------
+     At 844x390 a row-form card needed ~83px (padding, 30px avatar, gap, the
+     name's 4.5ch floor) of a ~90px cell, so a corner badge or a wider score
+     ran the cards into the score: "Swee… 0 : 0Che…". Here the card stacks,
+     a 24px avatar over a name with the cell's full width, so it fits down to
+     ~34px of cell and a name keeps ~9 letters. 9px taller than the row form.
+     Leave, where a game puts it in `trailing`, gets its own track, so both
+     player cells stay the same width. The conversation games tune their own
+     header below and are left out. */
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) auto;
+    grid-template-areas: "left center right trailing";
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 2px;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 12px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.5);
+    transform-origin: bottom right;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+    align-self: stretch;
+    min-width: 0;
+    text-align: center;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; line-height: 1.25; }
 }
 
 /* Tic-Tac-Toe / Connect Four / Rock Paper Scissors deltas. */
@@ -3205,7 +3375,9 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  /* 44px both ways: the phone's icon-only tile was 36px wide (#1345). */
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 14px;
   border: 1.5px solid rgba(224,75,59,0.35);
   background: rgba(255,107,91,0.12);
