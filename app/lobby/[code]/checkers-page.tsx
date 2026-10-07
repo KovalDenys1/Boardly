@@ -44,6 +44,7 @@ import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
@@ -998,6 +999,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         <GameStatusBanner
             isFinished={isFinished}
             isDraw={isDraw}
+            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: mySide !== null, isViewerWinner: winnerSide && !isDraw ? winnerSide === mySide : null })}
             finishedMessage={finishedMessage}
             activeTitle={currentPlayerName}
             meta={`#${gameData.moveCount + 1}`}

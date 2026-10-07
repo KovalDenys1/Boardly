@@ -11,6 +11,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS, WinPips } from '@/components/RockPaperScissorsGameBoard'
@@ -805,6 +806,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const statusSection = (
         <GameStatusBanner
             isFinished={shownFinished}
+            outcome={viewerOutcome({ isFinished: shownFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && (currentUserId === leftId || currentUserId === rightId), isViewerWinner: shownWinnerId ? shownWinnerId === currentUserId : null })}
             finishedMessage={finishedMessage}
             activeTitle={activeTitle}
             meta={`${readyCount}/2`}

@@ -318,6 +318,47 @@ describe('RockPaperScissorsLobbyPage', () => {
     })
   })
 
+  describe("the finished banner names the viewer's result (#1340)", () => {
+    const finishedState = (gameWinner: string) => ({
+      status: 'finished',
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      players: [
+        { id: 'user-1', name: 'Alice' },
+        { id: 'user-2', name: 'Bob' },
+      ],
+      data: {
+        mode: 'best-of-3',
+        rounds: [
+          { choices: { 'user-1': 'rock', 'user-2': 'scissors' }, winner: 'user-1' },
+          { choices: { 'user-1': 'rock', 'user-2': 'paper' }, winner: 'user-2' },
+          { choices: { 'user-1': 'paper', 'user-2': 'rock' }, winner: gameWinner },
+        ],
+        playerChoices: {},
+        scores: gameWinner === 'user-1' ? { 'user-1': 2, 'user-2': 1 } : { 'user-1': 1, 'user-2': 2 },
+        playersReady: [],
+        gameWinner,
+      },
+    })
+
+    it.each([
+      ['user-1', 'win', 'game.ui.victoryBadge'],
+      ['user-2', 'loss', 'game.ui.defeatBadge'],
+    ] as const)('when %s wins the viewer sees %s', async (winner, outcome, badge) => {
+      const response = buildLobbyResponse(finishedState(winner))
+      response.activeGame.status = 'finished'
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+
+      await waitFor(() => {
+        const titles = screen.getAllByTestId('game-status-title')
+        expect(titles.every((el) => el.getAttribute('data-outcome') === outcome)).toBe(true)
+        expect(titles[0].textContent).toContain(badge)
+      }, { timeout: 3000 })
+    })
+  })
+
   describe('a submit that fails (#995)', () => {
     /** Round 1 as the server resolved it while this player's request was out. */
     const resolvedRoundState = () => ({

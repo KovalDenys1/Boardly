@@ -45,6 +45,7 @@ import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
@@ -1016,6 +1017,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         <GameStatusBanner
             isFinished={isFinished}
             isDraw={isDraw}
+            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
             finishedMessage={finishedTitle}
             activeTitle={
                 isSpectator

@@ -233,6 +233,50 @@ describe('TicTacToeLobbyPage', () => {
     expect(screen.getAllByRole('button', { name: 'game.ui.leave' }).length).toBeGreaterThan(0)
   })
 
+  it('hides the undo and draw requests in a game against a bot (#1352)', async () => {
+    const response = buildLobbyResponse()
+    response.activeGame.players[1].user = { username: 'Bob', bot: { difficulty: 'easy' } }
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+
+    render(<TicTacToeLobbyPage code="ABCD" />)
+
+    expect((await screen.findAllByRole('button', { name: 'game.ui.leave' })).length).toBeGreaterThan(0)
+    expect(screen.queryAllByRole('button', { name: /undo/i })).toHaveLength(0)
+    expect(screen.queryAllByRole('button', { name: /draw/i })).toHaveLength(0)
+  })
+
+  describe("the finished banner names the viewer's result (#1340)", () => {
+    /** X (user-1, the viewer) takes the top row, or O (user-2) takes the middle row. */
+    function finishedResponse(winner: 'user-1' | 'user-2') {
+      const response = buildLobbyResponse()
+      const engine = new TicTacToeGame('game-1')
+      engine.restoreState(response.activeGame.state)
+      const moves: Array<[string, number, number]> = winner === 'user-1'
+        ? [['user-1', 0, 0], ['user-2', 1, 0], ['user-1', 0, 1], ['user-2', 1, 1], ['user-1', 0, 2]]
+        : [['user-1', 0, 0], ['user-2', 1, 0], ['user-1', 2, 2], ['user-2', 1, 1], ['user-1', 0, 2], ['user-2', 1, 2]]
+      for (const [playerId, row, col] of moves) {
+        engine.makeMove({ playerId, type: 'place', data: { row, col }, timestamp: new Date() })
+      }
+      response.activeGame.state = engine.getState()
+      response.activeGame.status = engine.getState().status
+      return response
+    }
+
+    it.each([
+      ['user-1', 'win', 'game.ui.victoryBadge'],
+      ['user-2', 'loss', 'game.ui.defeatBadge'],
+    ] as const)('when %s wins the viewer sees %s', async (winner, outcome, badge) => {
+      const response = finishedResponse(winner)
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+
+      render(<TicTacToeLobbyPage code="ABCD" />)
+
+      const titles = await screen.findAllByTestId('game-status-title')
+      expect(titles.every((el) => el.getAttribute('data-outcome') === outcome)).toBe(true)
+      expect(titles[0].textContent).toContain(badge)
+    })
+  })
+
   describe('an unanswered draw offer (#997)', () => {
     it('leaves the board playable for the player who made the offer', async () => {
       const response = buildLobbyResponseWithDrawOffer('user-1')

@@ -11,6 +11,7 @@ import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import { GamePlayer, ChatMessagePayload } from '@/types/game'
@@ -658,6 +659,7 @@ export default function SpyGameBoard({
   const statusSection = (
     <GameStatusBanner
       isFinished={isGameOver}
+      outcome={viewerOutcome({ isFinished: isGameOver, isDraw: gameResult.isDraw, isSpectator, isSeated: !!currentUserId && normalizedPlayers.some((p) => p.id === currentUserId), isViewerWinner: gameResult.winnerId ? iWon : null, isViewerAtTop: hasTopScore(scores, normalizedPlayers.map((p) => p.id), currentUserId) })}
       finishedMessage={finishedMessage}
       activeTitle={activeTitle}
       meta={statusMeta}
