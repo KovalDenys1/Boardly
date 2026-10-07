@@ -1,5 +1,5 @@
 import { ConnectFourGame, ConnectFourGameData, CellValue, PlayerDisc } from '@/lib/games/connect-four-game'
-import { ConnectFourBot } from '@/lib/bots/connect-four/connect-four-bot'
+import { ConnectFourBot, CONNECT_FOUR_HARD_TIME_BUDGET_MS } from '@/lib/bots/connect-four/connect-four-bot'
 
 const makeGame = (): ConnectFourGame => {
   const g = new ConnectFourGame('cf-bot-test')
@@ -111,6 +111,72 @@ describe('ConnectFourBot', () => {
       const result = bot.evaluateState()
       expect(typeof result).toBe('string')
       expect(result.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('hard search over played-out positions', () => {
+    afterEach(() => jest.restoreAllMocks())
+
+    function seedRandom(seed: number) {
+      let state = seed >>> 0
+      jest.spyOn(Math, 'random').mockImplementation(() => {
+        state = (state + 0x6d2b79f5) >>> 0
+        let t = state
+        t = Math.imul(t ^ (t >>> 15), t | 1)
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      })
+    }
+
+    function randomPosition(plies: number): ConnectFourGame {
+      const game = makeGame()
+      for (let i = 0; i < plies && game.getState().status === 'playing'; i++) {
+        const cols = game.getAvailableColumns()
+        const col = cols[Math.floor(Math.random() * cols.length)]
+        game.makeMove({ playerId: game.getCurrentPlayer()!.id, type: 'drop', data: { col }, timestamp: new Date() })
+      }
+      return game
+    }
+
+    function winningColumns(game: ConnectFourGame, playerId: string): number[] {
+      return game.getAvailableColumns().filter((col) => {
+        const copy = new ConnectFourGame('cf-copy')
+        copy.restoreState(JSON.parse(JSON.stringify(game.getState())))
+        copy.makeMove({ playerId, type: 'drop', data: { col }, timestamp: new Date() })
+        return copy.getState().winner === playerId
+      })
+    }
+
+    it('never passes up a win on the board, and answers inside its time budget', async () => {
+      seedRandom(1330)
+      let positionsWithAWin = 0
+      for (let n = 0; n < 40; n++) {
+        const game = randomPosition(6 + (n % 18))
+        if (game.getState().status !== 'playing') continue
+        const botId = game.getCurrentPlayer()!.id
+        const wins = winningColumns(game, botId)
+
+        const started = Date.now()
+        const decision = await new ConnectFourBot(game, 'hard', botId).makeDecision()
+        // The clock is checked every few hundred nodes, so allow one interval's overrun.
+        expect(Date.now() - started).toBeLessThan(CONNECT_FOUR_HARD_TIME_BUDGET_MS + 150)
+
+        expect(game.getAvailableColumns()).toContain(decision.col)
+        if (wins.length > 0) {
+          positionsWithAWin++
+          expect(wins).toContain(decision.col)
+        }
+      }
+      expect(positionsWithAWin).toBeGreaterThan(0)
+    })
+
+    it('still finds the only block when its search budget is almost nothing', async () => {
+      const game = makeGame()
+      const board: CellValue[][] = Array.from({ length: 6 }, () => Array(7).fill(null))
+      board[5][4] = 1; board[5][5] = 1; board[5][6] = 1
+      setBoard(game, board, 2, 1)
+      const decision = await new ConnectFourBot(game, 'hard', 'bot1', { timeBudgetMs: 1 }).makeDecision()
+      expect(decision.col).toBe(3)
     })
   })
 })

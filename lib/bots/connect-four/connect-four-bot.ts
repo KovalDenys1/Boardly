@@ -8,12 +8,68 @@ export interface ConnectFourBotDecision {
   col: number
 }
 
+/** Plies the hard bot looks ahead below its own move. */
+const HARD_SEARCH_DEPTH = 6
+/**
+ * A connected four, above anything the window heuristic can add up to: at 100 a
+ * position the heuristic rated highly could outrank a forced win.
+ */
+const WIN_SCORE = 1_000_000
+/** Centre first: alpha-beta cuts far more when the strongest columns are tried first. */
+const SEARCH_COLUMN_ORDER = Array.from({ length: COLS }, (_, i) => i).sort(
+  (a, b) => Math.abs(a - Math.floor(COLS / 2)) - Math.abs(b - Math.floor(COLS / 2)),
+)
+
+/** Every line of four on the board, as cell coordinates; built once, not per evaluation. */
+const WINDOWS: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = (() => {
+  const windows: (readonly [number, number])[][] = []
+  const directions: [number, number][] = [[0, 1], [1, 0], [1, 1], [1, -1]]
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      for (const [dr, dc] of directions) {
+        const endR = r + dr * 3
+        const endC = c + dc * 3
+        if (endR < 0 || endR >= ROWS || endC < 0 || endC >= COLS) continue
+        windows.push([0, 1, 2, 3].map((i) => [r + dr * i, c + dc * i] as const))
+      }
+    }
+  }
+  return windows
+})()
+
+function scoreWindow(discCount: number, oppCount: number): number {
+  const emptyCount = 4 - discCount - oppCount
+  if (oppCount > 0 && discCount > 0) return 0
+  if (discCount === 4) return 100
+  if (discCount === 3 && emptyCount === 1) return 5
+  if (discCount === 2 && emptyCount === 2) return 2
+  if (oppCount === 3 && emptyCount === 1) return -4
+  if (oppCount === 2 && emptyCount === 2) return -1
+  return 0
+}
+
+/** Wall-clock cap on the hard search; the bot plays the deepest result it finished. */
+export const CONNECT_FOUR_HARD_TIME_BUDGET_MS = 250
+/** How often, in visited nodes, the search looks at the clock. */
+const CLOCK_CHECK_INTERVAL = 256
+
+class SearchTimeout extends Error {}
+
 export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecision> {
   private botUserId: string | null
+  private readonly timeBudgetMs: number
+  private deadline = 0
+  private nodes = 0
 
-  constructor(gameEngine: ConnectFourGame, difficulty: BotDifficulty = 'medium', botUserId?: string) {
+  constructor(
+    gameEngine: ConnectFourGame,
+    difficulty: BotDifficulty = 'medium',
+    botUserId?: string,
+    options: { timeBudgetMs?: number } = {},
+  ) {
     super(gameEngine, difficulty)
     this.botUserId = botUserId ?? null
+    this.timeBudgetMs = options.timeBudgetMs ?? CONNECT_FOUR_HARD_TIME_BUDGET_MS
   }
 
   setBotUserId(botUserId: string) {
@@ -70,18 +126,35 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
     return this.pickByScore(board, disc, available, false)
   }
 
+  /**
+   * Iterative deepening to HARD_SEARCH_DEPTH, capped by wall clock: the column
+   * played is the best of the deepest search that finished, so a crowded
+   * mid-game position can never hold the bot's reply for seconds.
+   */
   private pickHard(board: CellValue[][], disc: PlayerDisc): number {
-    const available = this.getAvailableCols(board)
-    let bestCol = available[Math.floor(available.length / 2)]
-    let bestScore = Number.NEGATIVE_INFINITY
+    let ordered = this.orderedAvailableCols(board)
+    let bestCol = ordered[0]
+    this.deadline = Date.now() + this.timeBudgetMs
+    this.nodes = 0
 
-    for (const col of available) {
-      const next = this.dropDisc(board, col, disc)
-      if (!next) continue
-      const score = this.negamax(next, disc === 1 ? 2 : 1, disc, 6, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)
-      if (-score > bestScore) {
-        bestScore = -score
-        bestCol = col
+    for (let depth = 0; depth <= HARD_SEARCH_DEPTH; depth++) {
+      try {
+        const scored: { col: number; score: number }[] = []
+        let bestScore = Number.NEGATIVE_INFINITY
+        for (const col of ordered) {
+          const next = this.dropDisc(board, col, disc)
+          if (!next) continue
+          const score = -this.negamax(next, disc === 1 ? 2 : 1, disc, depth, Number.NEGATIVE_INFINITY, -bestScore)
+          scored.push({ col, score })
+          if (score > bestScore) bestScore = score
+        }
+        // Stable sort keeps centre-first among equals.
+        ordered = scored.sort((a, b) => b.score - a.score).map((entry) => entry.col)
+        bestCol = ordered[0]
+        if (Math.abs(bestScore) >= WIN_SCORE) break
+      } catch (error) {
+        if (error instanceof SearchTimeout) break
+        throw error
       }
     }
 
@@ -90,12 +163,13 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
 
   /** Negamax with alpha-beta. Returns score from the perspective of `currentDisc`. */
   private negamax(board: CellValue[][], currentDisc: PlayerDisc, botDisc: PlayerDisc, depth: number, alpha: number, beta: number): number {
-    const available = this.getAvailableCols(board)
+    if (++this.nodes % CLOCK_CHECK_INTERVAL === 0 && Date.now() >= this.deadline) throw new SearchTimeout()
+    const available = this.orderedAvailableCols(board)
 
     // Terminal: previous disc won → currentDisc lost → negative from currentDisc's perspective
     const prevDisc: PlayerDisc = currentDisc === 1 ? 2 : 1
     if (this.boardHasWinner(board, prevDisc)) {
-      return -(100 + depth)
+      return -(WIN_SCORE + depth)
     }
 
     if (available.length === 0 || depth === 0) {
@@ -126,68 +200,22 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
       if (board[r][centerCol] === opponent) score -= 3
     }
 
-    // Score all windows of 4
-    const windows = this.getAllWindows(board)
-    for (const window of windows) {
-      score += this.scoreWindow(window, disc)
+    for (const window of WINDOWS) {
+      let discCount = 0
+      let oppCount = 0
+      for (const [r, c] of window) {
+        const cell = board[r][c]
+        if (cell === disc) discCount++
+        else if (cell === opponent) oppCount++
+      }
+      score += scoreWindow(discCount, oppCount)
     }
 
     return score
   }
 
-  private scoreWindow(window: (CellValue)[], disc: PlayerDisc): number {
-    const opponent: PlayerDisc = disc === 1 ? 2 : 1
-    const discCount = window.filter((c) => c === disc).length
-    const emptyCount = window.filter((c) => c === null).length
-    const oppCount = window.filter((c) => c === opponent).length
-
-    if (oppCount > 0 && discCount > 0) return 0
-    if (discCount === 4) return 100
-    if (discCount === 3 && emptyCount === 1) return 5
-    if (discCount === 2 && emptyCount === 2) return 2
-    if (oppCount === 3 && emptyCount === 1) return -4
-    if (oppCount === 2 && emptyCount === 2) return -1
-    return 0
-  }
-
-  private getAllWindows(board: CellValue[][]): CellValue[][] {
-    const windows: CellValue[][] = []
-
-    // Horizontal
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c <= COLS - 4; c++) {
-        windows.push([board[r][c], board[r][c + 1], board[r][c + 2], board[r][c + 3]])
-      }
-    }
-
-    // Vertical
-    for (let c = 0; c < COLS; c++) {
-      for (let r = 0; r <= ROWS - 4; r++) {
-        windows.push([board[r][c], board[r + 1][c], board[r + 2][c], board[r + 3][c]])
-      }
-    }
-
-    // Diagonal down-right
-    for (let r = 0; r <= ROWS - 4; r++) {
-      for (let c = 0; c <= COLS - 4; c++) {
-        windows.push([board[r][c], board[r + 1][c + 1], board[r + 2][c + 2], board[r + 3][c + 3]])
-      }
-    }
-
-    // Diagonal down-left
-    for (let r = 0; r <= ROWS - 4; r++) {
-      for (let c = 3; c < COLS; c++) {
-        windows.push([board[r][c], board[r + 1][c - 1], board[r + 2][c - 2], board[r + 3][c - 3]])
-      }
-    }
-
-    return windows
-  }
-
   private boardHasWinner(board: CellValue[][], disc: PlayerDisc): boolean {
-    // Check all 4-windows for a winner
-    const windows = this.getAllWindows(board)
-    return windows.some((w) => w.every((c) => c === disc))
+    return WINDOWS.some((window) => window.every(([r, c]) => board[r][c] === disc))
   }
 
   private pickByScore(board: CellValue[][], disc: PlayerDisc, available: number[], _hard: boolean): number {
@@ -217,6 +245,10 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
       }
     }
     return null
+  }
+
+  private orderedAvailableCols(board: CellValue[][]): number[] {
+    return SEARCH_COLUMN_ORDER.filter((c) => board[0][c] === null)
   }
 
   private getAvailableCols(board: CellValue[][]): number[] {
