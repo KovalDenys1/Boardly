@@ -41,6 +41,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
+import { nextMoveKey, type MoveKey } from '@/lib/move-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -70,6 +71,9 @@ function parseLobbyGameState(activeGame: unknown): unknown {
 function tttCoord(row: number, col: number) {
     return ['A', 'B', 'C'][col] + (row + 1)
 }
+
+const sameMark = (a: TicTacToeMoveRecord, b: TicTacToeMoveRecord) =>
+    a.symbol === b.symbol && a.row === b.row && a.col === b.col
 
 function TttMark({ mark, size = 24, responsive = false, pop = false }: {
     mark: 'X' | 'O'; size?: number; responsive?: boolean; pop?: boolean
@@ -793,7 +797,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const lastTttMoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null
     // Only the just-placed mark pops and its history row slides in; a board
     // remount (mobile tab switch) shows the settled state (#1114).
-    const { fresh: lastMoveFresh, settle: settleLastMove } = useFreshKey(gameEngine ? (lastTttMove ? lastTttMoveSignature : null) : undefined)
+    const markKeyRef = React.useRef<MoveKey<TicTacToeMoveRecord> | null>(null)
+    markKeyRef.current = nextMoveKey(markKeyRef.current, Array.isArray(earlyMoveHistory) ? earlyMoveHistory : undefined, sameMark)
+    const { fresh: lastMoveFresh, settle: settleLastMove } = useFreshKey(gameEngine ? (markKeyRef.current?.key ?? null) : undefined)
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastTttMoveSignature,
