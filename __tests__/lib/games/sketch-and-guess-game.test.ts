@@ -1090,3 +1090,21 @@ describe('SketchAndGuessGame – the host\'s own words (#1086)', () => {
     }
   })
 })
+
+describe('SketchAndGuessGame – the list ends with the game (#1086)', () => {
+  it('deletes the host\'s list from state when the game finishes', () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => `word ${i}`)
+    const game = new SketchAndGuessGame('custom-end', { maxPlayers: 10, minPlayers: 3, rules: { customWords: twelve } } as never)
+    addDefaultPlayers(game, 3)
+    game.startGame()
+    expect(getData(game).customWords).toHaveLength(12)
+    let now = Date.now()
+    for (let i = 0; i < 40 && game.getState().status !== 'finished'; i++) {
+      now += 10 * 60_000
+      game.applyTimeoutFallback(undefined, now)
+    }
+    expect(game.getState().status).toBe('finished')
+    expect(getData(game).customWords).toBeUndefined()
+    expect(getData(game).customWordsOnly).toBeUndefined()
+  })
+})

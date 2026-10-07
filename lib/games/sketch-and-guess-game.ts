@@ -707,6 +707,9 @@ export class SketchAndGuessGame extends GameEngine {
     data.completionReason = 'all-rounds-finished'
     data.finishedAt = nowMs
     data.winnerId = data.ranking[0] || null
+    // Some readers return a finished state unsanitized, and the host's next game reuses this list.
+    delete data.customWords
+    delete data.customWordsOnly
     this.state.status = 'finished'
     this.state.winner = data.winnerId ?? undefined
     this.state.lastMoveAt = nowMs
