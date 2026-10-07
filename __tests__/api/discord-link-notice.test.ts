@@ -111,7 +111,7 @@ describe('the owner is emailed when a Discord account is linked (#1223)', () => 
     expect(mockSendNotice).toHaveBeenCalledTimes(1)
     const [to, details] = mockSendNotice.mock.calls[0]
     expect(to).toBe('owner@example.com')
-    expect(details).toEqual({ username: 'Ola', provider: 'discord', linkedAt: expect.any(Date) })
+    expect(details).toEqual({ username: 'Ola', language: 'en', provider: 'discord', linkedAt: expect.any(Date) })
     expect(details.linkedAt.getTime()).toBeGreaterThanOrEqual(before)
     expect(details.linkedAt.getTime()).toBeLessThanOrEqual(Date.now())
   })

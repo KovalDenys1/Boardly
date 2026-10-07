@@ -5,9 +5,8 @@ type Samples = { [Name in keyof typeof emailTemplates]: Parameters<(typeof email
 const TOKEN = 'sample'.padEnd(64, '0')
 
 /**
- * One realistic set of arguments per mail, for the preview and for the layout tests. The mails
- * sent while answering a request carry that request's language ('en' here); the rest have no
- * language to go on and show English then Norwegian.
+ * One realistic set of arguments per mail, for the preview and for the layout tests. A mail
+ * given no language is written in English.
  */
 export const emailSamples: Samples = {
   sendVerificationEmail: [TOKEN, 'Ola', 'en'],

@@ -35,14 +35,12 @@ export type EmailSheet = {
 
 export type EmailLayout = {
   preheader: string
-  sheets: EmailSheet[]
-  /** Lines under the sheets. Each group is one paragraph. */
+  sheet: EmailSheet
+  /** Lines under the sheet. Each group is one paragraph. */
   footer: EmailContent[][]
   /** URLs that become links wherever a paragraph, a note or a footer line names them. */
   links?: readonly string[]
 }
-
-const LANGUAGE_NAMES: Record<EmailLanguage, string> = { en: 'English', nb: 'Norsk' }
 
 const PAPER = '#FBF6EE'
 const CARD = '#FFFFFF'
@@ -229,49 +227,24 @@ function blockHtml(block: EmailBlock, links: readonly string[]): string {
   }
 }
 
-function languageTabs(current: EmailLanguage, all: EmailLanguage[]): string {
-  const chip = 'display: inline-block; padding: 2px 11px; border-radius: 999px; font-size: 12px; line-height: 18px; font-weight: 700;'
-  const tabs = all.map((lang, index) => {
-    const name = LANGUAGE_NAMES[lang]
-    if (lang === current) {
-      return `<span class="bd-tab-on" style="${chip} background: ${SUN}; border: 2px solid ${INK}; color: ${INK};">${name}</span>`
-    }
-    const arrow = index > all.indexOf(current) ? '&darr;' : '&uarr;'
-    return `<span class="bd-tab-off" style="${chip} border: 2px solid ${LINE}; color: ${INK_SOFT};">${name} ${arrow}</span>`
-  })
-  return tabs.join('&nbsp; ')
+function sheetHeader(): string {
+  const logo = `<a href="${BOARDLY_URL}" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">${imageHtml(
+    EMAIL_LOGO,
+    `width: ${EMAIL_LOGO.width}px; height: ${EMAIL_LOGO.height}px; font-family: ${DISPLAY_FONT}; font-size: 24px; font-weight: 800; color: ${INK};`
+  )}</a>`
+  return `<div style="padding: 0 0 20px;">${logo}</div>`
 }
 
-// The logo sits in the card's own padding, so its left edge is the text's left edge at
-// every width; the language chips share its row.
-function sheetHeader(sheet: EmailSheet, index: number, languages: EmailLanguage[]): string {
-  const logo =
-    index === 0
-      ? `<a href="${BOARDLY_URL}" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">${imageHtml(
-          EMAIL_LOGO,
-          `width: ${EMAIL_LOGO.width}px; height: ${EMAIL_LOGO.height}px; font-family: ${DISPLAY_FONT}; font-size: 24px; font-weight: 800; color: ${INK};`
-        )}</a>`
-      : ''
-  const tabs = languages.length > 1 ? languageTabs(sheet.lang, languages) : ''
-  if (!logo && !tabs) return ''
-  return (
-    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>` +
-    `<td align="left" valign="middle" style="padding: 0 0 20px;">${logo}</td>` +
-    `<td align="right" valign="middle" style="padding: 0 0 20px; white-space: nowrap;">${tabs}</td>` +
-    `</tr></table>`
-  )
-}
-
-function sheetHtml(sheet: EmailSheet, index: number, layout: EmailLayout): string {
+function sheetHtml(layout: EmailLayout): string {
+  const { sheet } = layout
   const links = layout.links ?? []
-  const languages = layout.sheets.map((each) => each.lang)
   const hero = sheet.hero
     ? `<div style="margin: 0 0 22px;">${imageHtml(sheet.hero, `width: 100%; max-width: ${sheet.hero.width}px; height: auto; border-radius: 22px;`)}</div>`
     : ''
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="bd-card" bgcolor="${CARD}" style="background: ${CARD}; border: 2px solid ${INK}; border-bottom: 6px solid ${INK}; border-radius: 24px; border-collapse: separate;"><tr>` +
     `<td class="bd-sheet bd-ink" style="padding: 24px 28px 14px; font-family: ${BODY_FONT}; font-size: 16px; line-height: 1.6; color: ${INK}; word-break: break-word; overflow-wrap: anywhere;">` +
-    sheetHeader(sheet, index, languages) +
+    sheetHeader() +
     `<div lang="${sheet.lang}">` +
     hero +
     `<h1 class="bd-title bd-ink" style="margin: 0 0 14px; font-family: ${DISPLAY_FONT}; font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; color: ${INK};">${escapeHtml(sheet.title)}</h1>` +
@@ -312,8 +285,6 @@ body { margin: 0; padding: 0; }
   .bd-facts { background: ${DARK_PAPER} !important; border-color: ${DARK_LINE} !important; }
   .bd-img-light { display: none !important; }
   .bd-img-dark { display: block !important; max-height: none !important; }
-  .bd-tab-on { border-color: ${SUN} !important; }
-  .bd-tab-off { border-color: ${DARK_LINE} !important; color: ${DARK_INK_SOFT} !important; }
   .bd-button-danger { background: ${DARK_INK} !important; border-color: ${DARK_INK} !important; }
   .bd-button-danger a { color: ${INK} !important; }
   .bd-button-quiet { background: ${DARK_CARD} !important; border-color: ${DARK_INK} !important; }
@@ -334,12 +305,10 @@ body { margin: 0; padding: 0; }
 const PREHEADER_FILLER = '&#847;&zwnj;&nbsp;'.repeat(60)
 
 function renderHtml(layout: EmailLayout): string {
-  const sheets = layout.sheets
-    .map((sheet, index) => `<tr><td style="padding: 0 0 16px;">${sheetHtml(sheet, index, layout)}</td></tr>`)
-    .join('')
+  const sheet = `<tr><td style="padding: 0 0 16px;">${sheetHtml(layout)}</td></tr>`
 
   return `<!DOCTYPE html>
-<html lang="${layout.sheets[0]?.lang ?? 'en'}">
+<html lang="${layout.sheet.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -347,7 +316,7 @@ function renderHtml(layout: EmailLayout): string {
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>${escapeHtml(layout.sheets[0]?.title ?? EMAIL_LOGO.alt)}</title>
+<title>${escapeHtml(layout.sheet.title || EMAIL_LOGO.alt)}</title>
 <style>${STYLES}</style>
 </head>
 <body class="bd-page" style="margin: 0; padding: 0; background: ${PAPER};">
@@ -355,7 +324,7 @@ function renderHtml(layout: EmailLayout): string {
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="bd-page" bgcolor="${PAPER}" style="background: ${PAPER};"><tr><td align="center" class="bd-outer" style="padding: 28px 16px 36px;">
 <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" align="center"><tr><td><![endif]-->
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
-${sheets}
+${sheet}
 <tr><td class="bd-footer" align="left" style="padding: 8px 30px 0; font-family: ${BODY_FONT};">${footerHtml(layout)}</td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -414,9 +383,7 @@ function sheetText(sheet: EmailSheet): string {
 }
 
 function renderText(layout: EmailLayout): string {
-  const sheets = layout.sheets.map(sheetText)
-  const parts = sheets.length > 1 ? sheets.flatMap((sheet) => [sheet, '----']) : sheets
-  return [...parts, ...layout.footer.map((group) => group.map(contentText).join('\n'))]
+  return [sheetText(layout.sheet), ...layout.footer.map((group) => group.map(contentText).join('\n'))]
     .filter((part) => part.length > 0)
     .join('\n\n')
 }

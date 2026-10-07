@@ -52,6 +52,14 @@ async function send(overrides: Partial<Details> = {}): Promise<{ mail: SentMail;
   return { mail: mockSend.mock.calls[0][0] as SentMail, options: mockSend.mock.calls[0][1] }
 }
 
+// The English mail and the Norwegian one (#1331), with both bodies joined for the facts each
+// of them has to state.
+async function sendEach(overrides: Partial<Details> = {}) {
+  const en = (await send({ ...overrides, language: 'en' })).mail
+  const nb = (await send({ ...overrides, language: 'nb' })).mail
+  return { en, nb, mail: { ...en, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` } }
+}
+
 function visibleText(html: string): string {
   return html
     .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
@@ -89,26 +97,31 @@ describe('sendSubscriptionNoticeEmail (#1165)', () => {
     restore('NEXTAUTH_URL', originalEnv.nextauth)
   })
 
-  it('says the subscription is running, in English and in Norwegian, and replies to support', async () => {
+  it('says the subscription is running, in one language at a time, and replies to support', async () => {
     const { mail, options } = await send()
 
     expect(mail.to).toBe('buyer@example.com')
     expect(mail.replyTo).toBe('support@boardly.online')
-    expect(mail.subject).toBe(
-      'Your Boardly Premium subscription is still running / Boardly Premium-abonnementet ditt løper fortsatt'
-    )
+    expect(mail.subject).toBe('Your Boardly Premium subscription is still running')
     expect(options).toEqual({ idempotencyKey: 'subscription-notice/user_1/2027-02-20' })
 
-    for (const part of [visibleText(mail.html), mail.text]) {
+    const { en, nb } = await sendEach()
+    expect(nb.subject).toBe('Boardly Premium-abonnementet ditt løper fortsatt')
+    for (const part of [visibleText(en.html), en.text]) {
       expect(part).toContain('Your Boardly Premium subscription is still running.')
+      expect(part).toContain('Hi Ola,')
+      expect(part).not.toContain('Hei Ola,')
+      expect(part).toContain('The Boardly team')
+    }
+    for (const part of [visibleText(nb.html), nb.text]) {
       expect(part).toContain('Boardly Premium-abonnementet ditt løper fortsatt.')
-      expect(part.indexOf('Hi Ola,')).toBeLessThan(part.indexOf('Hei Ola,'))
+      expect(part).not.toContain('Hi Ola,')
       expect(part).toContain('The Boardly team')
     }
   })
 
   it('names the plan, the price, the next renewal and the cancellation route (§ 33 first to third paragraphs)', async () => {
-    const { mail } = await send()
+    const { mail } = await sendEach()
     const text = mail.text
 
     expect(text).toContain('Boardly Premium, yearly plan. Price: $29.99 per year.')
@@ -124,7 +137,7 @@ describe('sendSubscriptionNoticeEmail (#1165)', () => {
   })
 
   it('reads as a monthly plan when it is one, and leaves the price out when Stripe gave none', async () => {
-    const { mail } = await send({ plan: 'monthly', unitAmount: null, currency: null, renewsAt: null })
+    const { mail } = await sendEach({ plan: 'monthly', unitAmount: null, currency: null, renewsAt: null })
 
     expect(mail.text).toContain('Boardly Premium, monthly plan.\n')
     expect(mail.text).not.toContain('Price:')

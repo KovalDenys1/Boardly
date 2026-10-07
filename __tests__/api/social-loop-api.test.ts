@@ -166,7 +166,7 @@ describe('Social loop APIs', () => {
       expect(response.status).toBe(200)
       expect(sendGameInviteEmail).toHaveBeenCalledTimes(1)
       expect((sendGameInviteEmail as jest.Mock).mock.calls[0][0]).toBe('friend@example.com')
-      expect((sendGameInviteEmail as jest.Mock).mock.calls[0][6]).toEqual({ userId: 'friend-1' })
+      expect((sendGameInviteEmail as jest.Mock).mock.calls[0][6]).toEqual({ userId: 'friend-1', language: 'en' })
     })
 
     it('rejects guest users for friend invites', async () => {

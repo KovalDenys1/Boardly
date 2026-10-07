@@ -1,6 +1,7 @@
 import type Stripe from 'stripe'
 import { prisma } from './db'
 import { sendSubscriptionNoticeEmail, type SubscriptionNoticeDetails } from './email'
+import { emailLanguageFromLocale } from './email-language'
 import { apiLogger } from './logger'
 import type { PremiumPlan } from './premium-plans'
 import { getStripe } from './stripe'
@@ -70,6 +71,7 @@ type Candidate = {
   id: string
   email: string | null
   username: string | null
+  language: string | null
   stripeSubscriptionId: string | null
   lastSubscriptionNoticeAt: Date | null
   missingStripeSubscriptionId: string | null
@@ -112,6 +114,7 @@ function noticeDetails(candidate: Candidate, subscription: Stripe.Subscription):
   const periodEnd = item?.current_period_end
   return {
     username: candidate.username,
+    language: emailLanguageFromLocale(candidate.language),
     plan: planOf(subscription),
     unitAmount: item?.price?.unit_amount ?? null,
     currency: item?.price?.currency ?? null,
@@ -150,6 +153,7 @@ export async function sendDueSubscriptionNotices(deps: SubscriptionNoticeDeps = 
       id: true,
       email: true,
       username: true,
+      language: true,
       stripeSubscriptionId: true,
       lastSubscriptionNoticeAt: true,
       missingStripeSubscriptionId: true,

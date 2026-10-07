@@ -30,46 +30,33 @@ jest.mock('@/lib/email-layout', () => {
 
 const notice: EmailLayout = {
   preheader: 'Your account is fine.',
-  sheets: [
-    {
-      lang: 'en',
-      title: 'An account notice',
-      blocks: [
-        { type: 'paragraph', content: 'Hi <b>Ola</b>,' },
-        { type: 'heading', text: 'What to do' },
-        { type: 'paragraph', content: 'Open https://boardly.online/profile or write to support@boardly.online.' },
-        { type: 'button', label: 'Open profile', href: 'https://boardly.online/profile?tab=premium&from=mail' },
-        { type: 'fallbackLink', text: 'Or open this link:', href: 'https://boardly.online/profile?tab=premium&from=mail' },
-      ],
-    },
-    {
-      lang: 'nb',
-      title: 'Et varsel om kontoen',
-      blocks: [
-        { type: 'paragraph', content: 'Hei Ola,' },
-        { type: 'heading', text: 'Dette gjør du' },
-        { type: 'paragraph', content: 'Åpne https://boardly.online/profile.' },
-      ],
-    },
-  ],
-  footer: [['Questions? Reply to this email.', 'Spørsmål? Svar på denne e-posten.'], ['The Boardly team']],
+  sheet: {
+    lang: 'en',
+    title: 'An account notice',
+    blocks: [
+      { type: 'paragraph', content: 'Hi <b>Ola</b>,' },
+      { type: 'heading', text: 'What to do' },
+      { type: 'paragraph', content: 'Open https://boardly.online/profile or write to support@boardly.online.' },
+      { type: 'button', label: 'Open profile', href: 'https://boardly.online/profile?tab=premium&from=mail' },
+      { type: 'fallbackLink', text: 'Or open this link:', href: 'https://boardly.online/profile?tab=premium&from=mail' },
+    ],
+  },
+  footer: [['Questions? Reply to this email.'], ['The Boardly team']],
   links: ['https://boardly.online/profile'],
 }
 
 describe('the shared email layout (#1293)', () => {
-  it('draws one labelled sheet per language, in the order given, and no label on a mail in one language', () => {
+  it('draws one sheet in one language, with no language label (#1331)', () => {
     const { html } = renderEmail(notice)
 
-    expect(html.indexOf('<div lang="en">')).toBeGreaterThan(-1)
-    expect(html.indexOf('<div lang="en">')).toBeLessThan(html.indexOf('<div lang="nb">'))
-    expect(html).toContain('>English</span>')
-    expect(html).toContain('>Norsk &darr;</span>')
-    expect(html).toContain('>English &uarr;</span>')
-    expect(html).toContain('>Norsk</span>')
+    expect(html).toContain('<html lang="en">')
+    expect(html.match(/<div lang="/g)).toHaveLength(1)
+    expect(html).not.toContain('>English</span>')
 
-    const single = renderEmail({ ...notice, sheets: [notice.sheets[0]] }).html
-    expect(single).not.toContain('>English</span>')
-    expect(single).not.toContain('Norsk')
+    const norwegian = renderEmail({ ...notice, sheet: { ...notice.sheet, lang: 'nb' } }).html
+    expect(norwegian).toContain('<html lang="nb">')
+    expect(norwegian).toContain('<div lang="nb">')
+    expect(norwegian).not.toContain('Norsk')
   })
 
   it('escapes the copy and links only the listed addresses and the support mailbox', () => {
@@ -90,7 +77,7 @@ describe('the shared email layout (#1293)', () => {
     expect(body).toMatch(/<div style="display: none;[^"]*">Your account is fine\./)
   })
 
-  it('writes the plain-text part from the same content: the title, headings over their paragraphs, a rule between languages', () => {
+  it('writes the plain-text part from the same content: the title, then headings over their paragraphs', () => {
     const { text } = renderEmail(notice)
 
     expect(text).toBe(
@@ -100,12 +87,7 @@ describe('the shared email layout (#1293)', () => {
         'WHAT TO DO\nOpen https://boardly.online/profile or write to support@boardly.online.',
         'Open profile: https://boardly.online/profile?tab=premium&from=mail',
         'Or open this link:\nhttps://boardly.online/profile?tab=premium&from=mail',
-        '----',
-        'Et varsel om kontoen',
-        'Hei Ola,',
-        'DETTE GJØR DU\nÅpne https://boardly.online/profile.',
-        '----',
-        'Questions? Reply to this email.\nSpørsmål? Svar på denne e-posten.',
+        'Questions? Reply to this email.',
         'The Boardly team',
       ].join('\n\n')
     )
@@ -159,7 +141,7 @@ const SINGLE_LANGUAGE_MAILS: [SenderName, { subject: string; replyTo?: string; r
   [
     'sendUnverifiedAccountWarningEmail',
     {
-      subject: 'Action required: verify your Boardly account in 3 days / Handling kreves: bekreft Boardly-kontoen din innen 3 dager',
+      subject: 'Action required: verify your Boardly account in 3 days',
       result: { success: true },
     },
   ],
@@ -167,7 +149,7 @@ const SINGLE_LANGUAGE_MAILS: [SenderName, { subject: string; replyTo?: string; r
   [
     'sendSecurityPasswordResetEmail',
     {
-      subject: 'Please set a new Boardly password / Lag et nytt passord for Boardly',
+      subject: 'Please set a new Boardly password',
       replyTo: 'support@boardly.online',
       result: { success: true, id: 'email_1' },
     },
@@ -184,7 +166,7 @@ const SINGLE_LANGUAGE_MAILS: [SenderName, { subject: string; replyTo?: string; r
   [
     'sendGameInviteEmail',
     {
-      subject: 'Kari invited you to play Guess the Spy on Boardly / Kari inviterte deg til å spille Gjett spionen',
+      subject: 'Kari invited you to play Guess the Spy on Boardly',
       result: { success: true },
     },
   ],
@@ -284,32 +266,31 @@ describe('every mail lib/email sends (#1293)', () => {
     const mail = await send(name)
     const described = layout.renderEmail.mock.calls[0][0]
 
-    for (const sheet of described.sheets) {
-      expect(mail.html).toContain(`>${escapeHtml(sheet.title)}</h1>`)
-      expect(mail.text).toContain(sheet.title)
-      for (const block of sheet.blocks) {
-        const said =
-          block.type === 'paragraph' || block.type === 'note' || block.type === 'lead'
-            ? plain(block.content)
-            : block.type === 'list'
-              ? block.items
-              : block.type === 'heading'
-                ? [block.text.toUpperCase()]
-                : block.type === 'button'
-                  ? [block.label, block.href]
-                  : block.type === 'callout'
-                    ? [block.text]
-                    : block.type === 'facts'
-                      ? block.rows.map((row) => `${row.label}: ${row.value}`)
-                      : block.type === 'details'
-                        ? block.sections.flatMap((section) => [
-                            section.heading.toUpperCase(),
-                            ...(section.paragraphs ?? []).flatMap(plain),
-                            ...(section.items ?? []),
-                          ])
-                        : [block.text, block.href]
-        for (const piece of said) expect(mail.text).toContain(piece)
-      }
+    const { sheet } = described
+    expect(mail.html).toContain(`>${escapeHtml(sheet.title)}</h1>`)
+    expect(mail.text).toContain(sheet.title)
+    for (const block of sheet.blocks) {
+      const said =
+        block.type === 'paragraph' || block.type === 'note' || block.type === 'lead'
+          ? plain(block.content)
+          : block.type === 'list'
+            ? block.items
+            : block.type === 'heading'
+              ? [block.text.toUpperCase()]
+              : block.type === 'button'
+                ? [block.label, block.href]
+                : block.type === 'callout'
+                  ? [block.text]
+                  : block.type === 'facts'
+                    ? block.rows.map((row) => `${row.label}: ${row.value}`)
+                    : block.type === 'details'
+                      ? block.sections.flatMap((section) => [
+                          section.heading.toUpperCase(),
+                          ...(section.paragraphs ?? []).flatMap(plain),
+                          ...(section.items ?? []),
+                        ])
+                      : [block.text, block.href]
+      for (const piece of said) expect(mail.text).toContain(piece)
     }
     for (const line of described.footer.flat()) for (const piece of plain(line)) expect(mail.text).toContain(piece)
     expect(mail.text).not.toMatch(/<\/?(?:p|div|table|a|h\d|br)\b/)
@@ -417,7 +398,7 @@ describe('every mail lib/email sends (#1293)', () => {
     expect(mail.text).toContain(`Stop game invite emails (${url})`)
   })
 
-  it('writes in the one language it is given, and in English then Norwegian without one (#1298)', async () => {
+  it('writes in the one language it is given, and in English only without one (#1298, #1331)', async () => {
     const norwegian = await send('sendWelcomeEmail', ['Ola', 'nb'])
     expect(norwegian.subject).toBe('Velkommen til Boardly, Ola!')
     expect(norwegian.html).toContain('<div lang="nb">')
@@ -429,10 +410,11 @@ describe('every mail lib/email sends (#1293)', () => {
     expect(english.html).toContain('<div lang="en">')
     expect(english.html).not.toContain('<div lang="nb">')
 
-    const both = await send('sendWelcomeEmail', ['Ola'])
-    expect(both.subject).toBe('Welcome to Boardly, Ola! / Velkommen til Boardly, Ola!')
-    expect(both.html.indexOf('<div lang="en">')).toBeLessThan(both.html.indexOf('<div lang="nb">'))
-    expect(both.html.match(/class="bd-img-light"/g)).toHaveLength(2)
+    const unknown = await send('sendWelcomeEmail', ['Ola'])
+    expect(unknown.subject).toBe('Welcome to Boardly, Ola!')
+    expect(unknown.html).toContain('<div lang="en">')
+    expect(unknown.html).not.toContain('<div lang="nb">')
+    expect(unknown.text).not.toContain('E-postinnstillinger')
 
     const notice = await send('sendSuspensionNoticeEmail', [{ ...emailSamples.sendSuspensionNoticeEmail[0], language: 'nb' }])
     expect(notice.subject).toBe('Boardly-kontoen din er suspendert')

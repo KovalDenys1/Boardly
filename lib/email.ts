@@ -72,11 +72,6 @@ export type EmailMessage = { subject: string; html: string; text: string }
 
 type Localized<T> = Record<EmailLanguage, T>
 
-/** English then Norwegian when the reader's language is unknown, otherwise that one only. */
-function languagesFor(language?: EmailLanguage | null): EmailLanguage[] {
-  return language === 'en' || language === 'nb' ? [language] : ['en', 'nb']
-}
-
 function siteUrl(): string {
   return process.env.NEXTAUTH_URL || BOARDLY_URL
 }
@@ -137,31 +132,26 @@ function composeEmail(mail: {
   language?: EmailLanguage | null
   copy: (lang: EmailLanguage) => SheetCopy
   preference: Preference
-  /** Footer paragraphs after the preference line, given the languages the mail is in. */
-  closing: (languages: EmailLanguage[]) => EmailLayout['footer']
+  /** Footer paragraphs after the preference line. */
+  closing: (lang: EmailLanguage) => EmailLayout['footer']
   links?: readonly string[]
 }): EmailMessage {
-  const languages = languagesFor(mail.language)
-  const copies = languages.map((lang) => ({ lang, ...mail.copy(lang) }))
+  const lang: EmailLanguage = mail.language === 'nb' ? 'nb' : 'en'
+  const copy = mail.copy(lang)
   return {
-    subject: copies.map((copy) => copy.subject).join(' / '),
+    subject: copy.subject,
     ...renderEmail({
-      preheader: copies[0].preheader,
-      sheets: copies.map((copy, index) => ({
-        lang: copy.lang,
-        title: copy.title,
-        blocks: copy.blocks,
-        hero: index === 0 ? copy.hero : undefined,
-      })),
-      footer: [languages.map((lang) => preferenceLine(mail.preference, lang)), ...mail.closing(languages)],
+      preheader: copy.preheader,
+      sheet: { lang, title: copy.title, blocks: copy.blocks, hero: copy.hero },
+      footer: [[preferenceLine(mail.preference, lang)], ...mail.closing(lang)],
       links: mail.links,
     }),
   }
 }
 
 const signOff = (): EmailLayout['footer'] => [[COMPANY_SIGN_OFF]]
-const noticeSignOff = (languages: EmailLanguage[]): EmailLayout['footer'] => [
-  languages.map((lang) => NOTICE_CLOSING[lang]),
+const noticeSignOff = (lang: EmailLanguage): EmailLayout['footer'] => [
+  [NOTICE_CLOSING[lang]],
   [COMPANY_SIGN_OFF],
 ]
 
@@ -936,7 +926,7 @@ export async function sendAccountDeletionEmail(
 }
 
 export type PremiumConfirmationDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   /** Resend idempotency key; one per checkout session so a retried send cannot double-deliver. */
   idempotencyKey?: string
@@ -1164,7 +1154,7 @@ function noticeEmail(notice: {
   art: (lang: EmailLanguage) => Pick<SheetCopy, 'hero'>
   always: AlwaysSentReason
   links: Readonly<Record<string, string>>
-  closing: (languages: EmailLanguage[]) => EmailLayout['footer']
+  closing: (lang: EmailLanguage) => EmailLayout['footer']
 }): EmailMessage {
   return composeEmail({
     language: notice.language,
@@ -1181,8 +1171,8 @@ function noticeEmail(notice: {
   })
 }
 
-const teamClosing = (languages: EmailLanguage[]): EmailLayout['footer'] => [
-  [...languages.map((lang) => NOTICE_CLOSING[lang]), TEAM_SIGNATURE],
+const teamClosing = (lang: EmailLanguage): EmailLayout['footer'] => [
+  [NOTICE_CLOSING[lang], TEAM_SIGNATURE],
 ]
 
 function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMessage {
@@ -1204,7 +1194,7 @@ function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMes
     }),
     always: 'payment',
     links,
-    closing: (languages) => [...teamClosing(languages), seller ? [seller] : []],
+    closing: (lang) => [...teamClosing(lang), seller ? [seller] : []],
   })
 }
 
@@ -1213,8 +1203,7 @@ function premiumConfirmationEmail(details: PremiumConfirmationDetails): EmailMes
  * (#1164). angrerettloven section 18 wants, on a durable medium, the section 8
  * information repeated and a statement that the buyer asked for the service
  * to start at once; ehandelsloven section 12 wants an order confirmation.
- * English first, then Norwegian bokmal, in one message: no language is stored
- * per user. Sent once per session, which the caller guarantees through
+ * Sent once per session, which the caller guarantees through
  * PurchaseConsents.confirmationSentAt, not this function.
  *
  * Not the receipt. Premium is sold through Stripe Managed Payments (#1179),
@@ -1248,7 +1237,7 @@ export async function sendPremiumConfirmationEmail(email: string, details: Premi
 }
 
 export type SubscriptionNoticeDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   /** Resend idempotency key; one per notice, so a retried send cannot double-deliver. */
   idempotencyKey?: string
@@ -1387,8 +1376,7 @@ function subscriptionNoticeEmail(details: SubscriptionNoticeDetails): EmailMessa
  * Link's own renewal emails do not cover it: outside Australia and the UK they
  * come only before the 12-month anniversary unless "Upcoming renewals" is on, and
  * even then a yearly plan hears once a year (docs/OPERATIONS.md, "Runbook:
- * running-subscription notice"). English first, then Norwegian bokmål, in one
- * message, like the purchase confirmation: no language is stored per user.
+ * running-subscription notice").
  * lib/subscription-notice.ts decides who is due and guarantees one send per
  * notice; this only renders and sends.
  */
@@ -1419,7 +1407,7 @@ export async function sendSubscriptionNoticeEmail(email: string, details: Subscr
 }
 
 export type InactiveAccountWarningDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   /** Resend idempotency key; one per warning, so a retried send cannot double-deliver. */
   idempotencyKey?: string
@@ -1509,8 +1497,7 @@ function inactiveAccountWarningEmail(details: InactiveAccountWarningDetails): Em
 /**
  * The warning before an inactive account is deleted (#1130, decision 2026-09-27): a
  * registered account nobody has signed in to for 24 months is deleted, and its owner hears
- * about it 30 days before. English first, then Norwegian bokmål, in one message, like the
- * other notices: no language is stored per user. lib/inactive-accounts.ts decides who is
+ * about it 30 days before. lib/inactive-accounts.ts decides who is
  * due and guarantees one send per warning; this only renders and sends.
  */
 export async function sendInactiveAccountWarningEmail(email: string, details: InactiveAccountWarningDetails) {
@@ -1540,7 +1527,7 @@ export async function sendInactiveAccountWarningEmail(email: string, details: In
 }
 
 export type TermsChangeNoticeDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   idempotencyKey?: string
   username?: string | null
@@ -1663,7 +1650,7 @@ export async function sendTermsChangeNoticeEmail(email: string, details: TermsCh
 }
 
 export type SuspensionNoticeDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   /** Resend idempotency key, so a retried request cannot deliver the same notice twice. */
   idempotencyKey?: string
@@ -1758,9 +1745,8 @@ function suspensionNoticeEmail(details: SuspensionNoticeDetails): EmailMessage {
 /**
  * The email a suspended account's owner gets (Control Panel #120). The Terms promise it
  * (section 5): "When we suspend or close an account, we email the owner the reason and, for
- * a temporary suspension, the end date." English first, then Norwegian bokmål, like the
- * other notices: no language is stored per user. The reason is staff's own text and is
- * shown as written, escaped, in both halves. POST /api/internal/admin/suspension-notice
+ * a temporary suspension, the end date." The reason is staff's own text and is
+ * shown as written, escaped. POST /api/internal/admin/suspension-notice
  * sends it; this only renders and sends.
  */
 export async function sendSuspensionNoticeEmail(email: string, details: SuspensionNoticeDetails) {
@@ -1792,7 +1778,7 @@ export async function sendSuspensionNoticeEmail(email: string, details: Suspensi
 const LINKABLE_PROVIDER_NAMES = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
 export type ProviderLinkedNoticeDetails = {
-  /** The one language to write in; English then Norwegian when unknown. */
+  /** The language to write in; English when unknown. */
   language?: EmailLanguage | null
   username?: string | null
   provider: keyof typeof LINKABLE_PROVIDER_NAMES
@@ -1872,8 +1858,7 @@ function providerLinkedNoticeEmail(details: ProviderLinkedNoticeDetails): EmailM
 /**
  * The notice an account's owner gets when a sign-in provider is linked to the account
  * (#1223): a linked provider is a way to sign in, so the owner hears about a new one.
- * English first, then Norwegian bokmål, like the other notices: no language is stored
- * per user. The caller decides who is told; this only renders and sends.
+ * The caller decides who is told; this only renders and sends.
  */
 export async function sendProviderLinkedNoticeEmail(email: string, details: ProviderLinkedNoticeDetails) {
   if (!resend) {

@@ -9,6 +9,7 @@ import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendPushNotification } from '@/lib/push-send'
 import { sendGameInviteEmail } from '@/lib/email'
+import { emailLanguageFromLocale } from '@/lib/email-language'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 const inviteSchema = z.object({
@@ -19,6 +20,7 @@ type FriendCandidate = {
   id: string
   username: string | null
   email: string | null
+  language: string | null
 }
 
 const limiter = rateLimit(rateLimitPresets.api)
@@ -117,6 +119,7 @@ export async function POST(
             id: true,
             username: true,
             email: true,
+            language: true,
           },
         },
         user2: {
@@ -124,6 +127,7 @@ export async function POST(
             id: true,
             username: true,
             email: true,
+            language: true,
           },
         },
       },
@@ -138,6 +142,7 @@ export async function POST(
           id: friend.id,
           username: friend.username,
           email: friend.email,
+          language: friend.language,
         })
       }
     }
@@ -241,7 +246,7 @@ export async function POST(
           lobby.name || '',
           lobby.gameType,
           inviteUrl,
-          { userId: friend.id }
+          { userId: friend.id, language: emailLanguageFromLocale(friend.language) }
         )
 
         if (!emailResult.success) {

@@ -152,6 +152,10 @@ Nullable `Users.termsAcceptedAt` and `Users.ageConfirmedAt` (#1135). Accounts re
 
 Nullable `Users.lastSubscriptionNoticeAt` (#1165): when the last running-subscription notice was sent (digitalytelsesloven § 33 fourth paragraph), and the compare-and-set claim that makes the daily `/api/cron/subscription-notices` job send each notice once (`lib/subscription-notice.ts`). Nullable `Users.missingStripeSubscriptionId`: a subscription id Stripe no longer has, which the job then skips quietly. Existing rows stay NULL.
 
+### `20261007120000_users_language`
+
+Nullable `Users.language` (#1331): the site locale (`en`, `no`, `ru`, `uk`) the browser last reported for a signed-in account. Every mail is written in it, `no` as Norwegian and anything else as English (`lib/email-language.ts`). Existing rows stay NULL and get English until the browser writes the column.
+
 ## Row Level Security
 
 RLS is part of the database safety model:

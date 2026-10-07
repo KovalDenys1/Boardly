@@ -347,6 +347,7 @@ describe('POST /api/stripe/webhook - checkout.session.completed records the cons
     expect(details).toEqual({
       idempotencyKey: 'purchase-confirmation:cs_1',
       username: 'Ola',
+      language: 'en',
       plan: 'monthly',
       amountTotal: 299,
       currency: 'usd',

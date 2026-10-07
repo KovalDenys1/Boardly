@@ -18,6 +18,7 @@
  */
 import { prisma } from '../lib/db'
 import { sendSecurityPasswordResetEmail } from '../lib/email'
+import { emailLanguageFromLocale } from '../lib/email-language'
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(name)
@@ -39,7 +40,7 @@ async function main() {
 
   const users = await prisma.users.findMany({
     where: { passwordHash: { not: null }, email: { not: null } },
-    select: { id: true, email: true, username: true },
+    select: { id: true, email: true, username: true, language: true },
     orderBy: { createdAt: 'asc' },
   })
 
@@ -58,7 +59,7 @@ async function main() {
       prisma.passwordResetTokens.deleteMany({ where: { userId: u.id } }),
     ])
     cleared += 1
-    const result = await sendSecurityPasswordResetEmail(u.email!, u.username)
+    const result = await sendSecurityPasswordResetEmail(u.email!, u.username, emailLanguageFromLocale(u.language))
     if (result.success) console.log(`  sent  ${maskEmail(u.email!)}  ${'id' in result ? result.id : ''}`)
     else { failedSends.push(u.id); console.log(`  SEND FAILED  ${maskEmail(u.email!)}  ${result.error}`) }
   }

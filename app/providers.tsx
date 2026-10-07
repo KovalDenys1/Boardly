@@ -6,6 +6,7 @@ import { SessionProvider } from 'next-auth/react'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { SignupAttribution } from '@/components/SignupAttribution'
+import { AccountLanguageSync } from '@/components/AccountLanguageSync'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
@@ -73,6 +74,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider basePath="/api/auth">
       <GuestProvider>
         <SignupAttribution />
+        <AccountLanguageSync />
         <OnboardingProvider>
           <TourProvider>
             <ToastProvider>

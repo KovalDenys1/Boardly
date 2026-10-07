@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
-import { emailLanguageFromRequest } from '@/lib/email-language'
+import { emailLanguageFor } from '@/lib/email-language'
 import type { EmailLanguage } from '@/lib/email-layout'
 import { apiLogger } from '@/lib/logger'
 import { failClosedAuthPreset, rateLimit } from '@/lib/rate-limit'
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         where: {
           email: insensitiveEquals(email),
         },
-        select: { id: true, email: true },
+        select: { id: true, email: true, language: true },
       })
     } catch (dbError) {
       const log = apiLogger('POST /api/auth/forgot-password')
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Both branches now answer right after the one lookup; the work that only an
     // existing account triggers happens after the response (#1142).
-    runAfterResponse(issuePasswordReset(user, email, emailLanguageFromRequest(request)))
+    runAfterResponse(issuePasswordReset(user, email, emailLanguageFor(user.language, request)))
 
     return NextResponse.json(GENERIC_RESPONSE)
   } catch (error) {

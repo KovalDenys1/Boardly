@@ -33,6 +33,7 @@ model Users {
   inactivityWarningDeliveredAt DateTime? @db.Timestamptz(3) // When Resend accepted that email (#1130). Deletion requires one later than lastActiveAt and at least 30 days old, so a crash between claim and send never deletes anyone unwarned. NULL until the first delivery
   termsNoticeVersion    String? // The Terms version whose change the owner was last emailed about (Terms section 11)
   termsNoticeSentAt     DateTime? @db.Timestamptz(3) // When Resend accepted that email
+  language              String? // The site locale the person last used (en, no, ru, uk), written by the browser; every mail is in this language (#1331). NULL until the first write: mails then go out in English
   totpSecret            String?
   totpEnabled           Boolean   @default(false)
   totpPendingSecret     String?

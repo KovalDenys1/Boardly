@@ -224,7 +224,7 @@ minute, counted against the panel as one caller. A 400 carries `{ code: 'INVALID
 | `/api/internal/admin/remove-content` | `userId`, `field`: `bio` / `avatar` / `username` | 200 `{ removed: true, username? }` · 404 `USER_NOT_FOUND` · 409 `BOT_ACCOUNT` · 502 `AVATAR_DELETE_FAILED` |
 | `/api/internal/admin/remove-chat-message` | `lobbyCode`, `messageId` | 200 `{ removed: true }` · 404 `NOT_FOUND` · 502 `CHAT_STORE_UNAVAILABLE` |
 
-- **The suspension email** is English then Norwegian, signed by the team, with the reason as staff wrote
+- **The suspension email** is in the account's language (#1331), signed by the team, with the reason as staff wrote
   it, the end date in UTC or "until further notice", and the appeal form at
   `https://boardly.online/suspended`. It does not suspend anything: the panel writes `suspended`,
   `banReason` and `banExpiresAt` and then calls this, and the route answers 409 `NOT_SUSPENDED` unless the
@@ -424,7 +424,7 @@ says "a similar object exists in test mode") is not written off that way but cou
 start and `Users.lastSubscriptionNoticeAt`: six calendar months are at least 181 days, so a job that fails for
 eleven days running still lands inside the window. The column is also the claim: it is moved with a
 compare-and-set before the send and put back if the send fails, so two runs cannot both send and a failure is
-retried the next day. The email (`sendSubscriptionNoticeEmail` in `lib/email.ts`) is English then Norwegian,
+retried the next day. The email (`sendSubscriptionNoticeEmail` in `lib/email.ts`) is in the account's language (#1331),
 in company voice - never the operator imprint, which #1227 keeps off every email but the Premium purchase
 confirmation - and names the plan, the price, the next renewal date, the
 one-click cancel on `/profile?tab=premium`, cancelling by writing to support@, and Link. No flag: on
