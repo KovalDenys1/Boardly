@@ -738,15 +738,22 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     triggerLifecycleRedirect('alias-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean; nextCreatorId?: string; nextCreatorName?: string }) => {
     clientLogger.log('📡 Alias player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
+    if (payload.nextCreatorId) {
+      if (payload.nextCreatorId === getCurrentUserId()) {
+        showToast.success('toast.youAreNowHost')
+      } else if (payload.nextCreatorName) {
+        showToast.info('toast.hostReassigned', undefined, { player: payload.nextCreatorName })
+      }
+    }
     if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('alias-lifecycle-redirect')
       return
     }
     void loadLobby()
-  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
+  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, getCurrentUserId])
 
   // Guesses arrive as server-signed `chat-message` broadcasts from
   // POST /api/lobby/[code]/alias-guess, so the name on each is the sender's own.

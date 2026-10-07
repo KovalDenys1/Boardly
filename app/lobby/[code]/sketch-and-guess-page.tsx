@@ -409,12 +409,21 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             playerName?: string
             remainingPlayers?: number
             gameTerminal?: boolean
+            nextCreatorId?: string
+            nextCreatorName?: string
         }) => {
             clientLogger.log('📡 Sketch & Guess player left:', data)
             if (isLeavingLobbyRef.current) return
 
             const departedPlayerName = data.username || data.playerName
             if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+            if (data.nextCreatorId) {
+                if (data.nextCreatorId === getCurrentUserId()) {
+                    showToast.success('toast.youAreNowHost')
+                } else if (data.nextCreatorName) {
+                    showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
+                }
+            }
 
             if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
                 triggerLifecycleRedirect('player-left:insufficient-players')
@@ -422,7 +431,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             }
             void loadLobbyData()
         },
-        [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect, isLeavingLobbyRef]
+        [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect, isLeavingLobbyRef, getCurrentUserId]
     )
 
     useEffect(() => {

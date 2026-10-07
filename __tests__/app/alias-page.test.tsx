@@ -253,6 +253,33 @@ describe('AliasLobbyPage', () => {
     })
     expect(mockReplace).not.toHaveBeenCalled()
   })
+
+  it('tells the player who inherits the room that they are now the host (#1089)', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-1', nextCreatorName: 'Alice' },
+      })
+    })
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('toast.youAreNowHost'))
+  })
+
+  it('names the new host to everyone else (#1089)', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-3', nextCreatorName: 'Carol' },
+      })
+    })
+
+    await waitFor(() => expect(toast.info).toHaveBeenCalledWith('toast.hostReassigned', undefined, { player: 'Carol' }))
+    expect(toast.success).not.toHaveBeenCalledWith('toast.youAreNowHost')
+  })
 })
 
 // #770 — the turn timer effect used to call clearInterval(id) from a
