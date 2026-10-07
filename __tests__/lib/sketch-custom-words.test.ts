@@ -12,6 +12,10 @@ describe('sketch custom words (#1086)', () => {
     expect(sketchCustomWordsRules({ text: nine.join(','), only: true })).toEqual({})
   })
 
+  it('treats words that match the same guesses as one, and drops ones no guess can match', () => {
+    expect(parseSketchCustomWords('café, cafe, big-dog, big dog, \u{1F355}, !!!')).toEqual(['café', 'big-dog'])
+  })
+
   it('ignores what is not text', () => {
     expect(resolveSketchCustomWords({ customWords: [1, null, {}] })).toBeNull()
     expect(resolveSketchCustomWords(null)).toBeNull()

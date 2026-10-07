@@ -12,11 +12,6 @@ import {
   type SketchCustomWordsSetting,
 } from '@/lib/sketch-custom-words'
 
-/**
- * The host's own words for Sketch & Guess (#1086): one row in the waiting room,
- * the list itself in a dialog, so the room never changes height. Kept on the
- * host's device and sent with the start request; nobody else sees the list.
- */
 export default function SketchCustomWords() {
   const { t } = useTranslation()
   const [saved, setSaved] = useState<SketchCustomWordsSetting>(readSketchCustomWordsSetting)
@@ -65,7 +60,7 @@ export default function SketchCustomWords() {
             value={draft.text}
             onChange={(e) => setDraft({ ...draft, text: e.target.value })}
             rows={6}
-            maxLength={8000}
+            maxLength={20000}
             aria-label={t('games.guess_my_drawing.customWords.title')}
             placeholder={t('games.guess_my_drawing.customWords.placeholder')}
             className="w-full rounded-xl border p-3 text-sm text-bd-ink"

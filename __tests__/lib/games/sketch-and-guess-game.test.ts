@@ -7,6 +7,7 @@ import {
   isSketchNearMiss,
   sanitizeSketchAndGuessActionEventForBroadcast,
   sanitizeSketchAndGuessStateForBroadcast,
+  stripSketchCustomWords,
 } from '@/lib/games/sketch-and-guess-game'
 import {
   SKETCH_GUESS_MIN_INTERVAL_MS,
@@ -1069,13 +1070,23 @@ describe('SketchAndGuessGame – the host\'s own words (#1086)', () => {
     for (const choice of getData(game).rounds[0].wordChoices) expect(choice.id.startsWith('custom-')).toBe(false)
   })
 
-  it('never broadcasts the list, to anyone', () => {
+  it('never publishes the list, to anyone, in data or in the config copy', () => {
     const game = customGame({ customWords: twelve, customWordsOnly: false })
     expect(getData(game).customWords).toHaveLength(12)
     for (const viewer of [null, 'player1', 'player2']) {
-      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer)
-      expect((published.data as Record<string, unknown>).customWords).toBeUndefined()
-      expect((published.data as Record<string, unknown>).customWordsOnly).toBeUndefined()
+      const published = JSON.stringify(sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer))
+      expect(published).not.toContain('office plant')
+      expect(published).not.toContain('customWords')
+    }
+    expect(JSON.stringify(stripSketchCustomWords(game.getState()))).not.toContain('office plant')
+  })
+
+  it('mixed: one of the three choices is always the host\'s, and a bank word they repeat is not offered twice', () => {
+    for (let i = 0; i < 20; i++) {
+      const game = customGame({ customWords: [...twelve.slice(0, 9), 'cat'], customWordsOnly: false })
+      const choices = getData(game).rounds[0].wordChoices
+      expect(choices.filter((c) => c.id.startsWith('custom-'))).toHaveLength(1)
+      expect(choices.filter((c) => c.en.includes('cat')).length).toBeLessThanOrEqual(1)
     }
   })
 })
