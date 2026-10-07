@@ -6,7 +6,7 @@ import { INACTIVITY_RULE_STARTS } from './terms-version'
 
 const log = apiLogger('terms-change-notice')
 
-export const TERMS_CHANGE_NOTICE_SEND = false
+export const TERMS_CHANGE_NOTICE_SEND = true
 
 export const TERMS_CHANGE_NOTICE = {
   version: '2026-10-05',
@@ -16,6 +16,9 @@ export const TERMS_CHANGE_NOTICE = {
 export const TERMS_CHANGE_NOTICE_DAYS = 30
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+// RFC 2606 reserves these domains; nobody can receive mail there.
+const RESERVED_TEST_DOMAINS = ['example.com', 'test.com']
 
 const startOfDay = (day: string) => new Date(`${day}T00:00:00.000Z`)
 
@@ -31,6 +34,7 @@ export function termsChangeNoticeWhere(): Prisma.UsersWhereInput {
     emailVerified: { not: null },
     createdAt: { lt: new Date(startOfDay(TERMS_CHANGE_NOTICE.version).getTime() + DAY_MS) },
     OR: [{ termsNoticeVersion: null }, { termsNoticeVersion: { not: TERMS_CHANGE_NOTICE.version } }],
+    NOT: RESERVED_TEST_DOMAINS.map((domain) => ({ email: { endsWith: `@${domain}`, mode: 'insensitive' as const } })),
   }
 }
 
@@ -84,6 +88,7 @@ export async function sendTermsChangeNotices(options: TermsChangeNoticeOptions =
 
     const sent = await sendEmail(account.email, {
       username: account.username,
+      language: 'en',
       appliesFrom: startOfDay(TERMS_CHANGE_NOTICE.appliesFrom),
       idempotencyKey: `terms-change-notice/${TERMS_CHANGE_NOTICE.version}/${account.id}`,
     })
