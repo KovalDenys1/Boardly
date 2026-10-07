@@ -16,6 +16,7 @@ import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { constantTimeEqual } from '@/lib/secret-compare'
+import { runAfterResponse } from '@/lib/after-response'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -285,9 +286,26 @@ export async function POST(
     const botDifficulty = getBotDifficulty(botPlayer)
     log.info('Bot difficulty', { difficulty: botDifficulty })
 
-    // Helper function to broadcast bot actions in real-time
+    // Every broadcast is kept alive past the response: the last commit's
+    // game-update is sent just before this route returns, and an instance frozen
+    // the moment the response leaves would hold the turn's hand-back until the
+    // client's grace ran out (#985 was the same freeze on the trigger).
     const broadcastBotAction = async (event: BaseBotActionEvent) => {
-      await broadcastToLobby(resolvedLobbyCode, 'bot-action', { ...event })
+      const sent = broadcastToLobby(resolvedLobbyCode, 'bot-action', { ...event })
+      runAfterResponse(sent)
+      await sent
+    }
+
+    const broadcastCommit = (state: ReturnType<typeof gameEngine.getState>) => {
+      const sent = Promise.resolve(broadcastToLobby(resolvedLobbyCode, 'game-update', {
+        action: 'state-change',
+        // The row id, so a client can tell a rematch's update from its own (#1160).
+        gameId: game.id,
+        payload: sanitizeStateForBroadcast(gameType, state),
+      })).then((ok) => {
+        if (!ok) log.warn('Failed to broadcast bot move', { gameId, botUserId })
+      })
+      runAfterResponse(sent)
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -372,6 +390,12 @@ export async function POST(
             lockTurn += 1
             lockUpdatedAt = newUpdatedAt
 
+            // The board is committed, so the table can see the move now. Only a move
+            // that ends the game waits for the Players rows below: the results screen
+            // reads them, and the broadcast is what sends players there.
+            const endsGame = newState.status !== 'playing'
+            if (!endsGame) broadcastCommit(gameEngine.getState())
+
             // Log state transitions
             if (statusChanged) {
               log.info('Game status changed by bot', {
@@ -449,11 +473,7 @@ export async function POST(
             log.info('Player scores updated')
 
           const currentState = gameEngine.getState()
-          const broadcastState = sanitizeStateForBroadcast(gameType, currentState)
-          void broadcastToLobby(resolvedLobbyCode, 'game-update', {
-            action: 'state-change',
-            payload: broadcastState,
-          })
+          if (endsGame) broadcastCommit(currentState)
 
           maybeAutoTransitionCompletedSeries(
             gameEngine,
