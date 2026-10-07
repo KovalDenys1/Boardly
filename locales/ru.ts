@@ -3427,6 +3427,7 @@ const ru = {
       upperShort: 'Верх',
       lowerShort: 'Низ',
       categoriesShort: 'Категории',
+      shortModeNote: 'Короткая игра: 9 раундов, одна клетка за раунд. В классическом режиме добавляются единицы–шестёрки и бонус.',
       bonusEarned: '+35 бонус',
       onPar: 'в графике',
       aheadOfPar: '+{{count}} к графику',

@@ -3429,6 +3429,7 @@ const uk: TranslationWithPlurals = {
       upperShort: 'Верх',
       lowerShort: 'Низ',
       categoriesShort: 'Категорії',
+      shortModeNote: 'Коротка гра: 9 раундів, одна клітинка за раунд. Класичний режим додає одиниці–шістки та бонус.',
       bonusEarned: '+35 бонус',
       onPar: 'за графіком',
       aheadOfPar: '+{{count}} до графіка',

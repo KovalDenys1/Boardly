@@ -3341,6 +3341,7 @@ const no = {
       upperShort: 'Øvre',
       lowerShort: 'Nedre',
       categoriesShort: 'Kategorier',
+      shortModeNote: 'Kort spill: 9 runder, én rute per runde. Klassisk modus legger til enere til seksere og bonusen.',
       bonusEarned: '+35 bonuspoeng',
       onPar: 'i rute',
       aheadOfPar: '+{{count}} foran',

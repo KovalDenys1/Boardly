@@ -2870,7 +2870,14 @@ input[type="range"].slider-thumb::-moz-range-track {
   overscroll-behavior: contain;
 }
 .yz-grid--classic { grid-template-rows: auto repeat(2, minmax(44px, 1fr)) auto repeat(3, minmax(44px, 1fr)); }
-.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 1fr)); }
+.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 96px)) auto; align-content: start; }
+.yz-mode-note {
+  grid-column: 1 / -1;
+  margin: 2px 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bd-ink-soft);
+}
 .yz-grid[aria-busy='true'] .yz-tile { opacity: 0.6; }
 
 .yz-section {
@@ -3045,7 +3052,9 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   .yz-grid--short {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-template-rows: auto repeat(2, minmax(44px, 1fr));
+    align-content: stretch;
   }
+  .yz-mode-note { display: none; }
   .yz-grid .yz-footer--in-grid { display: flex; grid-column: span 3; min-height: 0; }
   .yz-panel > .yz-footer { display: none; }
 }

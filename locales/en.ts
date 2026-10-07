@@ -3341,6 +3341,7 @@ const en = {
       upperShort: 'Upper',
       lowerShort: 'Lower',
       categoriesShort: 'Categories',
+      shortModeNote: 'Short game: 9 rounds, one box per round. Classic mode adds Ones to Sixes and the bonus.',
       bonusEarned: '+35 bonus',
       onPar: 'on par',
       aheadOfPar: '+{{count}} ahead',
