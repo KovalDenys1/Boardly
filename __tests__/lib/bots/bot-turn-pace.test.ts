@@ -144,8 +144,8 @@ describe('bot in-turn pause table matches the executors (#1049)', () => {
 
     // Both branches of the turn loop really ran: the mismatch one that ends the
     // turn, and the match one that goes round for another pair.
-    expect(allRuns).toContainEqual([1200, 180])
-    expect(allRuns).toContainEqual([420, 260])
+    expect(allRuns).toContainEqual([700, 100])
+    expect(allRuns).toContainEqual([250, 260])
 
     expect(longestRun(allRuns, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES.memory])
   })
@@ -279,13 +279,11 @@ describe('the grace covers the pause it is derived from (#1049)', () => {
     process.env = originalEnv
   })
 
-  it('memory at the default difficulty is the case the hardcoded 2500 ms missed', () => {
-    // The numbers the review ran: 2311 ms of bot pause against a 2500 ms grace
-    // left 189 ms for a database write and a realtime delivery, so the client's
-    // deferred POST landed inside the bot's own turn and took the 409 #1049 is
-    // about. These two lines are why the constant was the wrong shape.
-    expect(resolveBotInTurnPauseMs('memory', 'easy')).toBe(2311)
-    expect(resolveBotTurnGraceMs('memory')).toBeGreaterThan(2_500)
+  it("memory: a bot's missed pair stays up as long as a person's does", () => {
+    // MISMATCH_RESOLVE_DELAY_MS in MemoryGameBoard.tsx: a person's miss turns back
+    // after 1200 ms. The bot's used to stay up 2070 ms at medium.
+    expect(resolveBotInTurnPauseMs('memory', 'medium')).toBe(1200)
+    expect(resolveBotTurnGraceMs('memory')).toBeGreaterThan(resolveBotInTurnPauseMs('memory', 'easy'))
   })
 
   it.each(gameTypes)('%s: grace beats the pause at every difficulty', (gameType) => {

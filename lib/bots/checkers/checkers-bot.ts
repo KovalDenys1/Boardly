@@ -30,7 +30,7 @@ export interface CheckersBotDecision {
  * spent and plays the best move of the last depth it finished, so the bot-turn
  * route's serverless invocation never spends more than about a second thinking.
  */
-export const CHECKERS_HARD_TIME_BUDGET_MS = 900
+export const CHECKERS_HARD_TIME_BUDGET_MS = 600
 /** Deepest iteration; far past what the budget reaches from the opening. */
 const MAX_DEPTH = 20
 const WIN_SCORE = 100_000

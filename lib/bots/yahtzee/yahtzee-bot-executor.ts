@@ -55,7 +55,8 @@ export class YahtzeeBotExecutor {
                 botName: botPlayer.name,
                 message: `${botPlayer.name} is thinking...`,
             })
-            await botDelay(difficulty, 300)
+            // Short: the first roll's own pause follows straight after.
+            await botDelay(difficulty, 150)
 
             // Execute turn step by step
             let rollNumber = 0

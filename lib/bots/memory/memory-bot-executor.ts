@@ -18,6 +18,17 @@ export interface MemoryBotActionEvent {
 
 const MAX_PAIR_ATTEMPTS_PER_TURN = 40
 
+/**
+ * A missed pair stays face up for the mismatch pause plus the resolve pause:
+ * 1200 ms at medium, the same as a person's own miss stays up on the board
+ * (MISMATCH_RESOLVE_DELAY_MS in MemoryGameBoard.tsx). It was 2070 ms, so every
+ * bot miss held the table almost twice as long as a human one.
+ */
+export const MEMORY_BOT_MISMATCH_PAUSE_BASE = 700
+export const MEMORY_BOT_RESOLVE_PAUSE_BASE = 100
+/** After a found pair, before the thinking pause of the next one. */
+export const MEMORY_BOT_AFTER_MATCH_PAUSE_BASE = 250
+
 export class MemoryBotExecutor {
   static async executeBotTurn(
     gameEngine: MemoryGame,
@@ -82,7 +93,7 @@ export class MemoryBotExecutor {
           },
           message: `${botPlayer.name} missed a pair`,
         })
-        await botDelay(difficulty, 1200)
+        await botDelay(difficulty, MEMORY_BOT_MISMATCH_PAUSE_BASE)
         await this.resolveMismatch(bot, botPlayer.name, difficulty, onMove, onBotAction)
         return
       }
@@ -98,7 +109,7 @@ export class MemoryBotExecutor {
         message: `${botPlayer.name} found a pair`,
       })
 
-      await botDelay(difficulty, 420)
+      await botDelay(difficulty, MEMORY_BOT_AFTER_MATCH_PAUSE_BASE)
     }
 
     if (attempts >= MAX_PAIR_ATTEMPTS_PER_TURN) {
@@ -157,7 +168,7 @@ export class MemoryBotExecutor {
     onMove: MoveCallback,
     onBotAction?: (event: MemoryBotActionEvent) => void,
   ): Promise<void> {
-    await botDelay(difficulty, 180)
+    await botDelay(difficulty, MEMORY_BOT_RESOLVE_PAUSE_BASE)
     await onMove(bot.createResolveMismatchMove())
 
     onBotAction?.({
