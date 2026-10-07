@@ -1797,6 +1797,9 @@ const ru = {
         tapToInspect: 'Посмотреть доску',
         showResults: 'Показать результат',
         spectator: 'Зритель',
+        dropHint: 'Выберите столбец, чтобы бросить фишку',
+        winsOnTime: '{{player}} побеждает по времени',
+        outOfTime: 'Время вышло',
       },
     },
     checkers: {

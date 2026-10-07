@@ -1747,6 +1747,9 @@ const en = {
         tapToInspect: 'View Board',
         showResults: 'Show results',
         spectator: 'Spectator',
+        dropHint: 'Pick a column to drop your disc',
+        winsOnTime: '{{player}} wins on time',
+        outOfTime: 'Out of time',
       },
     },
     checkers: {

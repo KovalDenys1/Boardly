@@ -1747,6 +1747,9 @@ const no = {
         tapToInspect: 'Se brettet',
         showResults: 'Vis resultat',
         spectator: 'Tilskuer',
+        dropHint: 'Velg en kolonne for å slippe brikken',
+        winsOnTime: '{{player}} vinner på tid',
+        outOfTime: 'Tiden er ute',
       },
     },
     checkers: {

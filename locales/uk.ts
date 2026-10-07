@@ -1799,6 +1799,9 @@ const uk: TranslationWithPlurals = {
         tapToInspect: 'Переглянути дошку',
         showResults: 'Показати результат',
         spectator: 'Глядач',
+        dropHint: 'Оберіть стовпець, щоб кинути фішку',
+        winsOnTime: '{{player}} перемагає за часом',
+        outOfTime: 'Час вийшов',
       },
     },
     checkers: {
