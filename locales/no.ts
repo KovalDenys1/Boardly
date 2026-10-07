@@ -3156,6 +3156,8 @@ const no = {
       winBadge: 'SEIER',
       victoryBadge: 'SEIER',
       drawBadge: 'UAVGJORT',
+      defeatBadge: 'TAP',
+      gameOverBadge: 'SLUTT',
       viewBoard: 'Se brettet',
       kickPlayer: 'Fjern spiller',
       removedPlayers: 'Fjernede spillere',

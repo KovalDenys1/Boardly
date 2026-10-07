@@ -3224,6 +3224,8 @@ const ru = {
       winBadge: 'ПОБЕДА',
       victoryBadge: 'ПОБЕДА',
       drawBadge: 'НИЧЬЯ',
+      defeatBadge: 'ПОРАЖЕНИЕ',
+      gameOverBadge: 'ИГРА ОКОНЧЕНА',
       viewBoard: 'Посмотреть доску',
       kickPlayer: 'Удалить игрока',
       removedPlayers: 'Удалённые игроки',

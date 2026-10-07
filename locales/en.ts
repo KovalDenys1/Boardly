@@ -3156,6 +3156,8 @@ const en = {
       winBadge: 'WIN',
       victoryBadge: 'VICTORY',
       drawBadge: 'DRAW',
+      defeatBadge: 'DEFEAT',
+      gameOverBadge: 'GAME OVER',
       viewBoard: 'View Board',
       kickPlayer: 'Remove player',
       removedPlayers: 'Removed players',

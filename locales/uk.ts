@@ -3226,6 +3226,8 @@ const uk: TranslationWithPlurals = {
       winBadge: 'ПЕРЕМОГА',
       victoryBadge: 'ПЕРЕМОГА',
       drawBadge: 'НІЧИЯ',
+      defeatBadge: 'ПОРАЗКА',
+      gameOverBadge: 'ГРУ ЗАВЕРШЕНО',
       viewBoard: 'Переглянути дошку',
       kickPlayer: 'Видалити гравця',
       removedPlayers: 'Видалені гравці',

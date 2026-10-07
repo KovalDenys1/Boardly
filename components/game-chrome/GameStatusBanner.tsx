@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 
 /**
@@ -17,9 +17,18 @@ import { Icon } from '@/components/icons'
  * timer bar scales on the compositor (scaleX from the left) instead of
  * animating width, which relaid the banner every second.
  */
+/** The finished game seen from the viewer's seat. */
+export type GameOutcome = 'win' | 'loss' | 'draw'
+
 export interface GameStatusBannerProps {
   isFinished: boolean
   isDraw?: boolean
+  /**
+   * The viewer's result. Without it a finished, non-draw game shows the neutral
+   * badge: only the caller knows who is looking, and a wrong VICTORY to the
+   * loser is worse than no verdict.
+   */
+  outcome?: GameOutcome
   /** Already-translated result line ("Alice wins!", "It's a tie") — required when finished. */
   finishedMessage?: string
   /** Already-translated active-turn line ("Alice's turn"). */
@@ -74,6 +83,7 @@ const IDLE_NUDGE_SECONDS = 15
 export default function GameStatusBanner({
   isFinished,
   isDraw = false,
+  outcome,
   finishedMessage,
   activeTitle,
   meta,
@@ -88,21 +98,28 @@ export default function GameStatusBanner({
   const { t } = useTranslation()
 
   if (isFinished) {
+    const result: GameOutcome | 'over' =
+      isDraw || outcome === 'draw' ? 'draw' : isSpectator || !outcome ? 'over' : outcome
+    const BADGE: Record<typeof result, { key: TranslationKeys; background: string; color: string; plate: string }> = {
+      win: { key: 'game.ui.victoryBadge', background: 'var(--bd-sun)', color: 'var(--bd-ink)', plate: barColor },
+      loss: { key: 'game.ui.defeatBadge', background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-coral)' },
+      draw: { key: 'game.ui.drawBadge', background: 'var(--bd-lav)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-lav)' },
+      over: { key: 'game.ui.gameOverBadge', background: 'var(--bd-bg2)', color: 'var(--bd-ink)', plate: 'var(--bd-line)' },
+    }
+    const badge = BADGE[result]
     const badgeStyle: React.CSSProperties = {
       display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
       border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-      ...(isDraw
-        ? { background: 'var(--bd-lav)', color: 'var(--bd-ink-on-accent)' }
-        : { background: 'var(--bd-sun)', color: 'var(--bd-ink)' }),
+      whiteSpace: 'nowrap', flexShrink: 0, background: badge.background, color: badge.color,
     }
     return (
-      <div key={finishedMessage ?? 'finished'} className="game-status-cue" data-testid="game-status-title" style={{
+      <div key={finishedMessage ?? 'finished'} className="game-status-cue" data-testid="game-status-title" data-outcome={result} style={{
         padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
         display: 'flex', alignItems: 'center', gap: 12,
-        boxShadow: `0 4px 0 ${isDraw ? 'var(--bd-lav)' : barColor}`,
+        boxShadow: `0 4px 0 ${badge.plate}`,
       }}>
-        <span style={badgeStyle}>{isDraw ? t('game.ui.drawBadge') : t('game.ui.victoryBadge')}</span>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>{finishedMessage}</span>
+        <span style={badgeStyle}>{t(badge.key)}</span>
+        <span style={{ fontWeight: 600, fontSize: 13, minWidth: 0 }}>{finishedMessage}</span>
       </div>
     )
   }

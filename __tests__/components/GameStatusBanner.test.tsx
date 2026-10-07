@@ -23,11 +23,28 @@ describe('GameStatusBanner (#736 phase 4)', () => {
     expect(screen.getByText(':45')).toBeTruthy()
   })
 
-  it('renders the victory plate when finished', () => {
-    render(<GameStatusBanner {...base} isFinished finishedMessage="Alice wins!" />)
+  it('renders the victory plate for the winner', () => {
+    render(<GameStatusBanner {...base} isFinished outcome="win" finishedMessage="Alice wins!" />)
     expect(screen.getByText('game.ui.victoryBadge')).toBeTruthy()
     expect(screen.getByText('Alice wins!')).toBeTruthy()
     expect(screen.queryByText(':45')).toBeNull()
+  })
+
+  it('tells the loser it is a defeat, never a victory (#1340)', () => {
+    render(<GameStatusBanner {...base} isFinished outcome="loss" finishedMessage="Grid Rookie wins!" />)
+    expect(screen.getByText('game.ui.defeatBadge')).toBeTruthy()
+    expect(screen.queryByText('game.ui.victoryBadge')).toBeNull()
+  })
+
+  it('shows the neutral badge when the caller does not say who is looking (#1340)', () => {
+    render(<GameStatusBanner {...base} isFinished finishedMessage="Grid Rookie wins!" />)
+    expect(screen.getByText('game.ui.gameOverBadge')).toBeTruthy()
+    expect(screen.queryByText('game.ui.victoryBadge')).toBeNull()
+  })
+
+  it('shows a spectator the neutral badge even with an outcome passed (#1340)', () => {
+    render(<GameStatusBanner {...base} isFinished isSpectator outcome="win" finishedMessage="Alice wins!" />)
+    expect(screen.getByText('game.ui.gameOverBadge')).toBeTruthy()
   })
 
   it('renders the draw plate when finished with a draw', () => {

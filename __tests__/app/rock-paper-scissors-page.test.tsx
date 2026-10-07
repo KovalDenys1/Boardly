@@ -308,10 +308,10 @@ describe('RockPaperScissorsLobbyPage', () => {
       expect(mockBoardProps.current.gameData.gameWinner).toBe('user-1')
       // The banner's VICTORY and the card's WIN pill wait with it. (The result
       // overlay is in the DOM from the start, invisible for its own reveal delay.)
-      expect(document.body.textContent).not.toMatch(/game\.ui\.(victoryBadge|winBadge)/)
+      expect(document.body.textContent).not.toMatch(/game\.ui\.(victoryBadge|gameOverBadge|winBadge)/)
 
       await waitFor(
-        () => expect(document.body.textContent).toMatch(/game\.ui\.victoryBadge[\s\S]*game\.ui\.winBadge|game\.ui\.winBadge[\s\S]*game\.ui\.victoryBadge/),
+        () => expect(document.body.textContent).toMatch(/game\.ui\.(victoryBadge|gameOverBadge)[\s\S]*game\.ui\.winBadge|game\.ui\.winBadge[\s\S]*game\.ui\.(victoryBadge|gameOverBadge)/),
         { timeout: 2000 },
       )
       expect(mockBoardProps.current.shownScores).toEqual({ 'user-1': 2, 'user-2': 1 })
