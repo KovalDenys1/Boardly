@@ -54,3 +54,32 @@ describe('the first drop of a game that loaded empty', () => {
     expect(result.current.fresh).toBe(true)
   })
 })
+
+describe('an accepted undo (#1288)', () => {
+  it('leaves the disc it uncovers where it is', () => {
+    let previous: DropKey | null = null
+    const keyFor = (history: ConnectFourMoveRecord[]) => {
+      previous = nextDropKey(previous, history)
+      return previous?.key ?? null
+    }
+    const first = drop(3, 5, 1, 640)
+    const { result, rerender } = renderHook(({ k }: { k: string | null }) => useFreshKey(k), {
+      initialProps: { k: keyFor([]) },
+    })
+
+    rerender({ k: keyFor([first]) })
+    act(() => result.current.settle())
+    rerender({ k: keyFor([first, drop(4, 5, 2, 1500)]) })
+    expect(result.current.fresh).toBe(true)
+    act(() => result.current.settle())
+
+    rerender({ k: keyFor([first]) })
+    expect(result.current.fresh).toBe(false)
+  })
+
+  it('still drops the first disc of a new round that lands where the last round began', () => {
+    const lastRound = nextDropKey(null, [drop(3, 5, 1, 640), drop(4, 5, 2, 1500)])
+    const nextRound = nextDropKey(lastRound, [drop(3, 5, 1, 9000)])
+    expect(nextRound?.key).not.toBe(lastRound?.key)
+  })
+})

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import TicTacToeLobbyPage from '@/app/lobby/[code]/tic-tac-toe-page'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -28,13 +28,16 @@ const mockChannel: any = {
   subscribe: jest.fn(() => mockChannel),
 }
 
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: mockReplace,
-    push: mockPush,
-    prefetch: mockPrefetch,
-  }),
-}))
+// Next's router is the same object on every render; a fresh one per render
+// would re-run every effect that depends on it, loadLobby's included.
+jest.mock('next/navigation', () => {
+  const router = {
+    replace: (...args: unknown[]) => mockReplace(...args),
+    push: (...args: unknown[]) => mockPush(...args),
+    prefetch: (...args: unknown[]) => mockPrefetch(...args),
+  }
+  return { useRouter: () => router }
+})
 
 jest.mock('next-auth/react', () => ({
   useSession: () => ({
@@ -261,6 +264,37 @@ describe('TicTacToeLobbyPage', () => {
       screen.getAllByRole('button', { name: 'cell C3' }).forEach((cell) => {
         expect(cell.disabled).toBe(true)
       })
+    })
+  })
+
+  describe('a mark answered slowly by the server (#1288)', () => {
+    it('pops once: the server copy of a settled mark does not pop again', async () => {
+      render(<TicTacToeLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('ttt-board')).toBeTruthy())
+
+      let answerMove: (response: Response) => void = () => {}
+      mockFetchWithGuest.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/state') && init?.method === 'POST') {
+          return new Promise<Response>((resolve) => { answerMove = resolve })
+        }
+        return { ok: true, json: async () => buildLobbyResponse() } as Response
+      })
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'cell A1' })[0])
+      const popHosts = () => document.querySelectorAll('.ttt-mark-pop-host')
+      await waitFor(() => expect(popHosts().length).toBeGreaterThan(0))
+      popHosts().forEach((host) => fireEvent.animationEnd(host))
+      expect(popHosts()).toHaveLength(0)
+
+      const server = new TicTacToeGame('game-1')
+      server.restoreState(buildLobbyResponse().activeGame.state)
+      server.makeMove({ playerId: 'user-1', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date(Date.now() + 600) })
+      await act(async () => {
+        answerMove({ ok: true, status: 200, json: async () => ({ game: { state: server.getState(), status: 'playing' } }) } as Response)
+      })
+
+      await waitFor(() => expect(mockFetchWithGuest).toHaveBeenCalledWith('/api/game/game-1/state', expect.anything()))
+      expect(popHosts()).toHaveLength(0)
     })
   })
 })
