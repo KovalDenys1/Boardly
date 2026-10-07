@@ -105,6 +105,39 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.getByTestId('after-game-actions')).toBeTruthy()
   })
 
+  it('puts Play again first and View board, Return to lobby and Leave in one row under it (#1341)', () => {
+    render(<GameResultOverlay {...base} />)
+    const row = screen.getByTestId('game-result-secondary')
+    expect(Array.from(row.querySelectorAll('button')).map((b) => b.textContent)).toEqual([
+      'game.ui.viewBoard',
+      'game.ui.returnToLobby',
+      'game.ui.leave',
+    ])
+    const primary = screen.getByText('lobby.game.playAgain')
+    expect(primary.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The after-game block comes after both, below the fold on a short board.
+    expect(row.compareDocumentPosition(screen.getByTestId('after-game-actions')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('fades the scroller only while content sits below the fold (#1341)', () => {
+    const heights = { scrollHeight: 709, clientHeight: 274 }
+    const spies = (['scrollHeight', 'clientHeight'] as const).map((prop) =>
+      jest.spyOn(HTMLElement.prototype, prop, 'get').mockImplementation(function (this: HTMLElement) {
+        return this.dataset.testid === 'game-result-overlay-scroll' ? heights[prop] : 0
+      })
+    )
+    try {
+      render(<GameResultOverlay {...base} />)
+      const scroller = screen.getByTestId('game-result-overlay-scroll')
+      expect(scroller.getAttribute('data-more-below')).toBe('true')
+      scroller.scrollTop = 435
+      fireEvent.scroll(scroller)
+      expect(scroller.getAttribute('data-more-below')).toBe('false')
+    } finally {
+      spies.forEach((spy) => spy.mockRestore())
+    }
+  })
+
   it('renders the draw handshake instead of the trophy', () => {
     render(<GameResultOverlay {...base} title="It's a draw" isDraw />)
     expect(document.querySelector('[data-icon="handshake"]')).toBeTruthy()

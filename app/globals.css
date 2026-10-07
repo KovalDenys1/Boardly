@@ -2052,6 +2052,115 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(10px) scale(0.94); }
   to { opacity: 1; transform: none; }
 }
+/* Layout (#1341). The overlay covers the board card exactly, so it is a size
+   container: a ~274px phone-landscape board drops the icon and tightens the
+   type instead of pushing Leave below the fold. The scroller, not the scrim,
+   carries the bottom fade, so the scrim stays opaque to the edge. */
+.game-result-overlay { container: game-result / size; }
+.game-result-overlay__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.game-result-overlay__scroll[data-more-below='true'] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
+.game-result-overlay__panel {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  width: 100%;
+}
+.game-result-overlay__icon { display: flex; justify-content: center; }
+.game-result-overlay__kicker {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-family: ui-monospace, monospace;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+.game-result-overlay__title {
+  font-family: var(--bd-font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 4vw, 28px);
+  color: #fff;
+  text-align: center;
+  margin: 0 0 14px;
+  line-height: 1.1;
+}
+.game-result-overlay__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 300px;
+}
+.game-result-overlay__primary {
+  min-height: 48px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.game-result-overlay__primary:disabled { cursor: not-allowed; opacity: 0.65; }
+.game-result-overlay__plate {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  text-align: center;
+}
+/* View board, Return to lobby and Leave: one row of equal tiles; a long label
+   wraps inside its tile rather than adding a row. */
+.game-result-overlay__secondary {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.game-result-overlay__ghost {
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.15;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  font-family: inherit;
+  overflow-wrap: anywhere;
+}
+.game-result-overlay__ghost:disabled { cursor: not-allowed; opacity: 0.65; }
+.game-result-overlay__more { margin-top: 6px; }
+@container game-result (max-height: 420px) {
+  .game-result-overlay__panel { padding: 12px 14px; gap: 4px; }
+  .game-result-overlay__kicker { margin-top: 0; }
+  .game-result-overlay__title { font-size: 20px; margin-bottom: 8px; }
+  .game-result-overlay__primary { min-height: 44px; padding: 8px 16px; }
+}
+@container game-result (max-height: 320px) {
+  .game-result-overlay__icon { display: none; }
+}
 .ttt-board-overlay {
   position: absolute;
   inset: 0;
