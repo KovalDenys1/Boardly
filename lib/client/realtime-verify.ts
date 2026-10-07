@@ -67,7 +67,7 @@ function getSubtle(): SubtleCrypto | null {
   return webCrypto?.subtle ?? null
 }
 
-function base64UrlToBytes(value: string): Uint8Array | null {
+function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> | null {
   if (!/^[A-Za-z0-9_-]*$/.test(value)) return null
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((value.length + 3) % 4)
   try {
