@@ -3446,6 +3446,9 @@ const ru = {
     sendHelp: 'Нажмите Enter для отправки • Shift+Enter для новой строки',
     rules: 'Правила',
     rulesNewTab: 'Правила сообщества (откроются в новой вкладке)',
+    mutePlayer: 'Скрыть сообщения {{player}} на этом устройстве',
+    unmuteAll: 'Снова показать скрытых игроков: {{count}}',
+    unmuteAll_other: 'Снова показать скрытых игроков: {{count}}',
   },
   auth: {
     signedInProvidersHidden: 'Вы уже вошли в аккаунт. Чтобы войти через Google, GitHub или Discord, сначала выйдите из него.',

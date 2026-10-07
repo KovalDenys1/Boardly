@@ -3448,6 +3448,9 @@ const uk: TranslationWithPlurals = {
     sendHelp: 'Enter — надіслати • Shift+Enter — новий рядок',
     rules: 'Правила',
     rulesNewTab: 'Правила спільноти (відкриються в новій вкладці)',
+    mutePlayer: 'Приховати повідомлення {{player}} на цьому пристрої',
+    unmuteAll: 'Знову показати прихованих гравців: {{count}}',
+    unmuteAll_other: 'Знову показати прихованих гравців: {{count}}',
   },
   auth: {
     signedInProvidersHidden: 'Ви вже увійшли в акаунт. Щоб увійти через Google, GitHub або Discord, спершу вийдіть із нього.',

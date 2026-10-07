@@ -3357,6 +3357,9 @@ const no = {
     sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
     rules: 'Regler',
     rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
+    mutePlayer: 'Skjul meldinger fra {{player}} på denne enheten',
+    unmuteAll: 'Vis {{count}} skjult spiller igjen',
+    unmuteAll_other: 'Vis {{count}} skjulte spillere igjen',
   },
   auth: {
     signedInProvidersHidden: 'Du er allerede logget inn. Logg ut først for å logge inn med Google, GitHub eller Discord.',

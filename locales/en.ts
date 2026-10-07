@@ -3357,6 +3357,9 @@ const en = {
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
     rules: 'Rules',
     rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
+    mutePlayer: 'Hide messages from {{player}} on this device',
+    unmuteAll: 'Show {{count}} hidden player again',
+    unmuteAll_other: 'Show {{count}} hidden players again',
   },
   auth: {
     signedInProvidersHidden: 'You are already signed in. To sign in with Google, GitHub or Discord, sign out first.',
