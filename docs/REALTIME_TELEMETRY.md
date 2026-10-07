@@ -29,6 +29,19 @@ This document defines the production reliability telemetry path, alert rules, KP
 | `socket_reconnect_recovered` | KPI source for reconnect recovery latency | `attempts_total`, `time_to_recover_ms`, `is_guest` |
 | `socket_reconnect_failed_final` | KPI source for reconnect success ratio denominator | `attempts_total`, `reason`, `is_guest` |
 | `start_alone_auto_bot_result` | KPI source for start-alone -> auto-bot reliability | `game_type`, `success`, `reason`, `is_guest` |
+| `bot_turn_applied` | Server-only. Bot reply time: turn handed to the bot -> its first commit handed to Realtime (`latencyMs`); `payload.turn_ms` to its last commit | `gameType`, `latencyMs`, `success`, `source` (trigger), `reason`, `payload.difficulty`, `payload.commits`, `payload.turn_ms` |
+
+Bot reply time per game, last 7 days:
+
+```sql
+select "gameType", payload->>'difficulty' as difficulty, count(*),
+  percentile_cont(0.5) within group (order by "latencyMs") as p50,
+  percentile_cont(0.9) within group (order by "latencyMs") as p90,
+  count(*) filter (where not success) as failed
+from "OperationalEvents"
+where "eventName" = 'bot_turn_applied' and "occurredAt" > now() - interval '7 days'
+group by 1, 2 order by 1, 2;
+```
 
 ## Alert Delivery
 

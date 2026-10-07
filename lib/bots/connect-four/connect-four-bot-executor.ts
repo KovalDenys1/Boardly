@@ -26,10 +26,11 @@ export class ConnectFourBotExecutor {
 
     onBotAction?.({ type: 'thinking', botName: botPlayer.name, message: `${botPlayer.name} is thinking...` })
 
-    await botDelay(difficulty, 150)
-
+    // Search first, so the hard bot's search is spent inside the pause, not after it.
+    const thinkingStartedAt = Date.now()
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
+    await botDelay(difficulty, 150, Date.now() - thinkingStartedAt)
 
     await onMove(move)
 

@@ -35,10 +35,10 @@ export class TicTacToeBotExecutor {
       message: `${botPlayer.name} is thinking...`,
     })
 
-    await botDelay(difficulty, 120)
-
+    const thinkingStartedAt = Date.now()
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
+    await botDelay(difficulty, 120, Date.now() - thinkingStartedAt)
 
     await onMove(move)
 

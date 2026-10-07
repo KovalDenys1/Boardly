@@ -55,6 +55,9 @@ export const SERVER_OPERATIONAL_EVENT_NAMES = [
   // takes whatever shape a browser's CSP reporting sends, so eventName is hardcoded
   // server-side rather than taken from the request the way OPERATIONAL_EVENT_NAMES is.
   'csp_violation_reported',
+  // Written by lib/bot-turn-metrics.ts once per bot turn: how long a player waits for the
+  // bot's reply. A forged row would skew exactly the number it exists to report.
+  'bot_turn_applied',
 ] as const
 
 export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]

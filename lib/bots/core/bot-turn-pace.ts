@@ -9,8 +9,8 @@ import { botUxDelayUpperBoundMs, resolveBotUxDelayMs } from './bot-ux-timing'
  * `game-update` from its per-move callback only, so the client sees the turn
  * advance once per `onMove` and sees nothing at all during the `botDelay` pauses
  * the executor puts between them. Memory is the extreme case: the bot commits its
- * second flip, waits out `botDelay(difficulty, 1200)` so a human can read the two
- * cards, then `botDelay(difficulty, 180)` inside `resolveMismatch`, and only then
+ * second flip, waits out `botDelay(difficulty, 700)` so a human can read the two
+ * cards, then `botDelay(difficulty, 100)` inside `resolveMismatch`, and only then
  * commits the move that ends the turn.
  *
  * So the client's recovery timer has to outlast the longest run of consecutive
@@ -33,7 +33,7 @@ export type BotPacedGameType =
  * `onMove` commits - or, for a game whose turn is a single commit, between the
  * turn starting and that commit.
  *
- * - memory: `memory-bot-executor.ts` 85 (mismatch pause) then 160 (resolve)
+ * - memory: `memory-bot-executor.ts` 700 (mismatch pause) then 100 (resolve)
  * - yahtzee: `yahtzee-bot-executor.ts` 164 + 177 (end of a roll) then 199 + 213
  *   (the score that ends the turn)
  * - tic_tac_toe / connect_four / rock_paper_scissors: one pause, one commit
@@ -43,7 +43,7 @@ export type BotPacedGameType =
  *   roll, 400 before a token move – so the longest silence is one move pause
  */
 export const BOT_LONGEST_IN_TURN_PAUSE_BASES: Record<BotPacedGameType, readonly number[]> = {
-  memory: [1200, 180],
+  memory: [700, 100],
   yahtzee: [150, 400, 300, 200],
   tic_tac_toe: [120],
   connect_four: [150],
@@ -71,13 +71,13 @@ export const BOT_COMMIT_DELIVERY_ALLOWANCE_MS = 1_000
 /**
  * Silence that is not a `botDelay`: a bot that searches before its first commit.
  * Checkers' hard bot deepens until `CHECKERS_HARD_TIME_BUDGET_MS` is spent
- * (lib/bots/checkers/checkers-bot.ts, pinned equal by the pace test), right
- * after the executor's 150 pause, so the longest checkers silence is bounded by
- * the pause table plus this. Kept here as a number rather than imported, so this
+ * (lib/bots/checkers/checkers-bot.ts, pinned equal by the pace test). The
+ * executor spends that search inside its 150 pause rather than after it, so
+ * the pause table plus this is an upper bound, not the usual silence. Kept here as a number rather than imported, so this
  * module stays free of any one game's bot.
  */
 export const BOT_SEARCH_BUDGET_MS: Partial<Record<BotPacedGameType, number>> = {
-  checkers: 900,
+  checkers: 600,
 }
 
 function upperBoundFor(gameType: BotPacedGameType): number {

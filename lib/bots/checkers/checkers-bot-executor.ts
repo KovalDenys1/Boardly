@@ -31,9 +31,11 @@ export class CheckersBotExecutor {
 
     onBotAction?.({ type: 'thinking', botName: botPlayer.name, message: `${botPlayer.name} is thinking...` })
 
-    await botDelay(difficulty, CHECKERS_BOT_THINK_BASE_MS)
-
+    // Search first: the hard bot's search is spent inside the think pause rather
+    // than added to it.
+    const thinkingStartedAt = Date.now()
     const decision = await bot.makeDecision()
+    await botDelay(difficulty, CHECKERS_BOT_THINK_BASE_MS, Date.now() - thinkingStartedAt)
 
     // One commit per hop: the server validates each, and the turn only passes
     // once the chain is finished.
