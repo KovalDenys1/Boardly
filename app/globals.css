@@ -3236,6 +3236,47 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
     transform: translate(-50%, -50%);
     z-index: 1;
   }
+
+  /* --- Two-player header in this column (#1342). ------------------------
+     At 844x390 a row-form card needed ~83px (padding, 30px avatar, gap, the
+     name's 4.5ch floor) of a ~90px cell, so a corner badge or a wider score
+     ran the cards into the score: "Swee… 0 : 0Che…". Here the card stacks,
+     a 24px avatar over a name with the cell's full width, so it fits down to
+     ~34px of cell and a name keeps ~9 letters. 9px taller than the row form.
+     Leave, where a game puts it in `trailing`, gets its own track, so both
+     player cells stay the same width. The conversation games tune their own
+     header below and are left out. */
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) auto;
+    grid-template-areas: "left center right trailing";
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 2px;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 12px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.5);
+    transform-origin: bottom right;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+    align-self: stretch;
+    min-width: 0;
+    text-align: center;
+  }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; line-height: 1.25; }
 }
 
 /* Tic-Tac-Toe / Connect Four / Rock Paper Scissors deltas. */

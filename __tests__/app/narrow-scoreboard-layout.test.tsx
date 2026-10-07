@@ -93,6 +93,24 @@ describe('narrow scoreboard header (#1180)', () => {
     expect(valueOf('.game-landscape-side .game-player-avatar', 'width', LANDSCAPE)).toBe('30px')
   })
 
+  describe('two-player header in the landscape side column (#1342)', () => {
+    const SIDE = '.game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *)'
+    const SIDE_CARD = `${SIDE} :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card`
+
+    it('gives Leave its own track so both player cells are the same width', () => {
+      expect(valueOf(SIDE, 'grid-template-areas', LANDSCAPE)).toBe('"left center right trailing"')
+      expect(valueOf(`${SIDE} .game-scoreboard-cell--right`, 'display', LANDSCAPE)).toBe('contents')
+      expect(valueOf(`${SIDE} .game-scoreboard-right-card`, 'grid-area', LANDSCAPE)).toBe('right')
+      expect(valueOf(`${SIDE} .game-scoreboard-cell--right > :not(.game-scoreboard-right-card)`, 'grid-area', LANDSCAPE)).toBe('trailing')
+    })
+
+    it('stacks a small avatar over a name with no width floor, so nothing reaches the score', () => {
+      expect(valueOf(SIDE_CARD, 'flex-direction', LANDSCAPE)).toBe('column')
+      expect(valueOf(`${SIDE_CARD} .game-player-avatar`, 'width', LANDSCAPE)).toBe('24px')
+      expect(valueOf(`${SIDE_CARD} .game-player-identity`, 'min-width', LANDSCAPE)).toBe('0')
+    })
+  })
+
   it('keeps the conversation games out: their phone right cell is an auto track', () => {
     expect(
       valueOf(':is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) .game-scoreboard-cell', 'container-type')
