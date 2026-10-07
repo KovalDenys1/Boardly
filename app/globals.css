@@ -1802,9 +1802,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-board-card {
   /* The ONLY place board-cell math lives. The card is flex-sized by its
      column (definite height), so container units are the real available
-     space on every screen. 107/125 = the board's own internal chrome only
-     (surface padding and border, grid padding, gaps, drop-arrow row) – no
-     screen-chrome guesses.
+     space on every screen. 79/97 = the board's own internal chrome only: the
+     surface's padding and border (27), the frame's padding (16), the gaps (6×6
+     across, 5×6 down) and the drop-arrow row (20 + 4) – no screen-chrome
+     guesses.
 
      It no longer paints (#903). A size container's box cannot be derived from
      its contents, so as long as the cream surface and the measuring box were
@@ -1814,7 +1815,7 @@ input[type="range"].slider-thumb::-moz-range-track {
      a separate box that hugs the board; this one stretches, unseen, and the
      space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 107px) / 7), calc((100cqh - 125px) / 6)), 52px);
+  --c4-cell: clamp(22px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 80px);
   /* Not decoration: .ttt-board-overlay takes its radius from here. */
   border-radius: 18px;
   display: flex;
@@ -2869,7 +2870,14 @@ input[type="range"].slider-thumb::-moz-range-track {
   overscroll-behavior: contain;
 }
 .yz-grid--classic { grid-template-rows: auto repeat(2, minmax(44px, 1fr)) auto repeat(3, minmax(44px, 1fr)); }
-.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 1fr)); }
+.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 96px)) auto; align-content: start; }
+.yz-mode-note {
+  grid-column: 1 / -1;
+  margin: 2px 2px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bd-ink-soft);
+}
 .yz-grid[aria-busy='true'] .yz-tile { opacity: 0.6; }
 
 .yz-section {
@@ -3044,7 +3052,9 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   .yz-grid--short {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-template-rows: auto repeat(2, minmax(44px, 1fr));
+    align-content: stretch;
   }
+  .yz-mode-note { display: none; }
   .yz-grid .yz-footer--in-grid { display: flex; grid-column: span 3; min-height: 0; }
   .yz-panel > .yz-footer { display: none; }
 }
@@ -4022,9 +4032,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 @container (max-height: 420px) {
   .rps-board { overflow-y: auto; }
 }
-/* 320×568, worse with the idle nudge above it: the stacked hands alone fill the
-   card, so they lie down into one row and the tiles drop their hint line. */
-@container (max-height: 260px) {
+/* 320×568 and 320×640, worse with the idle nudge above it: the stacked hands
+   alone fill the card, so they lie down into one row and the tiles drop their
+   hint line. At 320×640 the card is 267px and the tiles were pushed 23px past it. */
+@container (max-height: 300px) {
   .rps-board {
     gap: 4px;
     --rps-emoji-xl: 30px;
@@ -4045,13 +4056,14 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-tile__beats { display: none; }
 }
 /* Narrow card (phones): the hands keep their width and the centre block
-   moves under them, so names are not squeezed by the round result. */
+   moves under them, so names are not squeezed by the round result. The
+   scoreboard header right above already shows the score. */
 @container (max-width: 440px) {
   .rps-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr auto; row-gap: 6px; }
   .rps-stage__center { grid-column: 1 / -1; order: 3; max-width: none; padding: 2px 0 0; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
   .rps-stage__center::before, .rps-stage__center::after { display: none; }
   .rps-stage__vs { display: none; }
-  .rps-stage__score { font-size: clamp(22px, 5cqh, 30px); }
+  .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
 }
 /* Rounds timeline in the side column. */
@@ -5240,8 +5252,14 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   box-sizing: border-box;
 }
 .ludo-actions__text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
-.ludo-actions__title,
-.ludo-actions__hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-actions__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-actions__hint {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-height: 1.3;
+}
 .ludo-actions__title { font-weight: 700; font-size: 13px; color: var(--bd-ink); }
 .ludo-actions__hint { font-size: 11px; color: var(--bd-ink-muted); }
 .ludo-roll-button {

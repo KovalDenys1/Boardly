@@ -4,10 +4,7 @@
 import { createElement } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import {
-  YAHTZEE_RESULTS_HOLD_MS,
-  useYahtzeeResultsHold,
-} from '@/app/lobby/[code]/hooks/useYahtzeeResultsHold'
+import { useYahtzeeResultsHold } from '@/app/lobby/[code]/hooks/useYahtzeeResultsHold'
 
 /**
  * #1052, the Yahtzee half. The ticket's acceptance box asks for "a test that
@@ -45,8 +42,6 @@ describe('useYahtzeeResultsHold (#1052)', () => {
     // here it was still null, `shouldShowHeldYahtzeeResults` was false and the
     // page rendered YahtzeeResults from the in-game branch - the mount it then
     // threw away when the effect landed.
-    jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
-
     function Probe() {
       const hold = useYahtzeeResultsHold(GAME_ID, true)
       return createElement('output', {}, JSON.stringify(hold))
@@ -58,16 +53,12 @@ describe('useYahtzeeResultsHold (#1052)', () => {
     )
 
     expect(firstRender.showResults).toBe(true)
-    // And the countdown the chip reads is already there, on that same render -
-    // read from an effect it was null for one commit and the chip was missing.
-    expect(firstRender.autoReturnAt).toBe(1_700_000_000_000 + YAHTZEE_RESULTS_HOLD_MS)
   })
 
   it('does not hold the results of a game that is still being played', () => {
     const { result } = renderHook(() => useYahtzeeResultsHold(GAME_ID, false))
 
     expect(result.current.showResults).toBe(false)
-    expect(result.current.autoReturnAt).toBeNull()
   })
 
   it('never flips the branch while the results are on screen', () => {
@@ -97,27 +88,31 @@ describe('useYahtzeeResultsHold (#1052)', () => {
     expect(seen.filter((shown) => !shown)).toEqual([])
   })
 
-  it('releases the results when the hold expires, and does not re-arm afterwards', () => {
+  it('keeps the results up however long the player reads them', () => {
     const { result, rerender } = renderHook(
       ({ finished }) => useYahtzeeResultsHold(GAME_ID, finished),
       { initialProps: { finished: true } }
     )
 
-    expect(result.current.showResults).toBe(true)
-
     act(() => {
-      jest.advanceTimersByTime(YAHTZEE_RESULTS_HOLD_MS + 50)
+      jest.advanceTimersByTime(10 * 60_000)
     })
-    expect(result.current.showResults).toBe(false)
-    expect(result.current.autoReturnAt).toBeNull()
-
-    // The engine still reports the same game finished on every later render, so a
-    // hold that re-armed here would put the results back over the lobby room the
-    // player has just been returned to.
     rerender({ finished: true })
+    expect(result.current.showResults).toBe(true)
+  })
+
+  it('stays released for that game once the player has left the results', () => {
+    const { result, rerender } = renderHook(
+      ({ finished }) => useYahtzeeResultsHold(GAME_ID, finished),
+      { initialProps: { finished: true } }
+    )
+
     act(() => {
-      jest.advanceTimersByTime(YAHTZEE_RESULTS_HOLD_MS * 2)
+      result.current.release()
     })
+    // The engine still reports the same game finished on every later render, so a
+    // hold that re-armed here would put the results back over the lobby room.
+    rerender({ finished: true })
     expect(result.current.showResults).toBe(false)
   })
 
@@ -136,6 +131,5 @@ describe('useYahtzeeResultsHold (#1052)', () => {
     // A rematch is a new Games row, and its results are a different screen.
     rerender({ gameId: 'cmub0000000000000000000x' })
     expect(result.current.showResults).toBe(true)
-    expect(result.current.autoReturnAt).not.toBeNull()
   })
 })

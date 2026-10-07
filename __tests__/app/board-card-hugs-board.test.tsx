@@ -29,7 +29,7 @@
  *    regression, winning on cascade order - passed. It now reads every matching
  *    rule in the file.
  *  - nothing pinned `.ttt-board-surface`'s `padding: 12px`, which is where the
- *    107/125 in `--c4-cell` and the two 27px terms come from. The arithmetic is
+ *    79/97 in `--c4-cell` and the two 27px terms come from. The arithmetic is
  *    checked here, so changing one without the others fails.
  *
  * The second review found the same root cause once more, in the state none of
@@ -765,10 +765,11 @@ describe('the board card does not paint the space the board leaves (#903)', () =
       const card = allBlocksFor('.ttt-board-card').join('\n')
       const cell = /--c4-cell:[^;]*100cqw - (\d+)px\)\s*\/\s*7\)[^;]*100cqh - (\d+)px\)\s*\/\s*6\)/.exec(card)
       expect(cell).toBeTruthy()
-      // 107 = the C4 grid's own 80px of chrome + the surface's 27.
-      expect(Number(cell![1])).toBe(80 + chrome)
-      // 125 = the same on the other axis, where the grid's chrome is 98.
-      expect(Number(cell![2])).toBe(98 + chrome)
+      // 79 = the C4 grid's own 52px of chrome (frame padding 16 + six 6px gaps)
+      // + the surface's 27.
+      expect(Number(cell![1])).toBe(52 + chrome)
+      // 97 = the same on the other axis: padding 16, five gaps, the 24px arrow row.
+      expect(Number(cell![2])).toBe(70 + chrome)
 
       // .ttt-board-wrap and .memory-grid both subtract the surface's chrome.
       const wrap = allBlocksFor('.ttt-board-wrap').join('\n')

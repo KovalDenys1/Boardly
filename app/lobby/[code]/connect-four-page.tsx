@@ -12,6 +12,7 @@ import {
     PlayerDisc,
     ROWS,
     COLS,
+    isConnectFourRoundLostOnTime,
 } from '@/lib/games/connect-four-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -44,6 +45,7 @@ import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
@@ -947,6 +949,12 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const isDraw = winnerDisc === 'draw'
     const winnerName = winnerDisc && !isDraw ? (winnerDisc === 1 ? p1Name : p2Name) : null
     const isMyWin = winnerDisc !== null && winnerDisc !== 'draw' && winnerDisc === myDisc
+    const isWonOnTime = isConnectFourRoundLostOnTime(gameData, isFinished ? 'finished' : resolvedStatus)
+    const finishedTitle = isDraw
+        ? t('games.connect_four.game.draw')
+        : winnerName
+            ? t(isWonOnTime ? 'games.connect_four.game.winsOnTime' : 'games.connect_four.game.playerWins', { player: winnerName })
+            : t('games.connect_four.game.gameWon')
 
     const pendingRequest = (gameData.pendingRequest ?? null) as ConnectFourPendingRequest | null
     const pendingRequesterName = pendingRequest ? getDisplayName(pendingRequest.requesterId) : null
@@ -1009,8 +1017,15 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         <GameStatusBanner
             isFinished={isFinished}
             isDraw={isDraw}
-            finishedMessage={isDraw ? t('games.connect_four.game.draw') : t('games.connect_four.game.playerWins', { player: winnerName })}
-            activeTitle={currentPlayerName}
+            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
+            finishedMessage={finishedTitle}
+            activeTitle={
+                isSpectator
+                    ? currentPlayerName
+                    : isMyTurn()
+                        ? t('games.connect_four.game.dropHint')
+                        : t('games.connect_four.game.playerTurn', { player: currentPlayerName })
+            }
             meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -1130,7 +1145,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 <>
                     {showsResultOverlay && (
                         <GameResultOverlay
-                            title={isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
+                            title={finishedTitle}
+                            kicker={isWonOnTime ? t('games.connect_four.game.outOfTime') : undefined}
                             isDraw={isDraw}
                             accentColor="var(--bd-mint-deep)"
                             accentShadowColor="rgba(0,0,0,0.25)"
@@ -1153,14 +1169,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     )
 
+    // A bot accepts every undo and then replays its move, so a bot game has no undo.
+    const hasBotPlayer = players.some((p) => !!p.user?.bot || !!p.bot)
+
     // Leave and the spectator's way back live in the header (layout DoD).
-    const actionsSection = isSpectator ? null : (
+    const actionsSection = isSpectator || hasBotPlayer ? null : (
         <div className="flex flex-col md:flex-row gap-2">
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
                 className="w-full md:w-auto"
-                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
+                style={{ minHeight: 44, padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
             </button>

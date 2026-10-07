@@ -49,6 +49,7 @@ import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { ActiveLudoMotion, useLudoMotion } from './hooks/useLudoMotion'
@@ -1057,6 +1058,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const statusSection = (
         <GameStatusBanner
             isFinished={isFinished}
+            outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && state.players.some((p) => p.id === currentUserId), isViewerWinner: winnerId ? winnerId === currentUserId : null })}
             finishedMessage={winnerName ? t('games.ludo.game.playerWins', { player: winnerName }) : t('game.ui.gameFinished')}
             activeTitle={statusTitle}
             meta={colorName(currentColor)}
@@ -1327,7 +1329,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                 <GameTabs
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
-                        { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${data.eventCount})` },
+                        { id: 'history' as const, label: t('game.ui.tabMoves') },
                         { id: 'rules' as const, label: t('games.ludo.game.rulesTab') },
                         ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
                     ]}

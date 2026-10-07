@@ -36,8 +36,17 @@ describe('resolveLobbySurface', () => {
     })
   })
 
+  it('keeps a finished Memory board up for its players, so its result overlay shows', () => {
+    expect(
+      resolveLobbySurface({ gameType: 'memory', gameStatus: 'finished', isParticipant: true }).showGameSurface
+    ).toBe(true)
+    expect(
+      resolveLobbySurface({ gameType: 'memory', gameStatus: 'finished', isParticipant: false }).showJoinPrompt
+    ).toBe(true)
+  })
+
   it('drops every other game type to the waiting room when its game finishes', () => {
-    for (const gameType of ['memory', 'yahtzee', 'tic_tac_toe', 'alias']) {
+    for (const gameType of ['yahtzee', 'tic_tac_toe', 'alias']) {
       expect(
         resolveLobbySurface({ gameType, gameStatus: 'finished', isParticipant: true }).showGameSurface
       ).toBe(false)

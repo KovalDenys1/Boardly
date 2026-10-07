@@ -45,6 +45,7 @@ import { nextMoveKey, type MoveKey } from '@/lib/move-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -978,6 +979,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         <GameStatusBanner
             isFinished={isFinished}
             isDraw={isDraw}
+            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!mySymbol, isViewerWinner: winnerSymbol && !isDraw ? winnerSymbol === mySymbol : null })}
             finishedMessage={isDraw ? t('games.tictactoe.game.catsGameFull') : t('games.tictactoe.game.playerWins', { player: winnerName })}
             activeTitle={isSpectator ? (gameData.currentSymbol === 'X' ? xName : oName) : t('games.tictactoe.game.playerTurn', { player: gameData.currentSymbol === 'X' ? xName : oName })}
             meta={isSpectator ? `#${gameData.moveCount + 1}` : t('games.tictactoe.game.moveNum', { num: gameData.moveCount + 1 })}
@@ -1014,7 +1016,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         onClick={() => void handleRespondToRequest(pendingRequest.type, true)}
                         disabled={isMoveSubmitting}
                         style={{
-                            padding: '6px 11px',
+                            minHeight: 44,
+                            padding: '6px 14px',
                             fontSize: 12,
                             borderRadius: 12,
                             fontWeight: 700,
@@ -1032,7 +1035,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         onClick={() => void handleRespondToRequest(pendingRequest.type, false)}
                         disabled={isMoveSubmitting}
                         style={{
-                            padding: '6px 11px',
+                            minHeight: 44,
+                            padding: '6px 14px',
                             fontSize: 12,
                             borderRadius: 12,
                             fontWeight: 600,
@@ -1131,14 +1135,19 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
+    // A bot accepts every undo and then replays its move, and draws by
+    // agreement are for two people, so a bot game has no request row.
+    const hasBotPlayer = players.some((p) => !!p.user?.bot || !!p.bot)
+
     // Leave and the spectator's way back live in the header (layout DoD); this
     // row keeps only the move requests.
-    const actionsSection = isSpectator ? null : (
+    const actionsSection = isSpectator || hasBotPlayer ? null : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
                 style={{
+                    minHeight: 44,
                     padding: '8px 14px',
                     fontSize: 13,
                     borderRadius: 14,
@@ -1157,6 +1166,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 onClick={() => void handleRequestDraw()}
                 disabled={!canRequestDraw}
                 style={{
+                    minHeight: 44,
                     padding: '8px 14px',
                     fontSize: 13,
                     borderRadius: 14,
