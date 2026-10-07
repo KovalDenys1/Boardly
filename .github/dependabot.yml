@@ -19,6 +19,18 @@ updates:
       # ts-jest (<7) and typescript-eslint (<6.1) do not accept TypeScript 7 yet.
       - dependency-name: "typescript"
         versions: [">=7"]
+      # eslint-plugin-react, -import and -jsx-a11y (via eslint-config-next) cap their eslint peer at 9.
+      - dependency-name: "eslint"
+        versions: [">=10"]
+      # Vercel and CI run Node 22; the types must not describe APIs the runtime lacks.
+      - dependency-name: "@types/node"
+        versions: [">=23"]
+      # 23 pins API version 2026-09-30.endive; moving it needs the webhook endpoint moved with it (#1322).
+      - dependency-name: "stripe"
+        versions: [">=23"]
+      # 11 inverts the data-collection defaults and moves to span streaming (#1323).
+      - dependency-name: "@sentry/nextjs"
+        versions: [">=11"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
