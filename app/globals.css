@@ -4023,9 +4023,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 @container (max-height: 420px) {
   .rps-board { overflow-y: auto; }
 }
-/* 320×568, worse with the idle nudge above it: the stacked hands alone fill the
-   card, so they lie down into one row and the tiles drop their hint line. */
-@container (max-height: 260px) {
+/* 320×568 and 320×640, worse with the idle nudge above it: the stacked hands
+   alone fill the card, so they lie down into one row and the tiles drop their
+   hint line. At 320×640 the card is 267px and the tiles were pushed 23px past it. */
+@container (max-height: 300px) {
   .rps-board {
     gap: 4px;
     --rps-emoji-xl: 30px;
@@ -4046,13 +4047,14 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-tile__beats { display: none; }
 }
 /* Narrow card (phones): the hands keep their width and the centre block
-   moves under them, so names are not squeezed by the round result. */
+   moves under them, so names are not squeezed by the round result. The
+   scoreboard header right above already shows the score. */
 @container (max-width: 440px) {
   .rps-stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr auto; row-gap: 6px; }
   .rps-stage__center { grid-column: 1 / -1; order: 3; max-width: none; padding: 2px 0 0; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
   .rps-stage__center::before, .rps-stage__center::after { display: none; }
   .rps-stage__vs { display: none; }
-  .rps-stage__score { font-size: clamp(22px, 5cqh, 30px); }
+  .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
 }
 /* Rounds timeline in the side column. */
