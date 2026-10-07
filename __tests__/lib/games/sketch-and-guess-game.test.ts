@@ -1040,3 +1040,42 @@ describe('SketchAndGuessGame – host hides a drawing (#1088)', () => {
     expect((revealed.data as { rounds: Array<{ drawingContent: string | null }> }).rounds[0].drawingContent).not.toBeNull()
   })
 })
+
+describe('SketchAndGuessGame – the host\'s own words (#1086)', () => {
+  const twelve = ['pizza night', 'office plant', 'grandma', 'the red car', 'tuesday', 'karaoke', 'lost keys', 'big dog', 'coffee', 'sunburn', 'bad wifi', 'hat']
+
+  function customGame(rules: Record<string, unknown>) {
+    const game = new SketchAndGuessGame('custom', { maxPlayers: 10, minPlayers: 3, rules } as never)
+    addDefaultPlayers(game, 3)
+    expect(game.startGame()).toBe(true)
+    return game
+  }
+
+  it('offers only the host\'s words when asked to, and a guess matches exactly as typed', () => {
+    const game = customGame({ customWords: twelve, customWordsOnly: true })
+    const choices = getData(game).rounds[0].wordChoices
+    expect(choices).toHaveLength(3)
+    for (const choice of choices) expect(twelve).toContain(choice.en[0])
+
+    const startAt = Date.now()
+    game.makeMove(createMove('player1', 'choose-word', { wordId: choices[0].id }, startAt))
+    game.makeMove(createMove('player2', 'submit-guess', { guess: choices[0].en[0] }, startAt + 1000))
+    expect(getData(game).rounds[0].guesses[0].isCorrect).toBe(true)
+  })
+
+  it('plays the bank when the list is under the minimum', () => {
+    const game = customGame({ customWords: twelve.slice(0, 9), customWordsOnly: true })
+    expect(getData(game).customWords).toBeUndefined()
+    for (const choice of getData(game).rounds[0].wordChoices) expect(choice.id.startsWith('custom-')).toBe(false)
+  })
+
+  it('never broadcasts the list, to anyone', () => {
+    const game = customGame({ customWords: twelve, customWordsOnly: false })
+    expect(getData(game).customWords).toHaveLength(12)
+    for (const viewer of [null, 'player1', 'player2']) {
+      const published = sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer)
+      expect((published.data as Record<string, unknown>).customWords).toBeUndefined()
+      expect((published.data as Record<string, unknown>).customWordsOnly).toBeUndefined()
+    }
+  })
+})

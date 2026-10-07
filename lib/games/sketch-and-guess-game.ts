@@ -1,3 +1,4 @@
+import { resolveSketchCustomWords, toSketchCustomWord } from '@/lib/sketch-custom-words'
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
 import { getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
@@ -117,6 +118,10 @@ export interface SketchAndGuessGameData {
   completionReason: 'all-rounds-finished' | null
   finishedAt: number | null
   isMvpScaffold: boolean
+  /** The host's own words for this game (#1086). Never broadcast: the sanitizer drops it. */
+  customWords?: string[]
+  /** Only the host's words, or mixed into the bank. */
+  customWordsOnly?: boolean
 }
 
 export interface SketchAndGuessTimeoutResolution {
@@ -234,6 +239,16 @@ export class SketchAndGuessGame extends GameEngine {
     data.phase = 'choosing'
     data.phaseStartedAt = typeof this.state.lastMoveAt === 'number' ? this.state.lastMoveAt : Date.now()
     data.submittedPlayerIds = []
+    // Read from config at the start, never from a move: the start request is
+    // the host's (#1086), and a list under the minimum plays the bank.
+    const custom = resolveSketchCustomWords(this.config?.rules)
+    if (custom) {
+      data.customWords = custom.words
+      data.customWordsOnly = custom.only
+    } else {
+      delete data.customWords
+      delete data.customWordsOnly
+    }
     data.rounds = [this.createRound(1, data.currentDrawerId, [])]
     data.scores = {}
     data.scoreBreakdown = {}
@@ -845,9 +860,12 @@ export class SketchAndGuessGame extends GameEngine {
    * pick falls back to words already played rather than offering fewer.
    */
   private pickWordChoices(previousRounds: SketchAndGuessRound[]): SketchWord[] {
+    const data = this.state?.data as SketchAndGuessGameData | undefined
+    const custom = (data?.customWords ?? []).map(toSketchCustomWord)
+    const bank: readonly SketchWord[] = custom.length === 0 ? SKETCH_WORDS : data?.customWordsOnly ? custom : [...SKETCH_WORDS, ...custom]
     const used = new Set(previousRounds.map((round) => round.word?.id).filter((id): id is string => !!id))
-    const fresh = SKETCH_WORDS.filter((word) => !used.has(word.id))
-    const pool = fresh.length >= WORD_CHOICE_COUNT ? fresh.slice() : SKETCH_WORDS.slice()
+    const fresh = bank.filter((word) => !used.has(word.id))
+    const pool = fresh.length >= WORD_CHOICE_COUNT ? fresh.slice() : bank.slice()
     const picked: SketchWord[] = []
     while (picked.length < WORD_CHOICE_COUNT && pool.length > 0) {
       const index = Math.floor(Math.random() * pool.length)
@@ -938,6 +956,11 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
       }
     : unsanitized
   if (data !== unsanitized) state = { ...state, data } as T
+  // The host's list would hand every guesser the answers (#1086).
+  if (data.customWords !== undefined || data.customWordsOnly !== undefined) {
+    const { customWords: _words, customWordsOnly: _only, ...rest } = data
+    return sanitizeSketchAndGuessStateForBroadcast({ ...state, data: rest } as T, viewerUserId, options)
+  }
 
   const isCurrentRoundRevealed = data.phase === 'reveal' || state.status === 'finished'
   if (isCurrentRoundRevealed) return state
