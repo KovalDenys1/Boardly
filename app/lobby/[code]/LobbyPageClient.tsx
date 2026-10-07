@@ -1574,8 +1574,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Which surface this viewer gets - the rule, and why it is a rule, live in
   // lib/lobby-surface.ts. Deliberately render-only: `isGameStarted` also gates
-  // the heartbeat, the lifecycle redirect and the dedicated-page switch, and
-  // when Yahtzee's and Memory's boards unmount is not #905's to change.
+  // the heartbeat, the lifecycle redirect and the dedicated-page switch. A
+  // finished Spy or Memory board stays up through `showGameSurface`; Yahtzee's
+  // results are held separately by useYahtzeeResultsHold.
   const { showGameSurface, showJoinPrompt, isSpectator } = resolveLobbySurface({
     gameStatus: game?.status,
     gameType: lobby?.gameType as string | undefined,
@@ -2602,7 +2603,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       )}
 
       {/* Desktop Chat - waiting room (sm+) */}
-      {!isGameStarted && isInGame && hasMultipleHumans && (
+      {!showGameSurface && !isGameStarted && isInGame && hasMultipleHumans && (
         <div className="hidden sm:block">
           <Chat
             lobbyCode={code}
