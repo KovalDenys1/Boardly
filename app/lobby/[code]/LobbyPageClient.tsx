@@ -2070,7 +2070,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             onReturnToLobbyRoom={yahtzeeResults.release}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
-            autoReturnAt={yahtzeeResults.autoReturnAt}
             isGuest={isGuest}
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             lobbyCode={code}

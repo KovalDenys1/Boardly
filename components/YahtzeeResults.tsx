@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -20,7 +19,6 @@ interface YahtzeeResultsProps {
   onBackToLobby: () => void
   onReturnToLobbyRoom?: () => void
   onReturnToWaiting?: () => void
-  autoReturnAt?: number | null
   isGuest?: boolean
   registerUrl?: string
   /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
@@ -62,7 +60,6 @@ export default function YahtzeeResults({
   onBackToLobby,
   onReturnToLobbyRoom,
   onReturnToWaiting,
-  autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
   lobbyCode,
@@ -74,21 +71,6 @@ export default function YahtzeeResults({
   const totalRounds = getActiveCategories(mode).length
   // Short mode has no upper section, so an "Upper 0" box is noise (#1187).
   const hasUpperSection = mode !== 'short'
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (!autoReturnAt) {
-      return
-    }
-
-    setNow(Date.now())
-    const timer = window.setInterval(() => {
-      setNow(Date.now())
-    }, 1000)
-
-    return () => window.clearInterval(timer)
-  }, [autoReturnAt])
-
   if (results.length === 0) {
     return null
   }
@@ -100,7 +82,6 @@ export default function YahtzeeResults({
   const winnerScoreBase = Math.max(1, winner.totalScore)
   const diceRolled = faceCounts ? faceCounts.reduce((sum, n) => sum + n, 0) : 0
   const mostCommonFace = faceCounts ? Math.max(1, ...faceCounts) : 1
-  const autoReturnSeconds = autoReturnAt ? Math.max(0, Math.ceil((autoReturnAt - now) / 1000)) : null
 
   return (
     <div
@@ -147,11 +128,66 @@ export default function YahtzeeResults({
                 <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">{t('yahtzee.results.winnerScore', { score: winner.totalScore })}</span>
                 <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">{t('yahtzee.results.marginScore', { margin: winnerMargin })}</span>
                 <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">{t('yahtzee.results.players', { count: results.length })}</span>
-                {autoReturnSeconds !== null && (
-                  <span className="bd-chip px-3 py-1.5 text-[11px]">
-                    {t('yahtzee.results.lobbyIn', { seconds: autoReturnSeconds })}
-                  </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="border-b px-4 py-3 sm:px-6 sm:py-4"
+            style={{
+              borderColor: 'var(--bd-line)',
+              background: 'var(--bd-bg2)',
+            }}
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className={canStartGame ? 'hidden sm:block' : ''}>
+                <div className="hidden sm:block">
+                  <div className="bd-kicker">{t('yahtzee.results.nextStep')}</div>
+                  <p className="mt-1 text-sm font-medium text-bd-ink">
+                    {t('yahtzee.results.nextStepHint')}
+                  </p>
+                </div>
+                {!canStartGame && (
+                  <p className="text-xs text-bd-ink-muted sm:mt-1">
+                    {t('yahtzee.results.hostCanStartNextRound')}
+                  </p>
                 )}
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+                <button
+                  onClick={onPlayAgain}
+                  disabled={!canStartGame}
+                  className="bd-btn bd-btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Icon name="refresh" size={18} />
+                  <span>{t('yahtzee.results.playAgain')}</span>
+                </button>
+                {onReturnToWaiting && canStartGame && (
+                  <button
+                    onClick={onReturnToWaiting}
+                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2"
+                  >
+                    <span>{t('game.ui.returnToLobby')}</span>
+                  </button>
+                )}
+                {onRequestRematch && canRequestRematch && (
+                  <button
+                    onClick={onRequestRematch}
+                    disabled={isRequestRematchPending}
+                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Icon name="megaphone" size={18} />
+                    <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
+                  </button>
+                )}
+                <button
+                  onClick={onBackToLobby}
+                  className="bd-btn bd-btn-coral flex items-center justify-center gap-2"
+                >
+                  <Icon name="arrow-left" size={18} />
+                  <span>{t('yahtzee.results.backToLobbies')}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -256,7 +292,7 @@ export default function YahtzeeResults({
             )}
             </div>
 
-            <section>
+            <section className="min-w-0">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3
                   className="text-2xl font-extrabold text-bd-ink"
@@ -376,66 +412,6 @@ export default function YahtzeeResults({
             })}
               </div>
             </section>
-          </div>
-
-          <div
-            className="border-t px-4 py-4 sm:px-6"
-            style={{
-              borderColor: 'var(--bd-line)',
-              background: 'var(--bd-bg2)',
-            }}
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <div className="bd-kicker">{t('yahtzee.results.nextStep')}</div>
-                <p className="mt-1 text-sm font-medium text-bd-ink">
-                  {autoReturnSeconds !== null
-                    ? t('yahtzee.results.autoReturnMsg')
-                    : t('yahtzee.results.nextStepHint')}
-                </p>
-                {!canStartGame && (
-                  <p className="mt-1 text-xs text-bd-ink-muted">
-                    {t('yahtzee.results.hostCanStartNextRound')}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  onClick={onPlayAgain}
-                  disabled={!canStartGame}
-                  className="bd-btn bd-btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Icon name="refresh" size={18} />
-                  <span>{t('yahtzee.results.playAgain')}</span>
-                </button>
-                {onReturnToWaiting && canStartGame && (
-                  <button
-                    onClick={onReturnToWaiting}
-                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2"
-                  >
-                    <span>{t('game.ui.returnToLobby')}</span>
-                  </button>
-                )}
-                {onRequestRematch && canRequestRematch && (
-                  <button
-                    onClick={onRequestRematch}
-                    disabled={isRequestRematchPending}
-                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Icon name="megaphone" size={18} />
-                    <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
-                  </button>
-                )}
-                <button
-                  onClick={onBackToLobby}
-                  className="bd-btn bd-btn-coral flex items-center justify-center gap-2"
-                >
-                  <Icon name="arrow-left" size={18} />
-                  <span>{t('yahtzee.results.backToLobbies')}</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
