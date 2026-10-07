@@ -3169,7 +3169,7 @@ const uk: TranslationWithPlurals = {
       needMorePlayers_few: 'Потрібно ще {{count}} гравці, щоб почати',
       needMorePlayers_many: 'Потрібно ще {{count}} гравців, щоб почати',
       startSoloTip: 'Можна почати самому — чекати не потрібно',
-      firstMoveNudge: 'Ваш хід — оберіть дію, щоб продовжити',
+      firstMoveNudge: 'Досі ваш хід',
       tip: 'Підказка',
       waitingForHost: 'Очікуємо, поки хост почне...',
       host: 'Хост',

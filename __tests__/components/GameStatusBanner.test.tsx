@@ -73,6 +73,8 @@ describe('GameStatusBanner idle nudge (#817)', () => {
   it('stays quiet while the acting player still has most of their turn', () => {
     render(<GameStatusBanner {...base} isYourTurn secs={50} />)
     expect(screen.queryByText('game.ui.firstMoveNudge')).toBeNull()
+    // The live region is already there, empty, so the hint is announced when it lands.
+    expect(screen.getByRole('status').textContent).toBe('')
   })
 
   it('speaks up once the acting player has sat on their turn', () => {
@@ -81,6 +83,15 @@ describe('GameStatusBanner idle nudge (#817)', () => {
     // used to run out in silence.
     render(<GameStatusBanner {...base} isYourTurn secs={45} />)
     expect(screen.getByText('game.ui.firstMoveNudge')).toBeTruthy()
+  })
+
+  it('pulses the banner itself instead of adding a block under it (#1343)', () => {
+    const { container } = render(<GameStatusBanner {...base} isYourTurn secs={45} />)
+    expect(container.childElementCount).toBe(1)
+    const banner = container.firstElementChild as HTMLElement
+    expect(banner.getAttribute('data-idle')).toBe('true')
+    expect(banner.className).toContain('game-status-banner--idle')
+    expect(screen.getByRole('status').textContent).toBe('game.ui.firstMoveNudge')
   })
 
   it('never nudges a player who is not the one to move', () => {

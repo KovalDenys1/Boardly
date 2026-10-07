@@ -3099,7 +3099,7 @@ const en = {
       needMorePlayers: 'Need {{count}} more player to start',
       needMorePlayers_other: 'Need {{count}} more players to start',
       startSoloTip: 'You can start on your own — no need to wait',
-      firstMoveNudge: 'Your move — pick an action to continue',
+      firstMoveNudge: 'Still your move',
       tip: 'Tip',
       waitingForHost: 'Waiting for host to start...',
       host: 'Host',

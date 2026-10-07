@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 
@@ -96,6 +96,10 @@ export default function GameStatusBanner({
   showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
+  // A live region announces changes, not what it mounted with: it starts empty
+  // and gets the hint after mount.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   if (isFinished) {
     const result: GameOutcome | 'over' =
@@ -146,13 +150,18 @@ export default function GameStatusBanner({
   // timer configured there is nothing to measure against, so no nudge.
   const elapsed = turnTimerLimit > 0 ? turnTimerLimit - secs : 0
   const showIdleNudge = showTimer && isYourTurn && turnTimerLimit > 0 && elapsed >= IDLE_NUDGE_SECONDS
+  // Idle (#1343): the banner itself pulses instead of growing a block under it.
+  // The title already says whose move it is, so the hint is for screen readers.
   return (
-    <>
-    <div style={{
-      padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-      border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-      display: 'flex', alignItems: 'center', gap: 12,
-    }}>
+    <div
+      className={`game-status-banner${showIdleNudge ? ' game-status-banner--idle' : ''}`}
+      data-idle={showIdleNudge ? 'true' : undefined}
+      style={{
+        padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
+        border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}
+    >
       {leadingIcon}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -181,17 +190,7 @@ export default function GameStatusBanner({
           {formatSeconds(secs)}
         </div>
       )}
-      </div>
-      {showIdleNudge && (
-        <div style={{
-          marginTop: 8, padding: '8px 12px', borderRadius: 12,
-          background: 'var(--bd-sun)', color: 'var(--bd-ink)',
-          fontSize: 12, fontWeight: 700, textAlign: 'center',
-          border: '1.5px solid var(--bd-ink)',
-        }}>
-          {t('game.ui.firstMoveNudge')}
-        </div>
-      )}
-    </>
+      <span role="status" className="sr-only">{mounted && showIdleNudge ? t('game.ui.firstMoveNudge') : ''}</span>
+    </div>
   )
 }

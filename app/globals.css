@@ -2006,6 +2006,25 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/* Idle turn (#1343): a ring on the banner's own box pulses, so the nudge adds
+   no block and the board never moves. */
+.game-status-banner { position: relative; }
+.game-status-banner--idle::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  border: 2px solid var(--bd-sun);
+  pointer-events: none;
+  animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+}
+@keyframes status-idle-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.012); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-status-banner--idle::after { animation: none; opacity: 1; }
+}
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
 .score-pop {

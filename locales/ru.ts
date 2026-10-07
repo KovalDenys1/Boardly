@@ -3167,7 +3167,7 @@ const ru = {
       needMorePlayers_few: 'Нужно ещё {{count}} игрока, чтобы начать',
       needMorePlayers_many: 'Нужно ещё {{count}} игроков, чтобы начать',
       startSoloTip: 'Можно начать одному — ждать не нужно',
-      firstMoveNudge: 'Ваш ход — выберите действие, чтобы продолжить',
+      firstMoveNudge: 'Всё ещё ваш ход',
       tip: 'Подсказка',
       waitingForHost: 'Ожидание, пока хост начнёт игру...',
       host: 'Хост',
