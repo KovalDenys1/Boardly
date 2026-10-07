@@ -484,6 +484,27 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
     expect(line.textContent).toContain('"team":"Team 1"')
   })
 
+  it('names the player who just described on the turn results, not the next describer (#1330)', async () => {
+    const response = buildTurnResponse({ meDescribing: false })
+    const data = response.activeGame.state.data as Record<string, unknown> & typeof response.activeGame.state.data
+    data.phase = 'turn_results'
+    data.currentCard = null
+    // _endTurn has already moved team 1 on to its next describer, Alice.
+    data.teams[0].describerIndex = 1
+    data.lastTurnResult = {
+      teamId: 'team-1',
+      describerId: 'user-2',
+      wordResults: [{ word: 'apple', result: 'guessed' }],
+      scoreDelta: 1,
+      turnIndex: 0,
+    } as never
+    mountWith(response)
+    await waitFor(() => expect(screen.getByTestId('alias-turn-results-screen')).toBeTruthy())
+
+    const label = screen.getByText(/alias\.describerWords/)
+    expect(label.textContent).toContain('"name":"Bob"')
+  })
+
   it('keeps the guess feed reachable on the describer screen', async () => {
     mountWith(buildTurnResponse({ meDescribing: true }))
     await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
