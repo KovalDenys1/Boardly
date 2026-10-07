@@ -99,7 +99,7 @@ const SKETCH_ACCENT_DEEP = 'var(--bd-mint-deep)'
 /** The engine's three phases, as a number the turn timer can hang a signature off. */
 const PHASE_ORDINAL: Record<SketchAndGuessGameData['phase'], number> = { choosing: 0, drawing: 1, reveal: 2 }
 
-type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-guess' | 'advance-round'
+type SketchAction = 'choose-word' | 'submit-drawing' | 'submit-guess' | 'accept-guess' | 'hide-drawing' | 'advance-round'
 
 /**
  * What a round starts with, and what a page shows for any round the draft below
@@ -625,6 +625,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const handleAdvanceRound = useCallback(async () => { await submitAction('advance-round', {}) }, [submitAction])
     const handleChooseWord = useCallback(async (wordId: string) => { await submitAction('choose-word', { wordId }) }, [submitAction])
     const handleAcceptGuess = useCallback(async (guessId: string) => { await submitAction('accept-guess', { guessId }) }, [submitAction])
+    const handleHideDrawing = useCallback(async () => { await submitAction('hide-drawing', {}) }, [submitAction])
 
     const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
@@ -1129,6 +1130,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 onAdvanceRound={handleAdvanceRound}
                 onChooseWord={handleChooseWord}
                 onAcceptGuess={handleAcceptGuess}
+                onHideDrawing={handleHideDrawing}
                 isSubmitting={isSubmitting}
                 isSpectator={isSpectator}
                 isHost={isCreator}

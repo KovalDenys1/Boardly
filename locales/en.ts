@@ -2794,6 +2794,8 @@ const en = {
         isClose: '{{name}} is close!',
         closeGuess: 'So close!',
         acceptGuess: 'Accept',
+        hideDrawing: 'Hide this drawing for everyone',
+        drawingHidden: 'The host hid this drawing',
         acceptedByHost: 'accepted by host',
         guessesTitle: 'Guesses',
         guessFeedEmpty: 'Guesses will show up here',

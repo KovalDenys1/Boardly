@@ -65,6 +65,8 @@ export interface SketchAndGuessRound {
   drawingAutoSubmitted: boolean
   /** When the drawer's page last saved the canvas mid-round (`save-drawing`). */
   drawingSavedAt?: number | null
+  /** The host blanked this round's drawing for everyone (#1088); the stored copy stays for a report. */
+  drawingHiddenByHost?: boolean
   /**
    * The one language each guesser's word hint is built in this round, fixed the
    * first time they ask, so nobody can collect the pattern in all four.
@@ -377,6 +379,12 @@ export class SketchAndGuessGame extends GameEngine {
         return !round.guesses.some((entry) => entry.playerId === guess.playerId && entry.isCorrect)
       }
 
+      case 'hide-drawing':
+        // Host only, like accept-guess: the route checks the lobby's creator and
+        // calls authorizeHost. Hiding twice is the same as hiding once.
+        if (this.authorizedHostId === null || this.authorizedHostId !== move.playerId) return false
+        return data.phase === 'drawing' || data.phase === 'reveal'
+
       case 'advance-round':
         // Not before the drawing is in: the drawer's page sends it as the reveal
         // opens, and moving on first would score the drawer for a blank canvas.
@@ -489,6 +497,11 @@ export class SketchAndGuessGame extends GameEngine {
       // not paid for a guess they ruled correct themselves.
       if (move.playerId === round.drawerId) guess.acceptedByDrawer = true
       this.recordCorrectGuesser(data, round, guess.playerId, now)
+      return
+    }
+
+    if (move.type === 'hide-drawing') {
+      round.drawingHiddenByHost = true
       return
     }
 
@@ -911,8 +924,20 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
   viewerUserId: string | null = null,
   options: SketchSanitizeOptions = {}
 ): T {
-  const data = state.data as SketchAndGuessGameData | undefined
-  if (!data || !Array.isArray(data.rounds)) return state
+  const unsanitized = state.data as SketchAndGuessGameData | undefined
+  if (!unsanitized || !Array.isArray(unsanitized.rounds)) return state
+  // A drawing the host hid never leaves the server again (#1088). It is swapped
+  // for an empty one rather than null, because null means "not sent yet" to the
+  // drawer's page, which would then try to send it again.
+  const data: SketchAndGuessGameData = unsanitized.rounds.some((round) => round.drawingHiddenByHost && round.drawingContent !== null)
+    ? {
+        ...unsanitized,
+        rounds: unsanitized.rounds.map((round) =>
+          round.drawingHiddenByHost && round.drawingContent !== null ? { ...round, drawingContent: HIDDEN_DRAWING_CONTENT } : round
+        ),
+      }
+    : unsanitized
+  if (data !== unsanitized) state = { ...state, data } as T
 
   const isCurrentRoundRevealed = data.phase === 'reveal' || state.status === 'finished'
   if (isCurrentRoundRevealed) return state
@@ -975,6 +1000,8 @@ export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unkno
 
   return { ...state, data: { ...data, rounds: sanitizedRounds } }
 }
+
+const HIDDEN_DRAWING_CONTENT = JSON.stringify({ type: 'drawing', version: 1, hidden: true, width: 64, height: 64, strokes: [] })
 
 export interface SketchSanitizeOptions {
   /** The lobby's creator, who may read near misses because they decide whether to accept one. */

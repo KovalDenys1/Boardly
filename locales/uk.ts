@@ -2858,6 +2858,8 @@ const uk: TranslationWithPlurals = {
         isClose: '{{name}}: майже вгадано!',
         closeGuess: 'Майже!',
         acceptGuess: 'Зарахувати',
+        hideDrawing: 'Приховати цей малюнок для всіх',
+        drawingHidden: 'Хост приховав цей малюнок',
         acceptedByHost: 'зараховано ведучим',
         guessesTitle: 'Здогадки',
         guessFeedEmpty: 'Тут зʼявляться здогадки',

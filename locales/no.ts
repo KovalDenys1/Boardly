@@ -2794,6 +2794,8 @@ const no = {
         isClose: '{{name}} er nær!',
         closeGuess: 'Nesten!',
         acceptGuess: 'Godta',
+        hideDrawing: 'Skjul denne tegningen for alle',
+        drawingHidden: 'Verten skjulte denne tegningen',
         acceptedByHost: 'godkjent av verten',
         guessesTitle: 'Gjetninger',
         guessFeedEmpty: 'Gjetningene dukker opp her',

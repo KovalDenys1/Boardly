@@ -393,6 +393,21 @@ describe('POST /api/game/[gameId]/sketch-and-guess-action accept-guess (#1082)',
     expect(prisma.games.updateMany).not.toHaveBeenCalled()
   })
 
+  it('lets only the host hide the drawing (#1088)', async () => {
+    asUser(SECOND_GUESSER)
+    const refused = await post({ action: 'hide-drawing' })
+    expect(refused.status).toBe(403)
+    expect(((await refused.json()) as { code: string }).code).toBe('NOT_HOST')
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+
+    asUser(DRAWER)
+    const response = await post({ action: 'hide-drawing' })
+    const body = (await response.json()) as { state: { data: { rounds: Array<{ drawingHiddenByHost?: boolean }> } } }
+    expect(response.status).toBe(200)
+    expect(body.state.data.rounds[0].drawingHiddenByHost).toBe(true)
+    expect(prisma.games.updateMany).toHaveBeenCalledTimes(1)
+  })
+
   it('does not let the host skip the matcher with a guess id that does not exist', async () => {
     asUser(DRAWER)
     const response = await post({ action: 'accept-guess', data: { guessId: 'r1-g99' } })

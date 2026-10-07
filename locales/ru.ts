@@ -2856,6 +2856,8 @@ const ru = {
         isClose: '{{name}}: почти угадано!',
         closeGuess: 'Почти!',
         acceptGuess: 'Засчитать',
+        hideDrawing: 'Скрыть этот рисунок для всех',
+        drawingHidden: 'Хост скрыл этот рисунок',
         acceptedByHost: 'засчитано ведущим',
         guessesTitle: 'Догадки',
         guessFeedEmpty: 'Здесь появятся догадки',

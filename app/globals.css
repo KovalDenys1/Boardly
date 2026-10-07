@@ -4573,6 +4573,25 @@ html.dark .spy-secret-tile {
   touch-action: auto;
   user-select: auto;
 }
+.sketch-canvas-corner {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.sketch-hide-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 27, 22, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  color: #6b6358;
+  cursor: pointer;
+}
+.sketch-hide-btn:hover { color: #1f1b16; }
+.sketch-hide-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bd-lav-deep); }
+.sketch-hide-btn:disabled { opacity: 0.5; cursor: default; }
 .sketch-choices {
   display: flex;
   flex-direction: column;
