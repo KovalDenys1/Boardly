@@ -3100,7 +3100,8 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 }
 .game-tab {
   flex: 1;
-  padding: 10px 8px;
+  min-height: 44px;
+  padding: 8px 8px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 13px;
@@ -3374,7 +3375,9 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  /* 44px both ways: the phone's icon-only tile was 36px wide (#1345). */
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 14px;
   border: 1.5px solid rgba(224,75,59,0.35);
   background: rgba(255,107,91,0.12);
