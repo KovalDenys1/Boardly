@@ -134,4 +134,93 @@ describe('PlayVsBotButton — the gate cannot be outrun', () => {
     expect(await screen.findByText('guest.playAsGuest')).toBeTruthy()
     expect(pushMock).not.toHaveBeenCalled()
   })
+
+  describe('a lobby still open elsewhere (#1344)', () => {
+    const conflict = {
+      ok: false,
+      status: 409,
+      json: async () => ({ error: 'You already have a game open', code: 'LOBBY_ALREADY_OPEN', lobbyCode: 'OLD1' }),
+    }
+
+    async function pickEasy() {
+      fireEvent.click(screen.getByText('quickPlay.playVsBot', { exact: false }))
+      await act(async () => {
+        fireEvent.click(screen.getByText('lobby.create.difficultyEasy'))
+      })
+    }
+
+    beforeEach(() => {
+      guestState = { isGuest: true }
+    })
+
+    it('asks instead of routing back to the old lobby unannounced', async () => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValueOnce(conflict)
+      render(<PlayVsBotButton gameType="checkers" />)
+      await pickEasy()
+
+      expect(await screen.findByRole('alertdialog')).toBeTruthy()
+      expect(screen.getByText('quickPlay.openLobbyTitle')).toBeTruthy()
+      expect(pushMock).not.toHaveBeenCalled()
+    })
+
+    it('leaves the old lobby and starts the new bot game', async () => {
+      ;(fetchWithGuest as jest.Mock)
+        .mockResolvedValueOnce(conflict)
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ success: true }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ lobbyCode: 'NEW1' }) })
+      render(<PlayVsBotButton gameType="checkers" />)
+      await pickEasy()
+
+      await act(async () => {
+        fireEvent.click(await screen.findByText('quickPlay.openLobbyLeaveAndPlay'))
+      })
+
+      await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/NEW1'))
+      const calls = (fetchWithGuest as jest.Mock).mock.calls
+      expect(calls[1][0]).toBe('/api/lobby/OLD1/leave')
+      expect(calls[1][1]).toEqual(expect.objectContaining({ method: 'POST' }))
+      expect(calls[2][0]).toBe('/api/quick-play')
+      expect(JSON.parse(calls[2][1].body)).toEqual(expect.objectContaining({ gameType: 'checkers', difficulty: 'easy' }))
+    })
+
+    it('moves focus into the dialog, traps Tab and returns focus to the trigger on Escape', async () => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValueOnce(conflict)
+      render(<PlayVsBotButton gameType="checkers" />)
+      await pickEasy()
+
+      const leave = await screen.findByText('quickPlay.openLobbyLeaveAndPlay')
+      const goBack = screen.getByText('quickPlay.openLobbyGoBack')
+      await waitFor(() => expect(document.activeElement).toBe(leave))
+      goBack.focus()
+      fireEvent.keyDown(goBack, { key: 'Tab' })
+      expect(document.activeElement).toBe(leave)
+      fireEvent.keyDown(leave, { key: 'Tab', shiftKey: true })
+      expect(document.activeElement).toBe(goBack)
+
+      fireEvent.keyDown(document, { key: 'Escape' })
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+      expect(document.activeElement).toBe(screen.getByText('quickPlay.playVsBot', { exact: false }).closest('button'))
+    })
+
+    it('closes the dialog when the trigger reopens the difficulty menu', async () => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValueOnce(conflict)
+      render(<PlayVsBotButton gameType="checkers" />)
+      await pickEasy()
+      await screen.findByRole('alertdialog')
+
+      fireEvent.click(screen.getByText('quickPlay.playVsBot', { exact: false }))
+      expect(screen.queryByRole('alertdialog')).toBeNull()
+      expect(screen.getByRole('menu')).toBeTruthy()
+    })
+
+    it('goes back to the old lobby when the player chooses it', async () => {
+      ;(fetchWithGuest as jest.Mock).mockResolvedValueOnce(conflict)
+      render(<PlayVsBotButton gameType="checkers" />)
+      await pickEasy()
+
+      fireEvent.click(await screen.findByText('quickPlay.openLobbyGoBack'))
+      expect(pushMock).toHaveBeenCalledWith('/lobby/OLD1')
+      expect(fetchWithGuest).toHaveBeenCalledTimes(1)
+    })
+  })
 })

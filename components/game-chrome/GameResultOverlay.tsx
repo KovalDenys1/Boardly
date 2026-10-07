@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
@@ -18,6 +18,12 @@ import { prefersReducedMotion } from '@/lib/motion'
  * margin:auto centers the content when it fits and lets it scroll from the
  * top when it doesn't — buttons can never be clipped on short screens
  * (#737, by construction for every adopter).
+ *
+ * Short boards (#1341): a phone in landscape leaves the board card ~274 px.
+ * Play again is the one primary button; View board, Return to lobby and Leave
+ * share one row under it, so outcome + Play again + Leave fit. The after-game
+ * block follows below, and while anything is below the fold the scroller
+ * fades out at its bottom edge so it reads as scrollable.
  *
  * Motion (#1111): every adopter mounts this in the same render that applies the
  * finishing move, so it used to cover the winning line before anyone saw it
@@ -98,31 +104,6 @@ export function resetResultOverlayRevealState(): void {
   inspectedResultKey = null
 }
 
-const ghostBtn: React.CSSProperties = {
-  padding: '10px 20px',
-  borderRadius: 14,
-  fontWeight: 600,
-  fontSize: 14,
-  background: 'rgba(255,255,255,0.12)',
-  color: 'rgba(255,255,255,0.85)',
-  border: '1px solid rgba(255,255,255,0.25)',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  width: '100%',
-}
-
-const platePlain: React.CSSProperties = {
-  padding: '12px 20px',
-  borderRadius: 14,
-  fontWeight: 600,
-  fontSize: 14,
-  background: 'rgba(255,255,255,0.08)',
-  color: 'rgba(255,255,255,0.55)',
-  border: '1px solid rgba(255,255,255,0.15)',
-  textAlign: 'center',
-  fontFamily: 'inherit',
-}
-
 export default function GameResultOverlay({
   title,
   kicker,
@@ -160,6 +141,24 @@ export default function GameResultOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only by design
   }, [])
 
+  // Whether content sits below the fold: drives the bottom fade (#1341).
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [moreBelow, setMoreBelow] = useState(false)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const update = () => setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+    observer?.observe(el)
+    if (el.firstElementChild) observer?.observe(el.firstElementChild)
+    return () => {
+      el.removeEventListener('scroll', update)
+      observer?.disconnect()
+    }
+  }, [])
+
   const handleInspect = () => {
     inspectedResultKey = resultKey ?? null
     onInspect()
@@ -183,6 +182,8 @@ export default function GameResultOverlay({
     </div>
   )
 
+  const showReturn = !actionsReplacement && isHost && !!onReturnToLobby
+
   return (
     <div
       data-testid="game-result-overlay"
@@ -198,107 +199,70 @@ export default function GameResultOverlay({
         background: 'rgba(31,27,22,0.82)',
         backdropFilter: 'blur(4px)',
         display: 'flex',
-        overflowY: 'auto',
         zIndex: 10,
       }}
     >
       <div
-        className="game-result-overlay__panel"
-        style={{
-          margin: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
-          padding: '20px 16px',
-          width: '100%',
-        }}
+        ref={scrollRef}
+        className="game-result-overlay__scroll"
+        data-testid="game-result-overlay-scroll"
+        data-more-below={moreBelow ? 'true' : 'false'}
       >
-        {icon ?? defaultIcon}
-        <div
-          style={{
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.5)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            fontFamily: 'ui-monospace,monospace',
-            marginTop: 8,
-            marginBottom: 2,
-          }}
-        >
-          {kicker ?? t('game.ui.roundOver')}
-        </div>
-        <h2
-          style={{
-            fontFamily: 'var(--bd-font-display)',
-            fontWeight: 800,
-            fontSize: 'clamp(22px, 4vw, 28px)',
-            color: '#fff',
-            textAlign: 'center',
-            margin: '0 0 14px',
-            lineHeight: 1.1,
-          }}
-        >
-          {title}
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 260 }}>
-          <button onClick={handleInspect} style={ghostBtn}>
-            {t('game.ui.viewBoard')}
-          </button>
-          {actionsReplacement ?? (isHost ? (
-            <>
-              {onPlayAgain && (
+        <div className="game-result-overlay__panel">
+          <div className="game-result-overlay__icon">{icon ?? defaultIcon}</div>
+          <div className="game-result-overlay__kicker">{kicker ?? t('game.ui.roundOver')}</div>
+          <h2 className="game-result-overlay__title">{title}</h2>
+          <div className="game-result-overlay__actions">
+            {actionsReplacement ?? (isHost ? (
+              onPlayAgain && (
                 <button
+                  type="button"
                   onClick={onPlayAgain}
                   disabled={isLoading}
-                  style={{
-                    padding: '12px 20px',
-                    borderRadius: 14,
-                    fontWeight: 700,
-                    fontSize: 15,
-                    background: accentColor,
-                    color: 'white',
-                    border: 'none',
-                    boxShadow: `0 4px 0 ${accentShadowColor}`,
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.65 : 1,
-                    fontFamily: 'inherit',
-                  }}
+                  className="game-result-overlay__primary"
+                  style={{ background: accentColor, boxShadow: `0 4px 0 ${accentShadowColor}` }}
                 >
                   {isLoading ? '…' : t('lobby.game.playAgain')}
                 </button>
-              )}
-              {onReturnToLobby && (
+              )
+            ) : (
+              <div className="game-result-overlay__plate">{t('game.ui.waitingForHost')}</div>
+            ))}
+            <div className="game-result-overlay__secondary" data-testid="game-result-secondary">
+              <button type="button" onClick={handleInspect} className="game-result-overlay__ghost">
+                {t('game.ui.viewBoard')}
+              </button>
+              {showReturn && (
                 <button
+                  type="button"
                   onClick={onReturnToLobby}
                   disabled={isLoading}
-                  style={{ ...ghostBtn, opacity: isLoading ? 0.65 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+                  className="game-result-overlay__ghost"
                 >
                   {t('game.ui.returnToLobby')}
                 </button>
               )}
-            </>
-          ) : (
-            <div style={platePlain}>{t('game.ui.waitingForHost')}</div>
-          ))}
-          {onLeave && (
-            <button onClick={onLeave} style={ghostBtn}>
-              {t('game.ui.leave')}
-            </button>
-          )}
-          {/*
-            Inside the 260 px column and under the primary actions, so it is also under
-            `actionsReplacement` — TTT's "Returning to lobby…" plate keeps share and the
-            Discord line beneath it instead of losing them with the host buttons (#982).
-          */}
-          <AfterGameActions
-            variant="overlay"
-            inviteCode={inviteCode}
-            gameType={gameType}
-            isGuest={isGuest}
-            isRegistered={isRegistered}
-            registerUrl={registerUrl}
-          />
+              {onLeave && (
+                <button type="button" onClick={onLeave} className="game-result-overlay__ghost">
+                  {t('game.ui.leave')}
+                </button>
+              )}
+            </div>
+            {/*
+              Under the primary actions, so it is also under `actionsReplacement` — TTT's
+              "Returning to lobby…" plate keeps share and the Discord line beneath it (#982).
+            */}
+            <div className="game-result-overlay__more">
+              <AfterGameActions
+                variant="overlay"
+                inviteCode={inviteCode}
+                gameType={gameType}
+                isGuest={isGuest}
+                isRegistered={isRegistered}
+                registerUrl={registerUrl}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
