@@ -1802,9 +1802,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-board-card {
   /* The ONLY place board-cell math lives. The card is flex-sized by its
      column (definite height), so container units are the real available
-     space on every screen. 107/125 = the board's own internal chrome only
-     (surface padding and border, grid padding, gaps, drop-arrow row) – no
-     screen-chrome guesses.
+     space on every screen. 79/97 = the board's own internal chrome only: the
+     surface's padding and border (27), the frame's padding (16), the gaps (6×6
+     across, 5×6 down) and the drop-arrow row (20 + 4) – no screen-chrome
+     guesses.
 
      It no longer paints (#903). A size container's box cannot be derived from
      its contents, so as long as the cream surface and the measuring box were
@@ -1814,7 +1815,7 @@ input[type="range"].slider-thumb::-moz-range-track {
      a separate box that hugs the board; this one stretches, unseen, and the
      space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 107px) / 7), calc((100cqh - 125px) / 6)), 52px);
+  --c4-cell: clamp(22px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 80px);
   /* Not decoration: .ttt-board-overlay takes its radius from here. */
   border-radius: 18px;
   display: flex;
