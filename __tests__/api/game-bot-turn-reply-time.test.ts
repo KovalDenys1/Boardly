@@ -123,4 +123,72 @@ describe('POST /api/game/[gameId]/bot-turn reply time', () => {
     const playersOrder = (prisma.players.update as jest.Mock).mock.invocationCallOrder[0]
     expect(playersOrder).toBeLessThan(broadcastOrder)
   })
+
+  it('records one bot_turn_applied row timed from the upstream trigger', async () => {
+    setUp({ currentPlayerIndex: 0, lastMoveAt: Date.now() })
+    const triggeredAt = Date.now() - 400
+
+    await POST(request({ triggerSource: 'state-route-auto', triggeredAt }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+    await flush()
+
+    expect(prisma.operationalEvents.create).toHaveBeenCalledTimes(1)
+    const { data } = (prisma.operationalEvents.create as jest.Mock).mock.calls[0][0]
+    expect(data).toMatchObject({
+      eventName: 'bot_turn_applied',
+      metricType: 'latency',
+      gameType: 'yahtzee',
+      success: true,
+      source: 'state-route-auto',
+      payload: { difficulty: 'hard', commits: 1 },
+    })
+    expect(data.latencyMs).toBeGreaterThanOrEqual(400)
+    expect(data.latencyMs).toBeLessThan(5_000)
+    expect(data.payload.turn_ms).toBe(data.latencyMs)
+  })
+
+  it('ignores a trigger time from the future and measures from the request instead', async () => {
+    setUp({ currentPlayerIndex: 0, lastMoveAt: Date.now() })
+
+    await POST(request({ triggeredAt: Date.now() + 60_000 }), { params: Promise.resolve({ gameId: 'game-123' }) })
+    await flush()
+
+    const { data } = (prisma.operationalEvents.create as jest.Mock).mock.calls[0][0]
+    expect(data.latencyMs).toBeGreaterThanOrEqual(0)
+    expect(data.latencyMs).toBeLessThan(5_000)
+  })
+
+  it('records a turn that failed before any commit, so a stalled bot shows up', async () => {
+    setUp({ currentPlayerIndex: 0 })
+    mockExecuteBotTurn.mockRejectedValue(new Error('No legal moves'))
+
+    const response = await POST(request({}), { params: Promise.resolve({ gameId: 'game-123' }) })
+    await flush()
+
+    expect(response.status).toBe(500)
+    const { data } = (prisma.operationalEvents.create as jest.Mock).mock.calls[0][0]
+    expect(data).toMatchObject({ success: false, latencyMs: null, reason: 'No legal moves' })
+  })
+
+  it('writes nothing when another instance won the turn', async () => {
+    setUp({ currentPlayerIndex: 0 })
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 0 })
+
+    const response = await POST(request({}), { params: Promise.resolve({ gameId: 'game-123' }) })
+    await flush()
+
+    expect(response.status).toBe(409)
+    expect(prisma.operationalEvents.create).not.toHaveBeenCalled()
+  })
+
+  it('never fails the turn when the metric write does', async () => {
+    setUp({ currentPlayerIndex: 0, lastMoveAt: Date.now() })
+    ;(prisma.operationalEvents.create as jest.Mock).mockRejectedValue(new Error('db down'))
+
+    const response = await POST(request({}), { params: Promise.resolve({ gameId: 'game-123' }) })
+    await flush()
+
+    expect(response.status).toBe(200)
+  })
 })

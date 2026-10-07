@@ -17,6 +17,7 @@ import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { constantTimeEqual } from '@/lib/secret-compare'
 import { runAfterResponse } from '@/lib/after-response'
+import { recordBotTurnApplied, type BotTurnTiming } from '@/lib/bot-turn-metrics'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -28,6 +29,8 @@ class ConcurrentBotTurnError extends Error {
 const botTurnLocks = new Map<string, boolean>()
 const DEFAULT_BOT_STATE_NOTIFY_TIMEOUT_MS = 2000
 const FAST_BOT_STATE_NOTIFY_TIMEOUT_MS = 250
+/** An upstream `triggeredAt` older than this is a stale clock or a retry, not a turn start. */
+const MAX_TRIGGER_AGE_MS = 60_000
 
 function resolveBotStateNotifyTimeoutMs(gameType: string): number {
   return gameType === 'tic_tac_toe'
@@ -40,6 +43,9 @@ export async function POST(
   { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
+  const requestStartedAt = Date.now()
+  let timing: BotTurnTiming | null = null
+  const commitBroadcasts: Promise<unknown>[] = []
   let lockKey: string | null = null
   let lockAcquired = false
   let gameId: string | undefined
@@ -286,6 +292,27 @@ export async function POST(
     const botDifficulty = getBotDifficulty(botPlayer)
     log.info('Bot difficulty', { difficulty: botDifficulty })
 
+    // Only an internal caller's clock marks when the turn became the bot's; anything
+    // else measures from this request's arrival.
+    const turnStartedAt =
+      isAuthorizedInternalRequest &&
+      normalizedTriggeredAt !== null &&
+      normalizedTriggeredAt <= requestStartedAt &&
+      requestStartedAt - normalizedTriggeredAt <= MAX_TRIGGER_AGE_MS
+        ? normalizedTriggeredAt
+        : requestStartedAt
+    const turnTiming: BotTurnTiming = {
+      gameType,
+      difficulty: botDifficulty,
+      source: isAuthorizedInternalRequest ? resolvedTriggerSource : 'client',
+      success: false,
+      turnStartedAt,
+      firstCommitAt: null,
+      lastCommitAt: null,
+      commits: 0,
+    }
+    timing = turnTiming
+
     // Every broadcast is kept alive past the response: the last commit's
     // game-update is sent just before this route returns, and an instance frozen
     // the moment the response leaves would hold the turn's hand-back until the
@@ -303,8 +330,13 @@ export async function POST(
         gameId: game.id,
         payload: sanitizeStateForBroadcast(gameType, state),
       })).then((ok) => {
+        const at = Date.now()
+        turnTiming.commits += 1
+        turnTiming.firstCommitAt ??= at
+        turnTiming.lastCommitAt = at
         if (!ok) log.warn('Failed to broadcast bot move', { gameId, botUserId })
       })
+      commitBroadcasts.push(sent)
       runAfterResponse(sent)
     }
 
@@ -516,6 +548,7 @@ export async function POST(
     )
 
     log.info('Bot turn execution completed')
+    turnTiming.success = true
 
     // Final notification removed - already sent after each move
     const finalState = gameEngine.getState()
@@ -528,9 +561,12 @@ export async function POST(
 
   } catch (error) {
     if (error instanceof ConcurrentBotTurnError) {
+      // Another instance played this turn and reports it; this one measured nothing.
+      timing = null
       return NextResponse.json({ message: 'Turn already processed by another instance' }, { status: 409 })
     }
 
+    if (timing) timing.reason = error instanceof Error ? error.message : String(error)
     log.error('Bot turn execution failed', error as Error, {
       gameId: gameId,
       lockKey,
@@ -545,6 +581,12 @@ export async function POST(
   } finally {
     if (lockAcquired && lockKey) {
       botTurnLocks.delete(lockKey)
+    }
+    const finishedTiming = timing
+    if (finishedTiming) {
+      runAfterResponse(
+        Promise.allSettled(commitBroadcasts).then(() => recordBotTurnApplied(finishedTiming)),
+      )
     }
   }
 }
