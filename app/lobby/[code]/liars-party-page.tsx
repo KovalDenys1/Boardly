@@ -25,6 +25,7 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
@@ -1159,6 +1160,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const statusSection = isFinished ? (
     <GameStatusBanner
       isFinished
+      outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: players.some(p => p.userId === currentUserId || p.id === currentUserId), isViewerWinner: winnerId ? iWon : null })}
       finishedMessage={finishedMessage}
       activeTitle={finishedMessage}
       secs={0}

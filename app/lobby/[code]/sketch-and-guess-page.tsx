@@ -12,6 +12,7 @@ import Chat from '@/components/Chat'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { viewerOutcome } from '@/lib/game-outcome'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
@@ -1105,6 +1106,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const statusSection = (
         <GameStatusBanner
             isFinished={isFinished}
+            outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentPlayer, isViewerWinner: winnerId ? iWon : null })}
             finishedMessage={finishedMessage}
             activeTitle={activeTitle}
             meta={phase === 'drawing' && !isFinished ? (

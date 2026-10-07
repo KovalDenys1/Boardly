@@ -18,6 +18,7 @@ import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
@@ -479,7 +480,7 @@ export default function MemoryGameBoard({
       className="memory-grid"
       style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
     >
-      {cards.map((card) => {
+      {cards.map((card, cardIndex) => {
         const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
         const isDisabled =
@@ -499,6 +500,13 @@ export default function MemoryGameBoard({
             type="button"
             onClick={() => handleCardClick(card.id)}
             disabled={isDisabled}
+            aria-label={
+              card.isMatched && card.value
+                ? t('games.memory.game.cardMatched', { num: cardIndex + 1, value: card.value })
+                : isFaceUp && card.value
+                  ? t('games.memory.game.cardFaceUp', { num: cardIndex + 1, value: card.value })
+                  : t('games.memory.game.cardFaceDown', { num: cardIndex + 1 })
+            }
             className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}${justMatchedIds.includes(card.id) ? ' memory-tile-match-cue' : ''}${pendingMismatchCardIds.includes(card.id) ? ' memory-tile-mismatch-cue' : ''}`}
           >
             <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
@@ -759,6 +767,7 @@ export default function MemoryGameBoard({
     <GameStatusBanner
       isFinished={isFinished}
       isDraw={isDraw}
+      outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })}
       finishedMessage={isDraw ? t('games.memory.game.tieLabel') : t('games.memory.game.winnerLabel', { player: winnerName })}
       activeTitle={t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
       meta={`${matchedPairs}/${totalPairs}`}
@@ -821,7 +830,7 @@ export default function MemoryGameBoard({
           {headerSection}
           {statusSection}
 
-          <main className="memory-layout">
+          <div className="memory-layout">
             <section className={`memory-board-panel${desktopShowsResultOverlay ? ' memory-board-panel--result' : ''}`} style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               <div className="ttt-board-surface">
                 {cardGrid}
@@ -870,7 +879,7 @@ export default function MemoryGameBoard({
               {historyPanel}
               {chatSection}
             </aside>
-          </main>
+          </div>
         </div>
       </div>
 

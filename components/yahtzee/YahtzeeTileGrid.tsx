@@ -212,6 +212,7 @@ export default function YahtzeeTileGrid({
         <span>{model.lowerTotal}</span>
       </div>
       {lowerTiles.map(renderTile)}
+      {mode === 'short' && <p className="yz-mode-note">{t('yahtzee.ui.shortModeNote')}</p>}
       {footerInGrid}
     </div>
   )

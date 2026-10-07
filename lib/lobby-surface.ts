@@ -20,7 +20,7 @@
  * lobby is simply a lobby with no game running.
  */
 export interface LobbySurface {
-  /** The game board is on screen (live, or a finished Spy game being read). */
+  /** The game board is on screen (live, or a finished Spy or Memory game being read). */
   showGameSurface: boolean
   /** The join prompt is offered - public lobbies auto-join through the same condition. */
   showJoinPrompt: boolean
@@ -28,8 +28,11 @@ export interface LobbySurface {
   isSpectator: boolean
 }
 
-/** The only game whose finished board outlives its row, and why: see above. */
-const KEEPS_FINISHED_SURFACE = 'guess_the_spy'
+/**
+ * Games whose finished board outlives its row, and why: see above. Their boards
+ * carry their own result screen; Yahtzee holds its results in LobbyPageClient.
+ */
+const KEEPS_FINISHED_SURFACE: ReadonlySet<string> = new Set(['guess_the_spy', 'memory'])
 
 export function resolveLobbySurface(input: {
   /** The lobby's relevant game row status: 'waiting' | 'playing' | 'finished'. */
@@ -41,7 +44,8 @@ export function resolveLobbySurface(input: {
   const isGameStarted = input.gameStatus === 'playing'
   const keepFinishedGameSurface =
     input.gameStatus === 'finished' &&
-    input.gameType === KEEPS_FINISHED_SURFACE &&
+    !!input.gameType &&
+    KEEPS_FINISHED_SURFACE.has(input.gameType) &&
     input.isParticipant
 
   const showGameSurface = isGameStarted || keepFinishedGameSurface
