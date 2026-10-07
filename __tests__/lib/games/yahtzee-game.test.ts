@@ -563,4 +563,34 @@ describe('YahtzeeGame', () => {
     })
   })
 
+  describe('face tally (#1085)', () => {
+    beforeEach(() => {
+      testPlayers.forEach(player => game.addPlayer(player))
+      game.startGame()
+    })
+
+    it('counts every fresh die and never recounts a held one', () => {
+      game.makeMove({ playerId: 'player1', type: 'roll', data: {}, timestamp: new Date() })
+      expect(game.getFaceCounts()!.reduce((a, b) => a + b, 0)).toBe(5)
+
+      const before = game.getFaceCounts()!
+      const dice = game.getDice()
+      game.makeMove({ playerId: 'player1', type: 'roll', data: { held: [true, true, false, false, false] }, timestamp: new Date() })
+      const after = game.getFaceCounts()!
+      expect(after.reduce((a, b) => a + b, 0)).toBe(8)
+      // The two held dice kept their faces and were not counted again.
+      expect(game.getDice().slice(0, 2)).toEqual(dice.slice(0, 2))
+      const added = after.map((n, i) => n - before[i])
+      const fresh = game.getDice().slice(2)
+      for (let face = 1; face <= 6; face++) {
+        expect(added[face - 1]).toBe(fresh.filter((d) => d === face).length)
+      }
+    })
+
+    it('answers null for a game saved before the tally existed', () => {
+      delete (getGameData(game) as { faceCounts?: number[] }).faceCounts
+      expect(game.getFaceCounts()).toBeNull()
+    })
+  })
+
 })

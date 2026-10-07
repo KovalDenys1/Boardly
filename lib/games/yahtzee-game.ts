@@ -16,6 +16,8 @@ export interface YahtzeeGameData {
     held: boolean[]
     timestamp: number
   }
+  /** How many times each face 1–6 came up across every fresh die this game; held dice are not recounted (#1085). */
+  faceCounts?: number[]
 }
 
 export class YahtzeeGame extends GameEngine {
@@ -31,7 +33,8 @@ export class YahtzeeGame extends GameEngine {
       dice: [1, 2, 3, 4, 5], // Initial dice values (not rolled yet)
       held: [false, false, false, false, false],
       rollsLeft: 3,
-      scores: []
+      scores: [],
+      faceCounts: [0, 0, 0, 0, 0, 0],
     }
   }
 
@@ -121,6 +124,12 @@ export class YahtzeeGame extends GameEngine {
           heldState[index] ? die : Math.floor(Math.random() * 6) + 1
         )
         gameData.rollsLeft--
+
+        const faceCounts = gameData.faceCounts ?? [0, 0, 0, 0, 0, 0]
+        gameData.dice.forEach((die, index) => {
+          if (!heldState[index]) faceCounts[die - 1]++
+        })
+        gameData.faceCounts = faceCounts
         
         // Store last roll info for history sync
         gameData.lastRoll = {
@@ -225,6 +234,12 @@ export class YahtzeeGame extends GameEngine {
   // Yahtzee-specific methods
   getDice(): number[] {
     return [...(this.state.data as YahtzeeGameData).dice]
+  }
+
+  /** Null for a game started before the tally existed. */
+  getFaceCounts(): number[] | null {
+    const counts = (this.state.data as YahtzeeGameData).faceCounts
+    return counts ? [...counts] : null
   }
 
   getHeld(): boolean[] {

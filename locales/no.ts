@@ -750,6 +750,10 @@ const no = {
             q: 'Er dette Yatzy eller Yahtzee?',
             a: 'Begge deler. Parradene kommer fra skandinavisk Yatzy, mens straightene, Hus og fem like gir de faste poengene fra amerikansk Yahtzee.',
           },
+          serverRolls: {
+            q: 'Er terningene rettferdige?',
+            a: 'Ja. Serveren vår kaster hver terning og ser bort fra tall nettleseren sender, så hver side har sjanse én av seks. På slutten av hvert spill ser du hvor ofte hver side kom opp.',
+          },
           needAccount: {
             q: 'Trenger jeg en konto?',
             a: 'Nei. Med et gjestenavn kan du opprette eller bli med i en lobby og spille mot roboter. En gjest som har spilt, beholdes i 90 dager uten aktivitet; registrer deg for å beholde profilen for alltid.',
@@ -3233,6 +3237,11 @@ const no = {
       nextStep: 'Neste steg',
       autoReturnMsg: 'Du kan gå gjennom tabellen i noen sekunder før vi går tilbake til lobbyen.',
       nextStepHint: 'Start en ny runde, be om en revansje, eller gå tilbake til lobbyer.',
+      diceTally: 'Terningoversikt',
+      diceRolled: '{{count}} terning kastet',
+      diceRolled_other: '{{count}} terninger kastet',
+      tallyNote: 'Serveren vår kaster hver terning. Hver side har sjanse én av seks, og en holdt terning telles én gang.',
+      faceCount: 'Side {{face}} kom opp {{count}} ganger',
     },
     bot: {
       thinking: 'Bot tenker...',
