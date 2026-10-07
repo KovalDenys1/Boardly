@@ -3099,6 +3099,15 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
      room for the game's own action row (layout DoD: no duplicated signals). */
   .game-landscape-side .game-player-subline,
   .game-landscape-side .game-player-turn { display: none; }
+  /* Inline, the WIN pill took the name's width and pushed the score out of its
+     cell. It hangs on the card's top edge, as in the stacked card (#1180). */
+  .game-landscape-side .game-player-win-badge {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
 }
 
 /* Tic-Tac-Toe / Connect Four / Rock Paper Scissors deltas. */

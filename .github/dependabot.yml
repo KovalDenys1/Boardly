@@ -25,9 +25,9 @@ updates:
       # Vercel and CI run Node 22; the types must not describe APIs the runtime lacks.
       - dependency-name: "@types/node"
         versions: [">=23"]
-      # 23 pins API version 2026-09-30.endive; moving it needs the webhook endpoint moved with it (#1322).
+      # Every minor from 22.2 pins a newer API version; moving it needs the webhook endpoint moved with it (#1322).
       - dependency-name: "stripe"
-        versions: [">=23"]
+        versions: [">=22.2.0"]
       # 11 inverts the data-collection defaults and moves to span streaming (#1323).
       - dependency-name: "@sentry/nextjs"
         versions: [">=11"]
