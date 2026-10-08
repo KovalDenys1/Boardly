@@ -173,19 +173,32 @@ export async function renderSketchGalleryImage(
 export default function SketchGallery({ entries, t }: { entries: SketchGalleryEntry[]; t: TFn }) {
   const [isSaving, setIsSaving] = useState(false)
   const hasAnyDrawing = entries.some((entry) => entry.drawing)
-
-  const handleSave = useCallback(async () => {
-    setIsSaving(true)
-    try {
-      const blob = await renderSketchGalleryImage(entries, {
+  // iOS Safari only opens the share sheet shortly after the tap, so the PNG is drawn
+  // before anyone taps, not in the handler.
+  const imageRef = useRef<Promise<File | null> | null>(null)
+  const entriesKey = entries.map((entry) => `${entry.round}:${entry.hidden}:${entry.drawing ? 1 : 0}:${entry.word}`).join('|')
+  const renderImage = useCallback(
+    () =>
+      renderSketchGalleryImage(entries, {
         title: t('games.guess_my_drawing.game.galleryImageTitle'),
         footer: 'boardly.online',
         byLine: (name) => t('games.guess_my_drawing.game.drawnBy', { name }),
         hidden: t('games.guess_my_drawing.game.drawingHidden'),
         noDrawing: t('games.guess_my_drawing.game.galleryNoDrawing'),
-      })
-      if (!blob) return
-      const file = new File([blob], 'boardly-sketch-gallery.png', { type: 'image/png' })
+      }).then((blob) => (blob ? new File([blob], 'boardly-sketch-gallery.png', { type: 'image/png' }) : null)),
+    // entriesKey stands for entries, which the board rebuilds on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entriesKey, t],
+  )
+  useEffect(() => {
+    imageRef.current = hasAnyDrawing ? renderImage() : null
+  }, [hasAnyDrawing, renderImage])
+
+  const handleSave = useCallback(async () => {
+    setIsSaving(true)
+    try {
+      const file = await (imageRef.current ?? renderImage())
+      if (!file) return
       const nav = typeof navigator !== 'undefined' ? navigator : null
       if (nav?.canShare?.({ files: [file] }) && nav.share) {
         try {
@@ -196,7 +209,7 @@ export default function SketchGallery({ entries, t }: { entries: SketchGalleryEn
           if (err instanceof DOMException && err.name === 'AbortError') return
         }
       }
-      const url = URL.createObjectURL(blob)
+      const url = URL.createObjectURL(file)
       const link = document.createElement('a')
       link.href = url
       link.download = file.name
@@ -205,7 +218,7 @@ export default function SketchGallery({ entries, t }: { entries: SketchGalleryEn
     } finally {
       setIsSaving(false)
     }
-  }, [entries, t])
+  }, [renderImage, t])
 
   return (
     <div className="sketch-phase" data-testid="sketch-gallery">
