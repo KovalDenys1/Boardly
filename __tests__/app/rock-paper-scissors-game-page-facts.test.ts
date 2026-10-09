@@ -4,6 +4,7 @@ import { getCatalogGames } from '@/lib/game-catalog'
 import { BOT_DIFFICULTIES, getBotDisplayName } from '@/lib/bot-profiles'
 import {
   RockPaperScissorsGame,
+  RPS_ROUND_HOLD_MS,
   sanitizeRpsStateForBroadcast,
   type RockPaperScissorsGameData,
   type RPSChoice,
@@ -185,7 +186,7 @@ describe('the RPS round clock against the routes (#1238)', () => {
     expect(engine.getState().turnStartedAt).toBe(1_000)
     now.mockReturnValue(5_000)
     pick(engine, 'b', 'paper')
-    expect(engine.getState().turnStartedAt).toBe(5_000)
+    expect(engine.getState().turnStartedAt).toBe(5_000 + RPS_ROUND_HOLD_MS)
     now.mockRestore()
     expect(rps.detail.rules.timeoutRandomPick).toMatch(/The clock restarts whenever a player locks in/)
     expect(rps.detail.multiplayer.turnTimer.desc).toMatch(/restarts it for your opponent/)

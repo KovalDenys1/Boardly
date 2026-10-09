@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { prefersReducedMotion } from '@/lib/motion'
+import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
@@ -126,10 +127,11 @@ export default function RockPaperScissorsGameBoard({
   const roundInProgress = readyIds.length > 0
   const mySubmitted = !!playerId && readyIds.includes(playerId)
   const myCurrentChoice = playerId ? ((gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null) : null
-  const canChoose = !isSpectator && !disabled && !isSubmitting && !mySubmitted && !isGameOver && players.length >= 2
-  // Between rounds the stage replays the reveal; once anyone picks again it
-  // turns back into two hands choosing.
-  const showReveal = !!latestRound && (!roundInProgress || isGameOver)
+  const hasRoundBoundary = typeof gameData.nextRoundAt === 'number'
+  const roundOpen = useRpsRoundOpen(gameData.nextRoundAt)
+  const canChoose = !isSpectator && !disabled && !isSubmitting && !mySubmitted && !isGameOver && players.length >= 2 && roundOpen
+  // A state saved before nextRoundAt existed keeps the reveal until someone picks again.
+  const showReveal = !!latestRound && (isGameOver || (hasRoundBoundary ? !roundOpen : !roundInProgress))
   const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
   const scores = shownScores ?? gameData.scores
   const leftScore = leftPlayer ? scores[leftPlayer.id] ?? 0 : 0
@@ -178,7 +180,7 @@ export default function RockPaperScissorsGameBoard({
             <span className="rps-stage__dot">·</span>
             <WinPips filled={rightScore} total={winsNeeded} color={rightAccent} />
           </span>
-          <span key={`r-${revealKey}`} className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : ''}`}>{stageResult}</span>
+          <span key={`r-${revealKey}`} className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : latestRound && !roundInProgress ? ' rps-stage__result--round' : ''}`}>{stageResult}</span>
         </div>
         <Hand key={`r-${revealKey}`} player={rightPlayer} accent={rightAccent} reveal={showReveal} {...handFor(rightPlayer)} />
       </section>

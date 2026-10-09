@@ -17,6 +17,7 @@ import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS, WinPips } from '@/components/RockPaperScissorsGameBoard'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useHeldValue } from '@/hooks/useHeldValue'
+import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
 import { prefersReducedMotion } from '@/lib/motion'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
@@ -64,6 +65,7 @@ interface RpsState {
     status: RpsLifecycleStatus
     currentPlayerIndex: number
     lastMoveAt: number | null
+    turnStartedAt: number | null
     players: Array<{ id: string; name: string }>
     data: RockPaperScissorsGameData
 }
@@ -128,6 +130,7 @@ function parseRpsState(raw: unknown, fallbackStatus?: RpsLifecycleStatus): RpsSt
         status: isLifecycleStatus(record.status) ? record.status : fallbackStatus ?? 'waiting',
         currentPlayerIndex: typeof record.currentPlayerIndex === 'number' ? record.currentPlayerIndex : 0,
         lastMoveAt: typeof record.lastMoveAt === 'number' && Number.isFinite(record.lastMoveAt) ? record.lastMoveAt : null,
+        turnStartedAt: typeof record.turnStartedAt === 'number' && Number.isFinite(record.turnStartedAt) ? record.turnStartedAt : null,
         players,
         data: {
             ...EMPTY_DATA,
@@ -140,6 +143,7 @@ function parseRpsState(raw: unknown, fallbackStatus?: RpsLifecycleStatus): RpsSt
                     : {},
             rounds: Array.isArray(dataRecord.rounds) ? (dataRecord.rounds as RockPaperScissorsGameData['rounds']) : [],
             playersReady: Array.isArray(dataRecord.playersReady) ? (dataRecord.playersReady as string[]) : [],
+            nextRoundAt: typeof dataRecord.nextRoundAt === 'number' && Number.isFinite(dataRecord.nextRoundAt) ? dataRecord.nextRoundAt : null,
         },
     }
 }
@@ -544,7 +548,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         !!game,
     )
     const mySubmitted = !!currentUserId && rpsData.playersReady.includes(currentUserId)
-    const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted
+    const roundOpen = useRpsRoundOpen(rpsData.nextRoundAt)
+    const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted && roundOpen
 
     // Round and opponent cues (#1111): a new round asks for the viewer's throw,
     // and the opponent locking theirs in is their move. Counting only the
@@ -563,13 +568,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             : 60
 
     // Simultaneous game: the "turn" is the round. `currentPlayerIndex` is
-    // never advanced by the engine, so the round count stands in for it — the
-    // timer hook resets on that boundary and on every lastMoveAt change.
+    // never advanced by the engine, so the round count stands in for it, and
+    // the round's clock starts at the server's nextRoundAt (turnStartedAt).
     const timerState = useMemo(() => {
         if (!game) return null
         return {
             currentPlayerIndex: rpsData.rounds.length,
             lastMoveAt: game.state.lastMoveAt ?? undefined,
+            turnStartedAt: game.state.turnStartedAt ?? undefined,
             status: game.state.status,
         }
     }, [game, rpsData.rounds.length])

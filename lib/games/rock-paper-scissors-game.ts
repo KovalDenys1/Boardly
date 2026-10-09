@@ -3,6 +3,9 @@ import { GameEngine, Player, Move, GameConfig } from '../game-engine'
 export type RPSChoice = 'rock' | 'paper' | 'scissors'
 export type BestOfMode = 'best-of-3' | 'best-of-5'
 
+/** From a round's reveal to the next round: about a second of reveal, then two seconds to read it. */
+export const RPS_ROUND_HOLD_MS = 3_000
+
 export interface RPSRound {
     choices: Record<string, RPSChoice>  // playerId -> choice (empty while waiting for opponent)
     winner: string | 'draw' | null      // playerId or 'draw'
@@ -15,6 +18,7 @@ export interface RockPaperScissorsGameData {
     scores: Record<string, number>  // playerScores
     playersReady: string[]  // Players who submitted their choice for current round
     gameWinner: string | null  // Player ID of game winner
+    nextRoundAt?: number | null  // Server time the next round opens; null before the first reveal and after the last
 }
 
 export class RockPaperScissorsGame extends GameEngine {
@@ -30,6 +34,7 @@ export class RockPaperScissorsGame extends GameEngine {
             scores: {},
             playersReady: [],
             gameWinner: null,
+            nextRoundAt: null,
         }
     }
 
@@ -111,6 +116,11 @@ export class RockPaperScissorsGame extends GameEngine {
         return false
     }
 
+    protected restartsTurnClock(_move: Move): boolean {
+        // A reveal has already set the next round's clock to nextRoundAt.
+        return (this.state.data as RockPaperScissorsGameData).playersReady.length > 0
+    }
+
     /**
      * Override startGame to initialize scores for both players
      */
@@ -184,6 +194,10 @@ export class RockPaperScissorsGame extends GameEngine {
                 gameData.playerChoices[player.id] = null
             }
             gameData.playersReady = []
+            gameData.nextRoundAt = Date.now() + RPS_ROUND_HOLD_MS
+            this.state.turnStartedAt = gameData.nextRoundAt
+        } else {
+            gameData.nextRoundAt = null
         }
     }
 

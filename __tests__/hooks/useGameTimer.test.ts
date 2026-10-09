@@ -203,3 +203,32 @@ describe('useGameTimer race guards', () => {
     expect(result.current.timeLeft).toBe(0)
   })
 })
+
+describe('useGameTimer with a turn that starts later (#1365)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.setSystemTime(new Date('2026-02-20T12:00:00.000Z'))
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('shows the full limit until the turn starts, then counts down from there', async () => {
+    const startsAt = Date.now() + 3_000
+    const { result } = renderHook(() =>
+      useGameTimer({
+        isMyTurn: false,
+        gameState: { currentPlayerIndex: 1, turnStartedAt: startsAt, status: 'playing' },
+        turnTimerLimit: 60,
+        onTimeout: jest.fn(),
+      })
+    )
+
+    await act(async () => { jest.advanceTimersByTime(2_000) })
+    expect(result.current.timeLeft).toBe(60)
+
+    await act(async () => { jest.advanceTimersByTime(3_000) })
+    expect(result.current.timeLeft).toBe(58)
+  })
+})
