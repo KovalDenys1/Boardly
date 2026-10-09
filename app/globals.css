@@ -3952,6 +3952,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   animation: rps-rise 0.35s ease both;
 }
 .rps-stage__result--reveal { color: var(--bd-ink); animation-delay: 1s; }
+.rps-stage__result--round { color: var(--bd-ink); animation: rps-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 
 .rps-tiles {
   display: grid;

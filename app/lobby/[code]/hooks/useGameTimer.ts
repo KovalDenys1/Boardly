@@ -30,7 +30,7 @@ function resolveTurnStartedAtMs(gameState: GameState | null): number | null {
 
 function calculateRemainingTimeSeconds(turnTimerLimit: number, turnStartedAt: number): number {
   const elapsedSeconds = Math.floor((Date.now() - turnStartedAt) / 1000)
-  return Math.max(0, turnTimerLimit - elapsedSeconds)
+  return Math.min(turnTimerLimit, Math.max(0, turnTimerLimit - elapsedSeconds))
 }
 
 export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }: UseGameTimerProps) {

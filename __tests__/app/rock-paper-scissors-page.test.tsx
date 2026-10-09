@@ -278,6 +278,17 @@ describe('RockPaperScissorsLobbyPage', () => {
       },
     })
 
+    it('passes the server round boundary through to the board (#1365)', async () => {
+      const held = tiedState()
+      ;(held as unknown as { turnStartedAt: number }).turnStartedAt = 4_102_444_800_000
+      held.data = { ...held.data, nextRoundAt: 4_102_444_800_000 } as typeof held.data
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(held) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      expect(mockBoardProps.current.gameData.nextRoundAt).toBe(4_102_444_800_000)
+    })
+
     it('announces the match winner only after the final hands have revealed', async () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(tiedState()) } as Response)
       render(<RockPaperScissorsLobbyPage code="ABCD" />)
