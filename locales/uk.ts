@@ -3257,6 +3257,7 @@ const uk: TranslationWithPlurals = {
       holdBadge: 'Утримано {{count}}',
       scoredCategory: 'Записав {{category}}',
       rollOfTurn: 'Кидок {{roll}} у ході {{turn}}',
+      rollShort: 'Кидок {{roll}}',
       burned: 'Злив цю категорію, щоб не гальмувати хід.',
       banked: 'Записано {{points}} очок у {{category}}.',
       heldForNext: 'Утримано {{count}} кубиків для наступного рішення.',
@@ -3455,6 +3456,7 @@ const uk: TranslationWithPlurals = {
       turnPickBox: 'Оберіть поле',
       roundOf: 'Раунд {{current}}/{{total}}',
       tabGame: 'Гра',
+      pointsShort: '{{count}} оч.',
     },
   },
   chat: {

@@ -3187,6 +3187,7 @@ const en = {
       holdBadge: 'Hold {{count}}',
       scoredCategory: 'Scored {{category}}',
       rollOfTurn: 'Roll {{roll}} of turn {{turn}}',
+      rollShort: 'Roll {{roll}}',
       burned: 'Burned this category to keep the turn moving.',
       banked: '{{points}} points banked in {{category}}.',
       heldForNext: '{{count}} dice held for the next decision.',
@@ -3367,6 +3368,7 @@ const en = {
       turnPickBox: 'Pick a box',
       roundOf: 'Round {{current}}/{{total}}',
       tabGame: 'Game',
+      pointsShort: '{{count}} pts',
     },
   },
   chat: {
