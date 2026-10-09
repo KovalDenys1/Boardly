@@ -35,6 +35,25 @@ export function getInternalAppOrigin(): string {
   return 'http://localhost:3000'
 }
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
+
+function isSameSite(from: URL, to: URL): boolean {
+  const bare = (hostname: string) => hostname.replace(/^www\./, '')
+  return from.protocol === to.protocol && from.port === to.port && bare(from.hostname) === bare(to.hostname)
+}
+
+// www.boardly.online answers with a 301 to the apex, and fetch follows a 301 as a body-less GET.
+export async function postBotTurn(url: string, init: Omit<RequestInit, 'method' | 'redirect'>): Promise<Response> {
+  const request = { ...init, method: 'POST', redirect: 'manual' as const }
+  const response = await fetch(url, request)
+  const location = REDIRECT_STATUSES.has(response.status) ? response.headers.get('location') : null
+  if (!location) return response
+
+  const target = new URL(location, url)
+  if (!isSameSite(new URL(url), target)) return response
+  return fetch(target, request)
+}
+
 export interface BotTurnForwardedCredentials {
   internalSecret: string | null | undefined
   authorization: string | null | undefined
