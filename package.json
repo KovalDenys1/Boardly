@@ -22,6 +22,7 @@
     "arch:audit": "tsx scripts/audit-module-boundaries.ts",
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "audit:emoji": "tsx scripts/check-emoji.ts",
+    "ios:sim": "tsx scripts/ios-sim.ts",
     "audit:docs": "tsx scripts/audit-docs.ts",
     "audit:a11y": "tsx scripts/audit-a11y.ts",
     "ci:quick": "npm run lint && npm run typecheck && npm run arch:audit && npm run audit:responsive && npm run audit:design-tokens && npm run audit:focus-rings && npm run audit:emoji && npm run audit:i18n && npm run audit:locale-health && npm run audit:docs",

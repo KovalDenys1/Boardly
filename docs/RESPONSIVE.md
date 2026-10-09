@@ -201,12 +201,22 @@ Every UI change, before it is "done":
    games use the curl + join-guest API approach). When a change touches the
    mobile/desktop switch, also check `DESKTOP_MIN_WIDTH_PX − 1` and
    `DESKTOP_MIN_WIDTH_PX`: exactly one of desktop-grid / mobile-tabs may render.
-3. **Real-device gate** for game-board or mobile fixes: emulated viewports do not
-   reproduce iOS Safari's address-bar animation, which changes the resolved
-   `100dvh` at runtime — this is only observable on a physical phone (use the
-   Vercel preview deployment). If you cannot verify on a real device, say so
-   explicitly instead of claiming the fix works.
-4. Shell primitives are pinned by className-contract Jest tests (pattern:
+3. **Mobile Safari on the iOS Simulator** for game-board or mobile fixes:
+   `npm run ios:sim -- <path>` opens the route in the simulator's real Mobile
+   Safari (WebKit, Safari's bars, the share APIs), headless, and writes
+   `<name>-page.png` and `<name>-device.png` to `tmp/ios-sim/`; it exits 1 when the
+   page scrolls sideways. Default device iPhone 16e (390 pt); run
+   `--device "iPhone 17 Pro Max"` for the wide end. `--guest <file>` signs in a
+   guest (`{guestToken, guestId, guestName}`), `--wait-for` / `--scroll` take CSS
+   selectors, `--eval` returns a value from the page. A WebDriver tap is synthetic
+   (iOS may read it as a long press, and it carries no user activation), so ask
+   `--eval` what an API supports rather than tapping a share button. One-time setup
+   on a new Mac: `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+   and `sudo safaridriver --enable`.
+4. **Real-device gate**: the simulator still is not the phone (performance, the
+   exact address-bar animation timing). Check the Vercel preview on a physical
+   iPhone, or say explicitly that you did not.
+5. Shell primitives are pinned by className-contract Jest tests (pattern:
    `__tests__/app/lobby-page-fallbacks.test.tsx`) — extend them when adding a
    surface, don't delete them.
 

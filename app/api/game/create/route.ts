@@ -17,7 +17,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
-import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
+import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
 import { runAfterResponse } from '@/lib/after-response'
 import {
   extractCarriedGameConfig,
@@ -474,8 +474,7 @@ export async function POST(request: NextRequest) {
       // with the instance once the response left, and a bot that moves first then
       // waited for the client's fallback - the freeze #985 fixed in the state route.
       runAfterResponse(
-        fetch(botApiUrl, {
-          method: 'POST',
+        postBotTurn(botApiUrl, {
           headers: botTurnHeaders,
           body: JSON.stringify({
             botUserId: dbCurrentPlayer.userId,

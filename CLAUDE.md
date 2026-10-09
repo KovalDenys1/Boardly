@@ -142,11 +142,15 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
 3. **Playwright MCP screenshot sweep** of every touched route at 320 / 390 / 768 /
    1280 px width (docs/RESPONSIVE.md#verification-procedure covers reaching
    in-game states and breakpoint-boundary checks).
-4. **Game-board or mobile fixes: real-device check is the final gate** — emulated
-   viewports do not reproduce iOS Safari address-bar dvh behavior. If you cannot
-   verify on a real device, say so explicitly instead of claiming the fix works.
-   Why this is a rule and not advice: in #688 Connect Four's bottom row was cropped
-   on a real iPhone after an emulated-viewport audit had called the game clean.
+4. **Game-board or mobile fixes: Mobile Safari on the iOS Simulator, then a real
+   device** — emulated Chromium viewports do not reproduce iOS Safari: WebKit layout,
+   the address bar that changes dvh, the share sheet. Run every touched mobile screen
+   through `npm run ios:sim -- <path>` (`scripts/ios-sim.ts`: real Mobile Safari,
+   headless, page + full-screen screenshots, exits 1 on sideways scroll; `--device
+   "iPhone 17 Pro Max"`, `--guest`, `--wait-for`, `--scroll`, `--eval`). A real iPhone
+   stays the last gate; if you could not use one, say so instead of claiming the fix
+   works. Why: in #688 Connect Four's bottom row was cropped on a real iPhone after an
+   emulated-viewport audit had called the game clean.
 5. **One flexible content region, as few `flex-shrink-0` blocks around it as
    possible.** Before adding a banner, check whether the same signal is already
    shown elsewhere on the screen, and reuse a compact pattern that exists in this

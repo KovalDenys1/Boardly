@@ -17,7 +17,7 @@ import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
-import { buildBotTurnHeaders, getInternalAppOrigin } from '@/lib/bot-turn-trigger'
+import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -163,8 +163,7 @@ function autoTriggerBotTurn(params: {
   // waiting for a client-side watchdog (in Rock Paper Scissors, the full round
   // timer). `after` keeps the invocation alive until the work settles.
   runAfterResponse(
-    fetch(botTurnApiUrl, {
-    method: 'POST',
+    postBotTurn(botTurnApiUrl, {
     headers: botTurnHeaders,
     body: JSON.stringify({
       botUserId,
