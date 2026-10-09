@@ -1,5 +1,6 @@
 'use client'
 
+import type React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -33,7 +34,7 @@ export default function YahtzeeEventLog({
         <h3 className="yz-events__title">{t('yahtzee.history.title')}</h3>
         <span className="yz-events__count">{entries.length}</span>
       </div>
-      <ol className="yz-events__list" style={{ ['--yz-event-rows' as string]: rows }}>
+      <ol className="yz-events__list" style={{ '--yz-event-rows': rows } as React.CSSProperties}>
         {slots.map((entry, index) => {
           if (!entry) {
             return (
