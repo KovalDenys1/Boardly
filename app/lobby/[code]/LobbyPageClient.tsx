@@ -111,6 +111,14 @@ import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import ScorePop from '@/components/game-chrome/ScorePop'
+import GameIcon from '@/components/GameIcon'
+import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
+import { reportablePlayerId } from '@/lib/reportable-player'
+import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -130,7 +138,7 @@ const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar
 const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'))
 const Chat = dynamic(() => import('@/components/Chat'))
 const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
-const RollHistory = dynamic(() => import('@/components/RollHistory'))
+const YahtzeeEventLog = dynamic(() => import('@/components/yahtzee/YahtzeeEventLog'))
 const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
 const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
@@ -144,15 +152,6 @@ const LobbySettingsPanel = dynamic(() => import('./components/LobbySettingsPanel
 const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
-const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
-  loading: () => (
-    <div className="h-full min-h-[280px] rounded-xl border border-(--bd-line) bg-(--bd-bg2)">
-      <div className="flex h-full items-center justify-center">
-        <LoadingSpinner size="md" />
-      </div>
-    </div>
-  ),
-})
 const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
   loading: () => <CenteredLoadingFallback />,
 })
@@ -378,6 +377,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     []
   )
 
+  // Yahtzee's desktop chat is a column of the game grid, always on screen (#1363).
+  const isMobileViewport = useIsMobileViewport()
+  const isYahtzeeDesktopChatShown = !isMobileViewport && lobby?.gameType === 'yahtzee' && game?.status === 'playing'
+
   // Shared chat pipeline (#736) — history loading is wired up after
   // useRealtimeConnection below, which supplies isConnected.
   const {
@@ -391,7 +394,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setChatMessages,
   } = useLobbyChat({
     code,
-    isChatVisible: !chatMinimized || mobileActiveTab === 'chat',
+    isChatVisible: !chatMinimized || mobileActiveTab === 'chat' || isYahtzeeDesktopChatShown,
     onIncomingMessageSound: () => playAmbientSound('message'),
   })
 
@@ -2000,7 +2003,97 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div className="yz-revert" role="status">{t('yahtzee.ui.moveReverted')}</div>
     ) : null
 
-    return { header, statusBanner, diceBar, tiles, revertNotice }
+    const enginePlayers = gameEngine.getPlayers()
+    const playerCard = (playerId: string, side: 'left' | 'right') => {
+      const dbPlayer = game?.players?.find((p) => p.userId === playerId)
+      const isBot = !!(dbPlayer?.user?.bot || dbPlayer?.bot)
+      const score = enginePlayers.find((p) => p.id === playerId)?.score || 0
+      return (
+        <GamePlayerCard
+          name={nameOf(playerId)}
+          isActive={playerId === currentPlayerId}
+          isMe={playerId === viewerId}
+          isWinner={false}
+          side={side}
+          avatarSrc={dbPlayer?.user?.avatarUrl ?? dbPlayer?.user?.image ?? null}
+          isPremium={!!dbPlayer?.user?.isPremium}
+          userId={reportablePlayerId(game?.players ?? [], playerId)}
+          lobbyCode={code}
+          accentColor="var(--bd-sky)"
+          subline={
+            <>
+              {isBot && (
+                <span className="bd-chip bd-chip-lav" style={{ padding: '0 5px', fontSize: 9, marginRight: 4 }}>{t('game.ui.botBadge')}</span>
+              )}
+              {t('yahtzee.ui.pointsShort', { count: score })}
+            </>
+          }
+        />
+      )
+    }
+    const scoreOf = (index: number) => enginePlayers[index]?.score || 0
+    const scoreboard = (
+      <div className="ttt-card yz-scoreboard-card">
+        {enginePlayers.length === 2 ? (
+          <GameScoreboardHeader
+            leftCard={playerCard(enginePlayers[0].id, 'left')}
+            center={
+              <>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                  <GameIcon gameId="yahtzee" accentColor="var(--bd-sky)" size={18} />
+                </div>
+                <ScorePop value={`${scoreOf(0)}:${scoreOf(1)}`} className="yz-scoreboard-score">
+                  {scoreOf(0)}<span className="yz-scoreboard-score__sep">:</span>{scoreOf(1)}
+                </ScorePop>
+                <div className="yz-scoreboard-meta">{t('yahtzee.ui.total')}</div>
+              </>
+            }
+            rightCard={playerCard(enginePlayers[1].id, 'right')}
+          />
+        ) : (
+          <div className="yz-player-grid">
+            {enginePlayers.map((p, index) => (
+              <React.Fragment key={p.id}>{playerCard(p.id, index % 2 === 0 ? 'left' : 'right')}</React.Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+
+    const room = (
+      <GameRoomCard
+        gameId="yahtzee"
+        title={t('games.yahtzee.name')}
+        code={code}
+        isSpectator={isSpectator}
+        leaveLabel={t('game.ui.leave')}
+        allowSpectators={!!lobby?.allowSpectators}
+        onLeave={() => setShowLeaveConfirmModal(true)}
+      />
+    )
+
+    // Desktop board: dice and Roll, whose card is shown, then the scorecard –
+    // one painted card that fills the centre column (#1363).
+    const board = (
+      <div className="yz-board-card">
+        <div className="yz-panel yz-panel--board">
+          {revertNotice}
+          {diceBar}
+          {pills.length > 1 && (
+            <YahtzeeScorePills
+              players={pills}
+              viewerId={viewerId}
+              viewingId={viewingPlayerId}
+              currentTurnId={currentPlayerId}
+              onSelect={(playerId) => setSelectedPlayerId(playerId === viewerId ? viewerId : playerId)}
+            />
+          )}
+          {tiles('panel')}
+        </div>
+      </div>
+    )
+
+    return { header, statusBanner, diceBar, tiles, revertNotice, scoreboard, room, board }
   })() : null
 
   return (
@@ -2256,6 +2349,39 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
+              {/* Desktop: the shared game grid (#1363). */}
+              <YahtzeeDesktopLayout
+                header={yahtzeeView?.scoreboard}
+                room={yahtzeeView?.room}
+                status={yahtzeeView?.statusBanner}
+                board={
+                  <>
+                    {yahtzeeView?.board}
+                    {celebrationEvent && !isMobileViewport && (
+                      <CelebrationBanner event={celebrationEvent} onComplete={handleCelebrationComplete} />
+                    )}
+                  </>
+                }
+                events={<YahtzeeEventLog entries={rollHistory} rows={hasMultipleHumans ? 5 : 8} fill={!hasMultipleHumans} />}
+                chat={hasMultipleHumans ? (
+                  <section className="game-chat-panel">
+                    <Chat
+                      lobbyCode={code}
+                      messages={chatMessages}
+                      onSendMessage={sendChatMessage}
+                      currentUserId={getCurrentUserId()}
+                      playerProfiles={chatPlayerProfiles}
+                      isMinimized={false}
+                      onToggleMinimize={() => { }}
+                      unreadCount={0}
+                      someoneTyping={someoneTyping}
+                      fullScreen
+                      onProfileClick={setProfileUserId}
+                    />
+                  </section>
+                ) : null}
+              />
+
               {/* Phone and tablet (below the desk breakpoint): pills, sound and
                   Leave, then the shared status banner (#1187). Hidden in phone
                   landscape, where the side pane carries the same header
@@ -2264,138 +2390,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {yahtzeeView?.header}
               </div>
 
-              {/* Top Status Bar — desktop only; below the desk breakpoint the
-                  pill header above replaces it (#1187). */}
-              <div className="hidden desk:block shrink-0 pt-2 mb-3 px-2 sm:px-4 yahtzee-top-status-bar">
-                <div
-                  className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
-                  style={{
-                    background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
-                  }}
-                >
-                  {/* Single responsive row: stacks below sm, one row from sm up */}
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    {/* Stats group - wraps internally, no hard-coded row break */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <Icon name="target" size={20} />
-                        <span className="text-sm sm:text-base font-bold text-bd-ink">
-                          {roundInfo.current}/{roundInfo.total}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[150px]">
-                        <Icon name="user" size={20} />
-                        <span className="truncate text-sm sm:text-base font-bold text-bd-ink">
-                          {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Icon name="trophy" size={20} />
-                        <span className="text-sm sm:text-base font-bold text-bd-ink">
-                          {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Actions group */}
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      <button
-                        onClick={() => {
-                          sounds.play('click', { force: true })
-                          const newState = sounds.toggle()
-                          setSoundEnabled(newState)
-                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-                            duration: 2000,
-                            position: 'top-center',
-                          })
-                        }}
-                        aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="bd-btn bd-btn-soft bd-btn-icon sm:w-auto! sm:aspect-auto! sm:px-3! sm:py-1.5! rounded-xl! flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
-                      >
-                        <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={18} />
-                        <span className="hidden sm:inline text-xs">{t('game.ui.sound')}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          sounds.play('click', { force: true })
-                          setShowLeaveConfirmModal(true)
-                        }}
-                        aria-label={t('game.ui.leave')}
-                        className="bd-btn bd-btn-coral rounded-xl! px-3! py-1.5! text-xs! flex items-center gap-1.5 focus-visible:ring-2! focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
-                      >
-                        <LeaveIcon />
-                        <span>{t('game.ui.leave')}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
-                {/* Desktop: Grid Layout */}
-                <div className="hidden desk:grid grid-cols-1 desk:grid-cols-12 grid-rows-[minmax(0,1fr)] gap-6 px-4 pb-4 h-full overflow-hidden">
-                  {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
-                    <GameBoard
-                      gameEngine={gameEngine}
-                      game={game}
-                      isMyTurn={isMyTurn()}
-                      statusBanner={yahtzeeView?.statusBanner}
-                      isMoveInProgress={isMoveInProgress}
-                      isRolling={isRolling}
-                      isOpponentRolling={isOpponentRolling}
-                      isScoring={isScoring}
-                      isStateReverting={isStateReverting}
-                      celebrationEvent={celebrationEvent}
-                      held={held}
-                      getCurrentUserId={getCurrentUserId}
-                      onRollDice={handleRollDice}
-                      onToggleHold={handleToggleHold}
-                      onScore={handleScore}
-                      onCelebrationComplete={handleCelebrationComplete}
-                    />
-                  </div>
-
-                  {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 min-w-0 h-full">
-                    <div className="h-full flex flex-col">
-                      <div className="flex-1 min-h-0">
-                        {yahtzeeView?.tiles('card')}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-3 min-w-0 h-full flex flex-col gap-3">
-                    {/* Players List - 40% of space */}
-                    <div className="flex-1 min-h-0">
-                      <PlayerList
-                        players={playersForLeaderboard}
-                        currentTurn={gameEngine.getState().currentPlayerIndex}
-                        currentUserId={getCurrentUserId()}
-                        onPlayerClick={(userId) => {
-                          // Toggle selection: if clicking same player, deselect; otherwise select
-                          setSelectedPlayerId(prev => prev === userId ? null : userId)
-                        }}
-                        onProfileClick={setProfileUserId}
-                        selectedPlayerId={selectedPlayerId || undefined}
-                        departedPlayerIds={departedPlayerIds}
-                      />
-                    </div>
-
-                    {/* Roll History - 60% of space. Always rendered to prevent layout jump on first roll. */}
-                    <div className="flex-1 min-h-0">
-                      <RollHistory entries={rollHistory} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile: Tabbed Layout */}
+              <div className="desk:hidden flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="desk:hidden relative yahtzee-mobile-layout"
+                  className="relative yahtzee-mobile-layout"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2411,7 +2409,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       {yahtzeeView?.diceBar}
                       {yahtzeeView?.tiles('panel')}
                     </div>
-                    {celebrationEvent && (
+                    {celebrationEvent && isMobileViewport && (
                       <CelebrationBanner event={celebrationEvent} onComplete={handleCelebrationComplete} />
                     )}
                   </MobileTabPanel>
@@ -2432,7 +2430,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         selectedPlayerId={selectedPlayerId || undefined}
                         departedPlayerIds={departedPlayerIds}
                       />
-                      <RollHistory entries={rollHistory} />
+                      <YahtzeeEventLog entries={rollHistory} rows={6} />
                     </div>
                   </MobileTabPanel>
 
@@ -2481,31 +2479,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
                 </div>
               </div>
-
-              {/* Desktop Chat - Minimized Button */}
-              {hasMultipleHumans && (
-              <div className="hidden desk:block">
-                <Chat
-                  lobbyCode={code}
-                  messages={chatMessages}
-                  onSendMessage={(message) => {
-                    sendChatMessage(message)
-                  }}
-                  currentUserId={getCurrentUserId()}
-                  playerProfiles={chatPlayerProfiles}
-                  isMinimized={chatMinimized}
-                  onToggleMinimize={() => {
-                    setChatMinimized(!chatMinimized)
-                    if (chatMinimized) {
-                      resetUnread()
-                    }
-                  }}
-                  unreadCount={unreadMessageCount}
-                  someoneTyping={someoneTyping}
-                  onProfileClick={setProfileUserId}
-                />
-              </div>
-              )}
 
               {/* Mobile Bottom Navigation */}
               <div className="yahtzee-mobile-layout shrink-0">
