@@ -969,11 +969,21 @@ export default function SpyGameBoard({
 
                 {(!isMyQuestionTurn || isSpectator) && !shouldAnswerNow && (
                   // Keyed on the questioner, so the turn passing slides the line in again.
-                  <div key={data.currentQuestionerId || 'none'} className="game-status-cue mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
-                    {currentQuestioner
-                      ? t('spy.decidingQuestion', { player: currentQuestioner.name })
-                      : t('spy.waitingForQuestioner')}
-                    {currentTarget ? ` ${t('spy.targetLabel', { player: currentTarget.name })}` : ''}
+                  <div key={`${data.currentQuestionerId || 'none'}:${data.pendingQuestion ? data.currentTargetId : ''}`} className="game-status-cue mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
+                    {currentTarget && data.pendingQuestion ? (
+                      <>
+                        <p>{t('spy.askedQuestion', { asker: currentQuestioner?.name ?? '', target: currentTarget.name })}</p>
+                        <p className="mt-1 text-base font-bold text-(--bd-ink)">{data.pendingQuestion}</p>
+                        <p className="mt-1">{t('spy.waitingForAnswer', { player: currentTarget.name })}</p>
+                      </>
+                    ) : (
+                      <>
+                        {currentQuestioner
+                          ? t('spy.decidingQuestion', { player: currentQuestioner.name })
+                          : t('spy.waitingForQuestioner')}
+                        {currentTarget ? ` ${t('spy.targetLabel', { player: currentTarget.name })}` : ''}
+                      </>
+                    )}
                   </div>
                 )}
 
