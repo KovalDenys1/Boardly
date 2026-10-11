@@ -20,6 +20,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import { guessesForTurn } from '@/lib/games/alias-guess'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
@@ -86,6 +87,7 @@ interface GuessMessage {
   userId: string
   username: string
   text: string
+  at: number
 }
 
 /**
@@ -768,6 +770,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       userId: msg.userId,
       username: msg.username ?? 'Player',
       text: msg.message ?? '',
+      at: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
     }])
   }, [getCurrentUserId])
 
@@ -957,6 +960,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       userId: uid ?? '',
       username,
       text,
+      at: turnStartedAt ?? Date.now(),
     }])
     setGuessInput('')
     void Promise.resolve(fetchWithGuest(`/api/lobby/${code}/alias-guess`, {
@@ -974,7 +978,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       .catch(() => {
         setGuesses(prev => prev.filter(g => g.id !== localId))
       })
-  }, [guessInput, getCurrentUserId, isGuest, guestName, session, code])
+  }, [guessInput, getCurrentUserId, isGuest, guestName, session, code, turnStartedAt])
 
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1474,7 +1478,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const setTurnTab = (tab: 'word' | 'guesses') => setTurnTabOverride({ turnKey, tab })
 
   const chatProps = {
-    guesses,
+    guesses: guessesForTurn(guesses, data.turnStartedAt),
     guessInput,
     onInputChange: setGuessInput,
     onSend: sendGuess,
@@ -1521,6 +1525,46 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
   if (data.phase === 'turn_active' && isDescriber) {
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
+    const describerActions = (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%', ...(isMobile ? { position: 'sticky' as const, bottom: 8, zIndex: 2 } : {}) }}>
+        <button
+          aria-label={t('alias.guessedCorrectly')}
+          onClick={() => handleMove('word_action', { action: 'guess' })}
+          disabled={isMoveSubmitting}
+          style={{
+            background: 'var(--bd-mint)', color: '#06322a',
+            border: 'none', borderRadius: 18,
+            padding: isMobile ? '16px 12px' : '22px 16px',
+            fontSize: isMobile ? 17 : 20, fontWeight: 700,
+            cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-mint-deep)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            opacity: isMoveSubmitting ? 0.5 : 1,
+          }}
+        >
+          <Icon name="check" size={isMobile ? 20 : 24} />
+          {t('alias.guessed')}
+          <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
+        </button>
+        <button
+          aria-label={t('alias.skipWord')}
+          onClick={() => handleMove('word_action', { action: 'skip' })}
+          disabled={isMoveSubmitting}
+          style={{
+            background: 'var(--bd-sun)', color: '#4a3a09',
+            border: 'none', borderRadius: 18,
+            padding: isMobile ? '16px 12px' : '22px 16px',
+            fontSize: isMobile ? 17 : 20, fontWeight: 700,
+            cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-sun-deep)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            opacity: isMoveSubmitting ? 0.5 : 1,
+          }}
+        >
+          <Icon name="close" size={isMobile ? 20 : 24} />
+          {t('alias.skip')}
+          <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
+        </button>
+      </div>
+    )
     return (
       <>
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
@@ -1555,17 +1599,19 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 18px',
-                background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
-                borderRadius: 999,
-              }}>
-                <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
-                <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
-                  {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
-                </span>
-              </div>
+              {!isMobile && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 18px',
+                  background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
+                  borderRadius: 999,
+                }}>
+                  <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
+                    {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
+                  </span>
+                </div>
+              )}
 
               {/* Hero word card */}
               <div className="md:flex-1" style={{
@@ -1595,6 +1641,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 </span>
               </div>
 
+              {isMobile && describerActions}
+
               {/* Timer + tally */}
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
                 <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
@@ -1621,45 +1669,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%' }}>
-                <button
-                  aria-label={t('alias.guessedCorrectly')}
-                  onClick={() => handleMove('word_action', { action: 'guess' })}
-                  disabled={isMoveSubmitting}
-                  style={{
-                    background: 'var(--bd-mint)', color: '#06322a',
-                    border: 'none', borderRadius: 18,
-                    padding: isMobile ? '16px 12px' : '22px 16px',
-                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
-                    cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-mint-deep)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    opacity: isMoveSubmitting ? 0.5 : 1,
-                  }}
-                >
-                  <Icon name="check" size={isMobile ? 20 : 24} />
-                  {t('alias.guessed')}
-                  <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
-                </button>
-                <button
-                  aria-label={t('alias.skipWord')}
-                  onClick={() => handleMove('word_action', { action: 'skip' })}
-                  disabled={isMoveSubmitting}
-                  style={{
-                    background: 'var(--bd-sun)', color: '#4a3a09',
-                    border: 'none', borderRadius: 18,
-                    padding: isMobile ? '16px 12px' : '22px 16px',
-                    fontSize: isMobile ? 17 : 20, fontWeight: 700,
-                    cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-sun-deep)',
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    opacity: isMoveSubmitting ? 0.5 : 1,
-                  }}
-                >
-                  <Icon name="close" size={isMobile ? 20 : 24} />
-                  {t('alias.skip')}
-                  <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
-                </button>
-              </div>
+              {!isMobile && describerActions}
 
               <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
                 {t('alias.endTurn')}
@@ -2033,12 +2043,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         </div>
 
         {renderHeader(t('alias.finalTitle'))}
-        <main className="bd-screen" style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
+        <main className="bd-screen alias-final-main" style={{ maxWidth: 880, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? t('alias.noWinnerLabel') : t('alias.championsLabel')}</BdLabel>
-            <h1 style={{
+            <h1 className="alias-final-title" style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
-              fontSize: 'clamp(56px, 10vw, 96px)',
               lineHeight: 0.98, textAlign: 'center', letterSpacing: '-0.025em', margin: 0,
             }}>
               {isTie ? (
@@ -2056,6 +2065,28 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 ? t('alias.tieSubtitle')
                 : t('alias.winnerSubtitle', { name: (winner?.name ?? '').split(' ')[0] })}
             </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {isHost ? (
+              <>
+                <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
+                  {isStarting ? t('alias.starting') : t('alias.playAgain')}
+                  <span aria-hidden style={{ fontSize: 18 }}>↻</span>
+                </button>
+                <button
+                  style={{ padding: '12px 22px', borderRadius: 14, fontWeight: 600, fontSize: 15, background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.18)', color: 'var(--bd-ink)', cursor: isStarting ? 'not-allowed' : 'pointer', opacity: isStarting ? 0.65 : 1, fontFamily: 'inherit' }}
+                  onClick={handleReturnToWaiting}
+                  disabled={isStarting}
+                >
+                  {t('game.ui.returnToLobby')}
+                </button>
+              </>
+            ) : (
+              <div style={{ padding: '10px 18px', borderRadius: 14, fontWeight: 600, fontSize: 14, background: 'rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--bd-ink-soft)', fontFamily: 'inherit', textAlign: 'center' }}>
+                {t('game.ui.waitingForHost')}
+              </div>
+            )}
           </div>
 
           <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
@@ -2080,28 +2111,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 )
               })}
             </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {isHost ? (
-              <>
-                <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
-                  {isStarting ? t('alias.starting') : t('alias.playAgain')}
-                  <span aria-hidden style={{ fontSize: 18 }}>↻</span>
-                </button>
-                <button
-                  style={{ padding: '12px 22px', borderRadius: 14, fontWeight: 600, fontSize: 15, background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.18)', color: 'var(--bd-ink)', cursor: isStarting ? 'not-allowed' : 'pointer', opacity: isStarting ? 0.65 : 1, fontFamily: 'inherit' }}
-                  onClick={handleReturnToWaiting}
-                  disabled={isStarting}
-                >
-                  {t('game.ui.returnToLobby')}
-                </button>
-              </>
-            ) : (
-              <div style={{ padding: '10px 18px', borderRadius: 14, fontWeight: 600, fontSize: 14, background: 'rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--bd-ink-soft)', fontFamily: 'inherit', textAlign: 'center' }}>
-                {t('game.ui.waitingForHost')}
-              </div>
-            )}
           </div>
 
           <div style={{ width: '100%', maxWidth: 420 }}>

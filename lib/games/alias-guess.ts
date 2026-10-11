@@ -17,3 +17,9 @@ export function canPostAliasGuess(state: unknown, userId: string): boolean {
   const describerId = team.playerIds[team.describerIndex ?? 0]
   return describerId !== userId
 }
+
+/** The guesses made in the turn on screen; `at` is the server's clock, the same one that stamps `turnStartedAt`. */
+export function guessesForTurn<T extends { at: number }>(guesses: readonly T[], turnStartedAt: number | null): T[] {
+  if (turnStartedAt === null) return []
+  return guesses.filter((guess) => guess.at >= turnStartedAt)
+}

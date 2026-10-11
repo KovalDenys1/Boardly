@@ -4227,6 +4227,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 
 .spy-stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-height: 430px;
   padding: 8px 0;
@@ -5261,6 +5262,9 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    there; the spectate page renders it in normal flow, where `.game-screen`'s
    own height is what applies. */
 .spy-screen-kit { flex: 1 1 auto; min-height: 0; }
+/* The role and score stack scrolls before the chat drops under a usable height. */
+.spy-screen-kit .ttt-right-col:has(> .game-chat-panel) { grid-template-rows: minmax(0, auto) minmax(200px, 1fr); }
+.spy-screen-kit .ttt-right-col:has(> .game-chat-panel) > .spy-side-stack > * { flex-shrink: 0; }
 
 .spy-roster-panel {
   display: flex;
@@ -5278,11 +5282,42 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   min-height: 0;
 }
 .ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
+/* A phone's board card can be 312px tall, so each phase's action comes before what can scroll. */
+.ttt-mobile-content .spy-role-identity { flex-direction: row; align-items: center; gap: 12px; }
+.ttt-mobile-content .spy-role-identity > .text-center { text-align: left; }
+.ttt-mobile-content .spy-role-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--bd-ink);
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.ttt-mobile-content .spy-role-title { font-size: 28px; }
+.ttt-mobile-content .spy-role-card { gap: 12px; }
+.ttt-mobile-content .spy-role-action { order: 1; }
+.ttt-mobile-content .spy-role-info { order: 2; }
+.ttt-mobile-content .spy-vote-submit {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--bd-card);
+  padding-bottom: 4px;
+}
 
 /* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
    switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
    above, which are scoped to .ttt-mobile-layout, never reach it. Same rules,
    same breakpoint, applied to this card wherever it renders. */
+.alias-final-main { margin: 40px auto 0; gap: 32px; }
+.alias-final-title { font-size: clamp(56px, 10vw, 96px); }
+/* A phone on its side has 390px: the actions under the title have to fit in it. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .alias-final-main { margin-top: 12px; gap: 14px; }
+  .alias-final-title { font-size: 44px; }
+}
+
 .alias-header-card {
   width: 100%;
   max-width: 1200px;
