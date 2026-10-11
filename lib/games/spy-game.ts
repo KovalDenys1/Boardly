@@ -155,6 +155,7 @@ export class SpyGame extends GameEngine {
     // Start role reveal phase
     data.phase = SpyGamePhase.ROLE_REVEAL
     data.phaseStartTime = Date.now()
+    this.state.lastMoveAt = data.phaseStartTime
 
     this.state.updatedAt = new Date()
   }
