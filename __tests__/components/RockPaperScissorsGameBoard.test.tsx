@@ -66,3 +66,61 @@ describe('RockPaperScissorsGameBoard reveal (#1287)', () => {
     expect(container.querySelectorAll('.rps-hand--shaking')).toHaveLength(0)
   })
 })
+
+describe('RockPaperScissorsGameBoard round boundary (#1365)', () => {
+  const OPENS_AT = 1_003_000
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.setSystemTime(1_000_000)
+    mockPrefersReducedMotion.mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  function tiles(container: HTMLElement) {
+    return Array.from(container.querySelectorAll<HTMLButtonElement>('.rps-tile'))
+  }
+
+  it('holds the result with the tiles shut, then opens the next round on its own', () => {
+    const { container, getByText } = render(
+      <RockPaperScissorsGameBoard gameData={{ ...RESOLVED, nextRoundAt: OPENS_AT }} playerId="me" players={PLAYERS} onSubmitChoice={jest.fn()} />,
+    )
+
+    act(() => { jest.advanceTimersByTime(OPENS_AT - 1_000_000 - 1) })
+    expect(container.querySelector('.rps-stage--reveal')).not.toBeNull()
+    expect(getByText('games.rock_paper_scissors.roundWonBy')).toBeTruthy()
+    expect(tiles(container).every((tile) => tile.disabled)).toBe(true)
+
+    act(() => { jest.advanceTimersByTime(1) })
+    expect(container.querySelector('.rps-stage--reveal')).toBeNull()
+    expect(container.querySelector('.rps-stage__result--round')?.textContent).toBe('games.rock_paper_scissors.roundNum')
+    expect(tiles(container).every((tile) => !tile.disabled)).toBe(true)
+  })
+
+  it('keeps the same hold without the animation when the viewer prefers reduced motion', () => {
+    mockPrefersReducedMotion.mockReturnValue(true)
+    const { container } = render(
+      <RockPaperScissorsGameBoard gameData={{ ...RESOLVED, nextRoundAt: OPENS_AT }} playerId="me" players={PLAYERS} onSubmitChoice={jest.fn()} />,
+    )
+
+    expect(handIcons(container)).toEqual(['paper', 'scissors'])
+    act(() => { jest.advanceTimersByTime(OPENS_AT - 1_000_000 - 1) })
+    expect(container.querySelector('.rps-stage--reveal')).not.toBeNull()
+    act(() => { jest.advanceTimersByTime(1) })
+    expect(container.querySelector('.rps-stage--reveal')).toBeNull()
+  })
+
+  it('opens at once when the round opened before the board mounted', () => {
+    jest.setSystemTime(OPENS_AT + 10_000)
+    const { container } = render(
+      <RockPaperScissorsGameBoard gameData={{ ...RESOLVED, nextRoundAt: OPENS_AT }} playerId="me" players={PLAYERS} onSubmitChoice={jest.fn()} />,
+    )
+
+    act(() => { jest.advanceTimersByTime(0) })
+    expect(container.querySelector('.rps-stage--reveal')).toBeNull()
+    expect(tiles(container).every((tile) => !tile.disabled)).toBe(true)
+  })
+})

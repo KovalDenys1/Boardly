@@ -3255,6 +3255,7 @@ const ru = {
       holdBadge: 'Удержано {{count}}',
       scoredCategory: 'Записал {{category}}',
       rollOfTurn: 'Бросок {{roll}} в ходе {{turn}}',
+      rollShort: 'Бросок {{roll}}',
       burned: 'Слил эту категорию, чтобы не тормозить ход.',
       banked: 'Записано {{points}} очков в {{category}}.',
       heldForNext: 'Удержано {{count}} кубиков для следующего решения.',
@@ -3453,6 +3454,7 @@ const ru = {
       turnPickBox: 'Выберите поле',
       roundOf: 'Раунд {{current}}/{{total}}',
       tabGame: 'Игра',
+      pointsShort: '{{count}} очк.',
     }
   },
   chat: {

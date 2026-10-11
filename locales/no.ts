@@ -3187,6 +3187,7 @@ const no = {
       holdBadge: 'Hold {{count}}',
       scoredCategory: 'Førte opp {{category}}',
       rollOfTurn: 'Kast {{roll}} i runde {{turn}}',
+      rollShort: 'Kast {{roll}}',
       burned: 'Strøk denne ruten for å holde runden i gang.',
       banked: '{{points}} poeng sikret i {{category}}.',
       heldForNext: 'Holder {{count}} terninger til neste valg.',
@@ -3367,6 +3368,7 @@ const no = {
       turnPickBox: 'Velg en rute',
       roundOf: 'Runde {{current}}/{{total}}',
       tabGame: 'Spill',
+      pointsShort: '{{count}} p',
     }
   },
   chat: {

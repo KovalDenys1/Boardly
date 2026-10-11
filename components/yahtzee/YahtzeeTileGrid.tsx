@@ -138,6 +138,7 @@ export default function YahtzeeTileGrid({
           <span className="yz-tile__icon" aria-hidden><TileGlyph category={tile.category} /></span>
           <span className="yz-tile__name">{name}</span>
         </span>
+        <span className="yz-tile__rule" aria-hidden>{t(`games.yahtzee.detail.scoring.rows.${tile.category}.rule`)}</span>
         <span className="yz-tile__foot">
           {isArmed ? (
             <span className="yz-tile__confirm">{t('yahtzee.ui.tapAgainZero')}</span>

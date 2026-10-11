@@ -3,7 +3,8 @@ import { Icon } from '@/components/icons'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
-import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
+import { ALL_CATEGORIES, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
+import { ROLL_HISTORY_LIMIT, scoreHistoryEntry } from '@/lib/yahtzee-roll-history'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
@@ -592,6 +593,22 @@ export function useGameActions(props: UseGameActionsProps) {
       // Get the NEW scorecard (after scoring) to verify category is now filled
       const newScorecard = newEngine.getScorecard(userId || '')
 
+      const scorerId = userId || guestId
+      const scorerCard = scorerId ? newEngine.getScorecard(scorerId) : undefined
+      const scoredPoints = scorerCard?.[category]
+      if (scorerId && scoredPoints !== undefined) {
+        const lastMoveAt = (parseServerGameState(data.game.state) as { lastMoveAt?: unknown } | null)?.lastMoveAt
+        const entry = scoreHistoryEntry({
+          playerId: scorerId,
+          playerName: newEngine.getPlayers().find((player) => player.id === scorerId)?.name || username || guestName || 'You',
+          category,
+          points: scoredPoints,
+          turnNumber: ALL_CATEGORIES.filter((key) => scorerCard?.[key] !== undefined).length,
+          timestamp: typeof lastMoveAt === 'number' ? lastMoveAt : Date.now(),
+        })
+        setRollHistory((prev) => (prev.some((existing) => existing.id === entry.id) ? prev : [...prev, entry].slice(-ROLL_HISTORY_LIMIT)))
+      }
+
       // Check if this score deserves a celebration
       // Only celebrate if we just filled this category (it should now be defined in scorecard)
       if (newScorecard && newScorecard[category] !== undefined) {
@@ -720,7 +737,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError, freshnessRef, setIsMoveInProgress])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError, freshnessRef, setIsMoveInProgress])
 
   return {
     handleRollDice,
