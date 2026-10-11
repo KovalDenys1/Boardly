@@ -36,6 +36,7 @@ import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
 
 const gameLimiter = rateLimit(rateLimitPresets.game)
+const lobbyReadAddressLimiter = rateLimit(rateLimitPresets.lobbyReadAddress)
 const UNLIMITED_SPECTATORS_VALUE = 0
 const MAX_JOIN_SERIALIZABLE_RETRIES = 2
 
@@ -221,6 +222,9 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const addressLimitResult = await lobbyReadAddressLimiter(request)
+    if (addressLimitResult) return addressLimitResult
+
     // Optional — this route stays publicly readable for guests/spectators
     // with no session; resolved so a signed-in viewer can see their own
     // not-yet-revealed data (e.g. Sketch & Guess's live prompt while

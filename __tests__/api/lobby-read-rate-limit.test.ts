@@ -49,4 +49,16 @@ describe('GET /api/lobby/[code] read budget', () => {
     mockAuth.mockResolvedValue({ id: 'guest-b', username: 'B', isGuest: true })
     expect((await readFromHomeNetwork()).status).not.toBe(429)
   })
+
+  it('caps one address across every identity it holds, before any lookup', async () => {
+    const ceiling = rateLimitPresets.lobbyReadAddress.maxRequests
+    for (let i = 0; i < ceiling; i += 1) {
+      mockAuth.mockResolvedValue({ id: `guest-${Math.floor(i / 100)}`, username: 'G', isGuest: true })
+      expect((await readFromHomeNetwork()).status).not.toBe(429)
+    }
+    mockAuth.mockClear()
+    mockAuth.mockResolvedValue({ id: 'guest-fresh', username: 'F', isGuest: true })
+    expect((await readFromHomeNetwork()).status).toBe(429)
+    expect(mockAuth).not.toHaveBeenCalled()
+  })
 })
