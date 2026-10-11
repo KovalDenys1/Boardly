@@ -91,19 +91,21 @@ export default function SpyVoting({
           </div>
         </div>
 
-        {!hasVoted ? (
-          <button
-            onClick={handleVote}
-            disabled={!selectedPlayer}
-            className={`bd-btn mt-5 w-full justify-center ${selectedPlayer ? 'bd-btn-primary' : 'bd-btn-soft cursor-not-allowed opacity-60'}`}
-          >
-            {t('spy.confirmVote')}
-          </button>
-        ) : (
-          <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-sm font-bold text-(--bd-mint-deep)">
-            {t('spy.confirmVote')}
-          </div>
-        )}
+        <div className="spy-vote-submit">
+          {!hasVoted ? (
+            <button
+              onClick={handleVote}
+              disabled={!selectedPlayer}
+              className={`bd-btn mt-5 w-full justify-center ${selectedPlayer ? 'bd-btn-primary' : 'bd-btn-soft cursor-not-allowed opacity-60'}`}
+            >
+              {t('spy.confirmVote')}
+            </button>
+          ) : (
+            <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-sm font-bold text-(--bd-mint-deep)">
+              {t('spy.confirmVote')}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

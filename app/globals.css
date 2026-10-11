@@ -4227,6 +4227,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 
 .spy-stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-height: 430px;
   padding: 8px 0;
@@ -5278,6 +5279,29 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   min-height: 0;
 }
 .ttt-mobile-content .spy-side-stack { flex: 1; min-height: 0; max-height: none; }
+/* A phone's board card can be 312px tall, so each phase's action comes before what can scroll. */
+.ttt-mobile-content .spy-role-identity { flex-direction: row; align-items: center; gap: 12px; }
+.ttt-mobile-content .spy-role-identity > .text-center { text-align: left; }
+.ttt-mobile-content .spy-role-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--bd-ink);
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.ttt-mobile-content .spy-role-title { font-size: 28px; }
+.ttt-mobile-content .spy-role-card { gap: 12px; }
+.ttt-mobile-content .spy-role-action { order: 1; }
+.ttt-mobile-content .spy-role-info { order: 2; }
+.ttt-mobile-content .spy-vote-submit {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--bd-card);
+  padding-bottom: 4px;
+}
 
 /* Alias's header (#905). Alias does not use the .ttt-* layout trees - it
    switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
