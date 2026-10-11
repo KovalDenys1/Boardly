@@ -20,6 +20,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import { guessesForTurn } from '@/lib/games/alias-guess'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
@@ -86,6 +87,7 @@ interface GuessMessage {
   userId: string
   username: string
   text: string
+  at: number
 }
 
 /**
@@ -768,6 +770,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       userId: msg.userId,
       username: msg.username ?? 'Player',
       text: msg.message ?? '',
+      at: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
     }])
   }, [getCurrentUserId])
 
@@ -957,6 +960,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       userId: uid ?? '',
       username,
       text,
+      at: turnStartedAt ?? Date.now(),
     }])
     setGuessInput('')
     void Promise.resolve(fetchWithGuest(`/api/lobby/${code}/alias-guess`, {
@@ -974,7 +978,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       .catch(() => {
         setGuesses(prev => prev.filter(g => g.id !== localId))
       })
-  }, [guessInput, getCurrentUserId, isGuest, guestName, session, code])
+  }, [guessInput, getCurrentUserId, isGuest, guestName, session, code, turnStartedAt])
 
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1474,7 +1478,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const setTurnTab = (tab: 'word' | 'guesses') => setTurnTabOverride({ turnKey, tab })
 
   const chatProps = {
-    guesses,
+    guesses: guessesForTurn(guesses, data.turnStartedAt),
     guessInput,
     onInputChange: setGuessInput,
     onSend: sendGuess,
