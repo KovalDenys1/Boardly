@@ -5310,6 +5310,14 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    switches on useIsMobileViewport() in TSX - so the many-seat squeeze rules
    above, which are scoped to .ttt-mobile-layout, never reach it. Same rules,
    same breakpoint, applied to this card wherever it renders. */
+.alias-final-main { margin: 40px auto 0; gap: 32px; }
+.alias-final-title { font-size: clamp(56px, 10vw, 96px); }
+/* A phone on its side has 390px: the actions under the title have to fit in it. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .alias-final-main { margin-top: 12px; gap: 14px; }
+  .alias-final-title { font-size: 44px; }
+}
+
 .alias-header-card {
   width: 100%;
   max-width: 1200px;

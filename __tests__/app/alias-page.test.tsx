@@ -703,3 +703,57 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     expect(screen.getByRole('button', { name: 'alias.guesses' }).className).not.toContain('game-tab-active')
   })
 })
+
+describe('AliasLobbyPage key buttons on a phone', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  function mountWith(mutate: (base: ReturnType<typeof buildLobbyResponse>) => void) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.teams[0].playerIds = ['user-1', 'user-2']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    mutate(base)
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => base } as Response)
+    return render(<AliasLobbyPage code="ABCD" />)
+  }
+
+  const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockIsMobileViewport = true
+  })
+
+  afterEach(() => {
+    mockIsMobileViewport = false
+  })
+
+  it('puts Guessed and Skip straight under the word, pinned while the rest scrolls', async () => {
+    mountWith((base) => {
+      base.activeGame.state.data.phase = 'turn_active'
+      base.activeGame.state.data.turnStartedAt = Date.now()
+      base.activeGame.state.data.currentCard = ['apple', 'pear']
+    })
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    const actions = screen.getByLabelText('alias.guessedCorrectly').parentElement!
+    expect(actions.style.position).toBe('sticky')
+    expect(follows(screen.getByText('alias.theSecretWord'), actions)).toBe(true)
+    expect(follows(actions, screen.getByText('alias.thisTurnSoFar'))).toBe(true)
+    expect(screen.queryByText('alias.youAreDescribing')).toBeNull()
+  })
+
+  it('shows Play Again before the final score card', async () => {
+    mountWith((base) => {
+      base.activeGame.status = 'finished'
+      base.activeGame.state.status = 'finished'
+      base.activeGame.state.data.phase = 'game_over'
+      base.activeGame.state.data.winnerId = 'tie'
+    })
+    await waitFor(() => expect(screen.getByTestId('alias-game-over-screen')).toBeTruthy())
+
+    expect(follows(screen.getByText('alias.playAgain'), screen.getAllByText('Team 1').at(-1)!)).toBe(true)
+  })
+})
