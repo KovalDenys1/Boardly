@@ -5263,8 +5263,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    own height is what applies. */
 .spy-screen-kit { flex: 1 1 auto; min-height: 0; }
 /* The role and score stack scrolls before the chat drops under a usable height. */
-.spy-screen-kit .ttt-right-col { grid-template-rows: minmax(0, auto) minmax(200px, 1fr); }
-.spy-screen-kit .ttt-right-col > .spy-side-stack > * { flex-shrink: 0; }
+.spy-screen-kit .ttt-right-col:has(> .game-chat-panel) { grid-template-rows: minmax(0, auto) minmax(200px, 1fr); }
+.spy-screen-kit .ttt-right-col:has(> .game-chat-panel) > .spy-side-stack > * { flex-shrink: 0; }
 
 .spy-roster-panel {
   display: flex;
