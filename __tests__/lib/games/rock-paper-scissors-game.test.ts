@@ -3,6 +3,7 @@ import {
   RockPaperScissorsGameData,
   RPSChoice,
   sanitizeRpsStateForBroadcast,
+  RPS_ROUND_HOLD_MS,
 } from '@/lib/games/rock-paper-scissors-game'
 import { Move } from '@/lib/game-engine'
 
@@ -306,5 +307,42 @@ describe('RockPaperScissorsGame', () => {
       expect(winner).not.toBeNull()
       expect(winner?.id).toBe('player1')
     })
+  })
+})
+
+describe('RockPaperScissorsGame round boundary (#1365)', () => {
+  let game: RockPaperScissorsGame
+  let now: jest.SpyInstance<number, []>
+
+  beforeEach(() => {
+    now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    game = new RockPaperScissorsGame('boundary-game')
+    addDefaultPlayers(game)
+    game.startGame()
+  })
+
+  afterEach(() => {
+    now.mockRestore()
+  })
+
+  it('stamps when the next round opens, a hold after the reveal, and starts the round clock there', () => {
+    expect(game.makeMove(createChoiceMove('player1', 'rock'))).toBe(true)
+    now.mockReturnValue(1_000_400)
+    expect(game.makeMove(createChoiceMove('player2', 'scissors'))).toBe(true)
+
+    const data = dataOfState(game.getState())
+    expect(RPS_ROUND_HOLD_MS).toBeGreaterThanOrEqual(2_000)
+    expect(data.nextRoundAt).toBe(1_000_400 + RPS_ROUND_HOLD_MS)
+    expect(game.getState().turnStartedAt).toBe(data.nextRoundAt)
+  })
+
+  it('stamps no next round once the match is decided', () => {
+    for (let round = 0; round < 2; round += 1) {
+      game.makeMove(createChoiceMove('player1', 'rock'))
+      game.makeMove(createChoiceMove('player2', 'scissors'))
+    }
+
+    expect(game.getState().status).toBe('finished')
+    expect(dataOfState(game.getState()).nextRoundAt).toBeNull()
   })
 })
