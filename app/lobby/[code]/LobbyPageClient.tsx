@@ -26,6 +26,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { readStoredRollHistory, seedRollHistory, serializeRollHistory } from '@/lib/yahtzee-roll-history'
 import { advanceLifecycleStatus, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -236,18 +237,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [showingBotOverlay, setShowingBotOverlay] = useState(false)
 
   // Roll history and celebrations - with localStorage persistence
-  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>(() => {
-    // Load from localStorage on mount
-    const saved = readLocal(`rollHistory_${code}`)
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        clientLogger.error('Failed to parse saved roll history:', e)
-      }
-    }
-    return []
-  })
+  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
   const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
 
@@ -279,11 +269,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [departedPlayerIds, setDepartedPlayerIds] = useState<Set<string>>(new Set())
 
   // Persist roll history to localStorage whenever it changes
+  const historyGameId = game?.id
   useEffect(() => {
-    if (rollHistory.length > 0) {
-      writeLocal(`rollHistory_${code}`, JSON.stringify(rollHistory))
+    if (rollHistory.length > 0 && historyGameId) {
+      writeLocal(`rollHistory_${code}`, serializeRollHistory(historyGameId, rollHistory))
     }
-  }, [rollHistory, code])
+  }, [rollHistory, code, historyGameId])
 
   // Clear roll history from localStorage when game finishes
   useEffect(() => {
@@ -1731,8 +1722,34 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setMobileActiveTab('game')
     setSelectedPlayerId(null)
     resetUnread()
-    setRollHistory([])
-  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread])
+    setRollHistory(readStoredRollHistory(readLocal(`rollHistory_${code}`), game.id))
+  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread, code])
+
+  // A page that saw none of the game (another device, a cleared tab) lists what the state still holds.
+  useEffect(() => {
+    if (rollHistory.length > 0 || !(gameEngine instanceof YahtzeeGame) || gameEngine.isGameFinished() || !Array.isArray(game?.players)) {
+      return
+    }
+    const dbPlayers = game.players
+    const enginePlayers = gameEngine.getPlayers()
+    const seeded = seedRollHistory({
+      players: enginePlayers.map((enginePlayer) => {
+        const dbPlayer = dbPlayers.find((candidate) => candidate.userId === enginePlayer.id || candidate.id === enginePlayer.id)
+        return {
+          id: enginePlayer.id,
+          name: dbPlayer?.user?.username || dbPlayer?.name || enginePlayer.name || 'Unknown',
+          isBot: !!(dbPlayer?.user?.bot || dbPlayer?.bot),
+        }
+      }),
+      scorecards: enginePlayers.map((enginePlayer) => gameEngine.getScorecard(enginePlayer.id)),
+      rollsLeft: gameEngine.getRollsLeft(),
+      currentPlayerId: gameEngine.getCurrentPlayer()?.id ?? null,
+      lastRoll: (gameEngine.getState().data as unknown as YahtzeeGameData | undefined)?.lastRoll,
+    })
+    if (seeded.length > 0) {
+      setRollHistory((prev) => (prev.length > 0 ? prev : seeded))
+    }
+  }, [rollHistory.length, gameEngine, game?.players, game?.id])
 
   useEffect(() => {
     if (

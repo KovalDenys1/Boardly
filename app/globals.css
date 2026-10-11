@@ -2959,6 +2959,11 @@ button.yz-tile:disabled { cursor: default; }
   min-width: 0; overflow: hidden;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
+.yz-tile__rule { display: none; font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--bd-ink-soft); }
+.yz-tile--best .yz-tile__rule { color: var(--bd-ink-on-accent); }
+@container (min-height: 96px) and (min-width: 44px) {
+  .yz-tile__rule { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: auto; }
+}
 .yz-tile__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; min-width: 0; }
 .yz-tile__mark { display: inline-flex; line-height: 0; color: var(--bd-mint-deep); }
 .yz-tile__badge { font-size: 10px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
@@ -2999,6 +3004,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 @container (max-width: 80px) {
   .yz-tile__icon { display: none; }
   .yz-tile__head { font-size: 11px; }
+  .yz-tile__rule { font-size: 11px; -webkit-line-clamp: 4; }
   .yz-tile__badge { display: none; }
   .yz-tile__value, .yz-tile--potential .yz-tile__value, .yz-tile--best .yz-tile__value { font-size: 18px; }
 }
@@ -3137,6 +3143,8 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 .yz-panel--board .yz-tile__value { font-size: 26px; }
 .yz-panel--board .yz-tile--potential .yz-tile__value,
 .yz-panel--board .yz-tile--best .yz-tile__value { font-size: 28px; }
+/* Every tile is its own size container, so the number grows with the tile instead of leaving its middle empty. */
+.yz-grid .yz-tile .yz-tile__value { font-size: clamp(18px, min(30cqh, 28cqw), 56px); }
 
 /* Recent events (#1363): a fixed number of one-line rows, never an inner
    scroll. Beside chat the card is as tall as its rows; alone in the column
