@@ -4358,6 +4358,7 @@ const en = {
     waitingForQuestioner: 'Waiting for the current questioner...',
     targetLabel: 'Target: {{player}}.',
     waitingForAnswer: 'Waiting for {{player}} to answer.',
+    askedQuestion: '{{asker}} asked {{target}}:',
     startVoting: 'End Round & Start Voting',
     guessLocation: 'Guess the Location',
     guessLocationWarning: 'Wrong guess ends the round — regulars win. Correct guess wins you 500 pts.',

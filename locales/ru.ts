@@ -4441,6 +4441,7 @@ const ru = {
     waitingForQuestioner: 'Ожидание следующего игрока...',
     targetLabel: 'Цель: {{player}}.',
     waitingForAnswer: 'Ожидание ответа от {{player}}.',
+    askedQuestion: '{{asker}} спрашивает у {{target}}:',
     startVoting: 'Завершить раунд и начать голосование',
     guessLocation: 'Угадать локацию',
     guessLocationWarning: 'Неправильный ответ завершит раунд — мирные выиграют. Правильный — +500 очков шпиону.',

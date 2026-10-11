@@ -4455,6 +4455,7 @@ const uk: TranslationWithPlurals = {
     waitingForQuestioner: 'Очікування наступного гравця...',
     targetLabel: 'Ціль: {{player}}.',
     waitingForAnswer: 'Очікування відповіді від {{player}}.',
+    askedQuestion: '{{asker}} питає у {{target}}:',
     startVoting: 'Завершити раунд і почати голосування',
     guessLocation: 'Вгадати локацію',
     guessLocationWarning: 'Неправильна відповідь завершує раунд — мирні перемагають. Правильна — +500 очок шпигуну.',

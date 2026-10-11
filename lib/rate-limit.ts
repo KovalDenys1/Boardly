@@ -578,6 +578,13 @@ export const rateLimitPresets = {
     message: 'Too many game actions. Please slow down.'
   },
 
+  // Every lobby read from one address, whoever holds it: each player then reads on the game budget.
+  lobbyReadAddress: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 600,
+    message: 'Too many requests. Please slow down.'
+  },
+
   // Guest joins by lobby code (#1157). One bucket per IP across every code: the path
   // carries the 4-digit code, so per-path keys gave each of the 10,000 codes its own
   // allowance. Token-holding rejoins count here too, at the game-action rate.

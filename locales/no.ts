@@ -4346,6 +4346,7 @@ const no = {
     waitingForQuestioner: 'Venter på neste spiller...',
     targetLabel: 'Mål: {{player}}.',
     waitingForAnswer: 'Venter på svar fra {{player}}.',
+    askedQuestion: '{{asker}} spurte {{target}}:',
     startVoting: 'Avslutt runden og start avstemning',
     guessLocation: 'Gjett stedet',
     guessLocationWarning: 'Feil gjett avslutter runden — vanlige spillere vinner. Riktig gjett gir spionen +500 poeng.',

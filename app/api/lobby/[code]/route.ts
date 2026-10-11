@@ -36,6 +36,7 @@ import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
 
 const gameLimiter = rateLimit(rateLimitPresets.game)
+const lobbyReadAddressLimiter = rateLimit(rateLimitPresets.lobbyReadAddress)
 const UNLIMITED_SPECTATORS_VALUE = 0
 const MAX_JOIN_SERIALIZABLE_RETRIES = 2
 
@@ -221,17 +222,21 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const rateLimitResult = await gameLimiter(request)
+    const addressLimitResult = await lobbyReadAddressLimiter(request)
+    if (addressLimitResult) return addressLimitResult
+
+    // Optional — this route stays publicly readable for guests/spectators
+    // with no session; resolved so a signed-in viewer can see their own
+    // not-yet-revealed data (e.g. Sketch & Guess's live prompt while
+    // they're the drawer) via the sanitizer below, and reads against their
+    // own budget rather than their network's.
+    const requestUser = await getRequestAuthUser(request)
+    const rateLimitResult = await gameLimiter(request, { identity: requestUser?.id })
     if (rateLimitResult) return rateLimitResult
 
     const { searchParams } = new URL(request.url)
     const includeFinished = searchParams.get('includeFinished') === 'true'
     const { code } = await params
-    // Optional — this route stays publicly readable for guests/spectators
-    // with no session; resolved only so a signed-in viewer can see their own
-    // not-yet-revealed data (e.g. Sketch & Guess's live prompt while
-    // they're the drawer) via the sanitizer below.
-    const requestUser = await getRequestAuthUser(request)
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
