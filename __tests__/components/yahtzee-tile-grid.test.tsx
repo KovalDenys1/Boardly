@@ -28,6 +28,15 @@ describe('YahtzeeTileGrid (#1187)', () => {
     expect(container.querySelectorAll('.yz-tile')).toHaveLength(9)
   })
 
+  it('carries the box rule inside every tile, so a tall tile is not empty inside (#1363)', () => {
+    const { container } = render(
+      <YahtzeeTileGrid scorecard={mockupCard} mode="short" dice={mockupDice} canScore onScore={jest.fn()} />,
+    )
+    expect(tile(container, 'chance').querySelector('.yz-tile__rule')?.textContent).toBe('games.yahtzee.detail.scoring.rows.chance.rule')
+    expect(tile(container, 'onePair').querySelector('.yz-tile__rule')?.textContent).toBe('games.yahtzee.detail.scoring.rows.onePair.rule')
+    expect(container.querySelectorAll('.yz-tile__rule')).toHaveLength(9)
+  })
+
   it('shows exactly one best tile and one best signal on screen', () => {
     const { container } = render(
       <YahtzeeTileGrid scorecard={mockupCard} mode="classic" dice={mockupDice} canScore onScore={jest.fn()} />,
