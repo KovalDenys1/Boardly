@@ -106,7 +106,7 @@ describe('the lobby page wiring', () => {
   const actions = fs.readFileSync(path.join(root, 'app/lobby/[code]/hooks/useGameActions.ts'), 'utf8')
 
   it('restores the stored history for the game instead of wiping it on mount', () => {
-    expect(page).toContain('readStoredRollHistory(')
+    expect(page).toContain('useStoredRollHistory(')
     expect(page).toContain('seedRollHistory(')
     expect(page).not.toMatch(/initializedMobileUiGameIdRef\.current = game\.id[\s\S]{0,200}setRollHistory\(\[\]\)/)
   })

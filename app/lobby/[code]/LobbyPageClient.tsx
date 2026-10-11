@@ -25,8 +25,9 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
-import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { readStoredRollHistory, seedRollHistory, serializeRollHistory } from '@/lib/yahtzee-roll-history'
+import { removeLocal } from '@/lib/safe-storage'
+import { seedRollHistory } from '@/lib/yahtzee-roll-history'
+import { useStoredRollHistory } from '@/hooks/useStoredRollHistory'
 import { advanceLifecycleStatus, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -237,7 +238,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [showingBotOverlay, setShowingBotOverlay] = useState(false)
 
   // Roll history and celebrations - with localStorage persistence
-  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
+  const [rollHistory, setRollHistory] = useStoredRollHistory(code, game?.id, lobby?.gameType === 'yahtzee' && game?.status === 'playing')
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
   const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
 
@@ -267,14 +268,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Players who have left mid-game (still shown in UI but greyed out)
   const [departedPlayerIds, setDepartedPlayerIds] = useState<Set<string>>(new Set())
-
-  // Persist roll history to localStorage whenever it changes
-  const historyGameId = game?.id
-  useEffect(() => {
-    if (rollHistory.length > 0 && historyGameId) {
-      writeLocal(`rollHistory_${code}`, serializeRollHistory(historyGameId, rollHistory))
-    }
-  }, [rollHistory, code, historyGameId])
 
   // Clear roll history from localStorage when game finishes
   useEffect(() => {
@@ -1722,8 +1715,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setMobileActiveTab('game')
     setSelectedPlayerId(null)
     resetUnread()
-    setRollHistory(readStoredRollHistory(readLocal(`rollHistory_${code}`), game.id))
-  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread, code])
+  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread])
 
   // A page that saw none of the game (another device, a cleared tab) lists what the state still holds.
   useEffect(() => {
