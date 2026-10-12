@@ -382,10 +382,13 @@ function GuessFeed({
   // reveal does not replay the whole list.
   const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(ordered, entryKey, true))
 
+  // No strip while there is nothing in it: on a short phone those 30px are the
+  // canvas's (#1382), and the first guess brings the feed with it.
+  if (ordered.length === 0) return null
+
   return (
     <section className="sketch-feed" aria-label={t('games.guess_my_drawing.game.guessesTitle')}>
       <ul className="sketch-feed__list">
-        {ordered.length === 0 && <li className="sketch-feed__empty">{t('games.guess_my_drawing.game.guessFeedEmpty')}</li>}
         {ordered.map((g, index) => {
           const name = `${nameOf(g.playerId)}${g.playerId === currentUserId ? ` ${t('game.ui.you')}` : ''}`
           const isNewest = index === 0 && newestFresh
@@ -539,56 +542,65 @@ function DrawerCanvasView({
         <SketchCanvas strokes={strokes} onStrokesChange={setStrokes} onLiveStroke={onLiveStroke} interactive activeColor={activeColor} activeWidth={activeWidth} corner={mask.corner} />
       )}
 
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        {BRUSH_COLORS.map((swatch) => (
+      {/* One row of 44px controls (#1382): the brush settings ride a rail that
+          scrolls on a narrow phone, undo and clear stay in reach on the right. */}
+      <div className="sketch-tools" role="toolbar" aria-label={t('games.guess_my_drawing.game.toolsLabel')}>
+        <div className="sketch-tools__rail">
+          {BRUSH_COLORS.map((swatch) => (
+            <button
+              key={swatch}
+              type="button"
+              aria-label={swatch}
+              aria-pressed={!isEraser && color === swatch}
+              onClick={() => onDraftChange({ color: swatch, isEraser: false })}
+              className={`sketch-tool sketch-tool--swatch${!isEraser && color === swatch ? ' sketch-tool--active' : ''}`}
+            >
+              <span className="sketch-tool__swatch" style={{ backgroundColor: swatch }} />
+            </button>
+          ))}
           <button
-            key={swatch}
             type="button"
-            aria-label={swatch}
-            onClick={() => onDraftChange({ color: swatch, isEraser: false })}
-            className={`h-7 w-7 rounded-full border-2 transition ${
-              !isEraser && color === swatch ? 'scale-110 border-bd-ink' : 'border-(--bd-line)'
-            }`}
-            style={{ backgroundColor: swatch }}
-          />
-        ))}
-        <button
-          type="button"
-          onClick={() => onDraftChange({ isEraser: !isEraser })}
-          className={`rounded-full border-2 px-2.5 py-1 text-xs font-semibold ${
-            isEraser ? 'border-bd-ink bg-(--bd-bg2)' : 'border-(--bd-line)'
-          }`}
-        >
-          <Icon name="eraser" size={13} /> {t('games.guess_my_drawing.game.eraser')}
-        </button>
-        <button
-          type="button"
-          onClick={() => onDraftChange({ isThick: !isThick })}
-          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold"
-        >
-          <span
-            aria-hidden
-            className="inline-block rounded-full bg-bd-ink align-middle"
-            style={{ width: isThick ? 12 : 7, height: isThick ? 12 : 7 }}
-          />{' '}
-          {t('games.guess_my_drawing.game.brushSize')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setStrokes(strokes.slice(0, -1))}
-          disabled={strokes.length === 0}
-          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
-        >
-          <Icon name="arrow-left" size={13} /> {t('games.guess_my_drawing.game.undo')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setStrokes([])}
-          disabled={strokes.length === 0}
-          className="rounded-full border-2 border-(--bd-line) px-2.5 py-1 text-xs font-semibold disabled:opacity-40"
-        >
-          <Icon name="trash" size={13} /> {t('games.guess_my_drawing.game.clear')}
-        </button>
+            aria-label={t('games.guess_my_drawing.game.eraser')}
+            title={t('games.guess_my_drawing.game.eraser')}
+            aria-pressed={isEraser}
+            onClick={() => onDraftChange({ isEraser: !isEraser })}
+            className={`sketch-tool${isEraser ? ' sketch-tool--active' : ''}`}
+          >
+            <Icon name="eraser" size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label={t('games.guess_my_drawing.game.brushSize')}
+            title={t('games.guess_my_drawing.game.brushSize')}
+            aria-pressed={isThick}
+            onClick={() => onDraftChange({ isThick: !isThick })}
+            className={`sketch-tool${isThick ? ' sketch-tool--active' : ''}`}
+          >
+            <span aria-hidden className="sketch-tool__dot" style={{ width: isThick ? 14 : 7, height: isThick ? 14 : 7 }} />
+          </button>
+        </div>
+        <div className="sketch-tools__actions">
+          <button
+            type="button"
+            aria-label={t('games.guess_my_drawing.game.undo')}
+            title={t('games.guess_my_drawing.game.undo')}
+            onClick={() => setStrokes(strokes.slice(0, -1))}
+            disabled={strokes.length === 0}
+            className="sketch-tool"
+          >
+            <Icon name="arrow-left" size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label={t('games.guess_my_drawing.game.clear')}
+            title={t('games.guess_my_drawing.game.clear')}
+            onClick={() => setStrokes([])}
+            disabled={strokes.length === 0}
+            className="sketch-tool"
+          >
+            <Icon name="trash" size={18} />
+          </button>
+        </div>
       </div>
 
       {feed}

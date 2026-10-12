@@ -2826,7 +2826,7 @@ const no = {
         galleryImageTitle: 'Tegninger fra Sketch & Guess',
         acceptedByHost: 'godkjent av verten',
         guessesTitle: 'Gjetninger',
-        guessFeedEmpty: 'Gjetningene dukker opp her',
+        toolsLabel: 'Tegneverktøy',
         nobodyGuessed: 'Ingen gjettet det',
         guessLimitReached: 'Ingen gjetninger igjen denne runden',
         guessTooFast: 'Ikke så fort – vent litt',

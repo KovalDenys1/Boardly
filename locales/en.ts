@@ -2826,7 +2826,7 @@ const en = {
         galleryImageTitle: 'Sketch & Guess drawings',
         acceptedByHost: 'accepted by host',
         guessesTitle: 'Guesses',
-        guessFeedEmpty: 'Guesses will show up here',
+        toolsLabel: 'Drawing tools',
         nobodyGuessed: 'Nobody guessed it',
         guessLimitReached: 'No guesses left this round',
         guessTooFast: 'Not so fast – wait a moment',

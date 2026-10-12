@@ -2888,7 +2888,7 @@ const ru = {
         galleryImageTitle: 'Рисунки из Sketch & Guess',
         acceptedByHost: 'засчитано ведущим',
         guessesTitle: 'Догадки',
-        guessFeedEmpty: 'Здесь появятся догадки',
+        toolsLabel: 'Инструменты рисования',
         nobodyGuessed: 'Никто не угадал',
         guessLimitReached: 'Попытки в этом раунде закончились',
         guessTooFast: 'Не так быстро – подождите секунду',

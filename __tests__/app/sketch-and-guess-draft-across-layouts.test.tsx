@@ -122,7 +122,7 @@ async function renderPage(role: 'drawer' | 'guesser') {
 }
 
 /** Every layout tree renders a canvas, so the count is the number of trees. */
-const undoButtons = () => screen.queryAllByText(UNDO).map((node) => node.closest('button') as HTMLButtonElement)
+const undoButtons = () => screen.queryAllByLabelText(UNDO) as HTMLButtonElement[]
 
 describe('Sketch & Guess draft survives a layout-tree swap (#1034)', () => {
   beforeEach(() => {

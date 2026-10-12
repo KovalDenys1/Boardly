@@ -2890,7 +2890,7 @@ const uk: TranslationWithPlurals = {
         galleryImageTitle: 'Малюнки зі Sketch & Guess',
         acceptedByHost: 'зараховано ведучим',
         guessesTitle: 'Здогадки',
-        guessFeedEmpty: 'Тут зʼявляться здогадки',
+        toolsLabel: 'Інструменти малювання',
         nobodyGuessed: 'Ніхто не вгадав',
         guessLimitReached: 'Спроби в цьому раунді скінчилися',
         guessTooFast: 'Не так швидко – зачекайте секунду',

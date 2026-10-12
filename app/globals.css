@@ -5038,7 +5038,6 @@ html.dark .spy-secret-tile {
   flex-direction: column-reverse;
   gap: 2px;
 }
-.sketch-feed__empty { font-size: 12px; color: var(--bd-ink-muted); text-align: center; padding: 6px 0; }
 .sketch-feed__item {
   display: flex;
   align-items: center;
@@ -5070,6 +5069,43 @@ html.dark .spy-secret-tile {
 .sketch-feed__accept:disabled { opacity: 0.4; cursor: default; }
 
 .sketch-guess-form { display: flex; flex-direction: column; gap: 4px; }
+
+/* The drawer's tools (#1382): one 44px row. The brush settings sit on a rail that
+   scrolls sideways where the row is too narrow for all of them (296px of card at
+   320 holds about five); undo and clear keep their place on the right. */
+.sketch-tools { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sketch-tools__rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+}
+.sketch-tools__rail::-webkit-scrollbar { display: none; }
+.sketch-tools__actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.sketch-tool {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+  cursor: pointer;
+}
+.sketch-tool--swatch { width: 36px; border-radius: 999px; }
+.sketch-tool--active { border-color: var(--bd-ink); background: var(--bd-bg2); box-shadow: inset 0 0 0 1px var(--bd-ink); }
+.sketch-tool:disabled { opacity: 0.4; cursor: default; }
+.sketch-tool__swatch { display: block; width: 22px; height: 22px; border-radius: 999px; border: 1px solid rgba(31,27,22,0.15); }
+.sketch-tool--active .sketch-tool__swatch { transform: scale(1.15); }
+.sketch-tool__dot { display: block; border-radius: 999px; background: var(--bd-ink); }
 
 /* The reveal's one header row: the word on the left, the button that moves on
    on the right. Above the canvas, so it is never below the fold (#1082). */
