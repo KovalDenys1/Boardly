@@ -395,6 +395,25 @@ html.dark {
 }
 /* @responsive-primitives-end */
 
+/* Waiting room in phone landscape (#1383): the header and the actions bar left the
+   roster about 60px between them at 844x390. The bar becomes a side column and the
+   roster takes the height; the column keeps the floating Chat button's corner free. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .waiting-room-body {
+    flex-direction: row;
+  }
+  .waiting-room-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 0 0 min(380px, 48vw);
+    min-height: 0;
+    border-top: 0;
+    border-left: 1px solid var(--bd-line);
+    overflow-y: auto;
+  }
+}
+
 /* Homepage viewport shells: fill the first view, but let content grow naturally. */
 .home-page-shell {
   min-height: 100vh;
