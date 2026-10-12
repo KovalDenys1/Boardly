@@ -532,6 +532,32 @@ describe('LiarsPartyLobbyPage', () => {
       }
     })
 
+    it('tells the claimant the table is voting, and names them on the claim card (#1381)', async () => {
+      const response = buildPlayingResponse()
+      Object.assign(response.activeGame.state.data, {
+        phase: 'challenge',
+        claim: { playerId: 'user-2', text: 'I once met a penguin', isBluff: true, submittedAt: Date.now() },
+        challengeVotes: [],
+      })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+
+      // user-1 votes; user-2 made the claim.
+      const { unmount } = render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
+      const voterBanner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
+      expect(voterBanner.textContent).toContain('liarsParty.challengeOrBelieve')
+      expect(desktop().getByTestId('liars-claim-by').textContent).toBe('liarsParty.claimedBy:{"name":"Bob"}')
+      unmount()
+
+      response.activeGame.state.data.currentClaimantId = 'user-1'
+      response.activeGame.state.data.claim.playerId = 'user-1'
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
+      const claimantBanner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
+      expect(claimantBanner.textContent).toContain('liarsParty.tableVotingOnYourClaim')
+      expect(claimantBanner.textContent).not.toContain('liarsParty.challengeOrBelieve')
+    })
+
     it('shows the table under the banner to an eliminated player', async () => {
       const response = buildPlayingResponse()
       Object.assign(response.activeGame.state.data, {

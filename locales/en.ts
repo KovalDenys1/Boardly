@@ -4510,6 +4510,7 @@ const en = {
     submitClaim: 'Submit Claim',
     charsRemaining: '{{count}} chars remaining',
     challengeOrBelieve: 'Challenge or Believe?',
+    tableVotingOnYourClaim: 'The table is voting on your claim',
     challenge: 'Challenge',
     believe: 'Believe',
     voted: '{{done}}/{{total}} voted',

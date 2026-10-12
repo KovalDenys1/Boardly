@@ -4617,6 +4617,7 @@ const ru = {
     charsRemaining_few: 'ещё {{count}} символа',
     charsRemaining_many: 'ещё {{count}} символов',
     challengeOrBelieve: 'Блефует или говорит правду?',
+    tableVotingOnYourClaim: 'Стол голосует по вашему заявлению',
     challenge: 'Блефует',
     believe: 'Верю',
     voted: '{{done}}/{{total}} проголосовали',

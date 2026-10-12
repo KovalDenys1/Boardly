@@ -4631,6 +4631,7 @@ const uk: TranslationWithPlurals = {
     charsRemaining_few: 'ще {{count}} символи',
     charsRemaining_many: 'ще {{count}} символів',
     challengeOrBelieve: 'Блефує чи говорить правду?',
+    tableVotingOnYourClaim: 'Стіл голосує щодо вашої заяви',
     challenge: 'Блефує',
     believe: 'Вірю',
     voted: '{{done}}/{{total}} проголосували',

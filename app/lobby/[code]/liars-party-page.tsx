@@ -426,8 +426,9 @@ function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, i
 }
 
 /** The claim under vote, plus how many votes are in. */
-function ClaimUnderVote({ data, heading, animate = false, t }: {
+function ClaimUnderVote({ data, players, heading, animate = false, t }: {
   data: LiarsPartyGameData
+  players: GamePlayer[]
   heading?: string
   /** The claim just arrived while the page was open: it lands instead of appearing (#1115). */
   animate?: boolean
@@ -438,6 +439,9 @@ function ClaimUnderVote({ data, heading, animate = false, t }: {
     <LiarsCard>
       {heading && <div className="liars-card__title">{heading}</div>}
       <blockquote className={`liars-claim${animate ? ' social-reveal' : ''}`} data-testid="liars-claim-text">&ldquo;{data.claim?.text}&rdquo;</blockquote>
+      <div className="text-sm text-bd-ink-soft" data-testid="liars-claim-by">
+        {t('liarsParty.claimedBy', { name: playerNameById(players, data.currentClaimantId, t) })}
+      </div>
       <ScorePop value={data.challengeVotes.length} className="text-sm text-bd-ink-muted" style={{ display: 'inline-block', transformOrigin: 'left center' }}>
         {t('liarsParty.voted', { done: data.challengeVotes.length, total: totalVoters })}
       </ScorePop>
@@ -462,7 +466,7 @@ function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eli
   return (
     <>
       {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
-      <ClaimUnderVote data={data} heading={t('liarsParty.challengeOrBelieve')} animate={animate} t={t} />
+      <ClaimUnderVote data={data} players={players} heading={t('liarsParty.challengeOrBelieve')} animate={animate} t={t} />
 
       {!canVote && myVote && (
         <LiarsCard className="text-center">
@@ -1174,7 +1178,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       activeTitle={
         phase === 'claim'
           ? (isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }))
-          : t('liarsParty.challengeOrBelieve')
+          : isClaimant ? t('liarsParty.tableVotingOnYourClaim') : t('liarsParty.challengeOrBelieve')
       }
       // No `meta`. GameStatusBanner puts it on the title's nowrap/ellipsis
       // line, and the peer pages pass 2 to 4 characters there (connect four

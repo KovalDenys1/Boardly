@@ -4498,6 +4498,7 @@ const no = {
     submitClaim: 'Send påstand',
     charsRemaining: '{{count}} tegn igjen',
     challengeOrBelieve: 'Utfordre eller tro?',
+    tableVotingOnYourClaim: 'Bordet stemmer over påstanden din',
     challenge: 'Utfordre',
     believe: 'Tro',
     voted: '{{done}}/{{total}} stemt',
