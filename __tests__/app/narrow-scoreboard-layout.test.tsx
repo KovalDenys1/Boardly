@@ -94,7 +94,7 @@ describe('narrow scoreboard header (#1180)', () => {
   })
 
   describe('two-player header in the landscape side column (#1342)', () => {
-    const SIDE = '.game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *)'
+    const SIDE = '.game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *)'
     const SIDE_CARD = `${SIDE} :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card`
 
     it('gives Leave its own track so both player cells are the same width', () => {

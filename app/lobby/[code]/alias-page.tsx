@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
+import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -201,7 +202,7 @@ const BdAvatar: React.FC<{ name?: string; color?: string; size?: number }> = ({ 
   </span>
 )
 
-const CountdownRing: React.FC<{ remaining: number; total: number; size?: number }> = ({ remaining, total, size = 148 }) => {
+const CountdownRing: React.FC<{ remaining: number; total: number; size?: number; showLabel?: boolean }> = ({ remaining, total, size = 148, showLabel = true }) => {
   const { t } = useTranslation()
   const stroke = 12
   const r = (size - stroke) / 2
@@ -240,7 +241,7 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number 
           color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
           fontVariantNumeric: 'tabular-nums', lineHeight: 1,
         }}>{label}</span>
-        <BdLabel style={{ fontSize: 10 }}>{t('alias.secondsLabel')}</BdLabel>
+        {showLabel && <BdLabel style={{ fontSize: 10 }}>{t('alias.secondsLabel')}</BdLabel>}
       </div>
     </div>
   )
@@ -425,7 +426,7 @@ const AliasGameHeader: React.FC<{
     : '–'
   return (
     <div className="ttt-card alias-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,107,91,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-      <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
+      <div aria-hidden style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
         <Icon name="chat" size={96} />
       </div>
       <GameScoreboardHeader
@@ -483,7 +484,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   const hitIds = guesses.filter((g) => guessMatchesWord(g.text, guessedWords)).map((g) => String(g.id))
   const { isFresh: isFreshHit, settle: settleHit } = useFreshIds(hitIds)
   return (
-    <div className={`w-full md:w-[280px] md:max-w-[280px] ${fillHeight ? 'flex-1 min-h-0' : 'h-[220px]'} md:h-full md:max-h-[560px]`} style={{
+    <div className={`alias-guess-panel w-full md:w-[280px] md:max-w-[280px] ${fillHeight ? 'flex-1 min-h-0' : 'h-[220px]'} md:h-full md:max-h-[560px]`} style={{
       ...cardBase,
       display: 'flex', flexDirection: 'column',
       minWidth: 0,
@@ -588,6 +589,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
   const isMobile = useIsMobileViewport()
+  const isLandscape = useActiveGameLayout() === 'landscape'
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
   // Mobile tab for the two turn screens (#905). The describer's guess feed was
   // `hidden md:block`, so on a phone the one player who needs to hear the
@@ -1525,8 +1527,99 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
   if (data.phase === 'turn_active' && isDescriber) {
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
-    const describerActions = (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: '100%', ...(isMobile ? { position: 'sticky' as const, bottom: 8, zIndex: 2 } : {}) }}>
+    const describerPill = (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 18px',
+        background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
+        borderRadius: 999,
+      }}>
+        <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
+          {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
+        </span>
+      </div>
+    )
+    const wordCard = (
+      <div className="md:flex-1 alias-landscape-hero" style={{
+        ...cardBase, width: '100%',
+        padding: isMobile ? '20px 24px' : '32px 40px 28px',
+        minHeight: isMobile ? 140 : 180,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 20, position: 'relative', overflow: 'hidden',
+      }}>
+        <div aria-hidden style={{ position: 'absolute', top: -120, left: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,107,91,0.10)' }} />
+        <div aria-hidden style={{ position: 'absolute', bottom: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(155,140,255,0.08)' }} />
+        <BdLabel>{t('alias.theSecretWord')}</BdLabel>
+        <AliasWordSwap
+          word={word}
+          lastResult={data.currentCardResults[data.currentCardResults.length - 1]?.result}
+          style={{
+            fontFamily: FONT_DISPLAY, fontWeight: 700,
+            fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
+            lineHeight: 1.02, textAlign: 'center',
+            color: 'var(--bd-ink)', letterSpacing: '-0.02em',
+            wordBreak: 'break-word',
+          }}
+        />
+        <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
+          {t('alias.doNotSayItFull')}
+        </span>
+      </div>
+    )
+    const timerTally = (
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+        <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <BdLabel>{t('alias.thisTurnSoFar')}</BdLabel>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <ScorePill kind="guessed" count={guessed} />
+            <ScorePill kind="skipped" count={skipped} />
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+              borderRadius: 999, padding: '6px 12px',
+              fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
+            }}>
+              <span style={{ opacity: 0.6, fontSize: 11 }}>{t('alias.net')}</span>
+              <ScorePop value={guessed - skipped} style={{ fontSize: 14, display: 'inline-block' }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</ScorePop>
+            </span>
+          </div>
+          {danger && (
+            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {t('alias.timesRunningOut')}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+    const endTurnButton = (
+      <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
+        {t('alias.endTurn')}
+      </button>
+    )
+    const statusBanner = (
+      <div className="alias-status-slot">
+      <GameStatusBanner
+        isFinished={false}
+        activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+        meta={`+${guessed} / −${skipped}`}
+        // The countdown ring below is this game's clock, and it is the
+        // thing players actually watch; a second timer in the banner would
+        // be the same signal twice (layout DoD).
+        showTimer={false}
+        secs={remaining}
+        turnTimerLimit={turnTimerSeconds}
+        barColor={teamAccent}
+        leadingIcon={<Icon name="chat" size={20} />}
+        isSpectator={isSpectator}
+        isYourTurn={!isSpectator && isDescriber}
+      />
+      </div>
+    )
+    const actionButtons = (inRow: boolean) => (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: inRow ? undefined : '100%', flex: inRow ? '1 1 auto' : undefined, minWidth: 0, ...(isMobile && !inRow ? { position: 'sticky' as const, bottom: 8, zIndex: 2 } : {}) }}>
         <button
           aria-label={t('alias.guessedCorrectly')}
           onClick={() => handleMove('word_action', { action: 'guess' })}
@@ -1565,129 +1658,72 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         </button>
       </div>
     )
+    const guessesPanel = (fill: boolean) => <GuessChatPanel {...chatProps} canType={false} fillHeight={fill} />
     return (
       <>
-        <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
-          {renderHeader(t('alias.phaseTurnKicker'))}
-          <div className="alias-status-slot">
-          <GameStatusBanner
-            isFinished={false}
-            activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
-            meta={`+${guessed} / −${skipped}`}
-            // The countdown ring below is this game's clock, and it is the
-            // thing players actually watch; a second timer in the banner would
-            // be the same signal twice (layout DoD).
-            showTimer={false}
-            secs={remaining}
-            turnTimerLimit={turnTimerSeconds}
-            barColor={teamAccent}
-            leadingIcon={<Icon name="chat" size={20} />}
-            isSpectator={isSpectator}
-            isYourTurn={!isSpectator && isDescriber}
-          />
+        {/* Phone landscape (#1384): the word and the buttons are the board pane; the
+            header, the status line and the guesses are the side column. */}
+        {isLandscape ? (
+          <div style={{ ...pageBg(lobby?.theme), padding: '8px 12px' }} data-testid="alias-describer-screen">
+            <div className="game-landscape-layout alias-landscape-layout" data-testid="alias-landscape-layout">
+              <div className="game-landscape-board alias-landscape-board">
+                {wordCard}
+                <div className="alias-landscape-actions">
+                  <CountdownRing remaining={remaining} total={turnTimerSeconds} size={60} showLabel={false} />
+                  {actionButtons(true)}
+                  {endTurnButton}
+                </div>
+              </div>
+              <div className="game-landscape-side">
+                {renderHeader(t('alias.phaseTurnKicker'))}
+                {statusBanner}
+                {guessesPanel(true)}
+              </div>
+            </div>
           </div>
-          {isMobile && (
-            <GameTabs
-              tabs={[
-                { id: 'word' as const, label: t('game.ui.tabBoard') },
-                { id: 'guesses' as const, label: t('alias.guesses') },
-              ]}
-              activeTab={turnTab}
-              onTabChange={setTurnTab}
-            />
-          )}
-          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
-            {/* Game content */}
-            <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              {!isMobile && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 18px',
-                  background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
-                  borderRadius: 999,
-                }}>
-                  <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
-                  <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
-                    {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
-                  </span>
-                </div>
-              )}
+        ) : (
+          <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
+            {renderHeader(t('alias.phaseTurnKicker'))}
+            {statusBanner}
+            {isMobile && (
+              <GameTabs
+                tabs={[
+                  { id: 'word' as const, label: t('game.ui.tabBoard') },
+                  { id: 'guesses' as const, label: t('alias.guesses') },
+                ]}
+                activeTab={turnTab}
+                onTabChange={setTurnTab}
+              />
+            )}
+            <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
+              {/* Game content */}
+              <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                {!isMobile && describerPill}
 
-              {/* Hero word card */}
-              <div className="md:flex-1" style={{
-                ...cardBase, width: '100%',
-                padding: isMobile ? '20px 24px' : '32px 40px 28px',
-                minHeight: isMobile ? 140 : 180,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 20, position: 'relative', overflow: 'hidden',
-              }}>
-                <div aria-hidden style={{ position: 'absolute', top: -120, left: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,107,91,0.10)' }} />
-                <div aria-hidden style={{ position: 'absolute', bottom: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(155,140,255,0.08)' }} />
-                <BdLabel>{t('alias.theSecretWord')}</BdLabel>
-                <AliasWordSwap
-                  word={word}
-                  lastResult={data.currentCardResults[data.currentCardResults.length - 1]?.result}
-                  style={{
-                    fontFamily: FONT_DISPLAY, fontWeight: 700,
-                    fontSize: isMobile ? 'clamp(36px, 10vw, 56px)' : 'clamp(48px, 9vw, 84px)',
-                    lineHeight: 1.02, textAlign: 'center',
-                    color: 'var(--bd-ink)', letterSpacing: '-0.02em',
-                    wordBreak: 'break-word',
-                  }}
-                />
-                <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
-                  {t('alias.doNotSayItFull')}
-                </span>
+                {wordCard}
+
+                {isMobile && actionButtons(false)}
+
+                {timerTally}
+
+                {!isMobile && actionButtons(false)}
+
+                {endTurnButton}
               </div>
 
-              {isMobile && describerActions}
-
-              {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <BdLabel>{t('alias.thisTurnSoFar')}</BdLabel>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <ScorePill kind="guessed" count={guessed} />
-                    <ScorePill kind="skipped" count={skipped} />
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                      borderRadius: 999, padding: '6px 12px',
-                      fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
-                    }}>
-                      <span style={{ opacity: 0.6, fontSize: 11 }}>{t('alias.net')}</span>
-                      <ScorePop value={guessed - skipped} style={{ fontSize: 14, display: 'inline-block' }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</ScorePop>
-                    </span>
-                  </div>
-                  {danger && (
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      {t('alias.timesRunningOut')}
-                    </span>
-                  )}
-                </div>
+              {/* The describer reads the guesses and never types them. On a phone
+                  it is the Guesses tab; on desktop the right column. */}
+              <div
+                className={isMobile ? undefined : 'hidden md:block'}
+                style={isMobile
+                  ? { display: turnTab === 'guesses' ? 'flex' : 'none', width: '100%', flex: 1, minHeight: 0 }
+                  : { width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}
+              >
+                {guessesPanel(isMobile)}
               </div>
-
-              {!isMobile && describerActions}
-
-              <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
-                {t('alias.endTurn')}
-              </button>
-            </div>
-
-            {/* The describer reads the guesses and never types them. On a phone
-                it is the Guesses tab; on desktop the right column. */}
-            <div
-              className={isMobile ? undefined : 'hidden md:block'}
-              style={isMobile
-                ? { display: turnTab === 'guesses' ? 'flex' : 'none', width: '100%', flex: 1, minHeight: 0 }
-                : { width: 280, height: '100%', maxHeight: 560, flexShrink: 0 }}
-            >
-              <GuessChatPanel {...chatProps} canType={false} fillHeight={isMobile} />
-            </div>
-          </main>
-        </div>
+            </main>
+          </div>
+        )}
         {!isSpectator && (
           <ConfirmModal
             isOpen={showLeaveConfirmModal}
@@ -1708,114 +1744,140 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // ── PHASE 3 — Guesser turn ─────────────────────────────────────────────────
   if (data.phase === 'turn_active' && !isDescriber) {
     const describerName = describerDisplayName
+    const listenPill = (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
+        border: '1.5px solid var(--bd-line)', borderRadius: 999,
+      }}>
+        {isSpectator
+          ? <BdLabel>{t('alias.spectatingWatch')}</BdLabel>
+          // "type your guess in the chat" is only true where the chat
+          // is on screen. This pane is the other mobile tab, so there
+          // it names the tab the input is actually on (#905 review).
+          : <BdLabel>{isMobile ? t('alias.listenUpTab') : t('alias.listenUp')}</BdLabel>
+        }
+      </div>
+    )
+    const heroCard = (
+      <div className="md:flex-1 alias-landscape-hero" style={{
+        ...cardBase, width: '100%',
+        padding: isMobile ? '16px 20px' : '24px 32px 28px',
+        minHeight: isMobile ? 160 : 220,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 20, position: 'relative', overflow: 'hidden',
+      }}>
+        <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+          {[0, 0.6, 1.2].map((d, i) => (
+            <span key={i} style={{
+              position: 'absolute', width: 220, height: 220, borderRadius: '50%',
+              border: '2px solid rgba(255,107,91,0.35)',
+              animation: 'bd-listening 2.4s ease-out infinite',
+              animationDelay: `${d}s`,
+            }} />
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
+          <BdLabel>{t('alias.describer')}</BdLabel>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BdAvatar name={describerName} color={teamAccent} />
+            <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 26 }}>{describerName}</span>
+          </div>
+        </div>
+
+        <span className="bd-float" style={{
+          fontFamily: FONT_DISPLAY, fontWeight: 700,
+          fontSize: isMobile ? 'clamp(72px, 20vw, 100px)' : 'clamp(100px, 16vw, 160px)',
+          lineHeight: 1,
+          color: 'var(--bd-coral)', textShadow: '0 6px 0 rgba(31,27,22,0.08)', zIndex: 1,
+        }}>?</span>
+      </div>
+    )
+    const timerTally = (
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
+        <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <BdLabel>{t('alias.liveTally')}</BdLabel>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <ScorePill kind="guessed" count={guessed} />
+            <ScorePill kind="skipped" count={skipped} />
+          </div>
+          {danger && (
+            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <Icon name="bolt" size={12} /> {t('alias.finalSeconds')}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+    const statusBanner = (
+      <div className="alias-status-slot">
+      <GameStatusBanner
+        isFinished={false}
+        activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+        meta={`+${guessed} / −${skipped}`}
+        // The countdown ring below is this game's clock, and it is the
+        // thing players actually watch; a second timer in the banner would
+        // be the same signal twice (layout DoD).
+        showTimer={false}
+        secs={remaining}
+        turnTimerLimit={turnTimerSeconds}
+        barColor={teamAccent}
+        leadingIcon={<Icon name="chat" size={20} />}
+        isSpectator={isSpectator}
+        isYourTurn={!isSpectator && isDescriber}
+      />
+      </div>
+    )
+    const guessesPanel = (fill: boolean) => <GuessChatPanel {...chatProps} canType={!isSpectator} fillHeight={fill} />
     return (
       <>
-        <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
-          {renderHeader(t('alias.phaseTurnKicker'))}
-          <div className="alias-status-slot">
-          <GameStatusBanner
-            isFinished={false}
-            activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
-            meta={`+${guessed} / −${skipped}`}
-            // The countdown ring below is this game's clock, and it is the
-            // thing players actually watch; a second timer in the banner would
-            // be the same signal twice (layout DoD).
-            showTimer={false}
-            secs={remaining}
-            turnTimerLimit={turnTimerSeconds}
-            barColor={teamAccent}
-            leadingIcon={<Icon name="chat" size={20} />}
-            isSpectator={isSpectator}
-            isYourTurn={!isSpectator && isDescriber}
-          />
-          </div>
-          {isMobile && (
-            <GameTabs
-              tabs={[
-                { id: 'word' as const, label: t('game.ui.tabBoard') },
-                { id: 'guesses' as const, label: t('alias.guesses') },
-              ]}
-              activeTab={turnTab}
-              onTabChange={setTurnTab}
-            />
-          )}
-          <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
-            {/* Game content */}
-            <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
-                border: '1.5px solid var(--bd-line)', borderRadius: 999,
-              }}>
-                {isSpectator
-                  ? <BdLabel>{t('alias.spectatingWatch')}</BdLabel>
-                  // "type your guess in the chat" is only true where the chat
-                  // is on screen. This pane is the other mobile tab, so there
-                  // it names the tab the input is actually on (#905 review).
-                  : <BdLabel>{isMobile ? t('alias.listenUpTab') : t('alias.listenUp')}</BdLabel>
-                }
+        {isLandscape ? (
+          <div style={{ ...pageBg(lobby?.theme), padding: '8px 12px' }} data-testid="alias-guesser-screen">
+            <div className="game-landscape-layout alias-landscape-layout" data-testid="alias-landscape-layout">
+              <div className="game-landscape-board alias-landscape-board">
+                {heroCard}
+                {timerTally}
               </div>
-
-              <div className="md:flex-1" style={{
-                ...cardBase, width: '100%',
-                padding: isMobile ? '16px 20px' : '24px 32px 28px',
-                minHeight: isMobile ? 160 : 220,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 20, position: 'relative', overflow: 'hidden',
-              }}>
-                <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
-                  {[0, 0.6, 1.2].map((d, i) => (
-                    <span key={i} style={{
-                      position: 'absolute', width: 220, height: 220, borderRadius: '50%',
-                      border: '2px solid rgba(255,107,91,0.35)',
-                      animation: 'bd-listening 2.4s ease-out infinite',
-                      animationDelay: `${d}s`,
-                    }} />
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
-                  <BdLabel>{t('alias.describer')}</BdLabel>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <BdAvatar name={describerName} color={teamAccent} />
-                    <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 26 }}>{describerName}</span>
-                  </div>
-                </div>
-
-                <span className="bd-float" style={{
-                  fontFamily: FONT_DISPLAY, fontWeight: 700,
-                  fontSize: isMobile ? 'clamp(72px, 20vw, 100px)' : 'clamp(100px, 16vw, 160px)',
-                  lineHeight: 1,
-                  color: 'var(--bd-coral)', textShadow: '0 6px 0 rgba(31,27,22,0.08)', zIndex: 1,
-                }}>?</span>
-              </div>
-
-              {/* Timer + tally */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: isMobile ? 16 : 28, alignItems: 'center', width: '100%' }}>
-                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={isMobile ? 88 : 140} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <BdLabel>{t('alias.liveTally')}</BdLabel>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <ScorePill kind="guessed" count={guessed} />
-                    <ScorePill kind="skipped" count={skipped} />
-                  </div>
-                  {danger && (
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      <Icon name="bolt" size={12} /> {t('alias.finalSeconds')}
-                    </span>
-                  )}
-                </div>
+              <div className="game-landscape-side">
+                {renderHeader(t('alias.phaseTurnKicker'))}
+                {statusBanner}
+                {guessesPanel(true)}
               </div>
             </div>
-
-            {/* Guessers type here; spectators are read-only. Right column on
-                desktop, the Guesses tab on a phone. */}
-            {(!isMobile || turnTab === 'guesses') && (
-              <GuessChatPanel {...chatProps} canType={!isSpectator} fillHeight={isMobile} />
+          </div>
+        ) : (
+          <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
+            {renderHeader(t('alias.phaseTurnKicker'))}
+            {statusBanner}
+            {isMobile && (
+              <GameTabs
+                tabs={[
+                  { id: 'word' as const, label: t('game.ui.tabBoard') },
+                  { id: 'guesses' as const, label: t('alias.guesses') },
+                ]}
+                activeTab={turnTab}
+                onTabChange={setTurnTab}
+              />
             )}
-          </main>
-        </div>
+            <main style={{ maxWidth: 1200, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen flex w-full flex-col gap-6 items-stretch md:flex-row md:gap-6 pb-4 md:pb-0">
+              {/* Game content */}
+              <div style={{ flex: 1, minWidth: 0, display: isMobile && turnTab !== 'word' ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                {listenPill}
+
+                {heroCard}
+
+                {timerTally}
+              </div>
+
+              {/* Guessers type here; spectators are read-only. Right column on
+                  desktop, the Guesses tab on a phone. */}
+              {(!isMobile || turnTab === 'guesses') && guessesPanel(isMobile)}
+            </main>
+          </div>
+        )}
         {!isSpectator && (
           <ConfirmModal
             isOpen={showLeaveConfirmModal}
