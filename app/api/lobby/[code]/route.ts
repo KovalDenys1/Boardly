@@ -34,11 +34,13 @@ import {
 } from '@/lib/persisted-game-state'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
+import { isTransactionWriteConflict } from '@/lib/database-errors'
 
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const lobbyReadAddressLimiter = rateLimit(rateLimitPresets.lobbyReadAddress)
 const UNLIMITED_SPECTATORS_VALUE = 0
-const MAX_JOIN_SERIALIZABLE_RETRIES = 2
+const MAX_JOIN_SERIALIZABLE_RETRIES = 4
+const JOIN_RETRY_JITTER_MS = 40
 
 class LobbyFullError extends Error {
   constructor() {
@@ -876,12 +878,9 @@ export async function POST(
           )
         }
 
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2034' &&
-          attempt < MAX_JOIN_SERIALIZABLE_RETRIES
-        ) {
+        if (isTransactionWriteConflict(error) && attempt < MAX_JOIN_SERIALIZABLE_RETRIES) {
           attempt += 1
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * JOIN_RETRY_JITTER_MS))
           continue
         }
 

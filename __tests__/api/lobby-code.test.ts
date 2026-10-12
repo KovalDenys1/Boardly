@@ -375,6 +375,40 @@ describe('POST /api/lobby/[code]', () => {
     )
   })
 
+  it('retries a join whose transaction lost a Serializable race at COMMIT (#1385)', async () => {
+    const commitConflict = Object.assign(new Error('TransactionWriteConflict'), {
+      name: 'DriverAdapterError',
+      cause: { kind: 'TransactionWriteConflict' },
+    })
+    mockPrisma.$transaction
+      .mockRejectedValueOnce(commitConflict)
+      .mockImplementationOnce(async (callback: any) => callback(mockPrisma as any))
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({ ...mockLobby, games: [mockGame] } as any)
+    mockPrisma.games.findFirst.mockResolvedValue({ id: 'game-123', status: 'waiting' } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null)
+    mockPrisma.players.count.mockResolvedValue(1)
+    mockPrisma.players.create.mockResolvedValue({
+      id: 'player-123',
+      userId: 'user-123',
+      gameId: 'game-123',
+      position: 1,
+      user: { id: 'user-123', username: 'testuser', isGuest: false },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    const response = await POST(request, { params: { code: 'ABC123' } })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(2)
+    expect(mockPrisma.players.create).toHaveBeenCalledTimes(1)
+  })
+
   it('should return 400 when lobby is full', async () => {
     const gameWithPlayers = {
       ...mockGame,
