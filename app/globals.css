@@ -395,6 +395,25 @@ html.dark {
 }
 /* @responsive-primitives-end */
 
+/* Waiting room in phone landscape (#1383): the header and the actions bar left the
+   roster about 60px between them at 844x390. The bar becomes a side column and the
+   roster takes the height; the column keeps the floating Chat button's corner free. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .waiting-room-body {
+    flex-direction: row;
+  }
+  .waiting-room-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 0 0 min(380px, 48vw);
+    min-height: 0;
+    border-top: 0;
+    border-left: 1px solid var(--bd-line);
+    overflow-y: auto;
+  }
+}
+
 /* Homepage viewport shells: fill the first view, but let content grow naturally. */
 .home-page-shell {
   min-height: 100vh;
@@ -3376,37 +3395,37 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
      Leave, where a game puts it in `trailing`, gets its own track, so both
      player cells stay the same width. The conversation games tune their own
      header below and are left out. */
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) {
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) auto;
     grid-template-areas: "left center right trailing";
   }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 2px;
     padding: 3px 2px;
   }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
     width: 24px;
     height: 24px;
   }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 12px; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 12px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
     transform: translate(2px, 2px) scale(0.5);
     transform-origin: bottom right;
   }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
     align-self: stretch;
     min-width: 0;
     text-align: center;
   }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; line-height: 1.25; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; line-height: 1.25; }
 }
 
 /* Tic-Tac-Toe / Connect Four / Rock Paper Scissors deltas. */
@@ -5019,7 +5038,6 @@ html.dark .spy-secret-tile {
   flex-direction: column-reverse;
   gap: 2px;
 }
-.sketch-feed__empty { font-size: 12px; color: var(--bd-ink-muted); text-align: center; padding: 6px 0; }
 .sketch-feed__item {
   display: flex;
   align-items: center;
@@ -5051,6 +5069,43 @@ html.dark .spy-secret-tile {
 .sketch-feed__accept:disabled { opacity: 0.4; cursor: default; }
 
 .sketch-guess-form { display: flex; flex-direction: column; gap: 4px; }
+
+/* The drawer's tools (#1382): one 44px row. The brush settings sit on a rail that
+   scrolls sideways where the row is too narrow for all of them (296px of card at
+   320 holds about five); undo and clear keep their place on the right. */
+.sketch-tools { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sketch-tools__rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+}
+.sketch-tools__rail::-webkit-scrollbar { display: none; }
+.sketch-tools__actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.sketch-tool {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+  cursor: pointer;
+}
+.sketch-tool--swatch { width: 36px; border-radius: 999px; }
+.sketch-tool--active { border-color: var(--bd-ink); background: var(--bd-bg2); box-shadow: inset 0 0 0 1px var(--bd-ink); }
+.sketch-tool:disabled { opacity: 0.4; cursor: default; }
+.sketch-tool__swatch { display: block; width: 22px; height: 22px; border-radius: 999px; border: 1px solid rgba(31,27,22,0.15); }
+.sketch-tool--active .sketch-tool__swatch { transform: scale(1.15); }
+.sketch-tool__dot { display: block; border-radius: 999px; background: var(--bd-ink); }
 
 /* The reveal's one header row: the word on the left, the button that moves on
    on the right. Above the canvas, so it is never below the fold (#1082). */
@@ -5335,6 +5390,20 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   }
 }
 .alias-status-slot { width: 100%; max-width: 1200px; margin: 0 auto 12px; flex-shrink: 0; }
+
+/* Alias in phone landscape (#1384): the word card and the Guessed/Skip row are the
+   board pane, the header, the status line and the guesses the side column, on the
+   shared .game-landscape-* family. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .alias-landscape-layout { gap: 8px; }
+  .alias-landscape-board { gap: 8px; }
+  .alias-landscape-board > .alias-landscape-hero { flex: 1 1 auto; min-height: 0; }
+  .alias-landscape-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .game-landscape-side > .alias-status-slot { margin-bottom: 0; }
+  .game-landscape-side .alias-header-card { padding: 6px 10px; }
+  .game-landscape-side .alias-header-card > [aria-hidden] { display: none; }
+  .game-landscape-side .alias-guess-panel { width: 100%; max-width: none; }
+}
 
 /* ── Ludo (#1084) ─────────────────────────────────────────────────────────
    Composes the shared .game-screen / .ttt-* family like Connect Four. The

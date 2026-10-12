@@ -106,6 +106,10 @@ jest.mock('@/lib/lobby-realtime-topic-client', () => ({
 // both turn screens behind a tab strip that only exists on a phone, so a test
 // that cannot set this covers the desktop layout only.
 let mockIsMobileViewport = false
+let mockActiveLayout: 'desktop' | 'landscape' | 'mobile' | null = null
+jest.mock('@/hooks/useActiveGameLayout', () => ({
+  useActiveGameLayout: () => mockActiveLayout,
+}))
 jest.mock('@/hooks/useIsMobileViewport', () => ({
   useIsMobileViewport: () => mockIsMobileViewport,
 }))
@@ -755,5 +759,59 @@ describe('AliasLobbyPage key buttons on a phone', () => {
     await waitFor(() => expect(screen.getByTestId('alias-game-over-screen')).toBeTruthy())
 
     expect(follows(screen.getByText('alias.playAgain'), screen.getAllByText('Team 1').at(-1)!)).toBe(true)
+  })
+})
+
+describe('AliasLobbyPage phone landscape (#1384)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  function buildTurnResponse({ meDescribing }: { meDescribing: boolean }) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    base.activeGame.state.data.turnStartedAt = Date.now()
+    base.activeGame.state.data.currentCard = ['apple', 'pear']
+    base.activeGame.state.data.teams[0].playerIds = meDescribing ? ['user-1', 'user-2'] : ['user-2', 'user-1']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    return base
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockIsMobileViewport = true
+    mockActiveLayout = 'landscape'
+  })
+
+  afterEach(() => {
+    mockIsMobileViewport = false
+    mockActiveLayout = null
+  })
+
+  it('lays the describer out as a board pane and a side column, with no tab strip', async () => {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildTurnResponse({ meDescribing: true }) } as Response)
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
+
+    const layout = screen.getByTestId('alias-landscape-layout')
+    const board = layout.querySelector('.game-landscape-board') as HTMLElement
+    const side = layout.querySelector('.game-landscape-side') as HTMLElement
+    expect(board.textContent).toContain('apple')
+    expect(board.querySelector('[aria-label="alias.guessedCorrectly"]')).toBeTruthy()
+    expect(board.querySelector('[aria-label="alias.skipWord"]')).toBeTruthy()
+    expect(side.querySelector('.alias-header-card')).toBeTruthy()
+    expect(side.querySelector('.alias-status-slot')).toBeTruthy()
+    expect(screen.queryByText('game.ui.tabBoard')).toBeNull()
+  })
+
+  it('gives the guesser the guess input in the side column', async () => {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildTurnResponse({ meDescribing: false }) } as Response)
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    const side = screen.getByTestId('alias-landscape-layout').querySelector('.game-landscape-side') as HTMLElement
+    expect(side.querySelector('input[placeholder="alias.guessPlaceholder"]')).toBeTruthy()
+    expect(screen.queryByText('game.ui.tabBoard')).toBeNull()
   })
 })

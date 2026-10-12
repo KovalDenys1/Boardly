@@ -18,6 +18,7 @@ import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-hel
 import { resolveBotTarget } from '@/lib/quick-play'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
+import { isTransactionWriteConflict } from '@/lib/database-errors'
 
 const log = apiLogger('/api/quick-play')
 
@@ -223,12 +224,7 @@ export async function POST(req: NextRequest) {
         } catch (err) {
           const msg = err instanceof Error ? err.message : ''
           if (msg === 'LOBBY_FULL' && attempt < MAX_JOIN_RETRIES) continue
-          if (
-            err instanceof Prisma.PrismaClientKnownRequestError &&
-            err.code === 'P2034' &&
-            attempt < MAX_JOIN_RETRIES
-          )
-            continue
+          if (isTransactionWriteConflict(err) && attempt < MAX_JOIN_RETRIES) continue
           // Lobby became unavailable — fall through to create new one
           break
         }

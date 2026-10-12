@@ -12,6 +12,8 @@ interface WaitingRoomActionsProps {
   canStartGame: boolean
   startingGame: boolean
   onStartGame: () => void
+  /** The page shows the floating Chat button over this bar's right end. */
+  reserveChatButton?: boolean
 }
 
 export default function WaitingRoomActions({
@@ -21,8 +23,12 @@ export default function WaitingRoomActions({
   canStartGame,
   startingGame,
   onStartGame,
+  reserveChatButton = false,
 }: WaitingRoomActionsProps) {
   const { t } = useTranslation()
+  const barClass = `waiting-room-actions shrink-0 border-t border-bd-line bg-bd-card-warm px-4 sm:pl-6 ${
+    reserveChatButton ? 'sm:pr-40' : 'sm:pr-6'
+  }`
 
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
@@ -36,7 +42,7 @@ export default function WaitingRoomActions({
 
   if (startingGame) {
     return (
-      <div className="shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-5 pb-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] sm:px-6">
+      <div className={`${barClass} py-5 pb-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))]`}>
         <div className="flex items-center justify-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun shadow-[2px_2px_0_var(--bd-ink)]">
             <LoadingSpinner size="sm" />
@@ -54,7 +60,7 @@ export default function WaitingRoomActions({
 
   if (!canStartGame) {
     return (
-      <div className="shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
+      <div className={`${barClass} py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))]`}>
         <div className="flex items-center gap-3 rounded-xl border border-bd-sun/40 bg-bd-sun/10 px-4 py-3.5">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-bd-sun opacity-60" />
@@ -74,7 +80,7 @@ export default function WaitingRoomActions({
   // Host view — invite/add-bot live inline in the player list's empty slots
   // (WaitingRoom.tsx); this bar only carries lobby status + Start Game.
   return (
-    <div className="shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
+    <div className={`${barClass} space-y-3 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))]`}>
       {!canAddMorePlayers && (
         <div className="flex items-center justify-between rounded-xl border border-bd-mint/45 bg-bd-mint/15 px-4 py-2.5">
           <div className="flex items-center gap-2">

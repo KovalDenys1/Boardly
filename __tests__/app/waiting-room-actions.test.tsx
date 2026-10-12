@@ -46,3 +46,27 @@ describe('WaitingRoomActions — the lone creator (#814)', () => {
     expect(screen.queryByText('game.ui.startSoloTip')).toBeNull()
   })
 })
+
+describe('WaitingRoomActions — the floating Chat button (#1383)', () => {
+  const lobby = { gameType: 'memory', maxPlayers: 4, creatorId: 'host', creator: { username: 'Host' } }
+  const game = { players: [{ id: 'p0', user: { bot: false } }, { id: 'p1', user: { bot: false } }] }
+
+  it('reserves the button\'s width at the bar\'s right end when the page shows it', () => {
+    const { container } = render(
+      <WaitingRoomActions game={game as never} lobby={lobby as never} minPlayers={2} canStartGame startingGame={false} onStartGame={jest.fn()} reserveChatButton />
+    )
+    const bar = container.firstElementChild as HTMLElement
+    expect(bar.classList.contains('waiting-room-actions')).toBe(true)
+    expect(bar.classList.contains('sm:pr-40')).toBe(true)
+    expect(bar.classList.contains('sm:pr-6')).toBe(false)
+  })
+
+  it('keeps the normal padding when there is no chat', () => {
+    const { container } = render(
+      <WaitingRoomActions game={game as never} lobby={lobby as never} minPlayers={2} canStartGame={false} startingGame={false} onStartGame={jest.fn()} />
+    )
+    const bar = container.firstElementChild as HTMLElement
+    expect(bar.classList.contains('sm:pr-6')).toBe(true)
+    expect(bar.classList.contains('sm:pr-40')).toBe(false)
+  })
+})

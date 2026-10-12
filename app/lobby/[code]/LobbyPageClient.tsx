@@ -2221,6 +2221,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             ))}
           </div>
 
+          {/* Players and the actions bar: a column, and in phone landscape a row,
+              so the roster is not squeezed out between the header and the bar (#1383). */}
+          <div className="waiting-room-body flex min-h-0 flex-1 flex-col">
           {/* Scrollable area: players/chat crossfades with the settings view */}
           <div className="relative flex-1 min-h-0 overflow-hidden">
             <div
@@ -2293,7 +2296,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             canStartGame={canStartGame}
             startingGame={startingGame}
             onStartGame={handleStartGame}
+            reserveChatButton={isInGame && hasMultipleHumans}
           />
+          </div>
         </div>
       ) : (
         // Game Started - the shared .game-screen shell owns the viewport

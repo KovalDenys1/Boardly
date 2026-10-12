@@ -298,7 +298,8 @@ describe('SketchAndGuessGameBoard for a spectator', () => {
     expect(screen.queryByPlaceholderText('games.guess_my_drawing.game.guessPlaceholder')).toBeNull()
     expect(screen.queryByText('games.guess_my_drawing.game.submitGuess')).toBeNull()
     expect(screen.queryByText('games.guess_my_drawing.game.spectatorNotice')).not.toBeNull()
-    expect(screen.queryByText('games.guess_my_drawing.game.guessFeedEmpty')).not.toBeNull()
+    // No guesses yet, so no feed strip either (#1382).
+    expect(container.querySelector('.sketch-feed')).toBeNull()
   })
 
   it('never puts the drawing tools in front of a spectator, even on the drawer seat', () => {
@@ -391,5 +392,29 @@ describe('SketchAndGuessGameBoard finished gallery (#1087)', () => {
     const base = buildGameData({ phase: 'reveal' }, { word: CASTLE, drawingContent: null })
     render(<SketchAndGuessGameBoard {...buildProps({ gameData: base, gameStatus: 'finished' })} />)
     expect(screen.queryByRole('button', { name: "games.guess_my_drawing.game.saveGallery" })).toBeNull()
+  })
+})
+
+describe('SketchAndGuessGameBoard drawer tools (#1382)', () => {
+  it('keeps every tool in one toolbar of 44px controls, with no empty guess strip', () => {
+    const gameData = buildGameData({}, { word: CASTLE, prompt: 'castle', guesses: [] })
+    const { container } = render(<SketchAndGuessGameBoard {...buildProps({ gameData, playerId: 'user-2' })} />)
+
+    const toolbar = container.querySelector('[role="toolbar"]') as HTMLElement
+    expect(toolbar).not.toBeNull()
+    const tools = Array.from(toolbar.querySelectorAll('button'))
+    expect(tools.length).toBe(9)
+    expect(tools.every((b) => b.classList.contains('sketch-tool'))).toBe(true)
+    for (const label of ['eraser', 'brushSize', 'undo', 'clear']) {
+      expect(toolbar.querySelector(`[aria-label="games.guess_my_drawing.game.${label}"]`)).not.toBeNull()
+    }
+    expect(container.querySelector('.sketch-feed')).toBeNull()
+  })
+
+  it('brings the feed in with the first guess', () => {
+    const guess = { id: 'r1-g1', playerId: 'user-3', guess: 'house', submittedAt: 1, isCorrect: false }
+    const gameData = buildGameData({}, { word: CASTLE, prompt: 'castle', guesses: [guess] })
+    const { container } = render(<SketchAndGuessGameBoard {...buildProps({ gameData, playerId: 'user-2' })} />)
+    expect(container.querySelector('.sketch-feed')).not.toBeNull()
   })
 })
