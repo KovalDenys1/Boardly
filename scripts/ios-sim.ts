@@ -3,6 +3,7 @@
  *
  *   npx tsx scripts/ios-sim.ts /games/yahtzee
  *   npx tsx scripts/ios-sim.ts /lobby/1234 --device "iPhone 17 Pro Max" --guest guest.json
+ *   npx tsx scripts/ios-sim.ts /profile --sign-in account.json   (a JSON file of { email, password })
  *   npx tsx scripts/ios-sim.ts /dev/page --scroll '[data-testid="x"]' --tap '.button' --out tmp/ios
  *   npx tsx scripts/ios-sim.ts / --eval "return navigator.canShare?.({ files: [new File(['x'], 'a.png', { type: 'image/png' })] })"
  *
@@ -34,6 +35,7 @@ interface Options {
   name: string
   base: string
   guest?: string
+  signIn?: string
   scroll?: string
   tap?: string
   waitFor?: string
@@ -61,6 +63,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--name') opts.name = next()
     else if (arg === '--base') opts.base = next()
     else if (arg === '--guest') opts.guest = next()
+    else if (arg === '--sign-in') opts.signIn = next()
     else if (arg === '--scroll') opts.scroll = next()
     else if (arg === '--tap') opts.tap = next()
     else if (arg === '--wait-for') opts.waitFor = next()
@@ -158,6 +161,23 @@ async function main() {
       webdriver(driver.port, method, `/session/${session}${path}`, body)
     const run = (script: string, args: unknown[] = []) => wd('POST', '/execute/sync', { script, args })
 
+    if (opts.signIn) {
+      // Every WebDriver session starts with an empty cookie jar, so the sign-in has to happen inside this one.
+      const account = JSON.parse(readFileSync(opts.signIn, 'utf8')) as { email: string; password: string }
+      await wd('POST', '/url', { url: new URL('/auth/login', opts.base).toString() })
+      const signedIn = await wd('POST', '/execute/async', {
+        script: `const done = arguments[arguments.length - 1]
+          ;(async () => {
+            const { csrfToken } = await (await fetch('/api/auth/csrf')).json()
+            const body = new URLSearchParams({ csrfToken, email: arguments[0], password: arguments[1], json: 'true' })
+            await fetch('/api/auth/callback/credentials', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+            const session = await (await fetch('/api/auth/session')).json()
+            return session?.user?.email ?? null
+          })().then(done, () => done(null))`,
+        args: [account.email, account.password],
+      })
+      if (signedIn !== account.email) throw new Error(`Sign-in as ${account.email} failed`)
+    }
     await wd('POST', '/url', { url })
     if (opts.guest) {
       // A guest is a token, an id and a name in localStorage (see CLAUDE.md, "Testing a game").
