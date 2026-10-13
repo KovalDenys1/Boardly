@@ -177,6 +177,28 @@ export function AudioSettingsButton() {
   )
 }
 
+/** One tap mutes or unmutes; the volume itself lives in Settings and the desktop popover. */
+export function MuteToggleButton({ className = '' }: { className?: string }) {
+  const { t } = useTranslation()
+  const { enabled, volume, toggleMute } = useAudioSettings()
+  const muted = !enabled || volume === 0
+
+  return (
+    <button
+      type="button"
+      onClick={toggleMute}
+      aria-pressed={muted}
+      aria-label={muted ? t('header.unmute') : t('header.mute')}
+      title={muted ? t('header.unmute') : t('header.mute')}
+      className={`flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-bd-line bg-bd-bg transition-colors hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 ${
+        muted ? 'text-bd-ink-muted' : 'text-bd-ink'
+      } ${className}`}
+    >
+      <VolumeIcon muted={muted} />
+    </button>
+  )
+}
+
 export function AudioSettingsMobilePanel() {
   const { t } = useTranslation()
   const { enabled, volume, toggleMute, changeVolume } = useAudioSettings()

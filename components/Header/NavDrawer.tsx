@@ -11,10 +11,8 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { isNavItemActive, visibleNavItems, type SiteNavItem } from '@/lib/site-nav'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
-import { AudioSettingsMobilePanel } from './AudioSettingsButton'
 import { ForgetGuestButton } from './ForgetGuestButton'
-import { ThemeMobilePanel } from './ThemeToggle'
+import { QuickSettingsRow } from './QuickSettingsRow'
 import { UserAvatar } from './UserAvatar'
 
 export const NAV_DRAWER_ID = 'site-nav-drawer'
@@ -150,16 +148,9 @@ export function NavDrawer({
               </Link>
             )
           })}
-
-          <div className="my-2 h-px shrink-0 bg-bd-line" />
-
-          <div className="shrink-0 rounded-[14px] border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-3">
-            <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-bd-ink-muted">{t('header.language')}</p>
-            <LanguageSwitcher variant="panel" />
-          </div>
-          <AudioSettingsMobilePanel />
-          <ThemeMobilePanel />
         </nav>
+
+        <QuickSettingsRow />
 
         <div className="nav-drawer-footer flex shrink-0 flex-col gap-2.5 border-t-[1.5px] border-bd-line bg-bd-bg2 px-5 py-4">
           {isAuthenticated ? (

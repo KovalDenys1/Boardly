@@ -10,6 +10,8 @@ import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LanguageSwitcherProps {
   variant?: 'header' | 'panel'
+  /** Portals the list and pins it to the button, for a parent that clips overflow. */
+  anchor?: 'top end' | 'bottom end'
 }
 
 // Each language's own self-name (endonym), not translated — a Russian
@@ -53,7 +55,7 @@ function CheckIcon() {
   )
 }
 
-export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitcherProps) {
+export default function LanguageSwitcher({ variant = 'header', anchor }: LanguageSwitcherProps) {
   const { t, i18n } = useTranslation()
   const isPanelVariant = variant === 'panel'
 
@@ -127,9 +129,10 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
         <MenuItems
-          className={`absolute right-0 z-50 mt-2 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
-            isPanelVariant ? 'w-full' : 'w-[176px]'
-          }`}
+          anchor={anchor ? { to: anchor, gap: 8 } : undefined}
+          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
+            anchor ? '' : 'absolute right-0 mt-2'
+          } ${isPanelVariant ? 'w-full' : 'w-[176px]'}`}
         >
           {LANGUAGE_OPTIONS.map((option) => {
             const isSelected = option.code === currentLocale

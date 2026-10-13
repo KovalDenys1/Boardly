@@ -399,6 +399,7 @@ const en = {
     themeDark: 'Dark',
     themeSystem: 'System',
     themeCurrent: 'Theme: {{mode}}',
+    quickSettings: 'Quick settings',
   },
   home: {
     welcomeBack: 'Welcome back, {{name}}!',

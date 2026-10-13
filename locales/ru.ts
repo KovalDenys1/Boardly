@@ -434,6 +434,7 @@ const ru = {
     themeDark: 'Тёмная',
     themeSystem: 'Системная',
     themeCurrent: 'Тема: {{mode}}',
+    quickSettings: 'Быстрые настройки',
   },
   home: {
     welcomeBack: 'С возвращением, {{name}}!',

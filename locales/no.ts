@@ -399,6 +399,7 @@ const no = {
     themeDark: 'Mørk',
     themeSystem: 'System',
     themeCurrent: 'Tema: {{mode}}',
+    quickSettings: 'Hurtiginnstillinger',
   },
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',

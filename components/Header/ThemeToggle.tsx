@@ -108,54 +108,71 @@ export function ThemeToggle() {
   )
 }
 
-export function ThemeMobilePanel() {
+const THEME_OPTIONS: { value: ThemeMode; labelKey: 'header.themeLight' | 'header.themeSystem' | 'header.themeDark'; Icon: React.FC }[] = [
+  { value: 'light', labelKey: 'header.themeLight', Icon: SunIcon },
+  { value: 'system', labelKey: 'header.themeSystem', Icon: SystemIcon },
+  { value: 'dark', labelKey: 'header.themeDark', Icon: MoonIcon },
+]
+
+const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+
+/**
+ * Light / System / Dark as one segmented control. `compact` shows icons only, for a
+ * row that has to share its width; the full form adds the label under each icon.
+ */
+export function ThemeSegmented({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation()
   const { mode, mounted, setTheme } = useThemeMode()
 
-  if (!mounted) return null
-
-  const options: { value: ThemeMode; label: string; Icon: React.FC }[] = [
-    { value: 'light', label: t('header.themeLight'), Icon: SunIcon },
-    { value: 'system', label: t('header.themeSystem'), Icon: SystemIcon },
-    { value: 'dark', label: t('header.themeDark'), Icon: MoonIcon },
-  ]
+  if (!mounted) {
+    return <div aria-hidden className={compact ? 'h-9 w-[118px]' : 'h-[66px]'} />
+  }
 
   return (
-    <div style={{ borderRadius: 14, border: '1.5px solid var(--bd-line)', background: 'var(--bd-card-warm)', padding: '12px 14px', marginTop: 4 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bd-ink-muted)', marginBottom: 10 }}>
-        {t('header.themeLabel')}
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-        {options.map(({ value, label, Icon }) => {
-          const active = mode === value
-          return (
-            <button
-              key={value}
-              onClick={() => setTheme(value)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 5,
-                padding: '9px 4px',
-                borderRadius: 10,
-                border: active ? '1.5px solid var(--bd-ink)' : '1.5px solid var(--bd-line)',
-                background: active ? 'var(--bd-bg2)' : 'transparent',
-                color: active ? 'var(--bd-ink)' : 'var(--bd-ink-muted)',
-                fontSize: 11,
-                fontWeight: active ? 700 : 500,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'all 0.15s',
-              }}
-              aria-pressed={active}
-            >
-              <Icon />
-              {label}
-            </button>
-          )
-        })}
-      </div>
+    <div
+      role="group"
+      aria-label={t('header.themeLabel')}
+      className={compact ? 'inline-flex rounded-xl border-[1.5px] border-bd-line bg-bd-bg p-0.5' : 'grid grid-cols-3 gap-1.5'}
+    >
+      {THEME_OPTIONS.map(({ value, labelKey, Icon }) => {
+        const active = mode === value
+        const label = t(labelKey)
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTheme(value)}
+            aria-pressed={active}
+            aria-label={compact ? label : undefined}
+            title={compact ? label : undefined}
+            className={
+              compact
+                ? `flex h-8 w-9 items-center justify-center rounded-[9px] transition-colors ${
+                    active ? 'bg-bd-ink text-bd-bg' : 'text-bd-ink-muted hover:bg-bd-bg2 hover:text-bd-ink'
+                  } ${focusRing}`
+                : `flex flex-col items-center gap-1.5 rounded-[10px] border-[1.5px] px-1 py-2 text-[11px] transition-colors ${
+                    active
+                      ? 'border-bd-ink bg-bd-bg2 font-bold text-bd-ink'
+                      : 'border-bd-line bg-transparent font-medium text-bd-ink-muted hover:bg-bd-bg2'
+                  } ${focusRing}`
+            }
+          >
+            <Icon />
+            {!compact && label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export function ThemeMobilePanel() {
+  const { t } = useTranslation()
+
+  return (
+    <div className="mt-1 rounded-[14px] border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-3">
+      <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-bd-ink-muted">{t('header.themeLabel')}</p>
+      <ThemeSegmented />
     </div>
   )
 }
