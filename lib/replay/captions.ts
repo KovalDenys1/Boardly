@@ -104,7 +104,7 @@ const ludo: CaptionTable = (step, ctx): ReplayCaption | null => {
   const event = (data.events as Array<{ kind: string; roll: number; capturedPlayerIds?: string[] }> | undefined)?.at(-1)
   const roll = event?.roll ?? (data.dice as number | undefined) ?? 0
   if (step.action === 'roll' || step.action === 'timeout') {
-    if (event?.kind === 'no-move' && step.action !== 'move') return { key: 'profile.gameReplay.captions.ludo.rollNoMove', params: { player, roll } }
+    if (event?.kind === 'no-move') return { key: 'profile.gameReplay.captions.ludo.rollNoMove', params: { player, roll } }
     if (event?.kind === 'triple-six') return { key: 'profile.gameReplay.captions.ludo.tripleSix', params: { player } }
     if (step.action === 'roll') return { key: 'profile.gameReplay.captions.ludo.roll', params: { player, roll } }
   }
