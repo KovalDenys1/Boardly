@@ -1764,6 +1764,13 @@ const ru = {
         full: 'Заполнено',
         newGame: 'НОВАЯ ИГРА',
       },
+      board: {
+        label: 'Доска «Четыре в ряд»',
+        cell: 'Ряд {{row}}, столбец {{col}}: {{disc}}',
+        red: 'красная фишка',
+        yellow: 'жёлтая фишка',
+        empty: 'пусто',
+      },
       game: {
         lobbyNotFoundTitle: 'Лобби не найдено',
         lobbyNotFoundDescription: 'Это лобби не существует или было закрыто.',
@@ -4182,9 +4189,6 @@ const ru = {
       roundAdvanced: 'Раунд продолжен',
       board: {
         dice: 'Кубики',
-        redDisc: 'Красный',
-        yellowDisc: 'Жёлтый',
-        toMove: 'ходит',
       },
     },
     gameResults: {

@@ -1766,6 +1766,13 @@ const uk: TranslationWithPlurals = {
         full: 'Заповнене',
         newGame: 'НОВА ГРА',
       },
+      board: {
+        label: 'Дошка «Чотири в ряд»',
+        cell: 'Ряд {{row}}, стовпець {{col}}: {{disc}}',
+        red: 'червона фішка',
+        yellow: 'жовта фішка',
+        empty: 'порожньо',
+      },
       game: {
         lobbyNotFoundTitle: 'Лобі не знайдено',
         lobbyNotFoundDescription: 'Це лобі не існує або було закрито.',
@@ -4195,9 +4202,6 @@ const uk: TranslationWithPlurals = {
       roundAdvanced: 'Раунд продовжено',
       board: {
         dice: 'Кубики',
-        redDisc: 'Червоний',
-        yellowDisc: 'Жовтий',
-        toMove: 'ходить',
       },
     },
     gameResults: {

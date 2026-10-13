@@ -1714,6 +1714,13 @@ const no = {
         full: 'Fullt',
         newGame: 'NYTT SPILL',
       },
+      board: {
+        label: 'Fire på rad-brett',
+        cell: 'Rad {{row}}, kolonne {{col}}: {{disc}}',
+        red: 'rød brikke',
+        yellow: 'gul brikke',
+        empty: 'tom',
+      },
       game: {
         lobbyNotFoundTitle: 'Lobby ikke funnet',
         lobbyNotFoundDescription: 'Lobbyen du leter etter eksisterer ikke eller er lukket.',
@@ -4083,9 +4090,6 @@ const no = {
       roundAdvanced: 'Runden gikk videre',
       board: {
         dice: 'Terninger',
-        redDisc: 'Rød',
-        yellowDisc: 'Gul',
-        toMove: 'skal flytte',
       },
     },
     gameResults: {
