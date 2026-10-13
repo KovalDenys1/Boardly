@@ -17,7 +17,7 @@ export function isFinished(step: ReplayStep): boolean {
   return (step.state as { status?: unknown } | null)?.status === 'finished'
 }
 
-const common: CaptionTable = (step, ctx) => {
+const common: CaptionTable = (step, ctx): ReplayCaption | null => {
   const player = nameOf(ctx, step.actorId)
   const accepted = (step.payload as { accept?: unknown } | null)?.accept === true
   switch (step.action) {
@@ -48,7 +48,7 @@ const roundEnd = (step: ReplayStep, ctx: ReplayContext, winnerSeat: number | nul
   return { key: `profile.gameReplay.captions.${game}.winsRound`, params: { player: seatName(ctx, winnerSeat) } }
 }
 
-const ticTacToe: CaptionTable = (step, ctx) => {
+const ticTacToe: CaptionTable = (step, ctx): ReplayCaption | null => {
   const data = dataOf(step.state)
   if (!data || step.action !== 'place') return null
   const winner = data.winner
@@ -62,7 +62,7 @@ const ticTacToe: CaptionTable = (step, ctx) => {
   }
 }
 
-const connectFour: CaptionTable = (step, ctx) => {
+const connectFour: CaptionTable = (step, ctx): ReplayCaption | null => {
   const data = dataOf(step.state)
   if (!data || step.action !== 'drop') return null
   const winner = data.winner
@@ -77,7 +77,7 @@ export function checkersSquareName([row, col]: [number, number]): string {
   return `${FILES[col] ?? '?'}${8 - row}`
 }
 
-const checkers: CaptionTable = (step, ctx) => {
+const checkers: CaptionTable = (step, ctx): ReplayCaption | null => {
   const data = dataOf(step.state)
   if (!data || step.action !== 'step') return null
   const player = nameOf(ctx, step.actorId)
@@ -94,7 +94,7 @@ const checkers: CaptionTable = (step, ctx) => {
   return { key: 'profile.gameReplay.captions.checkers.move', params }
 }
 
-const ludo: CaptionTable = (step, ctx) => {
+const ludo: CaptionTable = (step, ctx): ReplayCaption | null => {
   const data = dataOf(step.state)
   if (!data || (step.action !== 'roll' && step.action !== 'move' && step.action !== 'timeout')) return null
   const player = nameOf(ctx, step.actorId)

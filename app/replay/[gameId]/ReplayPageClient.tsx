@@ -12,7 +12,7 @@ import ReplayPlayerRail from '@/components/replay/ReplayPlayerRail'
 import ReplayTransport, { REPLAY_SPEEDS } from '@/components/replay/ReplayTransport'
 import { loadReplayRenderer } from '@/components/replay/registry'
 import { clientLogger } from '@/lib/client-logger'
-import { getCatalogGames } from '@/lib/game-catalog'
+import { getGameMetadata } from '@/lib/game-catalog'
 import { gameNameKey } from '@/lib/game-name-key'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { describeStep } from '@/lib/replay/captions'
@@ -164,7 +164,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
     )
   }
 
-  const catalog = getCatalogGames().find((entry) => entry.gameType === gameType)
+  const meta = getGameMetadata(gameType)
   const nameKey = gameNameKey(gameType)
   const gameName = nameKey ? t(nameKey) : gameType
   const activeId = activeSeatId(step.state)
@@ -193,7 +193,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
       isMe={seat.userId === ctx.viewerId}
       isWinner={seat.userId === winnerId}
       side={side}
-      accentColor={side === 'left' ? (catalog?.accentColor ?? SEAT_COLORS[0]) : SEAT_COLORS[1]}
+      accentColor={side === 'left' ? (meta?.accentColor ?? SEAT_COLORS[0]) : SEAT_COLORS[1]}
       userId={seat.userId}
     />
   )
