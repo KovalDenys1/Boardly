@@ -4,7 +4,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { metadata } from '@/app/premium/page'
 import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/premium/premium-json-ld'
 import PremiumContent from '@/app/premium/PremiumContent'
-import { organizationNode } from '@/lib/organization-json-ld'
 import { trackPremiumCta } from '@/lib/analytics'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
 
@@ -73,15 +72,39 @@ describe('/premium metadata', () => {
 })
 
 describe('/premium JSON-LD', () => {
-  it('offers exactly the plans Stripe priced, against the shared Organization node', () => {
+  it('offers exactly the plans Stripe priced', () => {
     const node = premiumProductJsonLd(BOTH_PLANS)
     expect(node['@type']).toBe('Product')
     expect(node.url).toBe(PREMIUM_URL)
-    expect(node.brand).toEqual({ '@id': organizationNode['@id'] })
     expect(node.offers).toEqual([
       expect.objectContaining({ price: '2.99', priceCurrency: 'USD' }),
       expect.objectContaining({ price: '19.99', priceCurrency: 'USD' }),
     ])
+  })
+
+  // Search Console's Merchant listings report (#1391): image is required, brand
+  // must be a typed object, and each Offer needs a return and a shipping policy.
+  it('is a complete merchant listing for Google', () => {
+    const node = premiumProductJsonLd(BOTH_PLANS)
+    expect(node.image).toEqual([expect.stringMatching(/^https:\/\/boardly\.online\/og\/premium$/)])
+    expect(node.brand).toEqual({ '@type': 'Brand', name: 'Boardly' })
+    for (const offer of node.offers ?? []) {
+      expect(offer.hasMerchantReturnPolicy).toEqual(
+        expect.objectContaining({
+          '@type': 'MerchantReturnPolicy',
+          returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+          applicableCountry: expect.arrayContaining(['NO', 'US']),
+        })
+      )
+      expect(offer.shippingDetails).toEqual(
+        expect.objectContaining({
+          '@type': 'OfferShippingDetails',
+          shippingRate: { '@type': 'MonetaryAmount', value: 0, currency: offer.priceCurrency },
+          shippingDestination: expect.arrayContaining([{ '@type': 'DefinedRegion', addressCountry: 'NO' }]),
+          deliveryTime: expect.objectContaining({ '@type': 'ShippingDeliveryTime' }),
+        })
+      )
+    }
   })
 
   it('publishes no Offer for a plan Stripe could not price', () => {
