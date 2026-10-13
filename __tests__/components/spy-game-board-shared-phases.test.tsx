@@ -82,7 +82,9 @@ function renderBoard(state, currentUserId: string) {
 
 function turnMarkers(container: HTMLElement) {
   return {
-    activeSeats: container.querySelectorAll('.game-player-card[data-active="true"]').length,
+    activeSeats:
+      container.querySelectorAll('.game-player-card[data-active="true"]').length +
+      container.querySelectorAll('.spy-player-row-active').length,
     labels:
       screen.queryAllByText('game.ui.yourTurn').length + screen.queryAllByText('game.ui.theirTurn').length,
   }

@@ -782,7 +782,7 @@ export default function SpyGameBoard({
         </div>
         <div className="spy-roster-list mt-3">
           {normalizedPlayers.map((player) => {
-            const isCurrent = player.id === data.currentQuestionerId
+            const isCurrent = isQuestioning && player.id === data.currentQuestionerId
             const nudge = isCurrent && turnPassFresh
             return (
               <div
