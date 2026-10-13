@@ -235,10 +235,16 @@ export default function SpyResults({
         )}
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          {!isGameOver && onNextRound && (
-            <button onClick={onNextRound} className="bd-btn bd-btn-primary flex-1 justify-center">
-              {t('spy.nextRound')}
-            </button>
+          {!isGameOver && (
+            onNextRound ? (
+              <button onClick={onNextRound} className="bd-btn bd-btn-primary flex-1 justify-center">
+                {t('spy.nextRound')}
+              </button>
+            ) : (
+              <div className="flex-1 rounded-2xl border border-(--bd-line) px-4 py-3 text-center text-sm font-semibold text-bd-ink-muted">
+                {t('game.ui.waitingForHost')}
+              </div>
+            )
           )}
 
           {isGameOver && (
