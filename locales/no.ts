@@ -964,7 +964,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Gjett spionen på Boardly gratis?',
-            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), en lengre spillhistorikk med nedlasting av repriser og premium-lobbytemaer krever Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Gjett spionen på mobil?',
@@ -1153,7 +1153,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Koster Tre på rad på Boardly noe?',
-            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, repriser av partier og egne lobbytemaer; selve spillet er det samme.',
+            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, lengre spillhistorikk og egne lobbytemaer; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Må jeg registrere meg først?',
@@ -1889,7 +1889,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er dam på Boardly gratis?',
-            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og lengre spillhistorikk; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Trenger jeg en konto for å spille?',
@@ -2316,7 +2316,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Ludo på Boardly gratis?',
-            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, lengre spillhistorikk og profilutseende.',
           },
           worksOnPhone: {
             q: 'Kan jeg spille Ludo på mobilen?',
@@ -3942,6 +3942,17 @@ const no = {
       cancel: 'Avbryt'
     },
     gameHistory: {
+      result: {
+        won: 'Vant',
+        lost: 'Tapte',
+        draw: 'Uavgjort',
+        abandoned: 'Forlatt',
+        cancelled: 'Avlyst',
+        inProgress: 'Pågår',
+      },
+      moreWithPremium: '{{count}} spill til med Premium',
+      moreWithPremium_one: '{{count}} spill til med Premium',
+      soloGame: 'Solospill',
       title: 'Spillhistorikk',
       status: 'Spillstatus',
       gameType: 'Spilltype',
@@ -3957,6 +3968,55 @@ const no = {
       clickToView: 'Klikk for å se detaljerte resultater'
     },
     gameReplay: {
+      youBadge: 'du',
+      first: 'Første trekk',
+      last: 'Siste trekk',
+      backToHistory: 'Tilbake til historikken',
+      stepCounter: '{{current}} av {{total}}',
+      captions: {
+        common: {
+          gameStarted: 'Spillet begynner',
+          gameFinished: 'Spillet er over',
+          drawGame: 'Spillet endte uavgjort',
+          timeout: 'Tiden gikk ut',
+          nextRound: '{{player}} startet neste runde',
+          undoRequested: '{{player}} ba om å ta tilbake et trekk',
+          undoAccepted: '{{player}} godtok angringen',
+          undoDeclined: '{{player}} avslo angringen',
+          drawRequested: '{{player}} tilbød remis',
+          drawAccepted: '{{player}} godtok remis',
+          drawDeclined: '{{player}} avslo remis',
+          forfeit: '{{player}} gikk tom for tid og taper',
+        },
+        ticTacToe: {
+          mark: '{{player}} satte {{symbol}} på rad {{row}}, kolonne {{col}}',
+          winsRound: '{{player}} vinner runden',
+          drawRound: 'Runden endte uavgjort',
+        },
+        connectFour: {
+          drop: '{{player}} slapp en brikke i kolonne {{col}}',
+          winsRound: '{{player}} vinner runden',
+          drawRound: 'Runden endte uavgjort',
+        },
+        checkers: {
+          move: '{{player}} flyttet {{from}} til {{to}}',
+          jump: '{{player}} slo {{count}} brikker, {{from}} til {{to}}',
+          jump_one: '{{player}} slo en brikke, {{from}} til {{to}}',
+          jump_other: '{{player}} slo {{count}} brikker, {{from}} til {{to}}',
+          crowned: '{{player}} nådde siste rad og ble dame, {{from}} til {{to}}',
+          wins: '{{player}} vinner',
+        },
+        ludo: {
+          roll: '{{player}} kastet {{roll}}',
+          rollNoMove: '{{player}} kastet {{roll}} og kan ikke flytte',
+          tripleSix: '{{player}} kastet tre seksere og mistet turen',
+          enter: '{{player}} satte en brikke ut',
+          move: '{{player}} flyttet en brikke {{roll}} felt',
+          capture: '{{player}} slo en brikke til {{opponent}}',
+          home: '{{player}} fikk en brikke i mål',
+          wins: '{{player}} vinner',
+        },
+      },
       title: 'Kampreplay',
       watch: 'Se replay',
       unavailable: 'Replay utilgjengelig',

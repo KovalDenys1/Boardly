@@ -74,17 +74,24 @@ export async function cleanupOversizedReplaySnapshots(): Promise<ReplayOverflowC
   let deletedSnapshots = 0
 
   for (const { gameId } of overflowGames) {
+    // The oldest snapshot is game:start, the only one holding the initial board.
+    const first = await prisma.gameStateSnapshots.findFirst({
+      where: { gameId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    })
     const overflow = await prisma.gameStateSnapshots.findMany({
       where: { gameId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: { id: true },
-      skip: MAX_SNAPSHOTS_PER_GAME,
+      skip: MAX_SNAPSHOTS_PER_GAME - 1,
     })
+    const ids = overflow.map((snapshot) => snapshot.id).filter((id) => id !== first?.id)
 
-    if (overflow.length === 0) continue
+    if (ids.length === 0) continue
 
     const result = await prisma.gameStateSnapshots.deleteMany({
-      where: { id: { in: overflow.map((snapshot) => snapshot.id) } },
+      where: { id: { in: ids } },
     })
     deletedSnapshots += result.count
   }

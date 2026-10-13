@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -65,7 +67,6 @@ interface GameResult {
 interface GameResultsModalProps {
   gameId: string | null
   onClose: () => void
-  onWatchReplay?: (gameId: string) => void
 }
 
 function getScoreValue(player: Player): number {
@@ -90,7 +91,6 @@ function formatOrdinalPlace(place: number, locale: string): string {
 export default function GameResultsModal({
   gameId,
   onClose,
-  onWatchReplay,
 }: GameResultsModalProps) {
   const { t } = useTranslation()
   const [game, setGame] = useState<GameResult | null>(null)
@@ -414,9 +414,9 @@ export default function GameResultsModal({
 
           {/* ── Replay CTA ── */}
           {game.hasReplay ? (
-            <button
-              type="button"
-              onClick={() => onWatchReplay?.(game.id)}
+            <Link
+              href={`/replay/${game.id}`}
+              onClick={onClose}
               className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition-all active:scale-[0.99]"
               style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
             >
@@ -424,7 +424,7 @@ export default function GameResultsModal({
                 <path d="M8 5v14l11-7z" />
               </svg>
               {t('profile.gameReplay.watch')}
-            </button>
+            </Link>
           ) : (
             <div
               className="flex items-start gap-3 rounded-2xl px-4 py-3.5 text-sm"

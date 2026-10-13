@@ -964,7 +964,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Guess the Spy on Boardly free?',
-            a: 'Yes, for everyone, guests included. Only letting spectators in (the host), replays (the viewer) and premium lobby themes need Premium.',
+            a: 'Yes, for everyone, guests included. Only letting spectators in (the host), a longer game history with replay downloads, and premium lobby themes need Premium.',
           },
           worksOnPhone: {
             q: 'Does Guess the Spy work on a phone?',
@@ -1153,7 +1153,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Does Tic Tac Toe on Boardly cost anything?',
-            a: 'No. Friends, all three bots and every series length are free. Premium adds extras such as spectators, replays and custom lobby themes; the game itself is the same.',
+            a: 'No. Friends, all three bots and every series length are free. Premium adds extras such as spectators, a longer game history and custom lobby themes; the game itself is the same.',
           },
           needAccount: {
             q: 'Do I have to register first?',
@@ -1889,7 +1889,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Checkers on Boardly free?',
-            a: 'Yes, including all three bots. Premium adds extras such as spectators and lobby themes for hosts, and game replays; the game is the same.',
+            a: 'Yes, including all three bots. Premium adds extras such as spectators and lobby themes for hosts, and a longer game history; the game is the same.',
           },
           needAccount: {
             q: 'Do I need an account to play?',
@@ -2316,7 +2316,7 @@ const en = {
         faq: {
           isItFree: {
             q: 'Is Ludo on Boardly free?',
-            a: 'Yes, every seat, mode, bot and timer. Premium adds extras around the game, such as spectators and lobby themes for the host, replays and profile looks.',
+            a: 'Yes, every seat, mode, bot and timer. Premium adds extras around the game, such as spectators and lobby themes for the host, a longer game history and profile looks.',
           },
           worksOnPhone: {
             q: 'Can I play Ludo on my phone?',
@@ -2989,7 +2989,7 @@ const en = {
         faq: {
           isItFree: {
             q: "Is Liar's Party free to play?",
-            a: 'Yes, the whole game is free for up to ten players. Premium adds bigger rooms, spectators, replays and lobby themes.',
+            a: 'Yes, the whole game is free for up to ten players. Premium adds bigger rooms, spectators, a longer game history and lobby themes.',
           },
           worksOnPhone: {
             q: "Does Liar's Party work on a phone?",
@@ -3953,6 +3953,17 @@ const en = {
       cancel: 'Cancel',
     },
     gameHistory: {
+      result: {
+        won: 'Won',
+        lost: 'Lost',
+        draw: 'Draw',
+        abandoned: 'Abandoned',
+        cancelled: 'Cancelled',
+        inProgress: 'In progress',
+      },
+      moreWithPremium: '{{count}} more games with Premium',
+      moreWithPremium_one: '{{count}} more game with Premium',
+      soloGame: 'Solo game',
       title: 'Game History',
       status: 'Status',
       gameType: 'Game Type',
@@ -3968,6 +3979,55 @@ const en = {
       clickToView: 'Click to view detailed results',
     },
     gameReplay: {
+      youBadge: 'you',
+      first: 'First move',
+      last: 'Last move',
+      backToHistory: 'Back to history',
+      stepCounter: '{{current}} of {{total}}',
+      captions: {
+        common: {
+          gameStarted: 'The game begins',
+          gameFinished: 'The game is over',
+          drawGame: 'The game ends in a draw',
+          timeout: 'Time ran out',
+          nextRound: '{{player}} started the next round',
+          undoRequested: '{{player}} asked to take a move back',
+          undoAccepted: '{{player}} allowed the take-back',
+          undoDeclined: '{{player}} declined the take-back',
+          drawRequested: '{{player}} offered a draw',
+          drawAccepted: '{{player}} accepted the draw',
+          drawDeclined: '{{player}} declined the draw',
+          forfeit: '{{player}} ran out of time and forfeits',
+        },
+        ticTacToe: {
+          mark: '{{player}} put {{symbol}} on row {{row}}, column {{col}}',
+          winsRound: '{{player}} wins the round',
+          drawRound: 'The round is a draw',
+        },
+        connectFour: {
+          drop: '{{player}} dropped a disc in column {{col}}',
+          winsRound: '{{player}} wins the round',
+          drawRound: 'The round is a draw',
+        },
+        checkers: {
+          move: '{{player}} moved {{from}} to {{to}}',
+          jump: '{{player}} jumped {{count}} pieces, {{from}} to {{to}}',
+          jump_one: '{{player}} jumped a piece, {{from}} to {{to}}',
+          jump_other: '{{player}} jumped {{count}} pieces, {{from}} to {{to}}',
+          crowned: '{{player}} reached the last row and was crowned, {{from}} to {{to}}',
+          wins: '{{player}} wins',
+        },
+        ludo: {
+          roll: '{{player}} rolled a {{roll}}',
+          rollNoMove: '{{player}} rolled a {{roll}} and has no move',
+          tripleSix: '{{player}} rolled three sixes and lost the turn',
+          enter: '{{player}} brought a token out',
+          move: '{{player}} moved a token {{roll}} squares',
+          capture: "{{player}} captured a token of {{opponent}}",
+          home: '{{player}} brought a token home',
+          wins: '{{player}} wins',
+        },
+      },
       title: 'Match Replay',
       watch: 'Watch Replay',
       unavailable: 'Replay Unavailable',
@@ -4741,7 +4801,7 @@ const en = {
     },
     q1: {
       question: 'Is Boardly free to play?',
-      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price; if you pay in your own currency instead, Link\'s exchange rate adds a conversion fee of 2 to 4%, which paying in US dollars avoids – for extras like replays, custom lobby themes and full stats, and free players may see ads.',
+      answer: 'Yes – every game is free to play, with no download and no account needed. Premium is an optional subscription from {{price}} a month – a US dollar price; if you pay in your own currency instead, Link\'s exchange rate adds a conversion fee of 2 to 4%, which paying in US dollars avoids – for extras like a longer game history, custom lobby themes and full stats, and free players may see ads.',
     },
     q2: {
       question: 'Do I need an account to play?',

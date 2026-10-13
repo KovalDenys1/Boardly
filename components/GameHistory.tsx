@@ -1,14 +1,18 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
-import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
+import { formatCompactDuration } from '@/lib/game-display'
+import { formatRelativeTime } from '@/lib/format-relative-time'
+import { gameNameKey } from '@/lib/game-name-key'
+import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type AvailableGameCatalogEntry } from '@/lib/game-catalog'
+import { Icon } from '@/components/icons'
+import GameIcon from '@/components/GameIcon'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
-import ReplayViewerModal from './ReplayViewerModal'
 import BoardlySelect from './ui/BoardlySelect'
 
 const GAME_HISTORY_STATUS_KEYS = {
@@ -19,42 +23,50 @@ const GAME_HISTORY_STATUS_KEYS = {
   cancelled: 'profile.gameHistory.cancelled',
 } as const satisfies Record<string, TranslationKeys>
 
-const GAME_TYPE_FILTER_OPTIONS = [
-  'all',
-  'yahtzee',
-  'guess_the_spy',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-  'memory',
-] as const
+type ViewerResult = 'won' | 'lost' | 'draw' | 'abandoned' | 'cancelled' | 'inProgress'
 
+const RESULT_KEYS = {
+  won: 'profile.gameHistory.result.won',
+  lost: 'profile.gameHistory.result.lost',
+  draw: 'profile.gameHistory.result.draw',
+  abandoned: 'profile.gameHistory.result.abandoned',
+  cancelled: 'profile.gameHistory.result.cancelled',
+  inProgress: 'profile.gameHistory.result.inProgress',
+} as const satisfies Record<ViewerResult, TranslationKeys>
+
+const RESULT_BADGE_CLASS: Record<ViewerResult, string> = {
+  won: 'bg-bd-mint text-bd-ink',
+  lost: 'bg-bd-coral/20 text-bd-ink',
+  draw: 'bg-bd-sun/40 text-bd-ink',
+  abandoned: 'bg-bd-bg2 text-bd-ink-soft',
+  cancelled: 'bg-bd-bg2 text-bd-ink-soft',
+  inProgress: 'bg-bd-lav/20 text-bd-ink',
+}
+
+let catalogGamesCache: AvailableGameCatalogEntry[] | null = null
+function availableCatalogGames(): AvailableGameCatalogEntry[] {
+  catalogGamesCache ??= getCatalogGames().filter(isAvailableCatalogEntry)
+  return catalogGamesCache
+}
 const STATUS_FILTER_OPTIONS = ['all', 'finished', 'playing', 'abandoned', 'cancelled'] as const
 
 const panelClassName =
   'rounded-[1.75rem] border-[1.5px] border-bd-line bg-bd-card-warm shadow-bd-soft'
 const warmSurfaceClassName =
   'rounded-3xl border border-bd-line bg-bd-bg'
-const tileClassName =
-  'rounded-2xl border border-bd-line bg-bd-card-warm'
-const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-transform hover:-translate-y-0.5 hover:bg-bd-bg2 disabled:cursor-not-allowed disabled:opacity-50'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
+const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
 
 interface Player {
   id: string
+  userId: string
+  isViewer: boolean
   username: string | null
   isPremium?: boolean
-  avatar: string | null
   isBot: boolean
-  bot?: {
-    id: string
-    userId: string
-    botType: string
-    difficulty: string
-  } | null
   score: number
   finalScore: number | null
   placement: number | null
@@ -71,6 +83,8 @@ interface GameHistoryItem {
   createdAt: string
   updatedAt: string
   abandonedAt: string | null
+  durationMs: number | null
+  viewerResult: ViewerResult
   hasReplay: boolean
   players: Player[]
 }
@@ -82,6 +96,8 @@ interface GameHistoryResponse {
     offset: number
     totalCount: number
     hasMore: boolean
+    capped?: boolean
+    hiddenCount?: number
   }
 }
 
@@ -95,15 +111,6 @@ function BoardIcon() {
   )
 }
 
-function ClockIcon() {
-  return (
-    <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 3" />
-    </svg>
-  )
-}
-
 function ReplayIcon() {
   return (
     <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -113,32 +120,9 @@ function ReplayIcon() {
   )
 }
 
-function ViewIcon() {
-  return (
-    <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function getStatusAccentClassName(status: string): string {
-  switch (status) {
-    case 'finished':
-      return 'bg-bd-mint'
-    case 'playing':
-      return 'bg-bd-sun'
-    case 'abandoned':
-      return 'bg-bd-coral'
-    case 'cancelled':
-      return 'bg-bd-bg2'
-    default:
-      return 'bg-bd-lav'
-  }
-}
-
 export default function GameHistory() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language
   const [games, setGames] = useState<GameHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -147,8 +131,8 @@ export default function GameHistory() {
   const [offset, setOffset] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [hiddenCount, setHiddenCount] = useState(0)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
-  const [selectedReplayGameId, setSelectedReplayGameId] = useState<string | null>(null)
 
   const limit = 20
 
@@ -161,17 +145,10 @@ export default function GameHistory() {
         limit: limit.toString(),
         offset: offset.toString(),
       })
-
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-
-      if (gameTypeFilter !== 'all') {
-        params.set('gameType', gameTypeFilter)
-      }
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (gameTypeFilter !== 'all') params.set('gameType', gameTypeFilter)
 
       const response = await fetch(`/api/user/games?${params.toString()}`)
-
       if (!response.ok) {
         throw new Error('Failed to load game history')
       }
@@ -180,6 +157,7 @@ export default function GameHistory() {
       setGames(data.games)
       setTotalCount(data.pagination.totalCount)
       setHasMore(data.pagination.hasMore)
+      setHiddenCount(data.pagination.capped ? data.pagination.hiddenCount ?? 0 : 0)
 
       clientLogger.log('Game history loaded', { count: data.games.length })
     } catch (err) {
@@ -204,54 +182,19 @@ export default function GameHistory() {
     setOffset(0)
   }
 
-  function handleNextPage() {
-    if (hasMore) {
-      setOffset(offset + limit)
-    }
-  }
-
-  function handlePreviousPage() {
-    if (offset > 0) {
-      setOffset(Math.max(0, offset - limit))
-    }
-  }
-
-  function formatDate(dateString: string): string {
-    const date = new Date(dateString)
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   function formatStatusLabel(status: string): string {
-    if (status === 'all') {
-      return t('profile.gameHistory.allStatuses')
-    }
-
+    if (status === 'all') return t('profile.gameHistory.allStatuses')
     const key = GAME_HISTORY_STATUS_KEYS[status as keyof typeof GAME_HISTORY_STATUS_KEYS]
-    if (key) {
-      return t(key)
-    }
-    return status.replace(/_/g, ' ')
+    return key ? t(key) : status.replace(/_/g, ' ')
   }
 
-  function formatGameTypeFilterLabel(gameType: string): string {
-    if (gameType === 'all') {
-      return t('profile.gameHistory.allGames')
-    }
-
-    return formatGameTypeLabel(gameType)
+  function gameName(gameType: string): string {
+    const key = gameNameKey(gameType)
+    return key ? t(key) : gameType.replace(/_/g, ' ')
   }
 
   function getVisibleRangeLabel(): string {
-    if (totalCount === 0) {
-      return t('profile.gameHistory.noGames')
-    }
-
+    if (totalCount === 0) return t('profile.gameHistory.noGames')
     return t('profile.gameHistory.showing', {
       start: offset + 1,
       end: Math.min(offset + limit, totalCount),
@@ -269,36 +212,17 @@ export default function GameHistory() {
 
   return (
     <div className="stack-y-6">
-      <GameResultsModal
-        gameId={selectedGameId}
-        onClose={() => setSelectedGameId(null)}
-        onWatchReplay={(gameId) => {
-          setSelectedGameId(null)
-          setSelectedReplayGameId(gameId)
-        }}
-      />
-      <ReplayViewerModal gameId={selectedReplayGameId} onClose={() => setSelectedReplayGameId(null)} />
+      <GameResultsModal gameId={selectedGameId} onClose={() => setSelectedGameId(null)} />
 
       <div className={`${panelClassName} overflow-hidden`}>
         <div className="relative p-6 sm:p-7">
           <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
-          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <p className={eyebrowClassName}>{t('profile.gameHistory.title')}</p>
-              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink">
-                {t('profile.gameHistory.title')}
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-bd-ink-soft">
-                {getVisibleRangeLabel()}
-              </p>
-            </div>
-
-            <div className={`${warmSurfaceClassName} px-4 py-3`}>
-              <p className={eyebrowClassName}>{t('profile.gameHistory.status')}</p>
-              <p className="mt-2 text-sm font-semibold text-bd-ink">
-                {formatStatusLabel(statusFilter)}
-              </p>
-            </div>
+          <div className="relative">
+            <p className={eyebrowClassName}>{t('profile.gameHistory.title')}</p>
+            <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink">
+              {t('profile.gameHistory.title')}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-bd-ink-soft">{getVisibleRangeLabel()}</p>
           </div>
         </div>
 
@@ -312,10 +236,10 @@ export default function GameHistory() {
                     value={gameTypeFilter}
                     onChange={handleGameTypeFilterChange}
                     ariaLabel={t('profile.gameHistory.gameType')}
-                    options={GAME_TYPE_FILTER_OPTIONS.map((option) => ({
-                      value: option,
-                      label: formatGameTypeFilterLabel(option),
-                    }))}
+                    options={[
+                      { value: 'all', label: t('profile.gameHistory.allGames') },
+                      ...availableCatalogGames().map((game) => ({ value: game.gameType, label: gameName(game.gameType) })),
+                    ]}
                     renderValue={(option) => (
                       <span className={gameTypeFilter !== 'all' ? 'block truncate font-semibold text-bd-ink' : 'block truncate'}>
                         {option?.label ?? ''}
@@ -365,145 +289,100 @@ export default function GameHistory() {
                 <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink">
                   {t('profile.gameHistory.noGames')}
                 </h3>
-                <p className="mt-2 max-w-xl text-sm text-bd-ink-soft sm:text-base">
-                  {getVisibleRangeLabel()}
-                </p>
+                <p className="mt-2 max-w-xl text-sm text-bd-ink-soft sm:text-base">{getVisibleRangeLabel()}</p>
               </div>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {games.map((game) => (
-                <div key={game.id} className={`${tileClassName} group relative overflow-hidden`}>
-                  <div className={`absolute inset-x-0 top-0 h-1.5 ${getStatusAccentClassName(game.status)}`} />
+            <ul className="flex flex-col gap-2.5">
+              {games.map((game) => {
+                const meta = getGameMetadata(game.gameType)
+                const opponents = game.players.filter((player) => !player.isViewer)
+                const whenAndHowLong = [
+                  formatRelativeTime(game.createdAt, locale),
+                  game.durationMs != null && game.status !== 'playing' && game.status !== 'waiting'
+                    ? formatCompactDuration(game.durationMs, locale)
+                    : null,
+                ].filter(Boolean).join(' · ')
 
-                  <div className="p-5 sm:p-6">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-                            <BoardIcon />
-                          </div>
-                          <div className="min-w-0">
-                            <h3
-                              className="truncate text-xl font-bold text-bd-ink"
-                              title={game.lobbyName}
-                            >
-                              {game.lobbyName}
-                            </h3>
-                            <p className="mt-1 text-sm text-bd-ink-soft">
-                              {formatGameTypeLabel(game.gameType)} · {formatDate(game.createdAt)}
-                            </p>
-                          </div>
-                        </div>
+                return (
+                  <li
+                    key={game.id}
+                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-bd-line bg-bd-card-warm p-3 sm:gap-4 sm:p-4"
+                  >
+                    {meta ? (
+                      <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="tile" />
+                    ) : (
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink">
+                        <BoardIcon />
                       </div>
+                    )}
 
-                      <div className="flex flex-wrap gap-2">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getGameStatusBadgeColor(game.status)}`}>
-                          {formatStatusLabel(game.status)}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGameId(game.id)}
+                      className={`min-w-0 rounded-xl text-left ${focusRing}`}
+                      aria-label={`${gameName(game.gameType)}: ${t('profile.gameHistory.clickToView')}`}
+                    >
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="truncate text-base font-bold text-bd-ink">{gameName(game.gameType)}</span>
+                        <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] ${RESULT_BADGE_CLASS[game.viewerResult] ?? RESULT_BADGE_CLASS.inProgress}`}>
+                          {t(RESULT_KEYS[game.viewerResult] ?? RESULT_KEYS.inProgress)}
                         </span>
-                        {game.lobbyCode && (
-                          <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft">
-                            {game.lobbyCode}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className={`${warmSurfaceClassName} mt-5 p-4`}>
-                      <div className="flex flex-wrap gap-2.5">
-                        {game.players.map((player, index) => (
-                          <div
-                            key={player.id}
-                            className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
-                              player.isWinner
-                                ? 'border-bd-sun-deep bg-bd-sun/20 text-bd-ink'
-                                : 'border-bd-line bg-bd-card-warm text-bd-ink-soft'
-                            }`}
-                          >
-                            <span className="flex items-center gap-1">
-                              <span
-                                className="max-w-40 truncate text-sm font-semibold sm:max-w-56"
-                                title={player.username || `Player ${index + 1}`}
-                              >
-                                {player.username || `Player ${index + 1}`}
-                              </span>
-                              {player.isPremium && !(player.isBot || player.bot) && (
-                                <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />
+                      </span>
+                      <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm text-bd-ink-soft">
+                        {opponents.length === 0 ? (
+                          <span>{t('profile.gameHistory.soloGame')}</span>
+                        ) : (
+                          opponents.map((player, index) => (
+                            <span key={player.id} className="inline-flex max-w-full items-center gap-1">
+                              <span className="truncate">{player.username || t('profile.gameReplay.playerFallback')}</span>
+                              {player.isBot && (
+                                <span className="rounded-full bg-bd-bg2 px-1.5 py-px text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-soft">
+                                  {t('profile.gameReplay.bot')}
+                                </span>
                               )}
+                              {player.isPremium && !player.isBot && <Icon name="crown" size={12} tone="premium" label="Premium" className="shrink-0" />}
+                              {index < opponents.length - 1 && <span aria-hidden>,</span>}
                             </span>
-                            {(player.isBot || player.bot) && (
-                              <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-soft">
-                                {t('profile.gameReplay.bot')}
-                              </span>
-                            )}
-                            {player.finalScore !== null ? (
-                              <span className="shrink-0 text-xs opacity-80">
-                                {player.finalScore} {t('profile.gameResults.points')}
-                              </span>
-                            ) : null}
-                            {player.isWinner ? (
-                              <span className="rounded-full bg-bd-sun px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-(--bd-ink-on-accent)">
-                                {t('lobby.game.win')}
-                              </span>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                          ))
+                        )}
+                        <span className="shrink-0 before:mr-1.5 before:content-['·']">{whenAndHowLong}</span>
+                      </span>
+                    </button>
 
-                    <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <p className="inline-flex items-center gap-1.5 text-sm text-bd-ink-soft">
-                        <ClockIcon />
-                        {formatDate(game.updatedAt)}
-                      </p>
-
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                        <button type="button" onClick={() => setSelectedGameId(game.id)} className={secondaryButtonClassName}>
-                          <ViewIcon />
-                          {t('profile.gameHistory.clickToView')}
-                        </button>
-                        <div className="flex flex-col gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedReplayGameId(game.id)}
-                            disabled={!game.hasReplay}
-                            className={game.hasReplay ? primaryButtonClassName : secondaryButtonClassName}
-                          >
-                            <ReplayIcon />
-                            {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
-                          </button>
-                          {!game.hasReplay && (
-                            <p className="px-1 text-xs text-bd-ink-soft">
-                              {game.status === 'abandoned'
-                                ? t('profile.gameResults.replayUnavailableAbandoned')
-                                : game.status === 'cancelled'
-                                  ? t('profile.gameResults.replayUnavailableCancelled')
-                                  : game.status === 'playing' || game.status === 'waiting'
-                                    ? t('profile.gameResults.replayUnavailableInProgress')
-                                    : t('profile.gameResults.replayUnavailableFinished')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    {game.hasReplay ? (
+                      <Link
+                        href={`/replay/${game.id}`}
+                        className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_3px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 sm:px-4 ${focusRing}`}
+                        aria-label={`${t('profile.gameReplay.watch')}: ${gameName(game.gameType)}`}
+                      >
+                        <ReplayIcon />
+                        <span className="hidden sm:inline">{t('profile.gameReplay.watch')}</span>
+                      </Link>
+                    ) : (
+                      <span className="w-11 shrink-0" aria-hidden />
+                    )}
+                  </li>
+                )
+              })}
+              {hiddenCount > 0 && (
+                <li className="px-1 pt-1 text-sm text-bd-ink-soft">
+                  <Link href="/profile?tab=premium" className={`font-semibold text-bd-lav-deep underline-offset-2 hover:underline ${focusRing}`}>
+                    {t('profile.gameHistory.moreWithPremium', { count: hiddenCount })}
+                  </Link>
+                </li>
+              )}
+            </ul>
           )}
 
           {(offset > 0 || hasMore) && (
             <div className={`${warmSurfaceClassName} p-4 sm:p-5`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button type="button" onClick={handlePreviousPage} disabled={offset === 0} className={secondaryButtonClassName}>
+                <button type="button" onClick={() => setOffset(Math.max(0, offset - limit))} disabled={offset === 0} className={secondaryButtonClassName}>
                   {t('common.previous')}
                 </button>
-
-                <span className="text-center text-sm text-bd-ink-soft">
-                  {getVisibleRangeLabel()}
-                </span>
-
-                <button type="button" onClick={handleNextPage} disabled={!hasMore} className={secondaryButtonClassName}>
+                <span className="text-center text-sm text-bd-ink-soft">{getVisibleRangeLabel()}</span>
+                <button type="button" onClick={() => hasMore && setOffset(offset + limit)} disabled={!hasMore} className={secondaryButtonClassName}>
                   {t('common.next')}
                 </button>
               </div>

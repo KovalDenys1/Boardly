@@ -2,10 +2,10 @@ import Die from '@/components/ui/Die'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { ReplayRendererProps } from './types'
 
-export default function YahtzeeReplayRenderer({ snapshotState, players, playerNameById }: ReplayRendererProps) {
+export default function YahtzeeReplayRenderer({ step, seats, playerNameById }: ReplayRendererProps) {
   const { t } = useTranslation()
 
-  const state = snapshotState as Record<string, unknown> | null
+  const state = step.state as Record<string, unknown> | null
   if (!state || typeof state !== 'object') return null
 
   const data = state.data as Record<string, unknown> | null
@@ -23,7 +23,7 @@ export default function YahtzeeReplayRenderer({ snapshotState, players, playerNa
 
   // Per-player total scores from scorecards
   const scores = Array.isArray(data.scores) ? (data.scores as Record<string, unknown>[]) : []
-  const playerTotals: { name: string; total: number }[] = players.map((p, i) => {
+  const playerTotals: { name: string; total: number }[] = seats.map((p, i) => {
     const scorecard = scores[i]
     const total = scorecard
       ? Object.values(scorecard).reduce<number>((sum, v) => sum + (typeof v === 'number' ? v : 0), 0)

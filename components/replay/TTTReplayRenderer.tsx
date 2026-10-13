@@ -21,10 +21,10 @@ function isWinningLine(value: unknown): value is [number, number][] {
   return Array.isArray(value) && value.every((pair) => Array.isArray(pair) && pair.length === 2)
 }
 
-export default function TTTReplayRenderer({ snapshotState, players, playerNameById }: ReplayRendererProps) {
+export default function TTTReplayRenderer({ step, seats, playerNameById }: ReplayRendererProps) {
   const { t } = useTranslation()
 
-  const state = snapshotState as Record<string, unknown> | null
+  const state = step.state as Record<string, unknown> | null
   if (!state || typeof state !== 'object') return null
 
   const data = state.data as Record<string, unknown> | null
@@ -47,9 +47,8 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
     for (const [r, c] of winningLine) winningCells.add(`${r}-${c}`)
   }
 
-  // Map X/O symbol to player name (first player is X, second is O)
-  const xPlayer = players[0] ? (playerNameById.get(players[0].userId) ?? 'X') : 'X'
-  const oPlayer = players[1] ? (playerNameById.get(players[1].userId) ?? 'O') : 'O'
+  const xPlayer = seats[0] ? (playerNameById.get(seats[0].userId) ?? 'X') : 'X'
+  const oPlayer = seats[1] ? (playerNameById.get(seats[1].userId) ?? 'O') : 'O'
 
   return (
     <div className="rounded-2xl border-[1.5px] border-bd-line bg-bd-bg2 p-4 sm:p-5">

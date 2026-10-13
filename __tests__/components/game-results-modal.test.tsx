@@ -112,23 +112,13 @@ describe('GameResultsModal', () => {
       })
     )
 
-    const handleWatchReplay = jest.fn()
-
-    render(
-      <GameResultsModal
-        gameId="game-1"
-        onClose={jest.fn()}
-        onWatchReplay={handleWatchReplay}
-      />
-    )
+    render(<GameResultsModal gameId="game-1" onClose={jest.fn()} />)
 
     expect((await screen.findAllByText('Friday Match')).length).toBeGreaterThan(0)
     expect(screen.getByText('profile.gameResults.summaryWinner')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.duration')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'profile.gameReplay.watch' }))
-
-    expect(handleWatchReplay).toHaveBeenCalledWith('game-1')
+    expect(screen.getByRole('link', { name: 'profile.gameReplay.watch' })).toHaveAttribute('href', '/replay/game-1')
   })
 
   it('shows replay as unavailable when no snapshots exist', async () => {

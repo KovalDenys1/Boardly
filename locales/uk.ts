@@ -1010,7 +1010,7 @@ const uk: TranslationWithPlurals = {
         faq: {
           isItFree: {
             q: 'Чи безкоштовна Вгадай шпигуна на Boardly?',
-            a: 'Так, для всіх, зокрема для гостей. Premium потрібен лише, щоб пускати глядачів (хостові), для повторів (глядачеві) і преміум-тем лобі.',
+            a: 'Так, для всіх, зокрема для гостей. Premium потрібен лише, щоб пускати глядачів (хостові), для довгої історії ігор зі завантаженням повторів і преміум-тем лобі.',
           },
           worksOnPhone: {
             q: 'Чи працює Вгадай шпигуна на телефоні?',
@@ -1199,7 +1199,7 @@ const uk: TranslationWithPlurals = {
         faq: {
           isItFree: {
             q: 'Скільки коштують Хрестики-нолики на Boardly?',
-            a: 'Нічого. Ігри з друзями, усі три боти й серії будь-якої довжини безкоштовні. Premium додає додаткові можливості, як-от глядачів, повтори партій і теми лобі; сама гра та сама.',
+            a: 'Нічого. Ігри з друзями, усі три боти й серії будь-якої довжини безкоштовні. Premium додає додаткові можливості, як-от глядачів, довгу історію партій і теми лобі; сама гра та сама.',
           },
           needAccount: {
             q: 'Чи треба спершу реєструватися?',
@@ -1941,7 +1941,7 @@ const uk: TranslationWithPlurals = {
         faq: {
           isItFree: {
             q: 'Чи безкоштовні шашки на Boardly?',
-            a: 'Так, включно з усіма трьома ботами. Premium дає додаткові можливості: глядачів і теми лобі для господаря, а також повтори партій; сама гра та сама.',
+            a: 'Так, включно з усіма трьома ботами. Premium дає додаткові можливості: глядачів і теми лобі для господаря, а також довгу історію партій; сама гра та сама.',
           },
           needAccount: {
             q: 'Чи потрібен акаунт, щоб грати?',
@@ -2380,7 +2380,7 @@ const uk: TranslationWithPlurals = {
         faq: {
           isItFree: {
             q: 'Лудо на Boardly безкоштовне?',
-            a: 'Так, усі місця, режими, боти й таймери. Premium додає можливості довкола гри: глядачів і теми лобі для хоста, повтори й оформлення профілю.',
+            a: 'Так, усі місця, режими, боти й таймери. Premium додає можливості довкола гри: глядачів і теми лобі для хоста, довгу історію партій і оформлення профілю.',
           },
           worksOnPhone: {
             q: 'Чи можна грати в Лудо на телефоні?',
@@ -4050,6 +4050,19 @@ const uk: TranslationWithPlurals = {
       cancel: 'Скасувати',
     },
     gameHistory: {
+      result: {
+        won: 'Перемога',
+        lost: 'Поразка',
+        draw: 'Нічия',
+        abandoned: 'Покинута',
+        cancelled: 'Скасована',
+        inProgress: 'Триває',
+      },
+      moreWithPremium: 'Ще {{count}} ігор з Premium',
+      moreWithPremium_one: 'Ще {{count}} гра з Premium',
+      moreWithPremium_few: 'Ще {{count}} гри з Premium',
+      moreWithPremium_many: 'Ще {{count}} ігор з Premium',
+      soloGame: 'Одиночна гра',
       title: 'Історія ігор',
       status: 'Статус',
       gameType: 'Тип гри',
@@ -4065,6 +4078,57 @@ const uk: TranslationWithPlurals = {
       clickToView: 'Натисніть, щоб переглянути детальні результати',
     },
     gameReplay: {
+      youBadge: 'ви',
+      first: 'Перший хід',
+      last: 'Останній хід',
+      backToHistory: 'Назад до історії',
+      stepCounter: '{{current}} з {{total}}',
+      captions: {
+        common: {
+          gameStarted: 'Гра починається',
+          gameFinished: 'Гру завершено',
+          drawGame: 'Гра закінчилася внічию',
+          timeout: 'Час вийшов',
+          nextRound: '{{player}} почав(ла) наступний раунд',
+          undoRequested: '{{player}} просить скасувати хід',
+          undoAccepted: '{{player}} дозволив(ла) скасувати хід',
+          undoDeclined: '{{player}} відмовив(ла) у скасуванні ходу',
+          drawRequested: '{{player}} пропонує нічию',
+          drawAccepted: '{{player}} прийняв(ла) нічию',
+          drawDeclined: '{{player}} відхилив(ла) нічию',
+          forfeit: 'У {{player}} вийшов час – поразка',
+        },
+        ticTacToe: {
+          mark: '{{player}} ставить {{symbol}} у рядок {{row}}, стовпець {{col}}',
+          winsRound: '{{player}} виграє раунд',
+          drawRound: 'У раунді нічия',
+        },
+        connectFour: {
+          drop: '{{player}} кидає фішку в стовпець {{col}}',
+          winsRound: '{{player}} виграє раунд',
+          drawRound: 'У раунді нічия',
+        },
+        checkers: {
+          move: '{{player}} ходить {{from}} – {{to}}',
+          jump: '{{player}} б\'є {{count}} шашок, {{from}} – {{to}}',
+          jump_one: '{{player}} б\'є шашку, {{from}} – {{to}}',
+          jump_few: '{{player}} б\'є {{count}} шашки, {{from}} – {{to}}',
+          jump_many: '{{player}} б\'є {{count}} шашок, {{from}} – {{to}}',
+          jump_other: '{{player}} б\'є {{count}} шашок, {{from}} – {{to}}',
+          crowned: '{{player}} доходить до останньої лінії і стає дамкою, {{from}} – {{to}}',
+          wins: '{{player}} перемагає',
+        },
+        ludo: {
+          roll: '{{player}} викидає {{roll}}',
+          rollNoMove: '{{player}} викидає {{roll}}, ходу немає',
+          tripleSix: '{{player}} викидає три шістки і втрачає хід',
+          enter: '{{player}} виводить фішку',
+          move: '{{player}} рухає фішку на {{roll}}',
+          capture: '{{player}} б\'є фішку гравця {{opponent}}',
+          home: '{{player}} доводить фішку додому',
+          wins: '{{player}} перемагає',
+        },
+      },
       title: 'Повтор матчу',
       watch: 'Дивитися повтор',
       unavailable: 'Повтор недоступний',
