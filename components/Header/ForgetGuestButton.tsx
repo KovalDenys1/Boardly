@@ -13,6 +13,7 @@ export const FORGET_GUEST_CONFIRM_WINDOW_MS = 5000
 interface ForgetGuestButtonProps {
   className?: string
   style?: CSSProperties
+  onDone?: () => void
 }
 
 /**
@@ -21,7 +22,7 @@ interface ForgetGuestButtonProps {
  * confirmation lives in the button's own label rather than a dialog, so it
  * adds nothing to the layout around it.
  */
-export function ForgetGuestButton({ className, style }: ForgetGuestButtonProps) {
+export function ForgetGuestButton({ className, style, onDone }: ForgetGuestButtonProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const { forgetGuest } = useGuest()
@@ -47,6 +48,7 @@ export function ForgetGuestButton({ className, style }: ForgetGuestButtonProps) 
     try {
       await forgetGuest()
       showToast.success('guest.forgetMeDone')
+      onDone?.()
       router.replace('/')
     } catch (error) {
       const code = (error as { code?: string } | null)?.code

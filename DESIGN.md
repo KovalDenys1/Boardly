@@ -280,7 +280,7 @@ Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwin
 - `html.dark` is applied by the theme init script in `app/layout.tsx` (runs in `<head>` before paint — no flash)
 - User preference is stored in `localStorage` under key `theme` (`light` | `dark` | `system`)
 - `system` (default) follows `prefers-color-scheme` automatically
-- Toggle UI: `ThemeToggle` (desktop header icon) and `ThemeMobilePanel` (mobile menu panel)
+- Toggle UI: `ThemeToggle` (desktop header icon), `ThemeSegmented` (the drawer's quick-settings row, compact; Profile → Settings → Appearance in full through `ThemeSettingsPanel`)
 - Lobby premium themes (`ocean`, `midnight`, `sakura`, `neon_city`) override CSS vars at container level via `getThemePageStyle()` — they are immune to the global dark/light toggle
 - Existing `dark:` classes in Header/MobileMenu are legacy and will be cleaned up when those components are redesigned
 

@@ -1,14 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
-import { AuthGateModal } from './AuthGateModal'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
 const MobileMenu = dynamic(
@@ -34,11 +31,9 @@ const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const { isGuest, guestName } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
-  const [authGateDest, setAuthGateDest] = useState<string | null>(null)
   useProfileNavigationTracking(pathname)
 
   useEffect(() => {
@@ -54,7 +49,6 @@ export default function Header() {
   const isLoading = status === 'loading'
   const isAuthUiReady = isGuestUiReady && !isLoading
   const effectiveIsAuthenticated = isAuthUiReady && isAuthenticated
-  const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
     <>
@@ -98,30 +92,16 @@ export default function Header() {
               boardly
             </button>
 
-            <HeaderNavigation
-              isAuthenticated={effectiveIsAuthenticated}
-              isGuest={isGuestSession}
-              onUnauthClick={setAuthGateDest}
-            />
+            <HeaderNavigation isAuthenticated={effectiveIsAuthenticated} />
           </div>
 
           {/* User menu and language switcher */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {/* Guest indicator */}
-            {isGuestSession && guestName && (
-              <div
-                className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full"
-                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
-              >
-                <Icon name="user" size={14} /> {guestName}
-              </div>
-            )}
-
-            <div className="hidden xl:block">
+            <div className="hidden desk:block">
               <LanguageSwitcher />
             </div>
 
-            <div className="hidden xl:block">
+            <div className="hidden desk:block">
               <AudioSettingsButton />
             </div>
 
@@ -144,19 +124,11 @@ export default function Header() {
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}
-              onUnauthClick={setAuthGateDest}
             />
           </div>
         </div>
       </nav>
     </header>
-
-    {authGateDest && (
-      <AuthGateModal
-        dest={authGateDest}
-        onClose={() => setAuthGateDest(null)}
-      />
-    )}
   </>
   )
 }

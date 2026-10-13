@@ -2,15 +2,14 @@
 
 import type { KeyboardEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { UserAvatar } from './UserAvatar'
 import { ThemeToggle } from './ThemeToggle'
-import { ForgetGuestButton } from './ForgetGuestButton'
+import { GuestMenu } from './GuestMenu'
+import { UserMenu } from './UserMenu'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -23,23 +22,13 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
-  const { isGuest, clearGuestMode } = useGuest()
+  const { isGuest } = useGuest()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
   const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   useEffect(() => {
     setIsGuestUiReady(true)
   }, [])
-
-  const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.replace('/')
-  }
-
-  const handleGuestExit = () => {
-    clearGuestMode()
-    router.replace('/')
-  }
 
   const handleProfileNavigation = () => {
     navigateToProfile(router, pathname)
@@ -54,40 +43,30 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (isGuestSession) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
-        <button
-          onClick={handleGuestExit}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15, border: '1.5px solid var(--bd-line)' }}
-        >
-          {t('guest.exit', 'Exit Guest')}
-        </button>
-        <ForgetGuestButton
-          className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2 disabled:opacity-60"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-        />
+        <GuestMenu />
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
         <button
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
@@ -99,14 +78,14 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
             boxShadow: '0 4px 0 var(--bd-coral)',
           }}
         >
-          {t('header.register', 'Play free')}
+          {t('header.register')}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="hidden lg:flex items-center gap-2 min-w-0">
+    <div className="hidden desk:flex items-center gap-2 min-w-0">
       <ThemeToggle />
       <span
         role="link"
@@ -115,31 +94,11 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         onKeyDown={handleProfileTextKeyDown}
         className="hidden 2xl:inline-block max-w-[120px] cursor-pointer truncate text-sm font-medium"
         style={{ color: 'var(--bd-ink)' }}
-        title={userName || userEmail || t('header.profile', 'Profile')}
+        title={userName || userEmail || t('header.profile')}
       >
         {userName || userEmail}
       </span>
-      <button
-        onClick={handleProfileNavigation}
-        className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
-        style={{ background: 'var(--bd-bg2)', boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }}
-        title={userName || t('header.profile', 'Profile')}
-      >
-        <UserAvatar
-          image={userImage}
-          userName={userName}
-          userEmail={userEmail}
-          className="h-9 w-9 bg-bd-lav text-(--bd-ink-on-accent)"
-          textClassName="text-sm font-bold"
-        />
-      </button>
-      <button
-        onClick={handleSignOut}
-        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-        style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-      >
-        {t('header.logout', 'Logout')}
-      </button>
+      <UserMenu userName={userName} userEmail={userEmail} userImage={userImage} />
     </div>
   )
 }
