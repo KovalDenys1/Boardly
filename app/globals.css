@@ -5428,6 +5428,9 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   -webkit-tap-highlight-color: transparent;
 }
 .ludo-board-surface { padding: 12px; }
+/* Replay: the last roll's die on the roller's yard corner, about one cell wide so it stays off the tokens. */
+.ludo-replay-die { position: absolute; width: clamp(20px, 7%, 40px); pointer-events: none; }
+.ludo-replay-die > svg { width: 100%; height: auto; }
 /* No transition on the token: a move walks square by square through
    useLudoMotion + ludoMoverKeyframes (#1113), and anything else (a resync, a
    rematch) settles at once rather than gliding across the corners. */

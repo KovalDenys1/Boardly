@@ -80,7 +80,15 @@ describe('describeStep', () => {
   it('reads a Ludo step from its last event', () => {
     const ev = (kind: string, roll: number, extra = {}) => ({ events: [{ kind, roll, ...extra }], dice: roll })
     expect(d('ludo', step('roll', 'ada', ev('no-move', 2)))).toEqual({ key: 'profile.gameReplay.captions.ludo.rollNoMove', params: { player: 'Ada', roll: 2 } })
-    expect(d('ludo', step('roll', 'ada', { events: [{ kind: 'move', roll: 1 }], dice: 6 }))).toEqual({ key: 'profile.gameReplay.captions.ludo.roll', params: { player: 'Ada', roll: 1 } })
+    const earlier = { events: [{ n: 4, kind: 'move', roll: 1 }] }
+    expect(d('ludo', step('roll', 'ada', { ...earlier, dice: 6 }, { prevState: { data: earlier } }))).toEqual({
+      key: 'profile.gameReplay.captions.ludo.roll',
+      params: { player: 'Ada', roll: 6 },
+    })
+    expect(d('ludo', step('roll', 'ada', { events: [{ n: 5, kind: 'move', roll: 3 }], dice: null }, { prevState: { data: earlier } }))).toEqual({
+      key: 'profile.gameReplay.captions.ludo.move',
+      params: { player: 'Ada', roll: 3 },
+    })
     expect(d('ludo', step('move', 'ada', ev('enter', 6)))).toEqual({ key: 'profile.gameReplay.captions.ludo.enter', params: { player: 'Ada' } })
     expect(d('ludo', step('move', 'robo', ev('capture', 4, { capturedPlayerIds: ['ada'] })))).toEqual({
       key: 'profile.gameReplay.captions.ludo.capture',
