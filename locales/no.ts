@@ -398,6 +398,7 @@ const no = {
     themeLight: 'Lys',
     themeDark: 'Mørk',
     themeSystem: 'System',
+    themeCurrent: 'Tema: {{mode}}',
   },
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',

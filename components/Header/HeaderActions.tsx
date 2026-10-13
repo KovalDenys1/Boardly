@@ -61,14 +61,14 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
         <button
           onClick={handleGuestExit}
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)', fontSize: 15, border: '1.5px solid var(--bd-line)' }}
         >
-          {t('guest.exit', 'Exit Guest')}
+          {t('header.exitGuest')}
         </button>
         <ForgetGuestButton
           className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2 disabled:opacity-60"
@@ -87,7 +87,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
         <button
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
@@ -99,7 +99,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
             boxShadow: '0 4px 0 var(--bd-coral)',
           }}
         >
-          {t('header.register', 'Play free')}
+          {t('header.register')}
         </button>
       </div>
     )
@@ -115,7 +115,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         onKeyDown={handleProfileTextKeyDown}
         className="hidden 2xl:inline-block max-w-[120px] cursor-pointer truncate text-sm font-medium"
         style={{ color: 'var(--bd-ink)' }}
-        title={userName || userEmail || t('header.profile', 'Profile')}
+        title={userName || userEmail || t('header.profile')}
       >
         {userName || userEmail}
       </span>
@@ -123,7 +123,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         onClick={handleProfileNavigation}
         className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
         style={{ background: 'var(--bd-bg2)', boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }}
-        title={userName || t('header.profile', 'Profile')}
+        title={userName || t('header.profile')}
       >
         <UserAvatar
           image={userImage}
@@ -138,7 +138,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
         style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
       >
-        {t('header.logout', 'Logout')}
+        {t('header.logout')}
       </button>
     </div>
   )

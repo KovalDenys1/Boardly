@@ -69,6 +69,7 @@ function useThemeMode() {
 }
 
 export function ThemeToggle() {
+  const { t } = useTranslation()
   const { mode, mounted, setTheme } = useThemeMode()
 
   const cycle = () => {
@@ -79,13 +80,14 @@ export function ThemeToggle() {
   if (!mounted) return <div style={{ width: 36, height: 36 }} />
 
   const Icon = ICONS[mode]
-  const label = mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System'
+  const label = t(mode === 'light' ? 'header.themeLight' : mode === 'dark' ? 'header.themeDark' : 'header.themeSystem')
+  const current = t('header.themeCurrent', { mode: label })
 
   return (
     <button
       onClick={cycle}
-      title={`Theme: ${label}`}
-      aria-label={`Switch theme (current: ${label})`}
+      title={current}
+      aria-label={current}
       style={{
         width: 36,
         height: 36,

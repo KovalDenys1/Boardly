@@ -31,7 +31,7 @@ jest.mock('@/lib/profile-navigation', () => ({
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
-    t: (_key: string, fallback?: string) => fallback ?? _key,
+    t: (key: string) => key,
   }),
 }))
 
@@ -83,7 +83,7 @@ describe('HeaderActions responsive user block', () => {
       />
     )
 
-    const logoutButton = screen.getByRole('button', { name: /logout/i })
+    const logoutButton = screen.getByRole('button', { name: 'header.logout' })
     expect(logoutButton.parentElement?.className).toContain('hidden')
     expect(logoutButton.parentElement?.className).toContain('lg:flex')
   })

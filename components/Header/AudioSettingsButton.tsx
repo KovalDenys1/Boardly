@@ -123,8 +123,8 @@ export function AudioSettingsButton() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={t('header.openAudioSettings', 'Open audio settings')}
-        title={t('header.audioSettings', 'Audio Settings')}
+        aria-label={t('header.openAudioSettings')}
+        title={t('header.audioSettings')}
         className={`relative flex h-9 w-9 items-center justify-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) transition-all hover:-translate-y-px hover:text-(--bd-ink) ${
           muted ? 'text-(--bd-ink-muted)' : 'text-(--bd-ink)'
         }`}
@@ -136,9 +136,9 @@ export function AudioSettingsButton() {
         <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-(--bd-ink) shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>
+              <p className="bd-kicker">{t('header.audioSettings')}</p>
               <p className="mt-1 text-sm font-semibold text-(--bd-ink-muted)">
-                {muted ? t('header.unmute', 'Unmute') : `${t('header.volume', 'Volume')} ${volumePercent}%`}
+                {muted ? t('header.unmute') : `${t('header.volume')} ${volumePercent}%`}
               </p>
             </div>
             <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
@@ -151,13 +151,13 @@ export function AudioSettingsButton() {
             onClick={toggleMute}
             className="mb-4 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
           >
-            <span>{muted ? t('header.unmute', 'Unmute') : t('header.mute', 'Mute')}</span>
+            <span>{muted ? t('header.unmute') : t('header.mute')}</span>
             <VolumeIcon muted={muted} />
           </button>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume', 'Volume')}</label>
+              <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
               <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
             </div>
             <input
@@ -168,7 +168,7 @@ export function AudioSettingsButton() {
               value={volume}
               onChange={(e) => changeVolume(parseFloat(e.target.value))}
               className="h-2 w-full cursor-pointer accent-(--bd-ink)"
-              aria-label={t('header.volume', 'Volume')}
+              aria-label={t('header.volume')}
             />
           </div>
         </div>
@@ -187,9 +187,9 @@ export function AudioSettingsMobilePanel() {
     <div className="rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-3 shadow-xs">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>
+          <p className="bd-kicker">{t('header.audioSettings')}</p>
           <p className="mt-1 text-xs font-semibold text-(--bd-ink-muted)">
-            {muted ? t('header.unmute', 'Unmute') : `${t('header.volume', 'Volume')} ${volumePercent}%`}
+            {muted ? t('header.unmute') : `${t('header.volume')} ${volumePercent}%`}
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
@@ -202,13 +202,13 @@ export function AudioSettingsMobilePanel() {
         onClick={toggleMute}
         className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
       >
-        <span>{muted ? t('header.unmute', 'Unmute') : t('header.mute', 'Mute')}</span>
+        <span>{muted ? t('header.unmute') : t('header.mute')}</span>
         <VolumeIcon muted={muted} />
       </button>
 
       <div className="px-1">
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume', 'Volume')}</label>
+          <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
           <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
         </div>
         <input
@@ -219,7 +219,7 @@ export function AudioSettingsMobilePanel() {
           value={volume}
           onChange={(e) => changeVolume(parseFloat(e.target.value))}
           className="h-2 w-full cursor-pointer accent-(--bd-ink)"
-          aria-label={t('header.volume', 'Volume')}
+          aria-label={t('header.volume')}
         />
       </div>
     </div>
