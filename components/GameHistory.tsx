@@ -8,7 +8,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { formatCompactDuration } from '@/lib/game-display'
 import { formatRelativeTime } from '@/lib/format-relative-time'
 import { gameNameKey } from '@/lib/game-name-key'
-import { getCatalogGames, isAvailableCatalogEntry, type AvailableGameCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type AvailableGameCatalogEntry } from '@/lib/game-catalog'
 import { Icon } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import LoadingSpinner from './LoadingSpinner'
@@ -295,7 +295,7 @@ export default function GameHistory() {
           ) : (
             <ul className="flex flex-col gap-2.5">
               {games.map((game) => {
-                const catalog = availableCatalogGames().find((entry) => entry.gameType === game.gameType)
+                const meta = getGameMetadata(game.gameType)
                 const opponents = game.players.filter((player) => !player.isViewer)
                 const whenAndHowLong = [
                   formatRelativeTime(game.createdAt, locale),
@@ -309,8 +309,8 @@ export default function GameHistory() {
                     key={game.id}
                     className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-bd-line bg-bd-card-warm p-3 sm:gap-4 sm:p-4"
                   >
-                    {catalog ? (
-                      <GameIcon gameId={catalog.svgId} accentColor={catalog.accentColor} size={20} variant="tile" />
+                    {meta ? (
+                      <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="tile" />
                     ) : (
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink">
                         <BoardIcon />
