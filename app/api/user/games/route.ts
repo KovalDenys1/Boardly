@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
           players: game.players.map((player) => ({
             id: player.id,
             userId: player.userId,
+            isViewer: player.userId === userId,
             username: player.user.username,
             isBot: !!player.user.bot,
             score: player.score,

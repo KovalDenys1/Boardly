@@ -3942,6 +3942,17 @@ const no = {
       cancel: 'Avbryt'
     },
     gameHistory: {
+      result: {
+        won: 'Vant',
+        lost: 'Tapte',
+        draw: 'Uavgjort',
+        abandoned: 'Forlatt',
+        cancelled: 'Avlyst',
+        inProgress: 'Pågår',
+      },
+      moreWithPremium: '{{count}} spill til med Premium',
+      moreWithPremium_one: '{{count}} spill til med Premium',
+      soloGame: 'Solospill',
       title: 'Spillhistorikk',
       status: 'Spillstatus',
       gameType: 'Spilltype',

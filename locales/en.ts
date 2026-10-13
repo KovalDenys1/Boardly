@@ -3953,6 +3953,17 @@ const en = {
       cancel: 'Cancel',
     },
     gameHistory: {
+      result: {
+        won: 'Won',
+        lost: 'Lost',
+        draw: 'Draw',
+        abandoned: 'Abandoned',
+        cancelled: 'Cancelled',
+        inProgress: 'In progress',
+      },
+      moreWithPremium: '{{count}} more games with Premium',
+      moreWithPremium_one: '{{count}} more game with Premium',
+      soloGame: 'Solo game',
       title: 'Game History',
       status: 'Status',
       gameType: 'Game Type',
