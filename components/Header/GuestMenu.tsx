@@ -11,11 +11,7 @@ import { ForgetGuestButton } from './ForgetGuestButton'
 const itemClassName =
   'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 disabled:opacity-60'
 
-/**
- * The guest's name opens Exit guest and Forget me. A Popover rather than a Menu
- * because Forget me arms on the first tap and deletes on the second (#1129), and a
- * Menu closes on the first.
- */
+// A Popover, not a Menu: Forget me needs a second tap and a Menu would close on the first.
 export function GuestMenu() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -30,8 +26,7 @@ export function GuestMenu() {
     <Popover as="div" className="relative">
       <PopoverButton
         className="inline-flex max-w-[140px] items-center gap-2 rounded-full border border-(--bd-sun-deep)/40 bg-(--bd-sun)/22 px-3 py-1.5 text-[13px] font-semibold text-bd-ink-soft transition-colors hover:bg-(--bd-sun)/35 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
-        aria-label={t('header.guestSession')}
-        title={guestName ?? t('header.guestSession')}
+        title={t('header.guestSession')}
       >
         <Icon name="user" size={14} />
         <span className="truncate">{guestName ?? t('header.guestSession')}</span>

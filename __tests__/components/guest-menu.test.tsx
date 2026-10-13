@@ -27,10 +27,7 @@ describe('GuestMenu', () => {
   it('shows the guest name and opens Exit guest and Forget me', () => {
     render(<GuestMenu />)
 
-    const trigger = screen.getByRole('button', { name: 'header.guestSession' })
-    expect(trigger.textContent).toContain('HostQ1383')
-
-    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole('button', { name: 'HostQ1383' }))
 
     expect(screen.getByRole('button', { name: 'header.exitGuest' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'guest.forgetMe' })).toBeTruthy()
@@ -38,7 +35,7 @@ describe('GuestMenu', () => {
 
   it('leaves guest mode and goes home', () => {
     render(<GuestMenu />)
-    fireEvent.click(screen.getByRole('button', { name: 'header.guestSession' }))
+    fireEvent.click(screen.getByRole('button', { name: 'HostQ1383' }))
 
     fireEvent.click(screen.getByRole('button', { name: 'header.exitGuest' }))
 
@@ -48,7 +45,7 @@ describe('GuestMenu', () => {
 
   it('keeps the panel open while Forget me waits for its second tap', () => {
     render(<GuestMenu />)
-    fireEvent.click(screen.getByRole('button', { name: 'header.guestSession' }))
+    fireEvent.click(screen.getByRole('button', { name: 'HostQ1383' }))
 
     fireEvent.click(screen.getByRole('button', { name: 'guest.forgetMe' }))
 
