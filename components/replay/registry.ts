@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import type { ReplayRendererProps } from './types'
 
 const registry: Record<string, () => Promise<{ default: ComponentType<ReplayRendererProps> }>> = {
-  tic_tac_toe: () => import('./TTTReplayRenderer'),
+  tic_tac_toe: () => import('./TttReplayRenderer'),
   yahtzee: () => import('./YahtzeeReplayRenderer'),
   connect_four: () => import('./ConnectFourReplayRenderer'),
 }

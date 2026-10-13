@@ -2501,6 +2501,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-width: 0;
   flex: 0 0 auto;
 }
+/* The replay puts a 28px score row and an 8px gap above the surface. */
+.ttt-replay .ttt-board-wrap {
+  width: min(calc(100cqw - 27px), calc(100cqh - 63px), 560px);
+}
 .ttt-board {
   aspect-ratio: 1;
   width: 100%;

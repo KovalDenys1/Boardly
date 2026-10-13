@@ -4195,7 +4195,6 @@ const uk: TranslationWithPlurals = {
       roundAdvanced: 'Раунд продовжено',
       board: {
         dice: 'Кубики',
-        winsRound: '{{player}} виграє цей раунд',
         redDisc: 'Червоний',
         yellowDisc: 'Жовтий',
         toMove: 'ходить',
