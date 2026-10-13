@@ -9,7 +9,7 @@ import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import { ThemeToggle } from './ThemeToggle'
-import { ForgetGuestButton } from './ForgetGuestButton'
+import { GuestMenu } from './GuestMenu'
 import { UserMenu } from './UserMenu'
 
 interface HeaderActionsProps {
@@ -23,18 +23,13 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
-  const { isGuest, clearGuestMode } = useGuest()
+  const { isGuest } = useGuest()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
   const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   useEffect(() => {
     setIsGuestUiReady(true)
   }, [])
-
-  const handleGuestExit = () => {
-    clearGuestMode()
-    router.replace('/')
-  }
 
   const handleProfileNavigation = () => {
     navigateToProfile(router, pathname)
@@ -58,17 +53,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         >
           {t('header.login')}
         </button>
-        <button
-          onClick={handleGuestExit}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15, border: '1.5px solid var(--bd-line)' }}
-        >
-          {t('header.exitGuest')}
-        </button>
-        <ForgetGuestButton
-          className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2 disabled:opacity-60"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-        />
+        <GuestMenu />
       </div>
     )
   }

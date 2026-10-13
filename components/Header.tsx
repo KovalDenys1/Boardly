@@ -1,7 +1,6 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -34,7 +33,7 @@ const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const { isGuest, guestName } = useGuest()
+  const { isGuest } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
@@ -107,16 +106,6 @@ export default function Header() {
 
           {/* User menu and language switcher */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {/* Guest indicator */}
-            {isGuestSession && guestName && (
-              <div
-                className="hidden desk:flex items-center gap-2 px-3 py-1 rounded-full"
-                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
-              >
-                <Icon name="user" size={14} /> {guestName}
-              </div>
-            )}
-
             <div className="hidden desk:block">
               <LanguageSwitcher />
             </div>
