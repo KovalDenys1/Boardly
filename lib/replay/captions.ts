@@ -94,6 +94,20 @@ const checkers: CaptionTable = (step, ctx): ReplayCaption | null => {
   return { key: 'profile.gameReplay.captions.checkers.move', params }
 }
 
+type LudoEventLike = { n?: number; kind: string; roll: number; capturedPlayerIds?: string[] }
+
+function lastLudoEvent(state: unknown): LudoEventLike | undefined {
+  return (dataOf(state)?.events as LudoEventLike[] | undefined)?.at(-1)
+}
+
+/** The event this step logged, or null when the newest one is left over from an earlier step. */
+function ludoEventOf(step: ReplayStep): LudoEventLike | null {
+  const event = lastLudoEvent(step.state)
+  if (!event) return null
+  const before = lastLudoEvent(step.prevState)
+  return before && before.n !== undefined && before.n === event.n ? null : event
+}
+
 const ludo: CaptionTable = (step, ctx): ReplayCaption | null => {
   const data = dataOf(step.state)
   if (!data || (step.action !== 'roll' && step.action !== 'move' && step.action !== 'timeout')) return null
@@ -101,12 +115,12 @@ const ludo: CaptionTable = (step, ctx): ReplayCaption | null => {
   if (isFinished(step) && typeof data.winnerId === 'string') {
     return { key: 'profile.gameReplay.captions.ludo.wins', params: { player: nameOf(ctx, data.winnerId) } }
   }
-  const event = (data.events as Array<{ kind: string; roll: number; capturedPlayerIds?: string[] }> | undefined)?.at(-1)
-  const roll = event?.roll ?? (data.dice as number | undefined) ?? 0
+  const event = ludoEventOf(step)
+  const roll = event?.roll ?? (data.dice as number | undefined) ?? (data.lastRoll as { value?: number } | null | undefined)?.value ?? 0
   if (step.action === 'roll' || step.action === 'timeout') {
     if (event?.kind === 'no-move') return { key: 'profile.gameReplay.captions.ludo.rollNoMove', params: { player, roll } }
     if (event?.kind === 'triple-six') return { key: 'profile.gameReplay.captions.ludo.tripleSix', params: { player } }
-    if (step.action === 'roll') return { key: 'profile.gameReplay.captions.ludo.roll', params: { player, roll } }
+    if (step.action === 'roll' && !event) return { key: 'profile.gameReplay.captions.ludo.roll', params: { player, roll } }
   }
   switch (event?.kind) {
     case 'enter':
