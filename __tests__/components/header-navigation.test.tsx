@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { HeaderNavigation } from '@/components/Header/HeaderNavigation'
 
 let mockPathname = '/'
@@ -20,7 +20,7 @@ describe('HeaderNavigation', () => {
   })
 
   it('keeps the full navigation hidden until the large breakpoint', () => {
-    const { container } = render(<HeaderNavigation isAuthenticated={false} isGuest={false} />)
+    const { container } = render(<HeaderNavigation isAuthenticated={false} />)
 
     const navigationContainer = container.firstChild as HTMLElement | null
 
@@ -31,7 +31,7 @@ describe('HeaderNavigation', () => {
 
   // #921: the nav must be crawlable, so every item is a real anchor with an href.
   it('renders every nav item as an anchor with its route', () => {
-    render(<HeaderNavigation isAuthenticated={false} isGuest={false} />)
+    render(<HeaderNavigation isAuthenticated={false} />)
 
     const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
 
@@ -39,17 +39,8 @@ describe('HeaderNavigation', () => {
   })
 
   it('adds Friends for a signed-in member', () => {
-    render(<HeaderNavigation isAuthenticated isGuest={false} />)
+    render(<HeaderNavigation isAuthenticated />)
 
     expect(screen.getByRole('link', { name: 'header.friends' }).getAttribute('href')).toBe('/friends')
-  })
-
-  it('lets public routes through without the auth prompt', () => {
-    const onUnauthClick = jest.fn()
-    render(<HeaderNavigation isAuthenticated={false} isGuest={false} onUnauthClick={onUnauthClick} />)
-
-    fireEvent.click(screen.getByRole('link', { name: 'header.games' }))
-
-    expect(onUnauthClick).not.toHaveBeenCalled()
   })
 })

@@ -20,22 +20,11 @@ export const SITE_NAV_ITEMS: readonly SiteNavItem[] = [
   { id: 'friends', labelKey: 'header.friends', href: '/friends', match: 'prefix', access: 'member' },
 ]
 
-export interface NavViewer {
-  isAuthenticated: boolean
-  isGuest?: boolean
-}
-
 export function isNavItemActive(item: SiteNavItem, pathname: string | null | undefined): boolean {
   if (!pathname) return false
   return item.match === 'exact' ? pathname === item.href : pathname.startsWith(item.href)
 }
 
-export function visibleNavItems(viewer: Pick<NavViewer, 'isAuthenticated'>): SiteNavItem[] {
+export function visibleNavItems(viewer: { isAuthenticated: boolean }): SiteNavItem[] {
   return SITE_NAV_ITEMS.filter((item) => item.access === 'public' || viewer.isAuthenticated)
-}
-
-/** A signed-out visitor who is not a guest gets the auth prompt on a member route. */
-export function shouldGateNav(item: SiteNavItem, viewer: NavViewer): boolean {
-  if (item.access === 'public') return false
-  return !viewer.isAuthenticated && !viewer.isGuest
 }

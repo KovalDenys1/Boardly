@@ -4,18 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
-import { useNavGate } from '@/hooks/useNavGate'
 
 interface HeaderNavigationProps {
   isAuthenticated: boolean
-  isGuest?: boolean
-  onUnauthClick?: (dest: string) => void
 }
 
-export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: HeaderNavigationProps) {
+export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
   const pathname = usePathname()
   const { t } = useTranslation()
-  const guard = useNavGate({ isAuthenticated, isGuest, onUnauthClick })
 
   const navBtn = (active: boolean) =>
     `rounded-xl font-medium transition-all duration-150 ${
@@ -32,7 +28,6 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
         <Link
           key={item.id}
           href={item.href}
-          onClick={guard(item)}
           className={navBtn(isNavItemActive(item, pathname))}
           style={navStyle}
         >

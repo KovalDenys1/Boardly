@@ -4,10 +4,8 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
-import { AuthGateModal } from './AuthGateModal'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
 const MobileMenu = dynamic(
@@ -33,11 +31,9 @@ const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const { isGuest } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
-  const [authGateDest, setAuthGateDest] = useState<string | null>(null)
   useProfileNavigationTracking(pathname)
 
   useEffect(() => {
@@ -53,7 +49,6 @@ export default function Header() {
   const isLoading = status === 'loading'
   const isAuthUiReady = isGuestUiReady && !isLoading
   const effectiveIsAuthenticated = isAuthUiReady && isAuthenticated
-  const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
     <>
@@ -97,11 +92,7 @@ export default function Header() {
               boardly
             </button>
 
-            <HeaderNavigation
-              isAuthenticated={effectiveIsAuthenticated}
-              isGuest={isGuestSession}
-              onUnauthClick={setAuthGateDest}
-            />
+            <HeaderNavigation isAuthenticated={effectiveIsAuthenticated} />
           </div>
 
           {/* User menu and language switcher */}
@@ -133,19 +124,11 @@ export default function Header() {
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}
-              onUnauthClick={setAuthGateDest}
             />
           </div>
         </div>
       </nav>
     </header>
-
-    {authGateDest && (
-      <AuthGateModal
-        dest={authGateDest}
-        onClose={() => setAuthGateDest(null)}
-      />
-    )}
   </>
   )
 }

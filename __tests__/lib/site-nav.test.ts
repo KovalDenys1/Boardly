@@ -1,4 +1,4 @@
-import { SITE_NAV_ITEMS, isNavItemActive, shouldGateNav, visibleNavItems } from '@/lib/site-nav'
+import { SITE_NAV_ITEMS, isNavItemActive, visibleNavItems } from '@/lib/site-nav'
 
 const byId = (id: string) => {
   const item = SITE_NAV_ITEMS.find((candidate) => candidate.id === id)
@@ -22,13 +22,5 @@ describe('site nav', () => {
     expect(isNavItemActive(byId('games'), '/games/checkers')).toBe(true)
     expect(isNavItemActive(byId('lobbies'), '/lobby/ABCD')).toBe(true)
     expect(isNavItemActive(byId('guides'), null)).toBe(false)
-  })
-
-  it('gates a member route only for a signed-out visitor who is not a guest', () => {
-    const friends = byId('friends')
-    expect(shouldGateNav(friends, { isAuthenticated: false, isGuest: false })).toBe(true)
-    expect(shouldGateNav(friends, { isAuthenticated: false, isGuest: true })).toBe(false)
-    expect(shouldGateNav(friends, { isAuthenticated: true })).toBe(false)
-    expect(shouldGateNav(byId('games'), { isAuthenticated: false, isGuest: false })).toBe(false)
   })
 })

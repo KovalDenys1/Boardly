@@ -4,13 +4,11 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import type { MouseEvent } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
-import { useNavGate } from '@/hooks/useNavGate'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { navigateToProfile } from '@/lib/profile-navigation'
-import { isNavItemActive, visibleNavItems, type SiteNavItem } from '@/lib/site-nav'
+import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
 import { ForgetGuestButton } from './ForgetGuestButton'
 import { QuickSettingsRow } from './QuickSettingsRow'
 import { UserAvatar } from './UserAvatar'
@@ -24,7 +22,6 @@ export interface NavDrawerProps {
   userName?: string | null
   userEmail?: string | null
   userImage?: string | null
-  onUnauthClick?: (dest: string) => void
 }
 
 const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
@@ -38,19 +35,12 @@ export function NavDrawer({
   userName,
   userEmail,
   userImage,
-  onUnauthClick,
 }: NavDrawerProps) {
   const { t } = useTranslation()
   const router = useRouter()
   const pathname = usePathname()
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
-  const guard = useNavGate({ isAuthenticated, isGuest: isGuestSession, onUnauthClick, beforeGate: onClose })
-
-  const handleNavClick = (item: SiteNavItem) => (event: MouseEvent<HTMLAnchorElement>) => {
-    guard(item)(event)
-    if (!event.defaultPrevented) onClose()
-  }
 
   const openProfileTab = (tab: 'profile' | 'settings') => {
     onClose()
@@ -58,11 +48,13 @@ export function NavDrawer({
   }
 
   const handleSignOut = async () => {
+    onClose()
     await signOut({ redirect: false })
     router.replace('/')
   }
 
   const handleGuestExit = () => {
+    onClose()
     clearGuestMode()
     router.replace('/')
   }
@@ -138,7 +130,7 @@ export function NavDrawer({
               <Link
                 key={item.id}
                 href={item.href}
-                onClick={handleNavClick(item)}
+                onClick={onClose}
                 aria-current={active ? 'page' : undefined}
                 className={`nav-drawer-link flex w-full items-center gap-3 rounded-xl text-[15px] font-semibold transition-colors ${
                   active ? 'bg-bd-sun text-bd-ink' : 'text-bd-ink-soft hover:bg-bd-bg2'
@@ -175,7 +167,7 @@ export function NavDrawer({
               <button type="button" onClick={handleGuestExit} className={inkButton}>
                 {t('header.exitGuest')}
               </button>
-              <ForgetGuestButton className={`w-full rounded-xl px-4 py-2 text-sm font-medium text-bd-ink-soft ${focusRing}`} />
+              <ForgetGuestButton onDone={onClose} className={`w-full rounded-xl px-4 py-2 text-sm font-medium text-bd-ink-soft ${focusRing}`} />
             </>
           ) : (
             <>

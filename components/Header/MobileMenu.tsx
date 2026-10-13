@@ -11,12 +11,11 @@ interface MobileMenuProps {
   userName?: string | null
   userEmail?: string | null
   userImage?: string | null
-  onUnauthClick?: (dest: string) => void
 }
 
 const barClass = 'absolute left-0 h-[2.5px] w-full rounded-full bg-bd-ink transition-all duration-300'
 
-export function MobileMenu({ isAuthenticated, userName, userEmail, userImage, onUnauthClick }: MobileMenuProps) {
+export function MobileMenu({ isAuthenticated, userName, userEmail, userImage }: MobileMenuProps) {
   const { t } = useTranslation()
   const pathname = usePathname()
   const isMobile = useIsMobileViewport()
@@ -30,8 +29,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail, userImage, on
     setOpen(false)
   }, [pathname])
 
-  // A drawer left open across a resize past the desktop breakpoint would keep
-  // the page scroll-locked behind an invisible dialog.
+  // Past the desktop breakpoint an open drawer is invisible but still scroll-locks the page.
   useEffect(() => {
     if (wasMobileRef.current && !isMobile) setOpen(false)
     wasMobileRef.current = isMobile
@@ -63,7 +61,6 @@ export function MobileMenu({ isAuthenticated, userName, userEmail, userImage, on
         userName={userName}
         userEmail={userEmail}
         userImage={userImage}
-        onUnauthClick={onUnauthClick}
       />
     </>
   )
