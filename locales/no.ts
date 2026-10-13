@@ -400,6 +400,7 @@ const no = {
     themeSystem: 'System',
     themeCurrent: 'Tema: {{mode}}',
     quickSettings: 'Hurtiginnstillinger',
+    openUserMenu: 'Kontomeny',
   },
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',

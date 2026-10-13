@@ -400,6 +400,7 @@ const en = {
     themeSystem: 'System',
     themeCurrent: 'Theme: {{mode}}',
     quickSettings: 'Quick settings',
+    openUserMenu: 'Account menu',
   },
   home: {
     welcomeBack: 'Welcome back, {{name}}!',

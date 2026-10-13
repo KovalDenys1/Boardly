@@ -437,6 +437,7 @@ const uk: TranslationWithPlurals = {
     themeSystem: 'Системна',
     themeCurrent: 'Тема: {{mode}}',
     quickSettings: 'Швидкі налаштування',
+    openUserMenu: 'Меню облікового запису',
   },
   home: {
     welcomeBack: 'З поверненням, {{name}}!',

@@ -2,7 +2,6 @@
 
 import type { KeyboardEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
@@ -11,6 +10,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import { ThemeToggle } from './ThemeToggle'
 import { ForgetGuestButton } from './ForgetGuestButton'
+import { UserMenu } from './UserMenu'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -30,11 +30,6 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   useEffect(() => {
     setIsGuestUiReady(true)
   }, [])
-
-  const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.replace('/')
-  }
 
   const handleGuestExit = () => {
     clearGuestMode()
@@ -119,27 +114,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       >
         {userName || userEmail}
       </span>
-      <button
-        onClick={handleProfileNavigation}
-        className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
-        style={{ background: 'var(--bd-bg2)', boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }}
-        title={userName || t('header.profile')}
-      >
-        <UserAvatar
-          image={userImage}
-          userName={userName}
-          userEmail={userEmail}
-          className="h-9 w-9 bg-bd-lav text-(--bd-ink-on-accent)"
-          textClassName="text-sm font-bold"
-        />
-      </button>
-      <button
-        onClick={handleSignOut}
-        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-        style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-      >
-        {t('header.logout')}
-      </button>
+      <UserMenu userName={userName} userEmail={userEmail} userImage={userImage} />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HeaderActions } from '@/components/Header/HeaderActions'
 
 const mockPush = jest.fn()
@@ -56,7 +56,8 @@ describe('HeaderActions responsive user block', () => {
     expect(userNameNode.className).toContain('truncate')
   })
 
-  it('uses profile navigation helper when avatar button is clicked', () => {
+  it('opens Profile, Settings and Logout from the avatar', async () => {
+    const { signOut } = jest.requireMock('next-auth/react') as { signOut: jest.Mock }
     render(
       <HeaderActions
         isAuthenticated
@@ -65,16 +66,25 @@ describe('HeaderActions responsive user block', () => {
       />
     )
 
-    const profileButton = screen
-      .getAllByTitle('Denys')
-      .find((element) => element.tagName.toLowerCase() === 'button')
+    fireEvent.click(screen.getByRole('button', { name: 'header.openUserMenu' }))
 
-    expect(profileButton).toBeDefined()
-    fireEvent.click(profileButton!)
-    expect(mockNavigateToProfile).toHaveBeenCalled()
+    const items = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    expect(items).toEqual(['header.profile', 'header.settings', 'header.logout'])
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'header.settings' }))
+    expect(mockNavigateToProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ push: mockPush, replace: mockReplace }),
+      '/games',
+      { tab: 'settings' }
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'header.openUserMenu' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'header.logout' }))
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
+    expect(signOut).toHaveBeenCalledWith({ redirect: false })
   })
 
-  it('keeps desktop action groups hidden until the large breakpoint', () => {
+  it('keeps desktop action groups hidden until the desktop breakpoint', () => {
     render(
       <HeaderActions
         isAuthenticated
@@ -83,8 +93,7 @@ describe('HeaderActions responsive user block', () => {
       />
     )
 
-    const logoutButton = screen.getByRole('button', { name: 'header.logout' })
-    expect(logoutButton.parentElement?.className).toContain('hidden')
-    expect(logoutButton.parentElement?.className).toContain('desk:flex')
+    const group = screen.getByRole('button', { name: 'header.openUserMenu' }).closest('div.hidden')
+    expect(group?.className).toContain('desk:flex')
   })
 })

@@ -435,6 +435,7 @@ const ru = {
     themeSystem: 'Системная',
     themeCurrent: 'Тема: {{mode}}',
     quickSettings: 'Быстрые настройки',
+    openUserMenu: 'Меню аккаунта',
   },
   home: {
     welcomeBack: 'С возвращением, {{name}}!',
