@@ -398,6 +398,9 @@ const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
+    themeCurrent: 'Theme: {{mode}}',
+    quickSettings: 'Quick settings',
+    openUserMenu: 'Account menu',
   },
   home: {
     welcomeBack: 'Welcome back, {{name}}!',
@@ -3839,7 +3842,7 @@ const en = {
       sections: {
         appearance: {
           title: 'Appearance',
-          subtitle: 'Language and theme preferences for this device.',
+          subtitle: 'Language, theme and sound for this device.',
         },
         privacyGame: {
           title: 'Privacy & Gameplay',
@@ -3859,6 +3862,10 @@ const en = {
       },
 
       // Theme
+      sound: {
+        title: 'Sound',
+        subtitle: 'Sound effects and volume on this device.',
+      },
       theme: {
         title: 'Theme',
         subtitle: 'Choose your preferred color scheme',

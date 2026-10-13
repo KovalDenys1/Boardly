@@ -9,7 +9,8 @@ import { changeLanguageLazy } from '@/i18n'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LanguageSwitcherProps {
-  variant?: 'header' | 'panel'
+  /** Portals the list and pins it to the button, for a parent that clips overflow. */
+  anchor?: 'top end' | 'bottom end'
 }
 
 // Each language's own self-name (endonym), not translated — a Russian
@@ -53,9 +54,8 @@ function CheckIcon() {
   )
 }
 
-export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitcherProps) {
+export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
   const { t, i18n } = useTranslation()
-  const isPanelVariant = variant === 'panel'
 
   const currentLocale = useMemo<Locale>(() => {
     const normalizedLanguage = i18n.language.toLowerCase()
@@ -80,37 +80,18 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
   }
 
   return (
-    <Menu as="div" className={isPanelVariant ? 'relative w-full' : 'relative'}>
+    <Menu as="div" className="relative">
       <MenuButton
-        className={
-          isPanelVariant
-            ? 'inline-flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-(--bd-input-bg) px-3.5 py-3 text-left text-bd-ink shadow-bd-soft transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
-            : 'inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-(--bd-input-bg) px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none'
-        }
+        className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-(--bd-input-bg) px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none"
         aria-label={t('header.language')}
       >
-        <span
-          className={
-            isPanelVariant
-              ? 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav'
-              : 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav'
-          }
-        >
+        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav">
           <GlobeIcon />
         </span>
 
-        {isPanelVariant ? (
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">{currentOption.name}</span>
-            <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
-              {currentOption.shortLabel}
-            </span>
-          </span>
-        ) : (
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-ink-soft">
-            {currentOption.shortLabel}
-          </span>
-        )}
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-ink-soft">
+          {currentOption.shortLabel}
+        </span>
 
         <span className="shrink-0 text-bd-ink-muted">
           <ChevronDownIcon />
@@ -127,9 +108,10 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
         <MenuItems
-          className={`absolute right-0 z-50 mt-2 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
-            isPanelVariant ? 'w-full' : 'w-[176px]'
-          }`}
+          anchor={anchor ? { to: anchor, gap: 8 } : undefined}
+          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
+            anchor ? '' : 'absolute right-0 mt-2'
+          } w-[176px]`}
         >
           {LANGUAGE_OPTIONS.map((option) => {
             const isSelected = option.code === currentLocale

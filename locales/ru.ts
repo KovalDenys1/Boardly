@@ -433,6 +433,9 @@ const ru = {
     themeLight: 'Светлая',
     themeDark: 'Тёмная',
     themeSystem: 'Системная',
+    themeCurrent: 'Тема: {{mode}}',
+    quickSettings: 'Быстрые настройки',
+    openUserMenu: 'Меню аккаунта',
   },
   home: {
     welcomeBack: 'С возвращением, {{name}}!',
@@ -3934,7 +3937,7 @@ const ru = {
       sections: {
         appearance: {
           title: 'Оформление',
-          subtitle: 'Язык и тема для этого устройства.',
+          subtitle: 'Язык, тема и звук на этом устройстве.',
         },
         privacyGame: {
           title: 'Приватность и игра',
@@ -3949,6 +3952,10 @@ const ru = {
         title: 'Язык',
         subtitle: 'Выберите предпочитаемый язык интерфейса',
         current: 'Текущий: {{language}}'
+      },
+      sound: {
+        title: 'Звук',
+        subtitle: 'Звуковые эффекты и громкость на этом устройстве.',
       },
       theme: {
         title: 'Тема',
