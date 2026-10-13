@@ -4037,6 +4037,19 @@ const ru = {
       cancel: 'Отмена'
     },
     gameHistory: {
+      result: {
+        won: 'Победа',
+        lost: 'Поражение',
+        draw: 'Ничья',
+        abandoned: 'Брошена',
+        cancelled: 'Отменена',
+        inProgress: 'Идёт',
+      },
+      moreWithPremium: 'Ещё {{count}} игр с Premium',
+      moreWithPremium_one: 'Ещё {{count}} игра с Premium',
+      moreWithPremium_few: 'Ещё {{count}} игры с Premium',
+      moreWithPremium_many: 'Ещё {{count}} игр с Premium',
+      soloGame: 'Одиночная игра',
       title: 'История игр',
       status: 'Статус',
       gameType: 'Тип игры',

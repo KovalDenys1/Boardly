@@ -70,6 +70,7 @@ describe('GET /api/user/games', () => {
     expect(row.viewerResult).toBe('won')
     expect(row.durationMs).toBe(240_000)
     expect(row.players.map((p) => p.userId)).toEqual(['me', 'bot'])
+    expect(row.players.map((p) => p.isViewer)).toEqual([true, false])
     expect(row.players[1].isBot).toBe(true)
   })
 
