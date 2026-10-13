@@ -69,7 +69,7 @@ export default function FeedbackWidget() {
     return () => window.removeEventListener('keydown', handler)
   }, [isOpen])
 
-  const isGamePage = /^\/lobby\/[^/]+$/.test(pathname)
+  const isGamePage = /^\/(lobby|replay)\/[^/]+$/.test(pathname)
   const shouldHideFloatingButton = isGamePage || isFooterFeedbackVisible
 
   const handleSubmit = async (e: React.FormEvent) => {

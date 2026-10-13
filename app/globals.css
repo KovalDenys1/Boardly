@@ -1902,7 +1902,14 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 /* The replay's read-only Connect Four board has no drop-arrow row, so its height allowance is 97 - 24. */
 .replay-board.ttt-board-card {
-  --c4-cell: clamp(22px, min(calc((100cqw - 79px) / 7), calc((100cqh - 73px) / 6)), 80px);
+  --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 73px) / 6)), 80px);
+}
+/* A 320×568 replay card is ~190 px tall, below the live boards' floors (Checkers 248 px, Ludo 180 + 27 px). */
+.replay-board .ck-board {
+  --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+}
+.replay-board .ludo-board {
+  width: clamp(140px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
 }
 /* Checkers (#1083). Same rule as --c4-cell: the square is the min() of a
    width-derived and a height-derived size, read off .ttt-board-card's container
@@ -5625,4 +5632,5 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .replay-caption { grid-area: caption; }
   .replay-transport { grid-area: transport; }
   .replay-extra { grid-area: extra; }
+  .replay-head .replay-back-label { display: none; }
 }

@@ -16,38 +16,40 @@ interface ReplayTransportProps {
   onCycleSpeed: () => void
 }
 
-const buttonClass =
-  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-bd-line bg-bd-bg text-bd-ink transition-colors hover:bg-bd-bg2 disabled:opacity-40 disabled:hover:bg-bd-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+const buttonBase =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] transition-colors disabled:opacity-40 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+const buttonClass = `${buttonBase} border-bd-line bg-bd-bg text-bd-ink hover:bg-bd-bg2 disabled:hover:bg-bd-bg`
+const playButtonClass = `${buttonBase} border-bd-ink bg-bd-ink text-bd-bg`
 
 export default function ReplayTransport({ index, count, playing, speed, caption, onSeek, onTogglePlay, onCycleSpeed }: ReplayTransportProps) {
   const { t } = useTranslation()
   const last = Math.max(0, count - 1)
 
   return (
-    <div className="replay-transport flex shrink-0 flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <button type="button" className={buttonClass} onClick={() => onSeek(0)} disabled={index === 0} aria-label={t('profile.gameReplay.first')}>
-          <Icon name="skip-back" size={18} />
-        </button>
-        <button type="button" className={buttonClass} onClick={() => onSeek(index - 1)} disabled={index === 0} aria-label={t('profile.gameReplay.stepBack')}>
-          <Icon name="arrow-left" size={18} />
-        </button>
-        <button
-          type="button"
-          className={`${buttonClass} bg-bd-ink text-bd-bg hover:bg-bd-ink`}
-          onClick={onTogglePlay}
-          disabled={count < 2}
-          aria-label={playing ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
-          aria-pressed={playing}
-        >
-          <Icon name={playing ? 'pause' : 'play'} size={18} />
-        </button>
-        <button type="button" className={buttonClass} onClick={() => onSeek(index + 1)} disabled={index >= last} aria-label={t('profile.gameReplay.stepForward')}>
-          <Icon name="arrow-right" size={18} />
-        </button>
-        <button type="button" className={buttonClass} onClick={() => onSeek(last)} disabled={index >= last} aria-label={t('profile.gameReplay.last')}>
-          <Icon name="skip-forward" size={18} />
-        </button>
+    <div className="replay-transport flex shrink-0 flex-wrap items-center justify-center gap-2">
+      <button type="button" className={buttonClass} onClick={() => onSeek(0)} disabled={index === 0} aria-label={t('profile.gameReplay.first')}>
+        <Icon name="skip-back" size={18} />
+      </button>
+      <button type="button" className={buttonClass} onClick={() => onSeek(index - 1)} disabled={index === 0} aria-label={t('profile.gameReplay.stepBack')}>
+        <Icon name="arrow-left" size={18} />
+      </button>
+      <button
+        type="button"
+        className={playButtonClass}
+        onClick={onTogglePlay}
+        disabled={count < 2}
+        aria-label={playing ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
+        aria-pressed={playing}
+      >
+        <Icon name={playing ? 'pause' : 'play'} size={18} />
+      </button>
+      <button type="button" className={buttonClass} onClick={() => onSeek(index + 1)} disabled={index >= last} aria-label={t('profile.gameReplay.stepForward')}>
+        <Icon name="arrow-right" size={18} />
+      </button>
+      <button type="button" className={buttonClass} onClick={() => onSeek(last)} disabled={index >= last} aria-label={t('profile.gameReplay.last')}>
+        <Icon name="skip-forward" size={18} />
+      </button>
+      <div className="flex min-w-0 basis-full items-center gap-2 desk:basis-0 desk:flex-1">
         <input
           type="range"
           min={0}
@@ -68,9 +70,6 @@ export default function ReplayTransport({ index, count, playing, speed, caption,
           {speed}×
         </button>
       </div>
-      <p className="text-center font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-muted">
-        {t('profile.gameReplay.stepCounter', { current: index + 1, total: count })}
-      </p>
     </div>
   )
 }

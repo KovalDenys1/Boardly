@@ -175,7 +175,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
       className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-3 text-sm font-semibold text-bd-ink hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
     >
       <Icon name="arrow-left" size={16} />
-      <span className="hidden sm:inline">{t('profile.gameReplay.backToHistory')}</span>
+      <span className="replay-back-label hidden sm:inline">{t('profile.gameReplay.backToHistory')}</span>
     </Link>
   )
   const center = (
