@@ -518,6 +518,7 @@ export default function SpyGameBoard({
   const currentRound = data.currentRound || 1
   const totalRounds = data.totalRounds || 3
   const isResults = phase === SpyGamePhase.RESULTS
+  const isQuestioning = phase === SpyGamePhase.QUESTIONING
   const isGameOver = isResults && currentRound >= totalRounds
   // The ROUND verdict belongs to SpyResults, which owns the reveal and already
   // computes it from resolveSpyOutcome. The end of the GAME is the engine's: it ranks the
@@ -601,7 +602,7 @@ export default function SpyGameBoard({
         leftCard={seatCard(
           waitingOnId ? playersById.get(waitingOnId) : undefined,
           'left',
-          !isResults && !!waitingOnId
+          isQuestioning && !!waitingOnId
         )}
         center={
           <>
@@ -624,7 +625,7 @@ export default function SpyGameBoard({
         rightCard={seatCard(
           rightSeatId ? playersById.get(rightSeatId) : undefined,
           'right',
-          !isResults && !!rightSeatId && rightSeatId === data.currentTargetId
+          isQuestioning && !!rightSeatId && rightSeatId === data.currentTargetId
         )}
         trailing={
           isSpectator
