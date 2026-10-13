@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { PlayerDisc, ROWS, COLS } from '@/lib/games/connect-four-game'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export const DISC_RED = 'var(--bd-coral)'
 export const DISC_YELLOW = 'var(--bd-sun)'
@@ -85,7 +86,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
     )
 }
 
-export default function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled }: {
+export default function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled, readOnly = false }: {
     board: (PlayerDisc | null)[][]
     winningLine: [number, number][] | null
     hoverCol: number | null
@@ -98,7 +99,10 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
     /** The newest disc falls only while this is true, so a remount does not replay it (#1114). */
     dropFresh?: boolean
     onDropSettled?: () => void
+    /** A picture of the board: no arrows, no click zones, cells are labelled images instead of buttons. */
+    readOnly?: boolean
 }) {
+    const { t } = useTranslation()
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
     const cellRef = useRef<HTMLButtonElement>(null)
 
@@ -117,9 +121,13 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
     }
 
     return (
-        <div style={{ position: 'relative', userSelect: 'none' }}>
+        <div
+            style={{ position: 'relative', userSelect: 'none', cursor: readOnly ? 'default' : undefined }}
+            role={readOnly ? 'group' : undefined}
+            aria-label={readOnly ? t('games.connect_four.board.label') : undefined}
+        >
             {/* Drop indicator arrows */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, marginBottom: 4, gap: 3 }}>
+            {!readOnly && <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, marginBottom: 4, gap: 3 }}>
                 {Array.from({ length: COLS }, (_, c) => (
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
@@ -131,7 +139,7 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                         </svg>
                     </div>
                 ))}
-            </div>
+            </div>}
 
             {/* Board grid — fixed dark frame (not var(--bd-ink), which
                 flips to a light color in html.dark) so the board keeps its
@@ -159,6 +167,30 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                         const fallDistancePx = isLastDropped && dropFresh && lastDroppedRow !== null
                             ? getFallDistancePx(lastDroppedRow)
                             : undefined
+                        if (readOnly) {
+                            return (
+                                <div
+                                    key={`${r}-${c}`}
+                                    role="img"
+                                    aria-label={t('games.connect_four.board.cell', {
+                                        row: r + 1,
+                                        col: c + 1,
+                                        disc: t(cell === 1 ? 'games.connect_four.board.red' : cell === 2 ? 'games.connect_four.board.yellow' : 'games.connect_four.board.empty'),
+                                    })}
+                                    style={{
+                                        width: 'var(--c4-cell, 44px)',
+                                        height: 'var(--c4-cell, 44px)',
+                                        borderRadius: '50%',
+                                        padding: 3,
+                                        background: 'rgba(255,255,255,0.10)',
+                                        display: 'grid',
+                                        placeItems: 'center',
+                                    }}
+                                >
+                                    <C4Disc disc={cell} isWin={win} isLast={isLastDropped} />
+                                </div>
+                            )
+                        }
                         return (
                             <button
                                 key={`${r}-${c}`}
@@ -200,7 +232,7 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
             </div>
 
             {/* Column click zones (overlay on entire column for easier clicking) */}
-            <div style={{
+            {!readOnly && <div style={{
                 position: 'absolute', inset: 0,
                 display: 'grid',
                 gridTemplateColumns: `repeat(${COLS}, 1fr)`,
@@ -218,7 +250,7 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                         />
                     )
                 })}
-            </div>
+            </div>}
         </div>
     )
 }

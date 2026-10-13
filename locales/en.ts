@@ -1714,6 +1714,13 @@ const en = {
         full: 'Full',
         newGame: 'NEW GAME',
       },
+      board: {
+        label: 'Connect Four board',
+        cell: 'Row {{row}}, column {{col}}: {{disc}}',
+        red: 'red disc',
+        yellow: 'yellow disc',
+        empty: 'empty',
+      },
       game: {
         lobbyNotFoundTitle: 'Lobby Not Found',
         lobbyNotFoundDescription: 'The lobby you\'re looking for doesn\'t exist or has been closed.',
@@ -4094,9 +4101,6 @@ const en = {
       roundAdvanced: 'Round advanced',
       board: {
         dice: 'Dice',
-        redDisc: 'Red',
-        yellowDisc: 'Yellow',
-        toMove: 'to move',
       },
     },
     gameResults: {
