@@ -5,6 +5,7 @@ const registry: Record<string, () => Promise<{ default: ComponentType<ReplayRend
   tic_tac_toe: () => import('./TttReplayRenderer'),
   yahtzee: () => import('./YahtzeeReplayRenderer'),
   connect_four: () => import('./C4ReplayRenderer'),
+  checkers: () => import('./CheckersReplayRenderer'),
 }
 
 export function hasReplayRenderer(gameType: string): boolean {
