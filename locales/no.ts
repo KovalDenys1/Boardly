@@ -4083,7 +4083,6 @@ const no = {
       roundAdvanced: 'Runden gikk videre',
       board: {
         dice: 'Terninger',
-        winsRound: '{{player}} vinner denne runden',
         redDisc: 'Rød',
         yellowDisc: 'Gul',
         toMove: 'skal flytte',

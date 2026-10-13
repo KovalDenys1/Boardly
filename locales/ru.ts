@@ -4182,7 +4182,6 @@ const ru = {
       roundAdvanced: 'Раунд продолжен',
       board: {
         dice: 'Кубики',
-        winsRound: '{{player}} выигрывает этот раунд',
         redDisc: 'Красный',
         yellowDisc: 'Жёлтый',
         toMove: 'ходит',

@@ -4094,7 +4094,6 @@ const en = {
       roundAdvanced: 'Round advanced',
       board: {
         dice: 'Dice',
-        winsRound: '{{player}} wins this round',
         redDisc: 'Red',
         yellowDisc: 'Yellow',
         toMove: 'to move',
