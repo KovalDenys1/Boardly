@@ -38,6 +38,12 @@ describe('HeaderNavigation', () => {
     expect(hrefs).toEqual(['/', '/games', '/lobby', '/leaderboard', '/guides'])
   })
 
+  it('adds Friends for a signed-in member', () => {
+    render(<HeaderNavigation isAuthenticated isGuest={false} />)
+
+    expect(screen.getByRole('link', { name: 'header.friends' }).getAttribute('href')).toBe('/friends')
+  })
+
   it('lets public routes through without the auth prompt', () => {
     const onUnauthClick = jest.fn()
     render(<HeaderNavigation isAuthenticated={false} isGuest={false} onUnauthClick={onUnauthClick} />)

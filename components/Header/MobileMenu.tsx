@@ -3,7 +3,7 @@
 import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { ForgetGuestButton } from './ForgetGuestButton'
 import { navigateToProfile } from '@/lib/profile-navigation'
@@ -13,6 +13,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { AudioSettingsMobilePanel } from './AudioSettingsButton'
 import { ThemeMobilePanel } from './ThemeToggle'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
+import { useNavGate } from '@/hooks/useNavGate'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -39,21 +41,6 @@ export function MobileMenu({
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
 
-  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard', '/guides']
-
-  // Nav items are real anchors (#921); a signed-out visitor on a non-public
-  // route gets the auth prompt instead of the navigation.
-  const guardMobile = (dest: string) => (event: MouseEvent<HTMLAnchorElement>) => {
-    if (!isAuthenticated && !isGuestSession && !PUBLIC_ROUTES.includes(dest)) {
-      event.preventDefault()
-      closeMenuImmediately()
-      onUnauthClick?.(dest)
-    }
-  }
-
-  const isActive = (path: string) => pathname === path
-  const isActiveStart = (path: string) => !!pathname?.startsWith(path)
-
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current)
@@ -76,6 +63,13 @@ export function MobileMenu({
     setIsClosing(false)
     setMobileMenuOpen(false)
   }, [clearCloseTimeout])
+
+  const guardMobile = useNavGate({
+    isAuthenticated,
+    isGuest: isGuestSession,
+    onUnauthClick,
+    beforeGate: closeMenuImmediately,
+  })
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -330,27 +324,11 @@ export function MobileMenu({
 
             {/* Nav links */}
             <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Link href="/" style={navBtn(isActive('/'))}>
-                {t('header.home')}
-              </Link>
-
-              <Link href="/games" onClick={guardMobile('/games')} style={navBtn(isActiveStart('/games'))}>
-                {t('header.games')}
-              </Link>
-              <Link href="/lobby" onClick={guardMobile('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
-                {t('header.lobbies')}
-              </Link>
-              <Link href="/leaderboard" onClick={guardMobile('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
-                {t('header.leaderboard')}
-              </Link>
-              <Link href="/guides" onClick={guardMobile('/guides')} style={navBtn(isActiveStart('/guides'))}>
-                {t('header.guides')}
-              </Link>
-              {isAuthenticated && (
-                <Link href="/friends" style={navBtn(isActiveStart('/friends'))}>
-                  {t('header.friends')}
+              {visibleNavItems({ isAuthenticated }).map((item) => (
+                <Link key={item.id} href={item.href} onClick={guardMobile(item)} style={navBtn(isNavItemActive(item, pathname))}>
+                  {t(item.labelKey)}
                 </Link>
-              )}
+              ))}
 
               <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0' }} />
 
