@@ -24,7 +24,7 @@ export default function ReplayTransport({ index, count, playing, speed, caption,
   const last = Math.max(0, count - 1)
 
   return (
-    <div className="flex shrink-0 flex-col gap-2">
+    <div className="replay-transport flex shrink-0 flex-col gap-2">
       <div className="flex items-center gap-2">
         <button type="button" className={buttonClass} onClick={() => onSeek(0)} disabled={index === 0} aria-label={t('profile.gameReplay.first')}>
           <Icon name="skip-back" size={18} />

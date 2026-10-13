@@ -3979,6 +3979,7 @@ const en = {
       clickToView: 'Click to view detailed results',
     },
     gameReplay: {
+      youBadge: 'you',
       first: 'First move',
       last: 'Last move',
       backToHistory: 'Back to history',

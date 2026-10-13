@@ -1,6 +1,7 @@
 'use client'
 
 import { Icon } from '@/components/icons'
+import { useTranslation } from '@/lib/i18n-helpers'
 import type { ReplayPlayer } from '@/lib/replay/types'
 
 interface ReplayPlayerRailProps {
@@ -12,6 +13,7 @@ interface ReplayPlayerRailProps {
 
 /** Three or more players as one scrolling row of pills; two players use the scoreboard header. */
 export default function ReplayPlayerRail({ seats, activeId, winnerId, viewerId }: ReplayPlayerRailProps) {
+  const { t } = useTranslation()
   return (
     <ul className="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
       {seats.map((seat) => {
@@ -31,7 +33,7 @@ export default function ReplayPlayerRail({ seats, activeId, winnerId, viewerId }
           >
             {winner && <Icon name="crown" size={14} />}
             <span className="max-w-[9rem] truncate">{seat.name}</span>
-            {seat.userId === viewerId && <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-bd-ink-muted">you</span>}
+            {seat.userId === viewerId && <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-bd-ink-muted">{t('profile.gameReplay.youBadge')}</span>}
           </li>
         )
       })}

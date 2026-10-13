@@ -4065,6 +4065,7 @@ const ru = {
       clickToView: 'Нажмите для просмотра детальных результатов'
     },
     gameReplay: {
+      youBadge: 'вы',
       first: 'Первый ход',
       last: 'Последний ход',
       backToHistory: 'Назад к истории',

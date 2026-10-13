@@ -200,8 +200,8 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
 
   return (
     <div className="bd-page page-shell">
-      <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-3 px-4 py-3 sm:px-6">
-        <div className="shrink-0 rounded-[1.5rem] border-[1.5px] border-bd-line bg-bd-card-warm p-3 shadow-bd-soft sm:p-4">
+      <div className="replay-screen mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-3 px-4 py-3 sm:px-6">
+        <div className="replay-head shrink-0 rounded-[1.5rem] border-[1.5px] border-bd-line bg-bd-card-warm p-3 shadow-bd-soft sm:p-4">
           {seats.length <= 2 && seats.length > 0 ? (
             <GameScoreboardHeader
               leftCard={card(seats[0], 'left')}
@@ -220,7 +220,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
           )}
         </div>
 
-        <div className="ttt-board-card flex-1" data-testid="replay-board">
+        <div className="replay-board ttt-board-card flex-1" data-testid="replay-board">
           {Renderer ? (
             <div className="flex max-h-full max-w-full items-center justify-center overflow-auto">
               <Renderer step={step} isFinalStep={isFinalStep} {...ctx} />
@@ -230,7 +230,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
           )}
         </div>
 
-        <p aria-live="polite" className="h-6 shrink-0 truncate text-center text-sm font-semibold text-bd-ink" data-testid="replay-caption">
+        <p aria-live="polite" className="replay-caption h-6 shrink-0 truncate text-center text-sm font-semibold text-bd-ink" data-testid="replay-caption">
           {caption}
         </p>
 
@@ -249,7 +249,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
         />
 
         {(payload.viewer.isPremium || process.env.NODE_ENV !== 'production') && (
-          <div className="flex shrink-0 items-center justify-center gap-4 pb-1 text-xs text-bd-ink-muted">
+          <div className="replay-extra flex shrink-0 items-center justify-center gap-4 pb-1 text-xs text-bd-ink-muted">
             {payload.viewer.isPremium && (
               <a href={`/api/game/${gameId}/replay?download=1`} className="font-semibold underline-offset-2 hover:underline">
                 {t('profile.gameReplay.download')}
