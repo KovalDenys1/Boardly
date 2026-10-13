@@ -27,7 +27,7 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
   const navStyle = { padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }
 
   return (
-    <div className="hidden xl:flex" style={{ marginLeft: 'clamp(10px, 1.5vw, 28px)', gap: 'clamp(2px, 0.3vw, 6px)' }}>
+    <div className="hidden desk:flex" style={{ marginLeft: 'clamp(10px, 1.5vw, 28px)', gap: 'clamp(2px, 0.3vw, 6px)' }}>
       {visibleNavItems({ isAuthenticated }).map((item) => (
         <Link
           key={item.id}

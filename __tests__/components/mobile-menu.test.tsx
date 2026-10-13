@@ -188,7 +188,7 @@ describe('MobileMenu', () => {
       />
     )
 
-    expect(screen.getByLabelText('Open menu').className).toContain('xl:hidden')
+    expect(screen.getByLabelText('Open menu').className).toContain('desk:hidden')
   })
 
   it('renders the language switcher inside the menu panel', () => {

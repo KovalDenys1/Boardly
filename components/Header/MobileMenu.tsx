@@ -140,7 +140,7 @@ export function MobileMenu({
             setMobileMenuOpen(true)
           }
         }}
-        className="xl:hidden relative z-50"
+        className="desk:hidden relative z-50"
         style={{
           padding: 8,
           borderRadius: 10,
@@ -199,14 +199,14 @@ export function MobileMenu({
         <>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 z-40 xl:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
+            className={`fixed inset-0 z-40 desk:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
             style={{ background: 'rgba(31,27,22,0.45)', backdropFilter: 'blur(4px)' }}
             onClick={closeMenu}
           />
 
           {/* Panel */}
           <div
-            className={`fixed top-0 right-0 bottom-0 z-50 flex h-full flex-col xl:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+            className={`fixed top-0 right-0 bottom-0 z-50 flex h-full flex-col desk:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
             style={{
               width: '85vw',
               maxWidth: 360,

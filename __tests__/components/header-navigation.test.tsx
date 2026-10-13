@@ -26,7 +26,7 @@ describe('HeaderNavigation', () => {
 
     expect(screen.getByRole('link', { name: 'header.home' })).toBeTruthy()
     expect(navigationContainer?.className).toContain('hidden')
-    expect(navigationContainer?.className).toContain('xl:flex')
+    expect(navigationContainer?.className).toContain('desk:flex')
   })
 
   // #921: the nav must be crawlable, so every item is a real anchor with an href.

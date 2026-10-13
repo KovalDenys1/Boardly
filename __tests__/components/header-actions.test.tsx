@@ -85,6 +85,6 @@ describe('HeaderActions responsive user block', () => {
 
     const logoutButton = screen.getByRole('button', { name: 'header.logout' })
     expect(logoutButton.parentElement?.className).toContain('hidden')
-    expect(logoutButton.parentElement?.className).toContain('lg:flex')
+    expect(logoutButton.parentElement?.className).toContain('desk:flex')
   })
 })

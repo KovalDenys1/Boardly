@@ -54,7 +54,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (isGuestSession) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
@@ -80,7 +80,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (!isAuthenticated) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
@@ -106,7 +106,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   }
 
   return (
-    <div className="hidden lg:flex items-center gap-2 min-w-0">
+    <div className="hidden desk:flex items-center gap-2 min-w-0">
       <ThemeToggle />
       <span
         role="link"
