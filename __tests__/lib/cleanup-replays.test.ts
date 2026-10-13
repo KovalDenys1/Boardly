@@ -6,6 +6,7 @@ jest.mock('@/lib/db', () => ({
     gameStateSnapshots: {
       deleteMany: jest.fn(),
       groupBy: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
     },
   },
@@ -70,11 +71,15 @@ describe('cleanupOversizedReplaySnapshots', () => {
     jest.clearAllMocks()
   })
 
-  it('deletes snapshots beyond the per-game cap for affected games only', async () => {
+  it('deletes snapshots beyond the per-game cap for affected games only, keeping the first', async () => {
     ;(prisma.gameStateSnapshots.groupBy as jest.Mock).mockResolvedValue([
       { gameId: 'game-1', _count: { id: 501 } },
     ])
-    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValue([{ id: 'snapshot-old' }])
+    ;(prisma.gameStateSnapshots.findFirst as jest.Mock).mockResolvedValue({ id: 'snapshot-start' })
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValue([
+      { id: 'snapshot-old' },
+      { id: 'snapshot-start' },
+    ])
     ;(prisma.gameStateSnapshots.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
 
     const result = await cleanupOversizedReplaySnapshots()
@@ -83,10 +88,23 @@ describe('cleanupOversizedReplaySnapshots', () => {
     expect(result.affectedGames).toBe(1)
     const findManyArgs = (prisma.gameStateSnapshots.findMany as jest.Mock).mock.calls[0][0]
     expect(findManyArgs.where.gameId).toBe('game-1')
-    expect(findManyArgs.skip).toBe(500)
+    expect(findManyArgs.skip).toBe(499)
     expect(prisma.gameStateSnapshots.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ['snapshot-old'] } },
     })
+  })
+
+  it('leaves a game alone when only its first snapshot is past the cap', async () => {
+    ;(prisma.gameStateSnapshots.groupBy as jest.Mock).mockResolvedValue([
+      { gameId: 'game-1', _count: { id: 500 } },
+    ])
+    ;(prisma.gameStateSnapshots.findFirst as jest.Mock).mockResolvedValue({ id: 'snapshot-start' })
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValue([{ id: 'snapshot-start' }])
+
+    const result = await cleanupOversizedReplaySnapshots()
+
+    expect(result.deletedSnapshots).toBe(0)
+    expect(prisma.gameStateSnapshots.deleteMany).not.toHaveBeenCalled()
   })
 
   it('does nothing when no game exceeds the cap', async () => {
