@@ -5578,8 +5578,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 }
 }
 
-/* Site nav drawer (#1397). The links take the height a phone has: 390x844 fits the
-   whole drawer without scrolling, 320x568 keeps a few px of nav scroll. */
+/* Nav drawer links scale with the viewport height so a 390x844 phone needs no scroll. */
 .nav-drawer-link {
   padding: clamp(7px, 1.3vh, 11px) 14px;
 }
@@ -5593,7 +5592,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .nav-drawer-footer-grid {
     display: contents;
   }
-  .nav-drawer-footer > button {
+  .nav-drawer-footer button {
     flex: 1 1 0;
+    width: auto;
   }
 }
