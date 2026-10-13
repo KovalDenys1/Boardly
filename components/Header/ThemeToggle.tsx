@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { getSafeLocalStorage, writeLocal } from '@/lib/safe-storage'
 
 const ORDER: ThemeMode[] = ['system', 'light', 'dark']
+const THEME_CHANGED_EVENT = 'boardly:theme-changed'
 
 function SunIcon() {
   return (
@@ -55,14 +56,20 @@ function useThemeMode() {
       const stored = getStoredThemeMode(getSafeLocalStorage() ?? undefined)
       if (stored === 'system') applyThemeMode('system')
     }
+    const sync = () => setMode(getStoredThemeMode(getSafeLocalStorage() ?? undefined))
     mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    window.addEventListener(THEME_CHANGED_EVENT, sync)
+    return () => {
+      mq.removeEventListener('change', handler)
+      window.removeEventListener(THEME_CHANGED_EVENT, sync)
+    }
   }, [mounted])
 
   const setTheme = (next: ThemeMode) => {
     writeLocal(THEME_STORAGE_KEY, next)
     applyThemeMode(next)
     setMode(next)
+    window.dispatchEvent(new Event(THEME_CHANGED_EVENT))
   }
 
   return { mode, mounted, setTheme }

@@ -4,17 +4,21 @@ import { QuickSettingsRow } from '@/components/Header/QuickSettingsRow'
 const mockApplyThemeMode = jest.fn()
 const mockWriteLocal = jest.fn()
 let soundEnabled = true
+let storedTheme = 'system'
 
 jest.mock('@/lib/theme', () => ({
   THEME_STORAGE_KEY: 'theme',
   DARK_MEDIA_QUERY: '(prefers-color-scheme: dark)',
-  getStoredThemeMode: () => 'system',
+  getStoredThemeMode: () => storedTheme,
   applyThemeMode: (...args: unknown[]) => mockApplyThemeMode(...args),
 }))
 
 jest.mock('@/lib/safe-storage', () => ({
   getSafeLocalStorage: () => null,
-  writeLocal: (...args: unknown[]) => mockWriteLocal(...args),
+  writeLocal: (key: string, value: string) => {
+    storedTheme = value
+    mockWriteLocal(key, value)
+  },
 }))
 
 jest.mock('@/lib/sounds', () => ({
@@ -42,6 +46,7 @@ describe('QuickSettingsRow', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     soundEnabled = true
+    storedTheme = 'system'
   })
 
   it('switches the theme and marks the chosen mode as pressed', () => {
