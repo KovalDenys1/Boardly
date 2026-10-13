@@ -297,11 +297,13 @@ describe('the Guess the Spy secrets against the broadcast sanitizer (#1243)', ()
     expect(route).toContain('spyGame.getRoleInfoForPlayer(userId)')
   })
 
-  it('keeps spectators, replays and premium themes behind Premium, as the free answer says', () => {
+  it('keeps spectators, the replay download and premium themes behind Premium, as the free answer says', () => {
     const lobby = source('app/api/lobby/route.ts')
     expect(lobby).toContain("'Premium required to enable spectators'")
     expect(lobby).toContain("'Premium required for custom lobby themes'")
-    expect(source('app/api/game/[gameId]/replay/route.ts')).toContain("'Premium required to access replays'")
-    expect(detail.faq.isItFree.a).toMatch(/Only letting spectators in \(the host\), replays \(the viewer\) and premium lobby themes need Premium/)
+    const replayRoute = source('app/api/game/[gameId]/replay/route.ts')
+    expect(replayRoute).toContain("'Premium required to download replays'")
+    expect(replayRoute).not.toContain("'Premium required to access replays'")
+    expect(detail.faq.isItFree.a).toMatch(/Only letting spectators in \(the host\), a longer game history with replay downloads, and premium lobby themes need Premium/)
   })
 })
