@@ -298,3 +298,18 @@ export function checkersMoverKeyframes(
     })
     return frames
 }
+
+export interface ActiveCheckersMotion {
+    plan: CheckersMotionPlan
+    timing: CheckersMotionTiming
+    /** performance.now() when the run began. */
+    startedAt: number
+    /**
+     * How far into the run this render starts. Non-zero only when a chain hop
+     * extended a run in flight; every delay is shifted by it, so an element that
+     * restarts (its key carries `epoch`) picks up where it was.
+     */
+    offset: number
+    /** Changes whenever the run is (re)created; animated elements key on it. */
+    epoch: number
+}
