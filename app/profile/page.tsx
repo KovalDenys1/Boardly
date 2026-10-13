@@ -19,6 +19,7 @@ import BoardlySelect from '@/components/ui/BoardlySelect'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { AppearanceDevicePanels } from '@/components/profile/AppearanceDevicePanels'
 import AvatarPicker from '@/components/AvatarPicker'
 import PublicProfileView from '@/components/PublicProfileView'
 import { buildAuthUrl } from '@/lib/auth-redirect'
@@ -2567,6 +2568,7 @@ export default function ProfilePage() {
                       />
                     </div>
 
+                    <AppearanceDevicePanels surfaceClassName={settingsSurfaceClassName} />
                   </div>
                 </section>
 

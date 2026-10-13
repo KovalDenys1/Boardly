@@ -3938,7 +3938,7 @@ const uk: TranslationWithPlurals = {
       sections: {
         appearance: {
           title: 'Оформлення',
-          subtitle: 'Мова і тема для цього пристрою.',
+          subtitle: 'Мова, тема і звук на цьому пристрої.',
         },
         privacyGame: {
           title: 'Приватність і гра',
@@ -3958,6 +3958,10 @@ const uk: TranslationWithPlurals = {
       },
 
       // Theme
+      sound: {
+        title: 'Звук',
+        subtitle: 'Звукові ефекти та гучність на цьому пристрої.',
+      },
       theme: {
         title: 'Тема',
         subtitle: 'Оберіть бажану кольорову схему',

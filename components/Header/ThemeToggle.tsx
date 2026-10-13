@@ -166,12 +166,18 @@ export function ThemeSegmented({ compact = false }: { compact?: boolean }) {
   )
 }
 
-export function ThemeMobilePanel() {
-  const { t } = useTranslation()
+interface ThemeSettingsPanelProps {
+  title: string
+  subtitle?: string
+  className?: string
+}
 
+/** The full three-tile theme picker, for a settings surface. */
+export function ThemeSettingsPanel({ title, subtitle, className = '' }: ThemeSettingsPanelProps) {
   return (
-    <div className="mt-1 rounded-[14px] border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-3">
-      <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-bd-ink-muted">{t('header.themeLabel')}</p>
+    <div className={className}>
+      <p className="mb-2 block text-sm font-semibold text-bd-ink">{title}</p>
+      {subtitle && <p className="mb-3 text-sm text-bd-ink-soft">{subtitle}</p>}
       <ThemeSegmented />
     </div>
   )

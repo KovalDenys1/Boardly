@@ -199,22 +199,27 @@ export function MuteToggleButton({ className = '' }: { className?: string }) {
   )
 }
 
-export function AudioSettingsMobilePanel() {
+interface AudioSettingsPanelProps {
+  title: string
+  subtitle?: string
+  className?: string
+}
+
+/** Mute button plus the volume slider, for a settings surface. */
+export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSettingsPanelProps) {
   const { t } = useTranslation()
   const { enabled, volume, toggleMute, changeVolume } = useAudioSettings()
   const muted = !enabled || volume === 0
   const volumePercent = Math.round(volume * 100)
 
   return (
-    <div className="rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-3 shadow-xs">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className={className}>
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="bd-kicker">{t('header.audioSettings')}</p>
-          <p className="mt-1 text-xs font-semibold text-(--bd-ink-muted)">
-            {muted ? t('header.unmute') : `${t('header.volume')} ${volumePercent}%`}
-          </p>
+          <p className="mb-1 block text-sm font-semibold text-bd-ink">{title}</p>
+          {subtitle && <p className="text-sm text-bd-ink-soft">{subtitle}</p>}
         </div>
-        <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
           <VolumeIcon muted={muted} />
         </div>
       </div>
@@ -222,7 +227,8 @@ export function AudioSettingsMobilePanel() {
       <button
         type="button"
         onClick={toggleMute}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
+        aria-pressed={muted}
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2) focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
       >
         <span>{muted ? t('header.unmute') : t('header.mute')}</span>
         <VolumeIcon muted={muted} />
@@ -230,10 +236,11 @@ export function AudioSettingsMobilePanel() {
 
       <div className="px-1">
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
+          <label htmlFor="audio-settings-volume" className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
           <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
         </div>
         <input
+          id="audio-settings-volume"
           type="range"
           min={0}
           max={1}

@@ -3841,7 +3841,7 @@ const no = {
       sections: {
         appearance: {
           title: 'Utseende',
-          subtitle: 'Språk og tema for denne enheten.',
+          subtitle: 'Språk, tema og lyd på denne enheten.',
         },
         privacyGame: {
           title: 'Personvern og spill',
@@ -3856,6 +3856,10 @@ const no = {
         title: 'Språk',
         subtitle: 'Velg foretrukket språk for grensesnittet',
         current: 'Gjeldende: {{language}}'
+      },
+      sound: {
+        title: 'Lyd',
+        subtitle: 'Lydeffekter og volum på denne enheten.',
       },
       theme: {
         title: 'Tema',
