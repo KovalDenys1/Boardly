@@ -3968,6 +3968,11 @@ const no = {
       clickToView: 'Klikk for å se detaljerte resultater'
     },
     gameReplay: {
+      youBadge: 'du',
+      first: 'Første trekk',
+      last: 'Siste trekk',
+      backToHistory: 'Tilbake til historikken',
+      stepCounter: '{{current}} av {{total}}',
       captions: {
         common: {
           gameStarted: 'Spillet begynner',

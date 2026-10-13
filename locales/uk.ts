@@ -4078,6 +4078,11 @@ const uk: TranslationWithPlurals = {
       clickToView: 'Натисніть, щоб переглянути детальні результати',
     },
     gameReplay: {
+      youBadge: 'ви',
+      first: 'Перший хід',
+      last: 'Останній хід',
+      backToHistory: 'Назад до історії',
+      stepCounter: '{{current}} з {{total}}',
       captions: {
         common: {
           gameStarted: 'Гра починається',
