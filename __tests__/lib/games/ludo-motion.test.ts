@@ -15,7 +15,7 @@ import {
     ludoVictimKeyframes,
     nextLudoRingTiming,
     timeLudoMotion,
-} from '@/app/lobby/[code]/ludo-motion'
+} from '@/lib/games/ludo-motion'
 
 const base = (tokens: Record<string, number[]>, lastMove: LudoLastMove | null = null): LudoGameData => ({
     mode: 'quick',
