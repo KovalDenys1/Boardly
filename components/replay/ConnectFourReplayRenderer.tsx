@@ -21,13 +21,13 @@ function isWinningLine(value: unknown): value is [number, number][] {
 }
 
 export default function ConnectFourReplayRenderer({
-  snapshotState,
-  players,
+  step,
+  seats,
   playerNameById,
 }: ReplayRendererProps) {
   const { t } = useTranslation()
 
-  const state = snapshotState as Record<string, unknown> | null
+  const state = step.state as Record<string, unknown> | null
   if (!state || typeof state !== 'object') return null
 
   const data = state.data as Record<string, unknown> | null
@@ -47,8 +47,8 @@ export default function ConnectFourReplayRenderer({
     for (const [r, c] of winningLine) winningCells.add(`${r}-${c}`)
   }
 
-  const p1Name = players[0] ? (playerNameById.get(players[0].userId) ?? t('profile.gameReplay.board.redDisc')) : t('profile.gameReplay.board.redDisc')
-  const p2Name = players[1] ? (playerNameById.get(players[1].userId) ?? t('profile.gameReplay.board.yellowDisc')) : t('profile.gameReplay.board.yellowDisc')
+  const p1Name = seats[0] ? (playerNameById.get(seats[0].userId) ?? t('profile.gameReplay.board.redDisc')) : t('profile.gameReplay.board.redDisc')
+  const p2Name = seats[1] ? (playerNameById.get(seats[1].userId) ?? t('profile.gameReplay.board.yellowDisc')) : t('profile.gameReplay.board.yellowDisc')
 
   // Same discs and frame as the live board (connect-four-page.tsx): coral and sun on a
   // frame that stays dark in both themes - hence the ink-on-accent token, which never flips.

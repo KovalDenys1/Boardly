@@ -4078,6 +4078,10 @@ const uk: TranslationWithPlurals = {
       clickToView: 'Натисніть, щоб переглянути детальні результати',
     },
     gameReplay: {
+      first: 'Перший хід',
+      last: 'Останній хід',
+      backToHistory: 'Назад до історії',
+      stepCounter: '{{current}} з {{total}}',
       title: 'Повтор матчу',
       watch: 'Дивитися повтор',
       unavailable: 'Повтор недоступний',

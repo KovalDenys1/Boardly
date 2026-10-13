@@ -3979,6 +3979,10 @@ const en = {
       clickToView: 'Click to view detailed results',
     },
     gameReplay: {
+      first: 'First move',
+      last: 'Last move',
+      backToHistory: 'Back to history',
+      stepCounter: '{{current}} of {{total}}',
       title: 'Match Replay',
       watch: 'Watch Replay',
       unavailable: 'Replay Unavailable',

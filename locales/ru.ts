@@ -4065,6 +4065,10 @@ const ru = {
       clickToView: 'Нажмите для просмотра детальных результатов'
     },
     gameReplay: {
+      first: 'Первый ход',
+      last: 'Последний ход',
+      backToHistory: 'Назад к истории',
+      stepCounter: '{{current}} из {{total}}',
       title: 'Повтор матча',
       watch: 'Смотреть повтор',
       unavailable: 'Повтор недоступен',

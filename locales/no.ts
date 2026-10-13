@@ -3968,6 +3968,10 @@ const no = {
       clickToView: 'Klikk for å se detaljerte resultater'
     },
     gameReplay: {
+      first: 'Første trekk',
+      last: 'Siste trekk',
+      backToHistory: 'Tilbake til historikken',
+      stepCounter: '{{current}} av {{total}}',
       title: 'Kampreplay',
       watch: 'Se replay',
       unavailable: 'Replay utilgjengelig',
