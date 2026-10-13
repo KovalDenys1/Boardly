@@ -964,7 +964,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Gjett spionen på Boardly gratis?',
-            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), en lengre spillhistorikk med nedlasting av repriser og premium-lobbytemaer krever Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Gjett spionen på mobil?',
@@ -1153,7 +1153,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Koster Tre på rad på Boardly noe?',
-            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, repriser av partier og egne lobbytemaer; selve spillet er det samme.',
+            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, lengre spillhistorikk og egne lobbytemaer; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Må jeg registrere meg først?',
@@ -1889,7 +1889,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er dam på Boardly gratis?',
-            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og lengre spillhistorikk; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Trenger jeg en konto for å spille?',
@@ -2316,7 +2316,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Ludo på Boardly gratis?',
-            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, lengre spillhistorikk og profilutseende.',
           },
           worksOnPhone: {
             q: 'Kan jeg spille Ludo på mobilen?',
