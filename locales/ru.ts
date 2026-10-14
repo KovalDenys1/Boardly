@@ -4129,6 +4129,13 @@ const ru = {
           miss: '{{player}} открывает {{value}}, не пара',
           wins: '{{player}} побеждает',
         },
+        yahtzee: {
+          roll: '{{player}} выбрасывает {{dice}}',
+          hold: '{{player}} оставляет {{dice}}',
+          holdNone: '{{player}} перебрасывает все кости',
+          score: '{{player}} записывает {{points}} в «{{category}}»',
+          wins: '{{player}} побеждает',
+        },
       },
       title: 'Повтор матча',
       watch: 'Смотреть повтор',
@@ -4194,9 +4201,6 @@ const ru = {
       claimSubmitted: 'Заявление отправлено',
       challengeSubmitted: 'Ответ на вызов отправлен',
       roundAdvanced: 'Раунд продолжен',
-      board: {
-        dice: 'Кубики',
-      },
     },
     gameResults: {
       title: 'Результаты игры',

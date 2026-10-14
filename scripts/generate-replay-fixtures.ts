@@ -14,6 +14,7 @@ import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { LudoGame } from '@/lib/games/ludo-game'
 import { MemoryGame } from '@/lib/games/memory-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import type { RegisteredGameType } from '@/lib/game-registry'
 import { sanitizeReplayState } from '@/lib/replay/sanitize-replay-state'
 import type { ReplayPlayer, ReplaySnapshotInput } from '@/lib/replay/types'
@@ -27,6 +28,7 @@ const GAMES: Array<{ type: RegisteredGameType; make: () => GameEngine }> = [
   { type: 'checkers', make: () => new CheckersGame('fixture-checkers') },
   { type: 'ludo', make: () => new LudoGame('fixture-ludo') },
   { type: 'memory', make: () => new MemoryGame('fixture-memory') },
+  { type: 'yahtzee', make: () => new YahtzeeGame('fixture-yahtzee') },
 ]
 
 const PLAYERS: ReplayPlayer[] = [

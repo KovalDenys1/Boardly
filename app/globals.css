@@ -2523,6 +2523,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 .memory-tile-last .memory-tile-face {
   box-shadow: inset 0 0 0 3px var(--bd-lav);
 }
+/* The Yahtzee replay is taller than a phone-landscape card; it scrolls from its top rather than overflowing a centring parent. */
+.yahtzee-replay {
+  max-height: calc(100cqh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
 .ttt-board {
   aspect-ratio: 1;
   width: 100%;

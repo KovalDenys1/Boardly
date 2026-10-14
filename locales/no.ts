@@ -4030,6 +4030,13 @@ const no = {
           miss: '{{player}} snudde {{value}}, ikke et par',
           wins: '{{player}} vinner',
         },
+        yahtzee: {
+          roll: '{{player}} kastet {{dice}}',
+          hold: '{{player}} beholdt {{dice}}',
+          holdNone: '{{player}} slapp alle terningene',
+          score: '{{player}} fikk {{points}} i {{category}}',
+          wins: '{{player}} vinner',
+        },
       },
       title: 'Kampreplay',
       watch: 'Se replay',
@@ -4095,9 +4102,6 @@ const no = {
       claimSubmitted: 'Påstand sendt',
       challengeSubmitted: 'Svar på utfordring sendt',
       roundAdvanced: 'Runden gikk videre',
-      board: {
-        dice: 'Terninger',
-      },
     },
     gameResults: {
       title: 'Spillresultater',
