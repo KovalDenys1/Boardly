@@ -12,9 +12,12 @@ import { verifyLobbyPassword } from '@/lib/lobby-password'
 import { isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit } from '@/lib/rate-limit'
 import { checkBotId } from 'botid/server'
+import { __botProtectionTestUtils } from '@/lib/bot-protection'
+import { recordServerReliabilityEvent } from '@/lib/server-operational-events'
 
 jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
 const mockCheckBotId = checkBotId as jest.Mock
+jest.mock('@/lib/server-operational-events', () => ({ recordServerReliabilityEvent: jest.fn() }))
 
 // The route builds its two limiters at import: the per-IP join budget, then the new-guest
 // one. Taken now, before any clearAllMocks empties mock.results.
@@ -476,6 +479,72 @@ describe('POST /api/lobby/[code]/join-guest — which joins may mint a guest (#1
 
       expect(response.status).toBe(403)
       expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+    })
+
+    describe('a flagged token-less join in monitor mode', () => {
+      const ANDROID_CHROME_UA =
+        'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36'
+
+      function flaggedJoin() {
+        return new NextRequest('http://localhost:3000/api/lobby/ABC123/join-guest', {
+          method: 'POST',
+          headers: {
+            'user-agent': ANDROID_CHROME_UA,
+            'x-forwarded-for': '198.51.100.23',
+            'x-vercel-ip-country': 'SE',
+          },
+          body: JSON.stringify({ guestName: 'Newcomer' }),
+        })
+      }
+
+      beforeEach(() => {
+        process.env.BOTID_MODE = 'monitor'
+        __botProtectionTestUtils.reset()
+        mockCheckBotId.mockResolvedValue(BOT)
+      })
+
+      afterEach(() => {
+        delete process.env.BOTID_MODE
+      })
+
+      it('records a minted guest, no challenge headers, country, device and browser', async () => {
+        const response = await JOIN_GUEST(flaggedJoin(), { params: { code: 'ABC123' } as any })
+
+        expect(response.status).toBe(200)
+        expect(recordServerReliabilityEvent).toHaveBeenCalledTimes(1)
+        expect(recordServerReliabilityEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            eventName: 'botid_flagged',
+            source: 'POST /api/lobby/[code]/join-guest',
+            payload: expect.objectContaining({
+              route: 'POST /api/lobby/[code]/join-guest',
+              challengeHeaders: 'none',
+              mintedGuest: true,
+              country: 'SE',
+              device: 'mobile',
+              browser: 'chrome',
+            }),
+          })
+        )
+        const written = JSON.stringify((recordServerReliabilityEvent as jest.Mock).mock.calls[0][0])
+        expect(written).not.toContain('198.51.100.23')
+        expect(written).not.toContain('Pixel 8')
+      })
+
+      it('records that no guest was minted when the join is refused afterwards', async () => {
+        mockPrisma.lobbies.findUnique.mockResolvedValue(null)
+
+        const response = await JOIN_GUEST(flaggedJoin(), { params: { code: 'ABC123' } as any })
+
+        expect(response.status).toBe(404)
+        expect(mockGetOrCreateGuestUser).not.toHaveBeenCalled()
+        expect(recordServerReliabilityEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            eventName: 'botid_flagged',
+            payload: expect.objectContaining({ mintedGuest: false }),
+          })
+        )
+      })
     })
 
     it('does not check a guest who already exists rejoining on their token', async () => {

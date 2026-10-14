@@ -785,6 +785,21 @@ refresh on page load runs before the browser challenge is ready. guest-session n
 call that mints a guest, as join-guest does. Read `botid_flagged` again a week after that release;
 what is left should be token-less calls only.
 
+**Read-out 2026-10-11: not enforced.** The returning-guest flags were gone; the five new ones came
+with first mints during a burst of guests on 09.10, and at least three were people who went on to
+play. Each `botid_flagged` event now carries a `payload` to tell such false positives from bots:
+`route`; `challengeHeaders` for the `x-is-human`, `x-path`, `x-method` headers the browser half
+attaches (`complete`; `empty` when all three came but the challenge in them was blank; `partial`;
+`none`); BotID's verdict fields (`isBot`, `isVerifiedBot`, `verifiedBotName`,
+`verifiedBotCategory`, `bypassed`, `classificationReason`, each string kept only as a plain
+label); `mintedGuest`, whether the call went on to create a guest; `country` from
+`x-vercel-ip-country`; `device` (`mobile`, `tablet`, `desktop`, `unknown`) and `browser` family
+from the User-Agent (`webview` and `headless` included). No IP address, User-Agent string, header
+value or guest id is stored, though a `mintedGuest` event can be matched to its guest by time, as
+the read-outs do. The event is still written at most once a minute per instance, for the first
+request flagged in that minute, so counts are a floor. Read it with
+`select "occurredAt", payload from "OperationalEvents" where "eventName" = 'botid_flagged' order by 1`.
+
 
 Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
 token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
