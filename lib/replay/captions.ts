@@ -218,6 +218,30 @@ const yahtzee: CaptionTable = (step, ctx): ReplayCaption | null => {
   }
 }
 
+const RPS_CHOICES = new Set(['rock', 'paper', 'scissors'])
+const choiceKey = (choice: string) => `lobby.choice.${choice}` as TranslationKeys
+
+const rockPaperScissors: CaptionTable = (step, ctx): ReplayCaption | null => {
+  const data = dataOf(step.state)
+  if (!data || step.action !== 'submit-choice' || !Array.isArray(data.rounds)) return null
+  const before = dataOf(step.prevState)?.rounds
+  const fresh = data.rounds.length > (Array.isArray(before) ? before.length : 0)
+  const round = fresh ? (data.rounds.at(-1) as { choices?: Record<string, unknown>; winner?: unknown } | undefined) : undefined
+  if (!round) return { key: 'profile.gameReplay.captions.rockPaperScissors.locked', params: { player: nameOf(ctx, step.actorId) } }
+  const choices = Object.entries(round.choices ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && RPS_CHOICES.has(entry[1]))
+  if (round.winner === 'draw' && choices.length > 0) {
+    return { key: 'profile.gameReplay.captions.rockPaperScissors.draw', paramKeys: { choice: choiceKey(choices[0][1]) } }
+  }
+  const winning = choices.find(([id]) => id === round.winner)
+  const losing = choices.find(([id]) => id !== round.winner)
+  if (!winning || !losing) return null
+  return {
+    key: isFinished(step) ? 'profile.gameReplay.captions.rockPaperScissors.wins' : 'profile.gameReplay.captions.rockPaperScissors.round',
+    params: { player: nameOf(ctx, winning[0]) },
+    paramKeys: { winning: choiceKey(winning[1]), losing: choiceKey(losing[1]) },
+  }
+}
+
 const TABLES: Record<string, CaptionTable> = {
   tic_tac_toe: ticTacToe,
   connect_four: connectFour,
@@ -225,6 +249,7 @@ const TABLES: Record<string, CaptionTable> = {
   ludo,
   memory,
   yahtzee,
+  rock_paper_scissors: rockPaperScissors,
 }
 
 /** The one line under the board for a step; never a humanised action id. */

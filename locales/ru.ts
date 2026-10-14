@@ -2033,6 +2033,10 @@ const ru = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Раунды',
+        roundItem: 'Раунд {{num}}: {{left}} против {{right}}',
+      },
       name: 'Камень, ножницы, бумага',
       description: 'Игра с одновременным выбором, где камень побеждает ножницы, ножницы побеждают бумагу, а бумага побеждает камень',
       difficulty: 'Лёгкая',
@@ -4135,6 +4139,12 @@ const ru = {
           holdNone: '{{player}} перебрасывает все кости',
           score: '{{player}} записывает {{points}} в «{{category}}»',
           wins: '{{player}} побеждает',
+        },
+        rockPaperScissors: {
+          round: '{{player}} берёт раунд: {{winning}} бьёт {{losing}}',
+          draw: 'Оба выбрали «{{choice}}»: ничья в раунде',
+          locked: '{{player}}: выбор сделан',
+          wins: '{{player}} выигрывает матч: {{winning}} бьёт {{losing}}',
         },
       },
       title: 'Повтор матча',

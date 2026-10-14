@@ -1983,6 +1983,10 @@ const no = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Runder',
+        roundItem: 'Runde {{num}}: {{left}} mot {{right}}',
+      },
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
@@ -4036,6 +4040,12 @@ const no = {
           holdNone: '{{player}} slapp alle terningene',
           score: '{{player}} fikk {{points}} i {{category}}',
           wins: '{{player}} vinner',
+        },
+        rockPaperScissors: {
+          round: '{{player}} tar runden: {{winning}} slår {{losing}}',
+          draw: 'Begge valgte {{choice}}: runden er uavgjort',
+          locked: '{{player}} har valgt',
+          wins: '{{player}} vinner kampen: {{winning}} slår {{losing}}',
         },
       },
       title: 'Kampreplay',

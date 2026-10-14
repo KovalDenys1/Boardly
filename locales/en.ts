@@ -1983,6 +1983,10 @@ const en = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Rounds',
+        roundItem: 'Round {{num}}: {{left}} against {{right}}',
+      },
       name: 'Rock Paper Scissors',
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
@@ -4047,6 +4051,12 @@ const en = {
           holdNone: '{{player}} released every die',
           score: '{{player}} scored {{points}} in {{category}}',
           wins: '{{player}} wins',
+        },
+        rockPaperScissors: {
+          round: '{{player}} takes the round: {{winning}} beats {{losing}}',
+          draw: 'Both threw {{choice}}: the round is a draw',
+          locked: '{{player}} locked in a choice',
+          wins: '{{player}} wins the match: {{winning}} beats {{losing}}',
         },
       },
       title: 'Match Replay',

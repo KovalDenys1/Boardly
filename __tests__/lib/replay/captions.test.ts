@@ -158,4 +158,27 @@ describe('describeStep', () => {
       params: { player: 'Robo' },
     })
   })
+  it('reads a Rock Paper Scissors round from its record and names both throws through their keys', () => {
+    const round = (choices: Record<string, string>, winner: string) => ({ rounds: [{ choices, winner }], playersReady: [] })
+    const prev = { status: 'playing', data: { rounds: [], playersReady: [] } }
+    expect(d('rock_paper_scissors', step('submit-choice', 'robo', round({ ada: 'rock', robo: 'paper' }, 'robo'), { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.round',
+      params: { player: 'Robo' },
+      paramKeys: { winning: 'lobby.choice.paper', losing: 'lobby.choice.rock' },
+    })
+    expect(d('rock_paper_scissors', step('submit-choice', 'robo', round({ ada: 'rock', robo: 'rock' }, 'draw'), { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.draw',
+      paramKeys: { choice: 'lobby.choice.rock' },
+    })
+    expect(d('rock_paper_scissors', step('submit-choice', 'ada', { rounds: [], playersReady: ['ada'] }, { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.locked',
+      params: { player: 'Ada' },
+    })
+    const last = { ...finished('submit-choice', 'ada', round({ ada: 'scissors', robo: 'paper' }, 'ada')), prevState: prev }
+    expect(d('rock_paper_scissors', last)).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.wins',
+      params: { player: 'Ada' },
+      paramKeys: { winning: 'lobby.choice.scissors', losing: 'lobby.choice.paper' },
+    })
+  })
 })

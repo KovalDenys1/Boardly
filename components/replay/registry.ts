@@ -8,6 +8,7 @@ const registry: Record<string, () => Promise<{ default: ComponentType<ReplayRend
   checkers: () => import('./CheckersReplayRenderer'),
   ludo: () => import('./LudoReplayRenderer'),
   memory: () => import('./MemoryReplayRenderer'),
+  rock_paper_scissors: () => import('./RpsReplayRenderer'),
 }
 
 export function hasReplayRenderer(gameType: string): boolean {
