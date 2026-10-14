@@ -877,6 +877,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     inviteCode={code}
                     gameType="rock_paper_scissors"
                     resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
+                    gameId={game?.id}
                     revealDelayMs={RPS_RESULT_REVEAL_DELAY_MS}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />

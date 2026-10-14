@@ -925,6 +925,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     inviteCode={code}
                     gameType="ludo"
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
+                    gameId={game?.id}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

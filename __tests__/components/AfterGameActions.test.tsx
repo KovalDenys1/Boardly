@@ -112,4 +112,26 @@ describe('AfterGameActions (#982)', () => {
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
     expect(screen.queryByTestId('push-nudge')).toBeNull()
   })
+
+  describe('Watch replay (#1421)', () => {
+    const replayLink = () => screen.queryByRole('link', { name: 'profile.gameReplay.watch' }) as HTMLAnchorElement | null
+
+    it('links a signed-in player of a finished game to its replay', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" isRegistered />)
+      expect(replayLink()?.getAttribute('href')).toBe('/replay/game-42')
+    })
+
+    it('shows guests no replay link, since they have no history', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" isGuest isRegistered />)
+      expect(replayLink()).toBeNull()
+    })
+
+    it('needs the game id and a game the replay page can draw', () => {
+      const { unmount } = render(<AfterGameActions gameType="memory" isRegistered />)
+      expect(replayLink()).toBeNull()
+      unmount()
+      render(<AfterGameActions gameType="alias" gameId="game-42" isRegistered />)
+      expect(replayLink()).toBeNull()
+    })
+  })
 })

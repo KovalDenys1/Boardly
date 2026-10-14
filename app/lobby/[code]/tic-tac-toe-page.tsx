@@ -1040,6 +1040,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     inviteCode={code}
                     gameType="tic_tac_toe"
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
+                    gameId={game?.id}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}
