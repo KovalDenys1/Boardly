@@ -25,6 +25,8 @@ interface YahtzeeResultsProps {
   lobbyCode?: string
   /** `status === 'authenticated' && !isGuest`, decided by the caller (#982). */
   isRegistered?: boolean
+  /** The finished game, for the after-game "Watch replay" link. */
+  gameId?: string | null
   /** Times each face 1–6 came up this game, from the server's state; null hides the tally (#1085). */
   faceCounts?: number[] | null
 }
@@ -64,6 +66,7 @@ export default function YahtzeeResults({
   registerUrl = '/auth/register',
   lobbyCode,
   isRegistered = false,
+  gameId,
   mode = 'classic',
   faceCounts = null,
 }: YahtzeeResultsProps) {
@@ -422,6 +425,7 @@ export default function YahtzeeResults({
             gameType="yahtzee"
             isGuest={isGuest}
             isRegistered={isRegistered}
+            gameId={gameId}
             registerUrl={registerUrl}
           />
         </div>

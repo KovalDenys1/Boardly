@@ -563,6 +563,7 @@ export default function MemoryGameBoard({
           inviteCode={lobbyCode}
           gameType="memory"
           resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+          gameId={gameId}
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
       )}
@@ -852,6 +853,7 @@ export default function MemoryGameBoard({
                   inviteCode={lobbyCode}
                   gameType="memory"
                   resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+                  gameId={gameId}
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}

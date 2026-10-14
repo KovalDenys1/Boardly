@@ -910,6 +910,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             {showsResultOverlay && (
                 <GameResultOverlay
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
+                    gameId={game?.id}
                     title={isDraw ? t('games.checkers.game.draw') : winnerName ? t('games.checkers.game.playerWins', { player: winnerName }) : t('games.checkers.game.gameWon')}
                     kicker={isDraw ? drawReasonLine : endReasonLine ?? undefined}
                     isDraw={isDraw}
