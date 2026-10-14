@@ -119,6 +119,8 @@ function memoryGame(): MemoryGame {
   game.startGame()
   const state = game.getState()
   state.currentPlayerIndex = 1
+  // The bot only recalls cards that were face up, so a board everyone has seen lets it find pairs.
+  for (const card of (state.data as MemoryGameData).cards) card.seen = true
   game.restoreState(state)
   return game
 }

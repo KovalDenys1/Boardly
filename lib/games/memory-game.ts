@@ -7,6 +7,7 @@ export interface MemoryCard {
   value: string
   isMatched: boolean
   isFlipped: boolean
+  seen?: boolean
 }
 
 export interface MemoryMoveRecord {
@@ -180,6 +181,7 @@ export class MemoryGame extends GameEngine {
     }
 
     selectedCard.isFlipped = true
+    selectedCard.seen = true
     data.flippedCardIds.push(selectedCard.id)
 
     if (data.flippedCardIds.length < 2) {
