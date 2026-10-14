@@ -2530,6 +2530,51 @@ input[type="range"].slider-thumb::-moz-range-track {
   overscroll-behavior: contain;
   padding: 4px;
 }
+/* The RPS stage fills the replay card above a one-line rail of the rounds so far. */
+.rps-replay {
+  width: min(calc(100cqw - 24px), 640px);
+  height: calc(100cqh - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rps-replay .rps-board { flex: 1 1 auto; height: auto; }
+.rps-replay-hand { display: flex; min-width: 0; }
+.rps-replay-hand > .rps-hand { flex: 1 1 auto; }
+.rps-replay-rounds {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  min-height: 28px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-x: auto;
+}
+.rps-replay-round {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--bd-card-warm);
+  box-shadow: inset 3px 0 0 var(--round-accent);
+  color: var(--bd-ink-soft);
+  font: 600 11px/1 ui-monospace, monospace;
+}
+.rps-replay-rounds:focus-visible {
+  outline: 2px solid var(--bd-lav);
+  outline-offset: -2px;
+}
+/* Auto margins centre the rail and still let an overflowing one scroll back to round 1. */
+.rps-replay-round:first-child { margin-left: auto; }
+.rps-replay-round:last-child { margin-right: auto; }
+.rps-replay-round[aria-current] {
+  background: var(--bd-bg2);
+  color: var(--bd-ink);
+  box-shadow: inset 0 0 0 1.5px var(--bd-ink), inset 3px 0 0 var(--round-accent);
+}
 .ttt-board {
   aspect-ratio: 1;
   width: 100%;

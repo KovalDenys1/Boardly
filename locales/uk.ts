@@ -2035,6 +2035,10 @@ const uk: TranslationWithPlurals = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Раунди',
+        roundItem: 'Раунд {{num}}: {{left}} проти {{right}}',
+      },
       name: 'Камінь Ножиці Папір',
       description: 'Гра одночасного вибору, де Камінь виграє Ножиці, Ножиці виграють Папір, а Папір виграває Камінь',
       difficulty: 'Легко',
@@ -4148,6 +4152,12 @@ const uk: TranslationWithPlurals = {
           holdNone: '{{player}} перекидає всі кубики',
           score: '{{player}} записує {{points}} у «{{category}}»',
           wins: '{{player}} перемагає',
+        },
+        rockPaperScissors: {
+          round: '{{player}} бере раунд: {{winning}} б\'є {{losing}}',
+          draw: 'Обидва вибрали «{{choice}}»: нічия в раунді',
+          locked: '{{player}}: вибір зроблено',
+          wins: '{{player}} виграє матч: {{winning}} б\'є {{losing}}',
         },
       },
       title: 'Повтор матчу',

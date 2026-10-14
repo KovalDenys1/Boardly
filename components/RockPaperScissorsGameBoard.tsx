@@ -86,7 +86,7 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
   )
 }
 
-type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
+export type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
 
 /** Must equal the `rps-shake` duration in app/globals.css. */
 export const RPS_SHAKE_MS = 750
@@ -213,7 +213,7 @@ export default function RockPaperScissorsGameBoard({
   )
 }
 
-function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
+export function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
   const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
   const [shaking, setShaking] = useState(() => reveal && !prefersReducedMotion())
   useEffect(() => {
