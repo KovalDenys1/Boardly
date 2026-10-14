@@ -1486,6 +1486,7 @@ const en = {
         cardFaceDown: 'Card {{num}}, face down',
         cardFaceUp: 'Card {{num}}, {{value}}',
         cardMatched: 'Card {{num}}, {{value}}, matched',
+        boardLabel: 'Memory board',
         tabBoard: 'Board',
         tabScore: 'Score',
         tabMoves: 'Moves',
@@ -1713,6 +1714,13 @@ const en = {
         playing: 'Playing',
         full: 'Full',
         newGame: 'NEW GAME',
+      },
+      board: {
+        label: 'Connect Four board',
+        cell: 'Row {{row}}, column {{col}}: {{disc}}',
+        red: 'red disc',
+        yellow: 'yellow disc',
+        empty: 'empty',
       },
       game: {
         lobbyNotFoundTitle: 'Lobby Not Found',
@@ -1975,6 +1983,10 @@ const en = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Rounds',
+        roundItem: 'Round {{num}}: {{left}} against {{right}}',
+      },
       name: 'Rock Paper Scissors',
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
@@ -4027,6 +4039,25 @@ const en = {
           home: '{{player}} brought a token home',
           wins: '{{player}} wins',
         },
+        memory: {
+          flip: '{{player}} turned over {{value}}',
+          match: '{{player}} found a pair of {{value}}',
+          miss: '{{player}} turned over {{value}}, not a pair',
+          wins: '{{player}} wins',
+        },
+        yahtzee: {
+          roll: '{{player}} rolled {{dice}}',
+          hold: '{{player}} kept {{dice}}',
+          holdNone: '{{player}} released every die',
+          score: '{{player}} scored {{points}} in {{category}}',
+          wins: '{{player}} wins',
+        },
+        rockPaperScissors: {
+          round: '{{player}} takes the round: {{winning}} beats {{losing}}',
+          draw: 'Both threw {{choice}}: the round is a draw',
+          locked: '{{player}} locked in a choice',
+          wins: '{{player}} wins the match: {{winning}} beats {{losing}}',
+        },
       },
       title: 'Match Replay',
       watch: 'Watch Replay',
@@ -4092,13 +4123,6 @@ const en = {
       claimSubmitted: 'Claim submitted',
       challengeSubmitted: 'Challenge submitted',
       roundAdvanced: 'Round advanced',
-      board: {
-        dice: 'Dice',
-        winsRound: '{{player}} wins this round',
-        redDisc: 'Red',
-        yellowDisc: 'Yellow',
-        toMove: 'to move',
-      },
     },
     gameResults: {
       title: 'Game Results',

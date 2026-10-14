@@ -28,8 +28,12 @@ const RULES: Record<string, (prev: ReplayStep | null, cur: ReplaySnapshotInput, 
     prev && action === 'step' && prev.action === 'step' && prev.actorId === cur.playerId && dataOf(prev.state)?.chainFrom != null
       ? 'merge'
       : null,
-  memory: (prev, _cur, action) =>
-    prev && (action === 'resolve-mismatch' || action === 'timeout-pass') && prev.action === 'flip' ? 'end' : null,
+  memory: (prev, _cur, action) => {
+    if (!prev || prev.action !== 'flip' || prev.endState !== undefined) return null
+    if (action === 'resolve-mismatch') return 'end'
+    const left = dataOf(prev.state)?.flippedCardIds
+    return action === 'timeout-pass' && Array.isArray(left) && left.length > 0 ? 'end' : null
+  },
   rock_paper_scissors: (prev, cur, action) =>
     prev && action === 'submit-choice' && prev.action === 'submit-choice' && prev.snapshotIds.length === 1 && prev.actorId !== cur.playerId
       ? 'merge'

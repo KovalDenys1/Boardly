@@ -1,4 +1,4 @@
-import { describeStep, checkersSquareName } from '@/lib/replay/captions'
+import { captionText, describeStep, checkersSquareName } from '@/lib/replay/captions'
 import type { ReplayContext, ReplayStep } from '@/lib/replay/types'
 
 const ctx: ReplayContext = {
@@ -80,12 +80,105 @@ describe('describeStep', () => {
   it('reads a Ludo step from its last event', () => {
     const ev = (kind: string, roll: number, extra = {}) => ({ events: [{ kind, roll, ...extra }], dice: roll })
     expect(d('ludo', step('roll', 'ada', ev('no-move', 2)))).toEqual({ key: 'profile.gameReplay.captions.ludo.rollNoMove', params: { player: 'Ada', roll: 2 } })
-    expect(d('ludo', step('roll', 'ada', { events: [{ kind: 'move', roll: 1 }], dice: 6 }))).toEqual({ key: 'profile.gameReplay.captions.ludo.roll', params: { player: 'Ada', roll: 1 } })
+    const earlier = { events: [{ n: 4, kind: 'move', roll: 1 }] }
+    expect(d('ludo', step('roll', 'ada', { ...earlier, dice: 6 }, { prevState: { data: earlier } }))).toEqual({
+      key: 'profile.gameReplay.captions.ludo.roll',
+      params: { player: 'Ada', roll: 6 },
+    })
+    expect(d('ludo', step('roll', 'ada', { events: [{ n: 5, kind: 'move', roll: 3 }], dice: null }, { prevState: { data: earlier } }))).toEqual({
+      key: 'profile.gameReplay.captions.ludo.move',
+      params: { player: 'Ada', roll: 3 },
+    })
     expect(d('ludo', step('move', 'ada', ev('enter', 6)))).toEqual({ key: 'profile.gameReplay.captions.ludo.enter', params: { player: 'Ada' } })
     expect(d('ludo', step('move', 'robo', ev('capture', 4, { capturedPlayerIds: ['ada'] })))).toEqual({
       key: 'profile.gameReplay.captions.ludo.capture',
       params: { player: 'Robo', opponent: 'Ada' },
     })
     expect(d('ludo', finished('move', 'robo', { winnerId: 'robo', events: [] }))).toEqual({ key: 'profile.gameReplay.captions.ludo.wins', params: { player: 'Robo' } })
+  })
+  it('tells a Memory first card, a pair and a miss apart and names the winner', () => {
+    const card = (id: string, value: string, isFlipped = false, isMatched = false) => ({ id, value, isFlipped, isMatched })
+    const first = { cards: [card('a', 'A', true), card('b', 'B'), card('c', 'A')], flippedCardIds: ['a'], pendingMismatchCardIds: [] }
+    expect(d('memory', step('flip', 'ada', first, { payload: { cardId: 'a' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.flip',
+      params: { player: 'Ada', value: 'A' },
+    })
+    const pair = { cards: [card('a', 'A', true, true), card('b', 'B'), card('c', 'A', true, true)], flippedCardIds: [], pendingMismatchCardIds: [] }
+    expect(d('memory', step('flip', 'robo', pair, { payload: { cardId: 'c' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.match',
+      params: { player: 'Robo', value: 'A' },
+    })
+    const miss = { cards: [card('a', 'A', true), card('b', 'B', true), card('c', 'A')], flippedCardIds: ['a', 'b'], pendingMismatchCardIds: ['a', 'b'] }
+    expect(d('memory', step('flip', 'ada', miss, { payload: { cardId: 'b' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.miss',
+      params: { player: 'Ada', value: 'B' },
+    })
+    expect(d('memory', step('flip', 'ada', miss, { payload: null, prevState: { data: first } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.miss',
+      params: { player: 'Ada', value: 'B' },
+    })
+    expect(d('memory', step('flip', 'ada', first, { payload: { cardId: 'b' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.flip',
+      params: { player: 'Ada', value: 'A' },
+    })
+    const all = { cards: [card('a', 'A', true, true), card('c', 'A', true, true)], winnerId: 'robo' }
+    expect(d('memory', finished('flip', 'robo', all))).toEqual({ key: 'profile.gameReplay.captions.memory.wins', params: { player: 'Robo' } })
+    expect(d('memory', finished('flip', 'robo', { ...all, winnerId: null }))).toEqual({ key: 'profile.gameReplay.captions.common.drawGame' })
+    expect(d('memory', step('timeout-pass', 'ada', first))).toEqual({ key: 'profile.gameReplay.captions.common.timeout' })
+  })
+  it('reads a Yahtzee roll, a hold and a score, and names the category through its own key', () => {
+    const dice = [3, 3, 5, 6, 1]
+    expect(d('yahtzee', step('roll', 'ada', { dice, held: [false, false, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.roll',
+      params: { player: 'Ada', dice: '3, 3, 5, 6, 1' },
+    })
+    expect(d('yahtzee', step('hold', 'ada', { dice, held: [true, true, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.hold',
+      params: { player: 'Ada', dice: '3, 3' },
+    })
+    expect(d('yahtzee', step('hold', 'ada', { dice, held: [false, false, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.holdNone',
+      params: { player: 'Ada' },
+    })
+    const scored = step('score', 'robo', { dice: [1, 1, 1, 1, 1], scores: [{}, { fullHouse: 25 }] }, {
+      payload: { category: 'fullHouse' },
+      state: { status: 'playing', players: [{ id: 'ada' }, { id: 'robo' }], data: { dice: [1, 1, 1, 1, 1], scores: [{}, { fullHouse: 25 }] } },
+    })
+    const caption = d('yahtzee', scored)
+    expect(caption).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.score',
+      params: { player: 'Robo', points: 25 },
+      paramKeys: { category: 'yahtzee.categories.fullHouse' },
+    })
+    const t = (key: string, params: Record<string, unknown> = {}) => `${key}${JSON.stringify(params)}`
+    expect(captionText(caption, t)).toBe('profile.gameReplay.captions.yahtzee.score{"player":"Robo","points":25,"category":"yahtzee.categories.fullHouse{}"}')
+    expect(d('yahtzee', finished('score', 'ada', { scores: [] }))).toEqual({ key: 'profile.gameReplay.captions.common.drawGame' })
+    expect(d('yahtzee', { ...finished('score', 'ada', { scores: [] }), state: { status: 'finished', winner: 'robo', data: { scores: [] } } })).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.wins',
+      params: { player: 'Robo' },
+    })
+  })
+  it('reads a Rock Paper Scissors round from its record and names both throws through their keys', () => {
+    const round = (choices: Record<string, string>, winner: string) => ({ rounds: [{ choices, winner }], playersReady: [] })
+    const prev = { status: 'playing', data: { rounds: [], playersReady: [] } }
+    expect(d('rock_paper_scissors', step('submit-choice', 'robo', round({ ada: 'rock', robo: 'paper' }, 'robo'), { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.round',
+      params: { player: 'Robo' },
+      paramKeys: { winning: 'lobby.choice.paper', losing: 'lobby.choice.rock' },
+    })
+    expect(d('rock_paper_scissors', step('submit-choice', 'robo', round({ ada: 'rock', robo: 'rock' }, 'draw'), { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.draw',
+      paramKeys: { choice: 'lobby.choice.rock' },
+    })
+    expect(d('rock_paper_scissors', step('submit-choice', 'ada', { rounds: [], playersReady: ['ada'] }, { prevState: prev }))).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.locked',
+      params: { player: 'Ada' },
+    })
+    const last = { ...finished('submit-choice', 'ada', round({ ada: 'scissors', robo: 'paper' }, 'ada')), prevState: prev }
+    expect(d('rock_paper_scissors', last)).toEqual({
+      key: 'profile.gameReplay.captions.rockPaperScissors.wins',
+      params: { player: 'Ada' },
+      paramKeys: { winning: 'lobby.choice.scissors', losing: 'lobby.choice.paper' },
+    })
   })
 })

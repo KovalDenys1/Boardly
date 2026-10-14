@@ -1538,6 +1538,7 @@ const uk: TranslationWithPlurals = {
         cardFaceDown: 'Картка {{num}}, сорочкою догори',
         cardFaceUp: 'Картка {{num}}, {{value}}',
         cardMatched: 'Картка {{num}}, {{value}}, пару знайдено',
+        boardLabel: 'Поле гри «Меморі»',
         tabBoard: 'Дошка',
         tabScore: 'Рахунок',
         tabMoves: 'Ходи',
@@ -1765,6 +1766,13 @@ const uk: TranslationWithPlurals = {
         playing: 'Грає',
         full: 'Заповнене',
         newGame: 'НОВА ГРА',
+      },
+      board: {
+        label: 'Дошка «Чотири в ряд»',
+        cell: 'Ряд {{row}}, стовпець {{col}}: {{disc}}',
+        red: 'червона фішка',
+        yellow: 'жовта фішка',
+        empty: 'порожньо',
       },
       game: {
         lobbyNotFoundTitle: 'Лобі не знайдено',
@@ -2027,6 +2035,10 @@ const uk: TranslationWithPlurals = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Раунди',
+        roundItem: 'Раунд {{num}}: {{left}} проти {{right}}',
+      },
       name: 'Камінь Ножиці Папір',
       description: 'Гра одночасного вибору, де Камінь виграє Ножиці, Ножиці виграють Папір, а Папір виграває Камінь',
       difficulty: 'Легко',
@@ -4128,6 +4140,25 @@ const uk: TranslationWithPlurals = {
           home: '{{player}} доводить фішку додому',
           wins: '{{player}} перемагає',
         },
+        memory: {
+          flip: '{{player}} відкриває {{value}}',
+          match: '{{player}} знаходить пару {{value}}',
+          miss: '{{player}} відкриває {{value}}, не пара',
+          wins: '{{player}} перемагає',
+        },
+        yahtzee: {
+          roll: '{{player}} викидає {{dice}}',
+          hold: '{{player}} залишає {{dice}}',
+          holdNone: '{{player}} перекидає всі кубики',
+          score: '{{player}} записує {{points}} у «{{category}}»',
+          wins: '{{player}} перемагає',
+        },
+        rockPaperScissors: {
+          round: '{{player}} бере раунд: {{winning}} б\'є {{losing}}',
+          draw: 'Обидва вибрали «{{choice}}»: нічия в раунді',
+          locked: '{{player}}: вибір зроблено',
+          wins: '{{player}} виграє матч: {{winning}} б\'є {{losing}}',
+        },
       },
       title: 'Повтор матчу',
       watch: 'Дивитися повтор',
@@ -4193,13 +4224,6 @@ const uk: TranslationWithPlurals = {
       claimSubmitted: 'Твердження надіслано',
       challengeSubmitted: 'Відповідь на виклик надіслано',
       roundAdvanced: 'Раунд продовжено',
-      board: {
-        dice: 'Кубики',
-        winsRound: '{{player}} виграє цей раунд',
-        redDisc: 'Червоний',
-        yellowDisc: 'Жовтий',
-        toMove: 'ходить',
-      },
     },
     gameResults: {
       title: 'Результати гри',

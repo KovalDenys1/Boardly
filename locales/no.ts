@@ -1486,6 +1486,7 @@ const no = {
         cardFaceDown: 'Kort {{num}}, vendt ned',
         cardFaceUp: 'Kort {{num}}, {{value}}',
         cardMatched: 'Kort {{num}}, {{value}}, funnet par',
+        boardLabel: 'Memory-brett',
         tabBoard: 'Brett',
         tabScore: 'Poeng',
         tabMoves: 'Trekk',
@@ -1713,6 +1714,13 @@ const no = {
         playing: 'Spiller',
         full: 'Fullt',
         newGame: 'NYTT SPILL',
+      },
+      board: {
+        label: 'Fire på rad-brett',
+        cell: 'Rad {{row}}, kolonne {{col}}: {{disc}}',
+        red: 'rød brikke',
+        yellow: 'gul brikke',
+        empty: 'tom',
       },
       game: {
         lobbyNotFoundTitle: 'Lobby ikke funnet',
@@ -1975,6 +1983,10 @@ const no = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Runder',
+        roundItem: 'Runde {{num}}: {{left}} mot {{right}}',
+      },
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
@@ -4016,6 +4028,25 @@ const no = {
           home: '{{player}} fikk en brikke i mål',
           wins: '{{player}} vinner',
         },
+        memory: {
+          flip: '{{player}} snudde {{value}}',
+          match: '{{player}} fant et par {{value}}',
+          miss: '{{player}} snudde {{value}}, ikke et par',
+          wins: '{{player}} vinner',
+        },
+        yahtzee: {
+          roll: '{{player}} kastet {{dice}}',
+          hold: '{{player}} beholdt {{dice}}',
+          holdNone: '{{player}} slapp alle terningene',
+          score: '{{player}} fikk {{points}} i {{category}}',
+          wins: '{{player}} vinner',
+        },
+        rockPaperScissors: {
+          round: '{{player}} tar runden: {{winning}} slår {{losing}}',
+          draw: 'Begge valgte {{choice}}: runden er uavgjort',
+          locked: '{{player}} har valgt',
+          wins: '{{player}} vinner kampen: {{winning}} slår {{losing}}',
+        },
       },
       title: 'Kampreplay',
       watch: 'Se replay',
@@ -4081,13 +4112,6 @@ const no = {
       claimSubmitted: 'Påstand sendt',
       challengeSubmitted: 'Svar på utfordring sendt',
       roundAdvanced: 'Runden gikk videre',
-      board: {
-        dice: 'Terninger',
-        winsRound: '{{player}} vinner denne runden',
-        redDisc: 'Rød',
-        yellowDisc: 'Gul',
-        toMove: 'skal flytte',
-      },
     },
     gameResults: {
       title: 'Spillresultater',

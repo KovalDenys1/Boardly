@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { checkBotId } from 'botid/server'
 import { BOTID_CHECK_LEVEL } from './botid-routes'
 import { apiLogger } from './logger'
+import { browserFamily, deviceClass } from './user-agent-class'
 
 const log = apiLogger('bot-protection')
 
@@ -31,9 +32,23 @@ function botIdApplies(): boolean {
   return process.env.VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'preview'
 }
 
-type Classification =
-  | { kind: 'verdict'; isBot: boolean; isVerifiedBot: boolean }
-  | { kind: 'unavailable'; reason: string }
+type Verdict = {
+  isBot: boolean
+  isVerifiedBot: boolean
+  verifiedBotName: string | null
+  verifiedBotCategory: string | null
+  bypassed: boolean | null
+  classificationReason: string | null
+}
+
+type Classification = { kind: 'verdict'; verdict: Verdict } | { kind: 'unavailable'; reason: string }
+
+const VERDICT_TEXT_MAX_LENGTH = 64
+
+function verdictText(value: unknown): string | null {
+  if (typeof value !== 'string' || !/^[\w .:/-]+$/.test(value)) return null
+  return value.slice(0, VERDICT_TEXT_MAX_LENGTH)
+}
 
 /**
  * Asks Vercel, with a deadline, and insists on an answer.
@@ -59,14 +74,20 @@ async function classify(): Promise<Classification> {
     if (result === 'timeout') {
       return { kind: 'unavailable', reason: `no answer within ${BOTID_TIMEOUT_MS} ms` }
     }
-    const verification = result as { isBot?: unknown; isVerifiedBot?: unknown } | null | undefined
+    const verification = result as Record<string, unknown> | null | undefined
     if (typeof verification?.isBot !== 'boolean') {
       return { kind: 'unavailable', reason: 'answered without a verdict (isBot is not a boolean)' }
     }
     return {
       kind: 'verdict',
-      isBot: verification.isBot,
-      isVerifiedBot: verification.isVerifiedBot === true,
+      verdict: {
+        isBot: verification.isBot,
+        isVerifiedBot: verification.isVerifiedBot === true,
+        verifiedBotName: verdictText(verification.verifiedBotName),
+        verifiedBotCategory: verdictText(verification.verifiedBotCategory),
+        bypassed: typeof verification.bypassed === 'boolean' ? verification.bypassed : null,
+        classificationReason: verdictText(verification.classificationReason),
+      },
     }
   } catch (error) {
     return { kind: 'unavailable', reason: error instanceof Error ? error.message : String(error) }
@@ -109,26 +130,86 @@ function botIdMonitorOnly(): boolean {
   return process.env.BOTID_MODE === 'monitor'
 }
 
-/** A bot verdict in monitor mode: logged every time, recorded at most once a minute per instance. */
+// What botid 1.5.x's browser half sets on a protected request (botid/dist/client/core).
+const BOTID_CHALLENGE_HEADERS = ['x-is-human', 'x-path', 'x-method'] as const
+
+/**
+ * What a flagged request looked like, coarse enough to read in aggregate: no IP address, no
+ * User-Agent string, no guest id, no header value. Country, device class and browser family
+ * answer "same network or same kind of device" for a burst of flags.
+ */
+type FlaggedPayload = {
+  route: string
+  challengeHeaders: 'complete' | 'empty' | 'partial' | 'none'
+  country: string | null
+  device: string
+  browser: string
+} & Verdict
+
+function challengeHeaderState(present: number, challenge: string | null): FlaggedPayload['challengeHeaders'] {
+  if (present === 0) return 'none'
+  if (present < BOTID_CHALLENGE_HEADERS.length) return 'partial'
+  // The browser half sends JSON.stringify(challenge), which is "undefined" or "{}" when none was ready.
+  return challenge === null || challenge.length <= 4 || challenge === 'undefined' ? 'empty' : 'complete'
+}
+
+function describeFlaggedRequest(route: string, request: Request, verdict: Verdict): FlaggedPayload {
+  const present = BOTID_CHALLENGE_HEADERS.filter((name) => request.headers.has(name)).length
+  const country = request.headers.get('x-vercel-ip-country')?.trim().toUpperCase() ?? ''
+  const userAgent = request.headers.get('user-agent')
+  return {
+    route,
+    challengeHeaders: challengeHeaderState(present, request.headers.get('x-is-human')),
+    ...verdict,
+    country: /^[A-Z]{2}$/.test(country) ? country : null,
+    device: deviceClass(userAgent),
+    browser: browserFamily(userAgent),
+  }
+}
+
+/**
+ * A bot verdict in monitor mode is logged every time and recorded at most once a minute per
+ * instance. The slot is taken when the verdict arrives, not when the route settles, so the
+ * request a minute keeps is the first one flagged, whatever its outcome.
+ */
 let lastFlaggedReportAt: number | null = null
-async function reportFlagged(route: string, verifiedBot: boolean): Promise<void> {
-  log.warn('BotID classified a request as a bot; monitor mode lets it through', { route, verifiedBot })
-
+function takeFlaggedSlot(): boolean {
   const now = Date.now()
-  if (lastFlaggedReportAt !== null && now - lastFlaggedReportAt < UNAVAILABLE_EVENT_INTERVAL_MS) return
+  if (lastFlaggedReportAt !== null && now - lastFlaggedReportAt < UNAVAILABLE_EVENT_INTERVAL_MS) return false
   lastFlaggedReportAt = now
+  return true
+}
 
+async function reportFlagged(payload: FlaggedPayload, mintedGuest: boolean): Promise<void> {
   try {
     const { recordServerReliabilityEvent } = await import('./server-operational-events')
-    await recordServerReliabilityEvent({ eventName: 'botid_flagged', source: route, reason: verifiedBot ? 'verified bot' : 'bot' })
+    await recordServerReliabilityEvent({
+      eventName: 'botid_flagged',
+      source: payload.route,
+      reason: payload.isVerifiedBot ? 'verified bot' : 'bot',
+      payload: { ...payload, mintedGuest },
+    })
   } catch {
     // Bookkeeping must never fail the request.
   }
 }
 
 /**
- * Vercel BotID (Basic) for a route that mints an account or a guest (#1157). Returns a 403 to
- * send when Vercel classifies the request as a bot, or null to carry on.
+ * The result of asking BotID. `refusal` is the 403 to send, or null to carry on. `settle` is
+ * called once the route knows whether it minted a guest; in monitor mode it writes the
+ * `botid_flagged` event then, so the event can say whether the flagged caller got a guest. It
+ * never throws and writes at most once.
+ */
+export interface BotCheck {
+  refusal: NextResponse | null
+  settle(outcome: { mintedGuest: boolean }): Promise<void>
+}
+
+const NOTHING_TO_SETTLE = async () => {}
+
+/**
+ * Vercel BotID (Basic) for a route that mints an account or a guest (#1157). Its `refusal` is
+ * a 403 to send when Vercel classifies the request as a bot, or null to carry on.
  *
  * The route must also be listed in `BOTID_PROTECTED_ROUTES`, or the browser never attaches the
  * challenge and every caller looks like a bot. A direct request - curl, a script, Playwright's
@@ -140,33 +221,58 @@ async function reportFlagged(route: string, verifiedBot: boolean): Promise<void>
  * Refusing every signup and every new guest because a second line of defence had a bad
  * minute is the outage #1156 was about.
  */
-export async function refuseIfBot(route: string): Promise<NextResponse | null> {
-  if (!botIdApplies()) return null
+export async function checkBot(route: string, request: Request): Promise<BotCheck> {
+  const passed: BotCheck = { refusal: null, settle: NOTHING_TO_SETTLE }
+  if (!botIdApplies()) return passed
 
   const classification = await classify()
   if (classification.kind === 'unavailable') {
     await reportUnavailable(route, classification.reason)
-    return null
+    return passed
   }
-  if (!classification.isBot) return null
+  const { verdict } = classification
+  if (!verdict.isBot) return passed
 
   if (botIdMonitorOnly()) {
-    await reportFlagged(route, classification.isVerifiedBot)
-    return null
+    log.warn('BotID classified a request as a bot; monitor mode lets it through', {
+      route,
+      verifiedBot: verdict.isVerifiedBot,
+    })
+    if (!takeFlaggedSlot()) return passed
+    const payload = describeFlaggedRequest(route, request, verdict)
+    let settled = false
+    return {
+      refusal: null,
+      async settle({ mintedGuest }) {
+        if (settled) return
+        settled = true
+        await reportFlagged(payload, mintedGuest)
+      },
+    }
   }
 
   log.warn('Refused a request BotID classified as a bot', {
     route,
-    verifiedBot: classification.isVerifiedBot,
+    verifiedBot: verdict.isVerifiedBot,
   })
-  return NextResponse.json(
-    {
-      error: 'Your browser could not be verified. Please reload the page and try again.',
-      code: 'BOT_CHECK_FAILED',
-      translationKey: 'errors.botCheckFailed',
-    },
-    { status: 403 }
-  )
+  return {
+    refusal: NextResponse.json(
+      {
+        error: 'Your browser could not be verified. Please reload the page and try again.',
+        code: 'BOT_CHECK_FAILED',
+        translationKey: 'errors.botCheckFailed',
+      },
+      { status: 403 }
+    ),
+    settle: NOTHING_TO_SETTLE,
+  }
+}
+
+/** `checkBot` for a route that mints no guest (register), settled at once. */
+export async function refuseIfBot(route: string, request: Request): Promise<NextResponse | null> {
+  const check = await checkBot(route, request)
+  await check.settle({ mintedGuest: false })
+  return check.refusal
 }
 
 export const __botProtectionTestUtils = {

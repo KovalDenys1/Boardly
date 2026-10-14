@@ -1,9 +1,9 @@
 /**
  * Plays each bot-capable board game bot against bot and writes the snapshots a
  * real game would store, as __tests__/fixtures/replays/<game>.json. Re-run when
- * an engine changes what it records:
+ * an engine changes what it records, naming the games to rewrite (none = all):
  *
- *   BOT_UX_DELAY_MS=0 npx tsx scripts/generate-replay-fixtures.ts
+ *   BOT_UX_DELAY_MS=0 npx tsx scripts/generate-replay-fixtures.ts memory
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,7 +12,10 @@ import type { GameEngine, Move } from '@/lib/game-engine'
 import { CheckersGame } from '@/lib/games/checkers-game'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { LudoGame } from '@/lib/games/ludo-game'
+import { RockPaperScissorsGame, type RockPaperScissorsGameData } from '@/lib/games/rock-paper-scissors-game'
+import { MemoryGame } from '@/lib/games/memory-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import type { RegisteredGameType } from '@/lib/game-registry'
 import { sanitizeReplayState } from '@/lib/replay/sanitize-replay-state'
 import type { ReplayPlayer, ReplaySnapshotInput } from '@/lib/replay/types'
@@ -25,6 +28,9 @@ const GAMES: Array<{ type: RegisteredGameType; make: () => GameEngine }> = [
   { type: 'connect_four', make: () => new ConnectFourGame('fixture-c4') },
   { type: 'checkers', make: () => new CheckersGame('fixture-checkers') },
   { type: 'ludo', make: () => new LudoGame('fixture-ludo') },
+  { type: 'memory', make: () => new MemoryGame('fixture-memory') },
+  { type: 'yahtzee', make: () => new YahtzeeGame('fixture-yahtzee') },
+  { type: 'rock_paper_scissors', make: () => new RockPaperScissorsGame('fixture-rps') },
 ]
 
 const PLAYERS: ReplayPlayer[] = [
@@ -54,7 +60,8 @@ async function play(type: RegisteredGameType, engine: GameEngine): Promise<Repla
   record('game:start', null, null)
 
   while (engine.getState().status === 'playing' && snapshots.length < MAX_MOVES) {
-    const actor = engine.getCurrentPlayer()
+    const ready = type === 'rock_paper_scissors' ? (engine.getState().data as RockPaperScissorsGameData).playersReady : null
+    const actor = ready ? engine.getState().players.find((p) => !ready.includes(p.id)) : engine.getCurrentPlayer()
     if (!actor) break
     const isBot = PLAYERS.find((p) => p.userId === actor.id)?.isBot ?? false
     const before = snapshots.length
@@ -70,7 +77,8 @@ async function play(type: RegisteredGameType, engine: GameEngine): Promise<Repla
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true })
-  for (const { type, make } of GAMES) {
+  const only = process.argv.slice(2)
+  for (const { type, make } of GAMES.filter((game) => only.length === 0 || only.includes(game.type))) {
     const snapshots = await play(type, make())
     const file = join(OUT_DIR, `${type}.json`)
     writeFileSync(file, JSON.stringify({ gameType: type, players: PLAYERS, snapshots }) + '\n')

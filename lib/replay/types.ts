@@ -42,6 +42,8 @@ export interface ReplayStep {
 export interface ReplayCaption {
   key: TranslationKeys
   params?: Record<string, string | number>
+  /** Params that are themselves locale keys, translated before the caption is. */
+  paramKeys?: Record<string, TranslationKeys>
 }
 
 export interface ReplayContext {

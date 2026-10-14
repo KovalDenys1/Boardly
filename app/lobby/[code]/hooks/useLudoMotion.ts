@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { LudoGameData } from '@/lib/games/ludo-game'
-import { LudoMotionPlan, LudoMotionTiming, deriveLudoMotion, timeLudoMotion } from '../ludo-motion'
+import { LudoMotionPlan, LudoMotionTiming, deriveLudoMotion, timeLudoMotion } from '@/lib/games/ludo-motion'
 
 export interface ActiveLudoMotion {
     plan: LudoMotionPlan

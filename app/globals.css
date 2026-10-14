@@ -1900,6 +1900,17 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-card-warm);
   box-shadow: inset 0 0 0 1.5px var(--bd-line), 0 4px 14px rgba(31,27,22,0.07);
 }
+/* The replay's read-only Connect Four board has no drop-arrow row, so its height allowance is 97 - 24. */
+.replay-board.ttt-board-card {
+  --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 73px) / 6)), 80px);
+}
+/* A 320×568 replay card is ~190 px tall, below the live boards' floors (Checkers 248 px, Ludo 180 + 27 px). */
+.replay-board .ck-board {
+  --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+}
+.replay-board .ludo-board {
+  width: clamp(140px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
+}
 /* Checkers (#1083). Same rule as --c4-cell: the square is the min() of a
    width-derived and a height-derived size, read off .ttt-board-card's container
    units, so the 8×8 board can never come out taller than its card. 40 = the
@@ -2500,6 +2511,69 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-height: 0;
   min-width: 0;
   flex: 0 0 auto;
+}
+/* The replay puts a 28px score row and an 8px gap above the surface. */
+.ttt-replay .ttt-board-wrap {
+  width: min(calc(100cqw - 27px), calc(100cqh - 63px), 560px);
+}
+/* Same 28px score row and 8px gap above the Memory grid; the card is the size container. */
+.memory-replay .memory-grid {
+  width: min(calc(100cqw - 27px), 780px, calc((100cqh - 63px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+}
+.memory-tile-last .memory-tile-face {
+  box-shadow: inset 0 0 0 3px var(--bd-lav);
+}
+/* The Yahtzee replay is taller than a phone-landscape card; it scrolls from its top rather than overflowing a centring parent. */
+.yahtzee-replay {
+  max-height: calc(100cqh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+}
+/* The RPS stage fills the replay card above a one-line rail of the rounds so far. */
+.rps-replay {
+  width: min(calc(100cqw - 24px), 640px);
+  height: calc(100cqh - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rps-replay .rps-board { flex: 1 1 auto; height: auto; }
+.rps-replay-hand { display: flex; min-width: 0; }
+.rps-replay-hand > .rps-hand { flex: 1 1 auto; }
+.rps-replay-rounds {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  min-height: 28px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-x: auto;
+}
+.rps-replay-round {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--bd-card-warm);
+  box-shadow: inset 3px 0 0 var(--round-accent);
+  color: var(--bd-ink-soft);
+  font: 600 11px/1 ui-monospace, monospace;
+}
+.rps-replay-rounds:focus-visible {
+  outline: 2px solid var(--bd-lav);
+  outline-offset: -2px;
+}
+/* Auto margins centre the rail and still let an overflowing one scroll back to round 1. */
+.rps-replay-round:first-child { margin-left: auto; }
+.rps-replay-round:last-child { margin-right: auto; }
+.rps-replay-round[aria-current] {
+  background: var(--bd-bg2);
+  color: var(--bd-ink);
+  box-shadow: inset 0 0 0 1.5px var(--bd-ink), inset 3px 0 0 var(--round-accent);
 }
 .ttt-board {
   aspect-ratio: 1;
@@ -5420,6 +5494,9 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   -webkit-tap-highlight-color: transparent;
 }
 .ludo-board-surface { padding: 12px; }
+/* Replay: the last roll's die on the roller's yard corner, about one cell wide so it stays off the tokens. */
+.ludo-replay-die { position: absolute; width: clamp(20px, 7%, 40px); pointer-events: none; }
+.ludo-replay-die > svg { width: 100%; height: auto; }
 /* No transition on the token: a move walks square by square through
    useLudoMotion + ludoMoverKeyframes (#1113), and anything else (a resync, a
    rematch) settles at once rather than gliding across the corners. */
@@ -5614,4 +5691,5 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .replay-caption { grid-area: caption; }
   .replay-transport { grid-area: transport; }
   .replay-extra { grid-area: extra; }
+  .replay-head .replay-back-label { display: none; }
 }

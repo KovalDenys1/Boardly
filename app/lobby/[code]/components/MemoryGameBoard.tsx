@@ -24,6 +24,7 @@ import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { sounds } from '@/lib/sounds'
 import ScorePop from '@/components/game-chrome/ScorePop'
+import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
 import { faceUpCardIds, idsAddedSince, matchedCardIds, takeRemoteFlips } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -468,7 +469,7 @@ export default function MemoryGameBoard({
   const winnerName = (winnerId && displayNameByUserId.get(winnerId)) || t('games.memory.game.unknownPlayer')
   const isDraw = isFinished && !winnerId
   const isMyWin = isFinished && !!winnerId && !!currentUserId && winnerId === currentUserId
-  const symbolSizeClass = gridColumns >= 6 ? 'text-lg sm:text-xl' : gridColumns === 5 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
+  const symbolSizeClass = memorySymbolSizeClass(gridColumns)
   const matchedPairs = cards.filter((card) => card.isMatched).length / 2
   const totalPairs = Math.max(1, cards.length / 2)
   const currentPlayerName =
@@ -476,10 +477,7 @@ export default function MemoryGameBoard({
     t('games.memory.game.unknownPlayer')
 
   const cardGrid = (
-    <div
-      className="memory-grid"
-      style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-    >
+    <MemoryGrid gridColumns={gridColumns}>
       {cards.map((card, cardIndex) => {
         const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
@@ -495,36 +493,20 @@ export default function MemoryGameBoard({
           isOptimisticallyFlipped
 
         return (
-          <button
+          <MemoryCardTile
             key={card.id}
-            type="button"
+            card={card}
+            cardIndex={cardIndex}
+            isFaceUp={isFaceUp}
+            symbolSizeClass={symbolSizeClass}
+            isDisabled={isDisabled}
             onClick={() => handleCardClick(card.id)}
-            disabled={isDisabled}
-            aria-label={
-              card.isMatched && card.value
-                ? t('games.memory.game.cardMatched', { num: cardIndex + 1, value: card.value })
-                : isFaceUp && card.value
-                  ? t('games.memory.game.cardFaceUp', { num: cardIndex + 1, value: card.value })
-                  : t('games.memory.game.cardFaceDown', { num: cardIndex + 1 })
-            }
-            className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}${justMatchedIds.includes(card.id) ? ' memory-tile-match-cue' : ''}${pendingMismatchCardIds.includes(card.id) ? ' memory-tile-mismatch-cue' : ''}`}
-          >
-            <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
-              <span className="memory-tile-back">
-                <span className="memory-tile-back-mark">✦</span>
-              </span>
-              <span className={`memory-tile-face ${symbolSizeClass}`}>
-                {/* Face-down cards no longer carry their value (#715), so an
-                    optimistic flip has nothing to show until the server confirms
-                    the move. Render a neutral placeholder for that brief window
-                    instead of a blank tile. */}
-                {card.value || (isFaceUp ? '·' : '')}
-              </span>
-            </span>
-          </button>
+            isJustMatched={justMatchedIds.includes(card.id)}
+            isMismatch={pendingMismatchCardIds.includes(card.id)}
+          />
         )
       })}
-    </div>
+    </MemoryGrid>
   )
 
   // One flag for both the class and the mount, so the desktop panel can never
@@ -581,6 +563,7 @@ export default function MemoryGameBoard({
           inviteCode={lobbyCode}
           gameType="memory"
           resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+          gameId={gameId}
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
       )}
@@ -870,6 +853,7 @@ export default function MemoryGameBoard({
                   inviteCode={lobbyCode}
                   gameType="memory"
                   resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+                  gameId={gameId}
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}

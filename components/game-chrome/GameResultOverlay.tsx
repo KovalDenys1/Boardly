@@ -79,6 +79,8 @@ export interface GameResultOverlayProps {
    * mount waits.
    */
   resultKey?: string
+  /** The finished game, for the after-game "Watch replay" link. */
+  gameId?: string | null
 }
 
 /** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
@@ -123,6 +125,7 @@ export default function GameResultOverlay({
   inviteCode,
   gameType,
   isRegistered = false,
+  gameId,
   revealDelayMs = RESULT_REVEAL_DELAY_MS,
   resultKey,
 }: GameResultOverlayProps) {
@@ -260,6 +263,7 @@ export default function GameResultOverlay({
                 isGuest={isGuest}
                 isRegistered={isRegistered}
                 registerUrl={registerUrl}
+                gameId={gameId}
               />
             </div>
           </div>

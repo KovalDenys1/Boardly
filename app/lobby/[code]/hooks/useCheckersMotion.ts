@@ -4,27 +4,13 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { CheckersGameData, Side } from '@/lib/games/checkers-game'
 import { sounds } from '@/lib/sounds'
 import {
-    CheckersMotionPlan,
-    CheckersMotionTiming,
+    type ActiveCheckersMotion,
     deriveCheckersMotion,
     extendCheckersMotion,
     timeCheckersMotion,
-} from '../checkers-motion'
+} from '@/lib/games/checkers-motion'
 
-export interface ActiveCheckersMotion {
-    plan: CheckersMotionPlan
-    timing: CheckersMotionTiming
-    /** performance.now() when the run began. */
-    startedAt: number
-    /**
-     * How far into the run this render starts. Non-zero only when a chain hop
-     * extended a run in flight; every delay is shifted by it, so an element that
-     * restarts (its key carries `epoch`) picks up where it was.
-     */
-    offset: number
-    /** Changes whenever the run is (re)created; animated elements key on it. */
-    epoch: number
-}
+export type { ActiveCheckersMotion }
 
 function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false

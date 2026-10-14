@@ -2177,6 +2177,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             lobbyCode={code}
             isRegistered={status === 'authenticated' && !isGuest}
+            gameId={game?.id}
           />
         </div>
       ) : !showGameSurface || !game ? (
@@ -2360,6 +2361,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               lobbyCode={code}
               isRegistered={status === 'authenticated' && !isGuest}
+              gameId={game?.id}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">

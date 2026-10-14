@@ -77,6 +77,26 @@ describe('groupSteps', () => {
     expect(steps[3].prevState).toBe(backDown)
   })
 
+  it('gives a Memory timeout its own step unless it turns back a card the flip left up', () => {
+    const oneUp = playing({ flippedCardIds: ['c1'], pendingMismatchCardIds: [] })
+    const hidden = playing({ flippedCardIds: [], pendingMismatchCardIds: [] })
+    const steps = groupSteps('memory', [
+      snap('game:start', null, playing()),
+      snap('flip', 'a', playing({ flippedCardIds: ['c1', 'c2'], pendingMismatchCardIds: ['c1', 'c2'] })),
+      snap('resolve-mismatch', 'a', hidden),
+      snap('timeout-pass', 'b', hidden),
+      snap('flip', 'a', playing({ flippedCardIds: [], pendingMismatchCardIds: [] })),
+      snap('timeout-pass', 'a', hidden),
+      snap('flip', 'b', oneUp),
+      snap('timeout-pass', 'b', hidden),
+    ])
+
+    expect(steps.map((s) => s.action)).toEqual(['game:start', 'flip', 'timeout-pass', 'flip', 'timeout-pass', 'flip'])
+    expect(steps[1].endState).toBe(hidden)
+    expect(steps[5].endState).toBe(hidden)
+    expect(steps[2].kind).toBe('system')
+  })
+
   it('makes one step of the two choices of a Rock Paper Scissors round', () => {
     const resolved = playing({ rounds: [{ winner: 'a' }] })
     const steps = groupSteps('rock_paper_scissors', [

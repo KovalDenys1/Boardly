@@ -1536,6 +1536,7 @@ const ru = {
         cardFaceDown: 'Карта {{num}}, рубашкой вверх',
         cardFaceUp: 'Карта {{num}}, {{value}}',
         cardMatched: 'Карта {{num}}, {{value}}, пара найдена',
+        boardLabel: 'Поле игры «Память»',
         tabBoard: 'Доска',
         tabScore: 'Счёт',
         tabMoves: 'Ходы',
@@ -1763,6 +1764,13 @@ const ru = {
         playing: 'Играет',
         full: 'Заполнено',
         newGame: 'НОВАЯ ИГРА',
+      },
+      board: {
+        label: 'Доска «Четыре в ряд»',
+        cell: 'Ряд {{row}}, столбец {{col}}: {{disc}}',
+        red: 'красная фишка',
+        yellow: 'жёлтая фишка',
+        empty: 'пусто',
       },
       game: {
         lobbyNotFoundTitle: 'Лобби не найдено',
@@ -2025,6 +2033,10 @@ const ru = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Раунды',
+        roundItem: 'Раунд {{num}}: {{left}} против {{right}}',
+      },
       name: 'Камень, ножницы, бумага',
       description: 'Игра с одновременным выбором, где камень побеждает ножницы, ножницы побеждают бумагу, а бумага побеждает камень',
       difficulty: 'Лёгкая',
@@ -4115,6 +4127,25 @@ const ru = {
           home: '{{player}} доводит фишку до дома',
           wins: '{{player}} побеждает',
         },
+        memory: {
+          flip: '{{player}} открывает {{value}}',
+          match: '{{player}} находит пару {{value}}',
+          miss: '{{player}} открывает {{value}}, не пара',
+          wins: '{{player}} побеждает',
+        },
+        yahtzee: {
+          roll: '{{player}} выбрасывает {{dice}}',
+          hold: '{{player}} оставляет {{dice}}',
+          holdNone: '{{player}} перебрасывает все кости',
+          score: '{{player}} записывает {{points}} в «{{category}}»',
+          wins: '{{player}} побеждает',
+        },
+        rockPaperScissors: {
+          round: '{{player}} берёт раунд: {{winning}} бьёт {{losing}}',
+          draw: 'Оба выбрали «{{choice}}»: ничья в раунде',
+          locked: '{{player}}: выбор сделан',
+          wins: '{{player}} выигрывает матч: {{winning}} бьёт {{losing}}',
+        },
       },
       title: 'Повтор матча',
       watch: 'Смотреть повтор',
@@ -4180,13 +4211,6 @@ const ru = {
       claimSubmitted: 'Заявление отправлено',
       challengeSubmitted: 'Ответ на вызов отправлен',
       roundAdvanced: 'Раунд продолжен',
-      board: {
-        dice: 'Кубики',
-        winsRound: '{{player}} выигрывает этот раунд',
-        redDisc: 'Красный',
-        yellowDisc: 'Жёлтый',
-        toMove: 'ходит',
-      },
     },
     gameResults: {
       title: 'Результаты игры',
