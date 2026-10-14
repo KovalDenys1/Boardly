@@ -117,6 +117,27 @@ describe('MemoryGame', () => {
     expect(game.getState().currentPlayerIndex).toBe(1)
   })
 
+  it('marks a card as seen once it is flipped, and keeps the mark after it is turned back', () => {
+    const game = new MemoryGame('memory-seen')
+    game.addPlayer(PLAYER_ONE)
+    game.addPlayer(PLAYER_TWO)
+    expect(game.startGame()).toBe(true)
+
+    restoreWithCards(game, [
+      { id: 'a1', value: 'A', isMatched: false, isFlipped: false },
+      { id: 'a2', value: 'A', isMatched: false, isFlipped: false },
+      { id: 'b1', value: 'B', isMatched: false, isFlipped: false },
+      { id: 'b2', value: 'B', isMatched: false, isFlipped: false },
+    ])
+
+    expect(game.makeMove(buildMove(PLAYER_ONE.id, 'flip', { cardId: 'a1' }))).toBe(true)
+    expect(game.makeMove(buildMove(PLAYER_ONE.id, 'flip', { cardId: 'b1' }))).toBe(true)
+    expect(game.makeMove(buildMove(PLAYER_ONE.id, 'resolve-mismatch'))).toBe(true)
+
+    const seenById = Object.fromEntries(getData(game).cards.map((card) => [card.id, card.seen === true]))
+    expect(seenById).toEqual({ a1: true, a2: false, b1: true, b2: false })
+  })
+
   it('passes the turn and hides an unmatched flipped card when the active player times out', () => {
     const game = new MemoryGame('memory-timeout')
     game.addPlayer(PLAYER_ONE)
