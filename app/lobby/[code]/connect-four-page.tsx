@@ -938,7 +938,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             inviteCode={code}
                             gameType="connect_four"
                             resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
-                            gameId={game?.id}
                             isRegistered={status === 'authenticated' && !isGuest}
                         />
                     )}
