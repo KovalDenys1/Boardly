@@ -12,8 +12,11 @@ import {
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { checkBotId } from 'botid/server'
+import { __botProtectionTestUtils } from '@/lib/bot-protection'
+import { recordServerReliabilityEvent } from '@/lib/server-operational-events'
 
 jest.mock('botid/server', () => ({ checkBotId: jest.fn() }))
+jest.mock('@/lib/server-operational-events', () => ({ recordServerReliabilityEvent: jest.fn() }))
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
@@ -184,6 +187,106 @@ describe('POST /api/auth/guest-session', () => {
       const response = await POST(buildRequest({ guestName: 'Person' }))
 
       expect(response.status).toBe(200)
+    })
+
+    describe('a flagged call in monitor mode', () => {
+      const IPHONE_UA =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1'
+      const mockRecord = recordServerReliabilityEvent as jest.MockedFunction<typeof recordServerReliabilityEvent>
+
+      function flaggedRequest(): NextRequest {
+        return new NextRequest('http://localhost:3000/api/auth/guest-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'user-agent': IPHONE_UA,
+            'x-forwarded-for': '203.0.113.7, 10.0.0.1',
+            'x-real-ip': '203.0.113.7',
+            'x-vercel-forwarded-for': '203.0.113.7',
+            'x-vercel-ip-country': 'NO',
+            'x-is-human': '{"b":0,"v":"challenge"}',
+            'x-path': '/api/auth/guest-session',
+            'x-method': 'POST',
+          },
+          body: JSON.stringify({ guestName: 'Person' }),
+        })
+      }
+
+      beforeEach(() => {
+        process.env.BOTID_MODE = 'monitor'
+        __botProtectionTestUtils.reset()
+        mockCheckBotId.mockResolvedValue({
+          isBot: true,
+          isHuman: false,
+          isVerifiedBot: false,
+          verifiedBotName: undefined,
+          verifiedBotCategory: undefined,
+          bypassed: false,
+          classificationReason: undefined,
+        })
+        mockGetOrCreateGuestUser.mockResolvedValue({ id: 'guest-user-1', username: 'Person' } as never)
+      })
+
+      afterEach(() => {
+        delete process.env.BOTID_MODE
+      })
+
+      it('records the route, the challenge headers, the verdict, the mint, country, device and browser', async () => {
+        const response = await POST(flaggedRequest())
+
+        expect(response.status).toBe(200)
+        expect(mockRecord).toHaveBeenCalledTimes(1)
+        expect(mockRecord).toHaveBeenCalledWith(
+          expect.objectContaining({
+            eventName: 'botid_flagged',
+            source: 'POST /api/auth/guest-session',
+            payload: {
+              route: 'POST /api/auth/guest-session',
+              challengeHeaders: 'complete',
+              isBot: true,
+              isVerifiedBot: false,
+              verifiedBotName: null,
+              verifiedBotCategory: null,
+              bypassed: false,
+              classificationReason: null,
+              mintedGuest: true,
+              country: 'NO',
+              device: 'mobile',
+              browser: 'safari',
+            },
+          })
+        )
+      })
+
+      it('writes no IP address, no User-Agent string and no guest id into the event', async () => {
+        await POST(flaggedRequest())
+
+        expect(mockRecord).toHaveBeenCalledTimes(1)
+        const event = mockRecord.mock.calls[0][0]
+        expect(event.payload).toEqual(expect.objectContaining({ device: 'mobile', browser: 'safari' }))
+
+        const written = JSON.stringify(event)
+        expect(written).not.toContain('203.0.113.7')
+        expect(written).not.toContain('10.0.0.1')
+        expect(written).not.toContain('iPhone OS')
+        expect(written).not.toContain('Mozilla')
+        expect(written).not.toContain('guest-user-1')
+        expect(written).not.toContain('challenge"')
+      })
+
+      it('records that no guest was minted when the mint itself fails', async () => {
+        mockGetOrCreateGuestUser.mockRejectedValue(new Error('database down'))
+
+        const response = await POST(flaggedRequest())
+
+        expect(response.status).toBe(500)
+        expect(mockRecord).toHaveBeenCalledWith(
+          expect.objectContaining({
+            eventName: 'botid_flagged',
+            payload: expect.objectContaining({ mintedGuest: false }),
+          })
+        )
+      })
     })
   })
 })

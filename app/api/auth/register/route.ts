@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   // After the rate limit, so a refused flood costs no BotID call (#1157).
-  const botRefusal = await refuseIfBot('POST /api/auth/register')
+  const botRefusal = await refuseIfBot('POST /api/auth/register', request)
   if (botRefusal) return botRefusal
 
   try {
