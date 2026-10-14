@@ -4142,6 +4142,13 @@ const uk: TranslationWithPlurals = {
           miss: '{{player}} відкриває {{value}}, не пара',
           wins: '{{player}} перемагає',
         },
+        yahtzee: {
+          roll: '{{player}} викидає {{dice}}',
+          hold: '{{player}} залишає {{dice}}',
+          holdNone: '{{player}} перекидає всі кубики',
+          score: '{{player}} записує {{points}} у «{{category}}»',
+          wins: '{{player}} перемагає',
+        },
       },
       title: 'Повтор матчу',
       watch: 'Дивитися повтор',
@@ -4207,9 +4214,6 @@ const uk: TranslationWithPlurals = {
       claimSubmitted: 'Твердження надіслано',
       challengeSubmitted: 'Відповідь на виклик надіслано',
       roundAdvanced: 'Раунд продовжено',
-      board: {
-        dice: 'Кубики',
-      },
     },
     gameResults: {
       title: 'Результати гри',

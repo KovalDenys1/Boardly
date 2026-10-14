@@ -15,7 +15,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { gameNameKey } from '@/lib/game-name-key'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { describeStep } from '@/lib/replay/captions'
+import { captionText, describeStep } from '@/lib/replay/captions'
 import { groupSteps } from '@/lib/replay/group-steps'
 import { activeSeatId, buildSeats, winnerSeatId, type ReplayApiPlayer } from '@/lib/replay/seats'
 import type { ReplayContext, ReplayRendererProps, ReplaySnapshotInput } from '@/lib/replay/types'
@@ -89,10 +89,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
   const count = steps.length
   const step = steps[Math.min(index, Math.max(0, count - 1))]
   const isFinalStep = count > 0 && index >= count - 1
-  const caption = step ? (() => {
-    const c = describeStep(gameType, step, ctx)
-    return t(c.key, c.params)
-  })() : ''
+  const caption = step ? captionText(describeStep(gameType, step, ctx), t) : ''
 
   const seek = useCallback((next: number) => {
     setIndex(Math.max(0, Math.min(count - 1, next)))

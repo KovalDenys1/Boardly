@@ -1,4 +1,4 @@
-import { describeStep, checkersSquareName } from '@/lib/replay/captions'
+import { captionText, describeStep, checkersSquareName } from '@/lib/replay/captions'
 import type { ReplayContext, ReplayStep } from '@/lib/replay/types'
 
 const ctx: ReplayContext = {
@@ -125,5 +125,37 @@ describe('describeStep', () => {
     expect(d('memory', finished('flip', 'robo', all))).toEqual({ key: 'profile.gameReplay.captions.memory.wins', params: { player: 'Robo' } })
     expect(d('memory', finished('flip', 'robo', { ...all, winnerId: null }))).toEqual({ key: 'profile.gameReplay.captions.common.drawGame' })
     expect(d('memory', step('timeout-pass', 'ada', first))).toEqual({ key: 'profile.gameReplay.captions.common.timeout' })
+  })
+  it('reads a Yahtzee roll, a hold and a score, and names the category through its own key', () => {
+    const dice = [3, 3, 5, 6, 1]
+    expect(d('yahtzee', step('roll', 'ada', { dice, held: [false, false, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.roll',
+      params: { player: 'Ada', dice: '3, 3, 5, 6, 1' },
+    })
+    expect(d('yahtzee', step('hold', 'ada', { dice, held: [true, true, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.hold',
+      params: { player: 'Ada', dice: '3, 3' },
+    })
+    expect(d('yahtzee', step('hold', 'ada', { dice, held: [false, false, false, false, false], rollsLeft: 2 }))).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.holdNone',
+      params: { player: 'Ada' },
+    })
+    const scored = step('score', 'robo', { dice: [1, 1, 1, 1, 1], scores: [{}, { fullHouse: 25 }] }, {
+      payload: { category: 'fullHouse' },
+      state: { status: 'playing', players: [{ id: 'ada' }, { id: 'robo' }], data: { dice: [1, 1, 1, 1, 1], scores: [{}, { fullHouse: 25 }] } },
+    })
+    const caption = d('yahtzee', scored)
+    expect(caption).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.score',
+      params: { player: 'Robo', points: 25 },
+      paramKeys: { category: 'yahtzee.categories.fullHouse' },
+    })
+    const t = (key: string, params: Record<string, unknown> = {}) => `${key}${JSON.stringify(params)}`
+    expect(captionText(caption, t)).toBe('profile.gameReplay.captions.yahtzee.score{"player":"Robo","points":25,"category":"yahtzee.categories.fullHouse{}"}')
+    expect(d('yahtzee', finished('score', 'ada', { scores: [] }))).toEqual({ key: 'profile.gameReplay.captions.common.drawGame' })
+    expect(d('yahtzee', { ...finished('score', 'ada', { scores: [] }), state: { status: 'finished', winner: 'robo', data: { scores: [] } } })).toEqual({
+      key: 'profile.gameReplay.captions.yahtzee.wins',
+      params: { player: 'Robo' },
+    })
   })
 })

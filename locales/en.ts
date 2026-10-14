@@ -4041,6 +4041,13 @@ const en = {
           miss: '{{player}} turned over {{value}}, not a pair',
           wins: '{{player}} wins',
         },
+        yahtzee: {
+          roll: '{{player}} rolled {{dice}}',
+          hold: '{{player}} kept {{dice}}',
+          holdNone: '{{player}} released every die',
+          score: '{{player}} scored {{points}} in {{category}}',
+          wins: '{{player}} wins',
+        },
       },
       title: 'Match Replay',
       watch: 'Watch Replay',
@@ -4106,9 +4113,6 @@ const en = {
       claimSubmitted: 'Claim submitted',
       challengeSubmitted: 'Challenge submitted',
       roundAdvanced: 'Round advanced',
-      board: {
-        dice: 'Dice',
-      },
     },
     gameResults: {
       title: 'Game Results',

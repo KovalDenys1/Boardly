@@ -1,4 +1,5 @@
 import { dataOf } from './group-steps'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 import type { ReplayCaption, ReplayContext, ReplayStep } from './types'
 
 export type CaptionTable = (step: ReplayStep, ctx: ReplayContext) => ReplayCaption | null
@@ -173,12 +174,57 @@ const memory: CaptionTable = (step, ctx): ReplayCaption | null => {
   return { key: 'profile.gameReplay.captions.memory.flip', params }
 }
 
+const YAHTZEE_CATEGORIES = new Set([
+  'ones', 'twos', 'threes', 'fours', 'fives', 'sixes', 'onePair', 'twoPairs', 'threeOfKind',
+  'fourOfKind', 'fullHouse', 'smallStraight', 'largeStraight', 'yahtzee', 'chance',
+])
+
+const yahtzee: CaptionTable = (step, ctx): ReplayCaption | null => {
+  const data = dataOf(step.state)
+  if (!data) return null
+  const player = nameOf(ctx, step.actorId)
+  if (isFinished(step)) {
+    const winner = (step.state as { winner?: unknown }).winner
+    return typeof winner === 'string'
+      ? { key: 'profile.gameReplay.captions.yahtzee.wins', params: { player: nameOf(ctx, winner) } }
+      : { key: 'profile.gameReplay.captions.common.drawGame' }
+  }
+  const dice = Array.isArray(data.dice) ? (data.dice as number[]) : []
+  const held = Array.isArray(data.held) ? (data.held as boolean[]) : []
+  switch (step.action) {
+    case 'roll':
+      return { key: 'profile.gameReplay.captions.yahtzee.roll', params: { player, dice: dice.join(', ') } }
+    case 'hold': {
+      const kept = dice.filter((_, index) => held[index])
+      return kept.length > 0
+        ? { key: 'profile.gameReplay.captions.yahtzee.hold', params: { player, dice: kept.join(', ') } }
+        : { key: 'profile.gameReplay.captions.yahtzee.holdNone', params: { player } }
+    }
+    case 'score': {
+      const category = (step.payload as { category?: unknown } | null)?.category
+      if (typeof category !== 'string' || !YAHTZEE_CATEGORIES.has(category)) return null
+      const players = (step.state as { players?: Array<{ id?: unknown }> }).players ?? []
+      const seat = players.findIndex((p) => p?.id === step.actorId)
+      const card = Array.isArray(data.scores) ? (data.scores[seat] as Record<string, unknown> | undefined) : undefined
+      const points = typeof card?.[category] === 'number' ? (card[category] as number) : 0
+      return {
+        key: 'profile.gameReplay.captions.yahtzee.score',
+        params: { player, points },
+        paramKeys: { category: `yahtzee.categories.${category}` as TranslationKeys },
+      }
+    }
+    default:
+      return null
+  }
+}
+
 const TABLES: Record<string, CaptionTable> = {
   tic_tac_toe: ticTacToe,
   connect_four: connectFour,
   checkers,
   ludo,
   memory,
+  yahtzee,
 }
 
 /** The one line under the board for a step; never a humanised action id. */
@@ -188,4 +234,11 @@ export function describeStep(gameType: string, step: ReplayStep, ctx: ReplayCont
     common(step, ctx) ??
     { key: 'profile.gameReplay.unknownAction' }
   )
+}
+
+/** The caption as text, with any param that is a locale key translated first. */
+export function captionText(caption: ReplayCaption, t: (key: TranslationKeys, params?: Record<string, unknown>) => string): string {
+  if (!caption.paramKeys) return t(caption.key, caption.params)
+  const translated = Object.fromEntries(Object.entries(caption.paramKeys).map(([name, key]) => [name, t(key)]))
+  return t(caption.key, { ...caption.params, ...translated })
 }

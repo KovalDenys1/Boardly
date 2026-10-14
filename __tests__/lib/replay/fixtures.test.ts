@@ -8,7 +8,7 @@ export function loadReplayFixture(gameType: string): { players: ReplayPlayer[]; 
   return JSON.parse(readFileSync(join(__dirname, '..', '..', 'fixtures', 'replays', `${gameType}.json`), 'utf-8'))
 }
 
-describe.each(['tic_tac_toe', 'connect_four', 'checkers', 'ludo', 'memory'])('%s fixture', (gameType) => {
+describe.each(['tic_tac_toe', 'connect_four', 'checkers', 'ludo', 'memory', 'yahtzee'])('%s fixture', (gameType) => {
   const fixture = loadReplayFixture(gameType)
   const ctx: ReplayContext = {
     seats: fixture.players,
