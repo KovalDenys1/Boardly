@@ -2516,6 +2516,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-replay .ttt-board-wrap {
   width: min(calc(100cqw - 27px), calc(100cqh - 63px), 560px);
 }
+/* Same 28px score row and 8px gap above the Memory grid; the card is the size container. */
+.memory-replay .memory-grid {
+  width: min(calc(100cqw - 27px), 780px, calc((100cqh - 63px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+}
+.memory-tile-last .memory-tile-face {
+  box-shadow: inset 0 0 0 3px var(--bd-lav);
+}
 .ttt-board {
   aspect-ratio: 1;
   width: 100%;
