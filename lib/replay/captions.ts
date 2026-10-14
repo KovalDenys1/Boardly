@@ -136,11 +136,49 @@ const ludo: CaptionTable = (step, ctx): ReplayCaption | null => {
   }
 }
 
+type MemoryCardLike = { id: string; value: string; isFlipped: boolean; isMatched: boolean }
+
+function memoryCards(state: unknown): MemoryCardLike[] | null {
+  const cards = dataOf(state)?.cards
+  return Array.isArray(cards) && cards.every((c) => c && typeof (c as MemoryCardLike).id === 'string') ? (cards as MemoryCardLike[]) : null
+}
+
+/** The card this flip turned: the payload's id when it is face up, else the one face up now that was face down before. */
+export function memoryFlippedCardId(step: ReplayStep): string | null {
+  const cards = memoryCards(step.state)
+  if (!cards) return null
+  const shown = (c: MemoryCardLike) => c.isFlipped || c.isMatched
+  const fromPayload = (step.payload as { cardId?: unknown } | null)?.cardId
+  if (typeof fromPayload === 'string' && cards.some((c) => c.id === fromPayload && shown(c))) return fromPayload
+  const before = new Set((memoryCards(step.prevState) ?? []).filter(shown).map((c) => c.id))
+  const fresh = cards.filter((c) => shown(c) && !before.has(c.id))
+  return fresh.length > 0 ? fresh[fresh.length - 1].id : null
+}
+
+const memory: CaptionTable = (step, ctx): ReplayCaption | null => {
+  const data = dataOf(step.state)
+  if (!data || step.action !== 'flip') return null
+  if (isFinished(step)) {
+    return typeof data.winnerId === 'string'
+      ? { key: 'profile.gameReplay.captions.memory.wins', params: { player: nameOf(ctx, data.winnerId) } }
+      : { key: 'profile.gameReplay.captions.common.drawGame' }
+  }
+  const id = memoryFlippedCardId(step)
+  const card = id ? memoryCards(step.state)?.find((c) => c.id === id) : undefined
+  if (!card) return null
+  const params = { player: nameOf(ctx, step.actorId), value: card.value }
+  if (card.isMatched) return { key: 'profile.gameReplay.captions.memory.match', params }
+  const pending = data.pendingMismatchCardIds
+  if (Array.isArray(pending) && pending.includes(card.id)) return { key: 'profile.gameReplay.captions.memory.miss', params }
+  return { key: 'profile.gameReplay.captions.memory.flip', params }
+}
+
 const TABLES: Record<string, CaptionTable> = {
   tic_tac_toe: ticTacToe,
   connect_four: connectFour,
   checkers,
   ludo,
+  memory,
 }
 
 /** The one line under the board for a step; never a humanised action id. */

@@ -7,6 +7,7 @@ const registry: Record<string, () => Promise<{ default: ComponentType<ReplayRend
   connect_four: () => import('./C4ReplayRenderer'),
   checkers: () => import('./CheckersReplayRenderer'),
   ludo: () => import('./LudoReplayRenderer'),
+  memory: () => import('./MemoryReplayRenderer'),
 }
 
 export function hasReplayRenderer(gameType: string): boolean {

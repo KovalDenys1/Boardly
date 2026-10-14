@@ -1,9 +1,9 @@
 /**
  * Plays each bot-capable board game bot against bot and writes the snapshots a
  * real game would store, as __tests__/fixtures/replays/<game>.json. Re-run when
- * an engine changes what it records:
+ * an engine changes what it records, naming the games to rewrite (none = all):
  *
- *   BOT_UX_DELAY_MS=0 npx tsx scripts/generate-replay-fixtures.ts
+ *   BOT_UX_DELAY_MS=0 npx tsx scripts/generate-replay-fixtures.ts memory
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,6 +12,7 @@ import type { GameEngine, Move } from '@/lib/game-engine'
 import { CheckersGame } from '@/lib/games/checkers-game'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { LudoGame } from '@/lib/games/ludo-game'
+import { MemoryGame } from '@/lib/games/memory-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import type { RegisteredGameType } from '@/lib/game-registry'
 import { sanitizeReplayState } from '@/lib/replay/sanitize-replay-state'
@@ -25,6 +26,7 @@ const GAMES: Array<{ type: RegisteredGameType; make: () => GameEngine }> = [
   { type: 'connect_four', make: () => new ConnectFourGame('fixture-c4') },
   { type: 'checkers', make: () => new CheckersGame('fixture-checkers') },
   { type: 'ludo', make: () => new LudoGame('fixture-ludo') },
+  { type: 'memory', make: () => new MemoryGame('fixture-memory') },
 ]
 
 const PLAYERS: ReplayPlayer[] = [
@@ -70,7 +72,8 @@ async function play(type: RegisteredGameType, engine: GameEngine): Promise<Repla
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true })
-  for (const { type, make } of GAMES) {
+  const only = process.argv.slice(2)
+  for (const { type, make } of GAMES.filter((game) => only.length === 0 || only.includes(game.type))) {
     const snapshots = await play(type, make())
     const file = join(OUT_DIR, `${type}.json`)
     writeFileSync(file, JSON.stringify({ gameType: type, players: PLAYERS, snapshots }) + '\n')

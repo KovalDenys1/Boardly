@@ -96,4 +96,34 @@ describe('describeStep', () => {
     })
     expect(d('ludo', finished('move', 'robo', { winnerId: 'robo', events: [] }))).toEqual({ key: 'profile.gameReplay.captions.ludo.wins', params: { player: 'Robo' } })
   })
+  it('tells a Memory first card, a pair and a miss apart and names the winner', () => {
+    const card = (id: string, value: string, isFlipped = false, isMatched = false) => ({ id, value, isFlipped, isMatched })
+    const first = { cards: [card('a', 'A', true), card('b', 'B'), card('c', 'A')], flippedCardIds: ['a'], pendingMismatchCardIds: [] }
+    expect(d('memory', step('flip', 'ada', first, { payload: { cardId: 'a' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.flip',
+      params: { player: 'Ada', value: 'A' },
+    })
+    const pair = { cards: [card('a', 'A', true, true), card('b', 'B'), card('c', 'A', true, true)], flippedCardIds: [], pendingMismatchCardIds: [] }
+    expect(d('memory', step('flip', 'robo', pair, { payload: { cardId: 'c' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.match',
+      params: { player: 'Robo', value: 'A' },
+    })
+    const miss = { cards: [card('a', 'A', true), card('b', 'B', true), card('c', 'A')], flippedCardIds: ['a', 'b'], pendingMismatchCardIds: ['a', 'b'] }
+    expect(d('memory', step('flip', 'ada', miss, { payload: { cardId: 'b' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.miss',
+      params: { player: 'Ada', value: 'B' },
+    })
+    expect(d('memory', step('flip', 'ada', miss, { payload: null, prevState: { data: first } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.miss',
+      params: { player: 'Ada', value: 'B' },
+    })
+    expect(d('memory', step('flip', 'ada', first, { payload: { cardId: 'b' } }))).toEqual({
+      key: 'profile.gameReplay.captions.memory.flip',
+      params: { player: 'Ada', value: 'A' },
+    })
+    const all = { cards: [card('a', 'A', true, true), card('c', 'A', true, true)], winnerId: 'robo' }
+    expect(d('memory', finished('flip', 'robo', all))).toEqual({ key: 'profile.gameReplay.captions.memory.wins', params: { player: 'Robo' } })
+    expect(d('memory', finished('flip', 'robo', { ...all, winnerId: null }))).toEqual({ key: 'profile.gameReplay.captions.common.drawGame' })
+    expect(d('memory', step('timeout-pass', 'ada', first))).toEqual({ key: 'profile.gameReplay.captions.common.timeout' })
+  })
 })
