@@ -170,9 +170,10 @@ plus 844×390 landscape). Check before calling it done:
 
 1. **No empty regions.** No card with small content floating in it, no column with a
    gap under its last card, no button row with a single button. Boards size to their
-   card with container units (`.ttt-board-card` is `container-type: size`); when a
-   panel is hidden (chat in bot games) its space is taken by something useful – the
-   history card stretched (`.ttt-history-card--fill`), a rules strip.
+   card with container units (`.ttt-board-card` is `container-type: size`). Chat shows
+   in every game, bot and solo games included, so the right column always holds the
+   history card and chat; when a panel is hidden for another reason, its space is
+   taken by something useful, such as a rules strip.
 2. **Shared controls in the same place in every game**, current and future:
    - Leave: top-right, in the `trailing` slot of `GameScoreboardHeader`, via
      `components/game-chrome/GameLeaveButton`; spectators get "Back to lobby" there.

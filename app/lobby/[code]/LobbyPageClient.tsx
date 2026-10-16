@@ -2378,8 +2378,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     )}
                   </>
                 }
-                events={<YahtzeeEventLog entries={rollHistory} rows={hasMultipleHumans ? 5 : 8} fill={!hasMultipleHumans} />}
-                chat={hasMultipleHumans ? (
+                events={<YahtzeeEventLog entries={rollHistory} rows={5} />}
+                chat={(
                   <section className="game-chat-panel">
                     <Chat
                       lobbyCode={code}
@@ -2395,7 +2395,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       onProfileClick={setProfileUserId}
                     />
                   </section>
-                ) : null}
+                )}
               />
 
               {/* Phone and tablet (below the desk breakpoint): pills, sound and
@@ -2451,7 +2451,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </MobileTabPanel>
 
                   {/* Chat Tab */}
-                  {hasMultipleHumans && (
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
                     <div
                       className="min-h-full"
@@ -2476,7 +2475,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       />
                     </div>
                   </MobileTabPanel>
-                  )}
                 </div>
 
                 {/* Phone landscape (#751, #1187): the tile grid is the board
@@ -2509,7 +2507,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   tabs={[
                     { id: 'game' as const, label: t('yahtzee.ui.tabGame'), icon: 'dice' as const },
                     { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: 'users' as const },
-                    ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: 'chat' as const, badge: unreadMessageCount }] : []),
+                    { id: 'chat' as const, label: t('game.ui.tabChat'), icon: 'chat' as const, badge: unreadMessageCount },
                   ]}
                   unreadChatCount={unreadMessageCount}
                 />
@@ -2552,6 +2550,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             <MemoryGameBoard
               gameId={game.id}
               lobbyCode={code}
+              isSpectator={isSpectator}
               players={Array.isArray(game.players) ? game.players : []}
               state={gameEngine.getState()}
               currentUserId={getCurrentUserId()}
@@ -2561,8 +2560,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
               isRestarting={startingGame || isReturningToWaiting}
-              chatMessages={hasMultipleHumans ? chatMessages : undefined}
-              onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
+              chatMessages={chatMessages}
+              onSendChatMessage={(message) => { sendChatMessage(message) }}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
               playerProfiles={chatPlayerProfiles}

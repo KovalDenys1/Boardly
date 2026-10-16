@@ -138,6 +138,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'ludo').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'rules' | 'chat'>('board')
+    const [infoTab, setInfoTab] = useState<'history' | 'rules'>('history')
     const [overlayInspecting, setOverlayInspecting] = useState(false)
 
     const {
@@ -795,9 +796,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         />
     )
 
-    const hasMultipleHumans = lobbyPlayers.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const eventText = (event: LudoEvent) => {
         const victims = (event.capturedPlayerIds ?? []).map(getDisplayName).join(', ')
         switch (event.kind) {
@@ -834,8 +832,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     )
 
     const historySection = (
-        // Never `--fill`: the column's second row always holds something – chat,
-        // or the rules when chat is hidden in a bot game.
         <div className="ttt-history-card ludo-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('games.ludo.game.rollsTitle')}</h3>
@@ -984,7 +980,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
@@ -1000,7 +996,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
@@ -1029,8 +1025,18 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
-                        {historySection}
-                        {chatSection ?? rulesSection}
+                        <div className="ludo-info-panel">
+                            <GameTabs
+                                tabs={[
+                                    { id: 'history' as const, label: t('game.ui.tabMoves') },
+                                    { id: 'rules' as const, label: t('games.ludo.game.rulesTab') },
+                                ]}
+                                activeTab={infoTab}
+                                onTabChange={setInfoTab}
+                            />
+                            {infoTab === 'rules' ? rulesSection : historySection}
+                        </div>
+                        {chatSection}
                     </div>
                 </div>
             </div>
@@ -1044,7 +1050,19 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {actionsSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: t('game.ui.tabMoves') },
+                            { id: 'rules' as const, label: t('games.ludo.game.rulesTab') },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' || mobileTab === 'rules' ? mobileTab : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : mobileTab === 'rules' ? rulesSection : chatSection}
                 </div>
             </div>
 
@@ -1057,7 +1075,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: t('game.ui.tabMoves') },
                         { id: 'rules' as const, label: t('games.ludo.game.rulesTab') },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

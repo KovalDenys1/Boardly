@@ -3430,6 +3430,13 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
        message lines plus the compact composer. */
     min-height: 128px;
   }
+  /* The move list shares the chat's slot behind a tab, so it gets the same floor. */
+  .game-landscape-side > .ttt-history-card { flex: 1 1 auto; min-height: 128px; max-height: none; }
+  /* Compact tabs: the strip costs this column height the chat floor needs. */
+  .game-landscape-side > .game-tabs { padding: 3px; }
+  .game-landscape-side > .game-tabs .game-tab { min-height: 32px; padding: 4px 8px; font-size: 12px; }
+  /* Behind tabs the panel's floor gives up the strip's height, so a checkers column with its hint line still fits 390px. */
+  .game-landscape-side > .game-tabs + :is(.game-chat-panel, .ttt-history-card) { min-height: 92px; }
 
   /* --- Compact chat, so that floor is a floor and not a ceiling. ---------
      The title strip goes: in this column the panel is always on screen, so it
@@ -5656,6 +5663,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 
 /* Rules: the second row of the right column when chat is hidden, a tab on phones. */
 .ludo-rules-card { max-height: none; }
+.ludo-info-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.ludo-info-panel > .ludo-rules-card { max-height: 340px; }
 .ludo-rules-list {
   margin: 0;
   padding-left: 18px;

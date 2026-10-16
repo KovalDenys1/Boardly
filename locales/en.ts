@@ -1128,7 +1128,7 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'Play a friend who is far away',
-            desc: 'Send the four-digit code or the link and play from anywhere. Each mark shows on both screens as it lands, with a chat when two people play.',
+            desc: 'Send the four-digit code or the link and play from anywhere. Each mark shows on both screens as it lands, and a chat sits beside the board.',
           },
           botsAndSolo: {
             title: 'Practise alone',
@@ -1417,7 +1417,7 @@ const en = {
           },
           worksOnPhone: {
             q: 'Does Memory work on a phone?',
-            a: 'Yes, in the mobile browser. Moves sit in a tab beside the board, plus chat when two or more people play.',
+            a: 'Yes, in the mobile browser. The cards resize to fit your screen, and the moves and the chat sit in tabs beside the board.',
           },
           timerRunsOut: {
             q: 'What if my turn clock runs out?',
@@ -1872,7 +1872,7 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'Play a friend anywhere',
-            desc: 'Share the code or link; moves appear on both boards live, with chat when two people play.',
+            desc: 'Share the code or link; moves appear on both boards live, with a chat beside the board.',
           },
           botsAndSolo: {
             title: 'Practise alone',
@@ -2304,7 +2304,7 @@ const en = {
         multiplayer: {
           withFriends: {
             title: 'Play friends anywhere',
-            desc: 'Share the code with up to three friends; chat opens once two people are seated.',
+            desc: 'Share the code with up to three friends; the chat sits beside the board.',
           },
           botsAndSolo: {
             title: 'Bots for solo play',

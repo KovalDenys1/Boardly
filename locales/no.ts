@@ -1128,7 +1128,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn langt unna',
-            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og det er chat når to personer spiller.',
+            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og en chat står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -1417,7 +1417,7 @@ const no = {
           },
           worksOnPhone: {
             q: 'Fungerer Hukommelse på mobil?',
-            a: 'Ja, i mobilnettleseren. Trekkene ligger i en fane ved siden av brettet, og chatten også når to eller flere spiller.',
+            a: 'Ja, i mobilnettleseren. Kortene tilpasser seg skjermen, og trekkene og chatten ligger i faner ved siden av brettet.',
           },
           timerRunsOut: {
             q: 'Hva skjer hvis turklokken min går ut?',
@@ -1872,7 +1872,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn hvor som helst',
-            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med en chat ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -2304,7 +2304,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill med venner hvor som helst',
-            desc: 'Del koden med opptil tre venner; chatten åpnes når to personer sitter ved bordet.',
+            desc: 'Del koden med opptil tre venner; chatten står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Roboter når du spiller alene',
