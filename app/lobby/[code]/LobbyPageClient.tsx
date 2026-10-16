@@ -97,7 +97,6 @@ import { useYahtzeeResultsHold } from './hooks/useYahtzeeResultsHold'
 import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
-import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -186,6 +185,8 @@ const LudoLobbyPage = dynamic(
 )
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
+// Where the celebration banner sits: over the dice tray, clear of the site header and the scoreboard.
+const BELOW_HEADER_TOAST = { position: 'top-center', style: { marginTop: 'calc(var(--bd-header-h) + 164px)' } } as const
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
 /** How long the finished turn's scorecard stays up: its row flash is 0.9 s (#1114). */
@@ -781,31 +782,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       playAmbientSound('click', { force: true })
     }
 
-    // Only show toast for final scoring action - skip thinking/hold/roll toasts
+    // A bot's score shows in the score table and Recent Rolls; only its Yahtzee gets a banner.
     if (event.type === 'score') {
       const scoreEvent = event as YahtzeeBotActionEvent
       const category = scoreEvent.data?.category
       const score = scoreEvent.data?.score
 
-      if (typeof category === 'string' && typeof score === 'number') {
+      if (category === 'yahtzee' && typeof score === 'number' && score > 0) {
         const celebration = detectCelebration(
           Array.isArray(scoreEvent.data?.dice) ? scoreEvent.data.dice as number[] : [],
           category,
           score
         )
-        const shown = showYahtzeeCategoryToast({
-          category,
-          score,
-          playerName: botName,
-          celebration,
-          id: `yahtzee-bot-score-${botName}-${category}-${score}`,
-        })
-
-        if (!shown) {
-          showToast.successText(event.message)
-        }
-      } else {
-        showToast.successText(event.message)
+        if (celebration) setCelebrationEvent({ ...celebration, score, playerName: botName })
       }
 
       playAmbientSound('score')
@@ -1215,7 +1204,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       if (workingEngine.getRollsLeft() === 3) {
         if (!handleRollDiceRef.current) {
           clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
-          showToast.error('toast.timerRollFirst')
+          showToast.error('toast.timerRollFirst', undefined, undefined, BELOW_HEADER_TOAST)
           return false
         }
 
@@ -1288,7 +1277,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               'toast.timerScoredZero',
               undefined,
               { category: displayName },
-              { duration: 4000 }
+              { ...BELOW_HEADER_TOAST, duration: 4000 }
             )
           } else {
             showToast.custom(
@@ -1296,7 +1285,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               <Icon name="clock" size={18} />,
               undefined,
               { score, category: displayName },
-              { duration: 4000 }
+              { ...BELOW_HEADER_TOAST, duration: 4000 }
             )
           }
         } else {

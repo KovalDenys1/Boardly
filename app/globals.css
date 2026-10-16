@@ -3303,6 +3303,9 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 }
 .yz-event__die--held { background: var(--bd-sun); border-color: var(--bd-ink); }
 
+/* A celebration lands over the dice tray: below the site header and clear of the scoreboard whose score it just changed. */
+.yz-celebration { top: calc(var(--bd-header-h) + 180px); }
+
 .ttt-cell-coord {
   position: absolute;
   top: 6px;

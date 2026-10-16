@@ -25,10 +25,6 @@ jest.mock('@/lib/celebrations', () => ({
   detectCelebration: jest.fn(() => null),
 }))
 
-jest.mock('@/lib/yahtzee-notifications', () => ({
-  showYahtzeeCategoryToast: jest.fn(),
-}))
-
 jest.mock('@/lib/analytics', () => ({
   trackPlayerAction: jest.fn(),
   trackGameCompleted: jest.fn(),
@@ -38,7 +34,6 @@ jest.mock('@/lib/analytics', () => ({
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { trackGameCompleted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
-import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 
 const mockRestoreGameEngineClient = restoreGameEngineClient as jest.MockedFunction<typeof restoreGameEngineClient>
 
@@ -168,7 +163,7 @@ describe('useGameActions', () => {
   })
 
   describe('handleScore', () => {
-    it('200 response → setGameEngine called and category toast shown', async () => {
+    it('200 response → setGameEngine called, and an ordinary score gets no banner', async () => {
       const restoredEngine = makeRestoreEngine()
       jest.spyOn(restoredEngine, 'getScorecard').mockReturnValue({ ones: 3 } as any)
       mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
@@ -191,7 +186,8 @@ describe('useGameActions', () => {
       jest.spyOn(gameEngine, 'getDice').mockReturnValue([1, 1, 1, 1, 1])
       jest.spyOn(gameEngine, 'getHeld').mockReturnValue([false, false, false, false, false])
 
-      const props = makeProps({ setGameEngine, gameEngine: gameEngine as any })
+      const setCelebrationEvent = jest.fn()
+      const props = makeProps({ setGameEngine, setCelebrationEvent, gameEngine: gameEngine as any })
 
       const { result } = renderHook(() => useGameActions(props))
       await act(async () => { await result.current.handleScore('ones') })
@@ -199,7 +195,7 @@ describe('useGameActions', () => {
       makeMovespy.mockRestore()
 
       expect(setGameEngine).toHaveBeenCalledWith(restoredEngine)
-      expect(showYahtzeeCategoryToast).toHaveBeenCalled()
+      expect(setCelebrationEvent).not.toHaveBeenCalled()
     })
 
     it('category already filled → fetch not called, returns null', async () => {

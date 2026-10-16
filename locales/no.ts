@@ -4700,7 +4700,6 @@ const no = {
     allDiceHeld: 'Alle terningene er holdt fast — slipp en eller skriv inn poeng!',
     notYourTurn: 'Det er ikke din tur!',
     gameOver: 'Spillet er over! {{player}} vinner!',
-    playerTurn: '{{player}} sin tur!',
     rollFailed: 'Kunne ikke kaste terningene',
     scoreFailed: 'Kunne ikke registrere poeng',
     linkCopied: 'Invitasjonslenke kopiert til utklippstavlen!',

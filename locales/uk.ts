@@ -4840,7 +4840,6 @@ const uk: TranslationWithPlurals = {
     allDiceHeld: 'Усі кубики зафіксовані — звільніть один або запишіть результат!',
     notYourTurn: 'Зараз не ваша черга!',
     gameOver: 'Гра завершена! {{player}} перемагає!',
-    playerTurn: 'Черга {{player}}!',
     rollFailed: 'Не вдалося кинути кубики',
     scoreFailed: 'Не вдалося зарахувати очки',
     linkCopied: 'Посилання скопійовано в буфер обміну!',

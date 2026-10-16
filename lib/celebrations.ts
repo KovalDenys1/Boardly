@@ -4,6 +4,8 @@ export interface CelebrationEvent {
   emoji: string
   score: number
   category?: string
+  /** Who scored it, when it is not the viewer. */
+  playerName?: string
 }
 
 /**

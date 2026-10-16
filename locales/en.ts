@@ -4712,7 +4712,6 @@ const en = {
     allDiceHeld: 'All dice are held — release one or score your roll!',
     notYourTurn: 'It\'s not your turn!',
     gameOver: 'Game Over! {{player}} wins!',
-    playerTurn: '{{player}}\'s turn!',
     rollFailed: 'Failed to roll dice',
     scoreFailed: 'Failed to score',
     linkCopied: 'Invite link copied to clipboard!',
