@@ -11,17 +11,19 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import ReplayPlayerRail from '@/components/replay/ReplayPlayerRail'
 import ReplayTransport, { REPLAY_SPEEDS } from '@/components/replay/ReplayTransport'
 import { loadReplayRenderer } from '@/components/replay/registry'
+import { fetchWithGuest, isGuestMode } from '@/lib/client/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { gameNameKey } from '@/lib/game-name-key'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { readLocal } from '@/lib/safe-storage'
 import { captionText, describeStep } from '@/lib/replay/captions'
 import { groupSteps } from '@/lib/replay/group-steps'
 import { activeSeatId, buildSeats, winnerSeatId, type ReplayApiPlayer } from '@/lib/replay/seats'
 import type { ReplayContext, ReplayRendererProps, ReplaySnapshotInput } from '@/lib/replay/types'
 
 interface ReplayPayload {
-  game: { id: string; gameType: string; lobbyName: string; players: ReplayApiPlayer[] }
+  game: { id: string; gameType: string; lobbyCode: string; lobbyName: string; players: ReplayApiPlayer[] }
   viewer: { isPremium: boolean }
   replay: { count: number; snapshots: ReplaySnapshotInput[] }
 }
@@ -46,16 +48,24 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState<number>(1)
 
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push(`/auth/login?returnUrl=/replay/${gameId}`)
-  }, [status, router, gameId])
+  // A guest watches the replay of a game they sat in with their guest token (#1440); the
+  // stored token is read directly so the first render does not wait for GuestContext.
+  const asGuest = status === 'unauthenticated' && isGuestMode()
 
   useEffect(() => {
-    if (status !== 'authenticated') return
+    if (status === 'unauthenticated' && !asGuest) router.push(`/auth/login?returnUrl=/replay/${gameId}`)
+  }, [status, asGuest, router, gameId])
+
+  useEffect(() => {
+    if (status !== 'authenticated' && !asGuest) return
     let cancelled = false
     ;(async () => {
       try {
-        const response = await fetch(`/api/game/${gameId}/replay`)
+        const response = await fetchWithGuest(`/api/game/${gameId}/replay`)
+        if (response.status === 401 && asGuest) {
+          if (!cancelled) router.push(`/auth/login?returnUrl=/replay/${gameId}`)
+          return
+        }
         if (!response.ok) {
           if (!cancelled) setError(response.status === 404 || response.status === 403 || response.status === 409 ? 'notFound' : 'failed')
           return
@@ -73,7 +83,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
     return () => {
       cancelled = true
     }
-  }, [gameId, status])
+  }, [gameId, status, asGuest, router])
 
   const gameType = payload?.game.gameType ?? ''
   const steps = useMemo(() => (payload ? groupSteps(gameType, payload.replay.snapshots) : []), [payload, gameType])
@@ -82,8 +92,8 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
     [payload, steps, t],
   )
   const ctx = useMemo<ReplayContext>(
-    () => ({ seats, playerNameById: new Map(seats.map((seat) => [seat.userId, seat.name])), viewerId: session?.user?.id ?? null }),
-    [seats, session?.user?.id],
+    () => ({ seats, playerNameById: new Map(seats.map((seat) => [seat.userId, seat.name])), viewerId: session?.user?.id ?? (asGuest ? readLocal('boardly_guest_id') : null) }),
+    [seats, session?.user?.id, asGuest],
   )
 
   const count = steps.length
@@ -139,7 +149,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [index, count, seek])
 
-  if (status === 'loading' || status === 'unauthenticated' || (!payload && !error)) {
+  if (status === 'loading' || (status === 'unauthenticated' && !asGuest) || (!payload && !error)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -166,13 +176,16 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
   const gameName = nameKey ? t(nameKey) : gameType
   const activeId = activeSeatId(step.state)
   const winnerId = isFinalStep ? winnerSeatId(step.state) : null
+  // A guest has no profile to go back to, only the lobby the game was played in.
+  const backHref = asGuest ? `/lobby/${payload.game.lobbyCode}` : '/profile?tab=history'
+  const backLabel = asGuest ? t('profile.gameReplay.backToLobby') : t('profile.gameReplay.backToHistory')
   const backLink = (
     <Link
-      href="/profile?tab=history"
+      href={backHref}
       className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-3 text-sm font-semibold text-bd-ink hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
     >
       <Icon name="arrow-left" size={16} />
-      <span className="replay-back-label hidden sm:inline">{t('profile.gameReplay.backToHistory')}</span>
+      <span className="replay-back-label hidden sm:inline">{backLabel}</span>
     </Link>
   )
   const center = (

@@ -100,7 +100,7 @@ export default function AfterGameActions({
    * boxes below are mutually exclusive by construction and at most one ever appears.
    */
   const canAskForPush = isRegistered && !isGuest
-  const replayHref = isRegistered && !isGuest && gameId && hasReplayRenderer(gameType) ? `/replay/${gameId}` : null
+  const replayHref = (isRegistered || isGuest) && gameId && hasReplayRenderer(gameType) ? `/replay/${gameId}` : null
 
   return (
     <div
@@ -160,7 +160,7 @@ export default function AfterGameActions({
       {/* 4 — guest → account. Mutually exclusive with slot 3, so at most one box appears. */}
       {isGuest && registerUrl && (
         <div style={{ width: '100%' }}>
-          <GuestConversionNudge registerUrl={registerUrl} gameType={gameType} lobbyCode={inviteCode} />
+          <GuestConversionNudge registerUrl={registerUrl} gameType={gameType} lobbyCode={inviteCode} hasReplay={replayHref !== null} />
         </div>
       )}
     </div>

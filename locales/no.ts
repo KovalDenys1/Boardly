@@ -3447,8 +3447,9 @@ const no = {
       differentAccount: 'Logg inn med en annen konto',
     },
     guestConversion: {
-      headline: 'Lagre fremgangen din — det er gratis',
+      headline: 'Ta vare på dette spillet — det er gratis',
       body: 'Opprett en konto for å beholde spillhistorikk, statistikk og rekker.',
+      bodyReplay: 'Opprett en konto for å beholde denne replayen, spillhistorikken og statistikken din.',
       cta: 'Opprett konto',
       dismiss: 'Kanskje senere',
     },
@@ -3981,6 +3982,7 @@ const no = {
     },
     gameReplay: {
       youBadge: 'du',
+      backToLobby: 'Tilbake til lobbyen',
       first: 'Første trekk',
       last: 'Siste trekk',
       backToHistory: 'Tilbake til historikken',

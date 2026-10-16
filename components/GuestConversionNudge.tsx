@@ -22,9 +22,11 @@ interface GuestConversionNudgeProps {
   registerUrl: string
   gameType?: AnalyticsGameType
   lobbyCode?: string | null
+  /** True when the end screen offers this game's replay, so the copy can name it. */
+  hasReplay?: boolean
 }
 
-export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode }: GuestConversionNudgeProps) {
+export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode, hasReplay = false }: GuestConversionNudgeProps) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
 
@@ -62,7 +64,7 @@ export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode 
             {t('auth.guestConversion.headline')}
           </p>
           <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 sm:text-sm">
-            {t('auth.guestConversion.body')}
+            {t(hasReplay ? 'auth.guestConversion.bodyReplay' : 'auth.guestConversion.body')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a

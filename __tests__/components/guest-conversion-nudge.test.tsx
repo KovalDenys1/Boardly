@@ -70,4 +70,13 @@ describe('GuestConversionNudge', () => {
 
     expect(JSON.parse(localStorage.getItem('boardly:signup-from') ?? '{}').from).toBe('guest_prompt')
   })
+
+  it('names the replay only when the end screen offers one (#1440)', () => {
+    const { unmount } = render(<GuestConversionNudge registerUrl="/auth/register" hasReplay />)
+    expect(screen.queryByText('auth.guestConversion.bodyReplay')).not.toBeNull()
+    unmount()
+
+    render(<GuestConversionNudge registerUrl="/auth/register" />)
+    expect(screen.queryByText('auth.guestConversion.body')).not.toBeNull()
+  })
 })

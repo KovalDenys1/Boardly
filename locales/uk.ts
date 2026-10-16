@@ -3538,8 +3538,9 @@ const uk: TranslationWithPlurals = {
       differentAccount: 'Увійти в інший акаунт',
     },
     guestConversion: {
-      headline: 'Збережіть прогрес — це безкоштовно',
+      headline: 'Збережіть цю гру — це безкоштовно',
       body: 'Створіть акаунт, щоб зберегти історію ігор, статистику та серії перемог.',
+      bodyReplay: 'Створіть акаунт, щоб зберегти цей повтор, історію ігор і статистику.',
       cta: 'Створити акаунт',
       dismiss: 'Може пізніше',
     },
@@ -4091,6 +4092,7 @@ const uk: TranslationWithPlurals = {
     },
     gameReplay: {
       youBadge: 'ви',
+      backToLobby: 'Назад до лобі',
       first: 'Перший хід',
       last: 'Останній хід',
       backToHistory: 'Назад до історії',

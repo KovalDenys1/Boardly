@@ -3447,8 +3447,9 @@ const en = {
       differentAccount: 'Sign in with a different account',
     },
     guestConversion: {
-      headline: 'Save your progress — it\'s free',
+      headline: 'Keep this game — it\'s free',
       body: 'Create an account to keep your game history, stats, and streak.',
+      bodyReplay: 'Create an account to keep this replay, your game history and your stats.',
       cta: 'Create account',
       dismiss: 'Maybe later',
     },
@@ -3992,6 +3993,7 @@ const en = {
     },
     gameReplay: {
       youBadge: 'you',
+      backToLobby: 'Back to lobby',
       first: 'First move',
       last: 'Last move',
       backToHistory: 'Back to history',

@@ -37,7 +37,7 @@ const mockFetch = jest.fn()
 
 function payload(isPremium = false) {
   return {
-    game: { id: 'game-1', gameType: 'tic_tac_toe', lobbyName: 'Lobby', players: fixture.players.map((p: { userId: string; name: string; isBot: boolean; seat: number }) => ({ userId: p.userId, username: p.name, isBot: p.isBot, position: p.seat })) },
+    game: { id: 'game-1', gameType: 'tic_tac_toe', lobbyCode: 'ABCD', lobbyName: 'Lobby', players: fixture.players.map((p: { userId: string; name: string; isBot: boolean; seat: number }) => ({ userId: p.userId, username: p.name, isBot: p.isBot, position: p.seat })) },
     viewer: { isPremium },
     replay: { count: fixture.snapshots.length, snapshots: fixture.snapshots },
   }
@@ -63,7 +63,7 @@ describe('ReplayPageClient', () => {
     expect(screen.getByTestId('replay-caption').textContent).toBe('profile.gameReplay.captions.common.gameStarted')
     expect(screen.getByText(/card:Ada:active/)).toBeTruthy()
     expect(screen.getByText(/card:Robo:idle/)).toBeTruthy()
-    expect(mockFetch).toHaveBeenCalledWith('/api/game/game-1/replay')
+    expect(mockFetch).toHaveBeenCalledWith('/api/game/game-1/replay', expect.anything())
   })
 
   it('steps with the keyboard and the transport, and names the winner on the last step', async () => {
@@ -109,5 +109,33 @@ describe('ReplayPageClient', () => {
     render(<ReplayPageClient gameId="game-1" />)
     expect(await screen.findByText('profile.gameReplay.noData')).toBeTruthy()
     expect(screen.getByRole('link', { name: /backToHistory/ })).toHaveAttribute('href', '/profile?tab=history')
+  })
+
+  describe('as a guest (#1440)', () => {
+    beforeEach(() => {
+      mockSession = { status: 'unauthenticated', data: null }
+      localStorage.setItem('boardly_guest_token', 'guest.token')
+      localStorage.setItem('boardly_guest_id', 'player-ada')
+      localStorage.setItem('boardly_guest_name', 'Ada')
+    })
+    afterEach(() => localStorage.clear())
+
+    it('loads the replay with the guest token and leads back to the lobby', async () => {
+      render(<ReplayPageClient gameId="game-1" />)
+
+      expect(await screen.findByText('board-step:0')).toBeTruthy()
+      const headers = mockFetch.mock.calls[0][1].headers as Headers
+      expect(headers.get('X-Guest-Token')).toBe('guest.token')
+      expect(screen.getByRole('link', { name: /backToLobby/ })).toHaveAttribute('href', '/lobby/ABCD')
+      expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('sends a guest whose token was refused to sign in', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) })
+
+      render(<ReplayPageClient gameId="game-1" />)
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/auth/login?returnUrl=/replay/game-1'))
+    })
   })
 })
