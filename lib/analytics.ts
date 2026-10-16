@@ -602,7 +602,7 @@ export function trackSignupPrompt(
     ...(context.gameType ? { game_type: context.gameType } : {}),
     ...(context.lobbyCode ? { lobby_code: context.lobbyCode } : {}),
   } satisfies Record<string, AnalyticsPropertyValue>
-  track('signup_prompt', { action })
+  track('signup_prompt', { action, ...payload })
   // Also to OperationalEvents, because `track` goes to Vercel Analytics and the Hobby plan
   // dropped every custom event until Pro (2026-09-18): the funnel the Revenue Plan defines
   // had never stored a row, and OperationalEvents stays the queryable copy.

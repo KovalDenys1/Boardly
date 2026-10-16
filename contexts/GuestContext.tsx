@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useSession } from 'next-auth/react'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import { signupSourceHeaders } from '@/lib/signup-source-client'
-import { takeSignupFrom } from '@/lib/signup-attribution'
+import { clearSignupFrom, peekSignupFrom } from '@/lib/signup-attribution'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -235,14 +235,15 @@ export function GuestProvider({ children }: { children: ReactNode }) {
 
         ;(async () => {
             try {
-                await fetch('/api/user/upgrade-guest', {
+                const response = await fetch('/api/user/upgrade-guest', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Guest-Token': activeGuestToken,
                     },
-                    body: JSON.stringify({ from: takeSignupFrom() }),
+                    body: JSON.stringify({ from: peekSignupFrom() }),
                 })
+                if (response.ok) clearSignupFrom()
             } catch {
                 // Ignore migration failures in client state transition path.
                 // The backend migration is idempotent and can be retried safely.
