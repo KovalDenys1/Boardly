@@ -123,6 +123,12 @@ function bindEvents(entry: RegistryEntry, topic: string, events: Record<string, 
   }
 }
 
+/** The topic of a lobby channel this page already holds, so a late consumer joins it without asking for it again. */
+export function openLobbyTopic(code: string): string | null {
+  for (const topic of registry.keys()) if (topic.startsWith(`lobby:${code}:`)) return topic
+  return null
+}
+
 export function acquireLobbyChannel(
   topic: string,
   subscriber: LobbyChannelSubscriber

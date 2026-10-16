@@ -1317,6 +1317,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       {phaseAction && <div className="liars-phase-action">{phaseAction}</div>}
       {showResultOverlay && (
         <GameResultOverlay
+          isSpectator={isSpectator}
           title={finishedMessage}
           kicker={t('lobby.game.gameOver')}
           accentColor={LIARS_PARTY_ACCENT}

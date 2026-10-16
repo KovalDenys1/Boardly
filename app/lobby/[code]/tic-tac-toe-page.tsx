@@ -1005,6 +1005,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
                     kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
                     isDraw={isDraw}

@@ -2146,6 +2146,20 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-family: inherit;
 }
 .game-result-overlay__primary:disabled { cursor: not-allowed; opacity: 0.65; }
+.game-result-overlay__note {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--bd-sun);
+  text-align: center;
+  animation: game-result-note-in 300ms ease-out both;
+}
+@keyframes game-result-note-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-result-overlay__note { animation: none; }
+}
 .game-result-overlay__plate {
   min-height: 44px;
   display: grid;

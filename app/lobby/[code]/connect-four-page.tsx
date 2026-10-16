@@ -922,6 +922,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 <>
                     {showsResultOverlay && (
                         <GameResultOverlay
+                            isSpectator={isSpectator}
                             title={finishedTitle}
                             kicker={isWonOnTime ? t('games.connect_four.game.outOfTime') : undefined}
                             isDraw={isDraw}

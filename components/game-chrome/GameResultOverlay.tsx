@@ -6,6 +6,7 @@ import { Icon } from '@/components/icons'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import type { AnalyticsGameType } from '@/lib/analytics'
 import { prefersReducedMotion } from '@/lib/motion'
+import { useRematchSignal } from '@/hooks/useRematchSignal'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -81,6 +82,10 @@ export interface GameResultOverlayProps {
   resultKey?: string
   /** The finished game, for the after-game "Watch replay" link. */
   gameId?: string | null
+  /** A spectator watches; only a seated player may ask for a rematch. */
+  isSpectator?: boolean
+  /** False where the end screen already has its own rematch ask (Guess the Spy's results). */
+  canAskRematch?: boolean
 }
 
 /** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
@@ -126,10 +131,14 @@ export default function GameResultOverlay({
   gameType,
   isRegistered = false,
   gameId,
+  isSpectator = false,
+  canAskRematch = true,
   revealDelayMs = RESULT_REVEAL_DELAY_MS,
   resultKey,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
+  const canAsk = canAskRematch && !isSpectator && (isGuest || isRegistered) && !!inviteCode
+  const rematch = useRematchSignal(canAsk ? inviteCode : null, gameId ?? resultKey ?? null)
   // Decided once, at mount: a later prop change must not hide a visible overlay.
   const [revealed, setRevealed] = useState(
     () => revealDelayMs <= 0 || prefersReducedMotion() || isReturnFromInspect(resultKey)
@@ -216,6 +225,11 @@ export default function GameResultOverlay({
           <div className="game-result-overlay__kicker">{kicker ?? t('game.ui.roundOver')}</div>
           <h2 className="game-result-overlay__title">{title}</h2>
           <div className="game-result-overlay__actions">
+            {isHost && rematch.requestedBy && (
+              <div className="game-result-overlay__note" role="status">
+                {t('game.ui.rematchWanted', { player: rematch.requestedBy })}
+              </div>
+            )}
             {actionsReplacement ?? (isHost ? (
               onPlayAgain && (
                 <button
@@ -228,8 +242,20 @@ export default function GameResultOverlay({
                   {isLoading ? '…' : t('lobby.game.playAgain')}
                 </button>
               )
+            ) : canAsk && rematch.askState !== 'sent' ? (
+              <button
+                type="button"
+                onClick={() => void rematch.ask()}
+                disabled={rematch.askState === 'sending'}
+                className="game-result-overlay__primary"
+                style={{ background: accentColor, boxShadow: `0 4px 0 ${accentShadowColor}` }}
+              >
+                {rematch.askState === 'sending' ? '…' : t('game.ui.askRematch')}
+              </button>
             ) : (
-              <div className="game-result-overlay__plate">{t('game.ui.waitingForHost')}</div>
+              <div className="game-result-overlay__plate" role="status">
+                {rematch.askState === 'sent' ? t('game.ui.rematchAsked') : t('game.ui.waitingForHost')}
+              </div>
             ))}
             <div className="game-result-overlay__secondary" data-testid="game-result-secondary">
               <button type="button" onClick={handleInspect} className="game-result-overlay__ghost">
