@@ -49,9 +49,17 @@ jest.mock('@/lib/db', () => ({
     $transaction: jest.fn(),
     // lib/session-user re-reads `suspended` on a write (#1137).
     users: {
-      findUnique: jest.fn(async () => ({ suspended: false })),
+      findUnique: jest.fn(async () => ({ suspended: false, createdAt: new Date() })),
+    },
+    operationalEvents: {
+      create: jest.fn(),
     },
   },
+}))
+
+jest.mock('@/lib/rate-limit', () => ({
+  rateLimit: jest.fn(() => jest.fn(async () => null)),
+  rateLimitPresets: { auth: {} },
 }))
 
 jest.mock('@/lib/guest-auth', () => ({
@@ -277,6 +285,73 @@ describe('POST /api/user/upgrade-guest', () => {
     })
     expect(mockTx.users.delete).toHaveBeenCalledWith({
       where: { id: 'guest-1' },
+    })
+  })
+
+  describe('guest_upgraded (#1439)', () => {
+    function migrateEmptyGuest(body?: unknown) {
+      mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+      mockGetGuestClaimsFromRequest.mockReturnValue({ guestId: 'guest-1', guestName: 'Guest One' } as any)
+      mockTx.users.findUnique.mockResolvedValue({ id: 'guest-1', isGuest: true })
+      mockTx.players.findMany.mockResolvedValue([])
+      mockTx.players.updateMany.mockResolvedValue({ count: 0 })
+      mockTx.lobbies.updateMany.mockResolvedValue({ count: 0 })
+      mockTx.lobbyInvites.updateMany.mockResolvedValue({ count: 0 })
+      mockTx.notifications.updateMany.mockResolvedValue({ count: 0 })
+      mockTx.notificationPreferences.findUnique.mockResolvedValue(null)
+
+      return POST(
+        new NextRequest('http://localhost:3000/api/user/upgrade-guest', {
+          method: 'POST',
+          headers: { 'X-Guest-Token': 'guest.token', 'Content-Type': 'application/json' },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        })
+      )
+    }
+
+    it('credits the guest prompt when the client says it sent the guest', async () => {
+      const response = await migrateEmptyGuest({ from: 'guest_prompt' })
+
+      expect(response.status).toBe(200)
+      expect(mockPrisma.operationalEvents.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          eventName: 'guest_upgraded',
+          source: 'guest_prompt',
+          payload: { moved_players: 0, new_account: true },
+        }),
+      })
+    })
+
+    it('stores no source for a value outside the allowlist', async () => {
+      await migrateEmptyGuest({ from: 'anything_else' })
+
+      expect(mockPrisma.operationalEvents.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ eventName: 'guest_upgraded', source: null }),
+      })
+    })
+
+    it('still records the upgrade when the request has no body', async () => {
+      await migrateEmptyGuest()
+
+      expect(mockPrisma.operationalEvents.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ eventName: 'guest_upgraded', source: null }),
+      })
+    })
+
+    it('records nothing when there was no guest left to move', async () => {
+      mockGetServerSession.mockResolvedValue({ user: { id: 'user-1' } } as any)
+      mockGetGuestClaimsFromRequest.mockReturnValue({ guestId: 'guest-1', guestName: 'Guest One' } as any)
+      mockTx.users.findUnique.mockResolvedValue(null)
+
+      await POST(
+        new NextRequest('http://localhost:3000/api/user/upgrade-guest', {
+          method: 'POST',
+          headers: { 'X-Guest-Token': 'guest.token' },
+          body: JSON.stringify({ from: 'guest_prompt' }),
+        })
+      )
+
+      expect(mockPrisma.operationalEvents.create).not.toHaveBeenCalled()
     })
   })
 })

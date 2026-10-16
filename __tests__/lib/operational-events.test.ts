@@ -128,4 +128,9 @@ describe('buildOperationalEventRecord', () => {
     expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('second_human_joined')
     expect(OPERATIONAL_EVENT_NAMES).toEqual(expect.arrayContaining(['invite_copied', 'invite_opened']))
   })
+
+  it('keeps guest_upgraded off the public beacon enum (#1439)', () => {
+    expect(SERVER_OPERATIONAL_EVENT_NAMES).toContain('guest_upgraded')
+    expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('guest_upgraded')
+  })
 })

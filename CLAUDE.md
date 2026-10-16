@@ -311,6 +311,13 @@ must also scale — the catalog is 11+ games and growing, so wrapping chip layou
 dead end; use vertically scrollable full-width plates (see `LobbySettingsPanel`'s Games
 drill-down).
 
+**No animation library (decided 2026-10-14).** Motion is CSS keyframes in `app/globals.css`,
+`onOwnAnimationEnd` for unmount-after-exit, and WAAPI planners for pieces that travel
+(`CheckersBoard`'s `el.animate`). That already meets the motion DoD, so `motion`/`framer-motion`
+would add ~15–35 KB gzip to game pages and a second system for the same job. Revisit only when a
+feature needs what this cannot do cheaply: an element travelling between different parents
+(`layoutId`), an animated list reorder, or drag with momentum.
+
 ## Bots belong in move-based games only
 
 The catalog splits in two, and the split decides whether a bot is ever appropriate:

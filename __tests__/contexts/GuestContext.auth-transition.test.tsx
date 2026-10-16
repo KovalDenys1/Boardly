@@ -122,8 +122,10 @@ describe('GuestContext auth transitions', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-Guest-Token': 'token-2',
           },
+          body: JSON.stringify({ from: null }),
         })
       )
     })

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { readLocal, writeLocal } from '@/lib/safe-storage'
-import { trackSignupPrompt } from '@/lib/analytics'
+import { trackSignupPrompt, type AnalyticsGameType } from '@/lib/analytics'
+import { markSignupFrom } from '@/lib/signup-attribution'
 
 // v2: dismissal expires after 24h (v1 hid the nudge forever after one click).
 const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v2'
@@ -19,9 +20,13 @@ function isDismissed(): boolean {
 
 interface GuestConversionNudgeProps {
   registerUrl: string
+  gameType?: AnalyticsGameType
+  lobbyCode?: string | null
+  /** True when the end screen offers this game's replay, so the copy can name it. */
+  hasReplay?: boolean
 }
 
-export default function GuestConversionNudge({ registerUrl }: GuestConversionNudgeProps) {
+export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode, hasReplay = false }: GuestConversionNudgeProps) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
 
@@ -29,15 +34,17 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
     try {
       if (!isDismissed()) {
         setVisible(true)
-        trackSignupPrompt('shown')
+        trackSignupPrompt('shown', { gameType, lobbyCode })
       }
     } catch {
       // localStorage unavailable (SSR or privacy mode) — don't show
     }
+    // Once per mount: a prop change on the same end screen is not a second showing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const dismiss = () => {
-    trackSignupPrompt('dismissed')
+    trackSignupPrompt('dismissed', { gameType, lobbyCode })
     try {
       writeLocal(DISMISS_KEY, String(Date.now()))
     } catch {
@@ -54,15 +61,18 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
         <div className="shrink-0"><Icon name="party" size={24} /></div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-emerald-900 dark:text-emerald-100 text-sm sm:text-base">
-            {t('auth.guestConversion.headline')}
+            {t(hasReplay ? 'auth.guestConversion.headlineReplay' : 'auth.guestConversion.headline')}
           </p>
           <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 sm:text-sm">
-            {t('auth.guestConversion.body')}
+            {t(hasReplay ? 'auth.guestConversion.bodyReplay' : 'auth.guestConversion.body')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a
               href={registerUrl}
-              onClick={() => trackSignupPrompt('clicked')}
+              onClick={() => {
+                trackSignupPrompt('clicked', { gameType, lobbyCode })
+                markSignupFrom('guest_prompt')
+              }}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors sm:text-sm"
             >
               <Icon name="sparkle" size={14} />

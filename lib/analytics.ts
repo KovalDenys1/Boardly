@@ -593,14 +593,22 @@ export function trackUserRetention(data: {
  * Guest → account nudge shown on result screens (GuestConversionNudge).
  * Together with `signupSource` on Users this is the guest→registered funnel.
  */
-export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): void {
-  track('signup_prompt', { action })
+export function trackSignupPrompt(
+  action: 'shown' | 'clicked' | 'dismissed',
+  context: { gameType?: AnalyticsGameType; lobbyCode?: string | null } = {}
+): void {
+  const payload = {
+    is_guest: true,
+    ...(context.gameType ? { game_type: context.gameType } : {}),
+    ...(context.lobbyCode ? { lobby_code: context.lobbyCode } : {}),
+  } satisfies Record<string, AnalyticsPropertyValue>
+  track('signup_prompt', { action, ...payload })
   // Also to OperationalEvents, because `track` goes to Vercel Analytics and the Hobby plan
   // dropped every custom event until Pro (2026-09-18): the funnel the Revenue Plan defines
   // had never stored a row, and OperationalEvents stays the queryable copy.
   // Note for whoever reads it: `shown` fires per mount and the nudge suppresses itself after
   // a dismissal, so clicked-over-shown is a per-session ratio, not a per-person one.
-  emitOperationalEvent(`signup_prompt_${action}`, { is_guest: true })
+  emitOperationalEvent(`signup_prompt_${action}`, payload)
   clientLogger.log('[analytics] Signup prompt', action)
 }
 
