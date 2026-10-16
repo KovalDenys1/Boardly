@@ -48,9 +48,8 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState<number>(1)
 
-  // A guest watches the replay of a game they sat in with their guest token (#1440); the
-  // stored token is read directly so the first render does not wait for GuestContext.
-  const asGuest = status === 'unauthenticated' && isGuestMode()
+  // Read from storage, not GuestContext, so the first fetch does not wait for its hydration.
+  const asGuest = useMemo(() => status === 'unauthenticated' && isGuestMode(), [status])
 
   useEffect(() => {
     if (status === 'unauthenticated' && !asGuest) router.push(`/auth/login?returnUrl=/replay/${gameId}`)

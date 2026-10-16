@@ -61,7 +61,7 @@ export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode,
         <div className="shrink-0"><Icon name="party" size={24} /></div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-emerald-900 dark:text-emerald-100 text-sm sm:text-base">
-            {t('auth.guestConversion.headline')}
+            {t(hasReplay ? 'auth.guestConversion.headlineReplay' : 'auth.guestConversion.headline')}
           </p>
           <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 sm:text-sm">
             {t(hasReplay ? 'auth.guestConversion.bodyReplay' : 'auth.guestConversion.body')}

@@ -3447,7 +3447,8 @@ const en = {
       differentAccount: 'Sign in with a different account',
     },
     guestConversion: {
-      headline: 'Keep this game — it\'s free',
+      headline: 'Save your progress — it\'s free',
+      headlineReplay: 'Keep this game — it\'s free',
       body: 'Create an account to keep your game history, stats, and streak.',
       bodyReplay: 'Create an account to keep this replay, your game history and your stats.',
       cta: 'Create account',

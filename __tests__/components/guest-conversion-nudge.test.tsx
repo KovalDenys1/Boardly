@@ -73,10 +73,12 @@ describe('GuestConversionNudge', () => {
 
   it('names the replay only when the end screen offers one (#1440)', () => {
     const { unmount } = render(<GuestConversionNudge registerUrl="/auth/register" hasReplay />)
+    expect(screen.queryByText('auth.guestConversion.headlineReplay')).not.toBeNull()
     expect(screen.queryByText('auth.guestConversion.bodyReplay')).not.toBeNull()
     unmount()
 
     render(<GuestConversionNudge registerUrl="/auth/register" />)
+    expect(screen.queryByText('auth.guestConversion.headline')).not.toBeNull()
     expect(screen.queryByText('auth.guestConversion.body')).not.toBeNull()
   })
 })
