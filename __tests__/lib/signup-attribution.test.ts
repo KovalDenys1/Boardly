@@ -1,19 +1,21 @@
-import { markSignupFrom, parseSignupFrom, takeSignupFrom } from '@/lib/signup-attribution'
+import { clearSignupFrom, markSignupFrom, parseSignupFrom, peekSignupFrom } from '@/lib/signup-attribution'
 
 describe('signup attribution (#1439)', () => {
   afterEach(() => localStorage.clear())
 
-  it('hands the mark over once', () => {
+  it('keeps the mark until it is cleared, so a failed upgrade can be retried with it', () => {
     markSignupFrom('guest_prompt')
 
-    expect(takeSignupFrom()).toBe('guest_prompt')
-    expect(takeSignupFrom()).toBeNull()
+    expect(peekSignupFrom()).toBe('guest_prompt')
+    expect(peekSignupFrom()).toBe('guest_prompt')
+    clearSignupFrom()
+    expect(peekSignupFrom()).toBeNull()
   })
 
   it('drops a mark older than a day', () => {
     markSignupFrom('guest_prompt')
 
-    expect(takeSignupFrom(Date.now() + 25 * 60 * 60 * 1000)).toBeNull()
+    expect(peekSignupFrom(Date.now() + 25 * 60 * 60 * 1000)).toBeNull()
   })
 
   it('accepts only known surfaces', () => {

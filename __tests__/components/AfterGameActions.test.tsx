@@ -8,8 +8,8 @@ jest.mock('@/lib/i18n-helpers', () => ({
 }))
 
 jest.mock('@/components/GuestConversionNudge', () => {
-  return function MockNudge() {
-    return <div data-testid="guest-nudge" />
+  return function MockNudge({ hasReplay }: { hasReplay?: boolean }) {
+    return <div data-testid="guest-nudge" data-has-replay={String(Boolean(hasReplay))} />
   }
 })
 
@@ -121,8 +121,18 @@ describe('AfterGameActions (#982)', () => {
       expect(replayLink()?.getAttribute('href')).toBe('/replay/game-42')
     })
 
-    it('shows guests no replay link, since they have no history', () => {
-      render(<AfterGameActions gameType="memory" gameId="game-42" isGuest isRegistered />)
+    it('links a guest to the replay of the game they just played, and the nudge names it (#1440)', () => {
+      const { unmount } = render(<AfterGameActions gameType="memory" gameId="game-42" isGuest registerUrl="/auth/register" />)
+      expect(replayLink()?.getAttribute('href')).toBe('/replay/game-42')
+      expect(screen.getByTestId('guest-nudge').getAttribute('data-has-replay')).toBe('true')
+      unmount()
+
+      render(<AfterGameActions gameType="memory" isGuest registerUrl="/auth/register" />)
+      expect(screen.getByTestId('guest-nudge').getAttribute('data-has-replay')).toBe('false')
+    })
+
+    it('shows a spectator no replay link', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" />)
       expect(replayLink()).toBeNull()
     })
 
