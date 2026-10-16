@@ -80,7 +80,7 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     )
   })
 
-  describe('rematch (sprint W43)', () => {
+  describe('rematch ask', () => {
     it('lets a seated non-host ask the host for a rematch instead of only waiting', () => {
       render(<GameResultOverlay {...base} isHost={false} isGuest inviteCode="AB12" />)
       fireEvent.click(screen.getByText('game.ui.askRematch'))
@@ -95,11 +95,22 @@ describe('GameResultOverlay (#736 phase 2)', () => {
       expect(screen.queryByText('game.ui.askRematch')).toBeNull()
     })
 
-    it('never offers a spectator the ask, nor listens for one', () => {
-      render(<GameResultOverlay {...base} isHost={false} inviteCode="AB12" />)
+    it('never offers a spectator the ask, nor listens for one, even a signed-in one', () => {
+      render(<GameResultOverlay {...base} isHost={false} isRegistered isSpectator inviteCode="AB12" />)
       expect(screen.queryByText('game.ui.askRematch')).toBeNull()
       expect(screen.getByText('game.ui.waitingForHost')).toBeTruthy()
       expect(mockRematchCode).toHaveBeenCalledWith(null)
+    })
+
+    it('leaves the ask to an end screen that has its own', () => {
+      render(<GameResultOverlay {...base} isHost={false} isGuest canAskRematch={false} inviteCode="AB12" />)
+      expect(screen.queryByText('game.ui.askRematch')).toBeNull()
+    })
+
+    it('shows the host who asked even when the actions are replaced', () => {
+      mockRematch.requestedBy = 'Ada'
+      render(<GameResultOverlay {...base} isGuest inviteCode="AB12" actionsReplacement={<button>Series over</button>} />)
+      expect(screen.getByRole('status').textContent).toBe('game.ui.rematchWanted')
     })
 
     it('shows the host who asked, above Play again', () => {

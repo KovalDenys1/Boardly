@@ -1144,6 +1144,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             />
             {isFinished && !isSpectator && !overlayInspecting && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
                     accentColor={SKETCH_ACCENT}

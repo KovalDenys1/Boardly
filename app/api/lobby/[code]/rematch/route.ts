@@ -95,14 +95,6 @@ export async function POST(
 
     const dedupedTargetUserIds = Array.from(new Set(targetUserIds))
 
-    // The host may be a guest, who has no user channel; the end screen listens on the lobby's.
-    if (!isCreator) {
-      await broadcastToLobby(lobby.code, 'rematch-request', {
-        requestedById: requestUser.id,
-        requestedByName: requestUser.username,
-      })
-    }
-
     if (dedupedTargetUserIds.length === 0) {
       return NextResponse.json({
         success: true,
@@ -123,11 +115,16 @@ export async function POST(
       inviteUrl,
     }
 
-    await Promise.all(
-      dedupedTargetUserIds.map((userId) =>
+    await Promise.all([
+      ...dedupedTargetUserIds.map((userId) =>
         broadcastToUser(userId, 'rematch-request', rematchPayload)
-      )
-    )
+      ),
+      // The host may be a guest, who has no user channel; the end screen listens on the lobby's.
+      ...(isCreator ? [] : [broadcastToLobby(lobby.code, 'rematch-request', {
+        requestedById: requestUser.id,
+        requestedByName: requestUser.username,
+      })]),
+    ])
 
     await Promise.allSettled(
       dedupedTargetUserIds.map((userId) =>

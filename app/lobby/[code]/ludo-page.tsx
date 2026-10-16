@@ -910,6 +910,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     title={winnerName ? t('games.ludo.game.playerWins', { player: winnerName }) : t('game.ui.gameFinished')}
                     kicker={winnerId === currentUserId ? t('games.ludo.game.youWon') : undefined}
                     accentColor="var(--bd-sun)"

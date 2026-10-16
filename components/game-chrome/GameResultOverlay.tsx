@@ -82,6 +82,10 @@ export interface GameResultOverlayProps {
   resultKey?: string
   /** The finished game, for the after-game "Watch replay" link. */
   gameId?: string | null
+  /** A spectator watches; only a seated player may ask for a rematch. */
+  isSpectator?: boolean
+  /** False where the end screen already has its own rematch ask (Guess the Spy's results). */
+  canAskRematch?: boolean
 }
 
 /** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
@@ -127,13 +131,14 @@ export default function GameResultOverlay({
   gameType,
   isRegistered = false,
   gameId,
+  isSpectator = false,
+  canAskRematch = true,
   revealDelayMs = RESULT_REVEAL_DELAY_MS,
   resultKey,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
-  // A spectator has no seat to ask a rematch for; the route would refuse them anyway.
-  const isPlayer = isGuest || isRegistered
-  const rematch = useRematchSignal(isPlayer ? inviteCode : null)
+  const canAsk = canAskRematch && !isSpectator && (isGuest || isRegistered) && !!inviteCode
+  const rematch = useRematchSignal(canAsk ? inviteCode : null, gameId ?? resultKey ?? null)
   // Decided once, at mount: a later prop change must not hide a visible overlay.
   const [revealed, setRevealed] = useState(
     () => revealDelayMs <= 0 || prefersReducedMotion() || isReturnFromInspect(resultKey)
@@ -220,13 +225,13 @@ export default function GameResultOverlay({
           <div className="game-result-overlay__kicker">{kicker ?? t('game.ui.roundOver')}</div>
           <h2 className="game-result-overlay__title">{title}</h2>
           <div className="game-result-overlay__actions">
+            {isHost && rematch.requestedBy && (
+              <div className="game-result-overlay__note" role="status">
+                {t('game.ui.rematchWanted', { player: rematch.requestedBy })}
+              </div>
+            )}
             {actionsReplacement ?? (isHost ? (
-              onPlayAgain && (<>
-                {rematch.requestedBy && (
-                  <div className="game-result-overlay__note" role="status">
-                    {t('game.ui.rematchWanted', { player: rematch.requestedBy })}
-                  </div>
-                )}
+              onPlayAgain && (
                 <button
                   type="button"
                   onClick={onPlayAgain}
@@ -236,8 +241,8 @@ export default function GameResultOverlay({
                 >
                   {isLoading ? '…' : t('lobby.game.playAgain')}
                 </button>
-              </>)
-            ) : isPlayer && inviteCode && rematch.askState !== 'sent' ? (
+              )
+            ) : canAsk && rematch.askState !== 'sent' ? (
               <button
                 type="button"
                 onClick={() => void rematch.ask()}
