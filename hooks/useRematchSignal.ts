@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
-import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
-import { fetchLobbyTopic } from '@/lib/lobby-realtime-topic-client'
+import { acquireLobbyChannel, openLobbyTopic } from '@/lib/lobby-channel-registry'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -18,18 +17,17 @@ interface RematchEntry {
   finishKey: string | null
   snap: RematchSnapshot
   listeners: Set<() => void>
-  subscribed: boolean
 }
 
-// Per lobby, not per overlay: the overlay unmounts on View board, and the host must still hear an ask
-// that arrives meanwhile, and a guest must not get the button back after asking.
+// Per lobby, not per overlay: the overlay unmounts on View board, and a guest must not get the button
+// back after asking, nor the host lose the notice.
 const lobbies = new Map<string, RematchEntry>()
 const IDLE: RematchSnapshot = { requestedBy: null, askState: 'idle' }
 
 function entryFor(code: string): RematchEntry {
   let entry = lobbies.get(code)
   if (!entry) {
-    entry = { finishKey: null, snap: IDLE, listeners: new Set(), subscribed: false }
+    entry = { finishKey: null, snap: IDLE, listeners: new Set() }
     lobbies.set(code, entry)
   }
   return entry
@@ -45,26 +43,6 @@ function readRequesterName(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null
   const name = (payload as { requestedByName?: unknown }).requestedByName
   return typeof name === 'string' && name.trim() ? name.trim() : null
-}
-
-function subscribeOnce(code: string) {
-  const entry = entryFor(code)
-  if (entry.subscribed) return
-  entry.subscribed = true
-  void fetchLobbyTopic(code).then((topic) => {
-    if (!topic) {
-      entry.subscribed = false
-      return
-    }
-    acquireLobbyChannel(topic, {
-      events: {
-        'rematch-request': (payload) => {
-          const name = readRequesterName(payload)
-          if (name) update(code, { requestedBy: name })
-        },
-      },
-    })
-  })
 }
 
 /** Clears every lobby's state; for tests. */
@@ -84,8 +62,23 @@ export function useRematchSignal(code: string | null | undefined, finishKey: str
       entry.finishKey = finishKey
       update(code, { requestedBy: null, askState: 'idle' })
     }
-    subscribeOnce(code)
   }, [code, finishKey])
+
+  useEffect(() => {
+    if (!code) return
+    // joins the channel the game page holds; with none open there is nothing to listen on
+    const topic = typeof openLobbyTopic === 'function' ? openLobbyTopic(code) : null
+    if (!topic) return
+    const handle = acquireLobbyChannel(topic, {
+      events: {
+        'rematch-request': (payload) => {
+          const name = readRequesterName(payload)
+          if (name) update(code, { requestedBy: name })
+        },
+      },
+    })
+    return () => handle.release()
+  }, [code])
 
   const subscribe = useCallback((listener: () => void) => {
     if (!code) return () => {}

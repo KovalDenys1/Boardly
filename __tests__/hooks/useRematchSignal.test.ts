@@ -7,8 +7,8 @@ jest.mock('@/lib/lobby-channel-registry', () => ({
     Object.assign(handlers, sub.events)
     return { channel: {}, release: jest.fn() }
   }),
+  openLobbyTopic: jest.fn((code: string) => `lobby:${code}:secret`),
 }))
-jest.mock('@/lib/lobby-realtime-topic-client', () => ({ fetchLobbyTopic: jest.fn(async () => 'lobby:AB12:secret') }))
 const mockFetch = jest.fn()
 jest.mock('@/lib/fetch-with-guest', () => ({ fetchWithGuest: (...args: unknown[]) => mockFetch(...args) }))
 jest.mock('@/lib/i18n-toast', () => ({ showToast: { error: jest.fn(), info: jest.fn() } }))
@@ -23,13 +23,16 @@ describe('useRematchSignal', () => {
     jest.clearAllMocks()
   })
 
-  it('keeps the ask sent and the host\'s notice across View board (the overlay unmounts)', async () => {
+  it('keeps the ask sent and the host\'s notice across View board, and lets go of the channel on unmount', async () => {
     mockFetch.mockResolvedValue(reply(true, { notifiedCount: 1 }))
     const first = renderHook(() => useRematchSignal('AB12', 'game-1'))
     await waitFor(() => expect(handlers['rematch-request']).toBeDefined())
     await act(async () => { await first.result.current.ask() })
     act(() => handlers['rematch-request']({ requestedByName: 'Ada' }))
     first.unmount()
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { acquireLobbyChannel } = require('@/lib/lobby-channel-registry')
+    expect(acquireLobbyChannel.mock.results[0].value.release).toHaveBeenCalled()
 
     const again = renderHook(() => useRematchSignal('AB12', 'game-1'))
     expect(again.result.current.askState).toBe('sent')
