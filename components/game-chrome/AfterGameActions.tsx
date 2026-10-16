@@ -160,7 +160,7 @@ export default function AfterGameActions({
       {/* 4 — guest → account. Mutually exclusive with slot 3, so at most one box appears. */}
       {isGuest && registerUrl && (
         <div style={{ width: '100%' }}>
-          <GuestConversionNudge registerUrl={registerUrl} />
+          <GuestConversionNudge registerUrl={registerUrl} gameType={gameType} lobbyCode={inviteCode} />
         </div>
       )}
     </div>

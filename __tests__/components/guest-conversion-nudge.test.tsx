@@ -59,4 +59,15 @@ describe('GuestConversionNudge', () => {
 
     expect(screen.queryByText('auth.guestConversion.headline')).not.toBeNull()
   })
+
+  it('marks the click so the account it becomes is credited to the prompt (#1439)', () => {
+    render(<GuestConversionNudge registerUrl="/auth/register" gameType="memory" lobbyCode="ABCD" />)
+
+    act(() => {
+      screen.getByText('auth.guestConversion.cta').closest('a')?.addEventListener('click', (e) => e.preventDefault())
+      screen.getByText('auth.guestConversion.cta').click()
+    })
+
+    expect(JSON.parse(localStorage.getItem('boardly:signup-from') ?? '{}').from).toBe('guest_prompt')
+  })
 })

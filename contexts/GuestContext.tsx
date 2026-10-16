@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useSession } from 'next-auth/react'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import { signupSourceHeaders } from '@/lib/signup-source-client'
+import { takeSignupFrom } from '@/lib/signup-attribution'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -237,8 +238,10 @@ export function GuestProvider({ children }: { children: ReactNode }) {
                 await fetch('/api/user/upgrade-guest', {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-Guest-Token': activeGuestToken,
                     },
+                    body: JSON.stringify({ from: takeSignupFrom() }),
                 })
             } catch {
                 // Ignore migration failures in client state transition path.
