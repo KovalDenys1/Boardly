@@ -6,6 +6,7 @@ import { Icon } from '@/components/icons'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import type { AnalyticsGameType } from '@/lib/analytics'
 import { prefersReducedMotion } from '@/lib/motion'
+import { useRematchSignal } from '@/hooks/useRematchSignal'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -130,6 +131,9 @@ export default function GameResultOverlay({
   resultKey,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
+  // A spectator has no seat to ask a rematch for; the route would refuse them anyway.
+  const isPlayer = isGuest || isRegistered
+  const rematch = useRematchSignal(isPlayer ? inviteCode : null)
   // Decided once, at mount: a later prop change must not hide a visible overlay.
   const [revealed, setRevealed] = useState(
     () => revealDelayMs <= 0 || prefersReducedMotion() || isReturnFromInspect(resultKey)
@@ -217,7 +221,12 @@ export default function GameResultOverlay({
           <h2 className="game-result-overlay__title">{title}</h2>
           <div className="game-result-overlay__actions">
             {actionsReplacement ?? (isHost ? (
-              onPlayAgain && (
+              onPlayAgain && (<>
+                {rematch.requestedBy && (
+                  <div className="game-result-overlay__note" role="status">
+                    {t('game.ui.rematchWanted', { player: rematch.requestedBy })}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={onPlayAgain}
@@ -227,9 +236,21 @@ export default function GameResultOverlay({
                 >
                   {isLoading ? '…' : t('lobby.game.playAgain')}
                 </button>
-              )
+              </>)
+            ) : isPlayer && inviteCode && rematch.askState !== 'sent' ? (
+              <button
+                type="button"
+                onClick={() => void rematch.ask()}
+                disabled={rematch.askState === 'sending'}
+                className="game-result-overlay__primary"
+                style={{ background: accentColor, boxShadow: `0 4px 0 ${accentShadowColor}` }}
+              >
+                {rematch.askState === 'sending' ? '…' : t('game.ui.askRematch')}
+              </button>
             ) : (
-              <div className="game-result-overlay__plate">{t('game.ui.waitingForHost')}</div>
+              <div className="game-result-overlay__plate" role="status">
+                {rematch.askState === 'sent' ? t('game.ui.rematchAsked') : t('game.ui.waitingForHost')}
+              </div>
             ))}
             <div className="game-result-overlay__secondary" data-testid="game-result-secondary">
               <button type="button" onClick={handleInspect} className="game-result-overlay__ghost">

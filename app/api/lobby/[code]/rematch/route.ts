@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { broadcastToUser } from '@/lib/supabase-server'
+import { broadcastToLobby, broadcastToUser } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -94,6 +94,14 @@ export async function POST(
       : lobby.creatorId ? [lobby.creatorId] : []
 
     const dedupedTargetUserIds = Array.from(new Set(targetUserIds))
+
+    // The host may be a guest, who has no user channel; the end screen listens on the lobby's.
+    if (!isCreator) {
+      await broadcastToLobby(lobby.code, 'rematch-request', {
+        requestedById: requestUser.id,
+        requestedByName: requestUser.username,
+      })
+    }
 
     if (dedupedTargetUserIds.length === 0) {
       return NextResponse.json({

@@ -20,6 +20,15 @@ jest.mock('@/components/game-chrome/AfterGameActions', () => {
   }
 })
 
+const mockRematch = { requestedBy: null as string | null, askState: 'idle' as 'idle' | 'sending' | 'sent', ask: jest.fn() }
+const mockRematchCode = jest.fn()
+jest.mock('@/hooks/useRematchSignal', () => ({
+  useRematchSignal: (code: string | null) => {
+    mockRematchCode(code)
+    return mockRematch
+  },
+}))
+
 describe('GameResultOverlay (#736 phase 2)', () => {
   const base = {
     title: 'Alice wins!',
@@ -33,6 +42,8 @@ describe('GameResultOverlay (#736 phase 2)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockRematch.requestedBy = null
+    mockRematch.askState = 'idle'
   })
 
   it('renders title, default kicker, and all host actions', () => {
@@ -67,6 +78,36 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         registerUrl: '/auth/register',
       })
     )
+  })
+
+  describe('rematch (sprint W43)', () => {
+    it('lets a seated non-host ask the host for a rematch instead of only waiting', () => {
+      render(<GameResultOverlay {...base} isHost={false} isGuest inviteCode="AB12" />)
+      fireEvent.click(screen.getByText('game.ui.askRematch'))
+      expect(mockRematch.ask).toHaveBeenCalled()
+      expect(mockRematchCode).toHaveBeenCalledWith('AB12')
+    })
+
+    it('says the ask went out once it did', () => {
+      mockRematch.askState = 'sent'
+      render(<GameResultOverlay {...base} isHost={false} isRegistered inviteCode="AB12" />)
+      expect(screen.getByText('game.ui.rematchAsked')).toBeTruthy()
+      expect(screen.queryByText('game.ui.askRematch')).toBeNull()
+    })
+
+    it('never offers a spectator the ask, nor listens for one', () => {
+      render(<GameResultOverlay {...base} isHost={false} inviteCode="AB12" />)
+      expect(screen.queryByText('game.ui.askRematch')).toBeNull()
+      expect(screen.getByText('game.ui.waitingForHost')).toBeTruthy()
+      expect(mockRematchCode).toHaveBeenCalledWith(null)
+    })
+
+    it('shows the host who asked, above Play again', () => {
+      mockRematch.requestedBy = 'Ada'
+      render(<GameResultOverlay {...base} isGuest inviteCode="AB12" />)
+      expect(screen.getByRole('status').textContent).toBe('game.ui.rematchWanted')
+      expect(screen.getByText('lobby.game.playAgain')).toBeTruthy()
+    })
   })
 
   it('shows the waiting plate instead of actions for non-hosts', () => {
