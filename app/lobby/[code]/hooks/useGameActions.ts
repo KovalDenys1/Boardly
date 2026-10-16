@@ -1,5 +1,4 @@
-import { createElement, useState, useCallback, useEffect, useRef } from 'react'
-import { Icon } from '@/components/icons'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
@@ -9,7 +8,6 @@ import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
-import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
@@ -483,12 +481,6 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsScoring(true)
 
     const diceBeforeScore = gameEngine.getDice()
-    const availableCategoryScores = scorecard
-      ? Object.entries(scorecard)
-          .filter(([, value]) => value === undefined)
-          .map(([candidate]) => calculateScore(diceBeforeScore, candidate as YahtzeeCategory))
-      : []
-    const bestAvailableScore = availableCategoryScores.length > 0 ? Math.max(...availableCategoryScores) : 0
 
     const move: Move = {
       playerId: userId || '',
@@ -588,7 +580,6 @@ export function useGameActions(props: UseGameActionsProps) {
 
       // Calculate score for celebration detection
       const scoredValue = calculateScore(diceBeforeScore, category)
-      const isBestPick = scoredValue > 0 && scoredValue === bestAvailableScore
 
       // Get the NEW scorecard (after scoring) to verify category is now filled
       const newScorecard = newEngine.getScorecard(userId || '')
@@ -612,17 +603,10 @@ export function useGameActions(props: UseGameActionsProps) {
       // Check if this score deserves a celebration
       // Only celebrate if we just filled this category (it should now be defined in scorecard)
       if (newScorecard && newScorecard[category] !== undefined) {
-        const celebration = detectCelebration(diceBeforeScore, category, scoredValue)
+        const celebration = scoredValue > 0 ? detectCelebration(diceBeforeScore, category, scoredValue) : null
         if (celebration) {
           setCelebrationEvent(celebration)
           celebrate() // Trigger confetti for good scores
-        } else {
-          showYahtzeeCategoryToast({
-            category,
-            score: scoredValue,
-            isBestPick,
-            id: `yahtzee-score-${category}-${scoredValue}-${newEngine.getRound()}`,
-          })
         }
       }
 
@@ -696,14 +680,6 @@ export function useGameActions(props: UseGameActionsProps) {
           fireworks()
           if (winner.id === userId) sounds.play('win')
           showToast.success('toast.gameOver', undefined, { player: winner.name })
-        }
-      } else {
-        const nextPlayer = newEngine.getCurrentPlayer()
-
-        // Only show "next turn" toast if it's NOT our turn now
-        // (don't show to the player who just scored)
-        if (nextPlayer && nextPlayer.id !== userId) {
-          showToast.custom('toast.playerTurn', createElement(Icon, { name: 'info', size: 18 }), undefined, { player: nextPlayer.name })
         }
       }
 

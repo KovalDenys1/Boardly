@@ -843,12 +843,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         />
     )
 
-    // Whether chat shows decides whether the Moves card spans the right column (#898).
-    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -959,7 +955,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
@@ -975,7 +971,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
@@ -1021,7 +1017,18 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {hintSection}
-                    {chatSection ?? historySection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                 </div>
             </div>
 
@@ -1033,7 +1040,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

@@ -60,7 +60,6 @@
     "no profile.premiumCard.holoBadge = \"Holo · Premium\"",
     "no yahtzee.history.holdBadge = \"Hold {{count}}\"",
     "no yahtzee.results.marginScore = \"Margin +{{margin}}\"",
-    "no yahtzee.ui.best = \"Best\"",
     "no yahtzee.ui.bestPlus = \"Best +{{score}}\"",
     "no yahtzee.ui.bonusProgress = \"{{current}}/63 for bonus\"",
     "ru common.premium = \"Premium\"",

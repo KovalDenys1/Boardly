@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import YahtzeeDiceBar from '@/components/yahtzee/YahtzeeDiceBar'
-import YahtzeeScorePills from '@/components/yahtzee/YahtzeeScorePills'
-import YahtzeeTileGrid from '@/components/yahtzee/YahtzeeTileGrid'
+import YahtzeeScoreTable from '@/components/yahtzee/YahtzeeScoreTable'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { dataOf } from '@/lib/replay/group-steps'
-import { calculateTotalScore, normalizeYahtzeeMode, type YahtzeeScorecard } from '@/lib/yahtzee'
+import { normalizeYahtzeeMode, type YahtzeeScorecard } from '@/lib/yahtzee'
 import type { ReplayRendererProps } from './types'
 
 const noop = () => {}
@@ -24,7 +22,6 @@ function enginePlayerIds(state: unknown): string[] {
 
 export default function YahtzeeReplayRenderer({ step, seats, playerNameById, viewerId }: ReplayRendererProps) {
   const { t } = useTranslation()
-  const [selected, setSelected] = useState<{ id: string; stepIndex: number } | null>(null)
 
   const data = dataOf(step.state)
   if (!data || !isDice(data.dice) || !Array.isArray(data.scores)) return null
@@ -39,61 +36,44 @@ export default function YahtzeeReplayRenderer({ step, seats, playerNameById, vie
   const state = step.state as { status?: unknown; currentPlayerIndex?: unknown }
   const currentId =
     state.status === 'playing' && typeof state.currentPlayerIndex === 'number' ? (ids[state.currentPlayerIndex] ?? null) : null
-  const scorecardOf = (id: string | null): YahtzeeScorecard | null => {
-    const index = id ? ids.indexOf(id) : -1
-    const card = index >= 0 ? scores[index] : null
-    return card && typeof card === 'object' ? (card as YahtzeeScorecard) : index >= 0 ? {} : null
+  const scorecardOf = (id: string): YahtzeeScorecard => {
+    const card = scores[ids.indexOf(id)]
+    return card && typeof card === 'object' ? (card as YahtzeeScorecard) : {}
   }
 
-  const pills = seats.map((seat) => ({
-    id: seat.userId,
-    name: playerNameById.get(seat.userId) ?? seat.name,
-    score: calculateTotalScore(scorecardOf(seat.userId) ?? {}),
-    isBot: seat.isBot,
-  }))
-  const actorId = step.actorId && ids.includes(step.actorId) ? step.actorId : null
-  const selectedId = selected && selected.stepIndex === step.index && ids.includes(selected.id) ? selected.id : null
-  const viewingId = selectedId ?? actorId ?? currentId ?? ids[0] ?? null
-  const scorecard = scorecardOf(viewingId)
-
   return (
-    <div className="yahtzee-replay flex w-full max-w-xl flex-col gap-3" data-testid="yahtzee-replay">
-      <YahtzeeScorePills
-        players={pills}
-        viewerId={viewerId}
-        viewingId={viewingId}
-        currentTurnId={currentId}
-        onSelect={(id) => setSelected({ id, stepIndex: step.index })}
-      />
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <YahtzeeDiceBar
-            dice={dice}
-            held={held}
-            rollsLeft={rollsLeft}
-            isMyTurn={false}
-            isRolling={false}
-            canHold={false}
-            canRoll={false}
-            onToggleHold={noop}
-            onRoll={noop}
-            showRollButton={false}
-          />
-        </div>
-        <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-widest text-bd-ink-muted" data-testid="yahtzee-replay-rolls">
+    <div className="yahtzee-replay" data-testid="yahtzee-replay">
+      <div className="yahtzee-replay__tray">
+        <YahtzeeDiceBar
+          dice={dice}
+          held={held}
+          rollsLeft={rollsLeft}
+          placeholder={rollsLeft === 3}
+          isRolling={false}
+          canHold={false}
+          canRoll={false}
+          onToggleHold={noop}
+          onRoll={noop}
+          showRollButton={false}
+        />
+        <span className="yahtzee-replay__rolls" data-testid="yahtzee-replay-rolls">
           {t('yahtzee.ui.rollsLeftCount', { count: rollsLeft })}
         </span>
       </div>
-      {scorecard && (
-        <YahtzeeTileGrid
-          key={viewingId ?? 'none'}
-          scorecard={scorecard}
-          mode={normalizeYahtzeeMode(data.mode)}
-          dice={dice}
-          canScore={false}
-          onScore={noop}
-        />
-      )}
+      <YahtzeeScoreTable
+        players={seats.map((seat) => ({
+          id: seat.userId,
+          name: playerNameById.get(seat.userId) ?? seat.name,
+          isBot: seat.isBot,
+          scorecard: scorecardOf(seat.userId),
+        }))}
+        viewerId={viewerId}
+        currentPlayerId={currentId}
+        mode={normalizeYahtzeeMode(data.mode)}
+        dice={dice}
+        canScore={false}
+        rollsLeft={rollsLeft}
+      />
     </div>
   )
 }

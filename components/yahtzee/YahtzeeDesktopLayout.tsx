@@ -18,7 +18,7 @@ export default function YahtzeeDesktopLayout({
   status: ReactNode
   board: ReactNode
   events: ReactNode
-  chat: ReactNode | null
+  chat: ReactNode
 }) {
   return (
     <div className="ttt-desktop-layout">
@@ -29,7 +29,7 @@ export default function YahtzeeDesktopLayout({
           {status}
           {board}
         </div>
-        <div className="ttt-right-col">
+        <div className="ttt-right-col yz-right-col">
           {events}
           {chat}
         </div>
