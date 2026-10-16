@@ -17,7 +17,7 @@ export const HEADER_HEIGHT_PX = 64
  * desktop layout (side panels, grid); anything narrower gets the mobile
  * layout (tabs). Decision record: docs/RESPONSIVE.md#breakpoint-decision-record
  * (1024 chosen over 900 — phone-landscape ~850-930px wide x ~390px tall must
- * get the mobile layout; matches Tailwind `lg:` already used by MobileTabs).
+ * get the mobile layout; matches the Tailwind `lg:` the in-game tab bars used).
  */
 export const DESKTOP_MIN_WIDTH_PX = 1024
 

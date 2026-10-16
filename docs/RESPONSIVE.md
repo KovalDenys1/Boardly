@@ -33,7 +33,7 @@ audit also fails if `--bd-header-h` in globals.css drifts from `HEADER_HEIGHT_PX
 ## Breakpoint decision record
 
 **Decided 2026-08-12 (#734): `DESKTOP_MIN_WIDTH_PX = 1024`.** Candidates were 900
-(the game CSS threshold) and 1024 (Tailwind `lg`, MobileTabs). Playwright sweep of
+(the game CSS threshold) and 1024 (Tailwind `lg`, the in-game tab bars). Playwright sweep of
 the in-game Tic-Tac-Toe screen:
 
 - 768×1024 (iPad portrait) → mobile-tabs layout, comfortable.
@@ -45,8 +45,8 @@ the in-game Tic-Tac-Toe screen:
   designed for constrained heights.
 - 1024×700 → desktop layout fits.
 
-Secondary reasons: 1024 equals the `lg:` threshold that `MobileTabs` /
-`MobileTabPanel` / `LobbyPageClient` already use (smallest migration), and iPad
+Secondary reasons: 1024 equals the `lg:` threshold that the in-game tab bars and
+`LobbyPageClient` already used (smallest migration), and iPad
 portrait/landscape land on the same side under both candidates. Cost: 900–1023px
 windows lose the desktop side panels and get the mobile-tabs layout — acceptable,
 it is fully functional. The value lives in one token; reversing the decision is a
@@ -102,7 +102,7 @@ The contract is pinned by `__tests__/app/phone-landscape-layout.test.ts`.
 | `.page-shell` | Full-height app page under the header (incl. loading/error/fallback screens) | exists (`globals.css`) |
 | `.page-shell-full` | Full-height page without the header | exists |
 | `.game-screen` family (`--game-h`) | In-game screen: board + chrome, mobile tabs + desktop grid | live (#745) — pair with a per-game skin class (`.ttt-screen`) |
-| `MobileTabs` / `MobileTabPanel` | Mobile in-game navigation (`app/lobby/[code]/components/`) | exists |
+| `GameTabs` | Mobile in-game navigation (`components/game-chrome/`) | exists |
 | Height-aware cell sizing idiom | Any multi-row board | exists (see below) |
 
 Rules that apply to all of them:
@@ -131,7 +131,7 @@ Rules that apply to all of them:
 | Regular page (lists, profile, auth, lobby browser) | `.page-shell` |
 | Loading / error / fallback screen | `.page-shell` (same as the page it replaces) |
 | In-game screen (any game) | `.game-screen` (+ per-game skin; layout family: `.ttt-*` for board games) |
-| In-game mobile navigation | `MobileTabs` + `MobileTabPanel` |
+| In-game mobile navigation | `GameTabs` |
 | Header offset in any calc | `var(--bd-header-h)` / `HEADER_HEIGHT_PX` |
 | Mobile/desktop conditional in TSX | `useIsMobileViewport()` — never raw `matchMedia('(max-width: Npx)')` |
 | Mobile/desktop conditional in classes | `desk:` screen (until it lands: `lg:`) |

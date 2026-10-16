@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { isRemoteRollArrival, rollSignature, type LastRollLike } from '@/lib/yahtzee-motion'
 
-/** Matches `.animate-shake-roll` (app/globals.css). */
+/** Covers the dice tray's staggered tumble (`yz-tumble` plus four 40 ms delays, app/globals.css). */
 export const REMOTE_ROLL_ANIMATION_MS = 600
 
 /**

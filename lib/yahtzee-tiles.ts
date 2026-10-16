@@ -53,6 +53,8 @@ export interface UpperProgress {
   par: number
   target: number
   bonusEarned: boolean
+  /** All six boxes are filled, so the bonus is settled either way. */
+  complete: boolean
 }
 
 export interface ScorecardTileModel {
@@ -151,6 +153,7 @@ export function buildScorecardTiles({
       par,
       target: UPPER_BONUS_TARGET,
       bonusEarned: upperTotal >= UPPER_BONUS_TARGET,
+      complete: UPPER_CATEGORIES.every((c) => scorecard[c] !== undefined),
     }
   }
 

@@ -2,13 +2,7 @@
 
 import React from 'react'
 
-/**
- * Shared mobile in-game tab strip (#736 phase 5) — replaces the duplicated
- * .ttt-tabs (TTT + C4) and .memory-tabs inline markup. Renders segmented
- * buttons with an optional unread badge per tab. Not to be confused with
- * MobileTabs (the bottom navigation bar Yahtzee/Spy use) — that is a
- * different paradigm and stays as is.
- */
+/** Shared mobile in-game tab strip (#736 phase 5), used by every game's phone layout. */
 export interface GameTab<T extends string> {
   id: T
   label: string

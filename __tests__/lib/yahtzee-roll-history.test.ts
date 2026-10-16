@@ -116,13 +116,12 @@ describe('the lobby page wiring', () => {
   })
 })
 
-describe('the score tiles', () => {
+describe('the score pad', () => {
   const css = fs.readFileSync(path.join(__dirname, '..', '..', 'app/globals.css'), 'utf8')
 
-  it('size the number from the tile itself, so a tall tile is filled rather than empty inside', () => {
-    const rule = css.match(/\.yz-grid \.yz-tile \.yz-tile__value\s*\{([^}]*)\}/)
-    expect(rule?.[1]).toMatch(/font-size:\s*clamp\([^)]*cqh[^)]*\)/)
-    // Declared after every fixed-size override, so it wins at equal specificity.
-    expect(css.lastIndexOf('.yz-grid .yz-tile .yz-tile__value')).toBeGreaterThan(css.lastIndexOf('.yz-panel--board .yz-tile--best .yz-tile__value'))
+  it('shares the card height between its rows, with a floor, so a tall pad has no empty band', () => {
+    const rule = css.match(/\.yz-sheet\s*\{([^}]*)\}/)
+    expect(rule?.[1]).toMatch(/grid-template-rows:[^;]*minmax\(var\(--yz-row-min\), 1fr\)/)
+    expect(rule?.[1]).toMatch(/overflow-y:\s*auto/)
   })
 })

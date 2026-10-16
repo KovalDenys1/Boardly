@@ -18,6 +18,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
 const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false })
@@ -29,8 +30,8 @@ const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page')
 const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false })
 const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
 const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
-const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
-const YahtzeeTileGrid = dynamic(() => import('@/components/yahtzee/YahtzeeTileGrid'), { ssr: false })
+const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'), { ssr: false })
+const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'), { ssr: false })
 
 const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers', 'ludo'])
 
@@ -255,6 +256,7 @@ export default function SpectatorLobbyPage() {
   const [isLimitReached, setIsLimitReached] = useState(false)
   const [isAdminView, setIsAdminView] = useState(false)
   const [yahtzeeEngine, setYahtzeeEngine] = useState<YahtzeeGame | null>(null)
+  const [departedIds, setDepartedIds] = useState<ReadonlySet<string>>(new Set())
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -340,7 +342,11 @@ export default function SpectatorLobbyPage() {
       events: {
         'game-update': reload,
         'game-started': reload,
-        'player-left': reload,
+        'player-left': (payload: unknown) => {
+          const userId = (payload as { userId?: unknown } | null)?.userId
+          if (typeof userId === 'string') setDepartedIds((current) => new Set(current).add(userId))
+          reload()
+        },
       },
     })
     return () => {
@@ -668,10 +674,11 @@ export default function SpectatorLobbyPage() {
 
   // ── Yahtzee: real board + scorecard, same UI as players ─────────────────────
   if (data.lobby.gameType === 'yahtzee') {
-    const yahtzeeCurrentPlayerId = yahtzeeEngine?.getCurrentPlayer()?.id
-    const yahtzeeScorecard = yahtzeeEngine && yahtzeeCurrentPlayerId
-      ? yahtzeeEngine.getScorecard(yahtzeeCurrentPlayerId)
-      : null
+    const yahtzeeCurrentPlayerId = yahtzeeEngine?.getCurrentPlayer()?.id ?? null
+    const yahtzeeNameOf = (playerId: string) => {
+      const p = activeGamePlayers.find((pl) => pl.userId === playerId)
+      return p?.user?.username || p?.name || yahtzeeEngine?.getPlayers().find((pl) => pl.id === playerId)?.name || t('game.ui.playerFallback')
+    }
 
     return (
       <>
@@ -685,41 +692,37 @@ export default function SpectatorLobbyPage() {
           isMidMatch={data.activeGame?.status === 'playing'}
         />
         {yahtzeeEngine ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,6fr)', gap: 16, padding: '16px', height: 'calc(var(--game-h) - 48px)', overflow: 'hidden' }}>
-            <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <YahtzeeGameBoard
-                gameEngine={yahtzeeEngine}
-                game={data.activeGame!}
-                isMyTurn={false}
-                isSpectator
-                isMoveInProgress={false}
-                isRolling={false}
-                isScoring={false}
-                isStateReverting={false}
-                celebrationEvent={null}
-                held={Array.isArray((parsedState?.data as Record<string, unknown> | undefined)?.held) ? (parsedState!.data as Record<string, unknown>).held as boolean[] : Array(5).fill(false)}
-                getCurrentUserId={() => spectatorUserId}
-                onRollDice={() => undefined}
-                onToggleHold={() => undefined}
-                onScore={() => undefined}
-                onCelebrationComplete={() => undefined}
-              />
-            </div>
-            <div style={{ minHeight: 0, overflow: 'auto' }}>
-              {yahtzeeScorecard && (
-                <YahtzeeTileGrid
-                  scorecard={yahtzeeScorecard}
+          <div className="yz-spectate">
+            <div className="yz-board-card">
+              <div className="yz-panel yz-panel--board">
+                <YahtzeeDiceBar
+                  dice={yahtzeeEngine.getDice()}
+                  held={yahtzeeEngine.getHeld()}
+                  rollsLeft={yahtzeeEngine.getRollsLeft()}
+                  placeholder={yahtzeeEngine.getRollsLeft() === 3}
+                  isRolling={false}
+                  canHold={false}
+                  canRoll={false}
+                  onToggleHold={() => undefined}
+                  onRoll={() => undefined}
+                  showRollButton={false}
+                />
+                <YahtzeeScoreTable
+                  players={yahtzeeEngine.getPlayers().map((player) => ({
+                    id: player.id,
+                    name: yahtzeeNameOf(player.id),
+                    isBot: isBotSeat(activeGamePlayers.find((pl) => pl.userId === player.id)),
+                    scorecard: yahtzeeEngine.getScorecard(player.id) ?? {},
+                  }))}
+                  viewerId={null}
+                  currentPlayerId={yahtzeeCurrentPlayerId}
                   mode={yahtzeeEngine.getMode()}
                   dice={yahtzeeEngine.getDice()}
                   canScore={false}
-                  onScore={() => undefined}
-                  otherPlayerName={(() => {
-                    const p = data.activeGame?.players?.find(pl => pl.userId === yahtzeeCurrentPlayerId)
-                    return p?.user?.username || p?.name || null
-                  })()}
-                  variant="card"
+                  rollsLeft={yahtzeeEngine.getRollsLeft()}
+                  departedIds={departedIds}
                 />
-              )}
+              </div>
             </div>
           </div>
         ) : (

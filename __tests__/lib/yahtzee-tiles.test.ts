@@ -42,7 +42,7 @@ describe('buildScorecardTiles', () => {
 
   it('shows the upper section against par: three of each face scored so far', () => {
     const model = buildScorecardTiles({ scorecard: mockupCard, mode: 'classic', dice: mockupDice, canScore: true })
-    expect(model.upper).toEqual({ total: 21, par: 21, target: 63, bonusEarned: false })
+    expect(model.upper).toEqual({ total: 21, par: 21, target: 63, bonusEarned: false, complete: false })
   })
 
   it('adds the 35 bonus once the upper section reaches 63', () => {

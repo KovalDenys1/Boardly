@@ -129,7 +129,7 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
    - Full-height page without header → `.page-shell-full`
    - In-game screen (board + chrome) → `.game-screen` family (`--game-h`); until it
      lands, copy the `.ttt-*` family — never invent a new one
-   - Mobile in-game navigation → `MobileTabs` / `MobileTabPanel`
+   - Mobile in-game navigation → `GameTabs` (`components/game-chrome/`)
    - Header offset → `var(--bd-header-h)` / `HEADER_HEIGHT_PX` (pending tokens issue)
    - Mobile/desktop split → the shared breakpoint (`desk:` screen,
      `MOBILE_MAX_MEDIA_QUERY`, `useIsMobileViewport()`) — never a raw px value

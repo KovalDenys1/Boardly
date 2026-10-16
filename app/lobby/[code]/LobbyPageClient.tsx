@@ -10,7 +10,6 @@ import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { sounds } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
-import { resolveScorecardPlayerId } from '@/lib/yahtzee-motion'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
@@ -94,7 +93,6 @@ import { useLobbyActions } from './hooks/useLobbyActions'
 import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useYahtzeeResultsHold } from './hooks/useYahtzeeResultsHold'
-import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -112,14 +110,16 @@ import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import ScorePop from '@/components/game-chrome/ScorePop'
-import GameIcon from '@/components/GameIcon'
 import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
 import { reportablePlayerId } from '@/lib/reportable-player'
-import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
+import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
+import { useYahtzeeHoldHint } from '@/hooks/useYahtzeeHoldHint'
+import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -131,9 +131,8 @@ function CenteredLoadingFallback() {
   )
 }
 
-const PlayerList = dynamic(() => import('@/components/PlayerList'))
 const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'))
-const YahtzeeTileGrid = dynamic(() => import('@/components/yahtzee/YahtzeeTileGrid'))
+const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'))
 const YahtzeeScorePills = dynamic(() => import('@/components/yahtzee/YahtzeeScorePills'))
 const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'))
 const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'))
@@ -143,8 +142,6 @@ const YahtzeeEventLog = dynamic(() => import('@/components/yahtzee/YahtzeeEventL
 const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
 const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
-const MobileTabs = dynamic(() => import('./components/MobileTabs'))
-const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
 const GameInterruptedOverlay = dynamic(() => import('./components/GameInterruptedOverlay'))
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
@@ -189,8 +186,6 @@ const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const BELOW_HEADER_TOAST = { position: 'top-center', style: { marginTop: 'calc(var(--bd-header-h) + 164px)' } } as const
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
-/** How long the finished turn's scorecard stays up: its row flash is 0.9 s (#1114). */
-const SCORECARD_LINGER_MS = 1200
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -243,14 +238,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
   const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
 
-  // Mobile tabs state
-  const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
-
-  // Selected player for viewing their scorecard
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
-  // The card of the player whose turn just ended stays up briefly, so their
-  // scored row's flash is seen before the view follows the turn (#1114).
-  const [lingerPlayerId, setLingerPlayerId] = useState<string | null>(null)
+  const [yahtzeeTab, setYahtzeeTab] = useState<'game' | 'rolls' | 'chat'>('game')
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
 
   // Friends invite modal state
@@ -363,8 +351,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
 
   // Yahtzee's desktop chat is a column of the game grid, always on screen (#1363).
-  const isMobileViewport = useIsMobileViewport()
-  const isYahtzeeDesktopChatShown = !isMobileViewport && lobby?.gameType === 'yahtzee' && game?.status === 'playing'
+  const gameLayout = useActiveGameLayout()
+  const isYahtzeeDesktopChatShown = gameLayout === 'desktop' && lobby?.gameType === 'yahtzee' && game?.status === 'playing'
 
   // Shared chat pipeline (#736) — history loading is wired up after
   // useRealtimeConnection below, which supplies isConnected.
@@ -379,7 +367,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setChatMessages,
   } = useLobbyChat({
     code,
-    isChatVisible: !chatMinimized || mobileActiveTab === 'chat' || isYahtzeeDesktopChatShown,
+    isChatVisible: !chatMinimized || (gameLayout === 'mobile' && yahtzeeTab === 'chat') || isYahtzeeDesktopChatShown,
     onIncomingMessageSound: () => playAmbientSound('message'),
   })
 
@@ -475,40 +463,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const currentPlayer = gameEngine.getCurrentPlayer()
     return currentPlayer?.id === getCurrentUserId()
   }, [gameEngine, game, getCurrentUserId])
-
-  // Track previous current player to detect turn changes
-  const prevCurrentPlayerIdRef = React.useRef<string | undefined>(undefined)
-
-  // Auto-reset selectedPlayerId when turn changes (only if viewing current player's card automatically)
-  useEffect(() => {
-    if (gameEngine) {
-      const currentPlayerId = gameEngine.getCurrentPlayer()?.id
-      const currentUserId = getCurrentUserId()
-
-      // Detect turn change
-      const turnChanged = prevCurrentPlayerIdRef.current !== undefined &&
-        prevCurrentPlayerIdRef.current !== currentPlayerId
-
-      // Only reset if:
-      // 1. Turn actually changed
-      // 2. selectedPlayerId is null (auto-viewing current player) OR
-      // 3. selectedPlayerId matches the previous current player (was following the turn automatically)
-      if (turnChanged &&
-        (selectedPlayerId === null || selectedPlayerId === prevCurrentPlayerIdRef.current)) {
-        setSelectedPlayerId(null) // Reset to show new current player
-        setLingerPlayerId(prevCurrentPlayerIdRef.current ?? null)
-      }
-
-      // Update ref
-      prevCurrentPlayerIdRef.current = currentPlayerId
-    }
-  }, [gameEngine, getCurrentUserId, selectedPlayerId])
-
-  useEffect(() => {
-    if (!lingerPlayerId) return
-    const timer = setTimeout(() => setLingerPlayerId(null), SCORECARD_LINGER_MS)
-    return () => clearTimeout(timer)
-  }, [lingerPlayerId])
 
   // Separate effect to track the complex expression
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
@@ -1341,6 +1295,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     getCurrentUserId(),
     gameEngine instanceof YahtzeeGame,
   )
+  const showHoldHint = useYahtzeeHoldHint({
+    myTurn: gameEngine instanceof YahtzeeGame && isMyTurn(),
+    rollsLeft: gameEngine instanceof YahtzeeGame ? gameEngine.getRollsLeft() : 3,
+    heldCount: held.filter(Boolean).length,
+  })
 
   // Update refs for timer
   React.useEffect(() => {
@@ -1701,8 +1660,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
 
     initializedMobileUiGameIdRef.current = game.id
-    setMobileActiveTab('game')
-    setSelectedPlayerId(null)
+    setYahtzeeTab('game')
     resetUnread()
   }, [lobby?.gameType, isGameStarted, game?.id, resetUnread])
 
@@ -1762,9 +1720,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    if (!prev.wasMyTurn && mine && mobileActiveTab !== 'chat') {
-      setMobileActiveTab('game')
-      setSelectedPlayerId(null)
+    if (!prev.wasMyTurn && mine && yahtzeeTab !== 'chat') {
+      setYahtzeeTab('game')
     }
 
     yahtzeeMobileTurnStateRef.current = {
@@ -1772,35 +1729,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       wasMyTurn: mine,
       rollsLeft,
     }
-  }, [game?.id, gameEngine, isGameStarted, isMyTurn, lobby?.gameType, mobileActiveTab])
-
-  const playersForLeaderboard = React.useMemo(() => {
-    if (!gameEngine || !Array.isArray(game?.players)) {
-      return []
-    }
-
-    const enginePlayers = gameEngine.getPlayers()
-    const positionByUserId = new Map<string, number>()
-
-    enginePlayers.forEach((player, index) => {
-      positionByUserId.set(player.id, index)
-    })
-
-    return game.players.map((player) => ({
-      id: player.id,
-      userId: player.userId,
-      user: {
-        name: player.user?.username || null,
-        username: player.user?.username || null,
-        email: null,
-        isPremium: !!player.user?.isPremium,
-        bot: player.user?.bot || null,
-      },
-      score: enginePlayers.find((enginePlayer) => enginePlayer.id === player.userId)?.score || 0,
-      position: positionByUserId.get(player.userId) ?? 0,
-      isReady: true,
-    }))
-  }, [game?.players, gameEngine])
+  }, [game?.id, gameEngine, isGameStarted, isMyTurn, lobby?.gameType, yahtzeeTab])
 
   const hasMultipleHumans = React.useMemo(() => {
     if (!game?.players) return false
@@ -1878,47 +1807,41 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     )
   }
 
-  // Yahtzee's phone chrome (#1187): score pills + sound + Leave on one row,
-  // GameStatusBanner under it, then one panel with the dice, the Roll button
-  // and every box of the scorecard as a tile. Shared by the portrait tabs and
-  // the phone-landscape side pane (#751); the desktop grid keeps its top bar.
   const toggleSound = () => {
     sounds.play('click', { force: true })
     const newState = sounds.toggle()
     setSoundEnabled(newState)
     showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
+      ...BELOW_HEADER_TOAST,
       duration: 2000,
-      position: 'top-center',
     })
   }
 
   const yahtzeeView = gameEngine instanceof YahtzeeGame ? (() => {
     const viewerId = getCurrentUserId() || null
     const currentPlayerId = gameEngine.getCurrentPlayer()?.id ?? null
-    const viewingPlayerId = resolveScorecardPlayerId(selectedPlayerId, lingerPlayerId, currentPlayerId)
-    const isViewingOther = !!viewingPlayerId && viewingPlayerId !== viewerId
     const myTurn = isMyTurn()
     const rollsLeft = gameEngine.getRollsLeft()
     const activeHeld = myTurn ? held : gameEngine.getHeld()
     const heldCount = activeHeld.filter(Boolean).length
+    const enginePlayers = gameEngine.getPlayers()
+    const dbPlayerOf = (playerId: string) => game?.players?.find((p) => p.userId === playerId)
+    const isBotPlayer = (playerId: string) => isBotSeat(dbPlayerOf(playerId))
     const nameOf = (playerId: string | null | undefined) => {
       if (!playerId) return t('game.ui.playerFallback')
-      const dbPlayer = game?.players?.find((p) => p.userId === playerId)
+      const dbPlayer = dbPlayerOf(playerId)
       return dbPlayer?.user?.username || dbPlayer?.name
-        || gameEngine.getPlayers().find((p) => p.id === playerId)?.name
+        || enginePlayers.find((p) => p.id === playerId)?.name
         || t('game.ui.playerFallback')
     }
-    const pills = gameEngine.getPlayers().map((p) => {
-      const dbPlayer = game?.players?.find((dp) => dp.userId === p.id)
-      return {
-        id: p.id,
-        name: nameOf(p.id),
-        score: p.score || 0,
-        isBot: !!(dbPlayer?.user?.bot || dbPlayer?.bot),
-      }
-    })
-    const scorecard = viewingPlayerId ? gameEngine.getScorecard(viewingPlayerId) : null
-    const canScore = myTurn && !isViewingOther && !isMoveInProgress && rollsLeft < 3
+    const pills = enginePlayers.map((p) => ({
+      id: p.id,
+      name: nameOf(p.id),
+      score: p.score || 0,
+      isBot: isBotPlayer(p.id),
+      profileId: p.id === viewerId ? null : reportablePlayerId(game?.players ?? [], p.id),
+    }))
+    const canScore = myTurn && !isMoveInProgress && rollsLeft < 3
 
     const statusTitle = myTurn
       ? rollsLeft === 3
@@ -1943,13 +1866,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const header = (
       <>
         <div className="yz-topbar">
-          <YahtzeeScorePills
-            players={pills}
-            viewerId={viewerId}
-            viewingId={viewingPlayerId}
-            currentTurnId={currentPlayerId}
-            onSelect={(playerId) => setSelectedPlayerId(playerId === viewerId ? viewerId : playerId)}
-          />
+          <YahtzeeScorePills players={pills} viewerId={viewerId} currentTurnId={currentPlayerId} onOpenProfile={setProfileUserId} />
           <button
             type="button"
             className="yz-sound"
@@ -1969,42 +1886,43 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         dice={gameEngine.getDice()}
         held={activeHeld}
         rollsLeft={rollsLeft}
-        isMyTurn={myTurn}
+        placeholder={rollsLeft === 3}
         isRolling={isRolling || isOpponentRolling}
         canHold={myTurn && !isMoveInProgress && rollsLeft < 3}
         canRoll={myTurn && rollsLeft > 0 && heldCount < 5 && !isMoveInProgress && !isRolling}
         onToggleHold={handleToggleHold}
         onRoll={handleRollDice}
+        showRollButton={!isSpectator}
+        hint={showHoldHint ? t('yahtzee.ui.holdHint') : null}
       />
     )
 
-    const tiles = (variant: 'panel' | 'card', cardHeader?: React.ReactNode) => scorecard ? (
-      <YahtzeeTileGrid
-        // One instance per player: its just-scored flash compares a card with
-        // its own previous state, never with another player's card.
-        key={viewingPlayerId || 'none'}
-        scorecard={scorecard}
+    const table = (
+      <YahtzeeScoreTable
+        players={enginePlayers.map((p) => ({
+          id: p.id,
+          name: nameOf(p.id),
+          isBot: isBotPlayer(p.id),
+          scorecard: gameEngine.getScorecard(p.id) ?? {},
+        }))}
+        viewerId={viewerId}
+        currentPlayerId={currentPlayerId}
         mode={gameEngine.getMode()}
         dice={gameEngine.getDice()}
         canScore={canScore}
         onScore={handleScore}
         isScoring={isScoring}
-        otherPlayerName={isViewingOther ? nameOf(viewingPlayerId) : null}
-        onBackToMine={isViewingOther && viewerId ? () => setSelectedPlayerId(viewerId) : undefined}
-        variant={variant}
-      >
-        {cardHeader}
-      </YahtzeeTileGrid>
-    ) : null
+        rollsLeft={rollsLeft}
+        departedIds={departedPlayerIds}
+      />
+    )
 
     const revertNotice = isStateReverting ? (
       <div className="yz-revert" role="status">{t('yahtzee.ui.moveReverted')}</div>
     ) : null
 
-    const enginePlayers = gameEngine.getPlayers()
     const playerCard = (playerId: string, side: 'left' | 'right') => {
-      const dbPlayer = game?.players?.find((p) => p.userId === playerId)
-      const isBot = !!(dbPlayer?.user?.bot || dbPlayer?.bot)
+      const dbPlayer = dbPlayerOf(playerId)
       const score = enginePlayers.find((p) => p.id === playerId)?.score || 0
       return (
         <GamePlayerCard
@@ -2020,7 +1938,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           accentColor="var(--bd-sky)"
           subline={
             <>
-              {isBot && (
+              {isBotPlayer(playerId) && (
                 <span className="bd-chip bd-chip-lav" style={{ padding: '0 5px', fontSize: 9, marginRight: 4 }}>{t('game.ui.botBadge')}</span>
               )}
               {t('yahtzee.ui.pointsShort', { count: score })}
@@ -2037,9 +1955,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             leftCard={playerCard(enginePlayers[0].id, 'left')}
             center={
               <>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                  <GameIcon gameId="yahtzee" accentColor="var(--bd-sky)" size={18} />
-                </div>
                 <ScorePop value={`${scoreOf(0)}:${scoreOf(1)}`} className="yz-scoreboard-score">
                   {scoreOf(0)}<span className="yz-scoreboard-score__sep">:</span>{scoreOf(1)}
                 </ScorePop>
@@ -2070,28 +1985,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       />
     )
 
-    // Desktop board: dice and Roll, whose card is shown, then the scorecard –
-    // one painted card that fills the centre column (#1363).
-    const board = (
-      <div className="yz-board-card">
-        <div className="yz-panel yz-panel--board">
-          {revertNotice}
-          {diceBar}
-          {pills.length > 1 && (
-            <YahtzeeScorePills
-              players={pills}
-              viewerId={viewerId}
-              viewingId={viewingPlayerId}
-              currentTurnId={currentPlayerId}
-              onSelect={(playerId) => setSelectedPlayerId(playerId === viewerId ? viewerId : playerId)}
-            />
-          )}
-          {tiles('panel')}
-        </div>
+    const panel = (variant?: 'board') => (
+      <div className={`yz-panel${variant ? ` yz-panel--${variant}` : ''}`}>
+        {revertNotice}
+        {diceBar}
+        {table}
       </div>
     )
 
-    return { header, statusBanner, diceBar, tiles, revertNotice, scoreboard, room, board }
+    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, room, panel }
   })() : null
 
   return (
@@ -2354,153 +2256,110 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
-              {/* Desktop: the shared game grid (#1363). */}
-              <YahtzeeDesktopLayout
-                header={yahtzeeView?.scoreboard}
-                room={yahtzeeView?.room}
-                status={yahtzeeView?.statusBanner}
-                board={
-                  <>
-                    {yahtzeeView?.board}
-                    {celebrationEvent && !isMobileViewport && (
-                      <CelebrationBanner event={celebrationEvent} onComplete={handleCelebrationComplete} />
-                    )}
-                  </>
-                }
-                events={<YahtzeeEventLog entries={rollHistory} rows={5} />}
-                chat={(
-                  <section className="game-chat-panel">
-                    <Chat
-                      lobbyCode={code}
-                      messages={chatMessages}
-                      onSendMessage={sendChatMessage}
-                      currentUserId={getCurrentUserId()}
-                      playerProfiles={chatPlayerProfiles}
-                      isMinimized={false}
-                      onToggleMinimize={() => { }}
-                      unreadCount={0}
-                      someoneTyping={someoneTyping}
-                      fullScreen
-                      onProfileClick={setProfileUserId}
-                    />
-                  </section>
-                )}
-              />
-
-              {/* Phone and tablet (below the desk breakpoint): pills, sound and
-                  Leave, then the shared status banner (#1187). Hidden in phone
-                  landscape, where the side pane carries the same header
-                  (yahtzee-top-status-bar, #751). */}
-              <div className="desk:hidden shrink-0 yahtzee-top-status-bar">
-                {yahtzeeView?.header}
-              </div>
-
-              <div className="desk:hidden flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
-                <div
-                  key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="relative yahtzee-mobile-layout"
-                  style={{
-                    height: '100%',
-                    minHeight: 0,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Game Tab: dice, Roll and the tile grid on one screen - the
-                      separate Score tab is gone (#1187), so the roll being
-                      scored is always in view. */}
-                  <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="yz-panel">
-                      {yahtzeeView?.revertNotice}
-                      {yahtzeeView?.diceBar}
-                      {yahtzeeView?.tiles('panel')}
-                    </div>
-                    {celebrationEvent && isMobileViewport && (
-                      <CelebrationBanner event={celebrationEvent} onComplete={handleCelebrationComplete} />
-                    )}
-                  </MobileTabPanel>
-
-                  {/* Players Tab */}
-                  <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="p-3 space-y-3">
-                      <PlayerList
-                        players={playersForLeaderboard}
-                        currentTurn={gameEngine.getState().currentPlayerIndex}
-                        currentUserId={getCurrentUserId()}
-                        onPlayerClick={(userId) => {
-                          setSelectedPlayerId(prev => prev === userId ? null : userId)
-                          // The card lives on the Game tab now (#1187)
-                          setMobileActiveTab('game')
-                        }}
-                        onProfileClick={setProfileUserId}
-                        selectedPlayerId={selectedPlayerId || undefined}
-                        departedPlayerIds={departedPlayerIds}
-                      />
-                      <YahtzeeEventLog entries={rollHistory} rows={6} />
-                    </div>
-                  </MobileTabPanel>
-
-                  {/* Chat Tab */}
-                  <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
-                    <div
-                      className="min-h-full"
-                      style={{
-                        height: '100%',
-                      }}
-                    >
+              {(gameLayout === null || gameLayout === 'desktop') && (
+                <YahtzeeDesktopLayout
+                  header={yahtzeeView?.scoreboard}
+                  room={yahtzeeView?.room}
+                  status={yahtzeeView?.statusBanner}
+                  board={<div className="yz-board-card">{yahtzeeView?.panel('board')}</div>}
+                  events={<YahtzeeEventLog entries={rollHistory} />}
+                  chat={(
+                    <section className="game-chat-panel">
                       <Chat
                         lobbyCode={code}
                         messages={chatMessages}
-                        onSendMessage={(message) => {
-                          sendChatMessage(message)
-                        }}
+                        onSendMessage={sendChatMessage}
                         currentUserId={getCurrentUserId()}
                         playerProfiles={chatPlayerProfiles}
                         isMinimized={false}
                         onToggleMinimize={() => { }}
                         unreadCount={0}
                         someoneTyping={someoneTyping}
-                        fullScreen={true}
+                        fullScreen
+                        readOnly={isSpectator}
                         onProfileClick={setProfileUserId}
                       />
-                    </div>
-                  </MobileTabPanel>
-                </div>
-
-                {/* Phone landscape (#751, #1187): the tile grid is the board
-                    pane; pills, status, dice and Roll are the side column.
-                    Players/RollHistory/Chat stay reachable in portrait. */}
-                <div className="game-landscape-layout yahtzee-landscape-layout">
-                  <div className="game-landscape-board">
-                    <div className="yz-panel">{yahtzeeView?.tiles('panel')}</div>
-                  </div>
-                  <div className="game-landscape-side yahtzee-landscape-side">
-                    {yahtzeeView?.header}
-                    <div className="yz-panel yz-panel--side">
-                      {yahtzeeView?.revertNotice}
-                      {yahtzeeView?.diceBar}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Bottom Navigation */}
-              <div className="yahtzee-mobile-layout shrink-0">
-                <MobileTabs
-                  activeTab={mobileActiveTab}
-                  onTabChange={(tab) => {
-                    setMobileActiveTab(tab)
-                    if (tab === 'chat') {
-                      resetUnread()
-                    }
-                  }}
-                  tabs={[
-                    { id: 'game' as const, label: t('yahtzee.ui.tabGame'), icon: 'dice' as const },
-                    { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: 'users' as const },
-                    { id: 'chat' as const, label: t('game.ui.tabChat'), icon: 'chat' as const, badge: unreadMessageCount },
-                  ]}
-                  unreadChatCount={unreadMessageCount}
+                    </section>
+                  )}
                 />
-              </div>
+              )}
+
+              {(gameLayout === null || gameLayout === 'mobile') && (
+                <div className="desk:hidden shrink-0 yahtzee-top-status-bar">
+                  {yahtzeeView?.header}
+                </div>
+              )}
+
+              {gameLayout !== 'desktop' && (
+                <div className="desk:hidden flex flex-1 min-h-0 flex-col overflow-x-hidden">
+                  {(gameLayout === null || gameLayout === 'mobile') && (
+                    <div className="yz-mobile yahtzee-mobile-layout">
+                      <GameTabs
+                        tabs={[
+                          { id: 'game' as const, label: t('yahtzee.ui.tabGame') },
+                          { id: 'rolls' as const, label: t('yahtzee.ui.tabRolls') },
+                          { id: 'chat' as const, label: t('game.ui.tabChat'), badge: unreadMessageCount },
+                        ]}
+                        activeTab={yahtzeeTab}
+                        onTabChange={(tab) => {
+                          setYahtzeeTab(tab)
+                          if (tab === 'chat') resetUnread()
+                        }}
+                      />
+                      <div className="yz-mobile__content">
+                        {/* Hidden, not unmounted: the score pad keeps each player's last-scored ring across tab switches. */}
+                        <div className="yz-mobile__tab" hidden={yahtzeeTab !== 'game'}>
+                          {yahtzeeView?.panel()}
+                        </div>
+                        {yahtzeeTab === 'rolls' && (
+                          <div className="yz-mobile__tab">
+                            <YahtzeeEventLog entries={rollHistory} />
+                          </div>
+                        )}
+                        {yahtzeeTab === 'chat' && (
+                          <div className="yz-mobile__tab">
+                            <section className="game-chat-panel">
+                              <Chat
+                                lobbyCode={code}
+                                messages={chatMessages}
+                                onSendMessage={(message) => {
+                                  sendChatMessage(message)
+                                }}
+                                currentUserId={getCurrentUserId()}
+                                playerProfiles={chatPlayerProfiles}
+                                isMinimized={false}
+                                onToggleMinimize={() => { }}
+                                unreadCount={0}
+                                someoneTyping={someoneTyping}
+                                fullScreen={true}
+                                readOnly={isSpectator}
+                                onProfileClick={setProfileUserId}
+                              />
+                            </section>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {(gameLayout === null || gameLayout === 'landscape') && (
+                    <div className="game-landscape-layout yahtzee-landscape-layout">
+                      <div className="game-landscape-board">
+                        <div className="yz-panel">{yahtzeeView?.table}</div>
+                      </div>
+                      <div className="game-landscape-side yahtzee-landscape-side">
+                        {yahtzeeView?.header}
+                        {yahtzeeView?.revertNotice}
+                        {yahtzeeView?.diceBar}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {celebrationEvent && (
+                <CelebrationBanner event={celebrationEvent} onComplete={handleCelebrationComplete} />
+              )}
             </div>
           ) : gameEngine && (lobby?.gameType as string) === 'guess_the_spy' && game?.id ? (
             <SpyGameBoard
@@ -2647,6 +2506,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <PlayerProfileCard
         userId={profileUserId}
         onClose={() => setProfileUserId(null)}
+        reportContext={{ lobbyCode: code, drawing: null }}
       />
      </div>
     </div>
