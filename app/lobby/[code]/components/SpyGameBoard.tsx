@@ -1098,6 +1098,7 @@ export default function SpyGameBoard({
       {phaseContent}
       {isGameOver && !isSpectator && !overlayInspecting && (
         <GameResultOverlay
+          canAskRematch={false}
           title={finishedMessage}
           kicker={t('lobby.game.gameOver')}
           isDraw={gameResult.isDraw}

@@ -71,6 +71,8 @@ export default function SocialLoopListener() {
     const showRematch = (payload: unknown) => {
       const rematch = readRematchRequestEvent(payload)
       if (!rematch) return
+      // Already on that lobby's page: its end screen shows the ask itself.
+      if (window.location.pathname === `/lobby/${rematch.lobbyCode}`) return
       const dedupeKey = `rematch:${rematch.sequenceId || `${rematch.lobbyCode}:${rematch.actorId}`}`
       if (isDuplicateEvent(dedupeKey)) return
 

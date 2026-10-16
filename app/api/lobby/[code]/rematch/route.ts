@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { broadcastToUser } from '@/lib/supabase-server'
+import { broadcastToLobby, broadcastToUser } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -115,11 +115,16 @@ export async function POST(
       inviteUrl,
     }
 
-    await Promise.all(
-      dedupedTargetUserIds.map((userId) =>
+    await Promise.all([
+      ...dedupedTargetUserIds.map((userId) =>
         broadcastToUser(userId, 'rematch-request', rematchPayload)
-      )
-    )
+      ),
+      // The host may be a guest, who has no user channel; the end screen listens on the lobby's.
+      ...(isCreator ? [] : [broadcastToLobby(lobby.code, 'rematch-request', {
+        requestedById: requestUser.id,
+        requestedByName: requestUser.username,
+      })]),
+    ])
 
     await Promise.allSettled(
       dedupedTargetUserIds.map((userId) =>
