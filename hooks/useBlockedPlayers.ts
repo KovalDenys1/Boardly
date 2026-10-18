@@ -24,6 +24,8 @@ const BLOCKS_URL = '/api/user/blocks'
 
 type Mode = 'pending' | 'account' | 'device'
 type Snapshot = { mode: Mode; players: BlockedPlayer[] }
+/** The changed event's detail from an instance; other senders (GuestContext) send none. */
+type Change = { source: object; mode: Mode; selfId: string | undefined; players: BlockedPlayer[] }
 
 const NO_PLAYERS: BlockedPlayer[] = []
 
@@ -76,6 +78,18 @@ async function fetchAccountPlayers(): Promise<BlockedPlayer[] | null> {
   } catch {
     return null
   }
+}
+
+// Shared by every instance on the page, so the chats and cards that mount together send one GET.
+let accountReadInFlight: { selfId: string | undefined; request: Promise<BlockedPlayer[] | null> } | null = null
+
+function readAccountPlayers(selfId: string | undefined): Promise<BlockedPlayer[] | null> {
+  if (accountReadInFlight && accountReadInFlight.selfId === selfId) return accountReadInFlight.request
+  const request = fetchAccountPlayers().finally(() => {
+    if (accountReadInFlight?.request === request) accountReadInFlight = null
+  })
+  accountReadInFlight = { selfId, request }
+  return request
 }
 
 // Shared by every instance on the page, so several chats and React's double effect send one request.
@@ -142,11 +156,11 @@ export function useBlockedPlayers(): UseBlockedPlayers {
       setSnapshot({ mode, players: newestFirst(readDevice()) })
       return
     }
-    const players = await fetchAccountPlayers()
+    const players = await readAccountPlayers(selfId)
     if (ticket !== loadTicket.current) return
     // A failed read leaves what is shown and ends the wait: chat must not hang on a list it cannot get.
     setSnapshot((previous) => (players ? { mode, players } : previous?.mode === mode ? previous : { mode, players: [] }))
-  }, [mode])
+  }, [mode, selfId])
 
   useEffect(() => {
     if (mode === 'pending') return
@@ -163,12 +177,18 @@ export function useBlockedPlayers(): UseBlockedPlayers {
   useEffect(() => {
     if (mode === 'pending') return
     const onChanged = (event: Event) => {
-      if ((event as CustomEvent<object>).detail === source.current) return
+      const change = (event as CustomEvent<Change | undefined>).detail
+      if (change?.source === source.current) return
+      if (mode === 'account' && change?.mode === 'account' && change.selfId === selfId) {
+        loadTicket.current++
+        setSnapshot({ mode, players: change.players })
+        return
+      }
       void load()
     }
     window.addEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
     return () => window.removeEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
-  }, [mode, load])
+  }, [mode, load, selfId])
 
   useEffect(() => {
     if (mode !== 'device') return
@@ -179,9 +199,13 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     return () => window.removeEventListener('storage', onStorage)
   }, [mode, load])
 
-  const announce = useCallback(() => {
-    window.dispatchEvent(new CustomEvent<object>(BLOCKED_PLAYERS_CHANGED_EVENT, { detail: source.current }))
-  }, [])
+  const announce = useCallback(
+    (players: BlockedPlayer[]) => {
+      const change: Change = { source: source.current, mode, selfId, players }
+      window.dispatchEvent(new CustomEvent<Change>(BLOCKED_PLAYERS_CHANGED_EVENT, { detail: change }))
+    },
+    [mode, selfId]
+  )
 
   const edit = useCallback(
     (change: (players: BlockedPlayer[]) => BlockedPlayer[]) => {
@@ -200,7 +224,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
         if (!stored.some((existing) => existing.id === player.id)) writeDevice([...stored, entry].slice(-DEVICE_LIMIT))
         const kept = readDevice()
         setSnapshot({ mode, players: newestFirst(kept) })
-        announce()
+        announce(newestFirst(kept))
         return kept.some((existing) => existing.id === player.id)
       }
 
@@ -219,7 +243,8 @@ export function useBlockedPlayers(): UseBlockedPlayers {
         edit((players) => players.filter((existing) => existing.id !== player.id))
         return false
       }
-      announce()
+      const current = latest.current.blocked
+      announce(current.some((existing) => existing.id === player.id) ? current : [entry, ...current])
       return true
     },
     [mode, edit, announce]
@@ -233,7 +258,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
         writeDevice(readDevice().filter((existing) => existing.id !== id))
         const kept = readDevice()
         setSnapshot({ mode, players: newestFirst(kept) })
-        announce()
+        announce(newestFirst(kept))
         return !kept.some((existing) => existing.id === id)
       }
 
@@ -249,7 +274,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
         edit((players) => (players.some((existing) => existing.id === id) ? players : insertByRecency(players, removed)))
         return false
       }
-      announce()
+      announce(latest.current.blocked.filter((existing) => existing.id !== id))
       return true
     },
     [mode, edit, announce]

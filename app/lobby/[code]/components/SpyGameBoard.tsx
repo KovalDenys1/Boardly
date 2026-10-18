@@ -102,7 +102,10 @@ interface SpyGameBoardProps {
    * and no chat panel or tab is rendered.
    */
   chatMessages?: ChatMessagePayload[]
-  onSendChatMessage?: (message: string) => void
+  onSendChatMessage?: (message: string) => void | Promise<string | null>
+  /** False puts the terms consent panel in place of the chat composer (#1466). */
+  chatTermsAccepted?: boolean | null
+  onAcceptChatTerms?: () => Promise<boolean>
   chatUnreadCount?: number
   onResetChatUnread?: () => void
   someoneTyping?: boolean
@@ -160,6 +163,8 @@ export default function SpyGameBoard({
   isSpectator = false,
   chatMessages = [],
   onSendChatMessage,
+  chatTermsAccepted,
+  onAcceptChatTerms,
   chatUnreadCount = 0,
   onResetChatUnread,
   someoneTyping = false,
@@ -815,6 +820,8 @@ export default function SpyGameBoard({
         lobbyCode={lobbyCode}
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
+        termsAccepted={chatTermsAccepted}
+        onAcceptTerms={onAcceptChatTerms}
         currentUserId={currentUserId || null}
         playerProfiles={playerProfiles}
         isMinimized={false}

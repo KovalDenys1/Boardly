@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { showToast } from '@/lib/i18n-toast'
 import { Icon } from '@/components/icons'
 import ReportDialog from '@/components/ReportDialog'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { REPORT_QUOTED_TEXT_MAX_CHARS } from '@/lib/content-reports'
-import { readLocal, writeLocal, removeLocal } from '@/lib/safe-storage'
 
 interface ChatMessage {
   id: string
@@ -24,7 +26,8 @@ interface PlayerProfile {
 
 interface ChatProps {
   messages: ChatMessage[]
-  onSendMessage: (message: string) => void
+  /** May resolve to the message when the server asked for the terms first; the composer then keeps it. */
+  onSendMessage: (message: string) => void | Promise<string | null>
   currentUserId?: string | null
   playerProfiles?: Map<string, PlayerProfile>
   isMinimized?: boolean
@@ -38,27 +41,16 @@ interface ChatProps {
   readOnly?: boolean
   /**
    * The lobby the messages belong to. With it (and a signed-in or guest viewer), every
-   * other player's message carries a Report action (#1172) and a Mute action (#1088);
+   * other player's message carries a Report action (#1172) and a Block action (#1466);
    * without it there is neither.
    */
   lobbyCode?: string
+  /** False puts the terms consent panel where the composer is (#1466); null or absent while unknown. */
+  termsAccepted?: boolean | null
+  onAcceptTerms?: () => Promise<boolean>
 }
 
-const MUTED_EVENT = 'boardly:chat-muted'
-
-function mutedStorageKey(lobbyCode: string) {
-  return `boardly_chat_muted_${lobbyCode}`
-}
-
-function readMuted(lobbyCode: string | undefined): string[] {
-  if (!lobbyCode) return []
-  try {
-    const parsed: unknown = JSON.parse(readLocal(mutedStorageKey(lobbyCode)) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
-  } catch {
-    return []
-  }
-}
+type BlockTarget = { messageId: string; userId: string; username: string }
 
 export default function Chat({
   messages,
@@ -74,35 +66,73 @@ export default function Chat({
   onProfileClick,
   readOnly = false,
   lobbyCode,
+  termsAccepted,
+  onAcceptTerms,
 }: ChatProps) {
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const [reportedMessage, setReportedMessage] = useState<ChatMessage | null>(null)
-  // A mute is the viewer's own: it hides that player's messages on this device, in
-  // this lobby, and tells nobody (#1088).
-  const [muted, setMuted] = useState<{ lobbyCode?: string; ids: string[] }>(() => ({ lobbyCode, ids: readMuted(lobbyCode) }))
-  const mutedIds = muted.lobbyCode === lobbyCode ? muted.ids : readMuted(lobbyCode)
-  const setMutedIds = (ids: string[]) => {
-    setMuted({ lobbyCode, ids })
-    if (!lobbyCode) return
-    if (ids.length > 0) writeLocal(mutedStorageKey(lobbyCode), JSON.stringify(ids))
-    else removeLocal(mutedStorageKey(lobbyCode))
-    window.dispatchEvent(new CustomEvent(MUTED_EVENT, { detail: lobbyCode }))
-  }
-  // A game page mounts one Chat per layout tree; the others must hide the same players.
-  useEffect(() => {
-    if (!lobbyCode) return
-    const onMuted = (event: Event) => {
-      if ((event as CustomEvent<string>).detail === lobbyCode) setMuted({ lobbyCode, ids: readMuted(lobbyCode) })
-    }
-    window.addEventListener(MUTED_EVENT, onMuted)
-    return () => window.removeEventListener(MUTED_EVENT, onMuted)
-  }, [lobbyCode])
-  const visibleMessages = mutedIds.length > 0 ? messages.filter((msg) => !mutedIds.includes(msg.userId)) : messages
+  const { blockedIds, block, ready: blocksReady } = useBlockedPlayers()
+  const visibleMessages = blockedIds.size > 0 ? messages.filter((msg) => !blockedIds.has(msg.userId)) : messages
+  const [blockTarget, setBlockTarget] = useState<BlockTarget | null>(null)
+  const blockConfirmId = useId()
+  const blockTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const blockCancelRef = useRef<HTMLButtonElement>(null)
+  const [blockFailedFor, setBlockFailedFor] = useState<{ messageId: string } | null>(null)
+  const showTermsConsent = !readOnly && termsAccepted === false && !!onAcceptTerms
+  const [focusTermsConsent, setFocusTermsConsent] = useState(false)
+  const focusComposerAfterConsent = useRef(false)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    if (blockTarget) blockCancelRef.current?.focus()
+  }, [blockTarget])
+
+  // A signed-in block hides the messages before the server answers, so a rolled-back block
+  // brings back a new button: find it after that render, or fall back to the heading.
+  useEffect(() => {
+    if (!blockFailedFor) return
+    const triggers = chatRef.current?.querySelectorAll<HTMLButtonElement>('button[data-message-id]') ?? []
+    const trigger = Array.from(triggers).find((button) => button.dataset.messageId === blockFailedFor.messageId)
+    ;(trigger ?? titleRef.current)?.focus()
+  }, [blockFailedFor])
+
+  useEffect(() => {
+    if (showTermsConsent || !focusComposerAfterConsent.current) return
+    focusComposerAfterConsent.current = false
+    inputRef.current?.focus()
+  }, [showTermsConsent])
+
+  const closeBlockConfirm = () => {
+    setBlockTarget(null)
+    blockTriggerRef.current?.focus()
+  }
+
+  const confirmBlock = async () => {
+    if (!blockTarget) return
+    const target = blockTarget
+    setBlockTarget(null)
+    if (await block({ id: target.userId, username: target.username })) {
+      // The button that opened the question left with the player's messages.
+      titleRef.current?.focus()
+      return
+    }
+    showToast.error('chat.blockFailed', undefined, { player: target.username })
+    setBlockFailedFor({ messageId: target.messageId })
+  }
+
+  const handleAcceptTerms = async () => {
+    if (!onAcceptTerms) return false
+    focusComposerAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (accepted) setFocusTermsConsent(false)
+    else focusComposerAfterConsent.current = false
+    return accepted
+  }
 
   // Scroll the message list itself, never scrollIntoView on the last bubble:
   // that walks every scrollable ancestor, and in the phone-landscape side
@@ -163,11 +193,16 @@ export default function Chat({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newMessage.trim()) {
-      onSendMessage(newMessage.trim())
-      setNewMessage('')
-      inputRef.current?.focus()
-    }
+    const text = newMessage.trim()
+    if (!text) return
+    const sending = onSendMessage(text)
+    setNewMessage('')
+    inputRef.current?.focus()
+    void sending?.then((kept) => {
+      if (typeof kept !== 'string') return
+      setNewMessage((current) => (current ? `${kept} ${current}` : kept))
+      setFocusTermsConsent(true)
+    })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -250,7 +285,7 @@ export default function Chat({
             {/* One line whatever the right-hand side takes: a kicker that wrapped made
                 the strip 13px taller and took it from the messages. */}
             <div className="chat-titlebar-kicker bd-kicker max-w-full truncate align-top">{t('chat.kicker')}</div>
-            <h3 className="truncate text-base font-bold text-bd-ink" id="chat-title">
+            <h3 ref={titleRef} tabIndex={-1} className="truncate text-base font-bold text-bd-ink focus:outline-hidden" id="chat-title">
               {t('chat.title')}
             </h3>
           </div>
@@ -262,18 +297,6 @@ export default function Chat({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          {mutedIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setMutedIds([])}
-              aria-label={t('chat.unmuteAll', { count: mutedIds.length })}
-              title={t('chat.unmuteAll', { count: mutedIds.length })}
-              className="chat-unmute-button inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-semibold text-bd-ink-soft transition-colors hover:text-bd-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
-            >
-              <Icon name="eye-off" size={14} />
-              <span>{mutedIds.length}</span>
-            </button>
-          )}
           {/* The community rules (#1173), in the title strip's right-hand side, which
               is empty in the game dock (fullScreen has no controls): no new row on a
               game screen. A short visible label, so the strip keeps the title on one
@@ -437,17 +460,62 @@ export default function Chat({
                           {canReport && (
                             <button
                               type="button"
-                              onClick={() => setMutedIds([...mutedIds, msg.userId])}
-                              aria-label={t('chat.mutePlayer', { player: msg.username })}
-                              title={t('chat.mutePlayer', { player: msg.username })}
-                              className="chat-mute-button -my-1.5 grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                              onClick={(event) => {
+                                blockTriggerRef.current = event.currentTarget
+                                setBlockTarget({ messageId: msg.id, userId: msg.userId, username: msg.username })
+                              }}
+                              disabled={!blocksReady}
+                              data-message-id={msg.id}
+                              aria-haspopup="dialog"
+                              aria-expanded={blockTarget?.messageId === msg.id}
+                              aria-controls={blockTarget?.messageId === msg.id ? blockConfirmId : undefined}
+                              aria-label={t('chat.blockPlayer', { player: msg.username })}
+                              title={t('chat.blockPlayer', { player: msg.username })}
+                              className="chat-block-button -my-1.5 grid h-6 w-6 place-items-center rounded-full text-bd-ink-muted opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              <Icon name="eye-off" size={12} />
+                              <Icon name="prohibit" size={12} />
                             </button>
                           )}
                         </div>
                       )}
                     </div>
+
+                    {blockTarget?.messageId === msg.id && (
+                      <div
+                        id={blockConfirmId}
+                        role="alertdialog"
+                        aria-label={t('chat.blockPlayer', { player: msg.username })}
+                        aria-describedby={`${blockConfirmId}-text`}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Escape') return
+                          event.stopPropagation()
+                          closeBlockConfirm()
+                        }}
+                        className="chat-block-confirm mt-1.5 max-w-[280px] rounded-2xl border px-3.5 py-3 text-bd-ink shadow-xs animate-[fade-in-plain_0.15s_ease-out] sm:max-w-xs"
+                        style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}
+                      >
+                        <p id={`${blockConfirmId}-text`} className="text-xs leading-snug">
+                          {t('chat.blockConfirm', { player: msg.username })}
+                        </p>
+                        <div className="mt-2.5 flex justify-end gap-2">
+                          <button
+                            ref={blockCancelRef}
+                            type="button"
+                            onClick={closeBlockConfirm}
+                            className="bd-btn bd-btn-soft rounded-xl px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+                          >
+                            {t('chat.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void confirmBlock()}
+                            className="bd-btn bd-btn-primary rounded-xl px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+                          >
+                            {t('chat.blockAction')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -501,7 +569,16 @@ export default function Chat({
         />
       )}
 
-      {!readOnly && (
+      {showTermsConsent && (
+        <TermsConsentPanel
+          onAccept={handleAcceptTerms}
+          autoFocus={focusTermsConsent}
+          className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}
+          style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+        />
+      )}
+
+      {!readOnly && !showTermsConsent && (
       <form
         onSubmit={handleSubmit}
         className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}

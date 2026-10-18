@@ -65,6 +65,8 @@ function serveBlocks(initial: Row[] = [], options: { postStatus?: number; failDe
 }
 
 const postCalls = () => mockFetch.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+const getCalls = () =>
+  mockFetch.mock.calls.filter(([url, init]) => url === '/api/user/blocks' && ((init as RequestInit | undefined)?.method ?? 'GET') === 'GET')
 
 describe('useBlockedPlayers', () => {
   const originalFetch = global.fetch
@@ -378,18 +380,36 @@ describe('useBlockedPlayers', () => {
       expect(result.current.blocked.map((player) => player.id)).toEqual(['u3', 'u2', 'u1'])
     })
 
-    it('tells another instance to reload from the server', async () => {
+    it('reads the account list once for every instance that mounts together', async () => {
+      serveBlocks([{ id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }])
+      const first = renderHook(() => useBlockedPlayers())
+      const second = renderHook(() => useBlockedPlayers())
+      await waitFor(() => expect(first.result.current.ready).toBe(true))
+      await waitFor(() => expect(second.result.current.ready).toBe(true))
+
+      expect(getCalls()).toHaveLength(1)
+      expect(second.result.current.blockedIds.has('u9')).toBe(true)
+    })
+
+    it('hands another instance the new list, so it updates without asking the server again', async () => {
       serveBlocks()
       const first = renderHook(() => useBlockedPlayers())
       const second = renderHook(() => useBlockedPlayers())
       await waitFor(() => expect(second.result.current.ready).toBe(true))
       await waitFor(() => expect(first.result.current.ready).toBe(true))
+      const readsBefore = getCalls().length
 
       await act(async () => {
         await first.result.current.block({ id: 'u2', username: 'Rival' })
       })
-
       await waitFor(() => expect(second.result.current.blockedIds.has('u2')).toBe(true))
+
+      await act(async () => {
+        await first.result.current.unblock('u2')
+      })
+      await waitFor(() => expect(second.result.current.blockedIds.has('u2')).toBe(false))
+
+      expect(getCalls()).toHaveLength(readsBefore)
     })
 
     it('stops showing the account list once signed out', async () => {

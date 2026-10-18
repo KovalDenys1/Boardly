@@ -346,6 +346,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const {
     chatMessages,
     sendChatMessage,
+    termsAccepted: chatTermsAccepted,
+    acceptTerms: acceptChatTerms,
     unreadCount: unreadMessageCount,
     resetUnread,
     someoneTyping,
@@ -2085,9 +2087,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   <Chat
                     lobbyCode={code}
                     messages={chatMessages}
-                    onSendMessage={(message) => {
-                      sendChatMessage(message)
-                    }}
+                    onSendMessage={sendChatMessage}
+                    termsAccepted={chatTermsAccepted}
+                    onAcceptTerms={acceptChatTerms}
                     currentUserId={getCurrentUserId()}
                     playerProfiles={chatPlayerProfiles}
                     isMinimized={false}
@@ -2205,6 +2207,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         lobbyCode={code}
                         messages={chatMessages}
                         onSendMessage={sendChatMessage}
+                        termsAccepted={chatTermsAccepted}
+                        onAcceptTerms={acceptChatTerms}
                         currentUserId={getCurrentUserId()}
                         playerProfiles={chatPlayerProfiles}
                         isMinimized={false}
@@ -2258,9 +2262,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                               <Chat
                                 lobbyCode={code}
                                 messages={chatMessages}
-                                onSendMessage={(message) => {
-                                  sendChatMessage(message)
-                                }}
+                                onSendMessage={sendChatMessage}
+                                termsAccepted={chatTermsAccepted}
+                                onAcceptTerms={acceptChatTerms}
                                 currentUserId={getCurrentUserId()}
                                 playerProfiles={chatPlayerProfiles}
                                 isMinimized={false}
@@ -2323,7 +2327,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onLeave={() => setShowLeaveConfirmModal(true)}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
-              onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
+              onSendChatMessage={hasMultipleHumans ? sendChatMessage : undefined}
+              chatTermsAccepted={chatTermsAccepted}
+              onAcceptChatTerms={acceptChatTerms}
               chatUnreadCount={unreadMessageCount}
               onResetChatUnread={resetUnread}
               someoneTyping={someoneTyping}
@@ -2345,7 +2351,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onLeave={() => setShowLeaveConfirmModal(true)}
               isRestarting={startingGame || isReturningToWaiting}
               chatMessages={chatMessages}
-              onSendChatMessage={(message) => { sendChatMessage(message) }}
+              onSendChatMessage={sendChatMessage}
+              chatTermsAccepted={chatTermsAccepted}
+              onAcceptChatTerms={acceptChatTerms}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
               playerProfiles={chatPlayerProfiles}
@@ -2380,9 +2388,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           <Chat
             lobbyCode={code}
             messages={chatMessages}
-            onSendMessage={(message) => {
-              sendChatMessage(message)
-            }}
+            onSendMessage={sendChatMessage}
+            termsAccepted={chatTermsAccepted}
+            onAcceptTerms={acceptChatTerms}
             currentUserId={getCurrentUserId()}
             playerProfiles={chatPlayerProfiles}
             isMinimized={chatMinimized}
