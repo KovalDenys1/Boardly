@@ -3,7 +3,7 @@
 //   npx tsx scripts/generate-play-listing-art.ts --screenshots      also the phone screenshots, from production
 //   ... --screenshots --langs en,no --only checkers,lobby           a subset
 //   ... --compose-only                                              re-caption the captures in tmp/play-listing/raw
-// The two guests it plays as on production are kept in tmp/play-listing/, so a rerun reuses them.
+// Its two production guests are minted outside Play mode (never Play-app signups) and reused from tmp/play-listing/.
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
@@ -197,12 +197,44 @@ async function openPlayMode(page: Page) {
   await page.waitForFunction(() => document.documentElement.dataset.appShell === 'play', null, { timeout: 20_000 })
 }
 
-async function settle(page: Page, lang: Lang, extraMs = 1500) {
+async function settle(page: Page, lang: Lang, extraMs = 1500, playMode = true) {
   await page.waitForFunction((value) => document.documentElement.lang === value, lang, { timeout: 20_000 })
   await page.evaluate(() => document.fonts.ready)
   await page.waitForTimeout(extraMs)
+  if (!playMode) return
   const shell = await page.evaluate(() => document.documentElement.dataset.appShell)
   if (shell !== 'play') throw new Error(`${page.url()} is not in Play mode (data-app-shell=${shell})`)
+}
+
+/** A guest minted while the Play mark is set is recorded as a Play-app signup (lib/signup-source-client.ts). */
+async function assertNotPlayMode(page: Page) {
+  const marked = await page.evaluate(
+    () =>
+      document.documentElement.dataset.appShell === 'play' ||
+      sessionStorage.getItem('boardly:app-shell') === 'play' ||
+      new URLSearchParams(location.search).get('utm_source') === 'android_app'
+  )
+  if (marked) throw new Error(`refusing to mint a guest on ${page.url()}: the Play mark is set, so it would count as a Play-app signup`)
+}
+
+/** Mints the context's guest, or reuses the stored one, in a tab that never opened the Play launch URL. */
+async function ensureGuest(context: BrowserContext, name: string) {
+  const page = await context.newPage()
+  try {
+    await page.goto(`${SITE}/lobby/create?gameType=alias`, { waitUntil: 'domcontentloaded' })
+    await setLang(page, 'en')
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await settle(page, 'en', 2500, false)
+    const nameInput = page.getByPlaceholder('Your name')
+    if (!(await nameInput.isVisible().catch(() => false))) return
+    await assertNotPlayMode(page)
+    await nameInput.fill(name)
+    await page.getByRole('button', { name: 'Play as Guest', exact: true }).click()
+    await page.waitForFunction(() => Boolean(localStorage.getItem('boardly_guest_token')), null, { timeout: 30_000 })
+    console.log(`  minted guest ${name} outside Play mode`)
+  } finally {
+    await page.close()
+  }
 }
 
 async function capture(page: Page, lang: Lang, shot: ShotId) {
@@ -350,18 +382,13 @@ async function leaveLobby(page: Page) {
   console.log('  left the lobby')
 }
 
-/** Opens the create page for a game in English; a host without a guest identity gets one through the gate. */
+/** Opens the create page for a game in English, as the guest ensureGuest made. */
 async function openCreatePage(page: Page, gameType: string) {
   await setLang(page, 'en')
   await page.goto(`${SITE}/lobby/create?gameType=${gameType}`, { waitUntil: 'domcontentloaded' })
   await settle(page, 'en')
-  const nameInput = page.getByPlaceholder('Your name')
-  if (await nameInput.isVisible().catch(() => false)) {
-    await nameInput.fill(HOST_NAME)
-    await page.getByRole('button', { name: 'Play as Guest', exact: true }).click()
-    await page.waitForFunction(() => Boolean(localStorage.getItem('boardly_guest_token')), null, { timeout: 30_000 })
-    await page.waitForTimeout(1500)
-  }
+  // ensureGuest runs first; a name gate here means the identity was lost, and minting now would be in Play mode.
+  if (await page.getByPlaceholder('Your name').isVisible().catch(() => false)) await assertNotPlayMode(page)
 }
 
 async function createLobby(page: Page, gameType: string): Promise<string> {
@@ -395,13 +422,16 @@ async function gamesPickerShots(page: Page) {
 }
 
 async function lobbyShots(browser: Browser, host: Page, code: string) {
+  // The friend is never captured, so it stays out of Play mode and joins as an ordinary web guest.
   const friendContext = await newContext(browser, 'friend')
   const friend = await friendContext.newPage()
-  await openPlayMode(friend)
   await friend.goto(`${SITE}/lobby/${code}`, { waitUntil: 'domcontentloaded' })
-  await settle(friend, 'en', 3000)
+  await setLang(friend, 'en')
+  await friend.reload({ waitUntil: 'domcontentloaded' })
+  await settle(friend, 'en', 3000, false)
   const nameInput = friend.locator('input:visible').first()
   if (await nameInput.isVisible().catch(() => false)) {
+    await assertNotPlayMode(friend)
     await nameInput.fill(FRIEND_NAME)
     await friend.getByRole('button', { name: /Play as Guest/ }).click()
   } else {
@@ -415,7 +445,7 @@ async function lobbyShots(browser: Browser, host: Page, code: string) {
   await captureEachLanguage(host, 'lobby', (lang) => foldBetweenLines(host, t(lang, 'game.ui.howToPlayTitle')))
 
   await friend.reload({ waitUntil: 'domcontentloaded' })
-  await settle(friend, 'en', 2500)
+  await settle(friend, 'en', 2500, false)
   await friend.locator('button[aria-label="Leave"]:visible').first().click()
   await friend.waitForURL((url) => !url.pathname.startsWith(`/lobby/${code}`), { timeout: 15_000 })
   await friendContext.close()
@@ -510,6 +540,8 @@ async function hostShots(browser: Browser) {
   const wanted = ['games', 'lobby', 'connect-four', 'checkers', 'tic-tac-toe'].filter((id) => only.has(id as ShotId))
   if (wanted.length === 0) return
   const context = await newContext(browser, 'host')
+  await ensureGuest(context, HOST_NAME)
+  await saveState(context, 'host')
   const page = await context.newPage()
   page.on('dialog', (dialog) => void dialog.accept())
   await openPlayMode(page)
