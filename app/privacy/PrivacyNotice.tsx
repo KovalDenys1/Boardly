@@ -62,6 +62,9 @@ const STORAGE_ITEMS = [
 
 const RIGHTS_ITEMS = ['export', 'correct', 'delete', 'forget'] as const
 
+// Google Play's Data safety form links here as the app's account deletion page.
+const DELETE_ACCOUNT_ANCHOR = 'delete-account'
+
 export type PrivacyController = { name: string; address: string } | null
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -249,7 +252,13 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p className="mb-3">{t('privacyPolicy.rights.lead')}</p>
             <ul className="list-disc space-y-1.5 pl-5">
               {RIGHTS_ITEMS.map((id) => (
-                <li key={id}>{t(`privacyPolicy.rights.${id}`)}</li>
+                <li
+                  key={id}
+                  id={id === 'delete' ? DELETE_ACCOUNT_ANCHOR : undefined}
+                  className={id === 'delete' ? 'scroll-mt-[calc(var(--bd-header-h)+1rem)]' : undefined}
+                >
+                  {t(`privacyPolicy.rights.${id}`, { email })}
+                </li>
               ))}
               <li>{t('privacyPolicy.rights.email', { email })}</li>
             </ul>

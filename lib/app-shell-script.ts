@@ -45,6 +45,7 @@ export function addPlayLaunchParams(href: string, origin: string): string {
   return url.href
 }
 
+// The Play listing declares no ads, so the app pauses every AdSense request; the consent message still loads.
 export function getAppShellInitScript() {
   return `(() => {
   try {
@@ -56,6 +57,7 @@ export function getAppShellInitScript() {
     try { standaloneAndroid = /Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone)').matches; } catch {}
     if (stored !== '${APP_SHELL_PLAY}' && !fromUrl && !/${PLAY_REFERRER.source}/.test(document.referrer) && !standaloneAndroid) return;
     document.documentElement.dataset.appShell = '${APP_SHELL_PLAY}';
+    try { (window.adsbygoogle = window.adsbygoogle || []).pauseAdRequests = 1; } catch {}
     document.addEventListener('click', (event) => {
       const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
       if (!(link instanceof HTMLAnchorElement) || link.target.toLowerCase() !== '_blank' || link.hasAttribute('download')) return;

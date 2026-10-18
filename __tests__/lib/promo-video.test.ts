@@ -1,22 +1,22 @@
+import { availableLocales } from '@/locales/meta'
 import { PROMO_VIDEO_ORIGIN, buildPromoVideoJsonLd, promoVideoFor } from '@/lib/promo-video'
 
 describe('promoVideoFor (#1470)', () => {
-  it('plays English for English, including a region tag', () => {
-    expect(promoVideoFor('en').src).toBe(`${PROMO_VIDEO_ORIGIN}/promo/v2/en.mp4`)
-    expect(promoVideoFor('en-GB')).toEqual(promoVideoFor('en'))
-  })
-
-  it('plays English for Ukrainian, never the Russian cut', () => {
-    expect(promoVideoFor('uk')).toEqual(promoVideoFor('en'))
+  it('plays each site language its own cut, including a region tag', () => {
+    for (const language of availableLocales) {
+      expect(promoVideoFor(language).src).toBe(`${PROMO_VIDEO_ORIGIN}/promo/v2.1/${language}.mp4`)
+      expect(promoVideoFor(language).poster).toBe(`${PROMO_VIDEO_ORIGIN}/promo/v2.1/${language}.jpg`)
+    }
+    expect(promoVideoFor('de-AT')).toEqual(promoVideoFor('de'))
   })
 
   it('plays English when the language is unknown or not set yet', () => {
-    expect(promoVideoFor('de')).toEqual(promoVideoFor('en'))
+    expect(promoVideoFor('fr')).toEqual(promoVideoFor('en'))
     expect(promoVideoFor(undefined)).toEqual(promoVideoFor('en'))
   })
 
   it('serves every cut and poster from the store the CSP allows', () => {
-    for (const language of ['en', 'no', 'ru', 'uk']) {
+    for (const language of availableLocales) {
       const video = promoVideoFor(language)
       expect(video.src.startsWith(`${PROMO_VIDEO_ORIGIN}/`)).toBe(true)
       expect(video.poster.startsWith(`${PROMO_VIDEO_ORIGIN}/`)).toBe(true)

@@ -60,8 +60,12 @@ export const TERMS_FIGURES = {
  * 2026-10-18 (#1466): the players you block (on the account, a copy on the device while you
  * are signed in, a guest's on the device), when a guest accepted the Terms, and the block list
  * in the data export.
+ * 2026-10-19 (#1468), the day it ships: section 7 gives account deletion its path in the
+ * profile and the email route for anyone who cannot sign in, under the anchor
+ * /privacy#delete-account that the Google Play listing links to; and section 3 names Google Play
+ * as the Android app's distributor, on its own account for its install and crash data.
  */
-export const PRIVACY_UPDATED = '2026-10-18'
+export const PRIVACY_UPDATED = '2026-10-19'
 
 /**
  * When the current withdrawal information on /premium and /withdrawal took effect.
