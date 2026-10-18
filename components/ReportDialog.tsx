@@ -190,7 +190,7 @@ export function ReportForm({ targets, quote, onDone, onBack, focusHeadingOnMount
           maxLength={REPORT_NOTE_MAX_CHARS}
           rows={3}
           placeholder={t('report.notePlaceholder')}
-          className="bd-input resize-none text-sm"
+          className="bd-input resize-none desk:text-sm"
         />
         <div className="mt-1 text-right text-[11px] text-bd-ink-muted" aria-hidden="true">
           {note.length}/{REPORT_NOTE_MAX_CHARS}

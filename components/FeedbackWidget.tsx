@@ -215,7 +215,7 @@ export default function FeedbackWidget() {
                     required
                     maxLength={2000}
                     rows={4}
-                    className="w-full resize-none rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink transition-colors focus:border-bd-lav-deep focus:outline-hidden dark:text-white"
+                    className="w-full resize-none rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-base text-bd-ink transition-colors desk:text-sm focus:border-bd-lav-deep focus:outline-hidden dark:text-white"
                   />
                   <p className="mt-1 text-right text-xs text-bd-ink-muted">
                     {message.length}/2000
@@ -234,7 +234,7 @@ export default function FeedbackWidget() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('feedback.emailPlaceholder')}
-                    className="w-full rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink transition-colors focus:border-bd-lav-deep focus:outline-hidden dark:text-white"
+                    className="w-full rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-base text-bd-ink transition-colors desk:text-sm focus:border-bd-lav-deep focus:outline-hidden dark:text-white"
                   />
                 </div>
 

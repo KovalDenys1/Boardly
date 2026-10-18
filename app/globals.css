@@ -1648,7 +1648,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   border-radius: 12px;
   background: var(--bd-input-bg);
   color: var(--bd-ink);
-  font-size: 15px; font-family: inherit;
+  font-size: 16px; font-family: inherit;
   transition: border-color 0.15s;
   width: 100%; display: block;
 }

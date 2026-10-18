@@ -1856,7 +1856,7 @@ export default function ProfilePage() {
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-sm text-bd-ink shadow-xs outline-hidden transition-all'
+    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
 
@@ -3052,7 +3052,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-hidden"
+                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
                   />
                   <div className="mt-1 flex items-center justify-between">
                     <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
