@@ -388,6 +388,7 @@ export async function POST(
             enginePlayers,
             dbPlayersByUserId,
             getScorecard: getScorecardForTerminalFields,
+            sharedTopWins: gameType === 'yahtzee',
           })
 
           log.info('Saving bot move to database...', {

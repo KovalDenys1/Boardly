@@ -167,6 +167,14 @@ describe('checkAndGrantAchievements', () => {
     expect(result.map((a) => a.key)).toEqual(['speed_demon'])
   })
 
+  it('counts only a sole win toward speed_demon: a shared first place is a draw (#1493)', async () => {
+    await checkAndGrantAchievements('user-1')
+
+    const speedQuery = mockPrisma.$queryRaw.mock.calls[1][0] as { sql: string }
+    expect(speedQuery.sql).toMatch(/p\."isWinner" = true AND NOT EXISTS \(\s*SELECT 1 FROM "Players" other/)
+    expect(speedQuery.sql).toContain('other."isWinner" = true AND other.id <> p.id')
+  })
+
   it('does not throw when the notification step fails', async () => {
     mockGetUserStatsDashboard.mockResolvedValue({
       ...JSON.parse(JSON.stringify(baseDashboard)),

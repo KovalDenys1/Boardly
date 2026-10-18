@@ -9,7 +9,7 @@ jest.mock('@/lib/client-logger', () => ({
 }))
 
 jest.mock('@/lib/i18n-toast', () => ({
-  showToast: { error: jest.fn(), success: jest.fn(), errorFrom: jest.fn(), custom: jest.fn() },
+  showToast: { error: jest.fn(), success: jest.fn(), info: jest.fn(), errorFrom: jest.fn(), custom: jest.fn() },
 }))
 
 jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
@@ -389,6 +389,45 @@ describe('useGameActions', () => {
       const event = (trackGameCompleted as jest.Mock).mock.calls[0][0]
       expect(event).toEqual(expect.objectContaining({ winnerSeat: 0, wasBot: false, finalScores: [0] }))
       expect(JSON.stringify(event)).not.toContain('Alice')
+    })
+
+    describe('the toast for the score that ends the game (#1493)', () => {
+      async function scoreLastBox(winner: { id: string; name: string } | null) {
+        const restoredEngine = makeRestoreEngine()
+        jest.spyOn(restoredEngine, 'getScorecard').mockReturnValue({ ones: 3 } as any)
+        jest.spyOn(restoredEngine, 'isGameFinished').mockReturnValue(true)
+        jest.spyOn(restoredEngine, 'checkWinCondition').mockReturnValue(winner as any)
+        mockRestoreGameEngineClient.mockResolvedValue(restoredEngine as any)
+        ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, status: 200, json: async () => ({ game: { state: {} } }) })
+
+        const makeMoveSpy = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+        const gameEngine = makeEngine()
+        jest.spyOn(gameEngine, 'getScorecard').mockReturnValue({} as any)
+        jest.spyOn(gameEngine, 'getDice').mockReturnValue([1, 1, 1, 1, 1])
+        const fireworks = jest.fn()
+        const props = makeProps({ reconcileWithServerSnapshot: makeReconcile(), gameEngine: gameEngine as any, fireworks })
+
+        const { result } = renderHook(() => useGameActions(props))
+        await act(async () => { await result.current.handleScore('ones') })
+        makeMoveSpy.mockRestore()
+        return fireworks
+      }
+
+      it('says it is a tie, with no fireworks, when the game ends with no winner', async () => {
+        const fireworks = await scoreLastBox(null)
+
+        expect(showToast.info).toHaveBeenCalledWith('toast.gameTie')
+        expect(showToast.success).not.toHaveBeenCalledWith('toast.gameOver', expect.anything(), expect.anything())
+        expect(fireworks).not.toHaveBeenCalled()
+      })
+
+      it('still names the winner, with fireworks, for an outright win', async () => {
+        const fireworks = await scoreLastBox({ id: 'player-1', name: 'Alice' })
+
+        expect(showToast.success).toHaveBeenCalledWith('toast.gameOver', undefined, { player: 'Alice' })
+        expect(showToast.info).not.toHaveBeenCalled()
+        expect(fireworks).toHaveBeenCalledTimes(1)
+      })
     })
 
     it('a failed move still reconciles, so the board cannot keep an optimistic update', async () => {

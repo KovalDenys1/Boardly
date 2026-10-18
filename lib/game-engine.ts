@@ -241,6 +241,9 @@ export abstract class GameEngine {
     if (winner) {
       this.state.status = 'finished';
       this.state.winner = winner.id;
+    } else if (this.checkDraw()) {
+      this.state.status = 'finished';
+      this.state.winner = undefined;
     } else {
       // Move to next player (only if this type of move should advance turn)
       if (this.shouldAdvanceTurn(move)) {
@@ -268,6 +271,11 @@ export abstract class GameEngine {
     if (previous.turnStartedAtMs === null) return;
     if (this.state.currentPlayerIndex !== previous.currentPlayerIndex) return;
     this.state.turnStartedAt = previous.turnStartedAtMs;
+  }
+
+  /** Whether the game has just ended with no single winner; checked only when checkWinCondition names nobody. */
+  checkDraw(): boolean {
+    return false;
   }
 
   // Override this in subclasses to control when turn advances

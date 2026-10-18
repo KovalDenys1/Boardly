@@ -121,6 +121,38 @@ describe('GameResultsModal', () => {
     expect(screen.getByRole('link', { name: 'profile.gameReplay.watch' })).toHaveAttribute('href', '/replay/game-1')
   })
 
+  it('reads a Yahtzee tie, every leader recorded a winner, as a draw rather than one of them winning (#1493)', async () => {
+    const seat = (id: string, finalScore: number, placement: number, isWinner: boolean) => ({
+      id, username: id, avatar: null, isBot: false, score: finalScore, finalScore, placement, isWinner,
+    })
+    mockFetch.mockResolvedValue(
+      mockJsonResponse({
+        id: 'game-1',
+        lobbyCode: 'ABCD1',
+        lobbyName: 'Yahtzee Night',
+        gameType: 'yahtzee',
+        status: 'finished',
+        createdAt: '2026-03-01T10:00:00.000Z',
+        updatedAt: '2026-03-01T10:30:00.000Z',
+        finishedAt: null,
+        endedAt: '2026-03-01T10:30:00.000Z',
+        durationMs: 30 * 60 * 1000,
+        abandonedAt: null,
+        hasReplay: false,
+        replayStepCount: 0,
+        state: {},
+        players: [seat('Alpha', 272, 1, true), seat('Bravo', 272, 1, true), seat('Charlie', 222, 3, false)],
+      })
+    )
+
+    render(<GameResultsModal gameId="game-1" onClose={jest.fn()} />)
+
+    expect((await screen.findAllByText('Yahtzee Night')).length).toBeGreaterThan(0)
+    expect(screen.getByText('profile.gameResults.summaryDraw')).toBeTruthy()
+    expect(screen.queryByText('profile.gameResults.summaryWinner')).toBeNull()
+    expect(screen.queryByText('profile.gameResults.winnerBadge')).toBeNull()
+  })
+
   it('shows replay as unavailable when no snapshots exist', async () => {
     mockFetch.mockResolvedValue(
       mockJsonResponse({

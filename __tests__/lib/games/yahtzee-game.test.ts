@@ -1,5 +1,7 @@
 import { YahtzeeGame, YahtzeeGameData } from '@/lib/games/yahtzee-game'
-import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
+import { YahtzeeCategory, calculateScore, calculateTotalScore } from '@/lib/yahtzee'
+import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
+import { calculateUserStats } from '@/lib/stats-calculator'
 import { Player } from '@/lib/game-engine'
 
 // Helper to get typed game data
@@ -469,6 +471,133 @@ describe('YahtzeeGame', () => {
     it('should calculate chance correctly', () => {
       const dice = [1, 2, 3, 4, 5]
       expect(calculateScore(dice, 'chance')).toBe(15)
+    })
+  })
+
+  describe('the last box filled (#1493)', () => {
+    const ALL_BUT_CHANCE = {
+      ones: 1, twos: 2, threes: 3, fours: 4, fives: 5, sixes: 6,
+      onePair: 6, twoPairs: 8, threeOfKind: 15, fourOfKind: 20,
+      fullHouse: 25, smallStraight: 30, largeStraight: 40, yahtzee: 50,
+    }
+
+    /** Every scorecard full but the last seat's chance, which that seat then scores with `dice`. */
+    function playLastBox(otherChances: number[], dice: number[]) {
+      const ids = [...otherChances.map((_, i) => `p${i + 1}`), `p${otherChances.length + 1}`]
+      const setup = new YahtzeeGame('end-game')
+      ids.forEach((id) => setup.addPlayer({ id, name: id }))
+      setup.startGame()
+      const state = setup.getState()
+      const data = state.data as YahtzeeGameData
+      otherChances.forEach((chance, i) => {
+        data.scores[i] = { ...ALL_BUT_CHANCE, chance }
+        state.players[i].score = calculateTotalScore(data.scores[i])
+      })
+      data.scores[ids.length - 1] = { ...ALL_BUT_CHANCE }
+      data.rollsLeft = 2
+      data.dice = dice
+
+      const last = new YahtzeeGame('end-game')
+      last.restoreState({ ...state, currentPlayerIndex: ids.length - 1 })
+      const accepted = last.makeMove({ playerId: ids[ids.length - 1], type: 'score', data: { category: 'chance' }, timestamp: new Date() })
+      expect(accepted).toBe(true)
+      return last
+    }
+
+    const placements = (g: YahtzeeGame) =>
+      Object.fromEntries(g.getPlayers().map((p) => [p.id, (p as Player & { placement?: number }).placement]))
+
+    it('finishes a shared top score as a draw, with no winner and the turn left where it was', () => {
+      const tied = playLastBox([20], [4, 4, 4, 4, 4])
+
+      expect(tied.getState().status).toBe('finished')
+      expect(tied.getState().winner).toBeUndefined()
+      expect(tied.checkWinCondition()).toBeNull()
+      expect(tied.getState().currentPlayerIndex).toBe(1)
+      expect(placements(tied)).toEqual({ p1: 1, p2: 1 })
+    })
+
+    it('still names the single top score the winner', () => {
+      const won = playLastBox([20], [6, 6, 6, 6, 6])
+
+      expect(won.getState().status).toBe('finished')
+      expect(won.getState().winner).toBe('p2')
+      expect(won.checkWinCondition()?.id).toBe('p2')
+      expect(placements(won)).toEqual({ p1: 2, p2: 1 })
+    })
+
+    it('draws two players tied at the top of three and ranks the third below them', () => {
+      const tied = playLastBox([20, 10], [4, 4, 4, 4, 4])
+
+      expect(tied.getState().status).toBe('finished')
+      expect(tied.getState().winner).toBeUndefined()
+      expect(placements(tied)).toEqual({ p1: 1, p2: 3, p3: 1 })
+    })
+
+    function persist(g: YahtzeeGame) {
+      const state = g.getState()
+      const dbPlayer = (userId: string) => ({ id: `row-${userId}`, userId, score: 0, scorecard: null, finalScore: null, placement: null, isWinner: false })
+      return buildTerminalFieldsAndPlayerUpdates({
+        statusChanged: true,
+        status: state.status,
+        winner: state.winner,
+        startedAt: new Date(Date.now() - 60_000),
+        enginePlayers: g.getPlayers(),
+        dbPlayersByUserId: new Map(g.getPlayers().map((p) => [p.id, dbPlayer(p.id)])),
+        getScorecard: (id) => g.getScorecard(id),
+        sharedTopWins: true,
+      })
+    }
+
+    it('persists the tie as a draw with every leader recorded a winner, in their shared place', () => {
+      const { terminalFields, changedPlayerUpdates } = persist(playLastBox([20, 10], [4, 4, 4, 4, 4]))
+
+      expect(terminalFields).toMatchObject({ terminalMetadata: { outcome: 'draw', isDraw: true, winnerUserId: null } })
+      expect(changedPlayerUpdates.map(({ id, isWinner, placement }) => ({ id, isWinner, placement }))).toEqual([
+        { id: 'row-p1', isWinner: true, placement: 1 },
+        { id: 'row-p2', isWinner: false, placement: 3 },
+        { id: 'row-p3', isWinner: true, placement: 1 },
+      ])
+    })
+
+    it('persists an outright win with the single winner only', () => {
+      const { terminalFields, changedPlayerUpdates } = persist(playLastBox([20], [6, 6, 6, 6, 6]))
+
+      expect(terminalFields).toMatchObject({ terminalMetadata: { outcome: 'winner', isDraw: false, winnerUserId: 'p2' } })
+      expect(changedPlayerUpdates.map(({ isWinner }) => isWinner)).toEqual([false, true])
+    })
+
+    it('reads 272, 272 and 222 as a draw, a draw and a loss in the stats', () => {
+      const FULL = { ones: 3, twos: 6, threes: 9, fours: 12, fives: 15, sixes: 18, onePair: 6, twoPairs: 8, threeOfKind: 15, fourOfKind: 20, fullHouse: 25, smallStraight: 30, largeStraight: 40, yahtzee: 0 }
+      const setup = new YahtzeeGame('stats-game')
+      ;['p1', 'p2', 'p3'].forEach((id) => setup.addPlayer({ id, name: id }))
+      setup.startGame()
+      const state = setup.getState()
+      const data = state.data as YahtzeeGameData
+      data.scores = [{ ...FULL, chance: 30 }, { ...FULL, chance: 30 }, { ...FULL, fourOfKind: 0, smallStraight: 0 }]
+      state.players.forEach((player, i) => { player.score = calculateTotalScore(data.scores[i]) })
+      data.rollsLeft = 2
+      data.dice = [6, 6, 6, 6, 6]
+      const g = new YahtzeeGame('stats-game')
+      g.restoreState({ ...state, currentPlayerIndex: 2 })
+      g.makeMove({ playerId: 'p3', type: 'score', data: { category: 'chance' }, timestamp: new Date() })
+      expect(g.getPlayers().map((p) => p.score)).toEqual([272, 272, 222])
+
+      const { changedPlayerUpdates } = persist(g)
+      const players = changedPlayerUpdates.map((update) => ({
+        userId: update.id.replace('row-', ''),
+        score: update.score,
+        finalScore: update.finalScore ?? null,
+        isWinner: update.isWinner ?? false,
+        placement: update.placement ?? null,
+      }))
+      const statsGame = { id: 'stats-game', gameType: 'yahtzee', status: 'finished', createdAt: '2026-10-19T10:00:00Z', updatedAt: '2026-10-19T10:10:00Z', players }
+      const outcomeOf = (userId: string) => {
+        const { wins, draws, losses } = calculateUserStats(userId, [statsGame]).overall
+        return wins ? 'win' : draws ? 'draw' : losses ? 'loss' : null
+      }
+
+      expect(['p1', 'p2', 'p3'].map(outcomeOf)).toEqual(['draw', 'draw', 'loss'])
     })
   })
 
