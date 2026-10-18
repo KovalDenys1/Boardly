@@ -3500,7 +3500,7 @@ const uk: TranslationWithPlurals = {
     login: {
       heroQuote: 'Вечір\nпʼятниці\nготовий',
       heroQuoteBy: 'Настільні ігри з друзями просто в браузері',
-      heroPlayers: 'Безкоштовно в браузері, нічого не треба встановлювати',
+      heroPlayers: 'Гості грають без акаунта',
       heroChipGames: '{{games}} ігор готові до гри',
       heroChipInstant: 'Без завантаження — просто в браузері',
       heroChipGuests: 'Друзі приєднуються за одним посиланням',

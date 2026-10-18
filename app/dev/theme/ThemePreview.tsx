@@ -14,7 +14,7 @@ import { getCatalogGames, getGameMetadata } from '@/lib/game-catalog'
  * The contrast read-out at the end is what stops a pretty palette shipping
  * unreadable. It measures the *resolved* colours out of the DOM instead of
  * trusting the panel's state, which means it also catches the pairs the panel
- * cannot see: a hardcoded `white` label on a coral button, `--bd-ink` on a sun
+ * cannot see: a hardcoded `white` label on an accent fill, a flipping `--bd-ink` on a sun
  * sticker, an accent that only fails once `html.dark` is on.
  */
 
@@ -95,7 +95,7 @@ const CONTRAST_GROUPS: ContrastGroup[] = [
     title: 'Buttons',
     pairs: [
       { label: 'Primary label', fg: 'var(--bd-bg)', bg: 'var(--bd-btn-ink)', where: '.bd-btn-primary' },
-      { label: 'Coral label', fg: 'white', bg: 'var(--bd-coral)', where: '.bd-btn-coral, hardcoded white' },
+      { label: 'Coral label', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-coral)', where: '.bd-btn-coral' },
       { label: 'Ghost on hover', fg: 'var(--bd-bg)', bg: 'var(--bd-btn-ink)', where: '.bd-btn-ghost:hover' },
     ],
   },
@@ -507,7 +507,7 @@ export default function ThemePreview(): React.JSX.Element {
         </div>
       </Section>
 
-      <Section title="Avatars" hint="Initials are hardcoded white, except the sun variant which uses ink.">
+      <Section title="Avatars" hint="Initials use --bd-ink-on-accent, which stays dark in both themes.">
         <div className="flex flex-wrap items-center gap-3">
           {[
             { cls: 'bd-avatar-coral', initial: 'D' },

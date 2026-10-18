@@ -3406,7 +3406,7 @@ const en = {
     login: {
       heroQuote: 'Your\nFriday\nnight, sorted',
       heroQuoteBy: 'Board games with friends, right in the browser',
-      heroPlayers: 'Free in your browser, nothing to install',
+      heroPlayers: 'Guests play without an account',
       heroChipGames: '{{games}} games ready to play',
       heroChipInstant: 'No download — play in the browser',
       heroChipGuests: 'Friends join with one link',

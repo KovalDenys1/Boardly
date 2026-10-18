@@ -1856,7 +1856,7 @@ export default function ProfilePage() {
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all'
+    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
 
@@ -2225,10 +2225,10 @@ export default function ProfilePage() {
                         id="profile-email-input"
                         className={`${fieldInputClassName} ${
                           emailStatus === 'available'
-                            ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
+                            ? 'border-emerald-400 dark:border-emerald-500'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
-                              ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav-deep'
+                              ? 'border-red-400 dark:border-red-500'
+                              : 'border-(--bd-input-border) focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2262,7 +2262,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav-deep`}
+                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">

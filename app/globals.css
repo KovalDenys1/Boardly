@@ -39,7 +39,7 @@
   --color-bd-sun-deep: #E5A82E;
   --color-bd-lav: #9B8CFF;
   --color-bd-lav-mid: #8B7DFF;
-  --color-bd-lav-deep: #7867E8;
+  --color-bd-lav-deep: var(--bd-lav-deep);
   --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
@@ -251,6 +251,7 @@
   --bd-lav: #9B8CFF;
   --bd-lav-mid: #8B7DFF;
   --bd-lav-deep: #7867E8;
+  --bd-logo-tile: #1F1B16;
   --bd-sky: #6BC1F0;
   --bd-card-warm: #FFF8EC;
   /* The plain card plate (move history, chat, side panels). A token rather than
@@ -276,6 +277,7 @@
 
 html.dark {
   --bd-bg:        #1E1B17;
+  --bd-logo-tile: #3A332A;
   --bd-bg2:       #2B2720;
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
@@ -1653,6 +1655,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   transition: border-color 0.15s;
   width: 100%; display: block;
 }
+@media (min-width: 1024px) { .bd-input { font-size: 15px; } }
 .bd-input:focus { outline: none; border-color: var(--bd-ink); }
 .bd-input::placeholder { color: var(--bd-ink-muted); }
 
@@ -2321,7 +2324,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-family: var(--bd-font-display);
   font-weight: 700;
   font-size: 18px;
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 /* Another player's avatar opens their player card (#1172). A bare button: the same
    box as the plain wrap, so the card neither moves nor grows. */
@@ -2563,7 +2566,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   font: 600 11px/1 ui-monospace, monospace;
 }
 .rps-replay-rounds:focus-visible {
-  outline: 2px solid var(--bd-lav);
+  outline: 2px solid var(--bd-lav-deep);
   outline-offset: -2px;
 }
 /* Auto margins centre the rail and still let an overflowing one scroll back to round 1. */
@@ -2937,6 +2940,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-die:not(:disabled):active .yz-die__face { scale: 0.96; }
 .yz-die:focus-visible { outline: none; }
 .yz-die:focus-visible .yz-die__face { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
+.yz-die--held:focus-visible .yz-die__face { box-shadow: inset 0 0 0 4px var(--bd-ink-on-accent), 0 9px 0 var(--bd-ink); }
 .yz-die--rolling .yz-die__face {
   animation: yz-tumble var(--bd-dur-slow) var(--bd-ease-out) both;
   animation-delay: calc(var(--i, 0) * 40ms);

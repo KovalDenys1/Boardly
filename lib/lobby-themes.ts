@@ -40,6 +40,7 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-surface-raised': t.dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.55)',
     '--bd-input-bg': t.dark ? t.bg2 : '#ffffff',
     '--bd-btn-ink': t.text,
+    ...(t.dark ? { '--bd-lav-deep': '#A99BFF' } : {}),
     background: t.bg,
     color: t.text,
     transition: 'background 0.3s ease, color 0.3s ease',

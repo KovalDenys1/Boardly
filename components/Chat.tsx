@@ -517,7 +517,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input h-full pr-14 desk:text-sm hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
+              className="bd-input h-full pr-14 hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">

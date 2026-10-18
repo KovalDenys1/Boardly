@@ -3406,7 +3406,7 @@ const no = {
     login: {
       heroQuote: 'Fredags-\nkvelden\ner ordnet',
       heroQuoteBy: 'Brettspill med venner, rett i nettleseren',
-      heroPlayers: 'Gratis i nettleseren, ingenting å installere',
+      heroPlayers: 'Gjester spiller uten konto',
       heroChipGames: '{{games}} spill klare til å spille',
       heroChipInstant: 'Ingen nedlasting — spill i nettleseren',
       heroChipGuests: 'Venner blir med via én lenke',
