@@ -4946,15 +4946,15 @@ const de: TranslationWithPlurals = {
       },
       guest: {
         title: 'Als Gast spielen',
-        data: 'Ein Gastname, eine zufällige Gast-ID, wann du zuletzt aktiv warst, und deine Plätze in Spielen. Keine E-Mail-Adresse und kein Passwort.',
+        data: 'Ein Gastname, eine zufällige Gast-ID, wann du zuletzt aktiv warst, deine Plätze in Spielen und wann du die Nutzungsbedingungen akzeptiert hast, was vor deiner ersten Chatnachricht oder deinem ersten Alias-Rateversuch geschieht. Keine E-Mail-Adresse und kein Passwort.',
         basis: 'Vertrag: Wir brauchen das, damit du ohne Konto spielen kannst.',
         retention: 'Ein Gast, der nie gespielt hat, wird nach {{guestIdle}} Tagen ohne Aktivität gelöscht, ein Gast, der gespielt hat, nach {{guestPlayed}} Tagen. Der Name wird dann in den Spielaufzeichnungen und Replays der anderen Spieler durch „Gelöschter Spieler“ ersetzt.',
       },
       games: {
         title: 'Spiele, Lobbys, Chat und Freunde',
-        data: 'Die Lobbys, die du erstellst oder denen du beitrittst, deine Züge, Punkte und Ergebnisse, Spiel-Replays, Lobby-Chatnachrichten, Freunde, Freundschaftsanfragen, Lobby-Einladungen, Benachrichtigungen und Erfolge.',
+        data: 'Die Lobbys, die du erstellst oder denen du beitrittst, deine Züge, Punkte und Ergebnisse, Spiel-Replays, Lobby-Chatnachrichten, Freunde, Freundschaftsanfragen, die von dir blockierten Spieler, Lobby-Einladungen, Benachrichtigungen und Erfolge.',
         basis: 'Vertrag: Das ist der Dienst selbst.',
-        retention: 'Spiele: {{gamesMonths}} Monate nach Spielende entfernen wir die Namen, Fragen, Antworten, Rateversuche und Zeichnungen aus der Spielaufzeichnung; Punkte und Ergebnisse bleiben, verknüpft mit einer Spieler-ID statt mit einem Namen, für deine Statistiken, die Bestenliste und Erfolge. Lobbys: {{lobbiesMonths}} Monate nach der Erstellung wird eine inaktive Lobby, in der nie ein Spiel begonnen hat, zusammen mit diesen Spielen gelöscht; eine Lobby, in der ein Spiel gespielt wurde, erhält einen neutralen Namen, und ihr Code wird für neue Lobbys freigegeben, sobald ihre Spiele den obigen Schritt durchlaufen haben. Replays: {{replayDays}} Tage. Lobby-Chat: {{chatHours}} Stunden, außer bei einer Nachricht, die jemand meldet: Die Meldung behält eine Kopie davon (siehe „Meldungen zu Chat, Zeichnungen und Profilen“). Benachrichtigungen: {{notificationsMonths}} Monate. Freunde und Erfolge: bis das Konto gelöscht wird.',
+        retention: 'Spiele: {{gamesMonths}} Monate nach Spielende entfernen wir die Namen, Fragen, Antworten, Rateversuche und Zeichnungen aus der Spielaufzeichnung; Punkte und Ergebnisse bleiben, verknüpft mit einer Spieler-ID statt mit einem Namen, für deine Statistiken, die Bestenliste und Erfolge. Lobbys: {{lobbiesMonths}} Monate nach der Erstellung wird eine inaktive Lobby, in der nie ein Spiel begonnen hat, zusammen mit diesen Spielen gelöscht; eine Lobby, in der ein Spiel gespielt wurde, erhält einen neutralen Namen, und ihr Code wird für neue Lobbys freigegeben, sobald ihre Spiele den obigen Schritt durchlaufen haben. Replays: {{replayDays}} Tage. Lobby-Chat: {{chatHours}} Stunden, außer bei einer Nachricht, die jemand meldet: Die Meldung behält eine Kopie davon (siehe „Meldungen zu Chat, Zeichnungen und Profilen“). Benachrichtigungen: {{notificationsMonths}} Monate. Freunde, blockierte Spieler und Erfolge: bis das Konto gelöscht wird.',
       },
       signIn: {
         title: 'Anmeldung mit Google, GitHub oder Discord',
@@ -5076,8 +5076,8 @@ const de: TranslationWithPlurals = {
     storage: {
       title: '6. Cookies und Speicherung auf deinem Gerät',
       lead: 'Wir speichern nur, was die Website zum Funktionieren braucht, plus die hier aufgeführten Einträge:',
-      session: 'Ein Anmelde-Cookie, das dich angemeldet hält.',
-      guest: 'Für Gäste: die Gast-ID, der Name und das Identitätstoken, die dich mit deinen Spielen verbunden halten. Das Token gilt {{guestTokenDays}} Tage ab deinem letzten Besuch, und „Vergiss mich“ entfernt alles davon.',
+      session: 'Ein Anmelde-Cookie, das dich angemeldet hält, und, solange du angemeldet bist, eine Kopie der Liste der von dir blockierten Spieler, damit der Chat sie schon vor dem Laden der Liste ausblendet. Beim Abmelden wird die Kopie entfernt.',
+      guest: 'Für Gäste: die Gast-ID, der Name und das Identitätstoken, die dich mit deinen Spielen verbunden halten, sowie die Liste der von dir blockierten Spieler. Das Token gilt {{guestTokenDays}} Tage ab deinem letzten Besuch, und „Vergiss mich“ entfernt alles davon.',
       preferences: 'Deine Sprache, dein Design, Ton und ähnliche Einstellungen sowie welche Hinweise du geschlossen hast.',
       lastAccount: 'Nur wenn du bei der Anmeldung mit E-Mail-Adresse und Passwort „Angemeldet bleiben“ ankreuzt: diese Adresse, damit die Anmeldeseite sie beim nächsten Mal vorschlagen kann. Sie bleibt nach dem Abmelden auf dem Gerät; eine Anmeldung ohne Häkchen bei „Angemeldet bleiben“ oder das Löschen der Daten dieser Website in deinem Browser entfernt sie.',
       google: 'Das in Abschnitt 5 beschriebene Einwilligungs-Cookie von Google.',
@@ -5087,7 +5087,7 @@ const de: TranslationWithPlurals = {
     rights: {
       title: '7. Deine Rechte',
       lead: 'Du hast das Recht auf Auskunft über deine Daten, auf ihre Berichtigung oder Löschung, auf Einschränkung ihrer Verarbeitung, darauf, sie in einem maschinenlesbaren Format zu erhalten, und auf Widerspruch gegen eine Verarbeitung, die auf unserem berechtigten Interesse beruht. Wo wir uns auf eine Einwilligung stützen, kannst du sie jederzeit widerrufen; das berührt nicht, was wir davor getan haben.',
-      export: 'Deine Daten herunterladen: Die Schaltfläche „Meine Daten herunterladen“ im Bereich „Deine Daten“ auf deiner Profilseite gibt dir eine JSON-Datei mit deinem Profil, deinen Einstellungen, verknüpften Anbietern, Spielen, von dir erstellten Lobbys, Käufen und Nachweisen zum Bezahlvorgang, Freunden, Freundschaftsanfragen, Einladungen, Benachrichtigungen, Feedback, von dir eingereichten Meldungen, Erfolgen und Push-Abonnements.',
+      export: 'Deine Daten herunterladen: Die Schaltfläche „Meine Daten herunterladen“ im Bereich „Deine Daten“ auf deiner Profilseite gibt dir eine JSON-Datei mit deinem Profil, deinen Einstellungen, verknüpften Anbietern, Spielen, von dir erstellten Lobbys, Käufen und Nachweisen zum Bezahlvorgang, Freunden, Freundschaftsanfragen, von dir blockierten Spielern, Einladungen, Benachrichtigungen, Feedback, von dir eingereichten Meldungen, Erfolgen und Push-Abonnements.',
       correct: 'Deine Daten berichtigen: Bearbeite dein Profil, einschließlich deiner E-Mail-Adresse, auf deiner Profilseite.',
       delete: 'Lösche dein Konto auf deiner Profilseite; wir bestätigen es per E-Mail. Dabei entfernen wir auch dein Profilbild, ersetzen deinen Namen in den Spielaufzeichnungen und Replays der anderen Spieler durch „Gelöschter Spieler“, behalten von dir gesendetes Feedback, entfernen aber deine E-Mail-Adresse und dein Konto daraus und löschen seine Kopie in unserem Discord-Feedback-Kanal, und wir kündigen ein laufendes Abonnement und löschen deinen Kundendatensatz bei Stripe. Von dir eingereichte Meldungen und Meldungen über dich verlieren ihre Verknüpfung mit deinem Konto; die Kopie gemeldeter Inhalte bleibt für die Aufbewahrungsdauer der Meldung erhalten.',
       forget: 'Gäste: „Vergiss mich“ im Gastmenü löscht deinen Gastdatensatz und deine Plätze in Spielen, ersetzt deinen Namen in den Aufzeichnungen der anderen Spieler durch „Gelöschter Spieler“ und entfernt die Gastdaten auf diesem Gerät. Wenn du in einem laufenden Spiel sitzt, beende oder verlasse es zuerst.',

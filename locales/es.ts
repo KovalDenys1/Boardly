@@ -4961,15 +4961,15 @@ const es: TranslationWithPlurals = {
       },
       guest: {
         title: 'Jugar como invitado',
-        data: 'Un nombre de invitado, un identificador de invitado aleatorio, cuándo estuviste activo por última vez y tus puestos en las partidas. Ninguna dirección de correo electrónico ni contraseña.',
+        data: 'Un nombre de invitado, un identificador de invitado aleatorio, cuándo estuviste activo por última vez, tus puestos en las partidas y cuándo aceptaste las Condiciones, algo que haces antes de tu primer mensaje en el chat o tu primer intento en Alias. Ninguna dirección de correo electrónico ni contraseña.',
         basis: 'Contrato: lo necesitamos para que puedas jugar sin cuenta.',
         retention: 'Un invitado que nunca jugó se elimina tras {{guestIdle}} días sin actividad; uno que jugó, tras {{guestPlayed}} días. Después, su nombre se sustituye por "Jugador eliminado" en los registros de partidas y repeticiones de los demás jugadores.',
       },
       games: {
         title: 'Partidas, salas, chat y amigos',
-        data: 'Las salas que creas o a las que te unes, tus jugadas, puntuaciones y resultados, las repeticiones de partidas, los mensajes del chat de la sala, amigos, solicitudes de amistad, invitaciones a salas, notificaciones y logros.',
+        data: 'Las salas que creas o a las que te unes, tus jugadas, puntuaciones y resultados, las repeticiones de partidas, los mensajes del chat de la sala, amigos, solicitudes de amistad, los jugadores que bloqueaste, invitaciones a salas, notificaciones y logros.',
         basis: 'Contrato: es el propio servicio.',
-        retention: 'Partidas: {{gamesMonths}} meses después de que termine la partida, quitamos del registro de la partida los nombres, las preguntas, las respuestas, los intentos de adivinar y los dibujos; las puntuaciones y los resultados se mantienen, vinculados a un identificador de jugador en lugar de a un nombre, para tus estadísticas, la clasificación y los logros. Salas: {{lobbiesMonths}} meses después de su creación, una sala inactiva en la que nunca empezó ninguna partida se elimina junto con esas partidas; una sala en la que se jugó una partida recibe un nombre neutro, y su código queda libre para nuevas salas, una vez que sus partidas hayan pasado por el paso anterior. Repeticiones: {{replayDays}} días. Chat de la sala: {{chatHours}} horas, salvo un mensaje que alguien denuncie: la denuncia conserva una copia (consulta "Denuncias de chat, dibujos y perfiles"). Notificaciones: {{notificationsMonths}} meses. Amigos y logros: hasta que se elimine la cuenta.',
+        retention: 'Partidas: {{gamesMonths}} meses después de que termine la partida, quitamos del registro de la partida los nombres, las preguntas, las respuestas, los intentos de adivinar y los dibujos; las puntuaciones y los resultados se mantienen, vinculados a un identificador de jugador en lugar de a un nombre, para tus estadísticas, la clasificación y los logros. Salas: {{lobbiesMonths}} meses después de su creación, una sala inactiva en la que nunca empezó ninguna partida se elimina junto con esas partidas; una sala en la que se jugó una partida recibe un nombre neutro, y su código queda libre para nuevas salas, una vez que sus partidas hayan pasado por el paso anterior. Repeticiones: {{replayDays}} días. Chat de la sala: {{chatHours}} horas, salvo un mensaje que alguien denuncie: la denuncia conserva una copia (consulta "Denuncias de chat, dibujos y perfiles"). Notificaciones: {{notificationsMonths}} meses. Amigos, jugadores bloqueados y logros: hasta que se elimine la cuenta.',
       },
       signIn: {
         title: 'Iniciar sesión con Google, GitHub o Discord',
@@ -5091,8 +5091,8 @@ const es: TranslationWithPlurals = {
     storage: {
       title: '6. Cookies y almacenamiento en tu dispositivo',
       lead: 'Solo guardamos lo que el sitio necesita para funcionar, además de los elementos que se indican aquí:',
-      session: 'Una cookie de inicio de sesión que mantiene tu sesión abierta.',
-      guest: 'Para invitados: el identificador de invitado, el nombre y el token de identidad que te mantienen vinculado a tus partidas. El token dura {{guestTokenDays}} días desde tu última visita, y "Olvidarme" los elimina todos.',
+      session: 'Una cookie de inicio de sesión que mantiene tu sesión abierta y, mientras está abierta, una copia de la lista de jugadores que bloqueaste, para que el chat los oculte antes de que se cargue la lista. Al cerrar sesión se elimina la copia.',
+      guest: 'Para invitados: el identificador de invitado, el nombre y el token de identidad que te mantienen vinculado a tus partidas, y la lista de jugadores que bloqueaste. El token dura {{guestTokenDays}} días desde tu última visita, y "Olvidarme" los elimina todos.',
       preferences: 'Tu idioma, tema, sonido y opciones similares, y qué avisos has cerrado.',
       lastAccount: 'Solo si marcas "Recordarme" al iniciar sesión con una dirección de correo y una contraseña: esa dirección, para que la página de inicio de sesión pueda ofrecértela la próxima vez. Se queda en el dispositivo después de cerrar sesión; iniciar sesión con "Recordarme" desmarcado, o borrar los datos de este sitio en tu navegador, la elimina.',
       google: 'La cookie de consentimiento de Google descrita en la sección 5.',
@@ -5102,7 +5102,7 @@ const es: TranslationWithPlurals = {
     rights: {
       title: '7. Tus derechos',
       lead: 'Tienes derecho a acceder a tus datos, a que se rectifiquen o se supriman, a limitar su tratamiento, a recibirlos en un formato legible por máquina y a oponerte al tratamiento basado en nuestro interés legítimo. Cuando nos basamos en el consentimiento, puedes retirarlo en cualquier momento; eso no afecta a lo que hicimos antes.',
-      export: 'Descarga tus datos: el botón "Descargar mis datos" de la sección "Tus datos" de tu página de perfil te da un archivo JSON con tu perfil, preferencias, proveedores vinculados, partidas, salas que creaste, compras y registros de pago, amigos, solicitudes de amistad, invitaciones, notificaciones, comentarios, denuncias que presentaste, logros y suscripciones push.',
+      export: 'Descarga tus datos: el botón "Descargar mis datos" de la sección "Tus datos" de tu página de perfil te da un archivo JSON con tu perfil, preferencias, proveedores vinculados, partidas, salas que creaste, compras y registros de pago, amigos, solicitudes de amistad, jugadores que bloqueaste, invitaciones, notificaciones, comentarios, denuncias que presentaste, logros y suscripciones push.',
       correct: 'Rectifica tus datos: edita tu perfil, incluida tu dirección de correo electrónico, en tu página de perfil.',
       delete: 'Elimina tu cuenta desde tu página de perfil; lo confirmamos por correo electrónico. Esto también elimina tu foto de perfil, sustituye tu nombre por "Jugador eliminado" en los registros de partidas y repeticiones de los demás jugadores, conserva los comentarios que enviaste pero les quita tu dirección de correo y tu cuenta y elimina su copia en nuestro canal de comentarios de Discord, y cancela cualquier suscripción y elimina tu ficha de cliente en Stripe. Las denuncias que presentaste y las denuncias sobre ti pierden su vínculo con tu cuenta; la copia del contenido denunciado se conserva durante el periodo de la denuncia.',
       forget: 'Invitados: "Olvidarme" en el menú de invitado elimina tu registro de invitado y tus puestos en las partidas, sustituye tu nombre por "Jugador eliminado" en los registros de los demás jugadores y borra los datos de invitado de este dispositivo. Si estás sentado en una partida en curso, termínala o sal de ella primero.',

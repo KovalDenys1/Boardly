@@ -4926,15 +4926,15 @@ const en = {
       },
       guest: {
         title: 'Playing as a guest',
-        data: 'A guest name, a random guest id, when you were last active, and your seats in games. No email address and no password.',
+        data: 'A guest name, a random guest id, when you were last active, your seats in games, and when you accepted the Terms, which you do before your first chat message or Alias guess. No email address and no password.',
         basis: 'Contract: we need this to let you play without an account.',
         retention: 'A guest who never played is deleted after {{guestIdle}} days without activity, a guest who played after {{guestPlayed}} days. The name is then replaced with "Deleted player" in other players\' game records and replays.',
       },
       games: {
         title: 'Games, lobbies, chat and friends',
-        data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, lobby invites, notifications and achievements.',
+        data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, the players you blocked, lobby invites, notifications and achievements.',
         basis: 'Contract: this is the service itself.',
-        retention: 'Games: {{gamesMonths}} months after the game ends, we remove the names, questions, answers, guesses and drawings from the game record; the scores and results stay, tied to a player id instead of a name, for your statistics, the leaderboard and achievements. Lobbies: {{lobbiesMonths}} months after creation, an inactive lobby in which no game ever started is deleted together with those games; a lobby in which a game was played gets a neutral name, and its code is released for new lobbies, once its games have been through the step above. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends and achievements: until the account is deleted.',
+        retention: 'Games: {{gamesMonths}} months after the game ends, we remove the names, questions, answers, guesses and drawings from the game record; the scores and results stay, tied to a player id instead of a name, for your statistics, the leaderboard and achievements. Lobbies: {{lobbiesMonths}} months after creation, an inactive lobby in which no game ever started is deleted together with those games; a lobby in which a game was played gets a neutral name, and its code is released for new lobbies, once its games have been through the step above. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends, blocked players and achievements: until the account is deleted.',
       },
       signIn: {
         title: 'Signing in with Google, GitHub or Discord',
@@ -5056,8 +5056,8 @@ const en = {
     storage: {
       title: '6. Cookies and storage on your device',
       lead: 'We store only what the site needs to work, plus the items listed here:',
-      session: 'A sign-in cookie that keeps you logged in.',
-      guest: 'For guests: the guest id, name and identity token that keep you attached to your games. The token lasts {{guestTokenDays}} days from your last visit, and "Forget me" removes all of them.',
+      session: 'A sign-in cookie that keeps you logged in and, while you are signed in, a copy of the list of players you blocked, so chat can hide them before the list has loaded. Signing out removes the copy.',
+      guest: 'For guests: the guest id, name and identity token that keep you attached to your games, and the list of players you blocked. The token lasts {{guestTokenDays}} days from your last visit, and "Forget me" removes all of them.',
       preferences: 'Your language, theme, sound and similar choices, and which notices you have dismissed.',
       lastAccount: 'Only if you tick "Remember me" when you sign in with an email address and password: that address, so the login page can offer it next time. It stays on the device after you sign out; signing in with "Remember me" unticked, or clearing this site\'s data in your browser, removes it.',
       google: 'Google\'s consent cookie described in section 5.',
@@ -5067,7 +5067,7 @@ const en = {
     rights: {
       title: '7. Your rights',
       lead: 'You have the right to access your data, to have it corrected or erased, to restrict its processing, to receive it in a machine-readable format, and to object to processing based on our legitimate interest. Where we rely on consent, you can withdraw it at any time; that does not affect what we did before.',
-      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, invites, notifications, feedback, reports you filed, achievements and push subscriptions.',
+      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, players you blocked, invites, notifications, feedback, reports you filed, achievements and push subscriptions.',
       correct: 'Correct your data: edit your profile, including your email address, on your profile page.',
       delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe. Reports you filed, and reports about you, lose their link to your account; the copy of reported content stays for the report\'s period.',
       forget: 'Guests: "Forget me" in the guest menu deletes your guest record and your seats in games, replaces your name with "Deleted player" in other players\' records, and clears the guest data on this device. If you are seated in a running game, finish or leave it first.',

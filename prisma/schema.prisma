@@ -44,7 +44,7 @@ model Users {
   banReason             String?
   banExpiresAt          DateTime? @db.Timestamptz(3)
   sessionsValidFrom     DateTime? @db.Timestamptz(3) // Session cutoff (#1136): a NextAuth JWT whose authenticatedAt is earlier is rejected. NULL = no cutoff. Set by a password reset and a completed email change
-  termsAcceptedAt       DateTime? @db.Timestamptz(3) // When the Terms were accepted (#1135): accounts rest on contract, GDPR Art. 6(1)(b). At sign-up, or in onboarding for an OAuth account. NULL for guests and accounts created before #1135 shipped
+  termsAcceptedAt       DateTime? @db.Timestamptz(3) // When the Terms were accepted (#1135): accounts rest on contract, GDPR Art. 6(1)(b). At sign-up, in onboarding for an OAuth account, or, guests included, before the first chat message or Alias guess (#1466). NULL until then
   ageConfirmedAt        DateTime? @db.Timestamptz(3) // When the person confirmed being 13 or older (#1135): at sign-up, or in onboarding for an OAuth account, with the same box as the Terms. NULL for guests and accounts created before #1135 shipped
   lastActiveAt          DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)

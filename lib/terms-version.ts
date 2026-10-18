@@ -57,8 +57,11 @@ export const TERMS_FIGURES = {
  * Premium status and online status follow it, except that players in lobbies and games
  * you shared see the Premium badge and the game results there.
  * 2026-10-05 (#1224): the inactive-account rule and its start date; two more kinds of email.
+ * 2026-10-18 (#1466): the players you block (on the account, a copy on the device while you
+ * are signed in, a guest's on the device), when a guest accepted the Terms, and the block list
+ * in the data export.
  */
-export const PRIVACY_UPDATED = '2026-10-05'
+export const PRIVACY_UPDATED = '2026-10-18'
 
 /**
  * When the current withdrawal information on /premium and /withdrawal took effect.

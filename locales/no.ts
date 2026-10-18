@@ -4914,15 +4914,15 @@ const no = {
       },
       guest: {
         title: 'Spille som gjest',
-        data: 'Et gjestenavn, en tilfeldig gjeste-id, når du sist var aktiv, og plassene dine i spill. Ingen e-postadresse og intet passord.',
+        data: 'Et gjestenavn, en tilfeldig gjeste-id, når du sist var aktiv, plassene dine i spill, og når du godtok vilkårene, noe du gjør før din første chatmelding eller Alias-gjetning. Ingen e-postadresse og intet passord.',
         basis: 'Avtale: vi trenger dette for at du skal kunne spille uten konto.',
         retention: 'En gjest som aldri har spilt, slettes etter {{guestIdle}} dager uten aktivitet, en gjest som har spilt, etter {{guestPlayed}} dager. Navnet erstattes da med «Deleted player» i andre spilleres spillhistorikk og reprise.',
       },
       games: {
         title: 'Spill, lobbyer, chat og venner',
-        data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, lobbyinvitasjoner, varsler og prestasjoner.',
+        data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, spillere du har blokkert, lobbyinvitasjoner, varsler og prestasjoner.',
         basis: 'Avtale: dette er selve tjenesten.',
-        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt, fjerner vi navn, spørsmål, svar, gjetninger og tegninger fra spilloppføringen; poengene og resultatene blir værende, knyttet til en spiller-ID i stedet for et navn, for statistikken din, topplisten og prestasjonene. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, slettes en inaktiv lobby der ingen spill noen gang startet, sammen med disse spillene; en lobby der det ble spilt, får et nøytralt navn, og koden frigjøres for nye lobbyer, når spillene i den har vært gjennom trinnet over. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til kontoen slettes.',
+        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt, fjerner vi navn, spørsmål, svar, gjetninger og tegninger fra spilloppføringen; poengene og resultatene blir værende, knyttet til en spiller-ID i stedet for et navn, for statistikken din, topplisten og prestasjonene. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, slettes en inaktiv lobby der ingen spill noen gang startet, sammen med disse spillene; en lobby der det ble spilt, får et nøytralt navn, og koden frigjøres for nye lobbyer, når spillene i den har vært gjennom trinnet over. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner, blokkerte spillere og prestasjoner: til kontoen slettes.',
       },
       signIn: {
         title: 'Innlogging med Google, GitHub eller Discord',
@@ -5044,8 +5044,8 @@ const no = {
     storage: {
       title: '6. Informasjonskapsler og lagring på enheten din',
       lead: 'Vi lagrer bare det nettstedet trenger for å fungere, i tillegg til punktene her:',
-      session: 'En innloggingskapsel som holder deg innlogget.',
-      guest: 'For gjester: gjeste-id-en, navnet og identitetsnøkkelen som holder deg knyttet til spillene dine. Nøkkelen varer i {{guestTokenDays}} dager fra siste besøk, og «Glem meg» fjerner alt sammen.',
+      session: 'En innloggingskapsel som holder deg innlogget, og mens du er innlogget, en kopi av listen over spillere du har blokkert, så chatten kan skjule dem før listen er lastet. Når du logger ut, fjernes kopien.',
+      guest: 'For gjester: gjeste-id-en, navnet og identitetsnøkkelen som holder deg knyttet til spillene dine, og listen over spillere du har blokkert. Nøkkelen varer i {{guestTokenDays}} dager fra siste besøk, og «Glem meg» fjerner alt sammen.',
       preferences: 'Språk, tema, lyd og lignende valg, og hvilke meldinger du har lukket.',
       lastAccount: 'Bare hvis du krysser av for «Husk meg» når du logger inn med e-postadresse og passord: den adressen, så innloggingssiden kan foreslå den neste gang. Den blir liggende på enheten etter at du logger ut; å logge inn uten «Husk meg», eller å slette dette nettstedets data i nettleseren, fjerner den.',
       google: 'Googles samtykkekapsel, beskrevet i punkt 5.',
@@ -5055,7 +5055,7 @@ const no = {
     rights: {
       title: '7. Rettighetene dine',
       lead: 'Du har rett til innsyn i opplysningene dine, til å få dem rettet eller slettet, til å begrense behandlingen, til å få dem i et maskinlesbart format, og til å protestere mot behandling som bygger på vår berettigede interesse. Der vi bygger på samtykke, kan du trekke det tilbake når som helst; det påvirker ikke det vi gjorde før.',
-      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
+      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, spillere du har blokkert, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
       correct: 'Rett opplysningene dine: rediger profilen, også e-postadressen, på profilsiden.',
       delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres.',
       forget: 'Gjester: «Glem meg» i gjestemenyen sletter gjesteoppføringen og plassene dine i spill, erstatter navnet ditt med «Deleted player» i andre spilleres historikk, og fjerner gjestedataene på denne enheten. Hvis du sitter i et pågående spill, må du fullføre eller forlate det først.',
