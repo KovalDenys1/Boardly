@@ -107,12 +107,17 @@ account's username; sign-in providers also send the name on the provider account
 play without one. It is shown to other players, which is the expected, user-initiated case, not
 sharing.
 
-**Email address.** Only for an account (`privacyPolicy.purposes.account.data`); guests have none
-(`privacyPolicy.rights.required`: "you can play as a guest without either"). Optional, because an
-account is optional. Used for sign-in and password reset, verification, security notices, friend
-game invites and chosen notifications, notices of Terms changes (`privacyPolicy.purposes.email.data`)
-and the sending limits that stop floods of mail (security). Resend delivers the mail as a service
-provider. Marketing email is consent-only and "We do not send such emails yet"
+**Email address.** Two ways in, both optional. An account has one
+(`privacyPolicy.purposes.account.data`), used for sign-in and password reset, verification, security
+notices, friend game invites and chosen notifications, notices of Terms changes
+(`privacyPolicy.purposes.email.data`) and the sending limits that stop floods of mail (security). And
+anyone, guest or account, may add a contact address to the feedback form so we can answer
+(`components/FeedbackWidget.tsx` lines 227-236, the field labelled optional; `app/api/feedback/route.ts`
+validates it as `z.string().email().optional()` and stores it with the message;
+`privacyPolicy.purposes.feedback.data`: "an email address if you give one") – that is Developer
+communications. No one needs an address to play: guests never give one unless they choose to in
+feedback (`privacyPolicy.rights.required`: "you can play as a guest without either"). Resend delivers
+the mail as a service provider. Marketing email is consent-only and "We do not send such emails yet"
 (`privacyPolicy.purposes.marketing.data`), so Advertising or marketing is not ticked; tick it the day
 the first newsletter goes out.
 
@@ -121,11 +126,14 @@ the friend code and public profile id, the provider account ids from Google, Git
 (`privacyPolicy.purposes.signIn.data`), and the Stripe customer id for anyone who bought on the web.
 Required: a guest id is minted for every player (`app/api/auth/guest-session/route.ts`).
 
-**Other info.** Accounts store when the person confirmed being 13 or older and accepted the Terms
-(`lib/age-confirmation.ts`, `Users.ageConfirmedAt`, `Users.termsAcceptedAt`;
-`privacyPolicy.purposes.account.data`). It is an age attestation, not a date of birth, but Play's
-"Other info" is "any other personal information such as date of birth…", so it is declared rather
-than argued away. Optional, because accounts are.
+**Other info.** Accounts store when the person confirmed being 13 or older
+(`lib/age-confirmation.ts`, `Users.ageConfirmedAt`; `privacyPolicy.purposes.account.data`). It is an
+age attestation, not a date of birth, but Play's "Other info" is "any other personal information such
+as date of birth…", so it is declared rather than argued away. Optional, because accounts are. When
+the Terms were accepted (`Users.termsAcceptedAt`) is stored for guests too since #1466, set before the
+first chat message or Explain the Word guess (`lib/terms-gate.ts`, `app/api/user/accept-terms/route.ts`;
+`privacyPolicy.purposes.guest.data`); that is a record of the contract, kept with the User IDs, not a
+personal attribute.
 
 **Purchase history.** The app sells nothing (#1465: `components/PurchaseOnly.tsx` removes every
 checkout and billing-portal entry in Play mode). It still declares this: an account that bought Premium on the web sees its status
