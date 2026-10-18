@@ -5546,6 +5546,8 @@ const en = {
     empty: "You haven't blocked anyone.",
     unblock: 'Unblock',
     blockedOn: 'Blocked {{date}}',
+    loadFailed: 'Could not load your blocked players.',
+    retry: 'Try again',
   },
   discordLink: {
     title: 'Link Boardly to Discord',

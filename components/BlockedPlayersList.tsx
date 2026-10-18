@@ -16,7 +16,7 @@ interface BlockedPlayersListProps {
  */
 export default function BlockedPlayersList({ className = '' }: BlockedPlayersListProps) {
   const { t, i18n } = useTranslation()
-  const { blocked, ready, unblock } = useBlockedPlayers()
+  const { blocked, ready, failed, unblock, retry } = useBlockedPlayers()
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set())
   const listId = useId()
 
@@ -43,6 +43,21 @@ export default function BlockedPlayersList({ className = '' }: BlockedPlayersLis
       <p role="status" className={`text-sm text-bd-ink-soft ${className}`}>
         {t('common.loading')}
       </p>
+    )
+  }
+
+  if (failed && blocked.length === 0) {
+    return (
+      <div role="alert" className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 ${className}`}>
+        <p className="text-sm text-bd-ink-soft">{t('blockedPlayers.loadFailed')}</p>
+        <button
+          type="button"
+          onClick={retry}
+          className="bd-btn bd-btn-soft shrink-0 rounded-xl px-3 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+        >
+          {t('blockedPlayers.retry')}
+        </button>
+      </div>
     )
   }
 

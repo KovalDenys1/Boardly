@@ -5566,6 +5566,8 @@ const de: TranslationWithPlurals = {
     empty: 'Du hast niemanden blockiert.',
     unblock: 'Blockierung aufheben',
     blockedOn: 'Blockiert am {{date}}',
+    loadFailed: 'Deine blockierten Spieler konnten nicht geladen werden.',
+    retry: 'Erneut versuchen',
   },
   discordLink: {
     title: 'Boardly mit Discord verknüpfen',

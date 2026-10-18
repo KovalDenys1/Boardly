@@ -412,6 +412,26 @@ describe('useBlockedPlayers', () => {
       expect(getCalls()).toHaveLength(readsBefore)
     })
 
+    it('says when the account list could not be read, blocks nothing meanwhile, and reads it again on retry', async () => {
+      serveBlocks([{ id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }])
+      const serve = mockFetch.getMockImplementation()!
+      let readFails = true
+      mockFetch.mockImplementation(async (url: string, init?: RequestInit) =>
+        url === '/api/user/blocks' && (init?.method ?? 'GET') === 'GET' && readFails ? reply({ error: 'nope' }, 500) : serve(url, init)
+      )
+
+      const { result } = renderHook(() => useBlockedPlayers())
+      await waitFor(() => expect(result.current.ready).toBe(true))
+      expect(result.current.failed).toBe(true)
+      expect(result.current.blockedIds.size).toBe(0)
+
+      readFails = false
+      act(() => result.current.retry())
+
+      await waitFor(() => expect(result.current.failed).toBe(false))
+      expect([...result.current.blockedIds]).toEqual(['u9'])
+    })
+
     it('stops showing the account list once signed out', async () => {
       serveBlocks([{ id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }])
       const { result, rerender } = renderHook(() => useBlockedPlayers())

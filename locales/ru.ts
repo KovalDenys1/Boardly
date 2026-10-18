@@ -5672,6 +5672,8 @@ const ru = {
     empty: 'Вы никого не заблокировали.',
     unblock: 'Разблокировать',
     blockedOn: 'Дата блокировки: {{date}}',
+    loadFailed: 'Не удалось загрузить заблокированных игроков.',
+    retry: 'Попробовать снова',
   },
   discordLink: {
     title: 'Связать Boardly с Discord',

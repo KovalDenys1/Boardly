@@ -92,6 +92,35 @@ describe('BlockedPlayersList (#1466)', () => {
     }
   })
 
+  it('says so when the account list could not be read, and Try again loads it', async () => {
+    session.mockReturnValue({ data: { user: { id: 'me' } }, status: 'authenticated' })
+    const originalFetch = global.fetch
+    let readFails = true
+    global.fetch = jest.fn(async () =>
+      readFails
+        ? new Response('{}', { status: 500 })
+        : new Response(
+            JSON.stringify({ blocks: [{ id: 'u-bob', username: 'Bob', blockedAt: '2026-10-01T10:00:00.000Z' }] }),
+            { status: 200 }
+          )
+    ) as typeof fetch
+
+    try {
+      render(<BlockedPlayersList />)
+
+      expect(await screen.findByText('blockedPlayers.loadFailed')).toBeTruthy()
+      expect(screen.queryByText('blockedPlayers.empty')).toBeNull()
+
+      readFails = false
+      fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.retry' }))
+
+      expect(await screen.findByText('Bob')).toBeTruthy()
+      expect(screen.queryByText('blockedPlayers.loadFailed')).toBeNull()
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
   it('says so when nobody is blocked', async () => {
     render(<BlockedPlayersList />)
 

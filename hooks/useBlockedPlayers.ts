@@ -13,6 +13,10 @@ export type UseBlockedPlayers = {
   blockedIds: ReadonlySet<string>
   /** False while the session is loading, and for a signed-in user until the account list has answered. */
   ready: boolean
+  /** True while the latest read of the account list failed; `blocked` then holds what was shown before, or nothing. */
+  failed: boolean
+  /** Reads the list again, in every instance on the page. */
+  retry: () => void
   /** Resolves true once the block is kept; false when it could not be, with nothing changed (session loading, account list not loaded, the server refused, or the device would not store it). */
   block: (player: { id: string; username: string }) => Promise<boolean>
   /** Resolves true once the player is unblocked; false when it could not be, with nothing changed (same reasons as `block`). */
@@ -23,7 +27,7 @@ const DEVICE_LIMIT = 200
 const BLOCKS_URL = '/api/user/blocks'
 
 type Mode = 'pending' | 'account' | 'device'
-type Snapshot = { mode: Mode; players: BlockedPlayer[] }
+type Snapshot = { mode: Mode; players: BlockedPlayer[]; failed?: boolean }
 /** The changed event's detail from an instance; other senders (GuestContext) send none. */
 type Change = { source: object; mode: Mode; selfId: string | undefined; players: BlockedPlayer[] }
 
@@ -138,6 +142,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
   const current = snapshot?.mode === mode ? snapshot.players : null
   const ready = current !== null
+  const failed = ready && snapshot?.failed === true
   const blocked = current ?? NO_PLAYERS
   const blockedIds = useMemo<ReadonlySet<string>>(() => new Set(blocked.map((player) => player.id)), [blocked])
 
@@ -159,7 +164,11 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     const players = await readAccountPlayers(selfId)
     if (ticket !== loadTicket.current) return
     // A failed read leaves what is shown and ends the wait: chat must not hang on a list it cannot get.
-    setSnapshot((previous) => (players ? { mode, players } : previous?.mode === mode ? previous : { mode, players: [] }))
+    setSnapshot((previous) =>
+      players
+        ? { mode, players }
+        : { mode, players: previous?.mode === mode ? previous.players : [], failed: true }
+    )
   }, [mode, selfId])
 
   useEffect(() => {
@@ -209,7 +218,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
 
   const edit = useCallback(
     (change: (players: BlockedPlayer[]) => BlockedPlayer[]) => {
-      setSnapshot((previous) => (previous?.mode === mode ? { mode, players: change(previous.players) } : previous))
+      setSnapshot((previous) => (previous?.mode === mode ? { ...previous, players: change(previous.players) } : previous))
     },
     [mode]
   )
@@ -280,5 +289,9 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     [mode, edit, announce]
   )
 
-  return { blocked, blockedIds, ready, block, unblock }
+  const retry = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(BLOCKED_PLAYERS_CHANGED_EVENT))
+  }, [])
+
+  return { blocked, blockedIds, ready, failed, block, unblock, retry }
 }

@@ -5686,6 +5686,8 @@ const uk: TranslationWithPlurals = {
     empty: 'Ви нікого не заблокували.',
     unblock: 'Розблокувати',
     blockedOn: 'Заблоковано {{date}}',
+    loadFailed: 'Не вдалося завантажити заблокованих гравців.',
+    retry: 'Спробувати ще раз',
   },
   discordLink: {
     title: 'Пов\'язати Boardly з Discord',
