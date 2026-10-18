@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
 
 /**
@@ -96,6 +97,12 @@ export default function GameStatusBanner({
   showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
+  // Every result overlay sits under this banner, and only the banner is mounted before the finish.
+  const finishedRef = React.useRef(isFinished)
+  useEffect(() => {
+    if (isFinished && !finishedRef.current) noteLiveFinish()
+    finishedRef.current = isFinished
+  }, [isFinished])
   // A live region announces changes, not what it mounted with: it starts empty
   // and gets the hint after mount.
   const [mounted, setMounted] = useState(false)

@@ -32,7 +32,6 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
@@ -445,7 +444,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.checkers.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -918,6 +916,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="checkers"
+                    outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: mySide !== null, isViewerWinner: winnerSide && !isDraw ? winnerSide === mySide : null })}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}

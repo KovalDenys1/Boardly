@@ -33,9 +33,7 @@ import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } f
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useFreshFor } from '@/hooks/useFreshFor'
-import { useFreshKey } from '@/hooks/useFreshKey'
 import ScorePop from '@/components/game-chrome/ScorePop'
-import { sounds } from '@/lib/sounds'
 import { staggerDelayMs, staggerStyle } from '@/lib/social-motion'
 
 interface LiarsPartyPageProps {
@@ -997,23 +995,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       : game && game.status !== 'playing' ? null : undefined,
     LIARS_REVEAL_MS,
   )
-  // The winner hears the win cue, like the other dedicated pages – once, and
-  // only for a finish that happened while they watched.
-  const finishedData = game?.status === 'finished' ? (gameEngine?.getState().data as LiarsPartyGameData | undefined) : undefined
-  const { fresh: finishFresh, settle: settleFinish } = useFreshKey(
-    !game
-      ? undefined
-      : game.status !== 'finished'
-        ? null
-        : finishedData
-          ? (finishedData.winnerId ? `${game.id}:${finishedData.winnerId}` : null)
-          : undefined,
-  )
-  useEffect(() => {
-    if (!finishFresh) return
-    if (!isSpectator && finishedData?.winnerId && finishedData.winnerId === soundUserId) sounds.play('win')
-    settleFinish()
-  }, [finishFresh, finishedData?.winnerId, isSpectator, settleFinish, soundUserId])
   useTurnSounds({
     isMyTurn: !!soundData && soundData.phase === 'claim' && soundData.currentClaimantId === soundUserId,
     lastMoveSignature: soundData ? `${soundData.currentRound}:${othersActed}` : null,
@@ -1334,6 +1315,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
           inviteCode={code}
           gameType="liars_party"
+          outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: players.some(p => p.userId === currentUserId || p.id === currentUserId), isViewerWinner: winnerId ? iWon : null })}
           resultKey={`${game?.id}:${data?.finishedAt ?? lastMoveAt ?? ''}`}
           revealDelayMs={LIARS_RESULT_REVEAL_DELAY_MS}
           isRegistered={status === 'authenticated' && !isGuest}

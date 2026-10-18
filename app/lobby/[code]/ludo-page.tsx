@@ -23,7 +23,6 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
@@ -411,12 +410,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
             trackMoveSubmitApplied({ gameType: 'ludo', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, isAutoAction, source: 'ludo_page' })
             if (move.type === 'timeout') showToast.info('games.ludo.game.timeoutMoved')
-            if (authoritativeState && typeof authoritativeState === 'object') {
-                const resolved = new LudoGame(game.id)
-                resolved.restoreState(authoritativeState as AnyGameState)
-                const winner = resolved.checkWinCondition()
-                if (winner && winner.id === userId) sounds.play('win')
-            }
             return true
         } catch (error) {
             trackMoveSubmitApplied({ gameType: 'ludo', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, isAutoAction, source: 'ludo_page' })
@@ -917,6 +910,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="ludo"
+                    outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && state.players.some((p) => p.id === currentUserId), isViewerWinner: winnerId ? winnerId === currentUserId : null })}
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                     gameId={game?.id}
                     isRegistered={status === 'authenticated' && !isGuest}

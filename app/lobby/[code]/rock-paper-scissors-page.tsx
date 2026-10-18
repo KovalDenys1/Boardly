@@ -877,6 +877,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="rock_paper_scissors"
+                    outcome={viewerOutcome({ isFinished: shownFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && (currentUserId === leftId || currentUserId === rightId), isViewerWinner: shownWinnerId ? shownWinnerId === currentUserId : null })}
                     resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
                     gameId={game?.id}
                     revealDelayMs={RPS_RESULT_REVEAL_DELAY_MS}

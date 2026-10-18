@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { liveFinishWithin, resetLiveFinish } from '@/lib/live-finish'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -205,5 +206,24 @@ describe('GameStatusBanner motion (#1111)', () => {
 
     rerender(<GameStatusBanner {...base} secs={90} />)
     expect(screen.getByTestId('game-status-timer-bar').style.transform).toBe('scaleX(1)')
+  })
+})
+
+describe('GameStatusBanner live finish (#1464)', () => {
+  const base = { activeTitle: 'Your turn', secs: 30, turnTimerLimit: 60, barColor: 'var(--bd-mint)', finishedMessage: 'Done' }
+
+  beforeEach(() => resetLiveFinish())
+
+  it('notes a finish it watched happen, for the result overlay', () => {
+    const { rerender } = render(<GameStatusBanner {...base} isFinished={false} />)
+    expect(liveFinishWithin(1000)).toBeNull()
+    rerender(<GameStatusBanner {...base} isFinished />)
+    expect(liveFinishWithin(1000)).toBe(1)
+  })
+
+  it('notes nothing when it mounts on a game that is already over', () => {
+    const { rerender } = render(<GameStatusBanner {...base} isFinished />)
+    rerender(<GameStatusBanner {...base} isFinished />)
+    expect(liveFinishWithin(1000)).toBeNull()
   })
 })

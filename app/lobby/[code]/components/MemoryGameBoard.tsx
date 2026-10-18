@@ -469,6 +469,7 @@ export default function MemoryGameBoard({
   const winnerName = (winnerId && displayNameByUserId.get(winnerId)) || t('games.memory.game.unknownPlayer')
   const isDraw = isFinished && !winnerId
   const isMyWin = isFinished && !!winnerId && !!currentUserId && winnerId === currentUserId
+  const viewerResult = viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })
   const symbolSizeClass = memorySymbolSizeClass(gridColumns)
   const matchedPairs = cards.filter((card) => card.isMatched).length / 2
   const totalPairs = Math.max(1, cards.length / 2)
@@ -562,6 +563,7 @@ export default function MemoryGameBoard({
           registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="memory"
+          outcome={viewerResult}
           resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
           gameId={gameId}
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
@@ -750,7 +752,7 @@ export default function MemoryGameBoard({
     <GameStatusBanner
       isFinished={isFinished}
       isDraw={isDraw}
-      outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })}
+      outcome={viewerResult}
       finishedMessage={isDraw ? t('games.memory.game.tieLabel') : t('games.memory.game.winnerLabel', { player: winnerName })}
       activeTitle={t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
       meta={`${matchedPairs}/${totalPairs}`}
@@ -853,6 +855,7 @@ export default function MemoryGameBoard({
                   registerUrl={registerUrl}
                   inviteCode={lobbyCode}
                   gameType="memory"
+                  outcome={viewerResult}
                   resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
                   gameId={gameId}
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}

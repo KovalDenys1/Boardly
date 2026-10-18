@@ -281,7 +281,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const stuckTurnRecoveryRef = React.useRef(createStuckTurnRecovery())
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
-  const winSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
   const yahtzeeMobileTurnStateRef = React.useRef<{
     currentPlayerId: string | null
@@ -578,16 +577,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 if (uniqueEntries.length === 0) return prev
                 return [...prev, ...uniqueEntries].slice(-20)
               })
-            }
-          }
-
-          // Play win sound for Memory/Spy (Yahtzee handled in useGameActions)
-          if (!(newEngine instanceof YahtzeeGame) && newEngine.isGameFinished()) {
-            const winner = newEngine.checkWinCondition()
-            const currentUserId = getCurrentUserId()
-            if (winner && winner.id === currentUserId && winSoundPlayedForRef.current !== game.id) {
-              winSoundPlayedForRef.current = game.id
-              playAmbientSound('win')
             }
           }
 
