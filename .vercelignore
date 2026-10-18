@@ -30,3 +30,6 @@ supabase_*.sql
 # Development files
 .next/cache
 .vercel
+
+# Android app (Trusted Web Activity); nothing in the web build reads it
+android/
