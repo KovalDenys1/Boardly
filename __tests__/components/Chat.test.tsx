@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Chat from '@/components/Chat'
@@ -185,12 +185,11 @@ describe('Chat community rules link (#1173)', () => {
     const { container } = render(
       <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
     )
-    const link = screen.getByRole('link', { name: 'chat.rulesNewTab' })
+    const link = within(container.querySelector('.chat-titlebar') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })
     expect(link.getAttribute('href')).toBe('/rules')
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toContain('noopener')
     expect(link.textContent).toBe('chat.rules')
-    expect(link.closest('.chat-titlebar')).toBe(container.querySelector('.chat-titlebar'))
     // Rarely opened, so it does not prefetch /rules on every game screen.
     expect(link.getAttribute('data-prefetch')).toBe('false')
   })
@@ -211,9 +210,21 @@ describe('Chat community rules link (#1173)', () => {
     )
     expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
     unmount()
-    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
-    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
+    expect(within(container.querySelector('.chat-titlebar') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
     expect(screen.getByLabelText('chat.minimize')).toBeTruthy()
+  })
+
+  // #1466 review: short phones (waiting room, max-height 720px) and the phone-landscape side
+  // column hide the title strip; globals.css shows this one there instead.
+  it('keeps a Rules link in the composer row for the layouts that hide the title strip', () => {
+    const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />)
+    const link = within(container.querySelector('form.chat-composer') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })
+    expect(link.getAttribute('href')).toBe('/rules')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+    expect(link.getAttribute('data-prefetch')).toBe('false')
+    expect(link.classList.contains('chat-composer-rules')).toBe(true)
   })
 
   it('adds no block to the panel', () => {
@@ -276,6 +287,24 @@ describe('Chat block action (#1466)', () => {
     fireEvent.click(first)
     fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
     await waitFor(() => expect(screen.queryAllByText('hi back')).toHaveLength(0))
+  })
+
+  it('puts focus on the composer after a block when the title strip is hidden', async () => {
+    const hide = document.createElement('style')
+    hide.textContent = '.chat-titlebar { display: none; }'
+    document.head.appendChild(hide)
+    try {
+      const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+      const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+      await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+      fireEvent.click(blockButton)
+      fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+
+      await waitFor(() => expect(screen.queryByText('hi back')).toBeNull())
+      expect(document.activeElement).toBe(container.querySelector('form.chat-composer'))
+    } finally {
+      hide.remove()
+    }
   })
 
   it('offers no Block on your own message or a system line', () => {

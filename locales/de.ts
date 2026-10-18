@@ -3411,7 +3411,7 @@ const de: TranslationWithPlurals = {
     rules: 'Regeln',
     rulesNewTab: 'Regeln der Boardly-Community (öffnet in neuem Tab)',
     blockPlayer: '{{player}} blockieren',
-    blockConfirm: '{{player}} blockieren? Du siehst die Nachrichten dieser Person in keinem Spiel mehr. Du kannst die Blockierung in deinen Einstellungen aufheben.',
+    blockConfirm: '{{player}} blockieren? Du siehst die Nachrichten dieser Person in keinem Spiel mehr. Du kannst die Blockierung später unter „Blockierte Spieler“ aufheben.',
     blockAction: 'Blockieren',
     blockFailed: '{{player}} konnte nicht blockiert werden. Bitte versuch es noch einmal.',
     cancel: 'Abbrechen',

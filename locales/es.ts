@@ -3423,7 +3423,7 @@ const es: TranslationWithPlurals = {
     rules: 'Normas',
     rulesNewTab: 'Normas de la comunidad de Boardly (se abre en una pestaña nueva)',
     blockPlayer: 'Bloquear a {{player}}',
-    blockConfirm: '¿Bloquear a {{player}}? No verás sus mensajes en ninguna partida. Puedes deshacer el bloqueo en tus ajustes.',
+    blockConfirm: '¿Bloquear a {{player}}? No verás sus mensajes en ninguna partida. Puedes deshacer el bloqueo más tarde desde Jugadores bloqueados.',
     blockAction: 'Bloquear',
     blockFailed: 'No se pudo bloquear a {{player}}. Inténtalo de nuevo.',
     cancel: 'Cancelar',

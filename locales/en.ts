@@ -3399,7 +3399,7 @@ const en = {
     rules: 'Rules',
     rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
     blockPlayer: 'Block {{player}}',
-    blockConfirm: "Block {{player}}? You won't see their messages in any game. You can unblock them in your settings.",
+    blockConfirm: "Block {{player}}? You won't see their messages in any game. You can unblock them later from Blocked players.",
     blockAction: 'Block',
     blockFailed: 'Could not block {{player}}. Try again.',
     cancel: 'Cancel',

@@ -3399,7 +3399,7 @@ const no = {
     rules: 'Regler',
     rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
     blockPlayer: 'Blokker {{player}}',
-    blockConfirm: 'Blokkere {{player}}? Du vil ikke se meldinger fra denne spilleren i noe spill. Du kan oppheve blokkeringen i innstillingene dine.',
+    blockConfirm: 'Blokkere {{player}}? Du vil ikke se meldinger fra denne spilleren i noe spill. Du kan oppheve blokkeringen senere under Blokkerte spillere.',
     blockAction: 'Blokker',
     blockFailed: 'Kunne ikke blokkere {{player}}. Prøv igjen.',
     cancel: 'Avbryt',

@@ -420,8 +420,12 @@ html.dark {
 /* Waiting-room Chat tab on a short phone (#1466): at 320x568 the card left the chat ~150px,
    which held neither the composer nor the terms panel whole. The tab above already names the
    chat, so its title strip goes, as in the landscape game column. */
+/* The composer's Rules link stands in for the title strip's where the strip is hidden. */
+.chat-composer-rules { display: none; }
+
 @media (max-height: 720px) {
   .waiting-room-chat .chat-titlebar { display: none; }
+  .waiting-room-chat .chat-composer-rules { display: inline-flex; }
   .waiting-room-chat .chat-messages { padding: 8px 10px; }
   .waiting-room-chat .chat-composer { padding: 8px 10px; }
   .waiting-room-chat .chat-composer-hint { display: none; }
@@ -3742,6 +3746,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      announced chat to someone already looking at it while taking a third of
      the room the messages needed. */
   .game-landscape-side .chat-titlebar { display: none; }
+  .game-landscape-side .chat-composer-rules { display: inline-flex; }
   .game-landscape-side .chat-messages { padding: 8px 10px; }
   .game-landscape-side .chat-composer { padding: 8px 10px; }
   .game-landscape-side .chat-composer-hint { display: none; }

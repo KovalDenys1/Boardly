@@ -38,7 +38,7 @@ export default function TermsConsentPanel({ onAccept, autoFocus = false, classNa
   }
 
   return (
-    <div role="group" aria-labelledby={promptId} className={`terms-consent ${className}`} style={style}>
+    <div role="group" aria-labelledby={promptId} tabIndex={-1} className={`terms-consent focus:outline-hidden ${className}`} style={style}>
       <p id={promptId} className="text-sm leading-snug text-bd-ink">{t('chat.termsPrompt')}</p>
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { useState, useRef, useEffect, useId, useCallback } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -101,14 +101,25 @@ export default function Chat({
     else if (box.top < listBox.top) list.scrollTop -= listBox.top - box.top
   }, [blockTarget, blockConfirmId])
 
+  // Short phones and the landscape side column hide the title strip; the composer then takes focus.
+  const focusChatStart = useCallback(() => {
+    const strip = titleRef.current?.closest<HTMLElement>('.chat-titlebar')
+    if (strip && window.getComputedStyle(strip).display !== 'none') {
+      titleRef.current?.focus()
+      return
+    }
+    chatRef.current?.querySelector<HTMLElement>('.chat-composer')?.focus()
+  }, [])
+
   // A signed-in block hides the messages before the server answers, so a rolled-back block
-  // brings back a new button: find it after that render, or fall back to the heading.
+  // brings back a new button: find it after that render, or fall back to the top of the chat.
   useEffect(() => {
     if (!blockFailedFor) return
     const triggers = chatRef.current?.querySelectorAll<HTMLButtonElement>('button[data-message-id]') ?? []
     const trigger = Array.from(triggers).find((button) => button.dataset.messageId === blockFailedFor.messageId)
-    ;(trigger ?? titleRef.current)?.focus()
-  }, [blockFailedFor])
+    if (trigger) trigger.focus()
+    else focusChatStart()
+  }, [blockFailedFor, focusChatStart])
 
   useEffect(() => {
     if (showTermsConsent || !focusComposerAfterConsent.current) return
@@ -127,7 +138,7 @@ export default function Chat({
     setBlockTarget(null)
     if (await block({ id: target.userId, username: target.username })) {
       // The button that opened the question left with the player's messages.
-      titleRef.current?.focus()
+      focusChatStart()
       return
     }
     showToast.error('chat.blockFailed', undefined, { player: target.username })
@@ -611,7 +622,8 @@ export default function Chat({
       {!readOnly && !showTermsConsent && (
       <form
         onSubmit={handleSubmit}
-        className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}
+        tabIndex={-1}
+        className={`chat-composer shrink-0 border-t p-4 focus:outline-hidden ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex items-stretch gap-2.5">
@@ -631,6 +643,18 @@ export default function Chat({
               {newMessage.length}/200
             </div>
           </div>
+          {/* Shown by globals.css where the title strip, and its Rules link, is hidden. */}
+          <Link
+            href="/rules"
+            prefetch={false}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('chat.rulesNewTab')}
+            title={t('chat.rulesNewTab')}
+            className="chat-composer-rules shrink-0 items-center justify-center rounded-xl px-2 text-bd-ink-soft transition-colors hover:text-bd-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+          >
+            <Icon name="shield" size={18} />
+          </Link>
           <button
             type="submit"
             disabled={!newMessage.trim()}
