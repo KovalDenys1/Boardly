@@ -279,7 +279,9 @@ export default function GameResultsModal({
       })
     : []
 
-  const winner = rankedPlayers.find((player) => player.isWinner) ?? null
+  // A Yahtzee tie records every leader a winner (#1493): that is a draw, not one of them winning.
+  const recordedWinners = rankedPlayers.filter((player) => player.isWinner)
+  const winner = recordedWinners.length === 1 ? recordedWinners[0] : null
   const winnerLabel = winner
     ? getPlayerLabel(winner, rankedPlayers.indexOf(winner))
     : !game
@@ -482,7 +484,7 @@ export default function GameResultsModal({
                       )}
                     </div>
                     <p className="mt-0.5 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-                      {player.isWinner
+                      {player.id === winner?.id
                         ? t('profile.gameResults.winnerBadge')
                         : player.placement
                           ? t('profile.gameResults.placeLabel', { place: formatOrdinalPlace(player.placement, locale) })
@@ -496,7 +498,7 @@ export default function GameResultsModal({
                     <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameResults.points')}
                     </span>
-                    {player.isWinner && <Icon name="crown" size={14} />}
+                    {player.id === winner?.id && <Icon name="crown" size={14} />}
                   </div>
                 </div>
               ))}

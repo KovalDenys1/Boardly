@@ -181,41 +181,39 @@ export class YahtzeeGame extends GameEngine {
         gameData.held = [false, false, false, false, false]
         gameData.rollsLeft = 3
         // Don't increment round - game ends when all players finish all categories
-        
+        this.rankFinalStandings()
+
         // Note: currentPlayerIndex is advanced by GameEngine.makeMove() after processMove
         break
     }
   }
 
-  checkWinCondition(): Player | null {
-    // Yahtzee is finished when all players have completed their scorecards (all categories)
+  private finalLeaders(): Player[] | null {
     const gameData = this.state.data as YahtzeeGameData
-    
-    // If not all players have scorecards, game not finished
-    if (gameData.scores.length !== this.state.players.length) {
-      return null
-    }
-    
-    // Check if all players have filled all categories
+    if (gameData.scores.length !== this.state.players.length) return null
     for (let i = 0; i < this.state.players.length; i++) {
       const scorecard = gameData.scores[i]
-      if (!scorecard || !isGameFinished(scorecard, this.getMode())) {
-        return null // Game not finished
-      }
+      if (!scorecard || !isGameFinished(scorecard, this.getMode())) return null
     }
+    const top = Math.max(...this.state.players.map((player) => player.score || 0))
+    return this.state.players.filter((player) => (player.score || 0) === top)
+  }
 
-    // Find player with highest score
-    let winner: Player | null = null
-    let maxScore = -1
+  private rankFinalStandings(): void {
+    if (!this.finalLeaders()) return
+    for (const player of this.state.players) {
+      const ahead = this.state.players.filter((other) => (other.score || 0) > (player.score || 0)).length
+      ;(player as Player & { placement?: number }).placement = ahead + 1
+    }
+  }
 
-    this.state.players.forEach(player => {
-      if ((player.score || 0) > maxScore) {
-        maxScore = player.score || 0
-        winner = player
-      }
-    })
+  checkWinCondition(): Player | null {
+    const leaders = this.finalLeaders()
+    return leaders?.length === 1 ? leaders[0] : null
+  }
 
-    return winner
+  checkDraw(): boolean {
+    return (this.finalLeaders()?.length ?? 0) > 1
   }
 
   getGameRules(): string[] {
@@ -227,7 +225,7 @@ export class YahtzeeGame extends GameEngine {
       'Lower section: special combinations with fixed scores',
       'Bonus 35 points if upper section >= 63',
       'Game ends when all categories are filled',
-      'Highest total score wins'
+      'Highest total score wins; a shared top total is a tie'
     ]
   }
 

@@ -24,6 +24,7 @@ import {
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getSessionUserOrThrow } from '@/lib/session-user'
 import { isRecentSignIn } from '@/lib/auth-session-policy'
+import { soleWinsWhere } from '@/lib/server/sole-wins'
 
 const limiter = rateLimit(rateLimitPresets.api)
 // The current-password check below is a password oracle for whoever holds the
@@ -99,15 +100,7 @@ async function getProfileAchievementStats(userId: string): Promise<ProfileAchiev
         },
       },
     }),
-    prisma.players.count({
-      where: {
-        userId,
-        isWinner: true,
-        game: {
-          status: 'finished',
-        },
-      },
-    }),
+    prisma.players.count({ where: soleWinsWhere(userId) }),
     prisma.userAchievements.findMany({
       where: { userId },
       select: { achievementKey: true, unlockedAt: true },

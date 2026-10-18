@@ -14,8 +14,12 @@ function viewerResultFor(status: string, isWinner: boolean | null, terminalMetad
   if (status === 'abandoned') return 'abandoned'
   if (status === 'cancelled') return 'cancelled'
   if (status !== 'finished') return 'inProgress'
-  const isDraw = !!(terminalMetadata && typeof terminalMetadata === 'object' && (terminalMetadata as { isDraw?: unknown }).isDraw === true)
-  if (isDraw) return 'draw'
+  const metadata = terminalMetadata && typeof terminalMetadata === 'object' ? terminalMetadata as { isDraw?: unknown; playerResults?: unknown } : null
+  if (metadata?.isDraw === true) {
+    // A draw with recorded winners was shared at the top: below it, the seat lost (#1493).
+    const sharedTop = Array.isArray(metadata.playerResults) && metadata.playerResults.some((result) => (result as { isWinner?: unknown } | null)?.isWinner === true)
+    return isWinner || !sharedTop ? 'draw' : 'lost'
+  }
   return isWinner ? 'won' : 'lost'
 }
 
