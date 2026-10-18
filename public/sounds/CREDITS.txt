@@ -1,5 +1,39 @@
 Sound Effects Credits
 
+Kenney sound set (public/sounds/kenney/)
+
+All 60 files come from four Kenney packs, downloaded from https://kenney.nl on 2026-10-18.
+Every pack is released under Creative Commons Zero (CC0 1.0):
+http://creativecommons.org/publicdomain/zero/1.0/
+"You may use these assets in personal and commercial projects. Credit (Kenney or
+www.kenney.nl) would be nice but is not mandatory." The licence text shipped with the packs is
+kept beside the files as LICENSE-kenney-CC0.txt. Thank you, Kenney.
+
+Each file is the pack's sample of the same name, mixed down to mono, trimmed, peak-normalised
+to -1 dBFS and encoded as MP3 (44.1 kHz, 96 kbps CBR).
+
+Casino Audio 1.1 (27 files):
+  card-place-1, card-place-2, card-place-3, card-place-4, card-shove-1, card-shove-2,
+  card-shove-3, card-slide-1, card-slide-2, card-slide-4, card-slide-6, chip-lay-1, chip-lay-2,
+  chip-lay-3, chips-collide-1, chips-collide-2, chips-handle-3, chips-stack-2, chips-stack-3,
+  chips-stack-4, chips-stack-5, dice-throw-1, dice-throw-2, dice-throw-3, die-throw-1,
+  die-throw-2, die-throw-3
+
+Interface Sounds 1.0 (20 files):
+  bong_001, confirmation_001, confirmation_002, confirmation_003, drop_001, drop_002, drop_003,
+  drop_004, error_008, glass_002, glass_004, glass_005, pluck_001, pluck_002, question_002,
+  tick_002, tick_004, toggle_001, toggle_002, toggle_003
+
+Impact Sounds 1.0 (11 files):
+  impactSoft_medium_001, impactSoft_medium_002, impactSoft_medium_003, impactWood_heavy_002,
+  impactWood_light_000, impactWood_light_001, impactWood_light_002, impactWood_light_003,
+  impactWood_light_004, impactWood_medium_000, impactWood_medium_002
+
+RPG Audio (2 files):
+  cloth2, cloth3
+
+Earlier files (public/sounds/*.mp3)
+
 1. dice_05.wav by dermotte
    Source: https://freesound.org/s/220745/
    License: Creative Commons Attribution 4.0
