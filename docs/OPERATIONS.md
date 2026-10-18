@@ -939,7 +939,7 @@ step below in order and do not flip the switch if any of steps 1–3 fails.
    (`lib/consent.ts`, `reopenGoogleConsentMessage`) must reopen the same message.
 6. **The variable is set for Production only, never Preview.** A Preview deployment serving
    ads would put a non-production host in front of real ad requests.
-7. **The label reads "Advertisements"** (`common.advertisement` in all four locale files,
+7. **The label reads "Advertisements"** (`common.advertisement` in every locale file,
    per Google's placement policy at
    [support.google.com/adsense/answer/1346295](https://support.google.com/adsense/answer/1346295)),
    and the unit stays the last element before the footer on guide pages — none on any game

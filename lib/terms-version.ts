@@ -20,8 +20,11 @@ import { CHAT_RETENTION_HOURS, RETENTION_DAYS, retentionMonths } from './retenti
  * 2026-09-27: the whole of /terms rewritten and translated (#1166), the community
  * rules and moderation (#1173) and the content-notice address (#1172) added.
  * 2026-10-05: section 2 gains the rule on accounts that are not used (#1224).
+ * 2026-10-18: section 1 names all six site languages, German and Spanish as translations
+ * only, the four binding versions unchanged (#1472). No obligation changes, so the
+ * change notice (lib/terms-change-notice.ts) stays on 2026-10-05 and nobody is re-mailed.
  */
-export const TERMS_VERSION = '2026-10-05'
+export const TERMS_VERSION = '2026-10-18'
 
 /** Printed in the Terms and the privacy notice, so moving it is a change of terms. */
 export const INACTIVITY_RULE_STARTS = '2027-01-01'
@@ -61,5 +64,6 @@ export const PRIVACY_UPDATED = '2026-10-05'
  * When the current withdrawal information on /premium and /withdrawal took effect.
  * 2026-09-27: the consent box also carries the age and capacity rule of Terms
  * section 3 (#1169, vergemålsloven § 12).
+ * 2026-10-18: the same information in German and Spanish (#1472); the other four locales are unchanged.
  */
-export const WITHDRAWAL_INFO_VERSION = '2026-09-27'
+export const WITHDRAWAL_INFO_VERSION = '2026-10-18'

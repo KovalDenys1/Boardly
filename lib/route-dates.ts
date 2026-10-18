@@ -21,8 +21,8 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
   '/games': '2026-09-07',
-  // #1234 named all eleven games (it listed seven).
-  '/about': '2026-09-28',
+  // #1472 names the six site languages.
+  '/about': '2026-10-18',
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
@@ -40,7 +40,7 @@ export const ROUTE_UPDATED = {
   // #1240 expanded the page to the Track A sections.
   '/games/liars-party': '2026-09-28',
   // #1239 expanded the page to the Track A sections.
-  '/games/sketch-and-guess': '2026-09-28',
+  '/games/sketch-and-guess': '2026-10-18', // #1472 names the four guess languages
   '/games/checkers': '2026-09-28', // #1241 expanded the page
   // #1242 expanded the page to the Track A sections.
   '/games/ludo': '2026-09-28',

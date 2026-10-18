@@ -42,6 +42,13 @@ describe('PUT /api/user/language (#1331)', () => {
     })
   })
 
+  it.each(['de', 'es'])('stores %s like every other site locale (#1472)', async (language) => {
+    const response = await put({ language })
+
+    expect(response.status).toBe(200)
+    expect(prisma.users.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { language } }))
+  })
+
   it('answers unchanged when the account already holds that locale', async () => {
     prisma.users.updateMany.mockResolvedValue({ count: 0 })
 
@@ -49,7 +56,7 @@ describe('PUT /api/user/language (#1331)', () => {
   })
 
   it('refuses anything that is not a site locale', async () => {
-    for (const language of ['nb', 'de', '', null, 42]) {
+    for (const language of ['nb', 'fr', 'de-DE', '', null, 42]) {
       expect((await put({ language })).status).toBe(400)
     }
     expect(prisma.users.updateMany).not.toHaveBeenCalled()

@@ -72,7 +72,7 @@ describe('Terms change notice email (#1224)', () => {
       expect(body).toContain('Hi Ola,')
       expect(body).toContain('One thing changes, and it applies from January 1, 2027.')
       expect(body).toContain(
-        'From January 1, 2027, an account that has not been used for 24 months is deleted. We email the address on the account 30 days before, and signing in once before that day keeps the account. Nothing else in the Terms has changed.'
+        'From January 1, 2027, an account that has not been used for 24 months is deleted. We email the address on the account 30 days before, and signing in once before that day keeps the account. Nothing else in the Terms changes what you agreed to.'
       )
       expect(body).toContain('has or has had Premium or has ever started a Premium purchase, or to an account that is suspended')
       expect(body).toContain('you can delete your account from your profile page before January 1, 2027: https://boardly.online/profile')

@@ -2707,7 +2707,7 @@ const en = {
         step2Title: 'Draw your prompt',
         step2Desc: 'Pick one of three words within 15 seconds. Then draw it in up to 80 seconds.',
         step3Title: 'Guess before the clock runs out',
-        step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
+        step3Desc: 'The others can guess up to 40 times while you draw, in English, Norwegian, Russian or Ukrainian. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
         step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or once everyone has drawn the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
@@ -4877,7 +4877,7 @@ const en = {
   about: {
     breadcrumb: 'About',
     title: 'About Boardly',
-    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
+    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian, Ukrainian, German and Spanish.',
     originTitle: 'Where it came from',
     origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
     origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',
@@ -5243,7 +5243,7 @@ const en = {
       title: '1. About these Terms',
       scope: 'These Terms are the agreement between you and us for using boardly.online: when you play as a guest, when you have an account, and when you buy Boardly Premium. Our privacy policy explains how we handle personal data.',
       accept: 'You accept the Terms when you create an account or buy Premium. If you play as a guest, the same rules apply to you.',
-      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
+      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. They are also available in German and Spanish, as translations. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
       version: 'The date at the bottom shows when this version took effect, and it changes only when the text changes. You can save or print this page to keep a copy.',
     },
     accounts: {
@@ -5331,7 +5331,7 @@ const en = {
       body: 'Questions about these Terms, notices about content and complaints go to',
     },
     updated: 'Last updated: {{date}}',
-    changeNote: 'New in this version: the rule in section 2 on accounts that are not used, which applies from {{inactiveFrom}}. Nothing else has changed.',
+    changeNote: 'New in this version: section 1 names the German and Spanish translations. The rule in section 2 on accounts that are not used, added in the previous version, applies from {{inactiveFrom}}. Nothing else has changed.',
     premium: {
       title: '3. Boardly Premium: subscription and right of withdrawal',
       price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars and is the full price: any VAT or sales tax due in your country is included in it, and Link collects it at checkout. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',

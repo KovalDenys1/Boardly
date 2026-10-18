@@ -14,6 +14,7 @@ describe('emailLanguageFromRequest (#1298)', () => {
     ['en;Q=0.4,nb;Q=0.9', 'nb'],
     ['uk-UA,uk;q=0.9,ru;q=0.8', 'en'],
     ['de-DE', 'en'],
+    ['es-ES,es;q=0.9', 'en'],
   ])('%s writes the mail in %s', (header, expected) => {
     expect(emailLanguageFromRequest(request(header))).toBe(expected)
   })
@@ -29,6 +30,8 @@ describe('emailLanguageFromLocale (#1331)', () => {
     ['en', 'en'],
     ['ru', 'en'],
     ['uk', 'en'],
+    ['de', 'en'],
+    ['es', 'en'],
     [null, 'en'],
     [undefined, 'en'],
     ['xx', 'en'],

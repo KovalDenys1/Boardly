@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import i18n, { changeLanguageLazy } from '@/i18n'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { availableLocales, defaultLocale } from '@/locales/meta'
 
 type LocaleTree = Record<string, unknown>
 
@@ -21,7 +22,7 @@ describe('i18n locale coverage', () => {
     const enResources = i18n.getResourceBundle('en', 'translation') as LocaleTree
     const enKeys = new Set(flattenKeys(enResources))
 
-    for (const locale of ['uk', 'no', 'ru'] as const) {
+    for (const locale of availableLocales.filter((code) => code !== defaultLocale)) {
       await changeLanguageLazy(locale)
       const localeResources = i18n.getResourceBundle(locale, 'translation') as LocaleTree
       const localeKeys = new Set(flattenKeys(localeResources))

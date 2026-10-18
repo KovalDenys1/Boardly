@@ -40,8 +40,11 @@ describe('Terms change notice (#1224)', () => {
 
   const run = (overrides = {}) => sendTermsChangeNotices({ now: NOW, approved: true, sendEmail, ...overrides })
 
-  it('is about the current Terms and the day the inactive-account rule starts', () => {
-    expect(TERMS_CHANGE_NOTICE).toEqual({ version: TERMS_VERSION, appliesFrom: INACTIVITY_RULE_STARTS })
+  it('is about the inactive-account change and the day that rule starts', () => {
+    // 2026-10-18 only names the German and Spanish translations, which needs no notice, so the
+    // notice stays on 2026-10-05: moving it would mail every account that already had it (#1472).
+    expect(TERMS_CHANGE_NOTICE).toEqual({ version: '2026-10-05', appliesFrom: INACTIVITY_RULE_STARTS })
+    expect(TERMS_VERSION).toBe('2026-10-18')
     expect(termsChangeNoticeDeadline().toISOString()).toBe('2026-12-02T00:00:00.000Z')
   })
 
