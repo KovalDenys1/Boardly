@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
+import {
+  getServerSoundSettings,
+  getSoundSettings,
+  setSoundEnabled,
+  setSoundVolume,
+  subscribeSoundSettings,
+} from '@/lib/sound-settings'
 import { headerControl } from './headerControlStyles'
-
-const AUDIO_SETTINGS_CHANGED_EVENT = 'boardly:audio-settings-changed'
-
-function broadcastAudioSettingsChange() {
-  if (typeof window === 'undefined') return
-  window.dispatchEvent(new Event(AUDIO_SETTINGS_CHANGED_EVENT))
-}
 
 function VolumeIcon({ muted }: { muted: boolean }) {
   return (
@@ -34,58 +33,24 @@ function VolumeIcon({ muted }: { muted: boolean }) {
 }
 
 function useAudioSettings() {
-  const [enabled, setEnabled] = useState(true)
-  const [volume, setVolumeState] = useState(0.7)
-
-  useEffect(() => {
-    setEnabled(sounds.isEnabled())
-    setVolumeState(sounds.getVolume())
-  }, [])
-
-  useEffect(() => {
-    const syncFromManager = () => {
-      setEnabled(sounds.isEnabled())
-      setVolumeState(sounds.getVolume())
-    }
-
-    window.addEventListener(AUDIO_SETTINGS_CHANGED_EVENT, syncFromManager)
-    return () => {
-      window.removeEventListener(AUDIO_SETTINGS_CHANGED_EVENT, syncFromManager)
-    }
-  }, [])
+  const { enabled, volume } = useSyncExternalStore(subscribeSoundSettings, getSoundSettings, getServerSoundSettings)
 
   const toggleMute = () => {
     if (!enabled) {
-      const next = sounds.toggle()
-      setEnabled(next)
-      if (volume === 0) {
-        sounds.setVolume(0.5)
-        setVolumeState(0.5)
-      }
-      broadcastAudioSettingsChange()
+      setSoundEnabled(true)
+      if (volume === 0) setSoundVolume(0.5)
       return
     }
-
     if (volume === 0) {
-      sounds.setVolume(0.5)
-      setVolumeState(0.5)
-      broadcastAudioSettingsChange()
+      setSoundVolume(0.5)
       return
     }
-
-    const next = sounds.toggle()
-    setEnabled(next)
-    broadcastAudioSettingsChange()
+    setSoundEnabled(false)
   }
 
   const changeVolume = (val: number) => {
-    sounds.setVolume(val)
-    setVolumeState(val)
-    if (!enabled && val > 0) {
-      sounds.toggle()
-      setEnabled(true)
-    }
-    broadcastAudioSettingsChange()
+    setSoundVolume(val)
+    if (!enabled && val > 0) setSoundEnabled(true)
   }
 
   return { enabled, volume, toggleMute, changeVolume }

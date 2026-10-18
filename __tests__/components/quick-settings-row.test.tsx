@@ -3,7 +3,6 @@ import { QuickSettingsRow } from '@/components/Header/QuickSettingsRow'
 
 const mockApplyThemeMode = jest.fn()
 const mockWriteLocal = jest.fn()
-let soundEnabled = true
 let storedTheme = 'system'
 
 jest.mock('@/lib/theme', () => ({
@@ -15,21 +14,10 @@ jest.mock('@/lib/theme', () => ({
 
 jest.mock('@/lib/safe-storage', () => ({
   getSafeLocalStorage: () => null,
+  readLocal: () => null,
   writeLocal: (key: string, value: string) => {
-    storedTheme = value
+    if (key === 'theme') storedTheme = value
     mockWriteLocal(key, value)
-  },
-}))
-
-jest.mock('@/lib/sounds', () => ({
-  sounds: {
-    isEnabled: () => soundEnabled,
-    getVolume: () => 0.7,
-    setVolume: jest.fn(),
-    toggle: jest.fn(() => {
-      soundEnabled = !soundEnabled
-      return soundEnabled
-    }),
   },
 }))
 
@@ -45,7 +33,6 @@ jest.mock('@/lib/i18n-helpers', () => ({
 describe('QuickSettingsRow', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    soundEnabled = true
     storedTheme = 'system'
   })
 
@@ -68,6 +55,7 @@ describe('QuickSettingsRow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'header.mute' }))
 
     expect(screen.getByRole('button', { name: 'header.unmute' })).toHaveAttribute('aria-pressed', 'true')
+    expect(mockWriteLocal).toHaveBeenCalledWith('soundEnabled', 'false')
   })
 
   it('anchors the language list to its chip so the panel cannot clip it', () => {

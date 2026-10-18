@@ -1,13 +1,11 @@
 Sound Effects Credits
 
-Kenney sound set (public/sounds/kenney/)
-
-All 60 files come from four Kenney packs, downloaded from https://kenney.nl on 2026-10-18.
+All 60 files in kenney/ come from four Kenney packs, downloaded from https://kenney.nl on 2026-10-18.
 Every pack is released under Creative Commons Zero (CC0 1.0):
 http://creativecommons.org/publicdomain/zero/1.0/
 "You may use these assets in personal and commercial projects. Credit (Kenney or
 www.kenney.nl) would be nice but is not mandatory." The licence text shipped with the packs is
-kept beside the files as LICENSE-kenney-CC0.txt. Thank you, Kenney.
+kept in kenney/LICENSE-kenney-CC0.txt. Thank you, Kenney.
 
 Each file is the pack's sample of the same name, mixed down to mono, trimmed, peak-normalised
 to -1 dBFS and encoded as MP3 (44.1 kHz, 96 kbps CBR).
@@ -31,19 +29,3 @@ Impact Sounds 1.0 (11 files):
 
 RPG Audio (2 files):
   cloth2, cloth3
-
-Earlier files (public/sounds/*.mp3)
-
-1. dice_05.wav by dermotte
-   Source: https://freesound.org/s/220745/
-   License: Creative Commons Attribution 4.0
-
-2. OKAY! by Scrampunk
-   Source: https://freesound.org/s/345299/
-   License: Creative Commons Attribution 4.0
-
-3. Itemize by Scrampunk
-   Source: https://freesound.org/s/345297/
-   License: Creative Commons Attribution 4.0
-
-Please see each sound's Freesound page for full license details and usage terms.
