@@ -5197,6 +5197,7 @@ const de: TranslationWithPlurals = {
       q2: {
         question: 'Was passiert, wenn ich kündige?',
         answer: 'Premium bleibt bis zum Ende des bereits bezahlten Zeitraums aktiv, danach wird nicht mehr verlängert. Du kündigst über das Abrechnungsportal auf deiner Profilseite.',
+        answerApp: 'Premium bleibt bis zum Ende des bereits bezahlten Zeitraums aktiv, danach wird nicht mehr verlängert. Du kannst über den Tab „Premium“ auf deiner Profilseite kündigen.',
       },
       q3: {
         question: 'In welcher Währung zahle ich?',
@@ -5205,6 +5206,7 @@ const de: TranslationWithPlurals = {
       q4: {
         question: 'Kann ich zwischen monatlich und jährlich wechseln?',
         answer: 'Ja. Öffne das Abrechnungsportal auf deiner Profilseite und ändere dort den Tarif; Link verrechnet die Differenz für die bereits bezahlte Zeit.',
+        answerApp: 'Ja, auf boardly.online im Browser: Öffne das Abrechnungsportal auf deiner Profilseite und ändere dort den Tarif. Link verrechnet die Differenz für die bereits bezahlte Zeit.',
       },
       q5: {
         question: 'Nehmt ihr Promo-Codes an?',
@@ -5223,6 +5225,7 @@ const de: TranslationWithPlurals = {
     soldThroughLink: 'Premium wird über Link verkauft: Sold through Link, LLC, ein verbundenes Unternehmen von Stripe, ist Händler (Merchant of Record) für den Kauf. Link nimmt die Zahlung entgegen und schickt dir deine Quittung, deine Rechnung und jede Erstattungsmitteilung per E-Mail. Du widerrufst bei uns wie unten beschrieben, und wir nehmen die Erstattung über Link vor.',
     laterTitle: 'Nach den 14 Tagen',
     later: 'Du kannst jederzeit über das Abrechnungsportal auf deiner Profilseite kündigen. Ein Monatsabonnement läuft dann bis zum Ende des Monats, den du bezahlt hast. Wenn du ein Jahresabonnement vorzeitig kündigst, erstatten wir die nicht genutzten vollen Monate. Für eine Kündigung in deinem Link-Konto auf link.com oder das Löschen dieses Kontos gelten stattdessen die Bedingungen von Link.',
+    laterApp: 'Du kannst jederzeit über den Tab „Premium“ auf deiner Profilseite kündigen. Ein Monatsabonnement läuft dann bis zum Ende des Monats, den du bezahlt hast. Wenn du ein Jahresabonnement vorzeitig kündigst, erstatten wir die nicht genutzten vollen Monate. Für eine Kündigung in deinem Link-Konto auf link.com oder das Löschen dieses Kontos gelten stattdessen die Bedingungen von Link.',
     howTitle: 'So widerrufst du',
     howIntro: 'Teile uns vor Ablauf der 14 Tage eindeutig mit, dass du den Vertrag widerrufen willst. Du kannst dafür das Formular unten verwenden, musst es aber nicht.',
     howEmailLabel: 'Per E-Mail an',

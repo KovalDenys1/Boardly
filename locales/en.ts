@@ -5177,6 +5177,7 @@ const en = {
       q2: {
         question: 'What happens if I cancel?',
         answer: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. Cancelling is done from the billing portal on your profile page.',
+        answerApp: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. You can cancel from the Premium tab on your profile page.',
       },
       q3: {
         question: 'Which currency am I charged in?',
@@ -5185,6 +5186,7 @@ const en = {
       q4: {
         question: 'Can I switch between monthly and yearly?',
         answer: 'Yes. Open the billing portal from your profile page and change the plan there; Link handles the difference for the time already paid.',
+        answerApp: 'Yes, on boardly.online in your browser: open the billing portal from your profile page and change the plan there. Link handles the difference for the time already paid.',
       },
       q5: {
         question: 'Do you take promo codes?',
@@ -5203,6 +5205,7 @@ const en = {
     soldThroughLink: 'Premium is sold through Link: Stripe\'s affiliate Sold through Link, LLC is the merchant of record for the purchase. Link takes the payment and emails your receipt, your invoice and any refund notice. You withdraw with us as described below, and we make the refund through Link.',
     laterTitle: 'After the 14 days',
     later: 'You can cancel at any time from the billing portal on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
+    laterApp: 'You can cancel at any time from the Premium tab on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
     howTitle: 'How to withdraw',
     howIntro: 'Tell us clearly that you want to withdraw from the contract before the 14 days are over. You can use the form below, but you do not have to.',
     howEmailLabel: 'By email to',

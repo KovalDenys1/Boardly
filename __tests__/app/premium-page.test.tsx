@@ -6,6 +6,7 @@ import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/pr
 import PremiumContent from '@/app/premium/PremiumContent'
 import { trackPremiumCta } from '@/lib/analytics'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
+import en from '@/locales/en'
 
 // The page itself only asks Stripe for the two prices; the test supplies them
 // so nothing here reaches the network or needs a Stripe key.
@@ -274,6 +275,56 @@ describe('/premium in the Play app (#1465)', () => {
     mockSession.signedIn = false
     render(<PremiumContent pricing={BOTH_PLANS} />)
     expect(screen.getAllByRole('link', { name: /Sign in to get Premium/ })).toHaveLength(2)
+  })
+
+  it('drops the payment notes, the withdrawal block and the checkout-only FAQ in the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByTestId('premium-withdrawal')).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.currencyNote)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.yearlyRefundNote)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Link's exchange rate/)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q3.question)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q5.question)).not.toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q1.question)).toBeInTheDocument()
+  })
+
+  it('keeps the payment notes, the withdrawal block and the whole FAQ on the web', () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByTestId('premium-withdrawal')).toBeInTheDocument()
+    expect(screen.getByText(en.premium.currencyNote)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.yearlyRefundNote)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q3.question)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q5.question)).toBeInTheDocument()
+  })
+
+  it('answers cancelling and switching plans with the app texts in the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByText(en.premium.faq.q2.answerApp)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q4.answerApp)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q2.answer)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q4.answer)).not.toBeInTheDocument()
+  })
+
+  it('answers cancelling and switching plans with the web texts on the web', () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByText(en.premium.faq.q2.answer)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q4.answer)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q2.answerApp)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q4.answerApp)).not.toBeInTheDocument()
+  })
+
+  it('still says the yearly plan is unavailable in the app when Stripe has no yearly price', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={{ monthly: BOTH_PLANS.monthly, yearly: null }} />)
+
+    expect(screen.getByText(en.premium.monthlyOnlyNote)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.currencyNote, { exact: false })).not.toBeInTheDocument()
   })
 
   it('never opens checkout once the page is known to be in the app', async () => {

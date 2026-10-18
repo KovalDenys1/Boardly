@@ -143,7 +143,7 @@ export default function WithdrawalContent() {
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('withdrawal.laterTitle')}</h2>
-              <p>{t('withdrawal.later')}</p>
+              <p>{inPlayApp ? t('withdrawal.laterApp') : t('withdrawal.later')}</p>
             </section>
 
             {/* The standard form (Q-0319B / Annex I(B)), as read-only text the visitor can copy */}

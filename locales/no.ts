@@ -5165,6 +5165,7 @@ const no = {
       q2: {
         question: 'Hva skjer hvis jeg sier opp?',
         answer: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Oppsigelse gjøres i faktureringsportalen på profilsiden din.',
+        answerApp: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Du kan si opp fra Premium-fanen på profilsiden din.',
       },
       q3: {
         question: 'Hvilken valuta blir jeg belastet i?',
@@ -5173,6 +5174,7 @@ const no = {
       q4: {
         question: 'Kan jeg bytte mellom månedlig og årlig?',
         answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Link håndterer differansen for tiden du allerede har betalt.',
+        answerApp: 'Ja, på boardly.online i nettleseren: åpne faktureringsportalen fra profilsiden din og bytt plan der. Link håndterer differansen for tiden du allerede har betalt.',
       },
       q5: {
         question: 'Tar dere imot rabattkoder?',
@@ -5191,6 +5193,7 @@ const no = {
     soldThroughLink: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link tar imot betalingen og sender kvittering, faktura og eventuelt varsel om refusjon på e-post. Du angrer hos oss slik det står nedenfor, og vi betaler tilbake gjennom Link.',
     laterTitle: 'Etter de 14 dagene',
     later: 'Du kan si opp når som helst i faktureringsportalen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
+    laterApp: 'Du kan si opp når som helst fra Premium-fanen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
     howTitle: 'Slik angrer du',
     howIntro: 'Gi oss en tydelig beskjed om at du vil gå fra avtalen, før fristen på 14 dager er ute. Du kan bruke skjemaet nedenfor, men du må ikke.',
     howEmailLabel: 'På e-post til',
