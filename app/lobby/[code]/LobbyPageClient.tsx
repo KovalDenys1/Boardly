@@ -1045,7 +1045,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Game timer hook - pass turnTimerLimit from lobby settings
   const turnTimerLimit = (lobby?.turnTimer as number) || 60
-  const { timeLeft, timerActive } = useGameTimer({
+  const { timeLeft } = useGameTimer({
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
@@ -1274,13 +1274,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleScoreRef.current = handleScore
     handleRollDiceRef.current = handleRollDice
   }, [handleScore, handleRollDice])
-
-  // Countdown tick for last 3 seconds of turn timer
-  React.useEffect(() => {
-    if (timerActive && isMyTurn() && timeLeft > 0 && timeLeft <= 3) {
-      playAmbientSound('countdown')
-    }
-  }, [timeLeft, timerActive, playAmbientSound])
 
   // Load lobby on mount
   useEffect(() => {

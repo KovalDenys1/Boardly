@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import { playCue } from '@/lib/sound-engine'
 import { liveFinishWithin, resetLiveFinish } from '@/lib/live-finish'
+
+jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -206,6 +209,51 @@ describe('GameStatusBanner motion (#1111)', () => {
 
     rerender(<GameStatusBanner {...base} secs={90} />)
     expect(screen.getByTestId('game-status-timer-bar').style.transform).toBe('scaleX(1)')
+  })
+})
+
+describe('GameStatusBanner turn timer cues (#1464)', () => {
+  const base = {
+    isFinished: false,
+    activeTitle: 'Your turn',
+    secs: 7,
+    turnTimerLimit: 60,
+    barColor: 'var(--bd-mint)',
+    isYourTurn: true,
+  }
+  const play = playCue as jest.Mock
+
+  beforeEach(() => play.mockClear())
+
+  function countDown(props: Partial<Parameters<typeof GameStatusBanner>[0]>, from: number, to: number) {
+    const { rerender } = render(<GameStatusBanner {...base} {...props} secs={from} />)
+    for (let secs = from - 1; secs >= to; secs -= 1) rerender(<GameStatusBanner {...base} {...props} secs={secs} />)
+  }
+
+  it('ticks once a second for the last five seconds of my own turn, rising a semitone each, then sounds the expiry', () => {
+    countDown({}, 7, 0)
+    expect(play.mock.calls).toEqual([
+      ['timer.tick', { semis: 0 }],
+      ['timer.tick', { semis: 1 }],
+      ['timer.tick', { semis: 2 }],
+      ['timer.tick', { semis: 3 }],
+      ['timer.tick', { semis: 4 }],
+      ['timer.expired'],
+    ])
+  })
+
+  it('stays silent on someone else’s turn, for a spectator, and with no timer', () => {
+    countDown({ isYourTurn: false }, 6, 0)
+    countDown({ isSpectator: true }, 6, 0)
+    countDown({ showTimer: false }, 6, 0)
+    countDown({ turnTimerLimit: 0 }, 6, 0)
+    expect(play).not.toHaveBeenCalled()
+  })
+
+  it('does not tick when it mounts mid-countdown or the clock jumps up', () => {
+    const { rerender } = render(<GameStatusBanner {...base} secs={3} />)
+    rerender(<GameStatusBanner {...base} secs={60} />)
+    expect(play).not.toHaveBeenCalled()
   })
 })
 
