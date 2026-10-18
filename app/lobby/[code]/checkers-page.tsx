@@ -27,7 +27,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
@@ -631,11 +631,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -857,7 +853,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     : reversedMoveHistory.map((m: CheckersMoveRecord, index) => (
                         <div key={`${m.timestamp}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.side === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>

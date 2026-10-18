@@ -7,9 +7,10 @@ import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { ForgetGuestButton } from './ForgetGuestButton'
+import { headerControl } from './headerControlStyles'
 
 const itemClassName =
-  'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 disabled:opacity-60'
+  'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:opacity-60'
 
 // A Popover, not a Menu: Forget me needs a second tap and a Menu would close on the first.
 export function GuestMenu() {
@@ -25,7 +26,7 @@ export function GuestMenu() {
   return (
     <Popover as="div" className="relative">
       <PopoverButton
-        className="inline-flex max-w-[140px] items-center gap-2 rounded-full border border-(--bd-sun-deep)/40 bg-(--bd-sun)/22 px-3 py-1.5 text-[13px] font-semibold text-bd-ink-soft transition-colors hover:bg-(--bd-sun)/35 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
+        className={`${headerControl({ border: 'border-(--bd-sun-deep)/40', surface: 'bg-(--bd-sun)/22 hover:bg-(--bd-sun)/35 data-open:bg-(--bd-sun)/35' })} max-w-[140px] gap-2 px-3 text-[13px] font-semibold`}
         title={t('header.guestSession')}
       >
         <Icon name="user" size={14} />

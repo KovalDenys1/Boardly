@@ -10,6 +10,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { ThemeToggle } from './ThemeToggle'
 import { GuestMenu } from './GuestMenu'
 import { UserMenu } from './UserMenu'
+import { headerControl } from './headerControlStyles'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -46,9 +47,9 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
+          className={`${headerControl()} px-4 text-[15px] font-medium`}
         >
           {t('header.login')}
         </button>
@@ -62,21 +63,16 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
+          className={`${headerControl()} px-4 text-[15px] font-medium`}
         >
           {t('header.login')}
         </button>
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
-          className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 hover:-translate-y-px"
-          style={{
-            background: 'var(--bd-ink)',
-            color: 'var(--bd-bg)',
-            fontSize: 15,
-            boxShadow: '0 4px 0 var(--bd-coral)',
-          }}
+          className={`${headerControl({ border: 'border-bd-ink', surface: 'bg-bd-ink hover:bg-bd-ink-soft', text: 'text-bd-bg' })} px-4 text-[15px] font-semibold`}
         >
           {t('header.register')}
         </button>

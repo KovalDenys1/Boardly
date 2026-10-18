@@ -75,7 +75,7 @@ export default function Header() {
                   width: 34,
                   height: 34,
                   borderRadius: 9,
-                  background: 'var(--bd-ink)',
+                  background: 'var(--bd-logo-tile)',
                   color: 'var(--bd-sun)',
                   display: 'grid',
                   placeItems: 'center',
@@ -109,7 +109,7 @@ export default function Header() {
             {effectiveIsAuthenticated && <PresenceTracker />}
 
             {!isAuthUiReady ? (
-              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div aria-hidden className="hidden desk:block h-9 w-[160px] shrink-0" />
             ) : (
               <HeaderActions
                 isAuthenticated={effectiveIsAuthenticated}

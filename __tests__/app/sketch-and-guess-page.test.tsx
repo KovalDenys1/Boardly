@@ -223,7 +223,7 @@ describe('SketchAndGuessLobbyPage fallback states', () => {
     const { container } = render(<SketchAndGuessLobbyPage code="ABCD" />)
 
     const root = container.firstChild as HTMLElement | null
-    expect(root?.className).toContain('min-h-(--game-h)')
+    expect(root?.className).toContain('h-(--game-h)')
     expect(container.innerHTML).not.toContain('min-h-dvh')
     expect(container.innerHTML).not.toContain('from-sky-50')
 

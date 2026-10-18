@@ -1856,7 +1856,7 @@ export default function ProfilePage() {
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-sm text-bd-ink shadow-xs outline-hidden transition-all'
+    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
 
@@ -1923,7 +1923,7 @@ export default function ProfilePage() {
                           className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-(--bd-ink-on-accent) outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
-                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
                           {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(
@@ -1993,7 +1993,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={handleResendVerification}
                               disabled={showResendVerification}
-                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {showResendVerification
                                 ? t('common.loading')
@@ -2168,7 +2168,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleResendVerification}
                           disabled={showResendVerification}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
                         >
                           {showResendVerification ? t('profile.sending') : t('profile.verificationBanner.resend')}
                         </button>
@@ -2225,10 +2225,10 @@ export default function ProfilePage() {
                         id="profile-email-input"
                         className={`${fieldInputClassName} ${
                           emailStatus === 'available'
-                            ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
+                            ? 'border-emerald-400 dark:border-emerald-500'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
-                              ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20'
+                              ? 'border-red-400 dark:border-red-500'
+                              : 'border-(--bd-input-border) focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2262,7 +2262,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20`}
+                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">
@@ -2937,7 +2937,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => void handleReactivate()}
                           disabled={premiumActionLoading}
-                          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
                         >
                           <Icon name="star" size={16} />
                           <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
@@ -3016,7 +3016,7 @@ export default function ProfilePage() {
                       type="button"
                       onClick={() => void handleCheckout()}
                       disabled={premiumActionLoading}
-                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {premiumActionLoading ? (
                         <>
@@ -3052,7 +3052,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-hidden"
+                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
                   />
                   <div className="mt-1 flex items-center justify-between">
                     <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>

@@ -123,7 +123,7 @@ export default function GamePlayerCard({
           {isWinner && (
             <span className="game-player-win-badge" style={{
               display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
-              background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
+              background: 'var(--bd-sun)', color: 'var(--bd-ink-on-accent)', border: '2px solid var(--bd-ink)',
               boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
             }}>{t('game.ui.winBadge')}</span>
           )}

@@ -18,7 +18,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
@@ -607,11 +607,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -846,7 +842,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     : reversedEvents.map((event: LudoEvent) => (
                         <div key={event.n} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 26, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(event.n).padStart(2, '0')}
+                                {String(event.n).padStart(2, '0')}
                             </span>
                             <TokenDot color={colorOf(event.playerId)} size={14} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>

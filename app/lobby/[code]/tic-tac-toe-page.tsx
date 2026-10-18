@@ -27,7 +27,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
@@ -722,11 +722,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -933,7 +929,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                             borderRadius: 12,
                             fontWeight: 700,
                             background: 'var(--bd-mint-deep)',
-                            color: 'white',
+                            color: 'var(--bd-ink-on-accent)',
                             border: 'none',
                             cursor: isMoveSubmitting ? 'not-allowed' : 'pointer',
                             opacity: isMoveSubmitting ? 0.65 : 1,
@@ -1114,7 +1110,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} className={index === 0 && lastMoveFresh ? 'ttt-history-row-in' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-soft)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <TttMark mark={m.symbol} size={16} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(m.playerId)}</span>

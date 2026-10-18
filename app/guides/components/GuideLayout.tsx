@@ -148,7 +148,7 @@ export function GuideSteps({ steps }: { steps: { title: string; detail: string }
             style={{
               borderColor: 'var(--bd-ink)',
               background: 'var(--bd-sun)',
-              color: 'var(--bd-ink)',
+              color: 'var(--bd-ink-on-accent)',
               fontFamily: 'var(--bd-font-display)',
             }}
           >

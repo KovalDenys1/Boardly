@@ -85,7 +85,7 @@ export default function RegisterForm() {
   const passwordTooltip = (
     <div className="space-y-2">
       <p className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
-        {t('auth.password.requirements', 'Password requirements')}
+        {t('auth.password.requirements')}
       </p>
       <div className="space-y-1.5">
         {passwordChecks.map((check) => (
@@ -320,7 +320,7 @@ export default function RegisterForm() {
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
                   <input
@@ -358,7 +358,7 @@ export default function RegisterForm() {
                     statusText={formData.password ? passwordStrength.label : undefined}
                     statusClassName={passwordStrength.textColor}
                     hint={passwordTooltip}
-                    hintLabel={t('auth.password.requirements', 'Password requirements')}
+                    hintLabel={t('auth.password.requirements')}
                     required={true}
                   />
                   {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.password}</p>}
@@ -451,12 +451,12 @@ export default function RegisterForm() {
           <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'white', lineHeight: 0.95, marginBottom: 12 }}>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink-on-accent)', lineHeight: 0.95, marginBottom: 12 }}>
                 {t('auth.register.heroTagline').split('\n').map((line, i) => (
                   <span key={i}>{line}{i < 2 && <br />}</span>
                 ))}
               </div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 200, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.75)', maxWidth: 200, lineHeight: 1.5 }}>
                 {t('auth.register.heroDesc')}
               </div>
             </div>
@@ -476,7 +476,7 @@ export default function RegisterForm() {
                   <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>{t('auth.register.heroPlayers')}</div>
+              <div style={{ fontSize: 13, color: 'var(--bd-ink-on-accent)', fontWeight: 500 }}>{t('auth.register.heroPlayers')}</div>
             </div>
           </div>
         </div>

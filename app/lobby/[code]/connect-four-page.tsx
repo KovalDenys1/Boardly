@@ -24,7 +24,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import C4Board, { DISC_RED, DISC_YELLOW } from '@/components/boards/C4Board'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
@@ -652,11 +652,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -813,8 +809,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         />
     )
 
-    const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
@@ -829,14 +823,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     : reversedMoveHistory.map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.disc === 1 ? p1Name : p2Name}
                             </span>
                             <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'ui-monospace,monospace', fontWeight: 700, flexShrink: 0, color: 'var(--bd-ink)' }}>
-                                {t('games.connect_four.game.moveColumn', { col: COLUMN_LABELS[m.col] })}
+                                {t('games.connect_four.game.moveColumn', { col: m.col + 1 })}
                             </span>
                         </div>
                     ))
@@ -856,7 +850,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
             {isPendingResponder ? (
                 <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'white', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
+                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'var(--bd-ink-on-accent)', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
                         {t('games.connect_four.game.undoAccept')}
                     </button>
                     <button onClick={() => void handleRespondToUndo(false)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>

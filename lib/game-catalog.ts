@@ -29,6 +29,7 @@ export type ExperimentalGameType =
   | 'fake_artist'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
+export type GameDifficulty = 'easy' | 'medium' | 'hard'
 
 export type LobbyCreateConfig = {
   gradient: string
@@ -97,7 +98,7 @@ type GameCatalogEntryBase = {
   nameKey: string
   descriptionKey: string
   players: string
-  difficultyKey: string
+  difficulty: GameDifficulty
   color: string
   /** Present on every game that has a page under `app/games/`. */
   seo?: GameSeo
@@ -379,7 +380,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.yahtzee.name',
     descriptionKey: 'games.yahtzee.description',
     players: '1-4',
-    difficultyKey: 'games.yahtzee.difficulty',
+    difficulty: 'easy',
     seo: {
       title: 'Play Yahtzee Online Free with Friends or Bots',
       description: 'Play Yahtzee online free in your browser. Roll five dice, fill the scorecard and play with up to three friends in real time, or against a bot.',
@@ -437,7 +438,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.spy.name',
     descriptionKey: 'games.spy.description',
     players: '3-10',
-    difficultyKey: 'games.spy.difficulty',
+    difficulty: 'medium',
     seo: {
       title: 'Play Guess the Spy Online Free – Social Deduction',
       description: 'Play Guess the Spy online free with 3 to 10 players. Everyone gets the location except the spy: ask questions, catch the bluff and vote. No download needed.',
@@ -487,7 +488,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.tictactoe.name',
     descriptionKey: 'games.tictactoe.description',
     players: '1-2',
-    difficultyKey: 'games.tictactoe.difficulty',
+    difficulty: 'easy',
     seo: {
       title: 'Play Tic Tac Toe Online Free with Friends',
       description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
@@ -535,7 +536,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.memory.name',
     descriptionKey: 'games.memory.description',
     players: '1-4',
-    difficultyKey: 'games.memory.difficulty',
+    difficulty: 'easy',
     seo: {
       title: 'Play Memory Game Online Free – Multiplayer',
       description: 'Play the Memory matching game online free with 2 to 4 players. Flip cards, keep the pairs you match and race on 4×4, 5×4 or 6×6 boards. No download needed.',
@@ -584,7 +585,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.connect_four.name',
     descriptionKey: 'games.connect_four.description',
     players: '1-2',
-    difficultyKey: 'games.connect_four.difficulty',
+    difficulty: 'medium',
     seo: {
       title: 'Play Connect 4 Online Free with a Friend',
       description: 'Play Connect 4 online free. Drop discs on a seven by six board and be first to line up four, against a friend or a bot. Real time in the browser, no download.',
@@ -638,7 +639,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.alias.name',
     descriptionKey: 'games.alias.description',
     players: '3-16',
-    difficultyKey: 'games.alias.difficulty',
+    difficulty: 'medium',
     seo: {
       title: 'Play Alias Online Free – Team Word Game',
       description: 'Play Alias online free with 3 to 16 players. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
@@ -688,7 +689,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.liars_party.name',
     descriptionKey: 'games.liars_party.description',
     players: '4-12',
-    difficultyKey: 'games.liars_party.difficulty',
+    difficulty: 'hard',
     seo: {
       title: "Play Liar's Party Online Free – Bluffing Game",
       description: "Play Liar's Party online free with 4 to 12 players. Make a claim, decide who is bluffing and let the vote settle it. In the browser, no download needed.",
@@ -734,7 +735,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.rock_paper_scissors.name',
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '1-2',
-    difficultyKey: 'games.rock_paper_scissors.difficulty',
+    difficulty: 'easy',
     seo: {
       title: 'Play Rock Paper Scissors Online Free',
       description: 'Play Rock Paper Scissors online free against a friend or a bot. Both players pick at the same time and the reveal is instant. In the browser, no download.',
@@ -780,7 +781,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.guess_my_drawing.name',
     descriptionKey: 'games.guess_my_drawing.description',
     players: '3-10',
-    difficultyKey: 'games.guess_my_drawing.difficulty',
+    difficulty: 'medium',
     seo: {
       title: 'Play Sketch & Guess Online Free – Draw and Guess',
       description: 'Play Sketch & Guess online free with 3 to 10 players. One player draws a secret prompt, everyone else races to guess it. In the browser, no download.',
@@ -838,7 +839,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.checkers.name',
     descriptionKey: 'games.checkers.description',
     players: '1-2',
-    difficultyKey: 'games.checkers.difficulty',
+    difficulty: 'medium',
     seo: {
       title: 'Play Checkers Online Free with a Friend or Bot',
       description: 'Play checkers online free. Classic 8×8 English draughts with forced captures, multi-jumps and kings, against a friend or a bot. In the browser, no download.',
@@ -891,7 +892,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.ludo.description',
     // 1: a lone player fills the other seats with bots.
     players: '1-4',
-    difficultyKey: 'games.ludo.difficulty',
+    difficulty: 'easy',
     seo: {
       title: 'Play Ludo Online Free with Friends or Bots',
       description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
@@ -945,7 +946,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.fake_artist.name',
     descriptionKey: 'games.fake_artist.description',
     players: '4-10',
-    difficultyKey: 'games.fake_artist.difficulty',
+    difficulty: 'medium',
     availability: 'in-development',
     // No `route`: nothing exists under app/games/fake-artist, so a route here
     // is a link to a 404 the moment the flag promotes the entry (#975). The
@@ -958,7 +959,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.telephone_doodle.name',
     descriptionKey: 'games.telephone_doodle.description',
     players: '3-12',
-    difficultyKey: 'games.telephone_doodle.difficulty',
+    difficulty: 'easy',
     availability: 'in-development',
     // No `route`, for the same reason as fake-artist above (#975).
     color: 'from-sky-500 to-indigo-600',
@@ -968,7 +969,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.wordsmines.name',
     descriptionKey: 'games.wordsmines.description',
     players: '2-8',
-    difficultyKey: 'games.wordsmines.difficulty',
+    difficulty: 'medium',
     availability: 'planned',
     color: 'from-gray-400 to-black',
   },
@@ -977,7 +978,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.anagrams.name',
     descriptionKey: 'games.anagrams.description',
     players: '2-8',
-    difficultyKey: 'games.anagrams.difficulty',
+    difficulty: 'medium',
     availability: 'planned',
     color: 'from-blue-300 to-indigo-500',
   },
@@ -986,7 +987,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.crocodile.name',
     descriptionKey: 'games.crocodile.description',
     players: '3-12',
-    difficultyKey: 'games.crocodile.difficulty',
+    difficulty: 'easy',
     availability: 'planned',
     color: 'from-green-600 to-lime-400',
   },
@@ -995,7 +996,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     nameKey: 'games.alibi_night.name',
     descriptionKey: 'games.alibi_night.description',
     players: '4-12',
-    difficultyKey: 'games.alibi_night.difficulty',
+    difficulty: 'hard',
     availability: 'planned',
     color: 'from-amber-500 to-red-600',
   },

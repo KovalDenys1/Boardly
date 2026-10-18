@@ -7,10 +7,10 @@
  * event, so attribution and the funnel keep working unchanged and `method` in the payload
  * is the only new thing to read.
  *
- * Web Share where the browser has it (iOS Safari, Android Chrome) puts the invite into
- * WhatsApp, Telegram, Discord or Teams in one tap, which is what the share sheet is worth;
- * every desktop browser lacks it, so the clipboard stays the fallback rather than a
- * hand-rolled list of per-app deep links that would each need their own maintenance.
+ * Web Share on a touch device (iOS Safari, Android Chrome) puts the invite into WhatsApp,
+ * Telegram, Discord or Teams in one tap, which is what the share sheet is worth. Desktop
+ * Chrome and Safari expose `share` too, but there a "Copy invite" button that opens a
+ * share sheet instead of copying read as broken, so a pointer device always copies.
  */
 
 import { buildInviteLink } from './invite-attribution'
@@ -94,10 +94,12 @@ async function copyToClipboard(
 export async function shareInvite(input: {
   payload: InviteSharePayload
   navigator: InviteShareNavigator | null | undefined
+  /** True on a coarse-pointer (touch) device – the only place the share sheet is offered. */
+  touch: boolean
 }): Promise<InviteShareOutcome> {
-  const { payload, navigator: nav } = input
+  const { payload, navigator: nav, touch } = input
 
-  if (canShareInvite(nav, payload)) {
+  if (touch && canShareInvite(nav, payload)) {
     try {
       await nav!.share!(payload)
       return 'shared'

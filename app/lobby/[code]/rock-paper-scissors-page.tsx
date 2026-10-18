@@ -918,7 +918,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         const who = isDrawRound ? t('lobby.game.draw') : getDisplayName(round.winner ?? '')
                         return (
                             <div key={`round-${number}`} className={`rps-round-row${isDrawRound ? ' rps-round-row--draw' : ''}`} style={{ '--row-accent': accent } as React.CSSProperties}>
-                                <span className="rps-round-row__num">#{String(number).padStart(2, '0')}</span>
+                                <span className="rps-round-row__num">{String(number).padStart(2, '0')}</span>
                                 <span className="rps-round-row__pair">
                                     <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}><Icon name={getChoiceIcon(leftChoice)} size={18} /></span>
                                     <span className="rps-round-row__vs">{t('game.ui.vs')}</span>

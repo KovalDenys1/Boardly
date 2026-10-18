@@ -8,7 +8,22 @@ describe('LobbyPage fallback components', () => {
 
     const root = container.firstChild as HTMLElement | null
     expect(root).not.toBeNull()
-    expect(root?.className).toContain('min-h-(--game-h)')
+    expect(root?.className).toContain('h-(--game-h)')
+    expect(root?.hasAttribute('data-lobby-loader')).toBe(true)
+    expect(screen.getByRole('status')).not.toBeNull()
+  })
+
+  it('starts the spinner on the document clock so a remounted loader keeps its angle', () => {
+    const spin = { startTime: null as number | null }
+    const original = HTMLElement.prototype.getAnimations
+    HTMLElement.prototype.getAnimations = jest.fn(() => [spin as unknown as Animation])
+    try {
+      render(<LobbyPageLoadingFallback />)
+    } finally {
+      HTMLElement.prototype.getAnimations = original
+    }
+
+    expect(spin.startTime).toBe(0)
   })
 
   it('renders error fallback with action button', () => {

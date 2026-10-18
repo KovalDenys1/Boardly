@@ -7,6 +7,7 @@ import { availableLocales, type Locale } from '@/locales/meta'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 import { changeLanguageLazy } from '@/i18n'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
+import { headerControl } from '@/components/Header/headerControlStyles'
 
 interface LanguageSwitcherProps {
   /** Portals the list and pins it to the button, for a parent that clips overflow. */
@@ -82,10 +83,10 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
   return (
     <Menu as="div" className="relative">
       <MenuButton
-        className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-bd-line bg-(--bd-input-bg) px-2.5 py-2 text-left text-bd-ink shadow-[0_3px_10px_rgba(31,27,22,0.06)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 dark:shadow-none"
+        className={`${headerControl()} gap-1.5 pl-1.5 pr-2 text-left`}
         aria-label={t('header.language')}
       >
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav">
+        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav">
           <GlobeIcon />
         </span>
 

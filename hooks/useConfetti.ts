@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { prefersReducedMotion } from '@/lib/motion'
 
 type ConfettiFn = (options?: Record<string, unknown>) => unknown
 
@@ -23,6 +24,7 @@ function loadConfetti(): Promise<ConfettiFn> {
 
 export function useConfetti() {
   const celebrate = useCallback(() => {
+    if (prefersReducedMotion()) return
     void (async () => {
       const confetti = await loadConfetti()
       const count = 200
@@ -69,6 +71,7 @@ export function useConfetti() {
   }, [])
 
   const fireworks = useCallback(() => {
+    if (prefersReducedMotion()) return
     void (async () => {
       const confetti = await loadConfetti()
       const duration = 3 * 1000

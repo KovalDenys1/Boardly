@@ -120,7 +120,7 @@ export default function WaitingRoom({
                 className={`h-11 w-11 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[2px_2px_0_var(--bd-ink)] ${avatarRingClass}`}
               />
             ) : (
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)] ${avatarRingClass}`}>
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-sm font-extrabold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)] ${avatarRingClass}`}>
                 {index + 1}
               </div>
             )}
@@ -136,7 +136,7 @@ export default function WaitingRoom({
                 </span>
               )}
               {isHost && (
-                <span className="rounded-full bg-bd-sun px-1.5 py-0.5 text-[10px] font-bold text-bd-ink">
+                <span className="rounded-full bg-bd-sun px-1.5 py-0.5 text-[10px] font-bold text-bd-ink-on-accent">
                   {t('game.ui.host')}
                 </span>
               )}

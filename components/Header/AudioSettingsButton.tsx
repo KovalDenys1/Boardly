@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { sounds } from '@/lib/sounds'
+import { headerControl } from './headerControlStyles'
 
 const AUDIO_SETTINGS_CHANGED_EVENT = 'boardly:audio-settings-changed'
 
@@ -125,9 +126,9 @@ export function AudioSettingsButton() {
         onClick={() => setOpen((o) => !o)}
         aria-label={t('header.openAudioSettings')}
         title={t('header.audioSettings')}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) transition-all hover:-translate-y-px hover:text-(--bd-ink) ${
-          muted ? 'text-(--bd-ink-muted)' : 'text-(--bd-ink)'
-        }`}
+        aria-expanded={open}
+        data-open={open ? '' : undefined}
+        className={`${headerControl({ square: true, text: muted ? 'text-bd-ink-muted hover:text-bd-ink data-open:text-bd-ink' : 'text-bd-ink' })} relative`}
       >
         <VolumeIcon muted={muted} />
       </button>
@@ -190,7 +191,7 @@ export function MuteToggleButton({ className = '' }: { className?: string }) {
       aria-pressed={muted}
       aria-label={muted ? t('header.unmute') : t('header.mute')}
       title={muted ? t('header.unmute') : t('header.mute')}
-      className={`flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-bd-line bg-bd-bg transition-colors hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 ${
+      className={`flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-bd-line bg-bd-bg transition-colors hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${
         muted ? 'text-bd-ink-muted' : 'text-bd-ink'
       } ${className}`}
     >
@@ -228,7 +229,7 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
         type="button"
         onClick={toggleMute}
         aria-pressed={muted}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2) focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2) focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
       >
         <span>{muted ? t('header.unmute') : t('header.mute')}</span>
         <VolumeIcon muted={muted} />
