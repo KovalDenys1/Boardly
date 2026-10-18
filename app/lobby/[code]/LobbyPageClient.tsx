@@ -6,7 +6,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { sounds } from '@/lib/sounds'
+import { LEGACY_SOUND_CUES, sounds } from '@/lib/sounds'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -194,6 +195,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
+  useSoundConsumer(LEGACY_SOUND_CUES)
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 

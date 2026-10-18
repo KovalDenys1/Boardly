@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 import { getSoundEngine, type PlayOptions } from '@/lib/sound-engine'
 import {
   CUE_IDS,
@@ -117,11 +118,11 @@ export default function SoundBoard() {
   const [outcome, setOutcome] = useState<Record<string, Outcome>>({})
   const gameCounter = useRef(0)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  useSoundConsumer(CUE_IDS)
 
   useEffect(() => {
     const engine = getSoundEngine()
     const refresh = () => setState({ context: engine.contextState(), ready: CUE_IDS.filter((id) => engine.isCueReady(id)).length })
-    void engine.preload(CUE_IDS).then(refresh)
     const interval = setInterval(refresh, 500)
     const pending = timers.current
     return () => {

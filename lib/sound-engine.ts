@@ -14,6 +14,8 @@ export interface PlayOptions {
 
 export interface SoundEngine {
   play(cue: CueId, options?: PlayOptions): boolean
+  /** Marks an audio consumer as mounted and preloads its cues at idle; the release suspends audio after the last one. */
+  retain(cues: readonly CueId[]): () => void
   preload(cues: readonly CueId[]): Promise<void>
   stopAll(): void
   isCueReady(cue: CueId): boolean
@@ -31,10 +33,16 @@ interface Voice {
   sources: AudioBufferSourceNode[]
 }
 
-const UNLOCK_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'] as const
+const UNLOCK_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'CapsLock', 'Fn'])
 const MAX_VOICES_PER_CUE = 4
 const ONSET_THRESHOLD = 0.01
 const ONSET_PRE_ROLL_S = 0.002
+const PREGESTURE_SAMPLE_RATE = 48000
+const RESUME_GRACE_MS = 250
+const RETRY_BASE_MS = 1000
+const RETRY_MAX_MS = 30_000
+const IDLE_PRELOAD_TIMEOUT_MS = 1500
 
 type AudioContextCtor = new (options?: AudioContextOptions) => AudioContext
 type OfflineAudioContextCtor = new (channels: number, length: number, sampleRate: number) => OfflineAudioContext
@@ -66,6 +74,30 @@ function isPageVisible(): boolean {
 function hasStickyActivation(): boolean {
   if (typeof navigator === 'undefined') return false
   return (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive === true
+}
+
+/** The events the HTML spec lets grant user activation: a touch pointerdown or an Escape keydown cannot start audio. */
+function isActivation(event: Event): boolean {
+  if (event.type === 'keydown') {
+    const key = (event as KeyboardEvent).key
+    return key !== 'Escape' && !MODIFIER_KEYS.has(key)
+  }
+  if (event.type === 'pointerdown') return (event as PointerEvent).pointerType === 'mouse'
+  if (event.type === 'pointerup') return (event as PointerEvent).pointerType !== 'mouse'
+  return true
+}
+
+function scheduleIdle(run: () => void): () => void {
+  const w = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+    cancelIdleCallback?: (handle: number) => void
+  }
+  if (w.requestIdleCallback && w.cancelIdleCallback) {
+    const handle = w.requestIdleCallback(run, { timeout: IDLE_PRELOAD_TIMEOUT_MS })
+    return () => w.cancelIdleCallback?.(handle)
+  }
+  const timer = setTimeout(run, IDLE_PRELOAD_TIMEOUT_MS)
+  return () => clearTimeout(timer)
 }
 
 function preferAmbientSession() {
@@ -104,17 +136,21 @@ export function createSoundEngine(): SoundEngine {
   let offline: OfflineAudioContext | null = null
   let master: GainNode | null = null
   let gestureSeen = false
-  let primed = false
+  let consumers = 0
+  let unsubscribeSettings: (() => void) | null = null
   let resolveContext: (context: AudioContext) => void = () => {}
   const contextCreated = new Promise<AudioContext>((resolve) => {
     resolveContext = resolve
   })
   const decoded = new Map<SampleId, DecodedSample>()
+  const encoded = new Map<SampleId, ArrayBuffer>()
   const loading = new Map<SampleId, Promise<void>>()
+  const failures = new Map<SampleId, { count: number; retryAt: number }>()
   const lastPlayedAt = new Map<CueId, number>()
   const lastVariant = new Map<string, SampleId>()
   const gamesPlayed = new Set<string>()
   const voices = new Map<CueId, Voice[]>()
+  const pendingPreloads = new Set<() => void>()
 
   function ensureContext(): AudioContext | null {
     if (ctx) return ctx
@@ -129,12 +165,14 @@ export function createSoundEngine(): SoundEngine {
     master = ctx.createGain()
     master.gain.value = masterLevel(getSoundSettings())
     master.connect(ctx.destination)
+    for (const sample of [...encoded.keys()]) if (decoded.has(sample)) redecode(sample)
     resolveContext(ctx)
     return ctx
   }
 
-  function resume(context: AudioContext) {
-    if (context.state !== 'running') context.resume().catch(() => {})
+  function requestResume(context: AudioContext) {
+    if (context.state === 'running' || context.state === 'closed') return
+    context.resume().catch(() => {})
   }
 
   // An offline context decodes without a gesture, so samples are ready before the first tap creates the real one.
@@ -144,21 +182,30 @@ export function createSoundEngine(): SoundEngine {
     const Offline = offlineAudioContextCtor()
     if (!Offline) return null
     try {
-      offline = new Offline(1, 1, 44100)
+      offline = new Offline(1, 1, PREGESTURE_SAMPLE_RATE)
     } catch {
       return null
     }
     return offline
   }
 
-  function unlock() {
+  function redecode(sample: SampleId) {
+    const bytes = encoded.get(sample)
+    encoded.delete(sample)
+    if (!bytes || !ctx || ctx.sampleRate === PREGESTURE_SAMPLE_RATE) return
+    ctx
+      .decodeAudioData(bytes)
+      .then((buffer) => decoded.set(sample, { buffer, offset: measureOnsetSeconds(buffer) }))
+      .catch(() => {})
+  }
+
+  function unlock(event: Event) {
+    if (!isActivation(event)) return
     gestureSeen = true
     const context = ensureContext()
-    if (!context) return
-    resume(context)
-    if (primed) return
-    primed = true
-    // WebKit unlocks output only for a source started inside the gesture itself.
+    if (!context || context.state === 'running') return
+    requestResume(context)
+    // WebKit unlocks output only for a source started inside the gesture itself, so every gesture primes until it runs.
     const silence = context.createBufferSource()
     silence.buffer = context.createBuffer(1, 1, context.sampleRate)
     silence.connect(context.destination)
@@ -199,23 +246,52 @@ export function createSoundEngine(): SoundEngine {
       stopAll()
       return
     }
-    if (ctx && gestureSeen) resume(ctx)
+    if (ctx && gestureSeen) requestResume(ctx)
+  }
+
+  function install() {
+    for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, { capture: true, passive: true })
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    unsubscribeSettings = subscribeSoundSettings(onSettingsChange)
+    onSettingsChange()
+    // Sticky activation from an earlier page lets Chrome and Firefox start the context without a new gesture.
+    if (ctx || hasStickyActivation()) {
+      const context = ensureContext()
+      if (context) requestResume(context)
+    }
+  }
+
+  function uninstall() {
+    for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, { capture: true })
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    unsubscribeSettings?.()
+    unsubscribeSettings = null
+    stopAll()
+    if (ctx && ctx.state !== 'closed') ctx.suspend().catch(() => {})
   }
 
   function load(sample: SampleId): Promise<void> {
-    if (decoded.has(sample)) return Promise.resolve()
+    if (decoded.has(sample) || !audioContextCtor()) return Promise.resolve()
     const pending = loading.get(sample)
     if (pending) return pending
+    const failure = failures.get(sample)
+    if (failure && performance.now() < failure.retryAt) return Promise.resolve()
     const task = (async () => {
       try {
         const response = await fetch(sampleUrl(sample))
-        if (!response.ok) return
+        if (!response.ok) throw new Error(`${response.status}`)
         const data = await response.arrayBuffer()
         const context = decoder() ?? (await contextCreated)
+        const preGesture = context !== ctx
+        if (preGesture) encoded.set(sample, data.slice(0))
         const buffer = await context.decodeAudioData(data)
         decoded.set(sample, { buffer, offset: measureOnsetSeconds(buffer) })
+        failures.delete(sample)
+        if (preGesture && ctx) redecode(sample)
       } catch {
-        // A sample that fails to load leaves its cues silent; the next preload retries it.
+        encoded.delete(sample)
+        const count = (failure?.count ?? 0) + 1
+        failures.set(sample, { count, retryAt: performance.now() + Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** (count - 1)) })
       } finally {
         loading.delete(sample)
       }
@@ -233,31 +309,38 @@ export function createSoundEngine(): SoundEngine {
   }
 
   function play(cue: CueId, options: PlayOptions = {}): boolean {
+    if (consumers === 0) return false
     const def = getCue(cue)
-    if (def.oncePerGame && options.gameId) {
-      const key = `${cue}:${options.gameId}`
-      if (gamesPlayed.has(key)) return false
-      gamesPlayed.add(key)
-    }
+    const onceKey = def.oncePerGame && options.gameId ? `${cue}:${options.gameId}` : null
+    if (onceKey && gamesPlayed.has(onceKey)) return false
     if (masterLevel(getSoundSettings()) <= 0 || !isPageVisible()) return false
-    if (!ctx || !master || ctx.state !== 'running') return false
+    if (!ctx || !master || ctx.state === 'closed') return false
 
     const now = performance.now()
     const last = lastPlayedAt.get(cue)
     if (last !== undefined && now - last < def.minGapMs) return false
 
     const picks: SampleId[] = []
+    let missing = false
     for (const [index, layer] of def.layers.entries()) {
       const sample = pickVariant(`${cue}:${index}`, layer)
-      if (!sample) return false
-      picks.push(sample)
+      if (sample) picks.push(sample)
+      else {
+        missing = true
+        layer.samples.forEach((variant) => void load(variant))
+      }
     }
-
-    lastPlayedAt.set(cue, now)
-    picks.forEach((sample, index) => lastVariant.set(`${cue}:${index}`, sample))
+    if (missing) return false
 
     const context = ctx
     const output = master
+    const running = context.state === 'running'
+    if (!running) requestResume(context)
+
+    lastPlayedAt.set(cue, now)
+    picks.forEach((sample, index) => lastVariant.set(`${cue}:${index}`, sample))
+    if (onceKey) gamesPlayed.add(onceKey)
+
     const jitter = def.jitterSemis ? (Math.random() * 2 - 1) * def.jitterSemis : 0
     const remoteDb = options.remote && def.remoteDb !== undefined ? def.remoteDb : 0
     const extraDb = Math.min(0, options.gainDb ?? 0)
@@ -295,41 +378,61 @@ export function createSoundEngine(): SoundEngine {
     while (list.length >= MAX_VOICES_PER_CUE) stopVoice(list.shift()!)
     list.push(voice)
     voices.set(cue, list)
+
+    // A suspended context queues sources on its frozen clock; one that does not run within the grace would play them late.
+    if (!running) {
+      setTimeout(() => {
+        if (context.state === 'running') return
+        stopVoice(voice)
+        removeVoice(cue, voice)
+      }, RESUME_GRACE_MS)
+    }
     return true
   }
 
   function preload(cues: readonly CueId[]): Promise<void> {
-    if (!audioContextCtor()) return Promise.resolve()
     const samples = new Set(cues.flatMap((cue) => cueSamples(cue)))
     return Promise.all([...samples].map(load)).then(() => undefined)
   }
 
-  let unsubscribeSettings = () => {}
-  if (typeof window !== 'undefined') {
-    for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, { capture: true, passive: true })
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    unsubscribeSettings = subscribeSoundSettings(onSettingsChange)
-    // Sticky activation from an earlier page lets Chrome and Firefox start the context without a new gesture.
-    if (hasStickyActivation()) {
-      const context = ensureContext()
-      if (context) resume(context)
+  function retain(cues: readonly CueId[]): () => void {
+    if (typeof window === 'undefined') return () => {}
+    consumers += 1
+    if (consumers === 1) install()
+    let cancelPreload: (() => void) | null = null
+    if (cues.length > 0) {
+      cancelPreload = scheduleIdle(() => {
+        if (cancelPreload) pendingPreloads.delete(cancelPreload)
+        void preload(cues)
+      })
+      pendingPreloads.add(cancelPreload)
+    }
+    let released = false
+    return () => {
+      if (released) return
+      released = true
+      if (cancelPreload) {
+        cancelPreload()
+        pendingPreloads.delete(cancelPreload)
+      }
+      consumers -= 1
+      if (consumers === 0) uninstall()
     }
   }
 
   return {
     play,
+    retain,
     preload,
     stopAll,
     isCueReady: (cue) => getCue(cue).layers.every((layer) => layer.samples.some((sample) => decoded.has(sample))),
     hasGesture: () => gestureSeen || hasStickyActivation(),
     contextState: () => (ctx ? (ctx.state as AudioContextState | 'interrupted') : 'none'),
     dispose: () => {
-      stopAll()
-      if (typeof window !== 'undefined') {
-        for (const type of UNLOCK_EVENTS) window.removeEventListener(type, unlock, { capture: true })
-        document.removeEventListener('visibilitychange', onVisibilityChange)
-      }
-      unsubscribeSettings()
+      pendingPreloads.forEach((cancel) => cancel())
+      pendingPreloads.clear()
+      if (consumers > 0 && typeof window !== 'undefined') uninstall()
+      consumers = 0
       ctx?.close().catch(() => {})
     },
   }
@@ -346,8 +449,8 @@ export function playCue(cue: CueId, options?: PlayOptions): boolean {
   return getSoundEngine().play(cue, options)
 }
 
-export function preloadSounds(cues: readonly CueId[]): Promise<void> {
-  return getSoundEngine().preload(cues)
+export function retainSounds(cues: readonly CueId[]): () => void {
+  return getSoundEngine().retain(cues)
 }
 
 export function stopAllSounds(): void {

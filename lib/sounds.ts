@@ -17,23 +17,8 @@ const LEGACY_CUES: Record<string, CueId> = {
   cardFlip: 'card.flip',
 }
 
-const IDLE_PRELOAD_TIMEOUT_MS = 1500
-let preloadScheduled = false
-
-function ensurePreload() {
-  if (preloadScheduled || typeof window === 'undefined') return
-  preloadScheduled = true
-  const run = () => void getSoundEngine().preload(Object.values(LEGACY_CUES))
-  const w = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }
-  if (w.requestIdleCallback) w.requestIdleCallback(run, { timeout: IDLE_PRELOAD_TIMEOUT_MS })
-  else setTimeout(run, IDLE_PRELOAD_TIMEOUT_MS)
-}
-
-// The replay page imports this through the Yahtzee dice bar and plays nothing, so only a lobby URL starts audio at import.
-if (typeof window !== 'undefined' && window.location.pathname.startsWith('/lobby/')) {
-  getSoundEngine()
-  ensurePreload()
-}
+/** What a page that still plays through this facade passes to `useSoundConsumer`. */
+export const LEGACY_SOUND_CUES: readonly CueId[] = [...new Set(Object.values(LEGACY_CUES))]
 
 interface LegacyPlayOptions {
   /** The old element volume, 0..1; played as attenuation relative to the master volume. */
@@ -46,7 +31,6 @@ interface LegacyPlayOptions {
 /** The pre-#1464 API, kept so every call site works until each moves to `playCue`. */
 export const sounds = {
   play(soundName: string, options: LegacyPlayOptions = {}): void {
-    ensurePreload()
     const cue = LEGACY_CUES[soundName]
     if (!cue) return
     const playOptions: PlayOptions = {}
@@ -74,12 +58,10 @@ export const sounds = {
   },
 
   isEnabled(): boolean {
-    ensurePreload()
     return isSoundEnabled()
   },
 
   hasUserInteracted(): boolean {
-    ensurePreload()
     return getSoundEngine().hasGesture()
   },
 }
