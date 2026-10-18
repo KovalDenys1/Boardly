@@ -4,7 +4,8 @@ import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { requireSessionUser } from '@/lib/session-user'
-import { MAX_BLOCKS_PER_ACCOUNT, blockedUserIdSchema } from '@/lib/user-blocks'
+import { MAX_BLOCKS_PER_ACCOUNT } from '@/lib/user-blocks'
+import { blockedUserIdSchema } from '@/lib/validation/user-blocks'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/user/blocks')
