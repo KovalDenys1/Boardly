@@ -1,11 +1,27 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useTranslation } from '@/lib/i18n-helpers'
 
+const serverSpinStart =
+  typeof document === 'undefined'
+    ? null
+    : document.querySelector('[data-lobby-loader] .animate-spin')?.getAnimations?.()[0]?.startTime
+const spinStart = typeof serverSpinStart === 'number' ? serverSpinStart : 0
+
 export function LobbyPageLoadingFallback() {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    // Each load stage mounts a new spinner, and a server-rendered one starts at HTML parse; one start time keeps every swap invisible.
+    ref.current?.getAnimations?.({ subtree: true }).forEach((animation) => {
+      animation.startTime = spinStart
+    })
+  }, [])
+
   return (
-    <div className="bd-page flex min-h-(--game-h) items-center justify-center">
+    <div ref={ref} data-lobby-loader="" className="bd-page flex h-(--game-h) items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )

@@ -1493,6 +1493,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   to   { opacity: 1; transform: translateY(0); }
 }
 .bd-screen { animation: bd-screen-in 0.35s var(--bd-ease-out); }
+/* Lobby route: the loader never animates in, so its stages swap in place; whatever replaces it fades in. */
+:where(.lobby-route) > :where(:not([data-lobby-loader])) {
+  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out);
+}
 
 /* Warm page background with radial accents */
 /* In the components layer on purpose: this file comes after @tailwind

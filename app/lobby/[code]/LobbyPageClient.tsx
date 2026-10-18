@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
-import LoadingSpinner from '@/components/LoadingSpinner'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { sounds } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
@@ -123,26 +122,19 @@ import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
-function CenteredLoadingFallback() {
-  return (
-    <div className="bd-page page-shell flex items-center justify-center">
-      <LoadingSpinner size="lg" />
-    </div>
-  )
-}
-
 const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'))
 const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'))
 const YahtzeeScorePills = dynamic(() => import('@/components/yahtzee/YahtzeeScorePills'))
 const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'))
-const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'))
+// next/dynamic without `loading` has no Suspense boundary; these mount mid-game and must not hide the game while their chunk loads.
+const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'), { loading: () => null })
 const Chat = dynamic(() => import('@/components/Chat'))
-const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
+const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'), { loading: () => null })
 const YahtzeeEventLog = dynamic(() => import('@/components/yahtzee/YahtzeeEventLog'))
 const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
 const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
-const GameInterruptedOverlay = dynamic(() => import('./components/GameInterruptedOverlay'))
+const GameInterruptedOverlay = dynamic(() => import('./components/GameInterruptedOverlay'), { loading: () => null })
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
 const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
@@ -151,34 +143,34 @@ const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
-  loading: () => <CenteredLoadingFallback />,
+  loading: () => <LobbyPageLoadingFallback />,
 })
 const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
-  loading: () => <CenteredLoadingFallback />,
+  loading: () => <LobbyPageLoadingFallback />,
 })
 const AliasLobbyPage = dynamic(
   () => import('./alias-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 const LiarsPartyLobbyPage = dynamic(
   () => import('./liars-party-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 const ConnectFourLobbyPage = dynamic(
   () => import('./connect-four-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 const SketchAndGuessLobbyPage = dynamic(
   () => import('./sketch-and-guess-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 const CheckersLobbyPage = dynamic(
   () => import('./checkers-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 const LudoLobbyPage = dynamic(
   () => import('./ludo-page'),
-  { loading: () => <CenteredLoadingFallback /> }
+  { loading: () => <LobbyPageLoadingFallback /> }
 )
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
@@ -1611,12 +1603,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     !isGameStarted &&
     autoJoinAttemptKey
   )
-  const showAutoJoinLoadingState = Boolean(
-    shouldAutoJoinPublicLobby &&
-    autoJoinAttemptKey &&
-    autoJoinAttemptedRef.current === autoJoinAttemptKey &&
-    !error
-  )
+  const showAutoJoinLoadingState = shouldAutoJoinPublicLobby && !error
 
   useEffect(() => {
     if (!shouldAutoJoinPublicLobby || !autoJoinAttemptKey || isJoiningLobby) {
@@ -1760,24 +1747,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
-  // Show loading while session is being fetched (for non-guest users)
-  if (!isGuest && status === 'loading') {
-    return (
-      <div className="bd-page page-shell flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <LoadingSpinner size="lg" />
-          <p className="text-bd-ink-muted">{t('lobby.loadingSession')}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="bd-page page-shell flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+  if ((!isGuest && status === 'loading') || loading || (showJoinPrompt && showAutoJoinLoadingState)) {
+    return <LobbyPageLoadingFallback />
   }
 
   if (!lobby) {
@@ -2005,46 +1976,23 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       {showJoinPrompt ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
-          {showAutoJoinLoadingState ? (
-            <div className="max-w-xl mx-auto w-full animate-scale-in">
-              <div className="bd-card p-6 text-center sm:p-8">
-                <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
-                  <Icon name="gamepad" size={30} tone="on-accent" />
-                </div>
-                <h2
-                  className="mb-2 text-2xl font-extrabold text-bd-ink sm:text-3xl"
-                  style={{ fontFamily: 'var(--bd-font-display)' }}
-                >
-                  {t('lobby.joinSection.title')}
-                </h2>
-                <p className="mb-6 text-sm text-bd-ink-soft sm:text-base">
-                  {t('lobby.joinPromptPublic', { lobby: lobby.name })}
-                </p>
-                <div className="flex items-center justify-center gap-3 text-bd-ink">
-                  <LoadingSpinner />
-                  <span>{t('lobby.joinSection.join')}</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <JoinPrompt
-              lobby={lobby}
-              viewerMode={joinViewerMode}
-              guestName={guestNameInput}
-              setGuestName={setGuestNameInput}
-              password={password}
-              setPassword={setPassword}
-              error={error}
-              errorCode={joinRefusalCode}
-              isJoining={isJoiningLobby}
-              onJoin={handleJoinLobby}
-              onJoinAsGuest={handleGuestJoinLobby}
-              onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
-              onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
-              onWatchAsSpectator={lobby?.allowSpectators ? () => router.push(`/lobby/${code}/spectate`) : undefined}
-              onCreateOwnLobby={fullLobbyCreateRoute ? handleCreateOwnLobby : undefined}
-            />
-          )}
+          <JoinPrompt
+            lobby={lobby}
+            viewerMode={joinViewerMode}
+            guestName={guestNameInput}
+            setGuestName={setGuestNameInput}
+            password={password}
+            setPassword={setPassword}
+            error={error}
+            errorCode={joinRefusalCode}
+            isJoining={isJoiningLobby}
+            onJoin={handleJoinLobby}
+            onJoinAsGuest={handleGuestJoinLobby}
+            onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+            onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+            onWatchAsSpectator={lobby?.allowSpectators ? () => router.push(`/lobby/${code}/spectate`) : undefined}
+            onCreateOwnLobby={fullLobbyCreateRoute ? handleCreateOwnLobby : undefined}
+          />
         </div>
       ) : shouldShowHeldYahtzeeResults ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -2594,7 +2542,7 @@ export default function LobbyPage() {
   // For all other cases, including all waiting rooms, use the shared lobby shell.
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
-      <Suspense fallback={<LoadingSpinner size="lg" />}>
+      <Suspense fallback={<LobbyPageLoadingFallback />}>
         <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>
     </ErrorBoundary>

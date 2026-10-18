@@ -15,19 +15,20 @@ import { spectatorTopicFor } from '@/lib/lobby-realtime-topic'
 import { readSpectatorChatMessage, type SpectatorChatMessage } from '@/lib/spectator-chat'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 
-const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
-const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false })
-const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false })
-const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
-const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
-const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
-const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page'), { ssr: false })
-const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false })
+const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const AliasPage = dynamic(() => import('../alias-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
 const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
 const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
 const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'), { ssr: false })
@@ -526,17 +527,7 @@ export default function SpectatorLobbyPage() {
   }
 
   if (loading) {
-    return (
-      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
-        <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
-          <LoadingSpinner size="lg" />
-          <div>
-            <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.loadingTitle')}</h1>
-            <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.loadingSubtitle')}</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   if (!data) {

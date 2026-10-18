@@ -17,6 +17,7 @@ import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import LeaveIcon from '@/components/LeaveIcon'
 import Chat from '@/components/Chat'
@@ -1021,11 +1022,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   })
 
   if (loading) {
-    return (
-      <div className="game-screen liars-screen liars-screen--centered" style={getThemePageStyle(lobby?.theme)}>
-        <LoadingSpinner />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   const resolvedStatus = game?.status ?? 'waiting'

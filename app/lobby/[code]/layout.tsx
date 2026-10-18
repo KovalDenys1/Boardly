@@ -55,5 +55,5 @@ export default function LobbyLayout({ children }: { children: React.ReactNode })
   // the single largest error bucket in Sentry. In-game UI is highly dynamic
   // and the app already ships its own 4-locale i18n, so auto-translating it
   // buys nothing. Marketing pages and guides stay translatable.
-  return <div translate="no" className="contents">{children}</div>
+  return <div translate="no" className="lobby-route contents">{children}</div>
 }

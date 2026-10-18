@@ -18,7 +18,7 @@ import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
@@ -1015,11 +1015,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   const resolvedStatus = game?.status ?? 'waiting'
@@ -1451,11 +1447,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // phase has already moved past team_assignment — fall back to the same
   // loading state used while data itself is still unset, instead of crashing.
   if (!data.teams || data.teams.length === 0) {
-    return (
-      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   const currentTeam = data.teams[data.currentTeamIndex]
@@ -2201,9 +2193,5 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     )
   }
 
-  return (
-    <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <LoadingSpinner />
-    </div>
-  )
+  return <LobbyPageLoadingFallback />
 }
