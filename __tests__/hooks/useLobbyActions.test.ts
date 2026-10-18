@@ -17,7 +17,6 @@ jest.mock('@/lib/i18n-toast', () => ({
   },
 }))
 
-jest.mock('@/lib/sounds', () => ({ sounds: { play: jest.fn() } }))
 jest.mock('@/lib/auth-headers', () => ({ getAuthHeaders: jest.fn(() => ({})) }))
 jest.mock('@/lib/restore-game-engine-client', () => ({ restoreGameEngineClient: jest.fn() }))
 jest.mock('@/lib/lobby-create-metrics', () => ({ finalizePendingLobbyCreateMetric: jest.fn() }))
