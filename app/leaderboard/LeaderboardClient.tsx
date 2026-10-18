@@ -47,7 +47,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
     <>
       <div className="flex items-center gap-3 md:block">
         <span
-          className="inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_#1F1B16]"
+          className={`inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold shadow-[2px_2px_0_#1F1B16] ${entry.rank <= 3 ? 'text-bd-ink-on-accent' : 'text-bd-ink'}`}
           style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
         >
           {entry.rank}

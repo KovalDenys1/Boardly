@@ -728,7 +728,7 @@ html.dark {
   border: 2px solid var(--bd-ink);
   border-radius: 999px;
   box-shadow: 2px 2px 0 var(--bd-ink);
-  color: var(--bd-ink);
+  color: var(--bd-ink-on-accent);
   flex: 0 0 auto;
   font-size: 12px;
   line-height: 1;
@@ -2121,7 +2121,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   border-radius: 14px;
   font-weight: 700;
   font-size: 15px;
-  color: white;
+  color: var(--bd-ink-on-accent);
   border: none;
   cursor: pointer;
   font-family: inherit;
