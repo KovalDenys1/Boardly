@@ -197,7 +197,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
   const { enabled: soundEnabled } = useSoundSettings()
-  useSoundConsumer(LEGACY_SOUND_CUES)
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 
@@ -2450,6 +2449,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
+  // Held here, not in LobbyPageContent: the dedicated game pages render instead of the shell.
+  useSoundConsumer(LEGACY_SOUND_CUES)
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string

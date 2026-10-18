@@ -337,6 +337,7 @@ export function createSoundEngine(): SoundEngine {
     const running = context.state === 'running'
     if (!running) requestResume(context)
 
+    const previousPlayedAt = lastPlayedAt.get(cue)
     lastPlayedAt.set(cue, now)
     picks.forEach((sample, index) => lastVariant.set(`${cue}:${index}`, sample))
     if (onceKey) gamesPlayed.add(onceKey)
@@ -385,6 +386,11 @@ export function createSoundEngine(): SoundEngine {
         if (context.state === 'running') return
         stopVoice(voice)
         removeVoice(cue, voice)
+        if (onceKey) gamesPlayed.delete(onceKey)
+        if (lastPlayedAt.get(cue) === now) {
+          if (previousPlayedAt === undefined) lastPlayedAt.delete(cue)
+          else lastPlayedAt.set(cue, previousPlayedAt)
+        }
       }, RESUME_GRACE_MS)
     }
     return true

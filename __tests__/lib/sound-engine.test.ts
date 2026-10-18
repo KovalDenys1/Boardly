@@ -430,6 +430,19 @@ describe('sound engine unlock', () => {
     expect(source.stop).toHaveBeenCalled()
   })
 
+  it('gives back the game id and the min gap when the grace drops a cue the context never ran', async () => {
+    await readyEngine()
+    MockAudioContext.resumeMode = 'never'
+    context().state = 'interrupted'
+
+    expect(engine.play('result.win', { gameId: 'g1' })).toBe(true)
+    await wait(300)
+
+    MockAudioContext.resumeMode = 'immediate'
+    context().state = 'running'
+    expect(engine.play('result.win', { gameId: 'g1' })).toBe(true)
+  })
+
   it('decodes before the gesture at 48 kHz and decodes again at the real rate when it differs', async () => {
     MockAudioContext.sampleRate = 44100
     engine = createSoundEngine()
