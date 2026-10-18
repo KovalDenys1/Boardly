@@ -167,6 +167,7 @@ notes-local/
 !scripts/codex-*.sh
 !scripts/export-postgres-mcp-ca.sh
 !scripts/test-mcp-postgres-driver.sh
+!scripts/android-build.sh
 setup-*.*
 # .env-template.*
 # *-template.*

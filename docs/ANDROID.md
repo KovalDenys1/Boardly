@@ -11,21 +11,39 @@ Chrome without a URL bar, so a web release reaches Android players without a new
 - `android/twa-manifest.json`: every setting of the app (identity, colours, start URL, icons,
   shortcuts, SDK levels, version, signing key). The only file in `android/` to edit by hand.
 - `android/` (the rest): the project Bubblewrap generates from it. Do not edit; `update` deletes
-  and rewrites it.
+  and regenerates `app/`, `gradle/` and the Gradle files in `android/`.
+- `scripts/android-build.sh`, run as `npm run android:build`: the signed build (see Build).
 - `public/.well-known/assetlinks.json`: ties the origin to the package (see Asset links).
 - `public/manifest.json`: the web manifest, with `"id": "/"`.
 
 ## Prerequisites
 
 - JDK 17: `brew install openjdk@17`.
-- Android command-line tools in `/opt/homebrew/share/android-commandlinetools`, with
+- Android command-line tools in Homebrew's `share/android-commandlinetools`, with
   `tools -> cmdline-tools/latest` symlinked beside `cmdline-tools/`; Bubblewrap's path check wants
   that folder.
 - Bubblewrap 1.27.0: `npm i -g @bubblewrap/cli@1.27.0`, with `~/.bubblewrap/config.json` pointing
   at the JDK and the SDK. `bubblewrap doctor` must pass.
-- The upload key at `~/.config/boardly-android/upload-key.jks`, alias `upload`, with its password
-  in the macOS keychain. `signingKey.path` in `twa-manifest.json` is written with `~` because the
-  absolute path is machine-specific.
+- The upload key (see Signing key).
+
+## Signing key
+
+- **Keystore:** `~/.config/boardly-android/upload-key.jks`, alias `upload`, RSA 2048, valid 10000
+  days, mode 600. Never commit it (`*.jks` is git-ignored).
+- **Password:** one value for the keystore and the key, in the macOS login keychain as account
+  `boardly`, service `boardly-android-upload`. Read it with `security find-generic-password -a
+  boardly -s boardly-android-upload -w`. It is in no file.
+- **Backup:** `~/Library/Mobile Documents/com~apple~CloudDocs/Keys/boardly-upload-key.jks` (iCloud
+  Drive, `Keys/`). It is only the keystore: the login keychain does not sync, so a new Mac also
+  needs the password, which should be copied once into a password manager.
+- **Lost key:** this is an upload key. Once Play App Signing is on, Google holds the key that
+  players' installs are signed with, and a lost upload key can be reset through Play Console
+  support (a new key, then its fingerprint in `assetlinks.json`).
+- **The `~` in `signingKey.path`:** `twa-manifest.json` writes the path with `~` because the
+  absolute path is machine-specific, but Bubblewrap does not expand `~`. The build script therefore
+  passes `--signingKeyPath "$HOME/.config/boardly-android/upload-key.jks" --signingKeyAlias upload`;
+  a manual `bubblewrap build` must pass the same two flags and set the same two password
+  variables, or it stops at a password prompt.
 
 ## Build
 
@@ -33,8 +51,20 @@ Chrome without a URL bar, so a web release reaches Android players without a new
 npm run android:build
 ```
 
-Produces the signed `.aab` for Play and an `.apk` for a device, both git-ignored. The script reads
-the keystore password from the keychain.
+Writes `android/app-release-bundle.aab` (the signed bundle for Play) and
+`android/app-release-signed.apk` (for a device), both git-ignored, and prints their paths. The
+script reads the keystore password from the keychain and hands it to Bubblewrap through its two
+password environment variables (named in the script) for that one run. It stops with a
+one-line hint when the keystore or the keychain item is missing, and when `twa-manifest.json`
+changed since `android/` was generated (run Regenerate first; Bubblewrap would otherwise ask, and
+bump the version on a yes). Gradle rewrites `android/app/src/main/res/xml/shortcuts.xml` on every
+build, so the script copies that tracked file to a temporary file first and puts it back when it
+exits, whether the build succeeded or failed; it never runs git.
+
+The first run downloads Gradle and the Android dependencies, a few minutes. Check the result with
+`keytool -printcert -jarfile android/app-release-signed.apk`: its SHA-256 must be listed in
+`assetlinks.json`. The build has no native code (`unzip -l` shows no `lib/` entries), so Play's
+16 KB page-size rule does not apply.
 
 ## Regenerate
 
@@ -55,21 +85,26 @@ android/` clean.
 
 ## Asset links
 
-Chrome drops the URL bar only while `assetlinks.json` lists the SHA-256 fingerprint of the key
-that signed the installed app. Two keys sign it, so both fingerprints go in
-`public/.well-known/assetlinks.json`:
+Chrome drops the URL bar only while `https://boardly.online/.well-known/assetlinks.json` lists the
+SHA-256 fingerprint of the key that signed the installed app. Two keys sign it, so both
+fingerprints belong in `public/.well-known/assetlinks.json`:
 
-- the upload key, for the local `.apk`;
-- the Play app-signing key, for what Play delivers. Copy it from Play Console, Release, Setup,
-  App integrity, after the first upload, and release the file before testing the store build.
+- the upload key, for the local `.apk`. It is in the file now;
+- the Play app-signing key, for what Play delivers. It does not exist until the first upload: copy
+  it from Play Console, Release, Setup, App integrity, add it to the same list, and release the
+  file before testing the store build. This is still to do.
+
+`__tests__/public/assetlinks.test.ts` checks the shape and that the package matches
+`twa-manifest.json`. The file reaches players only when it is on `main`.
 
 A wrong or missing fingerprint shows as a URL bar at the top of the app.
 
 ## Play mode
 
-The site recognises the Android app by its start URL, `/?utm_source=android_app&utm_medium=twa`,
-the pair #1465 detects, and runs in Play mode (no purchase path). Changing `startUrl` means
-changing that detection too.
+The site is meant to recognise the Android app by its start URL,
+`/?utm_source=android_app&utm_medium=twa`, and run in Play mode (no purchase path). That detection
+ships with #1465 and is not on `develop` yet. When it lands, changing `startUrl` means changing
+the detection too.
 
 ## Never use a WebView fallback
 
