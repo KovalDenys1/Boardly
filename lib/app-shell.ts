@@ -55,6 +55,13 @@ export function getAppShellInitScript() {
 }
 
 export function isPlayApp(root?: HTMLElement): boolean {
-  const target = root ?? (typeof document === 'undefined' ? undefined : document.documentElement)
-  return target?.dataset.appShell === APP_SHELL_PLAY
+  if (root) return root.dataset.appShell === APP_SHELL_PLAY
+  if (typeof document === 'undefined') return false
+  if (document.documentElement.dataset.appShell === APP_SHELL_PLAY) return true
+  // React removes <html> attributes it did not set when it mounts the root instead of hydrating it.
+  try {
+    return sessionStorage.getItem(APP_SHELL_STORAGE_KEY) === APP_SHELL_PLAY
+  } catch {
+    return false
+  }
 }

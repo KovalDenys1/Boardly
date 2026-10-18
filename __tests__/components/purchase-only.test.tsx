@@ -3,10 +3,12 @@ import { renderToString } from 'react-dom/server'
 import { hydrateRoot } from 'react-dom/client'
 import { render } from '@testing-library/react'
 import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
+import { APP_SHELL_STORAGE_KEY } from '@/lib/app-shell'
 
 describe('PurchaseOnly and PlayAppOnly', () => {
   afterEach(() => {
     delete document.documentElement.dataset.appShell
+    sessionStorage.clear()
     document.body.innerHTML = ''
     jest.restoreAllMocks()
   })
@@ -31,6 +33,18 @@ describe('PurchaseOnly and PlayAppOnly', () => {
     )
 
     expect(queryByText('Buy')).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('PurchaseOnly renders nothing when React has stripped the attribute from a Play app tab', () => {
+    sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+    const { container } = render(
+      <PurchaseOnly>
+        <button>Buy</button>
+      </PurchaseOnly>
+    )
+
+    expect(document.documentElement.dataset.appShell).toBeUndefined()
     expect(container).toBeEmptyDOMElement()
   })
 

@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import {
   APP_SHELL_STORAGE_KEY,
   PLAY_APP_PACKAGE,
@@ -164,6 +166,15 @@ describe('getAppShellInitScript', () => {
 })
 
 describe('isPlayApp', () => {
+  beforeEach(() => {
+    delete document.documentElement.dataset.appShell
+    sessionStorage.clear()
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   it('is true only when the attribute says play', () => {
     const root = document.createElement('html')
     expect(isPlayApp(root)).toBe(false)
@@ -183,5 +194,36 @@ describe('isPlayApp', () => {
     expect(isPlayApp()).toBe(true)
 
     delete document.documentElement.dataset.appShell
+  })
+
+  it('falls back to the stored launch when React has stripped the attribute', () => {
+    sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+
+    expect(document.documentElement.dataset.appShell).toBeUndefined()
+    expect(isPlayApp()).toBe(true)
+  })
+
+  it('ignores the stored launch when a root is passed', () => {
+    sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+
+    expect(isPlayApp(document.createElement('html'))).toBe(false)
+  })
+
+  it('is false when the tab cannot read storage', () => {
+    jest.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+      throw new Error('storage blocked')
+    })
+
+    expect(isPlayApp()).toBe(false)
+  })
+})
+
+describe('purchase UI rule in globals.css', () => {
+  it('hides every purchase marker inside the Play app', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8')
+
+    expect(css).toMatch(
+      /html\[data-app-shell='play'\] \[data-purchase-ui\]\s*\{\s*display:\s*none !important;\s*\}/
+    )
   })
 })
