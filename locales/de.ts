@@ -178,7 +178,7 @@ const de: TranslationWithPlurals = {
       gameModeHelper: 'Schneller Modus, kurzer Modus und Mods folgen bald!',
       gameModeClassic: 'Klassisch (15 Runden)',
       gameModeShort: 'Kurz (9 Runden)',
-      gameModeShortHelper: 'Im kurzen Modus wird nur der untere Teil gespielt – Paare, Straßen, Full House, Kniffel. Rund 40 % schneller.',
+      gameModeShortHelper: 'Im kurzen Modus wird nur der untere Teil gespielt – Paare, Straßen, Full House, Yahtzee. Rund 40 % schneller.',
       comingSoon: 'Demnächst',
       password: 'Passwort',
       passwordPlaceholder: 'Leer lassen für eine öffentliche Lobby',
@@ -421,7 +421,7 @@ const de: TranslationWithPlurals = {
     statsInCollection: 'Spiele im Katalog',
     statsBrowserNative: 'Installationen nötig',
     marquee: {
-      playYahtzee: 'Kniffel spielen',
+      playYahtzee: 'Yahtzee spielen',
       findTheSpy: 'Finde den Spion',
       quickTicTacToe: 'Schnell eine Runde Tic-Tac-Toe',
       matchCards: 'Paare finden bei Memory',
@@ -455,7 +455,7 @@ const de: TranslationWithPlurals = {
       title: 'In drei Schritten zum Spiel',
       step1: {
         title: 'Spiel auswählen',
-        description: 'Wähle Kniffel, Finde den Spion, Tic-Tac-Toe, Memory oder ein anderes Spiel aus der Liste.',
+        description: 'Wähle Yahtzee, Finde den Spion, Tic-Tac-Toe, Memory oder ein anderes Spiel aus der Liste.',
       },
       step2: {
         title: 'Freund einladen oder Bot hinzufügen',
@@ -546,12 +546,12 @@ const de: TranslationWithPlurals = {
       },
     },
     yahtzee: {
-      name: 'Kniffel',
-      title: 'Kniffel',
+      name: 'Yahtzee',
+      title: 'Yahtzee',
       description: 'Der Würfelklassiker mit taktischer Punktewertung. Würfle mit fünf Würfeln Kombinationen und hol dir viele Punkte!',
       difficulty: 'Leicht',
       seo: {
-        question: 'Kann man Kniffel online kostenlos mit Freunden spielen?',
+        question: 'Kann man Yahtzee online kostenlos mit Freunden spielen?',
         answer: 'Ja. Öffne eine Lobby, teile den vierstelligen Code, und bis zu vier von euch spielen in Echtzeit – kostenlos, im Browser, mit einem Gastnamen statt eines Kontos. Der kurze Modus hat neun Kategorien, der klassische alle fünfzehn, und ein Bot kann einen freien Platz besetzen.',
       },
       ribbon: {
@@ -560,11 +560,11 @@ const de: TranslationWithPlurals = {
         time: '15 Min.',
       },
       detail: {
-        title: 'Kniffel online spielen',
+        title: 'Yahtzee online spielen',
         heroDesc: 'Würfle mit fünf Würfeln, wähle die besten Kategorien und spiel eine ganze Partie mit Freunden oder Bots direkt im Browser.',
-        introTitle: 'Was ist Kniffel?',
-        intro0: 'Kniffel ist ein Würfelspiel für ein bis vier Spieler: Du würfelst mit fünf Würfeln, behältst die passenden und trägst das Ergebnis in ein Feld deines Blocks ein. Eine neue Lobby startet im kurzen Modus mit neun Kategorien, der klassische Modus spielt alle fünfzehn, und die höchste Summe gewinnt.',
-        intro1: 'Der Block folgt dem Yatzy-Stil mit den skandinavischen Zeilen „Ein Paar“ und „Zwei Paare“, während Full House, beide Straßen und Kniffel feste 25, 30, 40 und 50 Punkte bringen.',
+        introTitle: 'Was ist Yahtzee?',
+        intro0: 'Yahtzee ist ein Würfelspiel für ein bis vier Spieler: Du würfelst mit fünf Würfeln, behältst die passenden und trägst das Ergebnis in ein Feld deines Blocks ein. Eine neue Lobby startet im kurzen Modus mit neun Kategorien, der klassische Modus spielt alle fünfzehn, und die höchste Summe gewinnt.',
+        intro1: 'Der Block folgt dem Yatzy-Stil mit den skandinavischen Zeilen „Ein Paar“ und „Zwei Paare“, während Full House, beide Straßen und Yahtzee feste 25, 30, 40 und 50 Punkte bringen.',
         step1Title: 'Lobby erstellen oder beitreten',
         step1Desc: 'Starte einen Raum auf der Lobby-Seite oder gib den vierstelligen Code eines Freundes ein. Der Host legt Modus, Plätze und Zugtimer fest.',
         step2Title: 'Würfeln',
@@ -573,7 +573,7 @@ const de: TranslationWithPlurals = {
         step3Desc: 'Nach mindestens einem Wurf wählst du ein leeres Feld. Ist es gefüllt, bleibt es für den Rest des Spiels geschlossen.',
         step4Title: 'Block füllen',
         step4Desc: 'Es geht reihum, bis jedes Feld gefüllt ist. Dann gewinnt die höchste Summe.',
-        benefitsTitle: 'Warum Kniffel auf Boardly spielen?',
+        benefitsTitle: 'Warum Yahtzee auf Boardly spielen?',
         benefit1: 'Live-Mehrspieler: Jeder Zug erscheint sofort bei allen.',
         benefit2: 'Bots spielen mit, wenn deine Freunde offline sind.',
         benefit3: 'Läuft auf Handy, Tablet und Computer.',
@@ -583,7 +583,7 @@ const de: TranslationWithPlurals = {
           rollBeforeScoring: 'Vor dem Eintragen musst du mindestens einmal würfeln, darfst aber nach dem ersten oder zweiten Wurf aufhören.',
           mustScore: 'Jeder Zug endet mit einem Eintrag. Passt nichts, ist eine Null in einem offenen Feld erlaubt.',
           oneUsePerRow: 'Jedes Feld nimmt pro Spiel genau ein Ergebnis auf, auch eine Null, und lässt sich danach nicht mehr ändern.',
-          yahtzeeOnce: 'Der Kniffel bringt einmal 50 Punkte. Weitere fünf Gleiche bringen keinen Bonus und müssen in eine andere Zeile.',
+          yahtzeeOnce: 'Ein Yahtzee bringt einmal 50 Punkte. Weitere fünf Gleiche bringen keinen Bonus und müssen in eine andere Zeile.',
           upperBonus: 'Im klassischen Modus bringen 63 oder mehr bei Einsern bis Sechsern 35 Punkte extra. Der kurze Modus hat keinen Bonus.',
           gameEnd: 'Das Spiel endet, wenn alle Blöcke voll sind, und die höchste Summe inklusive Bonus gewinnt.',
           timerExpiry: 'Läuft der Zugtimer ab, spielt das Spiel deinen Zug zu Ende und trägt ihn für dich ein.',
@@ -686,7 +686,7 @@ const de: TranslationWithPlurals = {
             desc: 'Vier Gleiche nach dem ersten Wurf oder drei mit zwei Würfen übrig – da lohnt sich der Versuch.',
           },
           afterYahtzee: {
-            title: 'Wenn das Kniffel-Feld voll ist',
+            title: 'Wenn das Yahtzee-Feld voll ist',
             desc: 'Trag weitere fünf Gleiche als Viererpasch oder Chance ein, dann zählt die volle Summe.',
           },
           largeBeforeSmall: {
@@ -699,7 +699,7 @@ const de: TranslationWithPlurals = {
           },
           lockFourOfKind: {
             title: 'Viererpasch sichern',
-            desc: 'Vier hohe Würfel ergeben schon eine starke Summe, also würfle nur weiter, solange Kniffel noch offen ist.',
+            desc: 'Vier hohe Würfel ergeben schon eine starke Summe, also würfle nur weiter, solange Yahtzee noch offen ist.',
           },
           keepChance: {
             title: 'Chance aufheben',
@@ -713,7 +713,7 @@ const de: TranslationWithPlurals = {
           },
           zeroInBigBox: {
             title: 'Eine Null im großen Feld',
-            desc: 'Eine Null kostet bei Einsern oder Ein Paar wenig, bei Große Straße oder Kniffel aber vierzig oder fünfzig.',
+            desc: 'Eine Null kostet bei Einsern oder Ein Paar wenig, bei Große Straße oder Yahtzee aber vierzig oder fünfzig.',
           },
           losingBonusPace: {
             title: 'Den Bonus aus den Augen verlieren',
@@ -743,19 +743,19 @@ const de: TranslationWithPlurals = {
           },
         },
         audience: {
-          whoItSuits: 'Kniffel passt zu Familien, gemischten Altersgruppen und Freunden, die selten Brettspiele spielen: Die Regeln sind in einer Minute erklärt, und trotzdem belohnt das Planen auf den Bonus erfahrene Spieler.',
+          whoItSuits: 'Yahtzee passt zu Familien, gemischten Altersgruppen und Freunden, die selten Brettspiele spielen: Die Regeln sind in einer Minute erklärt, und trotzdem belohnt das Planen auf den Bonus erfahrene Spieler.',
         },
         history: {
-          americanAndNordic: 'Yahtzee, wie Kniffel in den USA heißt, kam dort 1956 durch den Spielzeughersteller Edwin S. Lowe auf den Markt und ist heute eine Marke von Hasbro. Die Paar-Zeilen bei Boardly stammen aus Yatzy, dem nordischen Verwandten.',
+          americanAndNordic: 'Yahtzee kam 1956 in den USA durch den Spielzeughersteller Edwin S. Lowe auf den Markt und ist heute eine Marke von Hasbro; in Deutschland kennen viele das Spiel unter dem Namen Kniffel. Die Paar-Zeilen bei Boardly stammen aus Yatzy, dem nordischen Verwandten.',
           firstOnBoardly: 'Es war auch das erste Spiel auf Boardly, begonnen als Schulaufgabe von meinem Lehrer Tarald – der Anstoß, endlich eine Website zu bauen, die ich seit Jahren geplant hatte.',
         },
         faq: {
           isItFree: {
-            q: 'Ist Kniffel auf Boardly kostenlos?',
+            q: 'Ist Yahtzee auf Boardly kostenlos?',
             a: 'Ja. Beide Modi, die Bots und private Lobbys kosten nichts; Premium bringt nur kosmetische Extras wie ein eigenes Avatarfoto und ändert nie das Spiel.',
           },
           isThereABot: {
-            q: 'Gibt es einen Kniffel-Bot?',
+            q: 'Gibt es einen Yahtzee-Bot?',
             a: 'Ja, in drei Stufen: Dice Rookie, Dice Strategist und Dice Oracle. Starte mit „Gegen Bot spielen“ ein Solospiel oder füge Bots zu deiner eigenen Lobby hinzu.',
           },
           timerRunsOut: {
@@ -763,7 +763,7 @@ const de: TranslationWithPlurals = {
             a: 'Dein Zug wird für dich beendet: ein Wurf, falls du noch nicht gewürfelt hattest, dann die offene Kategorie mit den meisten Punkten oder eine Null im günstigsten Feld.',
           },
           yatzyOrYahtzee: {
-            q: 'Ist das Yatzy oder Kniffel?',
+            q: 'Ist das Yatzy oder Yahtzee?',
             a: 'Beides. Die Paar-Zeilen stammen aus dem skandinavischen Yatzy, während die Straßen, Full House und fünf Gleiche die festen amerikanischen Werte bringen.',
           },
           serverRolls: {
@@ -785,7 +785,7 @@ const de: TranslationWithPlurals = {
         },
       },
       lobbies: {
-        title: 'Kniffel-Lobbys',
+        title: 'Yahtzee-Lobbys',
         subtitle: 'Tritt einem Spiel bei oder erstelle deine eigene Lobby!',
         subtitleGuest: 'Sieh dir die Lobbys an und melde dich an, wenn du hosten oder beitreten willst.',
         backToGames: 'Zurück zu den Spielen',
@@ -794,7 +794,7 @@ const de: TranslationWithPlurals = {
         signIn: 'Anmelden',
         createAccount: 'Konto erstellen',
         createNewLobby: 'Neue Lobby erstellen',
-        createDescription: 'Starte dein eigenes Kniffel-Spiel und lade Freunde ein!',
+        createDescription: 'Starte dein eigenes Yahtzee-Spiel und lade Freunde ein!',
         createNow: 'Jetzt erstellen',
         quickJoin: 'Schnell beitreten',
         quickJoinDesc: 'Du hast einen Lobby-Code? Gib ihn unten ein und tritt sofort bei!',
@@ -1692,7 +1692,7 @@ const de: TranslationWithPlurals = {
           },
           howManyPlayers: {
             q: 'Wie viele spielen gleichzeitig?',
-            a: 'Genau zwei pro Partie: du und jemand anderes oder du und ein Bot. Für drei oder vier Leute eignen sich Kniffel und Memory auf Boardly, die größere Gruppen erlauben.',
+            a: 'Genau zwei pro Partie: du und jemand anderes oder du und ein Bot. Für drei oder vier Leute eignen sich Yahtzee und Memory auf Boardly, die größere Gruppen erlauben.',
           },
           canIUndo: {
             q: 'Kann ich einen Zug zurücknehmen?',
@@ -2458,7 +2458,7 @@ const de: TranslationWithPlurals = {
       detail: {
         title: 'Alias online spielen',
         heroDesc: 'Ein Team-Wortspiel: Eine Person beschreibt geheime Begriffe, und das Team versucht, so viele wie möglich zu erraten.',
-        groupNotice: 'Alias braucht mindestens 3 Spieler und hat keine Bots – es ist ein Gruppenspiel. Trommel deine Leute zusammen, bevor du eine Lobby erstellst, oder wärm dich mit einem Spiel mit Bots wie Kniffel oder Vier gewinnt auf.',
+        groupNotice: 'Alias braucht mindestens 3 Spieler und hat keine Bots – es ist ein Gruppenspiel. Trommel deine Leute zusammen, bevor du eine Lobby erstellst, oder wärm dich mit einem Spiel mit Bots wie Yahtzee oder Vier gewinnt auf.',
         introTitle: 'Was ist Alias?',
         intro0: 'Alias ist ein Team-Spiel ums Umschreiben von Begriffen. Eine Person sieht einen geheimen Begriff und erklärt ihn, ohne das Wort selbst zu sagen.',
         intro1: 'Richtige Antworten bringen Punkte, Überspringen kostet Punkte. Die Teams wechseln sich ab, bis der Endstand über den Sieg entscheidet.',
@@ -3238,7 +3238,7 @@ const de: TranslationWithPlurals = {
       fullHouse: 'Full House',
       smallStraight: 'Kleine Straße',
       largeStraight: 'Große Straße',
-      yahtzee: 'Kniffel',
+      yahtzee: 'Yahtzee',
       chance: 'Chance',
       bonus: 'Bonus',
       upperTotal: 'Summe oben',
@@ -3319,7 +3319,7 @@ const de: TranslationWithPlurals = {
       rollDice: 'Würfeln',
       timeLeft: '{{time}} s',
       startingGame: 'Spiel startet …',
-      readyToPlay: 'Bereit für Kniffel?',
+      readyToPlay: 'Bereit für Yahtzee?',
       rollTheDice: 'Würfle, punkte groß ab und hab Spaß!',
       addBotOrWait: 'Füge einen Bot hinzu oder warte auf Mitspieler',
       preparingDice: 'Würfel werden vorbereitet …',
@@ -3329,7 +3329,7 @@ const de: TranslationWithPlurals = {
       leaveConfirm: 'Willst du das Spiel wirklich verlassen?',
       soundOn: 'Ton an',
       soundOff: 'Ton aus',
-      startYahtzeeGame: 'Kniffel starten',
+      startYahtzeeGame: 'Yahtzee starten',
       addBotPlayer: 'Bot hinzufügen',
       addAiOpponent: 'KI-Gegner hinzufügen',
       botAutoAddTip: 'Startest du allein, kommt automatisch ein Bot dazu',
@@ -3774,7 +3774,7 @@ const de: TranslationWithPlurals = {
           },
           yahtzee: {
             title: 'Punkteblock',
-            description: 'Punktestatistiken für beendete Kniffel-Partien.',
+            description: 'Punktestatistiken für beendete Yahtzee-Partien.',
           },
           ticTacToe: {
             title: 'Brett-Ergebnisse',
@@ -4309,7 +4309,7 @@ const de: TranslationWithPlurals = {
     backHome: 'Zur Startseite',
     createLobby: 'Lobby erstellen',
     viewGames: 'Spiele ansehen',
-    funFact: 'Schon gewusst? Die Chance auf einen Kniffel im ersten Wurf liegt bei 1 zu 1.296!',
+    funFact: 'Schon gewusst? Die Chance auf ein Yahtzee im ersten Wurf liegt bei 1 zu 1.296!',
   },
   quickPlay: {
     finding: 'Spiel wird gesucht …',
@@ -4890,10 +4890,10 @@ const de: TranslationWithPlurals = {
   about: {
     breadcrumb: 'Über Boardly',
     title: 'Über Boardly',
-    entity: 'Boardly (boardly.online) ist eine kostenlose Website für Echtzeit-Mehrspieler-Brettspiele: Kniffel, Finde den Spion, Tic-Tac-Toe, Vier gewinnt, Dame, Ludo, Memory, Alias, Lügnerparty, Zeichnen & Raten und Schere, Stein, Papier – gespielt im Browser mit Freunden über einen geteilten Link, ohne Registrierung, auf Englisch, Norwegisch, Russisch, Ukrainisch, Deutsch und Spanisch.',
+    entity: 'Boardly (boardly.online) ist eine kostenlose Website für Echtzeit-Mehrspieler-Brettspiele: Yahtzee, Finde den Spion, Tic-Tac-Toe, Vier gewinnt, Dame, Ludo, Memory, Alias, Lügnerparty, Zeichnen & Raten und Schere, Stein, Papier – gespielt im Browser mit Freunden über einen geteilten Link, ohne Registrierung, auf Englisch, Norwegisch, Russisch, Ukrainisch, Deutsch und Spanisch.',
     originTitle: 'Wie es anfing',
     origin1: 'Boardly begann als Idee, die sein Entwickler lange mit sich herumgetragen hatte: ein Ort, um mit Freunden online Brettspiele zu spielen, ohne Downloads und ohne Konto.',
-    origin2: 'Der Anstoß kam von einer Schulaufgabe, bei der Kniffel programmiert werden sollte. Als die Aufgabe fertig war, war das der Moment, die Website zu starten. Kniffel war das erste Spiel auf Boardly, und alles andere ist daraus gewachsen.',
+    origin2: 'Der Anstoß kam von einer Schulaufgabe, bei der Yahtzee programmiert werden sollte. Als die Aufgabe fertig war, war das der Moment, die Website zu starten. Yahtzee war das erste Spiel auf Boardly, und alles andere ist daraus gewachsen.',
     notTitle: 'Was Boardly nicht ist',
     not: 'Boardly ist nicht boardly.co, boardly.ai oder joinboardly.com – das sind andere Produkte, die nur den Namen teilen; die Brettspiel-Website gibt es ausschließlich unter boardly.online.',
     fundingTitle: 'Wie es finanziert wird',
@@ -4990,7 +4990,7 @@ const de: TranslationWithPlurals = {
       },
       analytics: {
         title: 'Verstehen, wie Boardly genutzt wird',
-        data: 'Über Vercel Web Analytics und Speed Insights: die Seite, die verweisende Website, Land und Region, Browser, Betriebssystem, Gerätetyp und Ladezeiten. Vercel unterscheidet Besuche anhand eines aus der Anfrage gebildeten Hashs statt eines Cookies und verwirft ihn nach 24 Stunden. Außerdem senden wir Spielereignisse wie das Spiel, die Anzahl der Spieler und die Dauer; am Ende einer Partie Kniffel gehören dazu die Punktzahl jedes Platzes und welcher Platz gewonnen hat (und ob es ein Bot war), nie ein Name. Für Vergleiche von Jahr zu Jahr bewahren wir einen Datensatz über Lobby-Beitritte auf, der nur einen gesalzenen Hash enthält, keine ID und keinen Namen.',
+        data: 'Über Vercel Web Analytics und Speed Insights: die Seite, die verweisende Website, Land und Region, Browser, Betriebssystem, Gerätetyp und Ladezeiten. Vercel unterscheidet Besuche anhand eines aus der Anfrage gebildeten Hashs statt eines Cookies und verwirft ihn nach 24 Stunden. Außerdem senden wir Spielereignisse wie das Spiel, die Anzahl der Spieler und die Dauer; am Ende einer Partie Yahtzee gehören dazu die Punktzahl jedes Platzes und welcher Platz gewonnen hat (und ob es ein Bot war), nie ein Name. Für Vergleiche von Jahr zu Jahr bewahren wir einen Datensatz über Lobby-Beitritte auf, der nur einen gesalzenen Hash enthält, keine ID und keinen Namen.',
         basis: 'Unser berechtigtes Interesse zu wissen, welche Seiten und Spiele funktionieren, und zu beheben, was langsam ist.',
         retention: 'Datensätze über Lobby-Beitritte: {{participationsMonths}} Monate. Vercel bewahrt die Analysedaten für den Zeitraum auf, den sein Dienst festlegt.',
       },
