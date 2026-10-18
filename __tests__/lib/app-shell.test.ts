@@ -16,6 +16,35 @@ import {
 
 const LAUNCH_SEARCH = '?utm_source=android_app&utm_medium=twa'
 
+const ANDROID_UA =
+  'Mozilla/5.0 (Linux; Android 16; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.137 Mobile Safari/537.36'
+const WINDOWS_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+const MAC_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+
+type DisplayMode = 'standalone' | 'browser' | 'throws'
+
+/** [label, user agent, display mode, whether that alone means the Play app] */
+const DEVICES: [string, string, DisplayMode, boolean][] = [
+  ['Android in standalone display mode', ANDROID_UA, 'standalone', true],
+  ['Android Chrome in a tab', ANDROID_UA, 'browser', false],
+  ['a Windows install', WINDOWS_UA, 'standalone', false],
+  ['a Mac install', MAC_UA, 'standalone', false],
+  ['an iPhone home-screen app', IPHONE_UA, 'standalone', false],
+  ['Android where matchMedia throws', ANDROID_UA, 'throws', false],
+]
+
+function setDevice(userAgent: string, displayMode: DisplayMode) {
+  jest.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent)
+  jest.spyOn(window, 'matchMedia').mockImplementation((query: string) => {
+    if (displayMode === 'throws') throw new Error('matchMedia unavailable')
+    return { matches: query === `(display-mode: ${displayMode})`, media: query } as MediaQueryList
+  })
+}
+
 function runInitScript() {
   new Function(getAppShellInitScript())()
 }
@@ -33,7 +62,14 @@ describe('constants', () => {
 })
 
 describe('detectPlayLaunch', () => {
-  const base = { search: '', referrer: '', stored: null }
+  const base = { search: '', referrer: '', stored: null, standaloneAndroid: false }
+
+  it('detects an Android page in standalone display mode, whatever else is missing', () => {
+    expect(detectPlayLaunch({ ...base, standaloneAndroid: true })).toBe(true)
+    expect(
+      detectPlayLaunch({ ...base, referrer: 'https://boardly.online/leaderboard', standaloneAndroid: true })
+    ).toBe(true)
+  })
 
   it('detects the TWA start URL', () => {
     expect(detectPlayLaunch({ ...base, search: LAUNCH_SEARCH })).toBe(true)
@@ -230,6 +266,61 @@ describe('getAppShellInitScript', () => {
     expect(window.location.search).toBe(LAUNCH_SEARCH)
   })
 
+  describe('display mode and platform', () => {
+    it('marks a tab Chrome restored after a full page load, and stores the mark again (#1486)', () => {
+      setDevice(ANDROID_UA, 'standalone')
+      setReferrer('https://boardly.online/leaderboard')
+
+      runInitScript()
+
+      expect(document.documentElement.dataset.appShell).toBe('play')
+      expect(sessionStorage.getItem(APP_SHELL_STORAGE_KEY)).toBe('play')
+    })
+
+    it.each(DEVICES)('with no other signal, %s', (_label, userAgent, displayMode, play) => {
+      setDevice(userAgent, displayMode)
+
+      expect(runInitScript).not.toThrow()
+
+      expect(document.documentElement.dataset.appShell).toBe(play ? 'play' : undefined)
+      expect(sessionStorage.getItem(APP_SHELL_STORAGE_KEY)).toBe(play ? 'play' : null)
+    })
+
+    it('still honours the other signals when matchMedia throws', () => {
+      setDevice(ANDROID_UA, 'throws')
+      window.history.replaceState(null, '', `/${LAUNCH_SEARCH}`)
+
+      runInitScript()
+
+      expect(document.documentElement.dataset.appShell).toBe('play')
+      expect(window.location.search).toBe('')
+    })
+
+    const pages: [string, { search: string; referrer: string; stored: string | null }][] = [
+      ['a plain visit', { search: '', referrer: '', stored: null }],
+      ['a same-site full load', { search: '', referrer: 'https://boardly.online/leaderboard', stored: null }],
+      ['the start URL', { search: LAUNCH_SEARCH, referrer: '', stored: null }],
+      ['the Play referrer', { search: '', referrer: 'android-app://online.boardly.app/', stored: null }],
+      ['another app as the referrer', { search: '', referrer: 'android-app://com.whatsapp/', stored: null }],
+      ['a stored launch', { search: '', referrer: '', stored: 'play' }],
+    ]
+
+    it.each(DEVICES.flatMap(([device, ua, mode, standaloneAndroid]) =>
+      pages.map(([page, input]) => [device, page, ua, mode, standaloneAndroid, input] as const)
+    ))('marks exactly when detectPlayLaunch does: %s, %s', (_device, _page, ua, mode, standaloneAndroid, input) => {
+      setDevice(ua, mode)
+      window.history.replaceState(null, '', `/${input.search}`)
+      setReferrer(input.referrer)
+      if (input.stored) sessionStorage.setItem(APP_SHELL_STORAGE_KEY, input.stored)
+
+      runInitScript()
+
+      expect(document.documentElement.dataset.appShell === 'play').toBe(
+        detectPlayLaunch({ ...input, standaloneAndroid })
+      )
+    })
+  })
+
   describe('links that open a new tab', () => {
     const origin = () => window.location.origin
 
@@ -388,6 +479,34 @@ describe('isPlayApp', () => {
     })
 
     expect(isPlayApp()).toBe(false)
+  })
+
+  it.each(DEVICES)('with no attribute and no stored launch, %s', (_label, userAgent, displayMode, play) => {
+    setDevice(userAgent, displayMode)
+
+    expect(isPlayApp()).toBe(play)
+  })
+
+  it('reads the display mode when the tab cannot read storage', () => {
+    setDevice(ANDROID_UA, 'standalone')
+    jest.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+      throw new Error('storage blocked')
+    })
+
+    expect(isPlayApp()).toBe(true)
+  })
+
+  it('still reads the stored launch when matchMedia throws', () => {
+    setDevice(ANDROID_UA, 'throws')
+    sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+
+    expect(isPlayApp()).toBe(true)
+  })
+
+  it('ignores the display mode when a root is passed', () => {
+    setDevice(ANDROID_UA, 'standalone')
+
+    expect(isPlayApp(document.createElement('html'))).toBe(false)
   })
 })
 

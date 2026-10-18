@@ -28,7 +28,11 @@ export function isPlayApp(root?: HTMLElement): boolean {
   if (document.documentElement.dataset.appShell === APP_SHELL_PLAY) return true
   // React removes <html> attributes it did not set when it mounts the root instead of hydrating it.
   try {
-    return sessionStorage.getItem(APP_SHELL_STORAGE_KEY) === APP_SHELL_PLAY
+    if (sessionStorage.getItem(APP_SHELL_STORAGE_KEY) === APP_SHELL_PLAY) return true
+  } catch {}
+  // A TWA reports standalone display mode; Android Chrome in a tab reports browser.
+  try {
+    return /Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone)').matches
   } catch {
     return false
   }

@@ -10,11 +10,13 @@ export function detectPlayLaunch(input: {
   search: string
   referrer: string
   stored: string | null
+  standaloneAndroid: boolean
 }): boolean {
   return (
     input.stored === APP_SHELL_PLAY ||
     isLaunchParams(new URLSearchParams(input.search)) ||
-    PLAY_REFERRER.test(input.referrer)
+    PLAY_REFERRER.test(input.referrer) ||
+    input.standaloneAndroid
   )
 }
 
@@ -50,7 +52,9 @@ export function getAppShellInitScript() {
     try { stored = sessionStorage.getItem('${APP_SHELL_STORAGE_KEY}'); } catch {}
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get('utm_source') === '${LAUNCH_SOURCE}' && params.get('utm_medium') === '${LAUNCH_MEDIUM}';
-    if (stored !== '${APP_SHELL_PLAY}' && !fromUrl && !/${PLAY_REFERRER.source}/.test(document.referrer)) return;
+    let standaloneAndroid = false;
+    try { standaloneAndroid = /Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone)').matches; } catch {}
+    if (stored !== '${APP_SHELL_PLAY}' && !fromUrl && !/${PLAY_REFERRER.source}/.test(document.referrer) && !standaloneAndroid) return;
     document.documentElement.dataset.appShell = '${APP_SHELL_PLAY}';
     document.addEventListener('click', (event) => {
       const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
