@@ -19,12 +19,13 @@ function cut(path: string): PromoVideo {
   }
 }
 
-/**
- * A locale missing here plays English. Ukrainian has no cut and stays on English
- * on purpose: the Russian cut is never the fallback for it.
- */
-const PROMO_VIDEOS: Partial<Record<Locale, PromoVideo>> & { en: PromoVideo } = {
-  en: cut('promo/v2/en'),
+const PROMO_VIDEOS: Record<Locale, PromoVideo> = {
+  en: cut('promo/v2.1/en'),
+  no: cut('promo/v2.1/no'),
+  ru: cut('promo/v2.1/ru'),
+  uk: cut('promo/v2.1/uk'),
+  de: cut('promo/v2.1/de'),
+  es: cut('promo/v2.1/es'),
 }
 
 export function promoVideoFor(language: string | undefined): PromoVideo {
