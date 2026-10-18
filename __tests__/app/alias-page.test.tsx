@@ -631,6 +631,29 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     await waitFor(() => expect(screen.getByText('apple')).toBeTruthy())
   })
 
+  // #1466 review: the lobby topic carries chat too; only the server's alias-guess frames are guesses.
+  it('shows only guesses in the guess feed, not other chat frames on the lobby topic', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'c-1', userId: 'user-3', username: 'Carol', message: 'lobby chatter', type: 'message', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'c-2', userId: 'user-4', username: 'Dan', message: 'untyped chatter', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-2', userId: 'user-3', username: 'Carol', message: 'pear', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+    })
+
+    await waitFor(() => expect(screen.getByText('pear')).toBeTruthy())
+    expect(screen.queryByText('lobby chatter')).toBeNull()
+    expect(screen.queryByText('untyped chatter')).toBeNull()
+  })
+
   it('takes a rate-limited guess back and says why, instead of dropping it silently', async () => {
     Element.prototype.scrollIntoView = jest.fn()
     const response = buildTurnResponse({ meDescribing: false })

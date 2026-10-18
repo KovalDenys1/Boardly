@@ -793,6 +793,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const uid = getCurrentUserId()
     if (msg.userId === uid) return
     if (typeof msg.message !== 'string') return
+    // The same topic carries the lobby's chat; only the guess route's frames belong in the feed.
+    if ((msg as unknown as Record<string, unknown>).type !== 'alias-guess') return
     const rawId = (msg as unknown as Record<string, unknown>).id
     const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : Date.now()
     setGuesses(prev => prev.some(g => g.id === id) ? prev : [...prev.slice(-99), {
