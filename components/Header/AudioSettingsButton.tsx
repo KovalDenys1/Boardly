@@ -1,10 +1,27 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { setSoundEnabled, setSoundVolume } from '@/lib/sound-settings'
 import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { headerControl } from './headerControlStyles'
+
+// navigator.audioSession exists in macOS Safari too, which has no silent switch, so the user agent decides.
+const IPHONE_UA = /iPhone|iPod/
+
+function subscribeNever() {
+  return () => {}
+}
+
+function useIsIPhone(): boolean {
+  return useSyncExternalStore(subscribeNever, () => IPHONE_UA.test(navigator.userAgent), () => false)
+}
+
+function SilentSwitchHint({ className = '' }: { className?: string }) {
+  const { t } = useTranslation()
+  if (!useIsIPhone()) return null
+  return <p className={`text-xs text-(--bd-ink-muted) ${className}`}>{t('header.silentSwitchHint')}</p>
+}
 
 function VolumeIcon({ muted }: { muted: boolean }) {
   return (
@@ -132,6 +149,7 @@ export function AudioSettingsButton() {
               aria-label={t('header.volume')}
             />
           </div>
+          <SilentSwitchHint className="mt-3" />
         </div>
       )}
     </div>
@@ -212,6 +230,7 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
           aria-label={t('header.volume')}
         />
       </div>
+      <SilentSwitchHint className="mt-3 px-1" />
     </div>
   )
 }

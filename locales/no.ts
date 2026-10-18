@@ -385,6 +385,7 @@ const no = {
     mute: 'Demp',
     unmute: 'Aktiver lyd',
     volume: 'Volum',
+    silentSwitchHint: 'På iPhone demper lydløs-bryteren også spillydene.',
     themeLabel: 'Tema',
     themeLight: 'Lys',
     themeDark: 'Mørk',

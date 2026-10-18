@@ -423,6 +423,7 @@ const ru = {
     mute: 'Выключить звук',
     unmute: 'Включить звук',
     volume: 'Громкость',
+    silentSwitchHint: 'На iPhone переключатель беззвучного режима также отключает звуки игры.',
     themeLabel: 'Тема',
     themeLight: 'Светлая',
     themeDark: 'Тёмная',

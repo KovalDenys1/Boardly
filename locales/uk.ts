@@ -425,6 +425,7 @@ const uk: TranslationWithPlurals = {
     mute: 'Вимкнути звук',
     unmute: 'Увімкнути звук',
     volume: 'Гучність',
+    silentSwitchHint: 'На iPhone перемикач беззвучного режиму також вимикає звуки гри.',
     themeLabel: 'Тема',
     themeLight: 'Світла',
     themeDark: 'Темна',
