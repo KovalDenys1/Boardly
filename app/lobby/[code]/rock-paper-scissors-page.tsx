@@ -888,17 +888,13 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     // Leave lives in the header (layout DoD); nothing else needs a row under the board.
 
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
-    const hasMultipleHumans = lobbyPlayers.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
     const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
     for (const p of lobbyPlayers) {
         if (p.userId) chatPlayerProfiles.set(p.userId, { avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null, isPremium: !!p.user?.isPremium })
     }
 
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('games.rock_paper_scissors.roundsTitle')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -937,7 +933,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         </div>
     )
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
@@ -953,7 +949,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     // The room card sits to the right of the scoreboard, in the same grid row
     // and at the same height (layout DoD, scheme A): game, room code, invite
@@ -997,7 +993,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 <div className="game-landscape-side">
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('games.rock_paper_scissors.roundsTitle')} (${rpsData.rounds.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                 </div>
             </div>
 
@@ -1009,7 +1016,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('games.rock_paper_scissors.roundsTitle')} (${rpsData.rounds.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

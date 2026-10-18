@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { isRemoteRollArrival, resolveScorecardPlayerId, rollSignature } from '@/lib/yahtzee-motion'
+import { isRemoteRollArrival, rollSignature } from '@/lib/yahtzee-motion'
 import { REMOTE_ROLL_ANIMATION_MS, useRemoteRoll } from '@/hooks/useRemoteRoll'
 
 const roll = (playerId: string, rollNumber: number, timestamp: number) => ({ playerId, rollNumber, timestamp })
@@ -16,13 +16,6 @@ describe('yahtzee motion', () => {
     expect(isRemoteRollArrival('bot:1:1', roll('bot', 1, 1), 'me')).toBe(false)
     expect(isRemoteRollArrival('bot:1:1', roll('bot', 2, 2), 'me')).toBe(true)
     expect(isRemoteRollArrival('bot:2:2', roll('me', 1, 3), 'me')).toBe(false)
-  })
-
-  it('shows an explicit pick, else the lingering card, else the current player', () => {
-    expect(resolveScorecardPlayerId('picked', 'linger', 'current')).toBe('picked')
-    expect(resolveScorecardPlayerId(null, 'linger', 'current')).toBe('linger')
-    expect(resolveScorecardPlayerId(null, null, 'current')).toBe('current')
-    expect(resolveScorecardPlayerId(null, null, undefined)).toBeNull()
   })
 })
 

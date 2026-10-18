@@ -178,14 +178,6 @@ const ru = {
       subtitle: '{{playerCount}}/{{maxPlayers}} игроков',
       returnButton: 'Вернуться в лобби',
     },
-    players: {
-      title: 'Игроки',
-      clickToView: 'Нажмите для просмотра',
-      fullList: 'Все игроки',
-      position: 'Позиция',
-      ready: 'Готов',
-      viewCards: 'Просмотр карт'
-    },
     create: {
       title: 'Создать лобби',
       lobbyName: 'Название лобби',
@@ -1172,7 +1164,7 @@ const ru = {
         multiplayer: {
           withFriends: {
             title: 'Играйте с другом на расстоянии',
-            desc: 'Отправьте четырёхзначный код или ссылку и играйте откуда угодно. Каждый знак сразу появляется на обоих экранах, а когда играют двое людей, есть чат.',
+            desc: 'Отправьте четырёхзначный код или ссылку и играйте откуда угодно. Каждый знак сразу появляется на обоих экранах, а рядом с полем есть чат.',
           },
           botsAndSolo: {
             title: 'Тренируйтесь в одиночку',
@@ -1464,7 +1456,7 @@ const ru = {
           },
           worksOnPhone: {
             q: 'Можно ли играть в Память на телефоне?',
-            a: 'Да, в мобильном браузере. Ходы открываются во вкладке рядом с полем, а когда играют двое и больше, там же и чат.',
+            a: 'Да, в мобильном браузере. Карточки подстраиваются под размер экрана, а ходы и чат открываются во вкладках рядом с полем.',
           },
           timerRunsOut: {
             q: 'Что будет, если мой таймер хода истечёт?',
@@ -1922,7 +1914,7 @@ const ru = {
         multiplayer: {
           withFriends: {
             title: 'Играйте с другом на расстоянии',
-            desc: 'Отправьте код или ссылку: ходы сразу видны на обеих досках, а когда играют двое людей, есть чат.',
+            desc: 'Отправьте код или ссылку: ходы сразу видны на обеих досках, а рядом с доской есть чат.',
           },
           botsAndSolo: {
             title: 'Тренируйтесь в одиночку',
@@ -2366,7 +2358,7 @@ const ru = {
         multiplayer: {
           withFriends: {
             title: 'Играйте с друзьями где угодно',
-            desc: 'Поделитесь кодом с тремя друзьями; чат откроется, когда за столом двое людей.',
+            desc: 'Поделитесь кодом с тремя друзьями; чат — рядом с доской.',
           },
           botsAndSolo: {
             title: 'Боты для игры в одиночку',
@@ -3229,7 +3221,6 @@ const ru = {
       perTurn: 'за ход',
       timeLimit: 'Лимит времени',
       gameFinished: 'Игра завершена!',
-      score: 'Счёт',
       chatPlaceholder: 'Написать…',
       spectatingBadge: 'Наблюдение',
       spectator: 'Зритель',
@@ -3258,7 +3249,6 @@ const ru = {
       settings: 'Настройки',
       botBadge: 'ИИ',
       playerLeft: 'вышел',
-      viewPlayerProfile: 'Открыть профиль игрока',
       stepOf: 'Шаг {{current}} из {{total}}',
       vs: 'против',
       removeBot: 'Убрать бота',
@@ -3307,7 +3297,6 @@ const ru = {
     },
     actions: {
       roll: 'Бросить кости',
-      hold: 'Держать',
       score: 'Очки',
       rollsLeft: 'Бросков осталось',
       myCards: 'Мои карты',
@@ -3381,12 +3370,8 @@ const ru = {
     ui: {
       hurry: 'Поторопитесь!',
       moveReverted: 'Ход не применился. Состояние восстановлено с сервера.',
-      waitTurnHint: 'Дождитесь своего хода...',
-      rollFirstHint: 'Сначала бросьте кости',
-      holdHint: 'Нажмите на кость, чтобы удержать/отпустить',
+      holdHint: 'Нажмите на кубик, чтобы оставить его',
       rollDice: 'Бросить',
-      rolling: 'Бросает...',
-      rollsLeft: '{{count}} / 3',
       timeLeft: '{{time}}с',
       startingGame: 'Начинаем игру...',
       readyToPlay: 'Готовы играть в Ятзи?',
@@ -3412,7 +3397,6 @@ const ru = {
       strong: 'Отлично',
       playable: 'Средне',
       fallbackOption: 'Слив',
-      best: 'Лучшее',
       bestPlus: 'Лучшее +{{score}}',
       burnSlot: 'Слить категорию',
       subtotal: 'Подытог',
@@ -3428,7 +3412,6 @@ const ru = {
       rollsLeftCount_one: 'остался {{count}} бросок',
       rollsLeftCount_few: 'осталось {{count}} броска',
       rollsLeftCount_many: 'осталось {{count}} бросков',
-      noRollsLeft: 'Бросков не осталось',
       holdingDice: 'Удерживает {{count}} кубик',
       holdingDice_other: 'Удерживает {{count}} кубика',
       holdingDice_one: 'Удерживает {{count}} кубик',
@@ -3440,32 +3423,15 @@ const ru = {
       rollsLeftChip: 'осталось {{count}}',
       holdChip: 'Держим {{held}}/{{total}}',
       reviewScorecard: 'Посмотреть таблицу',
-      tileScoredAria: '{{category}}: записано {{score}}',
-      tileOpenAria: '{{category}}: свободно',
       tileScoreAria: '{{category}}: записать {{score}}',
       tileConfirmZeroAria: '{{category}}: нажмите ещё раз, чтобы записать 0',
       tapAgainZero: 'Ещё раз — 0',
-      burnBadge: 'Сжечь',
-      upperShort: 'Верх',
-      lowerShort: 'Низ',
-      categoriesShort: 'Категории',
-      shortModeNote: 'Короткая игра: 9 раундов, одна клетка за раунд. В классическом режиме добавляются единицы–шестёрки и бонус.',
-      bonusEarned: '+35 бонус',
-      onPar: 'в графике',
-      aheadOfPar: '+{{count}} к графику',
-      behindPar: '−{{count}} от графика',
-      playersCard: 'Карта: {{player}}',
-      pickArrow: 'Выбрать «{{category}}» →',
-      burnArrow: 'Сжечь «{{category}}» →',
-      backToMine: 'Моя карта',
       scoresLabel: 'Счёт',
       youPill: 'Вы',
-      pillAria: '{{player}}: {{score}} очков, показать карту',
+      pillAria: '{{player}}: {{score}} очков',
       dieAria: 'Кубик {{value}}, нажмите, чтобы оставить',
       dieHeldAria: 'Кубик {{value}}, оставлен, нажмите, чтобы отпустить',
       dieBlankAria: 'Кубик ещё не брошен',
-      rollWaiting: 'Ожидание',
-      rollWithCount: 'Бросок · {{count}}',
       playerTurn: 'Ход: {{player}}',
       turnRollFirst: 'Ваш ход: бросайте',
       turnHoldOrPick: 'Бросьте снова или выберите поле',
@@ -3473,6 +3439,9 @@ const ru = {
       roundOf: 'Раунд {{current}}/{{total}}',
       tabGame: 'Игра',
       pointsShort: '{{count}} очк.',
+      heldLabel: 'Держу',
+      cellOpen: 'Свободно',
+      tabRolls: 'Броски',
     }
   },
   chat: {
@@ -4826,7 +4795,6 @@ const ru = {
     allDiceHeld: 'Все кости зафиксированы — отпустите одну или запишите очки!',
     notYourTurn: 'Сейчас не ваш ход!',
     gameOver: 'Игра окончена! Победил {{player}}!',
-    playerTurn: 'Ход {{player}}!',
     rollFailed: 'Не удалось бросить кости',
     scoreFailed: 'Не удалось засчитать очки',
     linkCopied: 'Ссылка-приглашение скопирована в буфер обмена!',

@@ -29,6 +29,12 @@ const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry')
   loading: () => null,
 })
 
+// Dev only – Agentation's licence does not cover shipping it inside a product we sell.
+const AgentationToolbar =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(() => import('agentation').then((m) => m.Agentation))
+    : null
+
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
@@ -260,6 +266,7 @@ export default function RootLayout({
           <FeedbackWidget />
         </Providers>
         {isProduction && <DeferredTelemetry />}
+        {AgentationToolbar && <AgentationToolbar endpoint="http://localhost:4747" />}
       </body>
     </html>
   )

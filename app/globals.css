@@ -997,7 +997,7 @@ body {
 }
 
 /* Animations. fade-in, scale-in and bounce-in are defined once, further
-   down with the Spy animations; fade-out once, after shake-roll (#1111). */
+   down with the Spy animations; fade-out once, after the roll keyframes (#1111). */
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -1063,33 +1063,8 @@ body {
   75% { transform: rotate(270deg) scale(1.1); }
 }
 
-@keyframes shake-roll {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  10% { transform: translate(-5px, -5px) rotate(-10deg); }
-  20% { transform: translate(5px, -5px) rotate(10deg); }
-  30% { transform: translate(-5px, 5px) rotate(-10deg); }
-  40% { transform: translate(5px, 5px) rotate(10deg); }
-  50% { transform: translate(-5px, -5px) rotate(-10deg) scale(1.1); }
-  60% { transform: translate(5px, -5px) rotate(10deg); }
-  70% { transform: translate(-5px, 5px) rotate(-10deg); }
-  80% { transform: translate(5px, 5px) rotate(10deg); }
-  90% { transform: translate(-2px, -2px) rotate(-5deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-
 .animate-roll {
   animation: roll 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.animate-shake-roll {
-  animation: shake-roll 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-}
-
-@keyframes dice-hold-pop {
-  0%   { transform: scale(1); }
-  35%  { transform: scale(1.18) rotate(-4deg); }
-  65%  { transform: scale(0.92) rotate(3deg); }
-  100% { transform: scale(0.95) rotate(0deg); }
 }
 
 @keyframes fade-out {
@@ -2537,13 +2512,17 @@ input[type="range"].slider-thumb::-moz-range-track {
 .memory-tile-last .memory-tile-face {
   box-shadow: inset 0 0 0 3px var(--bd-lav);
 }
-/* The Yahtzee replay is taller than a phone-landscape card; it scrolls from its top rather than overflowing a centring parent. */
+/* The Yahtzee replay: the tray over the score pad, which scrolls inside itself when the card is short. */
 .yahtzee-replay {
-  max-height: calc(100cqh - 24px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 4px;
+  width: min(calc(100cqw - 24px), 720px);
+  height: calc(100cqh - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+.yahtzee-replay__tray { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.yahtzee-replay__tray > .yz-tray { flex: 1 1 auto; min-width: 0; }
+.yahtzee-replay__rolls { flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--bd-ink-soft); }
 /* The RPS stage fills the replay card above a one-line rail of the rounds so far. */
 .rps-replay {
   width: min(calc(100cqw - 24px), 640px);
@@ -2819,12 +2798,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   to { opacity: 0; }
 }
 
-/* ============ YAHTZEE – TILE GRID (#1187) ============ */
-/* One screen on a phone: score pills, dice + Roll, and every box of the
-   scorecard as a tile, with nothing to scroll between the roll and the box it
-   goes in. The grid is the one flexible region: its rows are 1fr with a 44px
-   floor, so on a tall screen the tiles grow and on a short one the grid scrolls
-   rather than dropping below the tap-target size. Colours are tokens only. */
+/* ============ YAHTZEE – DICE TRAY AND SCORE PAD (#1446) ============ */
 
 .yz-panel {
   container: yzpanel / size;
@@ -2832,23 +2806,561 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 12px 10px;
+  gap: 10px;
   box-sizing: border-box;
 }
 
-/* Score pills: a single-line rail that scrolls sideways, never wraps. */
+.yz-revert {
+  flex-shrink: 0;
+  padding: 6px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; text-align: center;
+  color: var(--bd-ink); background: var(--bd-bg2); border: 1.5px solid var(--bd-coral);
+}
+
+.yz-tray {
+  container: yztray / inline-size;
+  flex-shrink: 0;
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+  background: var(--bd-bg2);
+  box-shadow: inset 0 2px 0 rgba(31,27,22,0.06);
+}
+/* min() of a width- and a height-derived size, or a tall die row clips (layout DoD 6). */
+.yz-tray__body {
+  --yz-gap: clamp(6px, 2.2cqw, 12px);
+  --yz-die: min(calc((100cqw - 4 * var(--yz-gap)) / 5), 9.5cqh, 60px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.yz-tray__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--bd-ink-soft);
+  animation: fade-in-plain var(--bd-dur) ease-out both;
+}
+.yz-tray__dice {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--yz-gap);
+  /* Room above for a held die's lift, below for its tag; the row never changes height. */
+  padding: 6px 0 9px;
+}
+@container yztray (min-width: 560px) {
+  .yz-tray__body {
+    --yz-die: min(calc((100cqw - 156px - 24px - 4 * var(--yz-gap)) / 5), 12cqh, 72px);
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .yz-tray__dice { justify-content: center; }
+  .yz-tray__body > .yz-roll { width: auto; min-width: 156px; min-height: var(--yz-die); padding-inline: 18px; }
+}
+
+.yz-die {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--yz-die);
+  height: var(--yz-die);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.yz-die:disabled { cursor: default; }
+.yz-die__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 17%;
+  box-sizing: border-box;
+  border-radius: 24%;
+  border: 2px solid var(--bd-ink);
+  background: var(--bd-card);
+  box-shadow: 0 3px 0 var(--bd-ink);
+  transition-property: transform, background-color, box-shadow;
+  transition-duration: var(--bd-dur);
+  transition-timing-function: var(--bd-ease-spring);
+}
+.yz-die__pip { place-self: center; width: 64%; height: 64%; border-radius: 999px; }
+.yz-die__pip--on { background: var(--bd-ink); }
+.yz-die--held .yz-die__face {
+  transform: translateY(-6px);
+  background: var(--bd-sun);
+  box-shadow: 0 9px 0 var(--bd-ink);
+}
+.yz-die--held .yz-die__pip--on { background: var(--bd-ink-on-accent); }
+.yz-die__held {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  translate: -50% 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bd-ink);
+  background: var(--bd-sun);
+  color: var(--bd-ink-on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.8);
+  transition-property: opacity, transform;
+  transition-duration: var(--bd-dur-fast);
+  transition-timing-function: ease-out;
+}
+.yz-die--held .yz-die__held { opacity: 1; transform: none; }
+.yz-die--placeholder .yz-die__face {
+  border-style: dashed;
+  border-color: var(--bd-input-border);
+  background: transparent;
+  box-shadow: none;
+}
+.yz-die--placeholder .yz-die__pip--on { background: var(--bd-ink-muted); opacity: 0.35; }
+@media (hover: hover) {
+  .yz-die:not(:disabled):hover .yz-die__face { transform: translateY(-2px); }
+  .yz-die--held:not(:disabled):hover .yz-die__face { transform: translateY(-7px); }
+}
+.yz-die:not(:disabled):active .yz-die__face { scale: 0.96; }
+.yz-die:focus-visible { outline: none; }
+.yz-die:focus-visible .yz-die__face { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-die--rolling .yz-die__face {
+  animation: yz-tumble var(--bd-dur-slow) var(--bd-ease-out) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.yz-die--landed .yz-die__face { animation: yz-land var(--bd-dur) var(--bd-ease-spring) both; }
+@keyframes yz-tumble {
+  0% { transform: none; }
+  30% { transform: translateY(-14px) rotate(-130deg) scale(1.04); }
+  62% { transform: translateY(3px) rotate(-280deg) scale(0.98); }
+  82% { transform: translateY(-3px) rotate(-345deg); }
+  100% { transform: none; }
+}
+@keyframes yz-land {
+  from { transform: scale(0.88); }
+  to { transform: none; }
+}
+
+.yz-roll {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 2px solid var(--bd-ink);
+  background: var(--bd-ink);
+  color: var(--bd-bg);
+  box-shadow: 0 4px 0 var(--bd-coral);
+  font-family: var(--bd-font-display);
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  transition-property: scale, background-color, color, box-shadow, border-color;
+  transition-duration: var(--bd-dur-fast);
+  transition-timing-function: ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.yz-roll__icon { display: inline-flex; line-height: 0; }
+.yz-roll--rolling .yz-roll__icon { animation: yz-roll-spin 600ms linear infinite; }
+@keyframes yz-roll-spin { to { transform: rotate(360deg); } }
+.yz-roll__pips { display: inline-flex; gap: 4px; }
+.yz-roll__pip {
+  width: 8px; height: 8px; border-radius: 999px;
+  border: 1.5px solid currentColor;
+  opacity: 0.45;
+  transition-property: opacity, background-color, transform;
+  transition-duration: var(--bd-dur);
+  transition-timing-function: ease-out;
+}
+.yz-roll__pip--left { background: var(--bd-sun); opacity: 1; }
+@media (hover: hover) {
+  .yz-roll:not(:disabled):hover { box-shadow: 0 5px 0 var(--bd-coral); }
+}
+.yz-roll:not(:disabled):active { scale: 0.96; box-shadow: 0 2px 0 var(--bd-coral); }
+.yz-roll:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-roll:disabled {
+  cursor: default;
+  background: var(--bd-card);
+  color: var(--bd-ink-soft);
+  border-color: var(--bd-line);
+  box-shadow: none;
+}
+.yz-roll:disabled .yz-roll__pip--left { background: var(--bd-ink-soft); border-color: var(--bd-ink-soft); opacity: 0.6; }
+
+.yz-sheet-wrap {
+  container: yzsheet / size;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.yz-sheet {
+  --yz-cat-min: 7rem;
+  --yz-col-min: 3rem;
+  --yz-row-min: 28px;
+  --yz-split-gap: 14px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns:
+    [a-start] minmax(var(--yz-cat-min), 1.5fr) [a-cat-end]
+    repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end];
+  grid-template-rows: auto repeat(var(--yz-stack-rows), minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  border-radius: 16px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-card);
+  font-variant-numeric: tabular-nums;
+}
+/* A finger needs taller rows than a pointer; a short window scrolls the pad, never the page. */
+@media (pointer: coarse) {
+  .yz-sheet { --yz-row-min: 38px; }
+}
+.yz-sheet[aria-busy='true'] .yz-ghost { opacity: 0.6; }
+
+.yz-sheet__row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: a-start / a-end;
+  grid-row: var(--yz-row);
+}
+.yz-sheet__row--head { grid-row: 1; position: sticky; top: 0; z-index: 2; }
+.yz-sheet__row--total { position: sticky; bottom: 0; z-index: 2; }
+.yz-sheet__row--head-b,
+.yz-sheet__row--upperTotal { display: none; }
+
+.yz-sheet__rh,
+.yz-sheet__corner,
+.yz-sheet__ph,
+.yz-cell {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--bd-line);
+}
+.yz-sheet__ph,
+.yz-cell {
+  justify-content: center;
+  padding-inline: 8px;
+  border-inline-start: 1px solid var(--bd-line);
+  transition: background-color var(--bd-dur) ease-out;
+}
+.yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 14%, transparent); }
+
+.yz-sheet__corner,
+.yz-sheet__ph {
+  min-height: 34px;
+  background-color: var(--bd-card-warm);
+  border-bottom: 2px solid var(--bd-ink);
+}
+.yz-sheet__ph {
+  flex-wrap: wrap;
+  gap: 2px 5px;
+  padding: 5px 4px 6px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--bd-ink);
+  text-align: center;
+}
+.yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-deep); }
+/* Three or four players: the marks go above the name, which gets the column's whole width. */
+.yz-sheet:is([data-players='3'], [data-players='4']) .yz-sheet__ph { flex-direction: column; }
+.yz-sheet__ph.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
+.yz-sheet__ph-name { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: break-word; hyphens: auto; }
+.yz-sheet__ph.is-departed .yz-sheet__ph-name { color: var(--bd-ink-soft); text-decoration: line-through; }
+.yz-sheet__ph-dot {
+  width: 7px; height: 7px; flex-shrink: 0; border-radius: 999px;
+  background: var(--bd-coral);
+  opacity: 0;
+  transform: scale(0.4);
+  transition-property: opacity, transform;
+  transition-duration: var(--bd-dur);
+  transition-timing-function: var(--bd-ease-spring);
+}
+.yz-sheet__ph.is-current .yz-sheet__ph-dot { opacity: 1; transform: none; }
+
+.yz-sheet__cat {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px 3px 12px;
+  box-sizing: border-box;
+  border: 0;
+  background: none;
+  color: var(--bd-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.yz-sheet__cat--static { cursor: default; }
+.yz-sheet__cat:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; border-radius: 8px; }
+.yz-sheet__cat-text { position: relative; flex: 0 1 auto; min-width: 0; }
+.yz-sheet__cat-name {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  transition: opacity var(--bd-dur-fast) ease-out;
+}
+.yz-sheet__cat-hint {
+  position: absolute; inset-block: 0; inset-inline-start: 0;
+  display: flex; align-items: center; white-space: nowrap;
+  font-size: 12px; font-weight: 800; line-height: 1.1;
+  animation: fade-in-plain var(--bd-dur-fast) ease-out both;
+}
+.yz-sheet__row.is-armed :is(.yz-sheet__cat-name, .yz-sheet__cat-info) { opacity: 0; }
+.yz-sheet__cat-info {
+  display: inline-flex; flex-shrink: 0;
+  color: var(--bd-ink-muted);
+  transition-property: color, opacity;
+  transition-duration: var(--bd-dur-fast);
+  transition-timing-function: ease-out;
+}
+@media (hover: hover) {
+  .yz-sheet__cat:not(.yz-sheet__cat--static):hover .yz-sheet__cat-info { color: var(--bd-ink); }
+}
+.yz-sheet__cat--total { width: auto; padding-inline-end: 14px; font-family: var(--bd-font-display); font-size: 15px; font-weight: 800; }
+.yz-mini-die {
+  width: 16px; height: 16px; flex-shrink: 0;
+  display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 2px; box-sizing: border-box;
+  border: 1.5px solid var(--bd-ink); border-radius: 4px;
+  background: var(--bd-card);
+}
+.yz-mini-die > span { place-self: center; width: 2.5px; height: 2.5px; border-radius: 999px; }
+.yz-mini-die > .yz-mini-die__pip--on { background: var(--bd-ink); }
+
+.yz-cell { overflow: hidden; }
+.yz-cell__num {
+  font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; color: var(--bd-ink);
+}
+.yz-cell__dash { color: var(--bd-ink-muted); font-size: 15px; line-height: 1; }
+.yz-sheet__row--sum > *,
+.yz-sheet__row--bonus > *,
+.yz-sheet__row--upperTotal > * { background-color: var(--bd-card-warm); }
+.yz-sheet__row--sum .yz-cell.is-current,
+.yz-sheet__row--bonus .yz-cell.is-current,
+.yz-sheet__row--upperTotal .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 18%, var(--bd-card-warm)); }
+.yz-sheet__row--bonus > * { border-bottom: 2px solid var(--bd-line); }
+.yz-cell--summary .yz-cell__num { font-size: 15px; color: var(--bd-ink-soft); }
+.yz-cell--summary .yz-cell__num--bonus { color: var(--bd-ink); font-weight: 800; }
+.yz-cell__bar {
+  position: absolute; inset-inline: 10px; bottom: 4px;
+  height: 3px; border-radius: 2px; overflow: hidden;
+  background: var(--bd-line);
+}
+.yz-cell__bar > i {
+  display: block; width: 100%; height: 100%;
+  background: var(--bd-sun);
+  transform-origin: left center;
+  transition: transform var(--bd-dur-slow) var(--bd-ease-out);
+}
+.yz-cell__bar--done > i { background: var(--bd-mint); }
+.yz-cell__bar--missed > i { background: var(--bd-ink-muted); }
+.yz-cell--summary .yz-cell__num--missed { color: var(--bd-ink-soft); font-weight: 600; }
+
+.yz-sheet__row--total > * {
+  background-color: var(--bd-card-warm);
+  border-top: 2px solid var(--bd-ink);
+  border-bottom: 0;
+}
+.yz-sheet__row--total > .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
+.yz-cell__total { font-family: var(--bd-font-display); font-weight: 800; font-size: 20px; line-height: 1; color: var(--bd-ink); }
+
+.yz-cell--action { padding: 3px; }
+.yz-ghost {
+  width: min(100%, 6.5rem);
+  height: min(100%, 2.75rem);
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  border: 1.5px dashed var(--bd-input-border);
+  background: var(--bd-card);
+  color: var(--bd-ink-soft);
+  font: inherit;
+  cursor: pointer;
+  transition-property: scale, background-color, border-color, color;
+  transition-duration: var(--bd-dur-fast);
+  transition-timing-function: ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; }
+.yz-ghost--zero { background: transparent; border-color: color-mix(in srgb, var(--bd-input-border) 55%, transparent); color: var(--bd-ink-muted); }
+.yz-ghost--burn { border-color: var(--bd-ink-soft); }
+.yz-ghost--best {
+  background: var(--bd-mint);
+  border: 2px solid var(--bd-ink);
+  color: var(--bd-ink-on-accent);
+  box-shadow: 0 2px 0 var(--bd-ink);
+}
+.yz-ghost--best .yz-ghost__value { font-weight: 800; }
+.yz-ghost--armed {
+  border: 2px solid var(--bd-coral-deep);
+  background: color-mix(in srgb, var(--bd-coral) 16%, var(--bd-card));
+  color: var(--bd-ink);
+}
+@media (hover: hover) {
+  .yz-ghost:not(:disabled):not(.yz-ghost--best):hover {
+    border-style: solid;
+    border-color: var(--bd-ink);
+    background: color-mix(in srgb, var(--bd-sun) 28%, var(--bd-card));
+    color: var(--bd-ink);
+  }
+}
+.yz-ghost:not(:disabled):active { scale: 0.96; }
+.yz-ghost:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -1px; }
+.yz-ghost:disabled { cursor: default; }
+
+.yz-cell--pop .yz-cell__num { animation: yz-cell-pop var(--bd-dur) var(--bd-ease-spring) both; }
+@keyframes yz-cell-pop {
+  0% { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: none; }
+}
+.yz-cell--sweep::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bd-sun) 75%, transparent) 55%, transparent);
+  pointer-events: none;
+  animation: yz-cell-sweep var(--bd-dur-slow) var(--bd-ease-out) both;
+}
+.yz-cell--sweep .yz-cell__num { animation: yz-cell-in var(--bd-dur) var(--bd-ease-out) 140ms both; }
+@keyframes yz-cell-sweep {
+  from { transform: translateX(-100%); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0.3; }
+}
+@keyframes yz-cell-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.yz-cell--last .yz-cell__num { position: relative; }
+.yz-cell--last .yz-cell__num::after {
+  content: '';
+  position: absolute;
+  inset: -7px -10px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--bd-sun-deep) 70%, transparent);
+  pointer-events: none;
+}
+
+/* Side by side on shared rows, fifteen boxes take the height of nine. */
+@container yzsheet (min-width: 470px) {
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) {
+    grid-template-columns:
+      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
+      var(--yz-split-gap)
+      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
+    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upperTotal { display: grid; }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
+  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
+}
+@container yzsheet (min-width: 580px) {
+  .yz-sheet--classic[data-players='3'] {
+    grid-template-columns:
+      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
+      var(--yz-split-gap)
+      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
+    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upperTotal { display: grid; }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
+  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
+}
+@container yzsheet (min-width: 680px) {
+  .yz-sheet--classic[data-players='4'] {
+    grid-template-columns:
+      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
+      var(--yz-split-gap)
+      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
+    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upperTotal { display: grid; }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
+  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
+}
+/* A narrow pad (320, four players) gives the names the width and drops the info glyph. */
+@container yzsheet (max-width: 359px) {
+  .yz-sheet { --yz-cat-min: 5.75rem; --yz-col-min: 2.6rem; }
+  .yz-sheet__cat { padding-inline: 8px 4px; font-size: 12px; }
+  .yz-sheet__cat-info { display: none; }
+  .yz-sheet__ph, .yz-cell { padding-inline: 6px; }
+  .yz-cell--action { padding: 3px; }
+}
+
+/* Hidden by default, so a browser without the Popover API never shows the rule inline. */
+.yz-rule-pop { display: none; }
+.yz-rule-pop:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 2px solid var(--bd-ink);
+  border-radius: 12px;
+  background: var(--bd-card);
+  color: var(--bd-ink);
+  box-shadow: 0 4px 0 var(--bd-ink);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: start;
+  animation: yz-pop-in var(--bd-dur-fast) ease-out both;
+}
+.yz-rule-pop__name { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
+.yz-rule-pop__rule { color: var(--bd-ink-soft); }
+.yz-rule-pop__value { font-weight: 700; }
+@keyframes yz-pop-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 .yz-pills {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
   flex: 1 1 auto;
+  margin: 0;
+  padding: 0 16px 0 0;
+  list-style: none;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
   mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
-  padding-right: 16px;
 }
 .yz-pills::-webkit-scrollbar { display: none; }
 .yz-pill {
@@ -2856,24 +3368,36 @@ input[type="range"].slider-thumb::-moz-range-track {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 10px;
   border-radius: 999px;
   border: 1.5px solid var(--bd-line);
-  background: var(--bd-input-bg);
+  background: var(--bd-card);
   color: var(--bd-ink);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  cursor: pointer;
-  transition: background var(--bd-dur-fast, 120ms), color var(--bd-dur-fast, 120ms);
+  transition-property: background-color, border-color;
+  transition-duration: var(--bd-dur);
+  transition-timing-function: ease-out;
 }
-.yz-pill__name { max-width: 7ch; overflow: hidden; text-overflow: ellipsis; }
+.yz-pill--current { border-color: var(--bd-ink); background: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card)); }
+button.yz-pill { font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) {
+  button.yz-pill:hover { border-color: var(--bd-ink); }
+}
+button.yz-pill:active { scale: 0.96; }
+button.yz-pill:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-pill__name { max-width: 8ch; overflow: hidden; text-overflow: ellipsis; }
 .yz-pill__score { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
-.yz-pill--viewing { background: var(--bd-ink); border-color: var(--bd-ink); color: var(--bd-bg); }
 .yz-pill__turn {
   width: 7px; height: 7px; border-radius: 999px; background: var(--bd-coral); flex-shrink: 0;
+  opacity: 0; transform: scale(0.4);
+  transition-property: opacity, transform;
+  transition-duration: var(--bd-dur);
+  transition-timing-function: var(--bd-ease-spring);
 }
+.yz-pill--current .yz-pill__turn { opacity: 1; transform: none; }
 
 .yz-topbar {
   display: flex;
@@ -2884,335 +3408,26 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .yz-sound {
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 36px; height: 36px; border-radius: 12px;
-  border: 1.5px solid var(--bd-line); background: var(--bd-input-bg); color: var(--bd-ink);
+  width: 40px; height: 40px; border-radius: 12px;
+  border: 1.5px solid var(--bd-line); background: var(--bd-card); color: var(--bd-ink);
 }
+.yz-sound:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
 .yz-status { flex-shrink: 0; padding: 8px 12px 0; }
 
-/* Dice + Roll. A die is the min() of a width-derived and a height-derived size
-   (layout DoD rule 6), both from the panel container, never the viewport. */
-.yz-dicebar {
-  --yz-roll-w: 112px;
-  --yz-die: min(calc((100cqw - var(--yz-roll-w) - 8px - 4 * 6px) / 5), 12cqh, 64px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.yz-dice { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; }
-.yz-die {
-  position: relative;
-  width: var(--yz-die);
-  height: var(--yz-die);
-  flex-shrink: 0;
-  border-radius: 24%;
-  border: 2px solid var(--bd-ink);
-  background: var(--bd-input-bg);
-  box-shadow: 0 3px 0 var(--bd-ink);
-  display: grid;
-  place-items: center;
-  padding: 0;
-  cursor: pointer;
-  transition: transform var(--bd-dur-fast, 120ms), background var(--bd-dur-fast, 120ms);
-}
-.yz-die--held { background: var(--bd-sun); transform: translateY(-2px); }
-.yz-die--pop { animation: dice-hold-pop 0.28s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
-.yz-die:disabled { cursor: default; }
-.yz-die--blank { opacity: 0.45; }
-.yz-die__pips {
-  width: 70%; height: 70%;
-  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
-}
-.yz-die__pip { width: 62%; height: 62%; border-radius: 999px; background: var(--bd-ink-on-accent); place-self: center; }
-.yz-die:not(.yz-die--held) .yz-die__pip { background: var(--bd-ink); }
-.yz-die:focus-visible, .yz-tile:focus-visible, .yz-pill:focus-visible, .yz-roll:focus-visible {
-  outline: 3px solid var(--bd-sky); outline-offset: -3px;
-}
-
-.yz-roll {
-  width: var(--yz-roll-w);
-  min-height: 48px;
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border-radius: 14px;
-  background: var(--bd-ink); color: var(--bd-bg);
-  border: 0;
-  font-weight: 800; font-size: 14px;
-  box-shadow: 0 4px 0 var(--bd-coral-deep);
-  cursor: pointer;
-  padding: 0 8px;
-  line-height: 1.1;
-  text-align: center;
-}
-/* A longer state ("No rolls left", or its Russian) wraps to two lines inside
-   the same button rather than widening it. */
-.yz-roll > span { min-width: 0; overflow-wrap: anywhere; }
-.yz-roll:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 var(--bd-coral-deep); }
-.yz-roll:disabled {
-  background: var(--bd-bg2); color: var(--bd-ink-soft); box-shadow: none;
-  border: 1.5px solid var(--bd-line); cursor: default;
-}
-/* A narrow phone (320px) cannot fit five usable dice beside the button:
-   the button drops under the dice and the dice take the full width. */
-@container yzpanel (max-width: 359px) {
-  .yz-dicebar { flex-wrap: wrap; --yz-die: min(calc((100cqw - 4 * 6px) / 5), 11cqh, 56px); }
-  .yz-dice { flex-basis: 100%; justify-content: space-between; }
-  .yz-roll { width: 100%; min-height: 44px; }
-}
-
-/* A wide portrait panel (tablet): bigger dice, centred with Roll, rather
-   than five small dice and a gap before the button. */
-@container yzpanel (min-width: 600px) {
-  .yz-dicebar {
-    --yz-die: min(calc((100cqw - var(--yz-roll-w) - 12px - 4 * 10px) / 5), 12cqh, 96px);
-    justify-content: center;
-    gap: 12px;
-  }
-  .yz-dice { flex: 0 1 auto; gap: 10px; }
-  .yz-roll { min-height: max(48px, var(--yz-die)); }
-}
-/* A short panel keeps every tile at tap size; the mode note gives way. */
-@container yzpanel (max-height: 520px) {
-  .yz-mode-note { display: none; }
-}
-
-.yz-revert {
-  flex-shrink: 0;
-  padding: 6px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; text-align: center;
-  color: var(--bd-coral-deep); background: var(--bd-bg2); border: 1.5px solid var(--bd-coral);
-}
-
-/* The grid. Section rows are auto, tile rows share what is left. */
-.yz-grid {
+.yz-mobile {
   flex: 1 1 auto;
   min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.yz-grid--classic { grid-template-rows: auto repeat(2, minmax(44px, 1fr)) auto repeat(3, minmax(44px, 1fr)); }
-.yz-grid--short { grid-template-rows: auto repeat(3, minmax(56px, 1fr)) auto; }
-.yz-mode-note {
-  grid-column: 1 / -1;
-  margin: 2px 2px 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--bd-ink-soft);
-}
-.yz-grid[aria-busy='true'] .yz-tile { opacity: 0.6; }
-
-.yz-section {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 2px;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--bd-ink);
-}
-.yz-section__label {
-  font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bd-ink-soft);
-}
-.yz-section__spacer { flex: 1; }
-.yz-section__bar { flex: 1; height: 6px; border-radius: 3px; background: var(--bd-bg2); overflow: hidden; }
-.yz-section__bar > i {
-  display: block; height: 100%; width: 100%; background: var(--bd-sun); transform-origin: left center;
-  transition: transform var(--bd-dur-slow, 400ms) var(--bd-ease-out, ease-out);
-}
-.yz-section__bar--done > i { background: var(--bd-mint); }
-.yz-section__pace { font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--bd-ink-soft); }
-/* Mint and coral text fail 4.5:1 at 11px on the cream page (DESIGN.md), so
-   the colour goes on a dot and the words stay ink. */
-.yz-section__pace::before {
-  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 999px;
-  margin-right: 4px; vertical-align: 1px; background: var(--bd-mint);
-}
-.yz-section__pace--behind::before { background: var(--bd-coral); }
-
-.yz-tile {
-  position: relative;
-  min-width: 0;
-  min-height: 44px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 5px 8px;
-  border-radius: 14px;
-  border: 1.5px solid var(--bd-line);
-  background: var(--bd-bg);
-  color: var(--bd-ink);
-  text-align: left;
-  font: inherit;
-  overflow: hidden;
-  /* Its own size container: a short tile (a 664px-tall iPhone viewport, a
-     landscape pane) drops to one line of name without the icon. */
-  container-type: size;
-}
-button.yz-tile { cursor: pointer; }
-button.yz-tile:disabled { cursor: default; }
-.yz-tile__head {
-  display: flex; align-items: flex-start; gap: 5px; min-width: 0;
-  font-size: 12px; font-weight: 700; line-height: 1.15;
-}
-.yz-tile__icon { flex-shrink: 0; display: inline-flex; line-height: 0; }
-/* The shared Die carries a 4px ink drop shadow as an inline style; at 16px it
-   reads as a black slab, so the tile's glyph drops it. */
-.yz-tile__icon > div { box-shadow: none !important; border-width: 1.5px !important; }
-.yz-tile__name {
-  min-width: 0; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.yz-tile__rule { display: none; font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--bd-ink-soft); }
-.yz-tile--best .yz-tile__rule { color: var(--bd-ink-on-accent); }
-@container ((min-height: 96px) and (min-width: 81px)) or ((max-width: 80px) and (min-height: 108px)) {
-  .yz-tile__rule { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: auto; }
-}
-@container (min-height: 130px) {
-  .yz-tile__rule { -webkit-line-clamp: 3; }
-}
-.yz-tile__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; min-width: 0; }
-.yz-tile__mark { display: inline-flex; line-height: 0; color: var(--bd-mint-deep); }
-.yz-tile__badge { font-size: 10px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
-.yz-tile__confirm { font-size: 10px; font-weight: 800; line-height: 1.1; color: var(--bd-ink); }
-.yz-tile--best .yz-tile__confirm { color: var(--bd-ink-on-accent); }
-.yz-tile__value {
-  margin-left: auto;
-  font-family: var(--bd-font-display); font-weight: 800; font-size: 20px; line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.yz-tile--scored { background: var(--bd-bg2); border-color: transparent; color: var(--bd-ink-soft); }
-.yz-tile--potential {
-  background: var(--bd-input-bg); border-color: var(--bd-ink); box-shadow: 0 3px 0 var(--bd-line);
-}
-.yz-tile--potential .yz-tile__value { font-size: 22px; }
-.yz-tile--zero { background: var(--bd-input-bg); border-style: dashed; border-color: var(--bd-ink-muted); }
-.yz-tile--zero .yz-tile__value, .yz-tile--open .yz-tile__value { color: var(--bd-ink-muted); }
-.yz-tile--best {
-  background: var(--bd-sun); color: var(--bd-ink-on-accent);
-  border: 2px solid var(--bd-ink); border-style: solid; box-shadow: 0 4px 0 var(--bd-ink);
-}
-.yz-tile--best .yz-tile__value { color: var(--bd-ink-on-accent); font-size: 22px; }
-.yz-tile--armed { border: 2px solid var(--bd-coral-deep); border-style: solid; }
-button.yz-tile:not(:disabled):active { transform: translateY(2px); }
-
-@container (max-height: 46px) {
-  .yz-tile__icon { display: none; }
-  .yz-tile__head { font-size: 11px; }
-  .yz-tile__name { -webkit-line-clamp: 1; }
-  .yz-tile__value, .yz-tile--potential .yz-tile__value, .yz-tile--best .yz-tile__value { font-size: 18px; }
-  .yz-tile__badge { font-size: 9px; letter-spacing: 0.08em; }
-}
-
-/* A narrow tile (six columns in phone landscape): the name gets the width,
-   and the amber fill alone marks the best move. Container sizes are the
-   content box, so these are the tile's size less its padding and border. */
-@container (max-width: 80px) {
-  .yz-tile__icon { display: none; }
-  .yz-tile__head { font-size: 11px; }
-  .yz-tile__rule { font-size: 11px; -webkit-line-clamp: 4; }
-  .yz-tile__badge { display: none; }
-  .yz-tile__value, .yz-tile--potential .yz-tile__value, .yz-tile--best .yz-tile__value { font-size: 18px; }
-}
-
-/* A box just banked: a mint wash that fades - opacity on an overlay, so
-   nothing relays while it plays. */
-.yz-tile--just-scored::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: var(--bd-mint);
-  border-radius: inherit;
-  opacity: 0;
-  pointer-events: none;
-  animation: yz-tile-flash 0.9s ease-out;
-}
-@keyframes yz-tile-flash {
-  0% { opacity: 0.55; }
-  100% { opacity: 0; }
-}
-
-/* Short mode has 9 boxes and the room of 15: bigger type in the same tiles. */
-.yz-grid--short .yz-tile { padding: 10px 12px; border-radius: 16px; }
-.yz-grid--short .yz-tile__head { font-size: 14px; }
-.yz-grid--short .yz-tile__value { font-size: 26px; }
-.yz-grid--short .yz-tile--potential .yz-tile__value,
-.yz-grid--short .yz-tile--best .yz-tile__value { font-size: 28px; }
-
-.yz-footer {
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 12px;
-  background: var(--bd-card-warm);
-  border: 1px solid var(--bd-line);
-}
-.yz-footer__label {
-  font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bd-ink-soft);
-}
-.yz-footer__detail {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12px; font-weight: 700; color: var(--bd-ink-soft);
-}
-.yz-footer__total { font-family: var(--bd-font-display); font-weight: 800; font-size: 17px; color: var(--bd-ink); }
-.yz-footer__back {
-  flex-shrink: 0; min-height: 32px; padding: 0 10px; border-radius: 999px;
-  border: 1.5px solid var(--bd-ink); background: var(--bd-input-bg); color: var(--bd-ink);
-  font-size: 12px; font-weight: 800;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .yz-tile--just-scored::after { animation-duration: 0.01ms; }
-  .yz-die--pop { animation: none; }
-  .yz-section__bar > i { transition: none; }
-}
-
-.yz-footer--in-grid { display: none; }
-
-/* A wide, short pane (phone landscape): six columns, so the card is three rows
-   of tiles, and the total takes the three cells the lower section leaves free
-   in its last row instead of a row of its own. */
-@container yzpanel ((min-width: 480px) and (max-height: 440px)) or (min-width: 760px) {
-  .yz-grid--classic {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: auto minmax(44px, 1fr) auto repeat(2, minmax(44px, 1fr));
-  }
-  .yz-grid--short {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: auto repeat(2, minmax(44px, 1fr));
-    align-content: stretch;
-  }
-  .yz-mode-note { display: none; }
-  .yz-grid .yz-footer--in-grid { display: flex; grid-column: span 3; min-height: 0; }
-  .yz-panel > .yz-footer { display: none; }
-}
-
-/* Desktop centre column: the same grid inside a card. */
-.yz-card {
-  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
-  border-radius: 20px;
-  border: 1.5px solid var(--bd-line);
-  background: linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%);
-  box-sizing: border-box;
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom));
 }
-.yz-card .yz-tile__head { font-size: 13px; }
-.yz-card .yz-tile__value { font-size: 24px; }
-.yz-card .yz-tile--potential .yz-tile__value,
-.yz-card .yz-tile--best .yz-tile__value { font-size: 26px; }
-.yz-card .yz-tile { padding: 8px 10px; }
+.yz-mobile__content { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.yz-mobile__tab { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.yz-mobile__tab[hidden] { display: none; }
+.yz-mobile__tab > .yz-events,
+.yz-mobile__tab > .game-chat-panel { flex: 1 1 auto; min-height: 0; max-height: none; }
 
-/* ===== YAHTZEE – DESKTOP ON THE SHARED GRID (#1363) =====
-   .ttt-desktop-layout / .ttt-grid as in every other game. The board card is
-   the centre column's one flexible region; dice and tiles size from its
-   container (yzpanel), so they fill it at any desktop height. */
 .yahtzee-screen > .ttt-desktop-layout {
   flex: 1 1 auto;
   height: auto;
@@ -3220,15 +3435,24 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   padding: 10px 20px 14px;
   box-sizing: border-box;
 }
-.yz-scoreboard-card { padding: 12px 16px; overflow: hidden; background: var(--bd-card-warm); }
-.yz-scoreboard-score { font-family: var(--bd-font-display); font-weight: 700; font-size: 28px; line-height: 1; color: var(--bd-ink); }
-.yz-scoreboard-score__sep { color: var(--bd-ink-muted); margin: 0 6px; }
-.yz-scoreboard-meta {
-  font-size: 9px; color: var(--bd-ink-muted); margin-top: 2px;
-  text-transform: uppercase; letter-spacing: 0.1em; font-family: ui-monospace, monospace;
+.yz-scoreboard-card { padding: 10px 14px; background: var(--bd-card-warm); }
+/* Both player cards the same height, so the names sit on one line however many lines either card shows. */
+.yz-scoreboard-card .game-scoreboard-header,
+.yz-scoreboard-card .game-scoreboard-cell--right { align-items: stretch; }
+.yz-scoreboard-card .game-scoreboard-cell--left,
+.yz-scoreboard-card .game-scoreboard-right-card { display: flex; }
+.yz-scoreboard-card .game-scoreboard-cell--left > .game-player-card,
+.yz-scoreboard-card .game-scoreboard-right-card > .game-player-card { flex: 1 1 auto; max-width: none; }
+.yz-scoreboard-card .game-scoreboard-center { align-self: center; overflow: visible; padding-inline: 8px; }
+.yz-scoreboard-card .game-player-identity { min-height: 56px; }
+.yz-scoreboard-score {
+  font-family: var(--bd-font-display); font-weight: 800; font-size: 28px; line-height: 1;
+  color: var(--bd-ink); white-space: nowrap;
 }
+.yz-scoreboard-score__sep { color: var(--bd-ink-muted); margin: 0 6px; }
+.yz-scoreboard-meta { font-size: 11px; font-weight: 700; color: var(--bd-ink-soft); margin-top: 4px; }
 .yz-player-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
-.yz-player-grid .game-player-card { max-width: none; }
+.yz-player-grid .game-player-card { max-width: none; height: 100%; box-sizing: border-box; }
 .ttt-center-col > .yz-board-card { flex: 1 1 auto; min-height: 0; }
 .yz-board-card {
   position: relative;
@@ -3238,29 +3462,21 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
   overflow: hidden;
 }
-.yz-panel--board { padding: 14px 16px; gap: 10px; }
-.yz-panel--board .yz-dicebar {
-  --yz-roll-w: 168px;
-  --yz-die: min(calc((100cqw - var(--yz-roll-w) - 12px - 4 * 10px) / 5), 14cqh, 80px);
-  gap: 12px;
-  justify-content: center;
+.yz-panel--board { padding: 12px 14px 14px; }
+.yz-spectate {
+  height: calc(var(--game-h) - 48px);
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
-.yz-panel--board .yz-dice { flex: 0 1 auto; gap: 10px; }
-.yz-panel--board .yz-roll { min-height: max(48px, var(--yz-die)); font-size: 16px; }
-.yz-panel--board > .yz-pills { flex: 0 0 auto; }
-.yz-panel--board .yz-tile { padding: 10px 12px; }
-.yz-panel--board .yz-tile__head { font-size: 13px; }
-.yz-panel--board .yz-tile__value { font-size: 26px; }
-.yz-panel--board .yz-tile--potential .yz-tile__value,
-.yz-panel--board .yz-tile--best .yz-tile__value { font-size: 28px; }
-/* Every tile is its own size container, so the number grows with the tile instead of leaving its middle empty. */
-.yz-grid .yz-tile .yz-tile__value { font-size: clamp(18px, min(26cqh, 26cqw), 52px); }
-@container (max-width: 80px) { .yz-grid .yz-tile .yz-tile__value { font-size: 18px; } }
+.yz-spectate > .yz-board-card { flex: 1 1 auto; min-height: 0; }
 
-/* Recent events (#1363): a fixed number of one-line rows, never an inner
-   scroll. Beside chat the card is as tall as its rows; alone in the column
-   (bot games) the same rows share the column's height. */
-.yz-events { max-height: none; }
+/* Recent rolls hug their entries up to part of the column; chat takes the rest. */
+.yz-right-col { grid-template-rows: fit-content(42%) minmax(0, 1fr); }
+.yz-events { max-height: none; min-height: 0; }
 .yz-events__head {
   display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
   padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--bd-line);
@@ -3270,23 +3486,23 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   display: inline-flex; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
   background: var(--bd-bg2); color: var(--bd-ink-soft);
 }
+.yz-events__empty { margin: 0; padding: 2px; font-size: 12px; color: var(--bd-ink-soft); }
 .yz-events__list {
   list-style: none; margin: 0; padding: 0;
-  display: grid;
-  grid-template-rows: repeat(var(--yz-event-rows), 32px);
-  gap: 4px;
-  min-height: 0;
-}
-.ttt-history-card--fill .yz-events__list {
   flex: 1 1 auto;
-  grid-template-rows: repeat(var(--yz-event-rows), minmax(28px, 1fr));
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .yz-event {
+  flex-shrink: 0;
   display: flex; align-items: center; gap: 8px; min-width: 0;
-  padding: 0 10px; border-radius: 8px;
+  min-height: 32px; padding: 0 10px; border-radius: 8px;
   background: var(--bd-card-warm); font-size: 12px; overflow: hidden;
 }
-.yz-event--empty { background: transparent; border: 1px dashed var(--bd-line); color: var(--bd-ink-muted); justify-content: center; }
 .yz-event__icon { flex-shrink: 0; display: inline-flex; color: var(--bd-ink-soft); }
 .yz-event--bot .yz-event__icon { color: var(--bd-lav-deep); }
 .yz-event__name {
@@ -3294,14 +3510,17 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
   font-weight: 700; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .yz-event__what { flex: 1 1 auto; min-width: 0; color: var(--bd-ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.yz-event__points { flex-shrink: 0; margin-left: auto; font-family: ui-monospace, monospace; font-weight: 700; color: var(--bd-mint-deep); }
-.yz-event__points--zero { color: var(--bd-ink-muted); }
+.yz-event__points { flex-shrink: 0; margin-left: auto; font-family: var(--bd-font-display); font-weight: 800; color: var(--bd-ink); }
+.yz-event__points--zero { color: var(--bd-ink-soft); }
 .yz-event__dice { flex-shrink: 0; margin-left: auto; display: inline-flex; gap: 2px; }
 .yz-event__die {
   width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; color: var(--bd-ink); background: var(--bd-bg2); border: 1px solid var(--bd-line);
 }
-.yz-event__die--held { background: var(--bd-sun); border-color: var(--bd-ink); }
+.yz-event__die--held { background: var(--bd-sun); border-color: var(--bd-ink); color: var(--bd-ink-on-accent); }
+
+/* A celebration lands over the dice tray: below the site header and clear of the scoreboard whose score it just changed. */
+.yz-celebration { top: calc(var(--bd-header-h) + 180px); }
 
 .ttt-cell-coord {
   position: absolute;
@@ -3322,9 +3541,7 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
 
 /* Mobile tabs */
 .ttt-mobile-layout { display: flex; flex-direction: column; gap: 10px; }
-/* Shared mobile in-game tab strip (#736 phase 5) — used by TTT, C4, Memory
-   via components/game-chrome/GameTabs. Distinct from MobileTabs (the bottom
-   nav bar Yahtzee/Spy use). */
+/* Shared mobile in-game tab strip (components/game-chrome/GameTabs). */
 .game-tabs {
   display: flex;
   gap: 4px;
@@ -3430,6 +3647,13 @@ button.yz-tile:not(:disabled):active { transform: translateY(2px); }
        message lines plus the compact composer. */
     min-height: 128px;
   }
+  /* The move list shares the chat's slot behind a tab, so it gets the same floor. */
+  .game-landscape-side > .ttt-history-card { flex: 1 1 auto; min-height: 128px; max-height: none; }
+  /* Compact tabs: the strip costs this column height the chat floor needs. */
+  .game-landscape-side > .game-tabs { padding: 3px; }
+  .game-landscape-side > .game-tabs .game-tab { min-height: 32px; padding: 4px 8px; font-size: 12px; }
+  /* Behind tabs the panel's floor gives up the strip's height, so a checkers column with its hint line still fits 390px. */
+  .game-landscape-side > .game-tabs + :is(.game-chat-panel, .ttt-history-card) { min-height: 92px; }
 
   /* --- Compact chat, so that floor is a floor and not a ceiling. ---------
      The title strip goes: in this column the panel is always on screen, so it
@@ -3983,15 +4207,6 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: 0 4px 0 0 var(--bd-coral-deep);
 }
 
-/* A history/moves card that owns its whole column when nothing sits below it
-   (chat hidden in bot games) – layout DoD: no gap under the last card. */
-.ttt-history-card--fill {
-  flex: 1 1 auto;
-  max-height: none;
-  min-height: 0;
-}
-/* The right column is a two-row grid (history, chat); alone, the card spans both. */
-.ttt-right-col > .ttt-history-card--fill { grid-row: 1 / -1; }
 
 /* Rock Paper Scissors board, composed as a duel: an arena (glow + watermark),
    a stage with two hands in the players' colours, the match score between
@@ -4753,30 +4968,16 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   justify-content: center;
 }
 
-/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS (#751, #1187) ===== */
-/* .yahtzee-screen/.yahtzee-mobile-layout are scoping hooks for this override.
-   Landscape puts the tile grid in the board pane (it is what the player acts
-   on, and it needs the width) and the pills, status banner, dice and Roll in
-   the side column. Players/RollHistory/Chat stay reachable in portrait. */
+/* ===== YAHTZEE – PHONE LANDSCAPE DELTAS ===== */
 @media (max-width: 1023px) and (orientation: landscape) {
   .yahtzee-mobile-layout { display: none !important; }
-  /* The portrait header sits above Main Game Area, outside both trees; the
-     side column renders the same header instead of losing ~100px to it. */
   .yahtzee-top-status-bar { display: none !important; }
   .yahtzee-landscape-layout { padding: 0 10px 10px; }
   .yahtzee-landscape-layout .game-landscape-board > .yz-panel { flex: 1 1 auto; padding: 8px 0 0; }
-  .yahtzee-landscape-side { overflow-y: auto; }
   .yahtzee-landscape-side .yz-topbar,
   .yahtzee-landscape-side .yz-status { padding-left: 0; padding-right: 0; }
-  .yahtzee-landscape-side > .yz-panel--side {
-    flex: 1 1 auto;
-    min-height: 96px;
-    justify-content: center;
-    padding: 0;
-  }
-  /* The side column is narrower than the 360px wrap point, so the dice take
-     its full width and Roll sits under them; size from its height too. */
-  .yz-panel--side .yz-dicebar { --yz-die: min(calc((100cqw - 4 * 6px) / 5), 40cqh, 56px); }
+  .yahtzee-landscape-side .yz-tray { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; padding: 8px 10px 10px; }
+  .yahtzee-landscape-side .yz-tray__body { --yz-die: min(calc((100cqw - 4 * var(--yz-gap)) / 5), 46px); gap: 8px; }
 }
 
 /* spy mobile (unchanged from existing) */
@@ -5656,6 +5857,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 
 /* Rules: the second row of the right column when chat is hidden, a tab on phones. */
 .ludo-rules-card { max-height: none; }
+.ludo-info-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.ludo-info-panel > .ludo-rules-card { max-height: 340px; }
 .ludo-rules-list {
   margin: 0;
   padding-left: 18px;

@@ -1097,15 +1097,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    // Hoisted above historySection: whether chat shows decides whether the
-    // Moves card is alone in the right column, and a card that is alone has
-    // to span it (#898). Chat is hidden in bot-only games (#522 parity with
-    // the shared lobby shell); spectators get a read-only feed.
-    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -1133,8 +1126,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
     const chatPlayerProfiles = (() => {
         const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
         for (const p of players) {
@@ -1148,7 +1139,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
@@ -1164,7 +1155,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     // Show score summary below player cards when match has results
     const _ = { myWins, myLosses }
@@ -1217,7 +1208,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                     {actionsSection}
                 </div>
             </div>
@@ -1231,7 +1233,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {
