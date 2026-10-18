@@ -451,12 +451,12 @@ export default function RegisterForm() {
           <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'white', lineHeight: 0.95, marginBottom: 12 }}>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink-on-accent)', lineHeight: 0.95, marginBottom: 12 }}>
                 {t('auth.register.heroTagline').split('\n').map((line, i) => (
                   <span key={i}>{line}{i < 2 && <br />}</span>
                 ))}
               </div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 200, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.75)', maxWidth: 200, lineHeight: 1.5 }}>
                 {t('auth.register.heroDesc')}
               </div>
             </div>
@@ -476,7 +476,7 @@ export default function RegisterForm() {
                   <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>{t('auth.register.heroPlayers')}</div>
+              <div style={{ fontSize: 13, color: 'var(--bd-ink-on-accent)', fontWeight: 500 }}>{t('auth.register.heroPlayers')}</div>
             </div>
           </div>
         </div>

@@ -463,7 +463,7 @@ export default function LoginForm() {
           <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink)', lineHeight: 0.95, marginBottom: 12, whiteSpace: 'pre-line' }}>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink-on-accent)', lineHeight: 0.95, marginBottom: 12, whiteSpace: 'pre-line' }}>
                 {t('auth.login.heroQuote')}
               </div>
               <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.7)', maxWidth: 200 }}>
@@ -483,9 +483,9 @@ export default function LoginForm() {
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
                 {[
-                  { icon: 'dice' as const, label: t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT, defaultValue: '{{games}} games ready to play' }) },
-                  { icon: 'bolt' as const, label: t('auth.login.heroChipInstant', 'No download – play in the browser') },
-                  { icon: 'users' as const, label: t('auth.login.heroChipGuests', 'Friends join with one link') },
+                  { icon: 'dice' as const, label: t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT }) },
+                  { icon: 'bolt' as const, label: t('auth.login.heroChipInstant') },
+                  { icon: 'users' as const, label: t('auth.login.heroChipGuests') },
                 ].map(({ icon, label }) => (
                   <div
                     key={label}
@@ -511,7 +511,7 @@ export default function LoginForm() {
                     <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
                   ))}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--bd-ink)', fontWeight: 500 }}>{t('auth.login.heroPlayers')}</div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink-on-accent)', fontWeight: 500 }}>{t('auth.login.heroPlayers')}</div>
               </div>
             </div>
           </div>

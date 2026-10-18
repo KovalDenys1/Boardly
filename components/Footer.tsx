@@ -41,7 +41,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                   width: 34,
                   height: 34,
                   borderRadius: 9,
-                  background: 'var(--bd-ink)',
+                  background: 'var(--bd-ink-on-accent)',
                   color: 'var(--bd-sun)',
                   display: 'grid',
                   placeItems: 'center',
