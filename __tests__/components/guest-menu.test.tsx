@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { GuestMenu } from '@/components/Header/GuestMenu'
 
 const mockReplace = jest.fn()
@@ -18,7 +18,11 @@ jest.mock('@/lib/i18n-toast', () => ({
 }))
 
 jest.mock('@/lib/i18n-helpers', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
+}))
+
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
 }))
 
 describe('GuestMenu', () => {
@@ -51,5 +55,15 @@ describe('GuestMenu', () => {
 
     expect(screen.getByRole('button', { name: 'guest.forgetMeConfirm' })).toBeTruthy()
     expect(mockForgetGuest).not.toHaveBeenCalled()
+  })
+
+  it('opens the Blocked players dialog from the menu (#1466)', async () => {
+    render(<GuestMenu />)
+    fireEvent.click(screen.getByRole('button', { name: 'HostQ1383' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.title' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'blockedPlayers.title' })
+    expect(await within(dialog).findByText('blockedPlayers.empty')).toBeTruthy()
   })
 })

@@ -2,15 +2,35 @@
 
 import type { KeyboardEvent } from 'react'
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { Icon } from '@/components/icons'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { ThemeToggle } from './ThemeToggle'
-import { GuestMenu } from './GuestMenu'
 import { UserMenu } from './UserMenu'
-import { headerControl } from './headerControlStyles'
+import { guestMenuButtonClass, headerControl } from './headerControlStyles'
+
+/** The guest menu's box and name while its code loads, so the header does not shift when it arrives. */
+function GuestMenuPlaceholder() {
+  const { t } = useTranslation()
+  const { guestName } = useGuest()
+  return (
+    <span aria-hidden className={guestMenuButtonClass}>
+      <Icon name="user" size={14} />
+      <span className="truncate">{guestName ?? t('header.guestSession')}</span>
+    </span>
+  )
+}
+
+// A guest is only known in the browser, so the menu never rendered on the server; its Popover
+// and dialogs stay out of every page's first load.
+const GuestMenu = dynamic(() => import('./GuestMenu').then((mod) => mod.GuestMenu), {
+  ssr: false,
+  loading: () => <GuestMenuPlaceholder />,
+})
 
 interface HeaderActionsProps {
   isAuthenticated: boolean

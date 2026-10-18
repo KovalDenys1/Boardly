@@ -1,8 +1,8 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CheckersGameData, Side } from '@/lib/games/checkers-game'
-import { sounds } from '@/lib/sounds'
+import { checkersCueSchedule, lastCueAtMs, startCueRun, type CueRun, type ScheduledCue } from '@/lib/board-sounds'
 import {
     type ActiveCheckersMotion,
     deriveCheckersMotion,
@@ -11,6 +11,12 @@ import {
 } from '@/lib/games/checkers-motion'
 
 export type { ActiveCheckersMotion }
+
+/** When the run a state started plays its last cue, so the turn cue can wait for it. */
+export interface CheckersCueEnd {
+    data: CheckersGameData | undefined
+    inMs: number
+}
 
 function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
@@ -27,15 +33,24 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
  * has its piece hidden at the destination – the piece never flashes there
  * before it travels. A state that no single move explains cancels the run.
  */
-export function useCheckersMotion(data: CheckersGameData | undefined, viewerSide: Side | null): ActiveCheckersMotion | null {
+export function useCheckersMotion(
+    data: CheckersGameData | undefined,
+    viewerSide: Side | null,
+    cueEndRef?: { current: CheckersCueEnd | null },
+): ActiveCheckersMotion | null {
     const prevRef = useRef<CheckersGameData | undefined>(undefined)
     const motionRef = useRef<ActiveCheckersMotion | null>(null)
     const epochRef = useRef(0)
+    const cuesRef = useRef<CueRun | null>(null)
     const [motion, setMotionState] = useState<ActiveCheckersMotion | null>(null)
 
     const setMotion = (next: ActiveCheckersMotion | null) => {
         motionRef.current = next
         setMotionState(next)
+    }
+    const startCues = (cues: ScheduledCue[], offsetMs = 0, played?: ReadonlySet<string>) => {
+        cuesRef.current = startCueRun(cues, { offsetMs, played })
+        if (cueEndRef) cueEndRef.current = { data, inMs: Math.max(0, lastCueAtMs(cues) - offsetMs) }
     }
 
     useLayoutEffect(() => {
@@ -43,14 +58,17 @@ export function useCheckersMotion(data: CheckersGameData | undefined, viewerSide
         prevRef.current = data
         const result = deriveCheckersMotion(prev, data, viewerSide)
         if (result.kind === 'none') return
+        const previousCues = cuesRef.current
+        previousCues?.cancel()
+        cuesRef.current = null
         if (result.kind === 'jump') {
             if (motionRef.current) setMotion(null)
             return
         }
         const { plan } = result
-        if (!plan.own) sounds.play('click')
         if (prefersReducedMotion()) {
             if (motionRef.current) setMotion(null)
+            startCues(checkersCueSchedule(plan, timeCheckersMotion(plan), true))
             return
         }
         const t = now()
@@ -60,13 +78,20 @@ export function useCheckersMotion(data: CheckersGameData | undefined, viewerSide
             : null
         epochRef.current += 1
         if (running && extended) {
-            setMotion({ plan: extended, timing: timeCheckersMotion(extended), startedAt: running.startedAt, offset: t - running.startedAt, epoch: epochRef.current })
+            const timing = timeCheckersMotion(extended)
+            const offset = t - running.startedAt
+            setMotion({ plan: extended, timing, startedAt: running.startedAt, offset, epoch: epochRef.current })
+            startCues(checkersCueSchedule(extended, timing), offset, previousCues?.played)
         } else {
-            setMotion({ plan, timing: timeCheckersMotion(plan), startedAt: t, offset: 0, epoch: epochRef.current })
+            const timing = timeCheckersMotion(plan)
+            setMotion({ plan, timing, startedAt: t, offset: 0, epoch: epochRef.current })
+            startCues(checkersCueSchedule(plan, timing))
         }
         // viewerSide only labels a move own or not; a change on its own is not a move.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data])
+
+    useEffect(() => () => cuesRef.current?.cancel(), [])
 
     // The run ends by itself; a later run or a jump replaces it earlier.
     useLayoutEffect(() => {

@@ -77,7 +77,10 @@ interface MemoryGameBoardProps {
   onReturnToWaiting?: () => void
   onLeave?: () => void
   chatMessages?: ChatMessagePayload[]
-  onSendChatMessage?: (message: string) => void
+  onSendChatMessage?: (message: string) => void | Promise<string | null>
+  /** False puts the terms consent panel in place of the chat composer (#1466). */
+  chatTermsAccepted?: boolean | null
+  onAcceptChatTerms?: () => Promise<boolean>
   chatUnreadCount?: number
   someoneTyping?: boolean
   playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
@@ -130,6 +133,8 @@ export default function MemoryGameBoard({
   onLeave,
   chatMessages = [],
   onSendChatMessage,
+  chatTermsAccepted,
+  onAcceptChatTerms,
   chatUnreadCount = 0,
   someoneTyping = false,
   playerProfiles,
@@ -795,6 +800,8 @@ export default function MemoryGameBoard({
         lobbyCode={lobbyCode}
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
+        termsAccepted={chatTermsAccepted}
+        onAcceptTerms={onAcceptChatTerms}
         currentUserId={currentUserId || null}
         isMinimized={false}
         onToggleMinimize={() => {}}

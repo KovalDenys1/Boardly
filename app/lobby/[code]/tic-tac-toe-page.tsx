@@ -42,6 +42,9 @@ import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextMoveKey, type MoveKey } from '@/lib/move-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useFreshCue } from '@/hooks/useFreshCue'
+import { playCue } from '@/lib/sound-engine'
+import { tttMarkSemis } from '@/lib/board-sounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
@@ -189,6 +192,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -702,7 +707,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         [earlyMoveHistory]
     )
 
-    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
+    // The turn cue (#1111); every mark, the opponent's included, taps from useFreshCue below.
     const lastTttMove = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
     const lastTttMoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null
     // Only the just-placed mark pops and its history row slides in; a board
@@ -713,9 +718,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastTttMoveSignature,
-        opponentMoved: !!lastTttMove && lastTttMove.playerId !== getCurrentUserId(),
         enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        moveCue: null,
     })
+    const playMarkCue = useCallback(() => {
+        if (!lastTttMove) return
+        playCue('tap.mark', { remote: isSpectator || lastTttMove.playerId !== getCurrentUserId(), semis: tttMarkSemis(lastTttMove.symbol) })
+    }, [lastTttMove, isSpectator, getCurrentUserId])
+    useFreshCue(gameEngine ? (markKeyRef.current?.key ?? null) : undefined, lastMoveFresh, playMarkCue, game?.id)
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -1140,6 +1150,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

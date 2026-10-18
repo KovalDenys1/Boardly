@@ -717,6 +717,31 @@ describe('ProfilePage', () => {
     expect(publicOption).toBeEnabled()
     expect(onlineBox).toBeChecked()
   })
+  it('lists the blocked players after Privacy in the settings tab, and Unblock removes one (#1466)', async () => {
+    const baseFetch = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === '/api/user/blocks') {
+        return mockJsonResponse({ blocks: [{ id: 'u-bob', username: 'Bob', blockedAt: '2026-10-01T10:00:00.000Z' }] })
+      }
+      if (url === '/api/user/blocks/u-bob' && init?.method === 'DELETE') return mockJsonResponse({ success: true })
+      return baseFetch(input, init)
+    })
+    window.history.replaceState({}, '', '/profile?tab=settings')
+
+    render(<ProfilePage />)
+
+    const section = await screen.findByRole('region', { name: 'blockedPlayers.title' })
+    expect(section.id).toBe('blocked')
+    const privacy = screen.getByRole('region', { name: 'profile.settings.privacy.title' })
+    expect(privacy.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    fireEvent.click(await within(section).findByRole('button', { name: 'blockedPlayers.unblock' }))
+
+    expect(await within(section).findByText('blockedPlayers.empty')).toBeTruthy()
+    expect(mockFetch).toHaveBeenCalledWith('/api/user/blocks/u-bob', { method: 'DELETE' })
+  })
+
   describe('privacy setting one click from the profile (#1226)', () => {
     let scrollIntoView: jest.Mock
     const originalScrollIntoView = Element.prototype.scrollIntoView

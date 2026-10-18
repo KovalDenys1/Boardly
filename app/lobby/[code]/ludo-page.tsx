@@ -30,14 +30,15 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
-import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useLudoRollSound } from './hooks/useLudoRollSound'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
-import { useLudoMotion } from './hooks/useLudoMotion'
+import { useLudoMotion, type LudoCueEnd } from './hooks/useLudoMotion'
 import { ludoRingKey } from '@/lib/games/ludo-motion'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -143,6 +144,8 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -355,6 +358,13 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         return gameEngine.getCurrentPlayer()?.id === getCurrentUserId()
     }, [gameEngine, game, getCurrentUserId])
 
+    const { tapped: noteRollTap, failed: forgetRollTaps } = useLudoRollSound(
+        gameEngine ? gameEngine.getData().lastRoll ?? null : undefined,
+        getCurrentUserId(),
+        isSpectator,
+        game?.id,
+    )
+
     const handleMove = useCallback(async (
         move: Move,
         options?: { autoActionContext?: AutoActionContext; isAutoAction?: boolean }
@@ -374,6 +384,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             }
             isMoveSubmittingRef.current = true
             setIsMoveSubmitting(true)
+            if (move.type === 'roll' && !isAutoAction) noteRollTap()
             // Only a token move is shown before the server answers. A roll is
             // never simulated here: the die is the server's, and a local number
             // that the server then replaced would look exactly like cheating.
@@ -400,6 +411,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             const data = await res.json().catch(() => null)
             if (isAutoAction && isExpectedAutoActionSkip(res.status, data)) return false
             if (!res.ok) {
+                if (move.type === 'roll') forgetRollTaps()
                 trackMoveSubmitApplied({ gameType: 'ludo', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, isAutoAction, source: 'ludo_page' })
                 clientLogger.error('Move failed:', data?.error)
                 if (!isAutoAction) showToast.error('games.ludo.game.moveFailed')
@@ -412,6 +424,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             if (move.type === 'timeout') showToast.info('games.ludo.game.timeoutMoved')
             return true
         } catch (error) {
+            if (move.type === 'roll') forgetRollTaps()
             trackMoveSubmitApplied({ gameType: 'ludo', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, isAutoAction, source: 'ludo_page' })
             clientLogger.error('Error making move:', error)
             if (!isAutoAction) showToast.errorFrom(error, 'games.ludo.game.moveFailed')
@@ -421,7 +434,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, getCurrentUserId, loadLobby, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, getCurrentUserId, loadLobby, isGuest, noteRollTap, forgetRollTaps])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null
@@ -573,7 +586,9 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     }, [gameEngine, boardUserId, canPickToken])
 
     // Motion (#1113): the viewer's id decides whether an arriving move is theirs.
-    const boardMotion = useLudoMotion(gameEngine ? gameEngine.getData() : undefined, isSpectator ? null : boardUserId ?? null)
+    const cueEndRef = useRef<LudoCueEnd | null>(null)
+    const boardMotionData = gameEngine ? gameEngine.getData() : undefined
+    const boardMotion = useLudoMotion(boardMotionData, isSpectator ? null : boardUserId ?? null, cueEndRef)
 
     const earlyEvents = gameEngine ? gameEngine.getData().events : undefined
     const reversedEvents = useMemo(
@@ -581,20 +596,14 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         [earlyEvents]
     )
 
-    // Turn and opponent cues (#1111); the win cue stays in handleMove. The
-    // latest of the last roll and the last move is what just happened, and an
-    // opponent's roll gets the dice sound rather than the move click.
+    // The die and the walk play their own cues; the turn cue waits for the walk's last one.
     const soundData = gameEngine ? gameEngine.getData() : null
-    const lastLudoRoll = soundData?.lastRoll ?? null
-    const lastLudoMove = soundData?.lastMove ?? null
-    const latestLudoAction = lastLudoRoll && (!lastLudoMove || lastLudoRoll.at > lastLudoMove.at) ? 'roll' : 'move'
-    const latestLudoActor = latestLudoAction === 'roll' ? lastLudoRoll?.playerId : lastLudoMove?.playerId
     useTurnSounds({
         isMyTurn: isMyTurn(),
-        lastMoveSignature: soundData ? `${lastLudoRoll?.at ?? ''}:${lastLudoMove?.at ?? ''}` : null,
-        opponentMoved: !!latestLudoActor && latestLudoActor !== boardUserId,
+        lastMoveSignature: soundData ? `${soundData.lastRoll?.at ?? ''}:${soundData.lastMove?.at ?? ''}` : null,
         enabled: !isSpectator && gameEngine?.getState().status === 'playing',
-        moveSound: latestLudoAction === 'roll' ? 'diceRoll' : 'click',
+        moveCue: null,
+        turnDelayMs: () => (cueEndRef.current?.data === boardMotionData ? cueEndRef.current?.inMs ?? 0 : 0) + TURN_AFTER_MOVE_MS,
     })
 
     // ─── Early returns ────────────────────────────────────────────────────────
@@ -976,6 +985,8 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

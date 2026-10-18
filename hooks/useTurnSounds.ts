@@ -35,7 +35,8 @@ export interface UseTurnSoundsOptions {
   moveSound?: string
   /** Cue for someone else's move, played at the remote level. `null`: the page plays the move itself. */
   moveCue?: CueId | null
-  turnDelayMs?: number
+  /** A function is read when the turn arrives, after the page's motion has planned the move that brought it. */
+  turnDelayMs?: number | (() => number)
 }
 
 /** The gap between the opponent's move cue and the viewer's turn cue. */
@@ -61,6 +62,8 @@ export function useTurnSounds({
 }: UseTurnSoundsOptions): void {
   const prevRef = useRef<{ isMyTurn: boolean; signature: string | number | null } | null>(null)
   const cue = moveCue === undefined ? legacyCue(moveSound) ?? null : moveCue
+  const turnDelayRef = useRef(turnDelayMs)
+  turnDelayRef.current = turnDelayMs
 
   useEffect(() => {
     const signature = lastMoveSignature ?? null
@@ -70,6 +73,9 @@ export function useTurnSounds({
     if (!prev || prev.signature === null || signature === null || !enabled) return
 
     if (cue && opponentMoved && signature !== prev.signature) playCue(cue, { remote: true })
-    if (isMyTurn && !prev.isMyTurn) playCue('turn.mine', { delayMs: turnDelayMs })
-  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, cue, turnDelayMs])
+    if (isMyTurn && !prev.isMyTurn) {
+      const delay = turnDelayRef.current
+      playCue('turn.mine', { delayMs: typeof delay === 'function' ? delay() : delay })
+    }
+  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, cue])
 }

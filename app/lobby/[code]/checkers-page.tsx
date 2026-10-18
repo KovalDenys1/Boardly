@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -49,7 +49,8 @@ import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { useCheckersMotion } from './hooks/useCheckersMotion'
+import { useCheckersMotion, type CheckersCueEnd } from './hooks/useCheckersMotion'
+import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
 import CheckersBoard, { FILES, PIECE_DARK, PIECE_LIGHT, squareName } from '@/components/boards/CheckersBoard'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
@@ -172,6 +173,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -606,12 +609,21 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     // Motion (#1112): the viewer's side decides whether an arriving move is theirs.
     const earlyViewerIndex = gameEngine ? gameEngine.getState().players.findIndex((p) => p.id === getCurrentUserId()) : -1
     const viewerSide: Side | null = earlyViewerIndex === 0 ? 1 : earlyViewerIndex === 1 ? 2 : null
-    const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide)
+    const cueEndRef = useRef<CheckersCueEnd | null>(null)
+    const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide, cueEndRef)
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
     const myTurnNow = !isSpectator && isMyTurn() && gameEngine?.getState().status === 'playing'
+    // The motion plays the move; the turn cue waits for its last landing.
+    useTurnSounds({
+        isMyTurn: myTurnNow,
+        lastMoveSignature: earlyData ? `${earlyMoveHistory?.length ?? 0}:${earlyData.lastMove?.path.length ?? 0}` : null,
+        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        moveCue: null,
+        turnDelayMs: () => (cueEndRef.current?.data === earlyData ? cueEndRef.current?.inMs ?? 0 : 0) + TURN_AFTER_MOVE_MS,
+    })
     const legalSteps: CheckersStep[] = useMemo(
         () => (gameEngine && myTurnNow ? gameEngine.getLegalSteps() : []),
         [gameEngine, myTurnNow]
@@ -956,6 +968,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

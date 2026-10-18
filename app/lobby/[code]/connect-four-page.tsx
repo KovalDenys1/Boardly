@@ -39,7 +39,8 @@ import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextDropKey, type DropKey } from '@/lib/connect-four-drop-key'
-import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -168,6 +169,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -631,7 +634,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         [earlyMoveHistory]
     )
 
-    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
     // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
     const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
     const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
@@ -640,11 +642,15 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const dropKeyRef = React.useRef<DropKey | null>(null)
     dropKeyRef.current = nextDropKey(dropKeyRef.current, Array.isArray(earlyMoveHistory) ? earlyMoveHistory : undefined)
     const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(gameEngine ? (dropKeyRef.current?.key ?? null) : undefined)
+    const c4Drop = lastC4Move ? { row: lastC4Move.row, remote: isSpectator || soundSeat < 0 || lastC4Move.disc !== soundSeat + 1 } : null
+    const dropSound = useConnectFourDropSound(gameEngine ? (dropKeyRef.current?.key ?? null) : undefined, lastDropFresh, c4Drop, game?.id)
+    // The disc plays its own landing; the turn cue waits until it has landed.
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastC4MoveSignature,
-        opponentMoved: !!lastC4Move && soundSeat >= 0 && lastC4Move.disc !== soundSeat + 1,
         enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        moveCue: null,
+        turnDelayMs: (lastDropFresh && lastC4Move ? dropSound.landingMs(lastC4Move.row) : 0) + TURN_AFTER_MOVE_MS,
     })
 
     // ─── Early returns ────────────────────────────────────────────────────────
@@ -887,6 +893,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     lastDroppedCol={gameData.lastDroppedCol}
                     dropFresh={lastDropFresh}
                     onDropSettled={settleLastDrop}
+                    onCellMeasured={dropSound.onCellMeasured}
                 />
                 {/* Inside the surface, not beside it: this pill is
                     `position: absolute; bottom`, so it hangs off the nearest
@@ -969,6 +976,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

@@ -631,6 +631,29 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     await waitFor(() => expect(screen.getByText('apple')).toBeTruthy())
   })
 
+  // #1466 review: the lobby topic carries chat too; only the server's alias-guess frames are guesses.
+  it('shows only guesses in the guess feed, not other chat frames on the lobby topic', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'c-1', userId: 'user-3', username: 'Carol', message: 'lobby chatter', type: 'message', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'c-2', userId: 'user-4', username: 'Dan', message: 'untyped chatter', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-2', userId: 'user-3', username: 'Carol', message: 'pear', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+    })
+
+    await waitFor(() => expect(screen.getByText('pear')).toBeTruthy())
+    expect(screen.queryByText('lobby chatter')).toBeNull()
+    expect(screen.queryByText('untyped chatter')).toBeNull()
+  })
+
   it('takes a rate-limited guess back and says why, instead of dropping it silently', async () => {
     Element.prototype.scrollIntoView = jest.fn()
     const response = buildTurnResponse({ meDescribing: false })
@@ -656,6 +679,75 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
       )
     })
     expect(screen.queryByText('banana')).toBeNull()
+  })
+
+  // #1466: a guess is free text shown to the whole lobby, so it waits for the terms like chat.
+  it('asks for the terms when a guess is refused for them, keeps the guess, and sends it once accepted', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    const response = buildTurnResponse({ meDescribing: false })
+    let termsAccepted = false
+    mockFetchWithGuest.mockImplementation(async (url) => {
+      if (String(url).endsWith('/alias-guess')) {
+        return termsAccepted
+          ? ({ ok: true, status: 200, json: async () => ({}) } as Response)
+          : ({ ok: false, status: 403, json: async () => ({ code: 'TERMS_REQUIRED' }) } as Response)
+      }
+      if (String(url) === '/api/user/accept-terms') {
+        termsAccepted = true
+        return { ok: true, status: 200, json: async () => ({ termsAcceptedAt: '2026-10-18T12:00:00.000Z' }) } as Response
+      }
+      return { ok: true, status: 200, json: async () => response } as Response
+    })
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    fireEvent.change(screen.getByPlaceholderText('alias.guessPlaceholder'), { target: { value: 'banana' } })
+    fireEvent.keyDown(screen.getByPlaceholderText('alias.guessPlaceholder'), { key: 'Enter' })
+
+    const accept = await screen.findByRole('button', { name: 'chat.termsAccept' })
+    expect(screen.getByText('chat.termsPrompt')).toBeTruthy()
+    expect(screen.queryByPlaceholderText('alias.guessPlaceholder')).toBeNull()
+    expect(screen.queryByText('banana')).toBeNull()
+
+    fireEvent.click(accept)
+    const input = (await screen.findByPlaceholderText('alias.guessPlaceholder')) as HTMLInputElement
+    expect(mockFetchWithGuest).toHaveBeenCalledWith('/api/user/accept-terms', expect.objectContaining({ method: 'POST' }))
+    expect(input.value).toBe('banana')
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => {
+      expect(mockFetchWithGuest.mock.calls.filter(([url]) => String(url).endsWith('/alias-guess'))).toHaveLength(2)
+    })
+    expect(screen.getByText('banana')).toBeTruthy()
+    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+  })
+
+  it('keeps a refused guess and what was typed after it, in that order', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    const response = buildTurnResponse({ meDescribing: false })
+    let refuseGuess: () => void = () => {}
+    mockFetchWithGuest.mockImplementation(async (url) => {
+      if (String(url).endsWith('/alias-guess')) {
+        return new Promise((resolve) => {
+          refuseGuess = () => resolve({ ok: false, status: 403, json: async () => ({ code: 'TERMS_REQUIRED' }) } as Response)
+        })
+      }
+      if (String(url) === '/api/user/accept-terms') {
+        return { ok: true, status: 200, json: async () => ({ termsAcceptedAt: '2026-10-18T12:00:00.000Z' }) } as Response
+      }
+      return { ok: true, status: 200, json: async () => response } as Response
+    })
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    const input = screen.getByPlaceholderText('alias.guessPlaceholder')
+    fireEvent.change(input, { target: { value: 'banana' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.change(input, { target: { value: 'apple' } })
+    await act(async () => refuseGuess())
+
+    fireEvent.click(await screen.findByRole('button', { name: 'chat.termsAccept' }))
+    expect(((await screen.findByPlaceholderText('alias.guessPlaceholder')) as HTMLInputElement).value).toBe('banana apple')
   })
 
   it('leaves the describer on the word card, with the feed one tap away', async () => {

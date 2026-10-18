@@ -33,7 +33,7 @@ export interface CheckersMotionHop {
 
 export interface CheckersMotionPlan {
     side: Side
-    /** The viewer made this move: it glides, faster, and makes no sound. */
+    /** The viewer made this move: it glides, faster, and its cues play at the viewer's own level. */
     own: boolean
     hops: CheckersMotionHop[]
     /** The piece as it stood before the first hop (a man stays a man in flight). */
