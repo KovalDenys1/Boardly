@@ -10,6 +10,7 @@
 /* inline: a lobby theme overrides --bd-* on a container, and a theme variable resolved on :root would not follow it. */
 @theme inline {
   --color-bd-ink: var(--bd-ink);
+  --color-bd-ink-on-accent: var(--bd-ink-on-accent);
   --color-bd-ink-soft: var(--bd-ink-soft);
   --color-bd-ink-muted: var(--bd-ink-muted);
   --color-bd-line: var(--bd-line);
@@ -668,7 +669,7 @@ html.dark {
   border: 2px solid var(--bd-ink);
   border-radius: 999px;
   box-shadow: 2px 2px 0 var(--bd-ink);
-  color: var(--bd-ink);
+  color: var(--bd-ink-on-accent);
   display: inline-flex;
   font-family: var(--bd-font-display);
   font-size: 13px;
@@ -1576,7 +1577,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: 999px;
   font-size: 13px; font-weight: 700;
-  background: var(--bd-sun); color: var(--bd-ink);
+  background: var(--bd-sun); color: var(--bd-ink-on-accent);
   border: 2px solid var(--bd-ink);
   box-shadow: 2px 2px 0 var(--bd-ink);
   font-family: var(--bd-font-display);
@@ -1597,7 +1598,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .bd-avatar-coral { background: var(--bd-coral); }
 .bd-avatar-mint  { background: var(--bd-mint); }
-.bd-avatar-sun   { background: var(--bd-sun); color: var(--bd-ink); }
+.bd-avatar-sun   { background: var(--bd-sun); color: var(--bd-ink-on-accent); }
 .bd-avatar-lav   { background: var(--bd-lav); }
 .bd-avatar-sky   { background: var(--bd-sky); }
 
@@ -4204,7 +4205,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
    carry the same colour; Bluff is the coral one. */
 .liars-choice--on-truth,
 .liars-choice--believe {
-  background: var(--bd-mint); color: var(--bd-ink);
+  background: var(--bd-mint); color: var(--bd-ink-on-accent);
   box-shadow: 0 4px 0 0 var(--bd-mint-deep);
 }
 .liars-choice--on-bluff {
@@ -5792,7 +5793,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   font-family: var(--bd-font-display);
   font-weight: 700;
   font-size: 15px;
-  color: var(--bd-ink);
+  color: var(--bd-ink-on-accent);
   background: var(--bd-sun);
   border: 2px solid var(--bd-ink);
   box-shadow: 0 4px 0 var(--bd-ink);

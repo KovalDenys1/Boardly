@@ -133,7 +133,7 @@ export function NavDrawer({
                 onClick={onClose}
                 aria-current={active ? 'page' : undefined}
                 className={`nav-drawer-link flex w-full items-center gap-3 rounded-xl text-[15px] font-semibold transition-colors ${
-                  active ? 'bg-bd-sun text-bd-ink' : 'text-bd-ink-soft hover:bg-bd-bg2'
+                  active ? 'bg-bd-sun text-bd-ink-on-accent' : 'text-bd-ink-soft hover:bg-bd-bg2'
                 } ${focusRing}`}
               >
                 {t(item.labelKey)}

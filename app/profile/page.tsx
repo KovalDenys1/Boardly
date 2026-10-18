@@ -1923,7 +1923,7 @@ export default function ProfilePage() {
                           className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-(--bd-ink-on-accent) outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
-                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
                           {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(

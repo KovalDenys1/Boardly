@@ -307,7 +307,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 fontWeight: 700,
                 fontSize: 13,
                 background: 'var(--bd-sun)',
-                color: 'var(--bd-ink)',
+                color: 'var(--bd-ink-on-accent)',
                 border: '2px solid var(--bd-ink)',
                 boxShadow: '2px 2px 0 var(--bd-ink)',
               }}

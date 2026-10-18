@@ -434,7 +434,7 @@ export default function PublicProfileView({
           </span>
         )}
       </div>
-      <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+      <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
         {t('profile.publicProfile.levelBadge', { level })}
       </div>
       {profile.isPremium && (
@@ -471,7 +471,7 @@ export default function PublicProfileView({
       <h1 className="mt-2 max-w-full wrap-break-word font-display text-[clamp(1.5rem,7.5vw,2.25rem)] font-black leading-tight text-bd-ink">
         {displayName}
       </h1>
-      <p className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-bd-ink bg-bd-sun px-4 py-1.5 text-sm font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
+      <p className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-bd-ink bg-bd-sun px-4 py-1.5 text-sm font-bold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]"
       >
         <Icon name="lock" size={15} />
         {t('profile.publicProfile.privateTitle')}

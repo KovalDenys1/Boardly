@@ -76,7 +76,7 @@ export default function RejoinLobbyBanner({ lobby, onDismiss }: RejoinLobbyBanne
           borderRadius: 9,
           border: 'none',
           background: 'var(--bd-sun)',
-          color: 'var(--bd-ink)',
+          color: 'var(--bd-ink-on-accent)',
           fontSize: 12,
           fontWeight: 700,
           cursor: 'pointer',

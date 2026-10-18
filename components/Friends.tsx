@@ -602,7 +602,7 @@ export default function Friends() {
       <div className="relative p-6 sm:p-7">
         <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
         <div className="relative">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
             {icon}
           </div>
           <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink">{title}</h3>
@@ -954,7 +954,7 @@ export default function Friends() {
                   <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                     <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className="relative shrink-0">
-                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.receiver?.username || 'Unknown', request.receiver?.avatar)}
                         </div>
                         <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-bd-card-warm bg-bd-sun-deep" />

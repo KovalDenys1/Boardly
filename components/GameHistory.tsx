@@ -35,7 +35,7 @@ const RESULT_KEYS = {
 } as const satisfies Record<ViewerResult, TranslationKeys>
 
 const RESULT_BADGE_CLASS: Record<ViewerResult, string> = {
-  won: 'bg-bd-mint text-bd-ink',
+  won: 'bg-bd-mint text-bd-ink-on-accent',
   lost: 'bg-bd-coral/20 text-bd-ink',
   draw: 'bg-bd-sun/40 text-bd-ink',
   abandoned: 'bg-bd-bg2 text-bd-ink-soft',
@@ -283,7 +283,7 @@ export default function GameHistory() {
             <div className={`${panelClassName} relative overflow-hidden`}>
               <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
               <div className="relative p-6 sm:p-7">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                   <BoardIcon />
                 </div>
                 <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink">
@@ -312,7 +312,7 @@ export default function GameHistory() {
                     {meta ? (
                       <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="tile" />
                     ) : (
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-bd-ink-on-accent">
                         <BoardIcon />
                       </div>
                     )}

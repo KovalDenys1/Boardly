@@ -149,7 +149,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
                               ? {
                                   background: 'var(--bd-sun)',
                                   borderColor: 'var(--bd-ink)',
-                                  color: 'var(--bd-ink)',
+                                  color: 'var(--bd-ink-on-accent)',
                                 }
                               : {
                                   background: 'var(--bd-bg2)',
