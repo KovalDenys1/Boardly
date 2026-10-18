@@ -17,6 +17,7 @@ fail() {
 }
 
 command -v bubblewrap >/dev/null 2>&1 || fail "bubblewrap not found; install it with 'npm i -g @bubblewrap/cli@1.27.0' (docs/ANDROID.md)"
+command -v perl >/dev/null 2>&1 || fail "perl not found; it redacts the password from the build output"
 
 # Bubblewrap and Gradle both need JDK 17; the system java on this Mac is not a runtime.
 JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
@@ -47,15 +48,23 @@ unset PASSWORD
 SHORTCUTS="$ANDROID_DIR/app/src/main/res/xml/shortcuts.xml"
 SNAPSHOT="$(mktemp)"
 cp "$SHORTCUTS" "$SNAPSHOT"
-restore_shortcuts() {
+cleanup() {
   cp "$SNAPSHOT" "$SHORTCUTS"
   rm -f "$SNAPSHOT"
+  # The Gradle daemon would keep the password variables in its environment for hours.
+  (cd "$ANDROID_DIR" && ./gradlew --stop >/dev/null 2>&1) || true
 }
-trap restore_shortcuts EXIT
+trap cleanup EXIT
+
+# A failed signing makes Bubblewrap print the signer's command line, password included.
+redact_password() {
+  # shellcheck disable=SC2016
+  perl -pe 'BEGIN { $| = 1; $p = $ENV{BUBBLEWRAP_KEY_PASSWORD} } s/\Q$p\E/[redacted]/g if length $p'
+}
 
 # Bubblewrap does not expand '~', so the manifest's signingKey.path is overridden with an absolute one.
 cd "$ANDROID_DIR"
-nice -n 10 bubblewrap build --skipPwaValidation --signingKeyPath "$KEYSTORE" --signingKeyAlias "$KEY_ALIAS" </dev/null
+nice -n 10 bubblewrap build --skipPwaValidation --signingKeyPath "$KEYSTORE" --signingKeyAlias "$KEY_ALIAS" </dev/null 2>&1 | redact_password
 
 for artifact in app-release-bundle.aab app-release-signed.apk; do
   [ -s "$ANDROID_DIR/$artifact" ] || fail "build finished but $artifact was not produced"

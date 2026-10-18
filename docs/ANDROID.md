@@ -39,6 +39,9 @@ Chrome without a URL bar, so a web release reaches Android players without a new
 - **Lost key:** this is an upload key. Once Play App Signing is on, Google holds the key that
   players' installs are signed with, and a lost upload key can be reset through Play Console
   support (a new key, then its fingerprint in `assetlinks.json`).
+- **Password characters:** it must stay `[A-Za-z0-9]`. Bubblewrap hands it to a shell unescaped.
+  It is also visible in `ps` for the seconds the signer runs (single-user Mac, low risk), and the
+  build script redacts it from Bubblewrap's output because a failed signing prints that command.
 - **The `~` in `signingKey.path`:** `twa-manifest.json` writes the path with `~` because the
   absolute path is machine-specific, but Bubblewrap does not expand `~`. The build script therefore
   passes `--signingKeyPath "$HOME/.config/boardly-android/upload-key.jks" --signingKeyAlias upload`;
@@ -59,7 +62,8 @@ one-line hint when the keystore or the keychain item is missing, and when `twa-m
 changed since `android/` was generated (run Regenerate first; Bubblewrap would otherwise ask, and
 bump the version on a yes). Gradle rewrites `android/app/src/main/res/xml/shortcuts.xml` on every
 build, so the script copies that tracked file to a temporary file first and puts it back when it
-exits, whether the build succeeded or failed; it never runs git.
+exits, whether the build succeeded or failed; it never runs git. It also stops the Gradle daemon
+then, so the password variables do not stay in a background process.
 
 The first run downloads Gradle and the Android dependencies, a few minutes. Check the result with
 `keytool -printcert -jarfile android/app-release-signed.apk`: its SHA-256 must be listed in
@@ -92,7 +96,10 @@ fingerprints belong in `public/.well-known/assetlinks.json`:
 - the upload key, for the local `.apk`. It is in the file now;
 - the Play app-signing key, for what Play delivers. It does not exist until the first upload: copy
   it from Play Console, Release, Setup, App integrity, add it to the same list, and release the
-  file before testing the store build. This is still to do.
+  file before testing the store build. This is still to do. Add it; never replace the upload-key
+  line, because local and sideloaded `.apk` builds and the emulator check are signed with the
+  upload key. Internal app sharing signs with a third key, shown on the same page. That page also
+  offers a ready Digital Asset Links snippet to paste from.
 
 `__tests__/public/assetlinks.test.ts` checks the shape and that the package matches
 `twa-manifest.json`. The file reaches players only when it is on `main`.
