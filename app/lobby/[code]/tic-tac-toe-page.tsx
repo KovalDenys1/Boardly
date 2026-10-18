@@ -929,7 +929,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                             borderRadius: 12,
                             fontWeight: 700,
                             background: 'var(--bd-mint-deep)',
-                            color: 'white',
+                            color: 'var(--bd-ink-on-accent)',
                             border: 'none',
                             cursor: isMoveSubmitting ? 'not-allowed' : 'pointer',
                             opacity: isMoveSubmitting ? 0.65 : 1,

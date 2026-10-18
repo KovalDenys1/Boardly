@@ -263,7 +263,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               width: '100%',
               padding: '16px 28px',
               background: 'var(--bd-coral)',
-              color: 'white',
+              color: 'var(--bd-ink-on-accent)',
               borderRadius: 14,
               fontWeight: 700,
               fontSize: 17,

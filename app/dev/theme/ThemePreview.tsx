@@ -73,7 +73,7 @@ interface ContrastGroup {
 
 /**
  * Only pairs that exist in `app/globals.css`. `white` is spelled out where the
- * rule hardcodes it (`.bd-btn-coral`, `.bd-avatar`) – those do not move with a
+ * rule hardcodes it (`.bd-btn-coral`) – those do not move with a
  * token, so they are the ones a palette change breaks silently. The button rows
  * measure `--bd-btn-ink` rather than `--bd-ink` for the same reason: that is the
  * property `.bd-btn-primary` actually paints with, so if the alias ever stops
@@ -108,8 +108,8 @@ const CONTRAST_GROUPS: ContrastGroup[] = [
       { label: 'On lavender', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-lav)', where: 'tone="on-accent"' },
       { label: 'On sky', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-sky)', where: 'tone="on-accent"' },
       { label: 'On premium', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-premium)', where: 'crown on a gold fill' },
-      { label: 'Sticker label on sun', fg: 'var(--bd-ink)', bg: 'var(--bd-sun)', where: '.bd-sticker, .bd-avatar-sun – flips in dark' },
-      { label: 'Avatar initial on coral', fg: 'white', bg: 'var(--bd-coral)', where: '.bd-avatar, hardcoded white' },
+      { label: 'Sticker label on sun', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-sun)', where: '.bd-sticker, .bd-avatar-sun' },
+      { label: 'Avatar initial on coral', fg: 'var(--bd-ink-on-accent)', bg: 'var(--bd-coral)', where: '.bd-avatar' },
     ],
   },
   {

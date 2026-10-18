@@ -900,7 +900,7 @@ export default function Friends() {
                   <div className="p-5 sm:p-6">
                     <div className="flex items-start gap-4">
                       <div className="relative shrink-0">
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_var(--bd-ink)]">
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
                         <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-(--bd-ink-on-accent)">

@@ -1588,7 +1588,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   border-radius: 50%;
   display: grid; place-items: center;
   font-family: var(--bd-font-display); font-weight: 700;
-  color: white;
+  color: var(--bd-ink-on-accent);
   /* Ink rim, white ring inside it – both inside the box, so a scrolling
      ancestor cannot clip the rim (#1278). */
   border: 2px solid var(--bd-ink);

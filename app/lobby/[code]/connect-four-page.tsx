@@ -850,7 +850,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
             {isPendingResponder ? (
                 <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'white', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
+                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'var(--bd-ink-on-accent)', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
                         {t('games.connect_four.game.undoAccept')}
                     </button>
                     <button onClick={() => void handleRespondToUndo(false)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>

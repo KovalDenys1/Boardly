@@ -209,7 +209,7 @@ export default function AvatarPicker({
             <button
               type="button"
               onClick={onUnlockUpload}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95"
             >
               <Icon name="star" size={14} />
               <span>{t('profile.avatarPicker.getPremium')}</span>
