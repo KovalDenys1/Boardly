@@ -389,6 +389,7 @@ const de: TranslationWithPlurals = {
     mute: 'Stumm',
     unmute: 'Ton an',
     volume: 'Lautstärke',
+    silentSwitchHint: 'Auf dem iPhone schaltet der Lautlos-Schalter auch die Spielsounds stumm.',
     themeLabel: 'Design',
     themeLight: 'Hell',
     themeDark: 'Dunkel',
@@ -450,6 +451,12 @@ const de: TranslationWithPlurals = {
     ctaVisitorTitle: 'Hier beginnt der Spieleabend.',
     ctaVisitorAccent: 'Ganz ohne Planung.',
     ctaVisitorBody: 'Spiel auswählen, Raum öffnen, Link teilen. Deine Freunde sind in Sekunden dabei – ohne Konto, ohne Download.',
+    promoVideo: {
+      kicker: 'So funktioniert es',
+      title: 'Boardly in einer Minute',
+      label: 'Video über Boardly: Spiel wählen, Link teilen und zusammen spielen',
+      play: 'Video abspielen',
+    },
     howItWorks: {
       kicker: 'So funktioniert’s',
       title: 'In drei Schritten zum Spiel',

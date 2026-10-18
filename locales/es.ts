@@ -393,6 +393,7 @@ const es: TranslationWithPlurals = {
     mute: 'Silenciar',
     unmute: 'Activar sonido',
     volume: 'Volumen',
+    silentSwitchHint: 'En iPhone, el interruptor de silencio también silencia los sonidos del juego.',
     themeLabel: 'Tema',
     themeLight: 'Claro',
     themeDark: 'Oscuro',
@@ -454,6 +455,12 @@ const es: TranslationWithPlurals = {
     ctaVisitorTitle: 'La noche de juegos empieza aquí.',
     ctaVisitorAccent: 'Sin planificar nada.',
     ctaVisitorBody: 'Elige un juego, abre una sala y comparte el enlace. Tus amigos entran en segundos — sin cuenta y sin descargas.',
+    promoVideo: {
+      kicker: 'Míralo en acción',
+      title: 'Boardly en un minuto',
+      label: 'Vídeo de Boardly: elige un juego, envía el enlace y juega con tus amigos',
+      play: 'Reproducir el vídeo',
+    },
     howItWorks: {
       kicker: 'Cómo funciona',
       title: 'Tres pasos para jugar',
