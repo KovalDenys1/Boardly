@@ -121,7 +121,9 @@ than argued away. Optional, because accounts are.
 **Purchase history.** The app sells nothing (#1465: `components/PurchaseOnly.tsx` removes every
 checkout and billing-portal entry in Play mode). It still declares this: an account that bought Premium on the web sees its status
 and renewal in the profile's Premium tab and can cancel it there, and that cancel request changes the
-purchase record from inside the app (`app/profile/page.tsx`, `handleCancelSubscription`). The account
+purchase record from inside the app (`app/profile/page.tsx`, `handleCancelSubscription`). The app
+names the website as the place to buy in plain text without a link, which the Payments FAQ allows a
+consumption-only app (`store-settings.md`, "Why the in-app Premium notice is allowed"). The account
 keeps "your Stripe customer and subscription ids, your Premium status and dates"
 (`privacyPolicy.purposes.premium.data`). Optional; Account management. **User payment info is not
 collected**: card details go to Link/Stripe on the web, never through the app ("We never receive your

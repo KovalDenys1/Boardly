@@ -68,13 +68,36 @@ Account features (profile, friends, data download, account deletion) need the re
 Account deletion: menu > Profile > Profile tab > Danger Zone > Delete Account. A confirmation
 link is emailed to the account's address. Guests delete their data with "Forget me" in the guest menu.
 
-Nothing can be bought in the app. The app is the website boardly.online running as a Trusted Web
-Activity.
+Nothing can be bought in the app. Premium bought on the website works in the app, and the app says
+in plain text, with no link, that Premium is sold on boardly.online: a consumption-only app, as the
+Payments policy FAQ (answer/10281818) allows. The app is the website boardly.online running as a
+Trusted Web Activity.
 ```
 
 The reviewer account is the one item here that needs the account owner: create it on boardly.online
 with an address you can read (so its email is verified and the deletion email arrives), and type the
 credentials into the Console.
+
+### Why the in-app Premium notice is allowed
+
+Inside the app, where the website offers checkout, the app shows one plain sentence instead, with no
+link: "Premium can be bought on boardly.online in your browser" (`premium.playAppNotice`, rendered as
+a `<p>` in `app/premium/PremiumContent.tsx`, the profile's Premium tab in `app/profile/page.tsx` and
+`components/AvatarPicker.tsx`; every checkout and billing-portal control is in `PurchaseOnly`, #1465).
+
+The Payments policy forbids leading users to another payment method "via … In-app webviews, buttons,
+links, messaging, advertisements, or other calls to action" (answer/9858738, section 4), but its FAQ
+answers "Can I communicate with my users about alternative ways to pay?" with an explicit allowance
+for this kind of app (answer/10281818, fetched 2026-10-18):
+
+> "For services and products that are consumption only (apps that do not enable users to purchase
+> access to digital goods or services from within the app), developers may choose to provide
+> additional information about purchasing options without direct links, including using language
+> like: … 'Go to our website to upgrade your subscription to Premium'"
+
+Boardly's app sells nothing, so it is consumption-only, and the sentence names the website without
+linking to it. The two conditions to keep: no purchase inside the app, and no link, button or URL that
+opens checkout from that notice.
 
 ## Closed test before production
 
