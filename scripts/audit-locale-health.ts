@@ -47,9 +47,6 @@ const updateBaseline = process.argv.includes('--update-baseline')
 const BASE_LOCALE = 'en'
 const OTHER_LOCALES = availableLocales.filter((locale) => locale !== BASE_LOCALE)
 
-// locales/es.ts is a copy of en.ts until the Spanish translation lands (#1472).
-const UNTRANSLATED_CHECK_PENDING: ReadonlySet<string> = new Set(['es'])
-
 /** Two or more letters, so "·", "1/2" and "{{count}}" alone are not copy. */
 const hasWords = /\p{L}{2,}/u
 const placeholderPattern = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g
@@ -111,7 +108,7 @@ export function inspectLocales(bundles: Record<string, unknown>): LocaleHealthRe
         )
       }
 
-      if (englishValue === translated && hasWords.test(englishValue) && !UNTRANSLATED_CHECK_PENDING.has(locale)) {
+      if (englishValue === translated && hasWords.test(englishValue)) {
         untranslated.push(`${locale} ${key} = ${JSON.stringify(englishValue)}`)
       }
     }
