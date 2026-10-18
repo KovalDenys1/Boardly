@@ -1548,7 +1548,7 @@ function englishTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChangeN
       {
         heading: 'What changes',
         paragraphs: [
-          `From ${day}, an account that has not been used for ${TERMS_FIGURES.inactiveMonths} months is deleted. We email the address on the account ${TERMS_FIGURES.inactiveWarningDays} days before, and signing in once before that day keeps the account. Nothing else in the Terms has changed.`,
+          `From ${day}, an account that has not been used for ${TERMS_FIGURES.inactiveMonths} months is deleted. We email the address on the account ${TERMS_FIGURES.inactiveWarningDays} days before, and signing in once before that day keeps the account. Nothing else in the Terms changes what you agreed to.`,
           'The rule does not apply to an account that has or has had Premium or has ever started a Premium purchase, or to an account that is suspended.',
         ],
       },
@@ -1581,7 +1581,7 @@ function norwegianTermsChangeCopy(d: TermsChangeNoticeDetails, links: TermsChang
       {
         heading: 'Hva som endres',
         paragraphs: [
-          `Fra ${day} slettes en konto som ikke har vært brukt på ${TERMS_FIGURES.inactiveMonths} måneder. Vi sender en e-post til adressen på kontoen ${TERMS_FIGURES.inactiveWarningDays} dager før, og logger du inn én gang før den dagen, beholder du kontoen. Ingenting annet i vilkårene er endret.`,
+          `Fra ${day} slettes en konto som ikke har vært brukt på ${TERMS_FIGURES.inactiveMonths} måneder. Vi sender en e-post til adressen på kontoen ${TERMS_FIGURES.inactiveWarningDays} dager før, og logger du inn én gang før den dagen, beholder du kontoen. Ingenting annet i vilkårene endrer det du har avtalt.`,
           'Regelen gjelder ikke for en konto som har eller har hatt Premium eller noen gang har startet et Premium-kjøp, og heller ikke for en konto som er suspendert.',
         ],
       },
