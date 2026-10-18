@@ -85,7 +85,7 @@ export default function RegisterForm() {
   const passwordTooltip = (
     <div className="space-y-2">
       <p className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
-        {t('auth.password.requirements', 'Password requirements')}
+        {t('auth.password.requirements')}
       </p>
       <div className="space-y-1.5">
         {passwordChecks.map((check) => (
@@ -320,7 +320,7 @@ export default function RegisterForm() {
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
                   <input
@@ -358,7 +358,7 @@ export default function RegisterForm() {
                     statusText={formData.password ? passwordStrength.label : undefined}
                     statusClassName={passwordStrength.textColor}
                     hint={passwordTooltip}
-                    hintLabel={t('auth.password.requirements', 'Password requirements')}
+                    hintLabel={t('auth.password.requirements')}
                     required={true}
                   />
                   {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.password}</p>}

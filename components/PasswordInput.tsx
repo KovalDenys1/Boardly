@@ -153,7 +153,7 @@ export default function PasswordInput({
               style={{ background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)' }}
             >
               <p className="text-xs font-semibold mb-2" style={{ color: 'var(--bd-ink)' }}>
-                {t('auth.password.requirements', 'Password requirements')}:
+                {t('auth.password.requirements')}:
               </p>
               <PasswordRequirement
                 met={value.length >= 8}
