@@ -76,3 +76,24 @@ describe('Footer legal links', () => {
     expect(screen.getByRole('link', { name: 'Community rules' })).toHaveAttribute('href', '/rules')
   })
 })
+
+describe('Footer in the Play app (#1465)', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('drops the /premium link in the app and keeps the rest of the Play column', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { container } = render(<Footer />)
+    const hrefs = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+
+    expect(hrefs).not.toContain('/premium')
+    expect(hrefs).toContain('/guides')
+  })
+
+  it('marks the /premium item on the web so the app hides it before hydration', () => {
+    const { container } = render(<Footer />)
+
+    expect(container.querySelector('a[href="/premium"]')?.closest('li')).toHaveAttribute('data-purchase-ui')
+  })
+})

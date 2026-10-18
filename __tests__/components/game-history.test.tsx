@@ -136,3 +136,37 @@ describe('GameHistory', () => {
     expect(options.map((o) => o.textContent)).toEqual(expect.arrayContaining(['games.checkers.name', 'games.ludo.name', 'games.liars_party.name']))
   })
 })
+
+describe('GameHistory in the Play app (#1465)', () => {
+  beforeAll(() => {
+    ;(global as typeof globalThis & { fetch: typeof mockFetch }).fetch = mockFetch as never
+  })
+
+  afterAll(() => {
+    ;(global as typeof globalThis & { fetch: typeof originalFetch }).fetch = originalFetch as never
+  })
+
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('does not point a free user at the Premium tab inside the app', async () => {
+    document.documentElement.dataset.appShell = 'play'
+    mockFetch.mockResolvedValue(mockJsonResponse({ games: [game({})], pagination: pagination({ totalCount: 20, capped: true, hiddenCount: 33 }) }))
+
+    render(<GameHistory />)
+
+    expect(await screen.findByText('games.connect_four.name')).toBeTruthy()
+    expect(screen.queryByText('profile.gameHistory.moreWithPremium:33')).toBeNull()
+    expect(document.querySelector('a[href="/profile?tab=premium"]')).toBeNull()
+  })
+
+  it('marks the Premium row on the web so the app hides it before hydration', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse({ games: [game({})], pagination: pagination({ totalCount: 20, capped: true, hiddenCount: 33 }) }))
+
+    render(<GameHistory />)
+
+    const link = await screen.findByRole('link', { name: 'profile.gameHistory.moreWithPremium:33' })
+    expect(link.closest('li')).toHaveAttribute('data-purchase-ui')
+  })
+})

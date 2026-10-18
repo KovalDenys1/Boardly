@@ -6,6 +6,7 @@ import {
   trackInviteOpened,
   trackLobbyLeaveRedirect,
   trackMoveSubmitApplied,
+  trackPremiumCta,
   trackPushPrompt,
   trackStartAloneAutoBotResult,
   trackSocketAuthRefreshFailed,
@@ -204,6 +205,34 @@ describe('Discord CTA (#982)', () => {
     expect(toAnalyticsGameType('chess')).toBeUndefined()
     expect(toAnalyticsGameType(undefined)).toBeUndefined()
     expect(toAnalyticsGameType(7)).toBeUndefined()
+  })
+})
+
+describe('premium CTA in the Play app (#1465)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('counts a premium CTA tap on the web', () => {
+    trackPremiumCta('premium_page', 'yearly')
+
+    expect(mockTrack).toHaveBeenCalledWith('feature_used', {
+      feature: 'premium_cta',
+      source: 'premium_page',
+      plan: 'yearly',
+    })
+  })
+
+  it('counts nothing inside the app, where a tap cannot convert', () => {
+    document.documentElement.dataset.appShell = 'play'
+
+    trackPremiumCta('premium_locked')
+
+    expect(mockTrack).not.toHaveBeenCalled()
   })
 })
 

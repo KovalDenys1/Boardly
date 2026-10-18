@@ -5136,6 +5136,7 @@ const es: TranslationWithPlurals = {
     ctaManage: 'Gestionar suscripción',
     ctaLoading: 'Abriendo el pago...',
     ctaNote: 'Cancela cuando quieras. ¿Tienes un código promocional? Introdúcelo en la página de pago.',
+    playAppNotice: 'Premium se puede comprar en boardly.online desde el navegador.',
     withdrawalTitle: 'Tu derecho de desistimiento',
     withdrawalBody: 'Tienes 14 días desde el día en que compras Premium para desistir, sin dar ningún motivo. Si desistes, te reembolsamos todo lo que pagaste por esa compra en un plazo de 14 días desde tu aviso, por el mismo medio de pago y sin ningún cargo.',
     withdrawalHow: 'Para desistir, envía un correo electrónico a support@boardly.online o usa el formulario de desistimiento de nuestra página de desistimiento.',
@@ -5211,6 +5212,7 @@ const es: TranslationWithPlurals = {
       q2: {
         question: '¿Qué pasa si cancelo?',
         answer: 'Premium sigue activo hasta el final del periodo que ya pagaste, y a partir de entonces dejan de producirse renovaciones. La cancelación se hace desde el portal de facturación de tu página de perfil.',
+        answerApp: 'Premium sigue activo hasta el final del periodo que ya pagaste, y a partir de entonces dejan de producirse renovaciones. Puedes cancelar desde la pestaña Premium de tu página de perfil.',
       },
       q3: {
         question: '¿En qué moneda se me cobra?',
@@ -5219,6 +5221,7 @@ const es: TranslationWithPlurals = {
       q4: {
         question: '¿Puedo cambiar entre el plan mensual y el anual?',
         answer: 'Sí. Abre el portal de facturación desde tu página de perfil y cambia el plan allí; Link gestiona la diferencia por el tiempo ya pagado.',
+        answerApp: 'Sí, en boardly.online desde el navegador: abre el portal de facturación desde tu página de perfil y cambia el plan allí. Link gestiona la diferencia por el tiempo ya pagado.',
       },
       q5: {
         question: '¿Aceptan códigos promocionales?',
@@ -5237,6 +5240,7 @@ const es: TranslationWithPlurals = {
     soldThroughLink: 'Premium se vende a través de Link: la filial de Stripe Sold through Link, LLC es el vendedor registrado de la compra. Link cobra el pago y te envía por correo el recibo, la factura y cualquier aviso de reembolso. Desistes ante nosotros como se describe abajo, y nosotros hacemos el reembolso a través de Link.',
     laterTitle: 'Después de los 14 días',
     later: 'Puedes cancelar en cualquier momento desde el portal de facturación de tu página de perfil. Un plan mensual sigue entonces activo hasta el final del mes que pagaste. Si cancelas un plan anual antes de tiempo, te reembolsamos los meses completos no utilizados. Cancelar en tu cuenta de Link en link.com, o eliminar esa cuenta, se rige en cambio por las condiciones de Link.',
+    laterApp: 'Puedes cancelar en cualquier momento desde la pestaña Premium de tu página de perfil. Un plan mensual sigue entonces activo hasta el final del mes que pagaste. Si cancelas un plan anual antes de tiempo, te reembolsamos los meses completos no utilizados. Cancelar en tu cuenta de Link en link.com, o eliminar esa cuenta, se rige en cambio por las condiciones de Link.',
     howTitle: 'Cómo desistir',
     howIntro: 'Comunícanos claramente que quieres desistir del contrato antes de que terminen los 14 días. Puedes usar el formulario de abajo, pero no es obligatorio.',
     howEmailLabel: 'Por correo electrónico a',

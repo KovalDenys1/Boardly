@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { getActiveAnnouncement } from '@/lib/runtime-config'
+import { isPurchaseHref } from '@/lib/app-shell'
+import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
 
 /**
  * A single line above the header, when there is something to say.
@@ -24,21 +26,29 @@ export async function AnnouncementBanner() {
     warning: 'bg-amber-500/10 text-amber-100 border-amber-500/30',
   }[announcement.tone]
 
-  const body = (
+  const body = (arrow: boolean) => (
     <span className="mx-auto flex max-w-5xl items-center justify-center gap-2 px-4 py-2 text-center text-sm">
       {announcement.message}
-      {announcement.href && <span aria-hidden="true">&rarr;</span>}
+      {arrow && <span aria-hidden="true">&rarr;</span>}
     </span>
+  )
+  const link = announcement.href && (
+    <Link href={announcement.href} className="block hover:underline">
+      {body(true)}
+    </Link>
   )
 
   return (
     <div role="status" className={`border-b ${tone}`}>
-      {announcement.href ? (
-        <Link href={announcement.href} className="block hover:underline">
-          {body}
-        </Link>
+      {!announcement.href ? (
+        body(false)
+      ) : isPurchaseHref(announcement.href) ? (
+        <>
+          <PurchaseOnly>{link}</PurchaseOnly>
+          <PlayAppOnly>{body(false)}</PlayAppOnly>
+        </>
       ) : (
-        body
+        link
       )}
     </div>
   )

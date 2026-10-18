@@ -64,6 +64,8 @@ export const PRIVACY_UPDATED = '2026-10-05'
  * When the current withdrawal information on /premium and /withdrawal took effect.
  * 2026-09-27: the consent box also carries the age and capacity rule of Terms
  * section 3 (#1169, vergemålsloven § 12).
- * 2026-10-18: the same information in German and Spanish (#1472); the other four locales are unchanged.
+ * 2026-10-18: the same information in German and Spanish (#1472), and the Play app's
+ * wording for cancelling, which points to the Premium tab instead of the billing portal
+ * (#1465). Both landed before this version was released.
  */
 export const WITHDRAWAL_INFO_VERSION = '2026-10-18'

@@ -160,3 +160,38 @@ describe('/withdrawal page (#1162)', () => {
     Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true })
   })
 })
+
+describe('/withdrawal in the Play app (#1465)', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('has no way back to /premium inside the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { container } = render(<WithdrawalContent />)
+
+    expect(container.querySelector('a[href="/premium"]')).toBeNull()
+    expect(screen.getByTestId('withdrawal-form')).toBeInTheDocument()
+  })
+
+  it('keeps the link back to /premium on the web', () => {
+    render(<WithdrawalContent />)
+
+    expect(screen.getByRole('link', { name: en.withdrawal.backToPremium })).toHaveAttribute('href', '/premium')
+  })
+
+  it('points to the Premium tab, not the billing portal, for cancelling inside the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<WithdrawalContent />)
+
+    expect(screen.getByText(en.withdrawal.laterApp)).toBeInTheDocument()
+    expect(screen.queryByText(en.withdrawal.later)).not.toBeInTheDocument()
+  })
+
+  it('keeps the billing portal text on the web', () => {
+    render(<WithdrawalContent />)
+
+    expect(screen.getByText(en.withdrawal.later)).toBeInTheDocument()
+    expect(screen.queryByText(en.withdrawal.laterApp)).not.toBeInTheDocument()
+  })
+})
