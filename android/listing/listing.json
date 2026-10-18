@@ -1,0 +1,133 @@
+{
+  "packageName": "online.boardly.app",
+  "defaultLanguage": "en-US",
+  "issue": 1468,
+  "languages": [
+    "en-US",
+    "no-NO",
+    "de-DE",
+    "es-ES",
+    "uk",
+    "ru-RU"
+  ],
+  "listings": {
+    "en-US": {
+      "title": "Boardly: Board & Party Games",
+      "shortDescription": "Board and party games with friends in real time. Send a link or play a bot.",
+      "gameNames": {
+        "yahtzee": "Yatzy",
+        "ludo": "Ludo",
+        "checkers": "Checkers",
+        "connect-four": "Four in a Row",
+        "tic-tac-toe": "Tic-Tac-Toe",
+        "memory": "Pairs",
+        "rps": "Rock Paper Scissors",
+        "spy": "Guess the Spy",
+        "alias": "Explain the Word",
+        "liars-party": "Liar's Party",
+        "guess-my-drawing": "Sketch & Guess"
+      },
+      "fullDescription": "Boardly is a collection of board and party games you play together online, in real time. Pick a game, open a room and send the link. Your friends join in seconds, from the app or from any browser, and nobody needs an account to start.\n\nBoard and dice games\n• Yatzy – roll five dice, keep the ones you need and fill the scorecard\n• Ludo – race your tokens round the board and send rivals back to the start\n• Checkers – jump, capture and crown your kings\n• Four in a Row – drop discs and be the first to line up four\n• Tic-Tac-Toe – three in a row, one quick round after another\n• Pairs – turn over cards and find every matching pair\n• Rock Paper Scissors – you both pick at once, then see who called it\n\nParty games for your group\n• Guess the Spy – everyone knows the place except the spy. Ask questions and find them. From 3 players.\n• Explain the Word – describe the word to your team without saying it. From 3 players.\n• Liar's Party – make a claim, true or a bluff, and the others decide whether to believe you. From 4 players.\n• Sketch & Guess – one player draws a secret word while everyone else races to guess it. From 3 players.\n\nPlay alone or together\n• The board and dice games have computer opponents at three levels: play solo, or fill an empty seat.\n• The party games are made for people talking to each other: on a video call, in the same room or in the game chat.\n• Quick Play finds an open room or sets one up for you. Or keep your room private for your own group.\n\nMade for playing together\n• Chat in every game, with a way to report a message and to block a player.\n• Moves, rolls and captures are animated, with sound you can turn off.\n• Turn timers keep the game moving.\n\nYour account and language\n• Play as a guest with just a name, or create an account to keep your stats, game history, friends and achievements.\n• Six languages: English, Norwegian, German, Spanish, Ukrainian and Russian.\n\nYour data\n• Guests never give an email address.\n• Delete your guest data with \"Forget me\", or your account from your profile page, whenever you like.\n• Chat messages are deleted after 24 hours unless someone reports them.\n\nBoardly is made in Norway and is for players aged 13 and over."
+    },
+    "no-NO": {
+      "title": "Boardly: brettspill med venner",
+      "shortDescription": "Brett- og selskapsspill med venner i sanntid. Del en lenke eller spill mot bots.",
+      "gameNames": {
+        "yahtzee": "Yatzy",
+        "ludo": "Ludo",
+        "checkers": "Dam",
+        "connect-four": "Fire på rad",
+        "tic-tac-toe": "Tre på rad",
+        "memory": "Hukommelse",
+        "rps": "Stein, saks, papir",
+        "spy": "Gjett spionen",
+        "alias": "Forklar ordet",
+        "liars-party": "Løgnerfest",
+        "guess-my-drawing": "Tegn og gjett"
+      },
+      "fullDescription": "Boardly er brettspill og selskapsspill dere spiller sammen på nett, i sanntid. Velg et spill, åpne et rom og del lenken. Vennene dine er med på sekunder, fra appen eller fra en hvilken som helst nettleser, og ingen trenger konto for å begynne.\n\nBrett- og terningspill\n• Yatzy – kast fem terninger, behold dem du trenger, og fyll ut blokka\n• Ludo – flytt brikkene rundt brettet og send motstanderne tilbake til start\n• Dam – hopp, slå og kron kongene dine\n• Fire på rad – slipp brikker ned og vær først med fire etter hverandre\n• Tre på rad – kryss og bolle, den ene raske runden etter den andre\n• Hukommelse – snu kort og finn alle parene\n• Stein, saks, papir – dere velger samtidig, og så ser dere hvem som traff\n\nSelskapsspill for gjengen\n• Gjett spionen – alle vet hvor dere er, bortsett fra spionen. Still spørsmål og finn ut hvem det er. Fra 3 spillere.\n• Forklar ordet – forklar ordet for laget ditt uten å si det. Fra 3 spillere.\n• Løgnerfest – kom med en påstand, sann eller bløff, og la de andre avgjøre om de tror deg. Fra 4 spillere.\n• Tegn og gjett – én tegner et hemmelig ord, og de andre kappes om å gjette det. Fra 3 spillere.\n\nAlene eller sammen\n• Brett- og terningspillene har datamotstandere på tre nivåer: spill alene, eller fyll en ledig plass.\n• Selskapsspillene er laget for folk som snakker sammen: på videosamtale, i samme rom eller i spillchatten.\n• Med ett trykk finner du et åpent rom, eller vi setter opp et til deg. Du kan også holde rommet privat for din egen gjeng.\n\nLaget for å spille sammen\n• Chat i alle spill, med mulighet til å rapportere en melding og blokkere en spiller.\n• Trekk, kast og slag er animert, og lyden kan slås av.\n• Tidsbegrensning på trekkene holder spillet i gang.\n\nKonto og språk\n• Spill som gjest med bare et navn, eller lag en konto for å ta vare på statistikk, spillhistorikk, venner og prestasjoner.\n• Seks språk: norsk, engelsk, tysk, spansk, ukrainsk og russisk.\n\nDataene dine\n• Gjester oppgir aldri e-postadresse.\n• Slett gjestedataene dine med «Glem meg», eller kontoen din fra profilsiden, når du vil.\n• Chatmeldinger slettes etter 24 timer, med mindre noen rapporterer dem.\n\nBoardly er laget i Norge og er for spillere fra 13 år."
+    },
+    "de-DE": {
+      "title": "Boardly: Brett- & Partyspiele",
+      "shortDescription": "Brett- und Partyspiele mit Freunden in Echtzeit – oder allein gegen Bots.",
+      "gameNames": {
+        "yahtzee": "Yatzy",
+        "ludo": "Ludo",
+        "checkers": "Dame",
+        "connect-four": "Vier in einer Reihe",
+        "tic-tac-toe": "Tic-Tac-Toe",
+        "memory": "Paare finden",
+        "rps": "Schere, Stein, Papier",
+        "spy": "Finde den Spion",
+        "alias": "Begriffe erklären",
+        "liars-party": "Lügnerparty",
+        "guess-my-drawing": "Zeichnen & Raten"
+      },
+      "fullDescription": "Mit Boardly spielst du Brett- und Partyspiele online mit anderen, in Echtzeit. Spiel auswählen, Raum öffnen, Link teilen: Deine Freunde sind in Sekunden dabei, aus der App oder aus jedem Browser, und niemand braucht ein Konto, um loszulegen.\n\nBrett- und Würfelspiele\n• Yatzy – fünf Würfel werfen, behalten, was passt, und den Block füllen\n• Ludo – die Figuren übers Brett jagen und Gegner zurück an den Start schicken\n• Dame – überspringen, schlagen und zur Dame werden\n• Vier in einer Reihe – Steine einwerfen und als Erster vier in eine Reihe bringen\n• Tic-Tac-Toe – drei in einer Reihe, eine schnelle Runde nach der anderen\n• Paare finden – Karten aufdecken und sich merken, wo welches Bild liegt\n• Schere, Stein, Papier – ihr wählt gleichzeitig, dann zeigt sich, wer richtig lag\n\nPartyspiele für eure Runde\n• Finde den Spion – alle kennen den Ort, nur der Spion nicht. Stellt Fragen und entlarvt ihn. Ab 3 Personen.\n• Begriffe erklären – erkläre deinem Team den Begriff, ohne ihn zu sagen. Ab 3 Personen.\n• Lügnerparty – stell eine Behauptung auf, wahr oder geblufft, und die anderen entscheiden, ob sie dir glauben. Ab 4 Personen.\n• Zeichnen & Raten – eine Person zeichnet einen geheimen Begriff, alle anderen raten um die Wette. Ab 3 Personen.\n\nAllein oder zusammen\n• Die Brett- und Würfelspiele haben Computergegner in drei Stufen: Spiel allein gegen sie oder besetze mit ihnen einen freien Platz.\n• Die Partyspiele leben vom Reden: im Videocall, im selben Raum oder im Spielchat.\n• Schnellspiel findet einen offenen Raum oder richtet einen für dich ein. Oder du hältst deinen Raum privat für deine eigene Runde.\n\nGemacht fürs gemeinsame Spielen\n• Chat in jedem Spiel, mit der Möglichkeit, eine Nachricht zu melden und Spieler zu blockieren.\n• Züge, Würfe und Schläge sind animiert, der Ton lässt sich abschalten.\n• Zugtimer halten das Spiel in Bewegung.\n\nKonto und Sprache\n• Spiel als Gast nur mit einem Namen oder leg ein Konto an, um Statistiken, Spielverlauf, Freunde und Erfolge zu behalten.\n• Sechs Sprachen: Deutsch, Englisch, Norwegisch, Spanisch, Ukrainisch und Russisch.\n\nDeine Daten\n• Gäste geben nie eine E-Mail-Adresse an.\n• Lösche deine Gastdaten mit „Vergiss mich“ oder dein Konto auf deiner Profilseite, wann immer du willst.\n• Chatnachrichten werden nach 24 Stunden gelöscht, außer jemand meldet sie.\n\nBoardly wird in Norwegen entwickelt und ist für Spielerinnen und Spieler ab 13 Jahren."
+    },
+    "es-ES": {
+      "title": "Boardly: juegos de mesa online",
+      "shortDescription": "Juegos de mesa y de fiesta en tiempo real: envía un enlace o juega contra bots.",
+      "gameNames": {
+        "yahtzee": "Yatzy",
+        "ludo": "Ludo",
+        "checkers": "Damas",
+        "connect-four": "Cuatro en raya",
+        "tic-tac-toe": "Tres en raya",
+        "memory": "Memoria",
+        "rps": "Piedra, papel o tijera",
+        "spy": "Encuentra al espía",
+        "alias": "Explica la palabra",
+        "liars-party": "Fiesta de mentirosos",
+        "guess-my-drawing": "Dibuja y adivina"
+      },
+      "fullDescription": "Boardly reúne juegos de mesa y de fiesta para jugar juntos online, en tiempo real. Elige un juego, abre una sala y comparte el enlace. Tus amigos entran en segundos, desde la app o desde cualquier navegador, y nadie necesita una cuenta para empezar.\n\nJuegos de mesa y de dados\n• Yatzy – tira cinco dados, quédate con los que te sirven y completa la hoja de puntos\n• Ludo – lleva tus fichas por el tablero y manda a tus rivales de vuelta a la salida\n• Damas – salta, captura y corona tus damas\n• Cuatro en raya – suelta fichas y sé el primero en alinear cuatro\n• Tres en raya – tres en línea, una partida rápida tras otra\n• Memoria – da la vuelta a las cartas y encuentra todas las parejas\n• Piedra, papel o tijera – elegís a la vez y enseguida se ve quién acertó\n\nJuegos de fiesta para tu grupo\n• Encuentra al espía – todos conocen el lugar menos el espía. Haced preguntas y descubridlo. Desde 3 jugadores.\n• Explica la palabra – describe la palabra a tu equipo sin decirla. Desde 3 jugadores.\n• Fiesta de mentirosos – haz una afirmación, verdadera o de farol, y los demás deciden si te creen. Desde 4 jugadores.\n• Dibuja y adivina – una persona dibuja una palabra secreta y los demás compiten por adivinarla. Desde 3 jugadores.\n\nSolo o en compañía\n• Los juegos de mesa y de dados tienen rivales controlados por el ordenador en tres niveles: juega solo contra ellos o úsalos para llenar un asiento libre.\n• Los juegos de fiesta están pensados para gente que habla entre sí: en una videollamada, en la misma habitación o en el chat del juego.\n• Partida rápida encuentra una sala abierta o crea una para ti. También puedes dejar tu sala en privado para tu grupo.\n\nHecho para jugar juntos\n• Chat en todos los juegos, con opción de denunciar un mensaje y de bloquear a un jugador.\n• Los movimientos, las tiradas y las capturas están animados, con sonido que puedes desactivar.\n• Los temporizadores de turno mantienen el ritmo de la partida.\n\nTu cuenta y tu idioma\n• Juega como invitado solo con un nombre, o crea una cuenta para guardar tus estadísticas, tu historial, tus amigos y tus logros.\n• Seis idiomas: español, inglés, alemán, noruego, ucraniano y ruso.\n\nTus datos\n• Los invitados nunca dan una dirección de correo electrónico.\n• Borra tus datos de invitado con «Olvidarme», o tu cuenta desde tu perfil, cuando quieras.\n• Los mensajes del chat se borran a las 24 horas, salvo que alguien los denuncie.\n\nBoardly está hecho en Noruega y es para jugadores a partir de 13 años."
+    },
+    "uk": {
+      "title": "Boardly: настільні ігри",
+      "shortDescription": "Настільні ігри та ігри для компанії онлайн. Надішли посилання або грай з ботом.",
+      "gameNames": {
+        "yahtzee": "Ятці",
+        "ludo": "Лудо",
+        "checkers": "Шашки",
+        "connect-four": "Чотири в ряд",
+        "tic-tac-toe": "Хрестики-нолики",
+        "memory": "Меморі",
+        "rps": "Камінь, ножиці, папір",
+        "spy": "Вгадай шпигуна",
+        "alias": "Поясни слово",
+        "liars-party": "Вечірка брехунів",
+        "guess-my-drawing": "Намалюй і вгадай"
+      },
+      "fullDescription": "Boardly – це настільні ігри та ігри для компанії, у які ви граєте разом онлайн, у реальному часі. Вибери гру, відкрий кімнату й надішли посилання. Друзі приєднаються за секунди – із застосунку або з будь-якого браузера, і нікому не потрібен акаунт, щоб почати.\n\nНастільні ігри та ігри в кості\n• Ятці – кидай п’ять кубиків, залишай потрібні й заповнюй таблицю очок\n• Лудо – веди фішки по колу й відправляй суперників назад на старт\n• Шашки – бий, стрибай ланцюжком і проводь дамки\n• Чотири в ряд – кидай фішки й першим збери чотири в лінію\n• Хрестики-нолики – три в ряд, швидка партія за партією\n• Меморі – перевертай картки й знаходь усі пари\n• Камінь, ножиці, папір – ви обираєте одночасно, а тоді видно, хто вгадав\n\nІгри для компанії\n• Вгадай шпигуна – усі знають місце, крім шпигуна. Ставте запитання та викрийте його. Від 3 гравців.\n• Поясни слово – поясни слово своїй команді, не називаючи його. Від 3 гравців.\n• Вечірка брехунів – зроби заяву, правдиву чи блеф, а інші вирішують, чи вірити тобі. Від 4 гравців.\n• Намалюй і вгадай – один гравець малює загадане слово, а інші навипередки його вгадують. Від 3 гравців.\n\nСамому чи разом\n• У настільних іграх та іграх у кості є комп’ютерні суперники трьох рівнів: грай сам або додай бота на вільне місце.\n• Ігри для компанії створені для живого спілкування: у відеодзвінку, в одній кімнаті чи в чаті гри.\n• Швидка гра знаходить відкриту кімнату або створює її для тебе. А можна зробити кімнату закритою для своєї компанії.\n\nСтворено, щоб грати разом\n• Чат у кожній грі, де можна поскаржитися на повідомлення й заблокувати гравця.\n• Ходи, кидки й взяття анімовані, а звук можна вимкнути.\n• Таймер ходу не дає грі затягуватися.\n\nАкаунт і мова\n• Грай як гість лише з іменем або створи акаунт, щоб зберігати статистику, історію ігор, друзів і досягнення.\n• Шість мов: українська, англійська, норвезька, німецька, іспанська та російська.\n\nТвої дані\n• Гості ніколи не вказують адресу електронної пошти.\n• Видали дані гостя кнопкою «Забути мене» або акаунт на сторінці профілю – будь-коли.\n• Повідомлення чату видаляються через 24 години, якщо на них ніхто не поскаржився.\n\nBoardly створюється в Норвегії та призначений для гравців від 13 років."
+    },
+    "ru-RU": {
+      "title": "Boardly: настольные игры",
+      "shortDescription": "Настольные игры и игры для компании онлайн. Отправь ссылку или играй с ботом.",
+      "gameNames": {
+        "yahtzee": "Ятзи",
+        "ludo": "Лудо",
+        "checkers": "Шашки",
+        "connect-four": "Четыре в ряд",
+        "tic-tac-toe": "Крестики-нолики",
+        "memory": "Память",
+        "rps": "Камень, ножницы, бумага",
+        "spy": "Угадай шпиона",
+        "alias": "Объясни слово",
+        "liars-party": "Вечеринка лжецов",
+        "guess-my-drawing": "Нарисуй и угадай"
+      },
+      "fullDescription": "Boardly – это настольные игры и игры для компании, в которые вы играете вместе онлайн, в реальном времени. Выбери игру, открой комнату и отправь ссылку. Друзья присоединятся за секунды – из приложения или из любого браузера, и никому не нужен аккаунт, чтобы начать.\n\nНастольные игры и игры в кости\n• Ятзи – бросай пять костей, оставляй нужные и заполняй таблицу очков\n• Лудо – веди фишки по кругу и отправляй соперников обратно на старт\n• Шашки – бей, прыгай цепочкой и проводи дамки\n• Четыре в ряд – бросай фишки и первым собери четыре в линию\n• Крестики-нолики – три в ряд, быстрая партия за партией\n• Память – переворачивай карточки и находи все пары\n• Камень, ножницы, бумага – вы выбираете одновременно, а потом видно, кто угадал\n\nИгры для компании\n• Угадай шпиона – все знают место, кроме шпиона. Задавайте вопросы и вычислите его. От 3 игроков.\n• Объясни слово – объясни слово своей команде, не называя его. От 3 игроков.\n• Вечеринка лжецов – сделай заявление, правдивое или блеф, а остальные решают, верить ли тебе. От 4 игроков.\n• Нарисуй и угадай – один игрок рисует загаданное слово, а остальные наперегонки его угадывают. От 3 игроков.\n\nОдному или вместе\n• В настольных играх и играх в кости есть компьютерные соперники трёх уровней: играй один или добавь бота на свободное место.\n• Игры для компании созданы для живого общения: по видеосвязи, в одной комнате или в чате игры.\n• Быстрая игра находит открытую комнату или создаёт её для тебя. А можно сделать комнату закрытой для своей компании.\n\nСоздано, чтобы играть вместе\n• Чат в каждой игре, где можно пожаловаться на сообщение и заблокировать игрока.\n• Ходы, броски и взятия анимированы, а звук можно отключить.\n• Таймер хода не даёт игре затягиваться.\n\nАккаунт и язык\n• Играй как гость, указав только имя, или создай аккаунт, чтобы сохранять статистику, историю игр, друзей и достижения.\n• Шесть языков: русский, украинский, английский, норвежский, немецкий и испанский.\n\nТвои данные\n• Гости никогда не указывают адрес электронной почты.\n• Удали данные гостя кнопкой «Забыть меня» или аккаунт на странице профиля – в любой момент.\n• Сообщения чата удаляются через 24 часа, если на них никто не пожаловался.\n\nBoardly создаётся в Норвегии и предназначен для игроков от 13 лет."
+    }
+  },
+  "releaseNotes": {
+    "1.0.0": {
+      "en-US": "The first version of Boardly for Android. It has the same games as boardly.online: Yatzy, Ludo, Checkers, Four in a Row, Tic-Tac-Toe, Pairs, Rock Paper Scissors, Guess the Spy, Explain the Word, Liar's Party and Sketch & Guess. Rooms, chat, friends and accounts work the same in the app and in the browser. Notifications for game invites, friend requests and turn reminders can be turned on in the app.",
+      "no-NO": "Den første versjonen av Boardly for Android. Den har de samme spillene som boardly.online: Yatzy, Ludo, Dam, Fire på rad, Tre på rad, Hukommelse, «Stein, saks, papir», Gjett spionen, Forklar ordet, Løgnerfest og Tegn og gjett. Rom, chat, venner og kontoer fungerer likt i appen og i nettleseren. Varsler om spillinvitasjoner, venneforespørsler og påminnelser om trekk kan slås på i appen.",
+      "de-DE": "Die erste Version von Boardly für Android. Sie bietet dieselben Spiele wie boardly.online: Yatzy, Ludo, Dame, Vier in einer Reihe, Tic-Tac-Toe, Paare finden, „Schere, Stein, Papier“, Finde den Spion, Begriffe erklären, Lügnerparty und Zeichnen & Raten. Räume, Chat, Freunde und Konten funktionieren in der App genauso wie im Browser. Benachrichtigungen zu Spieleinladungen, Freundschaftsanfragen und Zugerinnerungen lassen sich in der App einschalten.",
+      "es-ES": "La primera versión de Boardly para Android. Tiene los mismos juegos que boardly.online: Yatzy, Ludo, Damas, Cuatro en raya, Tres en raya, Memoria, «Piedra, papel o tijera», Encuentra al espía, Explica la palabra, Fiesta de mentirosos y Dibuja y adivina. Las salas, el chat, los amigos y las cuentas funcionan igual en la app que en el navegador. Las notificaciones de invitaciones, solicitudes de amistad y avisos de turno se activan en la app.",
+      "uk": "Перша версія Boardly для Android. У ній ті самі ігри, що й на boardly.online: Ятці, Лудо, Шашки, Чотири в ряд, Хрестики-нолики, Меморі, «Камінь, ножиці, папір», Вгадай шпигуна, Поясни слово, Вечірка брехунів і Намалюй і вгадай. Кімнати, чат, друзі й акаунти працюють у застосунку так само, як у браузері. Сповіщення про запрошення до гри, запити в друзі та нагадування про хід можна ввімкнути в застосунку.",
+      "ru-RU": "Первая версия Boardly для Android. В ней те же игры, что и на boardly.online: Ятзи, Лудо, Шашки, Четыре в ряд, Крестики-нолики, Память, «Камень, ножницы, бумага», Угадай шпиона, Объясни слово, Вечеринка лжецов и Нарисуй и угадай. Комнаты, чат, друзья и аккаунты работают в приложении так же, как в браузере. Уведомления о приглашениях в игру, заявках в друзья и напоминания о ходе можно включить в приложении."
+    }
+  }
+}
