@@ -5,6 +5,7 @@ import {
 } from '@/lib/notification-preferences'
 import { emailLanguageFromRequest } from '@/lib/email-language'
 import { escapeHtml, type EmailLanguage } from '@/lib/email-layout'
+import { getAppShellInitScript } from '@/lib/app-shell'
 
 type TokenType = NonNullable<ReturnType<typeof verifyNotificationUnsubscribeToken>>['type']
 
@@ -44,6 +45,7 @@ function page(lang: EmailLanguage, title: string, body: string, action = '', sta
   const settings = `${process.env.NEXTAUTH_URL || 'https://boardly.online'}/profile?tab=settings#notifications`
   return new NextResponse(
     `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)}</title>` +
+      `<script>${getAppShellInitScript()}</script>` +
       `<style>body{margin:0;padding:32px 16px;background:#FBF6EE;color:#1F1B16;font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}main{max-width:520px;margin:0 auto;background:#fff;border:2px solid #1F1B16;border-bottom-width:6px;border-radius:24px;padding:24px 28px}h1{margin:0 0 10px;font-size:26px;line-height:1.2}button{font:inherit;font-weight:700;padding:12px 24px;border-radius:16px;border:2px solid #FF6B5B;border-bottom:4px solid #E04B3B;background:#FF6B5B;color:#1F1B16;cursor:pointer}button:focus-visible{outline:3px solid #1F1B16;outline-offset:-6px}a{color:#1F1B16;text-decoration-color:#FF6B5B;text-decoration-thickness:2px}@media (prefers-color-scheme:dark){body{background:#1E1B17;color:#F0E8DB}main{background:#2B2720;border-color:#F0E8DB}a{color:#F0E8DB}button:focus-visible{outline-color:#F0E8DB}}</style>` +
       `</head><body><main><h1>${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p>${action}<p><a href="${escapeHtml(settings)}">${COPY[lang].settings}</a></p></main></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } }

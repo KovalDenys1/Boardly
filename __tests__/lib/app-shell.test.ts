@@ -361,6 +361,15 @@ describe('isPlayApp', () => {
   })
 })
 
+describe('pages served outside the Next.js layout', () => {
+  it('offline.html runs the same app-shell script as the layout', () => {
+    const html = readFileSync(join(process.cwd(), 'public/offline.html'), 'utf8')
+    const head = html.slice(0, html.indexOf('</head>'))
+
+    expect(head).toContain(`<script>${getAppShellInitScript()}</script>`)
+  })
+})
+
 describe('purchase UI rule in globals.css', () => {
   it('hides every purchase marker inside the Play app', () => {
     const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8')
