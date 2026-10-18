@@ -51,6 +51,13 @@ interface SpyResultsProps {
   onRevealEnd?: () => void
 }
 
+/** The line saying who the vote put out, or how the spy's guess went: the third step of the reveal. */
+export const SPY_OUTCOME_LINE_STEP = 2
+
+export function spyResultsLastStep(playerCount: number): number {
+  return 4 + Math.max(0, playerCount - 1)
+}
+
 export default function SpyResults({
   players,
   votes,
@@ -82,7 +89,7 @@ export default function SpyResults({
   // Class and delay for the `step`-th element of the reveal, or nothing.
   // The last step is the last vote/score row; the spacing shrinks to fit a
   // long table rather than letting the later rows start together.
-  const lastStep = 4 + Math.max(0, players.length - 1)
+  const lastStep = spyResultsLastStep(players.length)
   const rise = (step: number, className = 'social-rise') =>
     reveal ? { className, style: staggerStyle(step, lastStep) } : { className: '', style: undefined }
 
@@ -130,19 +137,19 @@ export default function SpyResults({
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
           {wasGuessRound ? (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>
               {guessWasCorrect
                 ? t('spy.guessCorrect', { player: spyPlayer?.name })
                 : t('spy.guessWrong', { player: spyPlayer?.name, guess: spyGuessedLocation })}
             </p>
           ) : !noElimination ? (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
                 : t('spy.wasSpy', { player: spyPlayer?.name })}
             </p>
           ) : (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>{t('spy.tieNoElimination')}</p>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>{t('spy.tieNoElimination')}</p>
           )}
           <div style={rise(3).style} className={`mx-auto mt-4 inline-flex ${rise(3).className} rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-(--bd-ink)`}>
             {t('spy.locationRevealed', { location })}

@@ -104,8 +104,9 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'Boardly', {
       body: data.body || '',
-      icon: '/icons/icon-192.svg',
-      badge: '/icons/icon-maskable-192.svg',
+      icon: '/icons/icon-192.png?v=3',
+      // Android draws the badge as a mask: it needs transparency, and an opaque square renders blank.
+      badge: '/icons/icon-monochrome-512.png?v=1',
       data: { url: data.url || '/' },
       tag: data.tag || 'boardly',
       renotify: true,

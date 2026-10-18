@@ -21,10 +21,6 @@ jest.mock('@/lib/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(() => Promise.resolve({ ok: true, json: async () => ({}) })),
 }))
 
-jest.mock('@/lib/sounds', () => ({
-  sounds: { play: jest.fn() },
-}))
-
 jest.mock('@/lib/analytics', () => ({
   trackDiscordCta: jest.fn(),
   trackSignupPrompt: jest.fn(),

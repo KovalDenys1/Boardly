@@ -14,7 +14,8 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
-import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import { RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS } from '@/lib/rps-motion'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useHeldValue } from '@/hooks/useHeldValue'
 import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
@@ -42,7 +43,8 @@ import type { GamePlayer, GameUpdatePayload } from '@/types/game'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { playCue } from '@/lib/sound-engine'
+import { useRpsSounds } from './hooks/useRpsSounds'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -442,6 +444,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         }
         isSubmittingRef.current = true
         setIsSubmitting(true)
+        if (!isAutoAction) playCue('vote.cast')
         try {
             // Optimistic: the tile locks in immediately; the reveal waits for the server.
             setGame((prevGame) => {
@@ -492,6 +495,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
                 revertOwnChoice()
                 if (!isAutoAction) {
+                    playCue('ui.error')
                     showToast.error('errors.general', undefined, { message: String(payload?.message || payload?.error || 'Failed to submit choice') })
                 }
                 // Not only on 409. A 500, a 400 or a dropped response all leave
@@ -510,7 +514,10 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
             clientLogger.error('Failed to submit choice:', error)
             revertOwnChoice()
-            if (!isAutoAction) showToast.errorFrom(error, 'errors.general')
+            if (!isAutoAction) {
+                playCue('ui.error')
+                showToast.errorFrom(error, 'errors.general')
+            }
             await loadLobby()
             return false
         } finally {
@@ -553,16 +560,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const roundOpen = useRpsRoundOpen(rpsData.nextRoundAt)
     const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted && roundOpen
 
-    // Round and opponent cues (#1111): a new round asks for the viewer's throw,
-    // and the opponent locking theirs in is their move. Counting only the
-    // opponent's lock keeps the viewer's own submit silent.
-    const opponentsReady = rpsData.playersReady.filter((id) => id !== currentUserId).length
-    useTurnSounds({
-        isMyTurn: iAmChoosing,
-        lastMoveSignature: game ? `${rpsData.rounds.length}:${opponentsReady}` : null,
-        opponentMoved: opponentsReady > 0,
-        enabled: !isSpectator && !!game && !isFinished,
-    })
+    // No turn cue: every round asks both players at once, and the reveal already marks it.
+    useRpsSounds(
+        game
+            ? {
+                rounds: rpsData.rounds.length,
+                ready: [...rpsData.playersReady].sort(),
+                lastWinner: rpsData.rounds[rpsData.rounds.length - 1]?.winner ?? null,
+                matchOver: !!rpsData.gameWinner,
+            }
+            : null,
+        { gameId: game?.id, viewerId: currentUserId, isSeated: !isSpectator && !!currentUserId && !!game?.state.players.some((p) => p.id === currentUserId) },
+    )
 
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
