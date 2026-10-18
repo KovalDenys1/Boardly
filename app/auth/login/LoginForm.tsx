@@ -464,10 +464,10 @@ export default function LoginForm() {
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink)', lineHeight: 0.95, marginBottom: 12, whiteSpace: 'pre-line' }}>
-                {t('auth.login.heroQuote', '“Best\nFriday\nnight ever”')}
+                {t('auth.login.heroQuote')}
               </div>
               <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.7)', maxWidth: 200 }}>
-                {t('auth.login.heroQuoteBy', '— our players about boardly')}
+                {t('auth.login.heroQuoteBy')}
               </div>
             </div>
             {/* floating dice */}
@@ -511,7 +511,7 @@ export default function LoginForm() {
                     <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
                   ))}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--bd-ink)', fontWeight: 500 }}>{t('auth.login.heroPlayers', '180,000+ players already here')}</div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink)', fontWeight: 500 }}>{t('auth.login.heroPlayers')}</div>
               </div>
             </div>
           </div>
