@@ -118,8 +118,9 @@ A wrong or missing fingerprint shows as a URL bar at the top of the app.
 The site runs in Play mode (no purchase path) when the head script in `lib/app-shell-script.ts`
 sees one of three signals: the start URL's `utm_source=android_app&utm_medium=twa` pair, the
 referrer `android-app://online.boardly.app`, or an Android user agent in `display-mode:
-standalone`. It sets `<html data-app-shell="play">` and stores the mark in sessionStorage for the
-rest of the tab, and `isPlayApp()` in `lib/app-shell.ts` reads the attribute, then the stored mark,
+standalone`. It sets `<html data-app-shell="play">`, pauses AdSense ad requests
+(`adsbygoogle.pauseAdRequests = 1`; the Play listing declares no ads) and stores the mark in
+sessionStorage for the rest of the tab, and `isPlayApp()` in `lib/app-shell.ts` reads the attribute, then the stored mark,
 then the display mode. The display mode is the only signal that survives Chrome restoring the tab
 after it was killed in the background or the activity was recreated: a page reached by a full load,
 such as the return from Google sign-in, comes back with sessionStorage empty and a boardly.online

@@ -31,17 +31,17 @@ Checked against the code on `develop` at a3bcab7b (2026-10-18).
 
 Play: "You must declare whether or not your app contains ads. This includes ads delivered through
 third-party ad SDKs", and "Google may verify this at any time and display the 'Contains ads' label if
-appropriate" (answer/9859455). No ad unit renders inside the app, now or after ads go live on the
-web: `components/AdSlot.tsx`, the only place an `<ins class="adsbygoogle">` comes from, renders
-nothing in Play mode (`useIsPlayApp()`), on top of its other gates (`NEXT_PUBLIC_ADS_ENABLED`, which
-is unset until AdSense approves the site, and premium). The AdSense script that `app/layout.tsx` loads
-also runs in the app, because the server cannot tell the app from a browser; there it is site
-verification and Google's EEA/UK consent message, requests no ad and shows the user nothing but that
-message (`data-safety.md`, Sharing). AdSense Auto ads, which need no slot, must stay off; nothing
-serves at all while AdSense still lists the site as "Getting ready".
+appropriate" (answer/9859455). The code keeps every ad out of the app, now and after ads go live on
+the web. The AdSense script that `app/layout.tsx` loads also runs in the app, because the server
+cannot tell the app from a browser, but in Play mode the head script sets `pauseAdRequests = 1`
+before it can run, so it sends no ad request at all, Auto ads included, and is left doing site
+verification and Google's EEA/UK consent message. And `components/AdSlot.tsx`, the only place an
+`<ins class="adsbygoogle">` comes from, renders nothing in Play mode (`useIsPlayApp()`), on top of its
+other gates (`NEXT_PUBLIC_ADS_ENABLED`, which is unset until AdSense approves the site, and premium).
+Details and tests: `data-safety.md`, Sharing.
 
-The answer changes only if ads are deliberately allowed in the app: removing the Play-mode gate or
-switching on Auto ads. The ads-day checklist in `docs/OPERATIONS.md` (step 10) says so.
+The answer changes only if ads are deliberately allowed in the app, by removing both. The ads-day
+checklist in `docs/OPERATIONS.md` (step 10) says so.
 
 ### App access: instructions for the reviewer
 

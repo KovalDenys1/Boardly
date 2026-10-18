@@ -207,12 +207,21 @@ on the server, and the server cannot tell the app from a browser (Play mode is d
 3. **The `FCCDCF` cookie**, first-party on boardly.online, which Google's script writes to remember the
    message and the visitor's answer (`privacyPolicy.ads.current`).
 
-**No ad requests.** An ad is requested only when an `<ins class="adsbygoogle">` is on the page and is
-pushed to `adsbygoogle`. `components/AdSlot.tsx` is the only place that renders one, and it renders
-nothing in the app (`useIsPlayApp()`, the fourth gate), nor anywhere while
-`NEXT_PUBLIC_ADS_ENABLED` is unset. AdSense's Auto ads would place ads without any `<ins>`; nothing serves at
-all while AdSense still lists the site as "Getting ready" (repo `CLAUDE.md`, "Ads"), and Auto ads
-must stay off for as long as the app declares no ads (`docs/OPERATIONS.md`, ads-day checklist step 10).
+**No ad requests, enforced in code twice.**
+
+- The head script that marks a Play launch (`getAppShellInitScript()` in `lib/app-shell-script.ts`,
+  the first script in `<head>`, ahead of the AdSense tag, and pinned into `public/offline.html`) sets
+  `(window.adsbygoogle = window.adsbygoogle || []).pauseAdRequests = 1` in the app. Google: "Use
+  `(adsbygoogle=window.adsbygoogle||[]).pauseAdRequests=1` to prevent the tag from sending ad
+  requests", and "This technique blocks ad requests from being sent, but various scripts are still
+  loaded" (AdSense Help, answer/7670312). Nothing in the code ever sets it back to 0. That covers
+  every request the tag would make, Auto ads included, whatever the AdSense console says; the consent
+  message is not an ad request and still loads. Tests: `__tests__/lib/app-shell.test.ts` (a Play
+  launch sets it, a web visit does not), `__tests__/app/adsense-loader-env-gate.test.tsx` (the
+  script runs before the tag).
+- `components/AdSlot.tsx`, the only place an `<ins class="adsbygoogle">` comes from, renders nothing
+  in the app (`useIsPlayApp()`, its fourth gate), nor anywhere while `NEXT_PUBLIC_ADS_ENABLED` is
+  unset (`__tests__/components/AdSlot.test.tsx`).
 
 **How the form treats it.** The privacy notice says Google processes this "as an independent
 controller under its own privacy policy" (`privacyPolicy.ads.current`;
@@ -253,9 +262,9 @@ boardly.online only, which is App interactions.
 
 ## Update this form when
 
-- ads are ever allowed inside the app (the `useIsPlayApp()` gate in `components/AdSlot.tsx` removed,
-  or AdSense Auto ads switched on): **Contains ads** becomes Yes (`store-settings.md`) and Google's
-  rows gain the ad data;
+- ads are ever allowed inside the app (the `pauseAdRequests` line in `lib/app-shell-script.ts` and
+  the `useIsPlayApp()` gate in `components/AdSlot.tsx` removed): **Contains ads** becomes Yes
+  (`store-settings.md`) and Google's rows gain the ad data;
 - the first marketing email goes out: add Advertising or marketing to Email address;
 - the AdSense script stops loading inside the app: drop the two Shared answers;
 - a new processor, SDK or data type appears in the privacy notice: `docs/PRIVACY-RETENTION.md` and

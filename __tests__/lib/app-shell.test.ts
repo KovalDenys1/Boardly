@@ -200,6 +200,40 @@ describe('getAppShellInitScript', () => {
     expect(window.location.search).toBe('')
   })
 
+  describe('AdSense in the Play app', () => {
+    type AdsQueue = { pauseAdRequests?: number; push?: unknown }
+    const ads = () => (window as unknown as { adsbygoogle?: AdsQueue }).adsbygoogle
+
+    afterEach(() => {
+      delete (window as unknown as { adsbygoogle?: AdsQueue }).adsbygoogle
+    })
+
+    it('pauses every ad request on a Play launch, before the AdSense tag has loaded', () => {
+      window.history.replaceState(null, '', `/${LAUNCH_SEARCH}`)
+
+      runInitScript()
+
+      expect(ads()?.pauseAdRequests).toBe(1)
+    })
+
+    it('pauses them on the tag AdSense already put in place', () => {
+      const loaded: AdsQueue = { push: jest.fn() }
+      ;(window as unknown as { adsbygoogle?: AdsQueue }).adsbygoogle = loaded
+      sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+
+      runInitScript()
+
+      expect(ads()).toBe(loaded)
+      expect(loaded.pauseAdRequests).toBe(1)
+    })
+
+    it('leaves AdSense alone on a plain web visit', () => {
+      runInitScript()
+
+      expect(ads()).toBeUndefined()
+    })
+  })
+
   it('keeps the other parameters and the hash in the cleaned URL', () => {
     window.history.replaceState(null, '', `/games${LAUNCH_SEARCH}&quick=1#top`)
 
