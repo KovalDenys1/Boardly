@@ -30,7 +30,8 @@ export function useInviteShare(code: string | null | undefined) {
           title: t('game.ui.inviteShareTitle'),
           text: t('game.ui.inviteShareText'),
         })
-        const outcome = await shareInvite({ payload, navigator: window.navigator })
+        const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false
+        const outcome = await shareInvite({ payload, navigator: window.navigator, touch })
 
         if (outcome === 'shared' || outcome === 'copied') {
           trackInviteCopied(source, code, outcome === 'shared' ? 'web_share' : 'clipboard')
