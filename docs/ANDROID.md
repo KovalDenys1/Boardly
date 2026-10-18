@@ -112,10 +112,19 @@ A wrong or missing fingerprint shows as a URL bar at the top of the app.
 
 ## Play mode
 
-The site is meant to recognise the Android app by its start URL,
-`/?utm_source=android_app&utm_medium=twa`, and run in Play mode (no purchase path). That detection
-ships with #1465 and is not on `develop` yet. When it lands, changing `startUrl` means changing
-the detection too.
+The site runs in Play mode (no purchase path) when the head script in `lib/app-shell-script.ts`
+sees one of three signals: the start URL's `utm_source=android_app&utm_medium=twa` pair, the
+referrer `android-app://online.boardly.app`, or an Android user agent in `display-mode:
+standalone`. It sets `<html data-app-shell="play">` and stores the mark in sessionStorage for the
+rest of the tab, and `isPlayApp()` in `lib/app-shell.ts` reads the attribute, then the stored mark,
+then the display mode. The display mode is the only signal that survives Chrome restoring the tab
+after it was killed in the background or the activity was recreated: a page reached by a full load,
+such as the return from Google sign-in, comes back with sessionStorage empty and a boardly.online
+referrer (#1486). A TWA reports `standalone`, Android Chrome in a tab reports `browser`, and
+desktop and iOS installs are not Android. An installed Android PWA (WebAPK) counts too, which is
+accepted: its users can still buy in Chrome, and once the Play listing exists the web manifest gets
+`related_applications` with `prefer_related_applications` so Android Chrome offers the Play app
+instead. Changing `startUrl` or `display` in `twa-manifest.json` means changing the detection too.
 
 ## Never use a WebView fallback
 
