@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { constantTimeEqual } from '@/lib/secret-compare'
+import { PROMO_VIDEO_ORIGIN } from '@/lib/promo-video'
 import {
   getSecurityHeaders,
   isSignatureAuthenticatedWebhook,
@@ -171,6 +172,7 @@ function buildCspHeaderValue() {
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
+    media-src 'self' ${PROMO_VIDEO_ORIGIN};
     connect-src ${connectSrcValue};
     worker-src 'self' blob:;
     frame-src 'self' https://accounts.google.com https://vercel.live https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com https://pagead2.googlesyndication.com https://ep2.adtrafficquality.google;
