@@ -426,6 +426,7 @@ const ru = {
     themeDark: 'Тёмная',
     themeSystem: 'Системная',
     themeCurrent: 'Тема: {{mode}}',
+    themeSystemHint: 'Как на устройстве',
     quickSettings: 'Быстрые настройки',
     openUserMenu: 'Меню аккаунта',
   },

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { headerControl } from './headerControlStyles'
 import { acquireRealtimeChannel, type LobbyChannelHandle } from '@/lib/lobby-channel-registry'
 import { fetchUserTopic } from '@/lib/user-realtime-topic-client'
 import {
@@ -264,11 +265,13 @@ export function NotificationsMenu() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all hover:-translate-y-px ${
+        aria-expanded={open}
+        data-open={open ? '' : undefined}
+        className={`${headerControl(
           unreadCount > 0
-            ? 'border-(--bd-ink) bg-(--bd-card-warm) text-(--bd-ink) shadow-[0_3px_0_rgba(31,27,22,0.14)]'
-            : 'border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink-muted) hover:text-(--bd-ink)'
-        }`}
+            ? { square: true, border: 'border-bd-ink', text: 'text-bd-ink' }
+            : { square: true, text: 'text-bd-ink-muted hover:text-bd-ink data-open:text-bd-ink' }
+        )} relative`}
         aria-label={t('header.openNotifications')}
         title={badgeLabel}
       >

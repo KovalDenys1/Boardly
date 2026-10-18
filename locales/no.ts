@@ -391,6 +391,7 @@ const no = {
     themeDark: 'Mørk',
     themeSystem: 'System',
     themeCurrent: 'Tema: {{mode}}',
+    themeSystemHint: 'Følger enheten din',
     quickSettings: 'Hurtiginnstillinger',
     openUserMenu: 'Kontomeny',
   },

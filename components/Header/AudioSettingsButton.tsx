@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { sounds } from '@/lib/sounds'
+import { headerControl } from './headerControlStyles'
 
 const AUDIO_SETTINGS_CHANGED_EVENT = 'boardly:audio-settings-changed'
 
@@ -125,9 +126,9 @@ export function AudioSettingsButton() {
         onClick={() => setOpen((o) => !o)}
         aria-label={t('header.openAudioSettings')}
         title={t('header.audioSettings')}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) transition-all hover:-translate-y-px hover:text-(--bd-ink) ${
-          muted ? 'text-(--bd-ink-muted)' : 'text-(--bd-ink)'
-        }`}
+        aria-expanded={open}
+        data-open={open ? '' : undefined}
+        className={`${headerControl({ square: true, text: muted ? 'text-bd-ink-muted hover:text-bd-ink data-open:text-bd-ink' : 'text-bd-ink' })} relative`}
       >
         <VolumeIcon muted={muted} />
       </button>

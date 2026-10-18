@@ -35,7 +35,7 @@ export function UserMenu({ userName, userEmail, userImage }: UserMenuProps) {
   return (
     <Menu as="div" className="relative">
       <MenuButton
-        className="flex overflow-hidden rounded-full bg-bd-bg2 p-0.5 shadow-[inset_0_0_0_2px_var(--bd-ink)] transition-transform hover:scale-110 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
+        className="flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-bd-bg2 p-0.5 shadow-[inset_0_0_0_2px_var(--bd-ink)] transition-[box-shadow,scale] duration-150 ease-out hover:shadow-[inset_0_0_0_2px_var(--color-bd-lav)] data-open:shadow-[inset_0_0_0_2px_var(--color-bd-lav)] motion-safe:active:scale-[0.96] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
         aria-label={t('header.openUserMenu')}
         title={userName || t('header.profile')}
       >
@@ -43,7 +43,7 @@ export function UserMenu({ userName, userEmail, userImage }: UserMenuProps) {
           image={userImage}
           userName={userName}
           userEmail={userEmail}
-          className="h-9 w-9 bg-bd-lav text-(--bd-ink-on-accent)"
+          className="h-8 w-8 bg-bd-lav text-(--bd-ink-on-accent)"
           textClassName="text-sm font-bold"
         />
       </MenuButton>

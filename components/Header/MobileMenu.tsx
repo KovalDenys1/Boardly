@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { NAV_DRAWER_ID, NavDrawer } from './NavDrawer'
+import { headerControl } from './headerControlStyles'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -13,7 +14,7 @@ interface MobileMenuProps {
   userImage?: string | null
 }
 
-const barClass = 'absolute left-0 h-[2.5px] w-full rounded-full bg-bd-ink transition-all duration-300'
+const barClass = 'absolute left-0 h-[2.5px] w-full rounded-full bg-bd-ink transition-[top,transform,opacity] duration-300'
 
 export function MobileMenu({ isAuthenticated, userName, userEmail, userImage }: MobileMenuProps) {
   const { t } = useTranslation()
@@ -40,9 +41,8 @@ export function MobileMenu({ isAuthenticated, userName, userEmail, userImage }: 
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className={`relative z-50 rounded-[10px] p-2 transition-colors duration-200 desk:hidden focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 ${
-          open ? 'bg-bd-bg2' : 'bg-transparent'
-        }`}
+        data-open={open ? '' : undefined}
+        className={`${headerControl({ square: true, text: 'text-bd-ink' })} relative z-50 desk:hidden`}
         aria-label={open ? t('common.close') : t('header.menu')}
         aria-expanded={open}
         aria-controls={NAV_DRAWER_ID}

@@ -428,6 +428,7 @@ const uk: TranslationWithPlurals = {
     themeDark: 'Темна',
     themeSystem: 'Системна',
     themeCurrent: 'Тема: {{mode}}',
+    themeSystemHint: 'Як на пристрої',
     quickSettings: 'Швидкі налаштування',
     openUserMenu: 'Меню облікового запису',
   },

@@ -391,6 +391,7 @@ const en = {
     themeDark: 'Dark',
     themeSystem: 'System',
     themeCurrent: 'Theme: {{mode}}',
+    themeSystemHint: 'Follows your device',
     quickSettings: 'Quick settings',
     openUserMenu: 'Account menu',
   },
