@@ -801,6 +801,7 @@ export default function MemoryGameBoard({
         playerProfiles={playerProfiles}
         onProfileClick={onProfileClick}
         fullScreen
+        readOnly={isSpectator}
       />
     </section>
   ) : null

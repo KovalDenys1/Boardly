@@ -158,14 +158,6 @@ const no = {
       subtitle: '{{playerCount}}/{{maxPlayers}} spillere',
       returnButton: 'Gå tilbake til lobby',
     },
-    players: {
-      title: 'Spillere',
-      clickToView: 'Klikk for å se',
-      fullList: 'Alle spillere',
-      position: 'Posisjon',
-      ready: 'Klar',
-      viewCards: 'Se kort'
-    },
     create: {
       title: 'Opprett lobby',
       lobbyName: 'Lobbynavn',
@@ -1128,7 +1120,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn langt unna',
-            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og det er chat når to personer spiller.',
+            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og en chat står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -1417,7 +1409,7 @@ const no = {
           },
           worksOnPhone: {
             q: 'Fungerer Hukommelse på mobil?',
-            a: 'Ja, i mobilnettleseren. Trekkene ligger i en fane ved siden av brettet, og chatten også når to eller flere spiller.',
+            a: 'Ja, i mobilnettleseren. Kortene tilpasser seg skjermen, og trekkene og chatten ligger i faner ved siden av brettet.',
           },
           timerRunsOut: {
             q: 'Hva skjer hvis turklokken min går ut?',
@@ -1872,7 +1864,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn hvor som helst',
-            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med en chat ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -2304,7 +2296,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill med venner hvor som helst',
-            desc: 'Del koden med opptil tre venner; chatten åpnes når to personer sitter ved bordet.',
+            desc: 'Del koden med opptil tre venner; chatten står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Roboter når du spiller alene',
@@ -3161,7 +3153,6 @@ const no = {
       perTurn: 'per tur',
       timeLimit: 'Tidsgrense',
       gameFinished: 'Spillet er ferdig!',
-      score: 'Poeng',
       chatPlaceholder: 'Skriv…',
       spectatingBadge: 'Ser på',
       spectator: 'Tilskuer',
@@ -3190,7 +3181,6 @@ const no = {
       settings: 'Innstillinger',
       botBadge: 'AI',
       playerLeft: 'forlot',
-      viewPlayerProfile: 'Se spillerprofil',
       stepOf: 'Steg {{current}} av {{total}}',
       vs: 'mot',
       removeBot: 'Fjern bot',
@@ -3236,7 +3226,6 @@ const no = {
     },
     actions: {
       roll: 'Kast terninger',
-      hold: 'Behold',
       score: 'Poeng',
       rollsLeft: 'Kast igjen',
       myCards: 'Mine kort',
@@ -3301,12 +3290,8 @@ const no = {
     ui: {
       hurry: 'Skynd deg!',
       moveReverted: 'Trekket feilet. Tilstanden ble gjenopprettet fra serveren.',
-      waitTurnHint: 'Vent på turen din...',
-      rollFirstHint: 'Kast terningene først',
-      holdHint: 'Trykk på terning for å holde/slippe',
+      holdHint: 'Trykk på en terning for å beholde den',
       rollDice: 'Kast',
-      rolling: 'Kaster...',
-      rollsLeft: '{{count}} / 3',
       timeLeft: '{{time}} s',
       startingGame: 'Starter spill...',
       readyToPlay: 'Klar til å spille Yahtzee?',
@@ -3332,7 +3317,6 @@ const no = {
       strong: 'Sterkt',
       playable: 'Greit',
       fallbackOption: 'Strykning',
-      best: 'Best',
       bestPlus: 'Best +{{score}}',
       burnSlot: 'Stryk en rute',
       subtotal: 'Delsum',
@@ -3345,7 +3329,6 @@ const no = {
       bankStrongScore: 'Du kan sikre en sterk score nå.',
       rollsLeftCount: '{{count}} kast igjen',
       rollsLeftCount_other: '{{count}} kast igjen',
-      noRollsLeft: 'Ingen kast igjen',
       holdingDice: 'Holder {{count}} terning',
       holdingDice_other: 'Holder {{count}} terninger',
       scorecardTitle: 'Poengtabell',
@@ -3354,32 +3337,15 @@ const no = {
       rollsLeftChip: '{{count}} igjen',
       holdChip: 'Holdt {{held}}/{{total}}',
       reviewScorecard: 'Se poengtabellen',
-      tileScoredAria: '{{category}}: ført {{score}}',
-      tileOpenAria: '{{category}}: ledig',
       tileScoreAria: '{{category}}: før {{score}}',
       tileConfirmZeroAria: '{{category}}: trykk igjen for å føre 0',
       tapAgainZero: 'Trykk igjen: 0',
-      burnBadge: 'Stryk',
-      upperShort: 'Øvre',
-      lowerShort: 'Nedre',
-      categoriesShort: 'Kategorier',
-      shortModeNote: 'Kort spill: 9 runder, én rute per runde. Klassisk modus legger til enere til seksere og bonusen.',
-      bonusEarned: '+35 bonuspoeng',
-      onPar: 'i rute',
-      aheadOfPar: '+{{count}} foran',
-      behindPar: '{{count}} bak',
-      playersCard: 'Kortet til {{player}}',
-      pickArrow: 'Velg {{category}} →',
-      burnArrow: 'Stryk {{category}} →',
-      backToMine: 'Mitt kort',
       scoresLabel: 'Poeng',
       youPill: 'Du',
-      pillAria: '{{player}}: {{score}} poeng, vis kortet',
+      pillAria: '{{player}}: {{score}} poeng',
       dieAria: 'Terning med {{value}}, trykk for å holde',
       dieHeldAria: 'Terning med {{value}}, holdt, trykk for å slippe',
       dieBlankAria: 'Terning, ikke kastet ennå',
-      rollWaiting: 'Venter',
-      rollWithCount: 'Kast · {{count}}',
       playerTurn: '{{player}} sin tur',
       turnRollFirst: 'Din tur: kast',
       turnHoldOrPick: 'Kast igjen eller velg en rute',
@@ -3387,6 +3353,9 @@ const no = {
       roundOf: 'Runde {{current}}/{{total}}',
       tabGame: 'Spill',
       pointsShort: '{{count}} p',
+      heldLabel: 'Holdt',
+      cellOpen: 'Åpen',
+      tabRolls: 'Kast',
     }
   },
   chat: {
@@ -4700,7 +4669,6 @@ const no = {
     allDiceHeld: 'Alle terningene er holdt fast — slipp en eller skriv inn poeng!',
     notYourTurn: 'Det er ikke din tur!',
     gameOver: 'Spillet er over! {{player}} vinner!',
-    playerTurn: '{{player}} sin tur!',
     rollFailed: 'Kunne ikke kaste terningene',
     scoreFailed: 'Kunne ikke registrere poeng',
     linkCopied: 'Invitasjonslenke kopiert til utklippstavlen!',

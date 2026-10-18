@@ -129,7 +129,7 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
    - Full-height page without header → `.page-shell-full`
    - In-game screen (board + chrome) → `.game-screen` family (`--game-h`); until it
      lands, copy the `.ttt-*` family — never invent a new one
-   - Mobile in-game navigation → `MobileTabs` / `MobileTabPanel`
+   - Mobile in-game navigation → `GameTabs` (`components/game-chrome/`)
    - Header offset → `var(--bd-header-h)` / `HEADER_HEIGHT_PX` (pending tokens issue)
    - Mobile/desktop split → the shared breakpoint (`desk:` screen,
      `MOBILE_MAX_MEDIA_QUERY`, `useIsMobileViewport()`) — never a raw px value
@@ -170,9 +170,10 @@ plus 844×390 landscape). Check before calling it done:
 
 1. **No empty regions.** No card with small content floating in it, no column with a
    gap under its last card, no button row with a single button. Boards size to their
-   card with container units (`.ttt-board-card` is `container-type: size`); when a
-   panel is hidden (chat in bot games) its space is taken by something useful – the
-   history card stretched (`.ttt-history-card--fill`), a rules strip.
+   card with container units (`.ttt-board-card` is `container-type: size`). Chat shows
+   in every game, bot and solo games included, so the right column always holds the
+   history card and chat; when a panel is hidden for another reason, its space is
+   taken by something useful, such as a rules strip.
 2. **Shared controls in the same place in every game**, current and future:
    - Leave: top-right, in the `trailing` slot of `GameScoreboardHeader`, via
      `components/game-chrome/GameLeaveButton`; spectators get "Back to lobby" there.

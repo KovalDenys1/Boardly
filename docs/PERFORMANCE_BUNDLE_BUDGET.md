@@ -65,7 +65,7 @@ Optimization set:
   - `WaitingRoom`
   - `LobbyInfo`
   - `JoinPrompt`
-  - `MobileTabPanel`
+  - the in-game tab panel (since replaced by `GameTabs`)
 - Preserved gameplay and realtime flows while reducing initial route chunk weight.
 
 Measured result from `next build`:

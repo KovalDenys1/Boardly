@@ -22,6 +22,11 @@ export function isBot(player: unknown): player is { user: { bot: unknown } } {
     )
 }
 
+/** A lobby seat held by a bot, whichever of the two places the payload carries it in. */
+export function isBotSeat(player: { user?: { bot?: unknown } | null; bot?: unknown } | null | undefined): boolean {
+    return !!(player?.user?.bot || player?.bot)
+}
+
 /**
  * Extract bot difficulty from player
  */

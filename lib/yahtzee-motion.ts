@@ -29,16 +29,3 @@ export function isRemoteRollArrival(
   if (previousSignature === undefined || !signature || signature === previousSignature) return false
   return lastRoll!.playerId !== viewerId
 }
-
-/**
- * Whose scorecard to show. An explicit pick wins; otherwise the card of the
- * player who just finished their turn lingers for a moment (so their scored
- * row's flash is seen) before the view follows the turn.
- */
-export function resolveScorecardPlayerId(
-  selectedPlayerId: string | null,
-  lingerPlayerId: string | null,
-  currentPlayerId: string | null | undefined,
-): string | null {
-  return selectedPlayerId || lingerPlayerId || currentPlayerId || null
-}

@@ -1,7 +1,7 @@
 import React from 'react'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import YahtzeeReplayRenderer from '@/components/replay/YahtzeeReplayRenderer'
 import { groupSteps } from '@/lib/replay/group-steps'
 import type { ReplayPlayer, ReplaySnapshotInput, ReplayStep } from '@/lib/replay/types'
@@ -43,7 +43,8 @@ function renderStep(step: ReplayStep, viewerId = fixture.players[0].userId) {
 }
 
 const dice = () => document.querySelectorAll('.yz-die')
-const pill = (name: RegExp) => within(screen.getByRole('group', { name: /scores/i })).getByRole('button', { name })
+const totals = () => screen.getAllByTestId('yahtzee-total').map((cell) => Number(cell.textContent))
+const filled = (card: YahtzeeScorecard | undefined) => Object.values(card ?? {}).filter((v) => typeof v === 'number').length
 
 describe('YahtzeeReplayRenderer', () => {
   it('opens on five unheld dice, three rolls and zero for every seat', () => {
@@ -51,9 +52,9 @@ describe('YahtzeeReplayRenderer', () => {
     expect(dice()).toHaveLength(5)
     expect(document.querySelectorAll('.yz-die--held')).toHaveLength(0)
     expect(screen.getByTestId('yahtzee-replay-rolls')).toHaveTextContent('3')
-    expect(screen.queryByRole('button', { name: /roll dice/i })).toBeNull()
-    for (const player of fixture.players) expect(pill(new RegExp(`${player.seat === 0 ? 'You' : player.name}.*\\b0\\b`))).toBeInTheDocument()
-    expect(document.querySelectorAll('[data-state="scored"]')).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /^roll/i })).toBeNull()
+    expect(totals()).toEqual(fixture.players.map(() => 0))
+    expect(document.querySelectorAll('.yz-cell--scored')).toHaveLength(0)
   })
 
   it('marks the held dice of a middle step and shows its rolls left', () => {
@@ -74,41 +75,28 @@ describe('YahtzeeReplayRenderer', () => {
     expect(screen.getByTestId('yahtzee-replay-rolls')).toHaveTextContent(String(before.rollsLeft))
   })
 
-  it('puts the turn dot on players[currentPlayerIndex]', () => {
+  it('marks the column of players[currentPlayerIndex] as the one playing', () => {
     const step = steps.find((s) => s.index > 0 && stateOf(s).currentPlayerIndex === 1 && stateOf(s).status === 'playing')!
     renderStep(step)
     const robo = fixture.players[1]
-    expect(pill(new RegExp(robo.name)).querySelector('.yz-pill__turn')).not.toBeNull()
-    expect(pill(/You/).querySelector('.yz-pill__turn')).toBeNull()
+    const current = document.querySelectorAll('.yz-sheet__row--head-a .yz-sheet__ph.is-current')
+    expect(current).toHaveLength(1)
+    expect(current[0]).toHaveTextContent(robo.name)
   })
 
-  it('ends on the final totals and the scorer card, and a pill switches the card', () => {
+  it('ends on the final totals with every seat\'s card side by side', () => {
     const final = steps.at(-1)!
     const { scores } = stateOf(final).data
     expect(stateOf(final).status).toBe('finished')
     renderStep(final)
-    const robo = fixture.players[1]
-    expect(pill(/You/)).toHaveAccessibleName(new RegExp(`\\b${calculateTotalScore(scores[0])}\\b`))
-    expect(pill(new RegExp(robo.name))).toHaveAccessibleName(new RegExp(`\\b${calculateTotalScore(scores[1])}\\b`))
-    const scorer = fixture.players.findIndex((p) => p.userId === final.actorId)
-    const filled = (card: YahtzeeScorecard) => Object.values(card).filter((v) => typeof v === 'number').length
-    expect(document.querySelectorAll('[data-state="scored"]')).toHaveLength(filled(scores[scorer]))
-    const other = 1 - scorer
-    fireEvent.click(pill(other === 0 ? /You/ : new RegExp(robo.name)))
-    expect(document.querySelectorAll('[data-state="scored"]')).toHaveLength(filled(scores[other]))
+    expect(totals()).toEqual([calculateTotalScore(scores[0]), calculateTotalScore(scores[1])])
+    expect(document.querySelectorAll('.yz-cell--scored')).toHaveLength(filled(scores[0]) + filled(scores[1]))
   })
 
-  it('goes back to following the actor once the step changes after a pill was picked', () => {
-    const ada = fixture.players[0]
-    const target = steps.find((s) => s.action === 'score' && s.actorId === ada.userId && stateOf(s).status === 'playing')!
-    const view = renderStep(steps[0])
-    fireEvent.click(pill(new RegExp(fixture.players[1].name)))
-    view.rerender(
-      <YahtzeeReplayRenderer step={target} isFinalStep={false} seats={fixture.players} playerNameById={playerNameById} viewerId={ada.userId} />,
-    )
-    const filled = (seat: number) => Object.values(stateOf(target).data.scores[seat] ?? {}).filter((v) => typeof v === 'number').length
-    expect(filled(0)).not.toBe(filled(1))
-    expect(document.querySelectorAll('[data-state="scored"]')).toHaveLength(filled(0))
+  it('shows the viewer\'s column first whoever the viewer is', () => {
+    const robo = fixture.players[1]
+    renderStep(steps[0], robo.userId)
+    expect(document.querySelectorAll('.yz-sheet__row--head-a .yz-sheet__ph')[1]).toHaveTextContent(fixture.players[0].name)
   })
 
   it('renders nothing for a malformed state', () => {
