@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react'
 import { renderHook } from '@testing-library/react'
 import { useTurnSounds, TURN_AFTER_MOVE_MS, turnCameToViewer, type UseTurnSoundsOptions } from '@/hooks/useTurnSounds'
 import { playCue } from '@/lib/sound-engine'
@@ -51,6 +52,21 @@ describe('useTurnSounds (#1111, #1464)', () => {
     const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 4, moveCue: null, turnDelayMs: 450 })
     rerender({ isMyTurn: true, lastMoveSignature: 5, opponentMoved: true, moveCue: null, turnDelayMs: 450 })
     expect(play.mock.calls).toEqual([['turn.mine', { delayMs: 450 }]])
+  })
+
+  it('reads a delay function when the turn arrives, after the layout effect that planned the move', () => {
+    const landing = { current: 0 }
+    const { rerender } = renderHook(
+      ({ turn, signature, plannedMs }: { turn: boolean; signature: number; plannedMs: number }) => {
+        useLayoutEffect(() => {
+          landing.current = plannedMs
+        }, [plannedMs])
+        useTurnSounds({ isMyTurn: turn, lastMoveSignature: signature, moveCue: null, turnDelayMs: () => landing.current + TURN_AFTER_MOVE_MS })
+      },
+      { initialProps: { turn: false, signature: 4, plannedMs: 0 } },
+    )
+    rerender({ turn: true, signature: 5, plannedMs: 220 })
+    expect(play.mock.calls).toEqual([['turn.mine', { delayMs: 220 + TURN_AFTER_MOVE_MS }]])
   })
 
   it('maps an old moveSound name to its cue when no moveCue is given', () => {
