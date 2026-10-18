@@ -198,7 +198,7 @@ plus 844×390 landscape). Check before calling it done:
      - `transform` and `opacity` only (see "Animations — never animate height");
      - roughly 200–450 ms;
      - `prefers-reduced-motion` respected;
-     - a `lib/sounds` cue alongside, where one exists.
+     - a sound-map cue (`lib/sound-map.ts`) alongside, where one exists.
 
 ## Adding a new game — checklist
 
