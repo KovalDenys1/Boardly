@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
-import { playCue } from '@/lib/sound-engine'
+import { useTurnTimerSounds } from '@/hooks/useTurnTimerSounds'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -81,22 +81,6 @@ function formatSeconds(secs: number): string {
  * out in silence, say whose move it is once it is clearly not being noticed.
  */
 const IDLE_NUDGE_SECONDS = 15
-
-/** The clock ticks aloud for the last seconds of the viewer's own timed turn, rising a semitone each second. */
-const TICK_FROM_SECONDS = 5
-
-function useTurnTimerSounds(secs: number, active: boolean) {
-  const shown = Math.max(0, Math.floor(secs))
-  const previousRef = useRef<number | null>(null)
-  useEffect(() => {
-    const previous = previousRef.current
-    previousRef.current = active ? shown : null
-    // Only a second counting down: a turn starting, a resync jumping up or the banner mounting mid-countdown stays quiet.
-    if (!active || previous === null || shown >= previous) return
-    if (shown === 0) playCue('timer.expired')
-    else if (shown <= TICK_FROM_SECONDS) playCue('timer.tick', { semis: TICK_FROM_SECONDS - shown })
-  }, [shown, active])
-}
 
 export default function GameStatusBanner({
   isFinished,

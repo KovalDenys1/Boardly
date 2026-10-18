@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import LeaveIcon from '@/components/LeaveIcon'
@@ -24,7 +24,9 @@ import ConfirmModal from '@/components/ConfirmModal'
 import TermsConsentPanel from '@/components/TermsConsentPanel'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
+import { viewerOutcome } from '@/lib/game-outcome'
+import { useAliasSounds } from './hooks/useAliasSounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -652,7 +654,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
-  const winSoundPlayedForRef = React.useRef<string | null>(null)
   const { isLeavingLobbyRef: isLeavingRef, leaveLobby } = useLeaveLobby(code, 'Alias')
   // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
   useLobbyHeartbeat(code, !isSpectator)
@@ -677,23 +678,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     fresh.restoreState(authoritativeState as any)
     setGameEngine(fresh)
 
-    if (fresh.isGameFinished() && winSoundPlayedForRef.current !== gameId) {
-      const data = fresh.getState().data as AliasGameData
-      if (data.winnerId && data.winnerId !== 'tie') {
-        const userId = getCurrentUserId()
-        const myTeam = data.teams.find(t => userId && t.playerIds.includes(userId))
-        if (myTeam && myTeam.id === data.winnerId) {
-          winSoundPlayedForRef.current = gameId
-          sounds.play('win')
-        }
-      }
-    }
-
     setGame(prev => {
       if (!prev || prev.id !== gameId) return prev
       return { ...prev, status: fresh.getState().status, state: authoritativeState }
     })
-  }, [getCurrentUserId])
+  }, [])
 
   const loadLobby = useCallback(async (attempt = 1) => {
     try {
@@ -827,10 +816,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onGameReset: handleGameReset,
   })
 
-  const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
-    if (!game || isMoveSubmitting) return
+  const handleMove = useCallback(async (type: string, payload: Record<string, unknown>): Promise<boolean> => {
+    if (!game || isMoveSubmitting) return false
     const userId = getCurrentUserId()
-    if (!userId) return
+    if (!userId) return false
 
     const move = { type, playerId: userId, data: payload, timestamp: new Date() }
 
@@ -860,16 +849,20 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         if (authoritativeState) {
           applyAuthoritativeState(game.id, authoritativeState)
         }
-      } else if (res.status === 409) {
+        return true
+      }
+      if (res.status === 409) {
         // STATE_CONFLICT: another player's move already advanced the phase; reconcile silently
         await loadLobby()
       } else {
         clientLogger.error('Alias move failed', { type, status: res.status })
         await loadLobby()
       }
+      return false
     } catch (err) {
       clientLogger.error('Alias handleMove error', err)
       await loadLobby()
+      return false
     } finally {
       setIsMoveSubmitting(false)
     }
@@ -1030,14 +1023,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
   }, [sendGuess])
 
-  // Turn and table cues (#1111), read off the engine here because the derived
-  // values below sit after the loading return and a hook cannot. Describing is
-  // the viewer's turn; each word the describer settles is a move for the rest.
+  // Read off the engine here because the derived values below sit after the loading return and a hook cannot.
   const soundUserId = getCurrentUserId()
   const soundData = game?.status === 'playing' ? (gameEngine?.getState()?.data as AliasGameData | undefined) : undefined
   const soundTeam = soundData?.teams?.[soundData.currentTeamIndex]
   const soundDescriberId = soundTeam?.playerIds[soundTeam.describerIndex ?? 0]
-  const soundResults = soundData?.phase === 'turn_active' ? soundData.currentCardResults.length : 0
   // The turn-results screen counts in only when the turn ended while this page
   // was open (#1115); undefined until a playing game is loaded.
   const turnResultsKey = soundData
@@ -1048,9 +1038,40 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const { fresh: turnResultsFresh, settle: settleTurnResults } = useFreshKey(turnResultsKey)
   useTurnSounds({
     isMyTurn: soundData?.phase === 'turn_active' && !!soundUserId && soundDescriberId === soundUserId,
-    lastMoveSignature: soundData ? `${soundData.turnStartedAt ?? ''}:${soundResults}` : null,
-    opponentMoved: soundResults > 0 && soundDescriberId !== soundUserId,
+    lastMoveSignature: soundData ? soundData.turnStartedAt ?? '' : null,
+    moveCue: null,
     enabled: !isSpectator && !!soundData,
+  })
+  const confirmedState = useMemo(() => {
+    const raw = game?.state
+    let parsed: unknown = raw
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw)
+      } catch {
+        parsed = null
+      }
+    }
+    return parsed && typeof parsed === 'object' ? (parsed as { data?: AliasGameData; lastMoveAt?: unknown }) : null
+  }, [game?.state])
+  const finishedData = game?.status === 'finished' ? (gameEngine?.getState()?.data as AliasGameData | undefined) : undefined
+  const finishedTeam = finishedData?.teams?.find((team) => !!soundUserId && team.playerIds.includes(soundUserId))
+  useAliasSounds({
+    data: game?.status === 'playing' ? confirmedState?.data : undefined,
+    lastMoveAt: typeof confirmedState?.lastMoveAt === 'number' ? confirmedState.lastMoveAt : null,
+    game: game ? { id: game.id, status: game.status } : null,
+    outcome: finishedData
+      ? viewerOutcome({
+          isFinished: true,
+          isDraw: finishedData.winnerId === 'tie',
+          isSpectator,
+          isSeated: !!finishedTeam,
+          isViewerWinner: finishedData.winnerId && finishedData.winnerId !== 'tie' ? finishedTeam?.id === finishedData.winnerId : null,
+        })
+      : undefined,
+    viewerId: soundUserId,
+    isSpectator,
+    remaining,
   })
 
   // ─── Loading ───────────────────────────────────────────────────────────────
@@ -1657,7 +1678,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: inRow ? undefined : '100%', flex: inRow ? '1 1 auto' : undefined, minWidth: 0, ...(isMobile && !inRow ? { position: 'sticky' as const, bottom: 8, zIndex: 2 } : {}) }}>
         <button
           aria-label={t('alias.guessedCorrectly')}
-          onClick={() => handleMove('word_action', { action: 'guess' })}
+          onClick={() => void handleMove('word_action', { action: 'guess' }).then((ok) => ok && playCue('card.correct'))}
           disabled={isMoveSubmitting}
           style={{
             background: 'var(--bd-mint)', color: '#06322a',
@@ -1675,7 +1696,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         </button>
         <button
           aria-label={t('alias.skipWord')}
-          onClick={() => handleMove('word_action', { action: 'skip' })}
+          onClick={() => void handleMove('word_action', { action: 'skip' }).then((ok) => ok && playCue('card.skip'))}
           disabled={isMoveSubmitting}
           style={{
             background: 'var(--bd-sun)', color: '#4a3a09',
