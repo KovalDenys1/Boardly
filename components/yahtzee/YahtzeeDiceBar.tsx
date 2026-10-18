@@ -2,8 +2,11 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { Icon } from '@/components/icons'
+
+/** die.hold is pitched +4 st for a hold; a release sits at +1 st, a lower step for letting go. */
+const RELEASE_SEMIS = -3
 
 const PIPS: Record<number, number[]> = {
   1: [4],
@@ -63,7 +66,7 @@ function DieButton({
       aria-pressed={held}
       aria-label={placeholder ? t('yahtzee.ui.dieBlankAria') : t(held ? 'yahtzee.ui.dieHeldAria' : 'yahtzee.ui.dieAria', { value })}
       onClick={() => {
-        sounds.play('click', { force: true })
+        playCue('die.hold', { semis: held ? RELEASE_SEMIS : 0 })
         onToggle()
       }}
     >
@@ -134,10 +137,7 @@ export default function YahtzeeDiceBar({
             className={`yz-roll${isRolling ? ' yz-roll--rolling' : ''}`}
             disabled={!canRoll}
             aria-label={`${t('yahtzee.ui.rollDice')}. ${t('yahtzee.ui.rollsLeftCount', { count: left })}`}
-            onClick={() => {
-              sounds.play('click', { force: true })
-              onRoll()
-            }}
+            onClick={onRoll}
           >
             <span className="yz-roll__icon" aria-hidden><Icon name="dice" size={18} /></span>
             <span className="yz-roll__label">{t('yahtzee.ui.rollDice')}</span>

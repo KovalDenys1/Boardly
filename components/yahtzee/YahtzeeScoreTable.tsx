@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { Icon } from '@/components/icons'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import type { YahtzeeCategory, YahtzeeMode, YahtzeeScorecard } from '@/lib/yahtzee'
@@ -182,11 +182,10 @@ export default function YahtzeeScoreTable({
   const score = (tile: ScoreTile) => {
     if (isScoring || !canScore || !onScore) return
     if (tile.state === 'zero' && armed !== tile.category) {
-      sounds.play('click', { force: true })
+      playCue('ui.select')
       setArmed(tile.category)
       return
     }
-    sounds.play('click', { force: true })
     setArmed(null)
     onScore(tile.category)
   }

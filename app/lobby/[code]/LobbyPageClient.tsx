@@ -6,8 +6,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { sounds } from '@/lib/sounds'
 import { playCue, type PlayOptions } from '@/lib/sound-engine'
+import { toggleSoundEnabled } from '@/lib/sound-settings'
 import type { CueId } from '@/lib/sound-map'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { viewerOutcome } from '@/lib/game-outcome'
@@ -332,16 +332,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
-  const playAmbientSound = useCallback(
-    (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
-      if (isInitialLoadRef.current) return
-      if (!sounds.hasUserInteracted()) return
-      if (!hasLobbyPageInteractionRef.current) return
-      sounds.play(soundName, options)
-    },
-    []
-  )
-
   const playAmbientCue = useCallback((cue: CueId, options?: PlayOptions) => {
     if (isInitialLoadRef.current || !hasLobbyPageInteractionRef.current) return
     playCue(cue, options)
@@ -529,6 +519,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             const scoreEventTimestamp =
               typeof parsedState.lastMoveAt === 'number' ? parsedState.lastMoveAt : Date.now()
             const scoredCategoryEntries: RollHistoryEntry[] = []
+            let someoneElseScored = false
+            let someoneElseCelebrated = false
 
             for (const enginePlayer of newEngine.getPlayers()) {
               const previousScorecard = gameEngine.getScorecard(enginePlayer.id)
@@ -553,6 +545,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   previousScorecard?.[category] === undefined &&
                   nextScorecard?.[category] !== undefined
                 ) {
+                  if (!isBot && enginePlayer.id !== getCurrentUserId()) {
+                    someoneElseScored = true
+                    const points = nextScorecard[category] ?? 0
+                    // The previous engine still holds the dice the score was made with.
+                    if (points > 0 && detectCelebration(gameEngine.getDice(), category, points)) someoneElseCelebrated = true
+                  }
                   scoredCategoryEntries.push({
                     id: `score-${enginePlayer.id}-${category}-${scoreEventTimestamp}`,
                     type: 'score',
@@ -567,6 +565,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 }
               }
             }
+
+            // A bot's score and combo sound from its bot-action event.
+            if (someoneElseScored) playAmbientCue('score.add', { remote: true })
+            if (someoneElseCelebrated) playAmbientCue('yahtzee.celebrate', { remote: true })
 
             if (scoredCategoryEntries.length > 0) {
               setRollHistory((prev) => {
@@ -606,17 +608,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               const turnNumber = getYahtzeeTurnNumberFromScorecard(
                 newEngine instanceof YahtzeeGame ? newEngine.getScorecard(lastRoll.playerId) : null
               )
-              const currentUserId = getCurrentUserId()
               const rollEntryId = `${lastRoll.playerId}-${lastRoll.timestamp}`
 
               setRollHistory(prev => {
                 const exists = prev.some((entry) => entry.id === rollEntryId)
 
                 if (exists) return prev
-
-                if (!playerIsBot && lastRoll.playerId !== currentUserId) {
-                  playAmbientSound('diceRoll', { force: true })
-                }
 
                 const newRollEntry: RollHistoryEntry = {
                   id: rollEntryId,
@@ -644,7 +641,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
+  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientCue, triggerLifecycleRedirect])
 
   const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
@@ -694,14 +691,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     const botName = event.botName || 'Bot'
 
-    // Roll history is synced from authoritative game-update snapshots.
-    // Avoid duplicating bot rolls here with optimistic local entries.
-    if (event.type === 'roll' && event.data?.dice) {
-      playAmbientSound('diceRoll', { force: true })
-    }
-
+    // A bot's roll sounds where its dice shake, from the state (useRemoteRoll below).
     if (event.type === 'hold' && Array.isArray((event as YahtzeeBotActionEvent).data?.held) && ((event as YahtzeeBotActionEvent).data?.held?.length ?? 0) > 0) {
-      playAmbientSound('click', { force: true })
+      playAmbientCue('die.hold', { remote: true })
     }
 
     // A bot's score shows in the score table and Recent Rolls; only its Yahtzee gets a banner.
@@ -716,15 +708,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           category,
           score
         )
-        if (celebration) setCelebrationEvent({ ...celebration, score, playerName: botName })
+        if (celebration) {
+          setCelebrationEvent({ ...celebration, score, playerName: botName })
+          playAmbientCue('yahtzee.celebrate', { remote: true })
+        }
       }
 
-      playAmbientSound('score')
+      playAmbientCue('score.add', { remote: true })
     }
 
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
-  }, [playAmbientSound])
+  }, [playAmbientCue])
 
   const prevSpectatorCountRef = useRef(0)
   const onSpectatorCountChange = useCallback((count: number) => {
@@ -1263,6 +1258,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     gameEngine instanceof YahtzeeGame ? (gameEngine.getState().data as unknown as YahtzeeGameData | undefined)?.lastRoll : undefined,
     getCurrentUserId(),
     gameEngine instanceof YahtzeeGame,
+    () => playAmbientCue('dice.roll', { remote: true }),
   )
   const showHoldHint = useYahtzeeHoldHint({
     myTurn: gameEngine instanceof YahtzeeGame && isMyTurn(),
@@ -1772,8 +1768,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   const toggleSound = () => {
-    sounds.play('click', { force: true })
-    const newState = sounds.toggle()
+    const newState = toggleSoundEnabled()
+    if (newState) playCue('ui.select')
     showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
       ...BELOW_HEADER_TOAST,
       duration: 2000,

@@ -4,7 +4,7 @@ import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ALL_CATEGORIES, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { ROLL_HISTORY_LIMIT, scoreHistoryEntry } from '@/lib/yahtzee-roll-history'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
@@ -224,8 +224,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsMoveInProgress(true)
     setIsRolling(true)
 
-    // Play sound immediately for instant feedback (force to ensure it plays)
-    sounds.play('diceRoll', { force: true })
+    playCue('dice.roll')
 
     // NOTE: We don't update dice values optimistically because:
     // 1. Client random != server random (will cause "flicker" when values change)
@@ -356,8 +355,6 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       }
 
-      // Sound already played optimistically, no need to play again
-
       // Track player action
       if (newEngine) {
         trackPlayerAction({
@@ -412,6 +409,7 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
       if (!isAutoAction) {
+        playCue('ui.error')
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.rollFailed')
@@ -510,7 +508,7 @@ export function useGameActions(props: UseGameActionsProps) {
         // Apply optimistic turn + score update for instant feedback.
         setGameEngine(optimisticEngine)
         setHeld([false, false, false, false, false])
-        sounds.play('score', { force: true })
+        playCue('score.add')
       } catch (optimisticError) {
         clientLogger.warn('Failed to apply optimistic score update', optimisticError)
       }
@@ -607,11 +605,12 @@ export function useGameActions(props: UseGameActionsProps) {
         if (celebration) {
           setCelebrationEvent(celebration)
           celebrate() // Trigger confetti for good scores
+          playCue('yahtzee.celebrate')
         }
       }
 
       if (isAutoAction) {
-        sounds.play('score', { force: true })
+        playCue('score.add')
       }
 
       // Track score action
@@ -678,7 +677,6 @@ export function useGameActions(props: UseGameActionsProps) {
 
         if (winner) {
           fireworks()
-          if (winner.id === userId) sounds.play('win')
           showToast.success('toast.gameOver', undefined, { player: winner.name })
         }
       }
@@ -699,6 +697,7 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
       if (!isAutoAction) {
+        playCue('ui.error')
         if (shouldApplyOptimisticScore) {
           setGameEngine(previousEngine)
         }
