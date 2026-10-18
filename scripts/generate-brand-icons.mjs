@@ -60,6 +60,23 @@ for (const size of [192, 512]) {
     `public/icons/icon-maskable-${size}.png`
   )
 }
+// Android notification icon: Android draws it from the alpha channel alone, so a white tile with the B cut out.
+{
+  const src = tile.toString()
+  const inkTile = src.match(/<rect[^>]*fill="#1F1B16"[^>]*\/>/)?.[0]
+  const glyph = src.match(/<text[^>]*>B<\/text>/)?.[0]
+  if (!inkTile || !glyph) throw new Error('assets/brand/tile.svg: ink tile or B not found')
+  const attr = (name) => Number(inkTile.match(new RegExp(`\\b${name}="([\\d.]+)"`))[1])
+  const shiftX = (512 - attr('width')) / 2 - attr('x')
+  const shiftY = (512 - attr('height')) / 2 - attr('y')
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">\n` +
+    `<g transform="translate(${shiftX} ${shiftY})">\n` +
+    `<mask id="glyph"><rect width="512" height="512" fill="#FFFFFF"/>${glyph.replace(/fill="[^"]*"/, 'fill="#000000"')}</mask>\n` +
+    `${inkTile.replace(/fill="[^"]*"/, 'fill="#FFFFFF" mask="url(#glyph)"')}\n` +
+    `</g>\n</svg>\n`
+  await render(sharp(Buffer.from(svg)).resize(512, 512).png(), 'public/icons/icon-monochrome-512.png')
+}
 // Apple touch icon: 180px, opaque ground (iOS shows black behind transparency)
 {
   const inner = await sharp(tile).resize(160).png().toBuffer()

@@ -84,6 +84,9 @@ Run it after any change to `twa-manifest.json`. Always pass `--skipVersionUpgrad
 Bubblewrap bumps the version and rewrites the file. Running it twice must leave `git status
 android/` clean.
 
+`update` downloads every icon URL in `twa-manifest.json`, and the web manifest, from
+boardly.online, so a new icon has to be live there before the update can use it.
+
 ## Versioning
 
 - Bump `appVersionCode` in `twa-manifest.json` for every upload to Play; Play rejects a code it
