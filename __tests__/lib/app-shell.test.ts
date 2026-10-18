@@ -4,6 +4,7 @@ import {
   APP_SHELL_STORAGE_KEY,
   PLAY_APP_PACKAGE,
   PLAY_APP_SIGNUP_SOURCE,
+  addPlayLaunchParams,
   detectPlayLaunch,
   getAppShellInitScript,
   isPlayApp,
@@ -76,15 +77,50 @@ describe('stripPlayLaunchParams', () => {
   })
 })
 
+describe('addPlayLaunchParams', () => {
+  const origin = 'https://boardly.online'
+
+  it('adds the launch pair to a same-origin path', () => {
+    expect(addPlayLaunchParams('/rules', origin)).toBe(
+      'https://boardly.online/rules?utm_source=android_app&utm_medium=twa'
+    )
+  })
+
+  it('keeps the other parameters and the hash', () => {
+    expect(addPlayLaunchParams('https://boardly.online/u/abc?tab=stats#top', origin)).toBe(
+      'https://boardly.online/u/abc?tab=stats&utm_source=android_app&utm_medium=twa#top'
+    )
+  })
+
+  it('does not add the pair twice', () => {
+    const href = 'https://boardly.online/terms?utm_source=android_app&utm_medium=twa'
+    expect(addPlayLaunchParams(href, origin)).toBe(href)
+  })
+
+  it('leaves another origin alone', () => {
+    expect(addPlayLaunchParams('https://discord.gg/boardly', origin)).toBe('https://discord.gg/boardly')
+    expect(addPlayLaunchParams('https://boardly.online.evil.com/', origin)).toBe('https://boardly.online.evil.com/')
+  })
+})
+
 describe('getAppShellInitScript', () => {
+  let installed: Parameters<typeof document.addEventListener>[] = []
+
   beforeEach(() => {
     delete document.documentElement.dataset.appShell
     sessionStorage.clear()
     setReferrer('')
     window.history.replaceState(null, '', '/')
+    installed = []
+    const addEventListener = document.addEventListener.bind(document)
+    jest.spyOn(document, 'addEventListener').mockImplementation((...args) => {
+      installed.push(args)
+      addEventListener(...args)
+    })
   })
 
   afterEach(() => {
+    for (const args of installed) document.removeEventListener(...args)
     jest.restoreAllMocks()
   })
 
@@ -162,6 +198,113 @@ describe('getAppShellInitScript', () => {
     runInitScript()
 
     expect(window.location.search).toBe(LAUNCH_SEARCH)
+  })
+
+  describe('links that open a new tab', () => {
+    const origin = () => window.location.origin
+
+    function anchor(href: string, attributes: Record<string, string> = {}) {
+      const a = document.createElement('a')
+      a.setAttribute('href', href)
+      for (const [name, value] of Object.entries(attributes)) a.setAttribute(name, value)
+      document.body.appendChild(a)
+      return a
+    }
+
+    /** Clicks without letting jsdom navigate, and returns the href the browser would follow. */
+    function click(target: HTMLElement, a: HTMLAnchorElement = target as HTMLAnchorElement) {
+      let followed = ''
+      const stop = (event: Event) => {
+        followed = a.href
+        event.preventDefault()
+      }
+      document.addEventListener('click', stop)
+      target.click()
+      document.removeEventListener('click', stop)
+      return followed
+    }
+
+    beforeEach(() => {
+      jest.useFakeTimers()
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+      document.body.innerHTML = ''
+    })
+
+    it('carries the launch pair into a same-origin new tab, then puts the href back', () => {
+      sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+      runInitScript()
+      const a = anchor('/rules?game=yahtzee#scoring', { target: '_blank' })
+
+      expect(click(a)).toBe(`${origin()}/rules?game=yahtzee&utm_source=android_app&utm_medium=twa#scoring`)
+
+      jest.runAllTimers()
+      expect(a.getAttribute('href')).toBe('/rules?game=yahtzee#scoring')
+    })
+
+    it('rewrites the link when the tap lands on an element inside it, and never adds the pair twice', () => {
+      sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+      runInitScript()
+      const a = anchor('/rules', { target: '_blank' })
+      const inner = document.createElement('span')
+      a.appendChild(inner)
+      const expected = `${origin()}/rules?utm_source=android_app&utm_medium=twa`
+
+      expect(click(inner, a)).toBe(expected)
+      expect(click(inner, a)).toBe(expected)
+
+      jest.runAllTimers()
+      expect(a.getAttribute('href')).toBe('/rules')
+    })
+
+    it.each([
+      ['an off-origin new-tab link', 'https://discord.gg/boardly', { target: '_blank' }],
+      ['a same-tab link', '/rules', {}],
+      ['a download link', '/exports/game.json', { target: '_blank', download: '' }],
+    ])('leaves %s alone', (_label, href, attributes) => {
+      sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+      runInitScript()
+      const a = anchor(href, attributes)
+
+      expect(click(a)).toBe(new URL(href, origin()).href)
+      jest.runAllTimers()
+      expect(a.getAttribute('href')).toBe(href)
+    })
+
+    it('follows the same rule as addPlayLaunchParams', () => {
+      sessionStorage.setItem(APP_SHELL_STORAGE_KEY, 'play')
+      runInitScript()
+      const hrefs = [
+        '/rules',
+        '/rules?game=yahtzee#scoring',
+        '/u/abc?tab=stats&utm_source=newsletter',
+        '/terms?utm_source=android_app&utm_medium=twa',
+        '/privacy?utm_source=android_app',
+        `${origin()}/privacy`,
+        'https://discord.gg/boardly',
+        '//evil.example/x',
+        'https://boardly.online.evil.com/',
+      ]
+
+      for (const href of hrefs) {
+        const a = anchor(href, { target: '_blank' })
+        expect({ href, followed: click(a) }).toEqual({
+          href,
+          followed: new URL(addPlayLaunchParams(href, origin()), origin()).href,
+        })
+        jest.runAllTimers()
+      }
+    })
+
+    it('installs nothing on a plain web visit', () => {
+      runInitScript()
+
+      expect(document.addEventListener).not.toHaveBeenCalled()
+      const a = anchor('/rules', { target: '_blank' })
+      expect(click(a)).toBe(`${origin()}/rules`)
+    })
   })
 })
 

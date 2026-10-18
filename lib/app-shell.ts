@@ -34,6 +34,21 @@ export function stripPlayLaunchParams(search: string): string {
   return rest ? `?${rest}` : ''
 }
 
+// A same-origin link with target="_blank" opens a tab whose sessionStorage starts empty.
+export function addPlayLaunchParams(href: string, origin: string): string {
+  let url: URL
+  try {
+    url = new URL(href, origin)
+  } catch {
+    return href
+  }
+  if (url.origin !== origin || isLaunchParams(url.searchParams)) return href
+
+  url.searchParams.set('utm_source', LAUNCH_SOURCE)
+  url.searchParams.set('utm_medium', LAUNCH_MEDIUM)
+  return url.href
+}
+
 export function getAppShellInitScript() {
   return `(() => {
   try {
@@ -43,6 +58,20 @@ export function getAppShellInitScript() {
     const fromUrl = params.get('utm_source') === '${LAUNCH_SOURCE}' && params.get('utm_medium') === '${LAUNCH_MEDIUM}';
     if (stored !== '${APP_SHELL_PLAY}' && !fromUrl && !/${PLAY_REFERRER.source}/.test(document.referrer)) return;
     document.documentElement.dataset.appShell = '${APP_SHELL_PLAY}';
+    document.addEventListener('click', (event) => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!(link instanceof HTMLAnchorElement) || link.target.toLowerCase() !== '_blank' || link.hasAttribute('download')) return;
+      try {
+        const url = new URL(link.href, location.origin);
+        if (url.origin !== location.origin) return;
+        if (url.searchParams.get('utm_source') === '${LAUNCH_SOURCE}' && url.searchParams.get('utm_medium') === '${LAUNCH_MEDIUM}') return;
+        const original = link.getAttribute('href');
+        url.searchParams.set('utm_source', '${LAUNCH_SOURCE}');
+        url.searchParams.set('utm_medium', '${LAUNCH_MEDIUM}');
+        link.href = url.href;
+        setTimeout(() => link.setAttribute('href', original), 0);
+      } catch {}
+    }, true);
     sessionStorage.setItem('${APP_SHELL_STORAGE_KEY}', '${APP_SHELL_PLAY}');
     if (fromUrl) {
       params.delete('utm_source');
