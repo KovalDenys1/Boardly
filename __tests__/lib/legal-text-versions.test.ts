@@ -109,8 +109,10 @@ const WITHDRAWAL_DIGESTS: Record<string, string> = {
   // four locale files give the same value, so no withdrawal or consent text has
   // changed in any locale since it shipped.
   '2026-09-27': '3a405553ea3088b9',
-  // German and Spanish added to the digest (#1472); en, no, ru and uk are unchanged.
-  '2026-10-18': '4e7e5baae81a4631',
+  // German and Spanish added to the digest (#1472), and withdrawal.laterApp, the Play app's
+  // wording for cancelling (#1465). Neither had been released when the other landed, so one
+  // digest covers both.
+  '2026-10-18': 'f6b5953de783a1e9',
 }
 
 describe('legal text versions move with the text (#1179)', () => {
