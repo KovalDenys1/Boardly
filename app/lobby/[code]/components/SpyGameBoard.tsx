@@ -4,8 +4,8 @@ import React from 'react'
 import { SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS, SpyGamePhase } from '@/lib/games/spy-game'
 import SpyRoleReveal from '@/components/SpyRoleReveal'
 import SpyVoting from '@/components/SpyVoting'
-import SpyResults from '@/components/SpyResults'
-import { resolveSpyGameResult } from '@/lib/games/spy-outcome'
+import SpyResults, { SPY_OUTCOME_LINE_STEP, spyResultsLastStep } from '@/components/SpyResults'
+import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome'
 import Chat from '@/components/Chat'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
@@ -24,7 +24,9 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useFreshOnArrival } from '@/hooks/useFreshFor'
-import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey } from '@/lib/social-motion'
+import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey, staggerDelayMs } from '@/lib/social-motion'
+import { playCue } from '@/lib/sound-engine'
+import { useSpySounds } from '../hooks/useSpySounds'
 
 interface SpyRoleInfo {
   role: string
@@ -296,6 +298,24 @@ export default function SpyGameBoard({
   const { fresh: latestEntryFresh, settle: settleLatestEntry } = useFreshKey(
     latestEntryKey(questionHistory, (entry) => `${entry.timestamp}-${entry.askerId}`),
   )
+  const roundOutcome = resolveSpyOutcome({ spyGuessedLocation: data.spyGuessedLocation, location: data.location || '', eliminatedId, spyId })
+  useSpySounds(
+    {
+      phase,
+      round,
+      roleCard: phase === SpyGamePhase.ROLE_REVEAL && !isSpectator && !!roleInfo,
+      questioner: data.currentQuestionerId || null,
+      asked: data.pendingQuestion ? data.currentTargetId || null : null,
+      entries: questionHistory.length,
+      answeredBy: questionHistory[questionHistory.length - 1]?.targetId ?? null,
+      voters: Object.keys(votes).sort(),
+      outAtMs:
+        phase === SpyGamePhase.RESULTS && !roundOutcome.wasGuessRound && !roundOutcome.noElimination
+          ? staggerDelayMs(SPY_OUTCOME_LINE_STEP, spyResultsLastStep(normalizedPlayers.length))
+          : null,
+    },
+    { gameId, viewerId: currentUserId, isSpectator, phaseStartedAt: Number(data.phaseStartTime || 0) },
+  )
 
   const fetchRoleInfo = React.useCallback(async () => {
     if (!currentUserId || phase === SpyGamePhase.WAITING) return
@@ -357,7 +377,7 @@ export default function SpyGameBoard({
   )
 
   const submitAction = React.useCallback(
-    async (action: string, actionData: Record<string, unknown> = {}) => {
+    async (action: string, actionData: Record<string, unknown> = {}): Promise<boolean> => {
       setIsActionLoading(true)
       const submitStartedAt = Date.now()
       let responseStatus: number | undefined
@@ -404,7 +424,9 @@ export default function SpyGameBoard({
           statusCode: responseStatus,
         })
         moveMetricTracked = true
+        return true
       } catch (error) {
+        playCue('ui.error')
         if (!moveMetricTracked) {
           trackMoveSubmitApplied({
             gameType: 'guess_the_spy',
@@ -417,6 +439,7 @@ export default function SpyGameBoard({
           })
         }
         showActionError(String((error as Error)?.message || 'Failed to submit action'))
+        return false
       } finally {
         setIsActionLoading(false)
       }
@@ -867,7 +890,7 @@ export default function SpyGameBoard({
             location={roleInfo.location}
             locationRole={roleInfo.locationRole}
             possibleCategories={roleInfo.possibleCategories}
-            onReady={() => void submitAction('player-ready')}
+            onReady={() => void submitAction('player-ready').then((ok) => ok && playCue('ui.select'))}
             playersReady={seatedReadyCount}
             totalPlayers={seatedPlayers.length}
             isReady={!!currentUserId && playersReady.includes(currentUserId)}
@@ -931,7 +954,7 @@ export default function SpyGameBoard({
                           const question = questionText.trim()
                           if (!question || !questionTargetId) return
                           setQuestionText('')
-                          void submitAction('ask-question', { targetId: questionTargetId, question })
+                          void submitAction('ask-question', { targetId: questionTargetId, question }).then((ok) => ok && playCue('card.place'))
                         }}
                         className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -967,7 +990,7 @@ export default function SpyGameBoard({
                         const answer = answerText.trim()
                         if (!answer) return
                         setAnswerText('')
-                        void submitAction('answer-question', { answer })
+                        void submitAction('answer-question', { answer }).then((ok) => ok && playCue('card.place'))
                       }}
                       className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -1048,7 +1071,7 @@ export default function SpyGameBoard({
           <SpyVoting
             players={seatedPlayers}
             currentUserId={currentUserId}
-            onVote={(targetId) => void submitAction('vote', { targetId })}
+            onVote={(targetId) => void submitAction('vote', { targetId }).then((ok) => ok && playCue('vote.cast'))}
             hasVoted={hasVoted}
             votesSubmitted={votesSubmitted}
             timeRemaining={timeRemaining}
