@@ -404,7 +404,7 @@ const no = {
     browseGamesArrow: 'Se spill →',
     viewLobbies: 'Se lobbyer',
     playAsGuest: 'Spill som gjest',
-    quickPlay: 'Rask spill',
+    quickPlay: 'Raskt spill',
     openProfile: 'Åpne profil',
     keepPlaying: 'Fortsett å spille',
     createFreeAccount: 'Opprett gratis konto',
@@ -2259,7 +2259,7 @@ const no = {
           },
           turnClock: {
             title: 'Klokke på hver tur',
-            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Raskt spill og Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre robotnivåer',
@@ -2361,7 +2361,7 @@ const no = {
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',
-            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Raskt spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',
@@ -2740,7 +2740,7 @@ const no = {
         modes: {
           oneRoundEach: { title: 'Én runde per spiller', desc: 'Alle tegner én gang, så fire spillere gir fire runder; det finnes ingen innstilling for antall runder.' },
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
-          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Raskt spill åpner med alle ti.' },
         },
         strategy: {
           pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
@@ -4854,7 +4854,7 @@ const no = {
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
     games: 'Spill',
     play: 'Spill',
-    quickPlay: 'Rask spilling',
+    quickPlay: 'Raskt spill',
     createRoom: 'Opprett rom',
     leaderboard: 'Resultattavle',
     guides: 'Guider',
