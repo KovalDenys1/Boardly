@@ -5101,6 +5101,7 @@ const en = {
     ctaManage: 'Manage subscription',
     ctaLoading: 'Opening checkout...',
     ctaNote: 'Cancel anytime. Have a promo code? Enter it on the payment page.',
+    playAppNotice: 'Premium can be bought on boardly.online in your browser.',
     withdrawalTitle: 'Your right of withdrawal',
     withdrawalBody: 'You have 14 days from the day you buy Premium to withdraw, without giving a reason. If you withdraw, we refund everything you paid for that purchase within 14 days of your notice, by the same payment method and with no fee.',
     withdrawalHow: 'To withdraw, send an email to support@boardly.online or use the withdrawal form on our withdrawal page.',

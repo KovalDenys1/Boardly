@@ -5,8 +5,10 @@ import { useCallback, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import { Icon, type IconName } from '@/components/icons'
+import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { trackPremiumCta } from '@/lib/analytics'
+import { isPlayApp } from '@/lib/app-shell'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 import {
@@ -86,6 +88,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
 
   const startCheckout = useCallback(
     async (source: string) => {
+      if (isPlayApp()) return
       // The buttons are disabled until the box is ticked; this covers any path
       // that reaches here without it, and the route refuses independently.
       if (!consented) {
@@ -209,6 +212,14 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
     )
   }
 
+  const playAppNotice = (
+    <PlayAppOnly>
+      <p className="mt-5 max-w-xl text-sm font-semibold leading-relaxed" style={{ color: 'var(--bd-ink)' }}>
+        {t('premium.playAppNotice')}
+      </p>
+    </PlayAppOnly>
+  )
+
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -326,14 +337,17 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
               </p>
             </div>
 
-            {consentBox('premium-consent-hero')}
+            <PurchaseOnly>
+              {consentBox('premium-consent-hero')}
 
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              {cta(HERO_CTA)}
-              <span className="text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.ctaNote')}
-              </span>
-            </div>
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                {cta(HERO_CTA)}
+                <span className="text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.ctaNote')}
+                </span>
+              </div>
+            </PurchaseOnly>
+            {playAppNotice}
             {/* bd-coral-deep was 3.79:1 on this card, below the 4.5:1 AA
                 minimum (#1171 axe pass) — bd-ink keeps both readable
                 without touching the brand palette. */}
@@ -469,8 +483,11 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('premium.closingBody')}
             </p>
-            {consentBox('premium-consent-closing')}
-            <div className="mt-5">{cta(CLOSING_CTA)}</div>
+            <PurchaseOnly>
+              {consentBox('premium-consent-closing')}
+              <div className="mt-5">{cta(CLOSING_CTA)}</div>
+            </PurchaseOnly>
+            {playAppNotice}
           </section>
         </article>
       </div>

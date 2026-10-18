@@ -5089,6 +5089,7 @@ const no = {
     ctaManage: 'Administrer abonnement',
     ctaLoading: 'Åpner kassen...',
     ctaNote: 'Si opp når som helst. Har du en rabattkode? Skriv den inn på betalingssiden.',
+    playAppNotice: 'Premium kan kjøpes på boardly.online i nettleseren.',
     withdrawalTitle: 'Din angrerett',
     withdrawalBody: 'Du har 14 dagers angrerett fra den dagen du kjøper Premium, uten å oppgi noen grunn. Angrer du, betaler vi tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr.',
     withdrawalHow: 'For å angre sender du en e-post til support@boardly.online, eller bruker angreskjemaet på siden om angrerett.',

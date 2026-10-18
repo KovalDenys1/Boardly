@@ -5136,6 +5136,7 @@ const es: TranslationWithPlurals = {
     ctaManage: 'Gestionar suscripción',
     ctaLoading: 'Abriendo el pago...',
     ctaNote: 'Cancela cuando quieras. ¿Tienes un código promocional? Introdúcelo en la página de pago.',
+    playAppNotice: 'Premium se puede comprar en boardly.online desde el navegador.',
     withdrawalTitle: 'Tu derecho de desistimiento',
     withdrawalBody: 'Tienes 14 días desde el día en que compras Premium para desistir, sin dar ningún motivo. Si desistes, te reembolsamos todo lo que pagaste por esa compra en un plazo de 14 días desde tu aviso, por el mismo medio de pago y sin ningún cargo.',
     withdrawalHow: 'Para desistir, envía un correo electrónico a support@boardly.online o usa el formulario de desistimiento de nuestra página de desistimiento.',

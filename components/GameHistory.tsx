@@ -14,6 +14,7 @@ import GameIcon from '@/components/GameIcon'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
 import BoardlySelect from './ui/BoardlySelect'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 const GAME_HISTORY_STATUS_KEYS = {
   waiting: 'profile.gameHistory.waiting',
@@ -122,6 +123,7 @@ function ReplayIcon() {
 
 export default function GameHistory() {
   const { t, i18n } = useTranslation()
+  const inPlayApp = useIsPlayApp()
   const locale = i18n.language
   const [games, setGames] = useState<GameHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -365,8 +367,8 @@ export default function GameHistory() {
                   </li>
                 )
               })}
-              {hiddenCount > 0 && (
-                <li className="px-1 pt-1 text-sm text-bd-ink-soft">
+              {hiddenCount > 0 && !inPlayApp && (
+                <li data-purchase-ui className="px-1 pt-1 text-sm text-bd-ink-soft">
                   <Link href="/profile?tab=premium" className={`font-semibold text-bd-lav-deep underline-offset-2 hover:underline ${focusRing}`}>
                     {t('profile.gameHistory.moreWithPremium', { count: hiddenCount })}
                   </Link>

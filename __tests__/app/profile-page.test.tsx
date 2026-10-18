@@ -493,31 +493,31 @@ describe('ProfilePage', () => {
     )
   })
 
+  /** Purchases answers at once; the renewal route answers with `renewal`, or never. */
+  function withPurchases(
+    purchases: Record<string, unknown>,
+    renewal: { status: number; body: unknown } | 'never' = { status: 200, body: { renewal: null } }
+  ) {
+    const routeEverythingElse = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : String(input)
+      if (url.includes('/api/user/purchases/renewal')) {
+        if (renewal === 'never') return new Promise(() => {})
+        return mockJsonResponse(renewal.body, renewal.status)
+      }
+      if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
+      return routeEverythingElse(input, init)
+    })
+  }
+
+  const renewing = {
+    isPremium: true,
+    premiumUntil: '2026-10-27T00:00:00.000Z',
+    cancelAtPeriodEnd: false,
+    hasSubscriptionId: true,
+  }
+
   describe('the renewal line (#1167)', () => {
-    /** Purchases answers at once; the renewal route answers with `renewal`, or never. */
-    function withPurchases(
-      purchases: Record<string, unknown>,
-      renewal: { status: number; body: unknown } | 'never' = { status: 200, body: { renewal: null } }
-    ) {
-      const routeEverythingElse = mockFetch.getMockImplementation()!
-      mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === 'string' ? input : String(input)
-        if (url.includes('/api/user/purchases/renewal')) {
-          if (renewal === 'never') return new Promise(() => {})
-          return mockJsonResponse(renewal.body, renewal.status)
-        }
-        if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
-        return routeEverythingElse(input, init)
-      })
-    }
-
-    const renewing = {
-      isPremium: true,
-      premiumUntil: '2026-10-27T00:00:00.000Z',
-      cancelAtPeriodEnd: false,
-      hasSubscriptionId: true,
-    }
-
     beforeEach(() => {
       window.history.replaceState({}, '', '/profile?tab=premium')
     })
@@ -566,6 +566,68 @@ describe('ProfilePage', () => {
 
       expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
       expect(mockFetch).not.toHaveBeenCalledWith('/api/user/purchases/renewal', expect.anything())
+    })
+  })
+
+  describe('the Premium tab in the Play app (#1465)', () => {
+    beforeEach(() => {
+      window.history.replaceState({}, '', '/profile?tab=premium')
+    })
+
+    afterEach(() => {
+      delete document.documentElement.dataset.appShell
+    })
+
+    it('shows a free user the notice instead of the buy button', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('premium.playAppNotice')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /profile\.premiumTab\.getPremium/ })).toBeNull()
+    })
+
+    it('keeps the buy button and no notice for a free user on the web', async () => {
+      render(<ProfilePage />)
+
+      expect(await screen.findByRole('button', { name: /profile\.premiumTab\.getPremium/ })).toBeTruthy()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
+    })
+
+    it('keeps the status and Cancel for a subscriber in the app, without Manage billing', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases(renewing)
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'common.cancel' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+    })
+
+    it('offers no reactivate control in the app while the subscription is cancelling', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+    })
+
+    it('opens no billing portal from the app for premium without a subscription id', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases({ ...renewing, hasSubscriptionId: false })
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'premium.ctaManage' })).toBeNull()
+    })
+
+    it('keeps Manage billing and reactivate on the web', async () => {
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+
+      expect(await screen.findByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeTruthy()
     })
   })
 

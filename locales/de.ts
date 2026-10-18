@@ -5121,6 +5121,7 @@ const de: TranslationWithPlurals = {
     ctaManage: 'Abo verwalten',
     ctaLoading: 'Zahlungsseite wird geöffnet …',
     ctaNote: 'Jederzeit kündbar. Du hast einen Promo-Code? Gib ihn auf der Zahlungsseite ein.',
+    playAppNotice: 'Premium kannst du auf boardly.online im Browser kaufen.',
     withdrawalTitle: 'Dein Widerrufsrecht',
     withdrawalBody: 'Du kannst innerhalb von 14 Tagen ab dem Tag, an dem du Premium kaufst, ohne Angabe von Gründen widerrufen. Wenn du widerrufst, erstatten wir dir alles, was du für diesen Kauf bezahlt hast, innerhalb von 14 Tagen nach deiner Mitteilung, über dieselbe Zahlungsmethode und ohne Gebühr.',
     withdrawalHow: 'Um zu widerrufen, schick eine E-Mail an support@boardly.online oder nutze das Widerrufsformular auf unserer Widerrufsseite.',

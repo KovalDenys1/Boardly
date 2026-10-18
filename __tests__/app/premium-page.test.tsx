@@ -39,8 +39,13 @@ jest.mock('@/lib/i18n-helpers', () => {
   }
 })
 
+const mockSession = { signedIn: true }
+
 jest.mock('next-auth/react', () => ({
-  useSession: () => ({ data: { user: { id: 'user-1' } }, status: 'authenticated' }),
+  useSession: () =>
+    mockSession.signedIn
+      ? { data: { user: { id: 'user-1' } }, status: 'authenticated' }
+      : { data: null, status: 'unauthenticated' },
 }))
 
 const root = process.cwd()
@@ -226,5 +231,59 @@ describe('/premium checkout', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not open checkout/)
+  })
+})
+
+describe('/premium in the Play app (#1465)', () => {
+  const notice = 'Premium can be bought on boardly.online in your browser.'
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockSession.signedIn = true
+    global.fetch = fetchMock as unknown as typeof fetch
+  })
+
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('shows the notice where the checkout buttons and the consent boxes were', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByRole('button', { name: /Get Premium/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getAllByText(notice)).toHaveLength(2)
+  })
+
+  it('offers no sign-in-to-buy link to a signed-out visitor', () => {
+    mockSession.signedIn = false
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByRole('link', { name: /Sign in to get Premium/ })).not.toBeInTheDocument()
+    expect(screen.getAllByText(notice)).toHaveLength(2)
+  })
+
+  it('keeps both checkout buttons and the sign-in link on the web, without the notice', () => {
+    const { unmount } = render(<PremiumContent pricing={BOTH_PLANS} />)
+    expect(screen.getAllByRole('button', { name: /Get Premium/ })).toHaveLength(2)
+    expect(screen.queryByText(notice)).not.toBeInTheDocument()
+    unmount()
+
+    mockSession.signedIn = false
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    expect(screen.getAllByRole('link', { name: /Sign in to get Premium/ })).toHaveLength(2)
+  })
+
+  it('never opens checkout once the page is known to be in the app', async () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
+    document.documentElement.dataset.appShell = 'play'
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
+
+    await Promise.resolve()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(trackPremiumCta).not.toHaveBeenCalled()
   })
 })
