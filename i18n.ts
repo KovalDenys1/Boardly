@@ -104,8 +104,12 @@ async function loadLocaleResource(locale: Locale): Promise<void> {
     case 'es':
       mod = await import('./locales/es')
       break
-    default:
+    default: {
+      // 'en' is bundled eagerly; a new locale without a case above fails tsc here.
+      const preloaded: 'en' = locale
+      void preloaded
       return
+    }
   }
 
   i18n.addResourceBundle(
