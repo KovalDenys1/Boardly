@@ -5061,7 +5061,7 @@ const es: TranslationWithPlurals = {
         where: 'EE. UU. Discord está certificada conforme al Marco de Privacidad de Datos UE-EE. UU. y utiliza cláusulas contractuales tipo.',
       },
       google: {
-        purpose: 'Inicio de sesión con Google, y el script de AdSense con su mensaje de consentimiento (por cuenta propia)',
+        purpose: 'Inicio de sesión con Google, y el script de AdSense con su mensaje de consentimiento (por cuenta propia). Google Play, que distribuye nuestra app de Android, trata sus propios datos de instalaciones y fallos por cuenta propia; la app muestra este mismo sitio y no recoge nada más.',
         where: 'EE. UU. Google está certificada conforme al Marco de Privacidad de Datos UE-EE. UU. y también utiliza cláusulas contractuales tipo.',
       },
       github: {

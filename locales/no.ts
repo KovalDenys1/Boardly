@@ -5014,7 +5014,7 @@ const no = {
         where: 'USA. Discord er sertifisert under EU–US Data Privacy Framework og bruker EUs standard personvernbestemmelser.',
       },
       google: {
-        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne)',
+        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne). Google Play, som distribuerer Android-appen vår, behandler sine egne installasjons- og krasjdata på egne vegne; appen kjører det samme nettstedet og samler ikke inn noe mer.',
         where: 'USA. Google er sertifisert under EU–US Data Privacy Framework og bruker også EUs standard personvernbestemmelser.',
       },
       github: {

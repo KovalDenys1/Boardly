@@ -5046,7 +5046,7 @@ const de: TranslationWithPlurals = {
         where: 'USA. Discord ist nach dem EU-US Data Privacy Framework zertifiziert und verwendet Standardvertragsklauseln.',
       },
       google: {
-        purpose: 'Anmeldung mit Google sowie das AdSense-Skript mit seiner Einwilligungsmeldung (in eigener Verantwortung)',
+        purpose: 'Anmeldung mit Google sowie das AdSense-Skript mit seiner Einwilligungsmeldung (in eigener Verantwortung). Google Play, über das wir unsere Android-App vertreiben, verarbeitet seine eigenen Installations- und Absturzdaten in eigener Verantwortung; die App zeigt dieselbe Website und erhebt nichts darüber hinaus.',
         where: 'USA. Google ist nach dem EU-US Data Privacy Framework zertifiziert und verwendet außerdem Standardvertragsklauseln.',
       },
       github: {

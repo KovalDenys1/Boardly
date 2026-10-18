@@ -62,7 +62,8 @@ export const TERMS_FIGURES = {
  * in the data export.
  * 2026-10-19 (#1468), the day it ships: section 7 gives account deletion its path in the
  * profile and the email route for anyone who cannot sign in, under the anchor
- * /privacy#delete-account that the Google Play listing links to.
+ * /privacy#delete-account that the Google Play listing links to; and section 3 names Google Play
+ * as the Android app's distributor, on its own account for its install and crash data.
  */
 export const PRIVACY_UPDATED = '2026-10-19'
 

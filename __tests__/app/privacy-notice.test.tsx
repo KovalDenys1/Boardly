@@ -263,6 +263,29 @@ describe('privacy notice (#1126)', () => {
     }
     expect(text).toContain('Linked Roles')
   })
+
+  // #1468: the Android app is distributed through Google Play, which keeps its own install and
+  // crash data; the app is the same site, so nothing else changes.
+  it('names Google Play as the Android app\'s distributor, on its own account, in every language', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    expect(container.textContent).toContain(
+      'Google Play, which distributes our Android app, processes its own install and crash data on its own account; the app runs this same site and collects nothing more.'
+    )
+
+    const locales = {
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+      de: require('@/locales/de').default,
+      es: require('@/locales/es').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const { purpose } = locale.privacyPolicy.recipients.google
+      for (const needle of ['Google Play', 'Android']) {
+        expect({ name, needle, found: purpose.includes(needle) }).toEqual({ name, needle, found: true })
+      }
+    }
+  })
 })
 
 /**

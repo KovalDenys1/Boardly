@@ -5026,7 +5026,7 @@ const en = {
         where: 'USA. Discord is certified under the EU-US Data Privacy Framework and uses Standard Contractual Clauses.',
       },
       google: {
-        purpose: 'Sign-in with Google, and the AdSense script with its consent message (on its own account)',
+        purpose: 'Sign-in with Google, and the AdSense script with its consent message (on its own account). Google Play, which distributes our Android app, processes its own install and crash data on its own account; the app runs this same site and collects nothing more.',
         where: 'USA. Google is certified under the EU-US Data Privacy Framework and also uses Standard Contractual Clauses.',
       },
       github: {
