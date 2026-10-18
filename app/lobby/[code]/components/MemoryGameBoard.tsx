@@ -22,10 +22,11 @@ import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
+import { useMemorySounds } from '../hooks/useMemorySounds'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
-import { faceUpCardIds, idsAddedSince, matchedCardIds, takeRemoteFlips } from '@/lib/memory-motion'
+import { idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
@@ -226,27 +227,13 @@ export default function MemoryGameBoard({
     setOptimisticFlippedIds((prev) => prev.filter((id) => !confirmedIds.has(id)))
   }, [flippedCardIds, cards]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Motion cues (#1114): the opponent's flips sound like the viewer's own, and a
-  // freshly matched pair gets a short pop before settling. Keyed on id lists so
-  // the effect runs once per arriving change, never per render.
-  const faceUpKey = faceUpCardIds(cards).join(',')
+  // Keyed on the id list, so a matched pair pops once per arriving change, never per render.
   const matchedKey = matchedCardIds(cards).join(',')
-  const prevFaceUpRef = useRef<Set<string> | null>(null)
   const prevMatchedRef = useRef<Set<string> | null>(null)
-  const ownFlipsRef = useRef<Set<string>>(new Set())
   const [justMatchedIds, setJustMatchedIds] = useState<string[]>([])
+  const { playOwnFlip, forgetOwnFlip } = useMemorySounds({ gameId, cards, currentPlayerId, viewerId: currentUserId, isSpectator })
 
   const cardsLoaded = cards.length > 0
-  useEffect(() => {
-    if (!cardsLoaded) return
-    const current = faceUpKey ? faceUpKey.split(',') : []
-    const arrived = idsAddedSince(prevFaceUpRef.current, current)
-    prevFaceUpRef.current = new Set(current)
-    if (takeRemoteFlips(arrived, ownFlipsRef.current).length > 0) {
-      sounds.play('cardFlip', { force: true })
-    }
-  }, [faceUpKey, cardsLoaded])
-
   useEffect(() => {
     if (!cardsLoaded) return
     const current = matchedKey ? matchedKey.split(',') : []
@@ -330,6 +317,7 @@ export default function MemoryGameBoard({
             payload?.code === 'STATE_CONFLICT'
 
           if (!isExpectedRaceError) {
+            playCue('ui.error')
             showToast.error('games.memory.game.moveFailed', undefined, {
               message:
                 (typeof payload?.details === 'string' && payload.details) ||
@@ -344,6 +332,7 @@ export default function MemoryGameBoard({
         return true
       } catch (error) {
         report(false)
+        playCue('ui.error')
         showToast.errorFrom(error, 'games.memory.game.moveFailed')
         return false
       } finally {
@@ -445,17 +434,16 @@ export default function MemoryGameBoard({
       }
 
       setOptimisticFlippedIds((prev) => [...prev, cardId])
-      ownFlipsRef.current.add(cardId)
-      sounds.play('cardFlip', { force: true })
+      playOwnFlip(cardId)
 
       void submitMove({ type: 'flip', data: { cardId } }).then((success) => {
         if (!success) {
-          ownFlipsRef.current.delete(cardId)
+          forgetOwnFlip(cardId)
           setOptimisticFlippedIds((prev) => prev.filter((id) => id !== cardId))
         }
       })
     },
-    [isMyTurn, optimisticFlippedIds.length, pendingMismatchCardIds.length, submitMove]
+    [isMyTurn, optimisticFlippedIds.length, pendingMismatchCardIds.length, submitMove, playOwnFlip, forgetOwnFlip]
   )
 
   if (!gameData || cards.length === 0) {

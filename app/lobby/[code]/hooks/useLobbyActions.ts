@@ -3,7 +3,6 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { toAnalyticsGameType } from '@/lib/analytics-game-types'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
-import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import {
