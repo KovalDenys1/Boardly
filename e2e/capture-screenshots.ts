@@ -218,7 +218,14 @@ async function mintHost(request: APIRequestContext, baseURL: string, names: stri
   throw new Error('Ran out of display names for the host')
 }
 
+/** A guest has to accept the terms before chatting (#1466); the host's frame shows the composer, not the consent panel. */
+async function acceptTerms(session: Session, guest: Guest): Promise<void> {
+  const res = await post(session, '/api/user/accept-terms', guest, {})
+  if (!res.ok) throw new Error(`accept-terms for ${guest.guestName}: ${res.status} ${JSON.stringify(res.body)}`)
+}
+
 async function chat(session: Session, code: string, guest: Guest, message: string): Promise<void> {
+  await acceptTerms(session, guest)
   await post(session, `/api/lobby/${code}/chat`, guest, { message })
 }
 
@@ -535,6 +542,7 @@ async function main(): Promise<void> {
     const names = [...NAMES]
     const host = await mintHost(request, baseURL, names, minted)
     const session: Session = { request, browser, baseURL, host, minted, names }
+    await acceptTerms(session, host)
 
     const failed: string[] = []
     for (const capture of captures) {
