@@ -29,6 +29,7 @@ export function useConfetti() {
       const defaults = {
         origin: { y: 0.7 },
         zIndex: 9999,
+        disableForReducedMotion: true,
       }
 
       function fire(particleRatio: number, opts: Record<string, unknown>) {
@@ -73,7 +74,7 @@ export function useConfetti() {
       const confetti = await loadConfetti()
       const duration = 3 * 1000
       const animationEnd = Date.now() + duration
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999, disableForReducedMotion: true }
 
       function randomInRange(min: number, max: number) {
         return Math.random() * (max - min) + min
