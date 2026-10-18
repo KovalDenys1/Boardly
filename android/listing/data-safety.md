@@ -40,8 +40,8 @@ processes "on its own account" – see Sharing below.
 | Does your app collect or share any of the required user data types? | **Yes** | the table below |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** | `curl -sI http://boardly.online` answers `308` to `https://`; `https://boardly.online` sends `strict-transport-security: max-age=63072000; includeSubDomains` (both checked 2026-10-18). Realtime is Supabase over WSS, push payloads are Web Push encrypted (`lib/push-send.ts`). Privacy notice § 9: "all traffic uses HTTPS". |
 | Which methods of account creation does your app support? | **Username and password** (email address + password) and **OAuth** (Google, GitHub, Discord). Playing needs no account: guests play with a name only. | `app/api/auth/register/route.ts`, `lib/next-auth.ts`, `app/api/auth/guest-session/route.ts` |
-| Delete account URL | `https://boardly.online/privacy` (section 7, "Your rights": delete from the profile page, or write to support@boardly.online) | `locales/en.ts` `privacyPolicy.rights.delete`, `.email` |
-| Do you provide a way for users to request that some or all of their data is deleted, without requiring them to delete their account? | **Yes**, `https://boardly.online/privacy` – guests delete everything with "Forget me"; account holders edit or clear profile fields themselves and ask support@boardly.online for anything else; chat deletes itself after 24 h | `app/api/user/forget-guest/route.ts`, `components/Header/ForgetGuestButton.tsx`, `lib/retention-periods.ts` `CHAT_RETENTION_HOURS` |
+| Delete account URL | `https://boardly.online/privacy#delete-account`: the item in section 7, "Your rights", that gives the path in the profile (browser or app: Danger Zone → Delete Account, confirmed by email) and, for anyone who cannot sign in, writing to support@boardly.online from the account's address; the next item is the guests' "Forget me" | `locales/*.ts` `privacyPolicy.rights.delete` and `.forget`; the anchor in `app/privacy/PrivacyNotice.tsx`, pinned by `__tests__/app/privacy-notice.test.tsx` |
+| Do you provide a way for users to request that some or all of their data is deleted, without requiring them to delete their account? | **Yes**, `https://boardly.online/privacy#delete-account` – guests delete everything with "Forget me"; account holders edit or clear profile fields themselves and ask support@boardly.online for anything else; chat deletes itself after 24 h | `app/api/user/forget-guest/route.ts`, `components/Header/ForgetGuestButton.tsx`, `lib/retention-periods.ts` `CHAT_RETENTION_HOURS` |
 | Independent security review | No | – |
 
 **In-app deletion path** (Play's account deletion policy, answer/13327111, requires "an in-app path to
@@ -50,7 +50,16 @@ tab → **Danger Zone** → **Delete Account** → **Send Deletion Email** → t
 `/auth/delete-account?token=…` → type `DELETE` (`app/profile/page.tsx` around the
 `profile.dangerZone` block, `app/api/user/request-deletion/route.ts`,
 `app/auth/delete-account/page.tsx`). It is not wrapped in `PurchaseOnly`, so Play mode shows it.
-Guests: header guest menu → **Forget me** (`components/Header/ForgetGuestButton.tsx`).
+The Danger Zone sits on the **Profile** tab, the one the profile page opens on; the Settings tab holds
+notifications, privacy and blocked players. Guests: header guest menu → **Forget me**
+(`components/Header/ForgetGuestButton.tsx`).
+
+**Web link resource**: `https://boardly.online/privacy#delete-account` lands on the deletion item of
+the privacy notice, which names Boardly and the Android app, gives the same path, and tells anyone
+who cannot sign in to write to support@boardly.online from the account's address; the item right
+after it is the guests' "Forget me". Play wants the link "functional", "relevant in scope", with the
+deletion pathway "prominently featured and easily discoverable on the page", referencing "the app or
+developer name" (answer/13327111).
 
 What deletion keeps, which the policy allows if the privacy policy says so ("security, fraud
 prevention or regulatory compliance", answer/13327111): reports about content keep their copy for

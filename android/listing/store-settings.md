@@ -24,7 +24,7 @@ Checked against the code on `develop` at a3bcab7b (2026-10-18).
 | Content rating | Game, see `content-rating.md` | – |
 | Target audience | 13–15, 16–17, 18+ | `target-audience.md` |
 | Data safety | see `data-safety.md` | – |
-| Account deletion URL | **https://boardly.online/privacy** | `data-safety.md` |
+| Account deletion URL | **https://boardly.online/privacy#delete-account** | `data-safety.md` |
 | Advertising ID, news, government, financial, health | No | `target-audience.md` |
 
 ### Ads: "No"
