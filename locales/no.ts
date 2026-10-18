@@ -2700,7 +2700,7 @@ const no = {
         step2Title: 'Tegn ordet ditt',
         step2Desc: 'Du har 15 sekunder på å velge ett av tre ord. Deretter har du inntil 80 sekunder på å tegne det.',
         step3Title: 'Gjett før tiden går ut',
-        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
+        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på engelsk, norsk, russisk eller ukrainsk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
         step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter når alle har tegnet.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
@@ -4858,7 +4858,7 @@ const no = {
   about: {
     breadcrumb: 'Om',
     title: 'Om Boardly',
-    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
+    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk, ukrainsk, tysk og spansk.',
     originTitle: 'Hvor det kom fra',
     origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
     origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
@@ -5224,7 +5224,7 @@ const no = {
       title: '1. Om vilkårene',
       scope: 'Vilkårene er avtalen mellom deg og oss om bruk av boardly.online: når du spiller som gjest, når du har en konto, og når du kjøper Boardly Premium. Hvordan vi behandler personopplysninger, står i personvernerklæringen.',
       accept: 'Du godtar vilkårene når du oppretter en konto eller kjøper Premium. Spiller du som gjest, gjelder de samme reglene for deg.',
-      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
+      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. De finnes også på tysk og spansk, som oversettelser. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
       version: 'Datoen nederst viser når denne versjonen gjelder fra, og den endres bare når teksten endres. Du kan lagre eller skrive ut siden for å ta vare på en kopi.',
     },
     accounts: {
@@ -5312,7 +5312,7 @@ const no = {
       body: 'Spørsmål om vilkårene, meldinger om innhold og klager sender du til',
     },
     updated: 'Sist oppdatert: {{date}}',
-    changeNote: 'Nytt i denne versjonen: regelen i punkt 2 om kontoer som ikke brukes, som gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
+    changeNote: 'Nytt i denne versjonen: punkt 1 nevner oversettelsene til tysk og spansk. Regelen i punkt 2 om kontoer som ikke brukes, som kom i forrige versjon, gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
     premium: {
       title: '3. Boardly Premium: abonnement og angrerett',
       price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar og er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',

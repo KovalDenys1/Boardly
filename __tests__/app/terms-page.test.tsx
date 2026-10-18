@@ -116,7 +116,7 @@ describe('/terms (#1166)', () => {
     expect(TERMS_FIGURES.inactiveMonths * 365).toBe(RETENTION_DAYS.inactiveAccounts * 12)
     expect(TERMS_FIGURES.inactiveWarningDays).toBe(RETENTION_DAYS.inactiveAccountWarning)
     expect(screen.getByTestId('terms-change-note')).toHaveTextContent(
-      'New in this version: the rule in section 2 on accounts that are not used, which applies from January 1, 2027. Nothing else has changed.'
+      'New in this version: section 1 names the German and Spanish translations. The rule in section 2 on accounts that are not used, added in the previous version, applies from January 1, 2027. Nothing else has changed.'
     )
   })
 

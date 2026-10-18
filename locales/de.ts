@@ -4890,7 +4890,7 @@ const de: TranslationWithPlurals = {
   about: {
     breadcrumb: 'Über Boardly',
     title: 'Über Boardly',
-    entity: 'Boardly (boardly.online) ist eine kostenlose Website für Echtzeit-Mehrspieler-Brettspiele: Kniffel, Finde den Spion, Tic-Tac-Toe, Vier gewinnt, Dame, Ludo, Memory, Alias, Lügnerparty, Zeichnen & Raten und Schere, Stein, Papier – gespielt im Browser mit Freunden über einen geteilten Link, ohne Registrierung, auf Englisch, Norwegisch, Russisch und Ukrainisch.',
+    entity: 'Boardly (boardly.online) ist eine kostenlose Website für Echtzeit-Mehrspieler-Brettspiele: Kniffel, Finde den Spion, Tic-Tac-Toe, Vier gewinnt, Dame, Ludo, Memory, Alias, Lügnerparty, Zeichnen & Raten und Schere, Stein, Papier – gespielt im Browser mit Freunden über einen geteilten Link, ohne Registrierung, auf Englisch, Norwegisch, Russisch, Ukrainisch, Deutsch und Spanisch.',
     originTitle: 'Wie es anfing',
     origin1: 'Boardly begann als Idee, die sein Entwickler lange mit sich herumgetragen hatte: ein Ort, um mit Freunden online Brettspiele zu spielen, ohne Downloads und ohne Konto.',
     origin2: 'Der Anstoß kam von einer Schulaufgabe, bei der Kniffel programmiert werden sollte. Als die Aufgabe fertig war, war das der Moment, die Website zu starten. Kniffel war das erste Spiel auf Boardly, und alles andere ist daraus gewachsen.',
@@ -5256,7 +5256,7 @@ const de: TranslationWithPlurals = {
       title: '1. Über diese Bedingungen',
       scope: 'Diese Bedingungen sind die Vereinbarung zwischen dir und uns über die Nutzung von boardly.online: wenn du als Gast spielst, wenn du ein Konto hast und wenn du Boardly Premium kaufst. Unsere Datenschutzerklärung erklärt, wie wir mit personenbezogenen Daten umgehen.',
       accept: 'Du akzeptierst die Bedingungen, wenn du ein Konto erstellst oder Premium kaufst. Wenn du als Gast spielst, gelten für dich dieselben Regeln.',
-      languages: 'Die Bedingungen werden auf Norwegisch, Englisch, Russisch und Ukrainisch veröffentlicht, in jeder Sprache mit demselben Inhalt. Falls die Fassungen jemals Unterschiedliches sagen oder eine Bestimmung unklar ist, wird sie so ausgelegt, wie es für dich als Verbraucher am günstigsten ist.',
+      languages: 'Die Bedingungen werden auf Norwegisch, Englisch, Russisch und Ukrainisch veröffentlicht, in jeder Sprache mit demselben Inhalt. Außerdem gibt es sie als Übersetzungen auf Deutsch und Spanisch. Falls die Fassungen jemals Unterschiedliches sagen oder eine Bestimmung unklar ist, wird sie so ausgelegt, wie es für dich als Verbraucher am günstigsten ist.',
       version: 'Das Datum unten zeigt, seit wann diese Fassung gilt, und es ändert sich nur, wenn sich der Text ändert. Du kannst diese Seite speichern oder ausdrucken, um eine Kopie aufzubewahren.',
     },
     accounts: {
@@ -5344,7 +5344,7 @@ const de: TranslationWithPlurals = {
       body: 'Fragen zu diesen Bedingungen, Meldungen zu Inhalten und Beschwerden richtest du an',
     },
     updated: 'Zuletzt aktualisiert: {{date}}',
-    changeNote: 'Neu in dieser Fassung: die Regel in Abschnitt 2 zu Konten, die nicht genutzt werden, die ab {{inactiveFrom}} gilt. Sonst hat sich nichts geändert.',
+    changeNote: 'Neu in dieser Fassung: Abschnitt 1 nennt die Übersetzungen auf Deutsch und Spanisch. Die Regel in Abschnitt 2 zu Konten, die nicht genutzt werden, kam in der vorigen Fassung hinzu und gilt ab {{inactiveFrom}}. Sonst hat sich nichts geändert.',
     premium: {
       title: '3. Boardly Premium: Abonnement und Widerrufsrecht',
       price: 'Boardly Premium ist ein kostenpflichtiges Abonnement, das monatlich oder jährlich abgerechnet wird. Der Preis wird auf der Premium-Seite in US-Dollar angezeigt und ist der Endpreis: Eine in deinem Land fällige Mehrwertsteuer oder Umsatzsteuer ist darin enthalten, und Link zieht sie beim Bezahlvorgang ein. Wenn du in einer anderen Währung bezahlst, enthält der Wechselkurs eine Umrechnungsgebühr von 2 bis 4 %, und du kannst auf der Zahlungsseite wählen, ohne diese Gebühr in US-Dollar zu bezahlen.',

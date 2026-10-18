@@ -2702,7 +2702,7 @@ const es: TranslationWithPlurals = {
         step2Title: 'Dibuja tu palabra',
         step2Desc: 'Elige una de tres palabras en 15 segundos. Después dibújala en un máximo de 80 segundos.',
         step3Title: 'Adivina antes de que se acabe el tiempo',
-        step3Desc: 'Mientras dibujas, los demás pueden intentar adivinar hasta 40 veces, en cualquier idioma del sitio. Cuanto antes aciertan, más puntúan.',
+        step3Desc: 'Mientras dibujas, los demás pueden intentar adivinar hasta 40 veces, en inglés, noruego, ruso o ucraniano. Cuanto antes aciertan, más puntúan.',
         step4Title: 'Revela y pasa el lápiz',
         step4Desc: 'Se revela la palabra; los puntos se sumaron con cada respuesta. Dibuja el siguiente jugador o, cuando todos han dibujado, termina la partida.',
         benefitsTitle: '¿Por qué jugar a Dibuja y adivina en Boardly?',
@@ -4872,7 +4872,7 @@ const es: TranslationWithPlurals = {
   about: {
     breadcrumb: 'Acerca de',
     title: 'Acerca de Boardly',
-    entity: 'Boardly (boardly.online) es un sitio web gratuito de juegos de mesa multijugador en tiempo real: Yahtzee, Encuentra al espía, Tres en raya, Cuatro en raya, Damas, Ludo, Memoria, Alias, Fiesta de mentirosos, Dibuja y adivina y Piedra, papel o tijera, que se juegan en el navegador con amigos mediante un enlace compartido, sin registro, en inglés, noruego, ruso y ucraniano.',
+    entity: 'Boardly (boardly.online) es un sitio web gratuito de juegos de mesa multijugador en tiempo real: Yahtzee, Encuentra al espía, Tres en raya, Cuatro en raya, Damas, Ludo, Memoria, Alias, Fiesta de mentirosos, Dibuja y adivina y Piedra, papel o tijera, que se juegan en el navegador con amigos mediante un enlace compartido, sin registro, en inglés, noruego, ruso, ucraniano, alemán y español.',
     originTitle: 'De dónde viene',
     origin1: 'Boardly nació de una idea que su desarrollador llevaba mucho tiempo en la cabeza: un lugar para jugar a juegos de mesa con amigos online, sin descargas y sin necesidad de cuenta.',
     origin2: 'El empujón para construirlo llegó con un trabajo de clase que consistía en programar Yahtzee. Terminado el trabajo, llegó el momento de empezar el sitio. Yahtzee fue el primer juego de Boardly, y todo lo demás creció a partir de ahí.',
@@ -5238,7 +5238,7 @@ const es: TranslationWithPlurals = {
       title: '1. Sobre estas Condiciones',
       scope: 'Estas Condiciones son el acuerdo entre tú y nosotros para el uso de boardly.online: cuando juegas como invitado, cuando tienes una cuenta y cuando compras Boardly Premium. Nuestra política de privacidad explica cómo tratamos los datos personales.',
       accept: 'Aceptas las Condiciones cuando creas una cuenta o compras Premium. Si juegas como invitado, se te aplican las mismas normas.',
-      languages: 'Las Condiciones se publican en noruego, inglés, ruso y ucraniano, con el mismo contenido en cada idioma. Si alguna vez las versiones dicen cosas distintas, o una cláusula no está clara, se interpreta de la forma más favorable para ti como consumidor.',
+      languages: 'Las Condiciones se publican en noruego, inglés, ruso y ucraniano, con el mismo contenido en cada idioma. También están disponibles en alemán y español, como traducciones. Si alguna vez las versiones dicen cosas distintas, o una cláusula no está clara, se interpreta de la forma más favorable para ti como consumidor.',
       version: 'La fecha que aparece al final indica cuándo entró en vigor esta versión, y solo cambia cuando cambia el texto. Puedes guardar o imprimir esta página para conservar una copia.',
     },
     accounts: {
@@ -5326,7 +5326,7 @@ const es: TranslationWithPlurals = {
       body: 'Las preguntas sobre estas Condiciones, los avisos sobre contenido y las reclamaciones se envían a',
     },
     updated: 'Última actualización: {{date}}',
-    changeNote: 'Novedad de esta versión: la norma de la sección 2 sobre las cuentas que no se usan, que se aplica a partir del {{inactiveFrom}}. No ha cambiado nada más.',
+    changeNote: 'Novedad de esta versión: la sección 1 menciona las traducciones al alemán y al español. La norma de la sección 2 sobre las cuentas que no se usan, añadida en la versión anterior, se aplica a partir del {{inactiveFrom}}. No ha cambiado nada más.',
     premium: {
       title: '3. Boardly Premium: suscripción y derecho de desistimiento',
       price: 'Boardly Premium es una suscripción de pago, facturada mensual o anualmente. El precio se muestra en la página de Premium en dólares estadounidenses y es el precio completo: incluye el IVA o el impuesto sobre las ventas que corresponda en tu país, y Link lo cobra en el pago. Si pagas en otra moneda, el tipo de cambio incluye una comisión de conversión del 2 al 4 %, y puedes elegir pagar en dólares estadounidenses en la página de pago sin ella.',

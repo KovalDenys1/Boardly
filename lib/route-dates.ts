@@ -21,8 +21,8 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
   '/games': '2026-09-07',
-  // #1234 named all eleven games (it listed seven).
-  '/about': '2026-09-28',
+  // #1472 names the six site languages.
+  '/about': '2026-10-18',
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
