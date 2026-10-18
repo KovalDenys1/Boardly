@@ -813,8 +813,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         />
     )
 
-    const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
@@ -829,14 +827,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     : reversedMoveHistory.map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.disc === 1 ? p1Name : p2Name}
                             </span>
                             <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'ui-monospace,monospace', fontWeight: 700, flexShrink: 0, color: 'var(--bd-ink)' }}>
-                                {t('games.connect_four.game.moveColumn', { col: COLUMN_LABELS[m.col] })}
+                                {t('games.connect_four.game.moveColumn', { col: m.col + 1 })}
                             </span>
                         </div>
                     ))

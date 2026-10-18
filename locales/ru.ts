@@ -1799,7 +1799,7 @@ const ru = {
         disc1: 'Красный',
         disc2: 'Жёлтый',
         noMovesYet: 'Ходов нет — начинает Красный.',
-        moveColumn: 'кол. {{col}}',
+        moveColumn: 'Колонка {{col}}',
         tapToInspect: 'Посмотреть доску',
         showResults: 'Показать результат',
         spectator: 'Зритель',

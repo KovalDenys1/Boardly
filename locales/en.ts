@@ -1749,7 +1749,7 @@ const en = {
         disc1: 'Red',
         disc2: 'Yellow',
         noMovesYet: 'No moves yet — Red starts.',
-        moveColumn: 'col {{col}}',
+        moveColumn: 'Column {{col}}',
         tapToInspect: 'View Board',
         showResults: 'Show results',
         spectator: 'Spectator',

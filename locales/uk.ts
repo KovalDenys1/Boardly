@@ -1801,7 +1801,7 @@ const uk: TranslationWithPlurals = {
         disc1: 'Червоний',
         disc2: 'Жовтий',
         noMovesYet: 'Ходів ще немає — починає Червоний.',
-        moveColumn: 'кол. {{col}}',
+        moveColumn: 'Колонка {{col}}',
         tapToInspect: 'Переглянути дошку',
         showResults: 'Показати результат',
         spectator: 'Глядач',

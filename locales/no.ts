@@ -1749,7 +1749,7 @@ const no = {
         disc1: 'Rød',
         disc2: 'Gul',
         noMovesYet: 'Ingen trekk ennå — Rød starter.',
-        moveColumn: 'kol. {{col}}',
+        moveColumn: 'Kolonne {{col}}',
         tapToInspect: 'Se brettet',
         showResults: 'Vis resultat',
         spectator: 'Tilskuer',
