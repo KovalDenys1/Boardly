@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 
 interface BlockedPlayersListProps {
+  /** Sizes the list; it scrolls itself once it is given a height (a max-height, or min-h-0 flex-1 in a column). */
   className?: string
 }
 
@@ -50,7 +51,7 @@ export default function BlockedPlayersList({ className = '' }: BlockedPlayersLis
   }
 
   return (
-    <ul className={`blocked-players-list custom-scrollbar max-h-80 divide-y divide-bd-line overflow-y-auto ${className}`}>
+    <ul className={`blocked-players-list custom-scrollbar divide-y divide-bd-line overflow-y-auto ${className}`}>
       {blocked.map((player) => {
         const nameId = `${listId}-${player.id}`
         return (

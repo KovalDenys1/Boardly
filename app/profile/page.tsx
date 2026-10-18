@@ -2909,7 +2909,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className={`mt-5 ${settingsSurfaceClassName}`}>
-                    <BlockedPlayersList />
+                    <BlockedPlayersList className="max-h-80" />
                   </div>
                 </section>
               </div>
