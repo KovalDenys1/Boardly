@@ -5978,3 +5978,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .replay-extra { grid-area: extra; }
   .replay-head .replay-back-label { display: none; }
 }
+
+html[data-app-shell='play'] [data-purchase-ui] {
+  display: none !important;
+}

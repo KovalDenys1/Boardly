@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
+import { getAppShellInitScript } from '@/lib/app-shell'
 import { siteJsonLd } from '@/lib/organization-json-ld'
 import { isProductionDeployment } from '@/lib/feature-flags'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
@@ -136,6 +137,7 @@ export default function RootLayout({
   // Vercel hasn't declared an environment at all (e.g. `pnpm dev`, jest).
   const adSenseLoaderEnabled = isProductionDeployment()
   const themeInitScript = getThemeInitScript()
+  const appShellInitScript = getAppShellInitScript()
   const devServiceWorkerResetScript = !isProduction
     ? `(() => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -243,6 +245,10 @@ export default function RootLayout({
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: appShellInitScript }}
         />
         {devServiceWorkerResetScript && (
           <script
