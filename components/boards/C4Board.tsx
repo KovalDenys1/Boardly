@@ -1,6 +1,7 @@
-import React, { useRef } from 'react'
+import React, { useLayoutEffect, useRef } from 'react'
 import { PlayerDisc, ROWS, COLS } from '@/lib/games/connect-four-game'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { C4_DEFAULT_CELL_PX, c4DropDurationMs, c4FallDistancePx } from '@/lib/connect-four-drop-timing'
 
 export const DISC_RED = 'var(--bd-coral)'
 export const DISC_YELLOW = 'var(--bd-sun)'
@@ -46,7 +47,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
     const isAnimating = pop && !!fallDistancePx
 
     if (isAnimating) {
-        const durationMs = 240 + Math.round(fallDistancePx! * 0.9)
+        const durationMs = c4DropDurationMs(fallDistancePx!)
         return (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                 {/* Keep the empty hole visible while disc is in flight */}
@@ -86,7 +87,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
     )
 }
 
-export default function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled, readOnly = false }: {
+export default function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled, onCellMeasured, readOnly = false }: {
     board: (PlayerDisc | null)[][]
     winningLine: [number, number][] | null
     hoverCol: number | null
@@ -99,6 +100,8 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
     /** The newest disc falls only while this is true, so a remount does not replay it (#1114). */
     dropFresh?: boolean
     onDropSettled?: () => void
+    /** The cell height a drop's fall is measured in, so the page can time the landing without the board. */
+    onCellMeasured?: (px: number) => void
     /** A picture of the board: no arrows, no click zones, cells are labelled images instead of buttons. */
     readOnly?: boolean
 }) {
@@ -115,10 +118,13 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
     }
     const ghostRow = hoverCol !== null && !disabled ? getDropRow(hoverCol) : null
 
-    const getFallDistancePx = (targetRow: number): number => {
-        const cellH = cellRef.current?.getBoundingClientRect().height ?? 46
-        return (targetRow + 1) * (cellH + 6)
-    }
+    const getFallDistancePx = (targetRow: number): number =>
+        c4FallDistancePx(targetRow, cellRef.current?.getBoundingClientRect().height ?? C4_DEFAULT_CELL_PX)
+
+    useLayoutEffect(() => {
+        const px = cellRef.current?.getBoundingClientRect().height
+        if (px) onCellMeasured?.(px)
+    }, [board, onCellMeasured])
 
     return (
         <div
