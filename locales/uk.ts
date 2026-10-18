@@ -425,6 +425,7 @@ const uk: TranslationWithPlurals = {
     mute: 'Вимкнути звук',
     unmute: 'Увімкнути звук',
     volume: 'Гучність',
+    silentSwitchHint: 'На iPhone перемикач беззвучного режиму також вимикає звуки гри.',
     themeLabel: 'Тема',
     themeLight: 'Світла',
     themeDark: 'Темна',
@@ -492,6 +493,12 @@ const uk: TranslationWithPlurals = {
     ctaVisitorTitle: 'Ігровий вечір починається тут.',
     ctaVisitorAccent: 'Без планування.',
     ctaVisitorBody: 'Вибери гру, відкрий кімнату, поділися посиланням. Друзі приєднаються за секунди — без акаунту та завантажень.',
+    promoVideo: {
+      kicker: 'Подивіться самі',
+      title: 'Boardly за одну хвилину',
+      label: 'Відео про Boardly: оберіть гру, надішліть посилання й грайте разом',
+      play: 'Увімкнути відео',
+    },
     howItWorks: {
       kicker: 'Як це працює',
       title: 'Три кроки до гри',

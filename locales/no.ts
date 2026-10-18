@@ -385,6 +385,7 @@ const no = {
     mute: 'Demp',
     unmute: 'Aktiver lyd',
     volume: 'Volum',
+    silentSwitchHint: 'På iPhone demper lydløs-bryteren også spillydene.',
     themeLabel: 'Tema',
     themeLight: 'Lys',
     themeDark: 'Mørk',
@@ -443,6 +444,12 @@ const no = {
     ctaVisitorTitle: 'Spillkvelden starter her.',
     ctaVisitorAccent: 'Ingen planlegging nødvendig.',
     ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
+    promoVideo: {
+      kicker: 'Se det i bruk',
+      title: 'Boardly på ett minutt',
+      label: 'Video om Boardly: velg et spill, send lenken og spill sammen',
+      play: 'Spill av videoen',
+    },
     howItWorks: {
       kicker: 'Slik fungerer det',
       title: 'Tre steg for å spille',

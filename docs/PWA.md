@@ -1,13 +1,13 @@
 # PWA Support (Issue #44)
 
-Updated: 2026-09-15
+Updated: 2026-10-18
 
 Issue #44 shipped and was closed on 2026-02-25. This page tracks the current PWA
 implementation and its regression checks.
 
 ## Implemented
 
-- Web app manifest: `public/manifest.json`
+- Web app manifest: `public/manifest.json`; its `"id": "/"` also identifies the web app to the Android app (see `docs/ANDROID.md`)
 - App icons: `public/icons/*` (PNG + SVG, including maskable variants)
 - Service worker: `public/sw.js`
 - Offline fallback page: `public/offline.html`

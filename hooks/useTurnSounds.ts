@@ -44,6 +44,15 @@ export interface UseTurnSoundsOptions {
 /** Someone else's move is quieter than the viewer's own cues: a nudge, not an alert. */
 export const OPPONENT_MOVE_VOLUME_FACTOR = 0.6
 
+/** The lobby shell's turn cue: when the turn comes to the viewer, never when it leaves them. */
+export function turnCameToViewer(
+  previousPlayerId: string | null | undefined,
+  currentPlayerId: string | null | undefined,
+  viewerId: string | null | undefined,
+): boolean {
+  return Boolean(previousPlayerId && currentPlayerId && viewerId && currentPlayerId !== previousPlayerId && currentPlayerId === viewerId)
+}
+
 export function useTurnSounds({
   isMyTurn,
   lastMoveSignature,

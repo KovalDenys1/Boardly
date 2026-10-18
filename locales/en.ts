@@ -385,6 +385,7 @@ const en = {
     mute: 'Mute',
     unmute: 'Unmute',
     volume: 'Volume',
+    silentSwitchHint: 'On iPhone, the silent switch also mutes game sounds.',
     themeLabel: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
@@ -443,6 +444,12 @@ const en = {
     ctaVisitorTitle: 'Game night starts here.',
     ctaVisitorAccent: 'No planning needed.',
     ctaVisitorBody: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account, no download.',
+    promoVideo: {
+      kicker: 'See it in action',
+      title: 'Boardly in one minute',
+      label: 'Boardly video: pick a game, send the link and play together',
+      play: 'Play the video',
+    },
     howItWorks: {
       kicker: 'How it works',
       title: 'Three steps to play',
