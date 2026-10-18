@@ -173,19 +173,42 @@ requests its AdSense script makes (Sharing). Required, because the guest token i
 
 ## Sharing: only Google's AdSense script
 
-`app/layout.tsx` loads `pagead2.googlesyndication.com/pagead/js/adsbygoogle.js` on every production
-page, so also inside the app (`adSenseLoaderEnabled = isProductionDeployment()`, not gated on Play
-mode). No ad unit renders (`components/AdSlot.tsx`: `NEXT_PUBLIC_ADS_ENABLED` is unset), but the
-script calls Google, shows Google's EEA/UK consent message and writes the `FCCDCF` cookie, and the
-privacy notice says Google does this "as an independent controller under its own privacy policy"
-(`privacyPolicy.ads.current`, `privacyPolicy.recipients.google.purpose`: "on its own account").
-An independent controller is not a service provider, so the transfer is sharing: Approximate location
-(from the IP) and Device or other IDs (Google's cookies), for Advertising or marketing and for
-Fraud prevention, security, and compliance (the consent record).
+**What the script does inside the app.** `app/layout.tsx` puts
+`pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044` into the
+`<head>` of every production page (`adSenseLoaderEnabled = isProductionDeployment()`). It is rendered
+on the server, and the server cannot tell the app from a browser (Play mode is detected in the browser,
+`lib/app-shell-script.ts`), so the app loads it too. There it does three things and no more:
 
-If the AdSense script stops loading in Play mode (see the report's follow-ups), both "Shared" cells
-become **No** and the Advertising or marketing purpose drops from both rows; update the form in the
-same release.
+1. **AdSense site verification** for boardly.online (repo `CLAUDE.md`, "Ads").
+2. **Google's EEA/UK consent message (Funding Choices).** The script calls
+   `fundingchoicesmessages.google.com`, which decides from the request's IP address whether the visitor
+   is in the EEA or the UK and, if so, shows Google's consent message (published for boardly.online in
+   32 languages since 2026-09-02). The footer's "Privacy and cookie settings" reopens it
+   (`lib/consent.ts`).
+3. **The `FCCDCF` cookie**, first-party on boardly.online, which Google's script writes to remember the
+   message and the visitor's answer (`privacyPolicy.ads.current`).
+
+**No ad requests.** An ad is requested only when an `<ins class="adsbygoogle">` is on the page and is
+pushed to `adsbygoogle`. `components/AdSlot.tsx` is the only place that renders one, and it renders
+nothing in the app (`useIsPlayApp()`, the fourth gate), nor anywhere while
+`NEXT_PUBLIC_ADS_ENABLED` is unset. AdSense's Auto ads would place ads without any `<ins>`; nothing serves at
+all while AdSense still lists the site as "Getting ready" (repo `CLAUDE.md`, "Ads"), and Auto ads
+must stay off for as long as the app declares no ads (`docs/OPERATIONS.md`, ads-day checklist step 10).
+
+**How the form treats it.** The privacy notice says Google processes this "as an independent
+controller under its own privacy policy" (`privacyPolicy.ads.current`;
+`privacyPolicy.recipients.google.purpose`: "on its own account"). An independent controller is not a
+service provider processing "on behalf of the developer", so what Google receives is **sharing**:
+
+- **Approximate location**: Google infers the region from the IP address to decide whether to show
+  the message ("Approximate location that is inferred, such as via IP address … must be disclosed",
+  answer/10787469).
+- **Device or other IDs**: the `FCCDCF` cookie, and any cookies Google's own domains already hold in
+  Chrome, travel with those requests.
+- **Purposes**: Fraud prevention, security, and compliance (recording consent is a legal requirement
+  for the visitor's region), and Advertising or marketing, because the script is AdSense's loader and
+  Google uses what it receives under its own policy, which covers advertising. Declaring the wider
+  purpose is the cautious side: Play's risk is under-declaring.
 
 Not sharing, and why:
 
@@ -211,9 +234,10 @@ boardly.online only, which is App interactions.
 
 ## Update this form when
 
-- ads are switched on (`NEXT_PUBLIC_ADS_ENABLED=true`) while `AdSlot` still renders in Play mode:
-  the store's **Contains ads** declaration changes too (`store-settings.md`);
+- ads are ever allowed inside the app (the `useIsPlayApp()` gate in `components/AdSlot.tsx` removed,
+  or AdSense Auto ads switched on): **Contains ads** becomes Yes (`store-settings.md`) and Google's
+  rows gain the ad data;
 - the first marketing email goes out: add Advertising or marketing to Email address;
-- the AdSense script is gated out of Play mode: drop the two Shared answers;
+- the AdSense script stops loading inside the app: drop the two Shared answers;
 - a new processor, SDK or data type appears in the privacy notice: `docs/PRIVACY-RETENTION.md` and
   `app/privacy/PrivacyNotice.tsx` are where that change lands first.

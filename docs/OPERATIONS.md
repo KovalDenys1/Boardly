@@ -949,6 +949,11 @@ step below in order and do not flip the switch if any of steps 1–3 fails.
    this checklist exists to prevent.
 9. **After go-live, watch AdSense's Transactions page** for invalid-activity deductions in
    the days that follow.
+10. **Ads stay off inside the Play app.** `AdSlot` renders nothing in Play mode
+    (`useIsPlayApp()`), whatever this switch says, and AdSense Auto ads stay off in the
+    console, because the loader in `app/layout.tsx` also runs in the app and Auto ads need no
+    slot. Turning ads on there changes the Play listing's "Contains ads" and Data safety
+    answers (`android/listing/store-settings.md`, `android/listing/data-safety.md`).
 
 ### CSP hardening verification (preview/production)
 
