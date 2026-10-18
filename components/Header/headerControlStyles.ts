@@ -21,7 +21,7 @@ export function headerControl({
     'inline-flex h-9 shrink-0 items-center justify-center rounded-xl border-[1.5px]',
     'transition-[background-color,color,border-color,scale] duration-150 ease-out',
     'motion-safe:enabled:active:scale-[0.96]',
-    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50',
+    'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep',
     '[-webkit-tap-highlight-color:transparent]',
     square ? 'w-9' : '',
     border,

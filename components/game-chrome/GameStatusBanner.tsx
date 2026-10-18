@@ -105,7 +105,7 @@ export default function GameStatusBanner({
     const result: GameOutcome | 'over' =
       isDraw || outcome === 'draw' ? 'draw' : isSpectator || !outcome ? 'over' : outcome
     const BADGE: Record<typeof result, { key: TranslationKeys; background: string; color: string; plate: string }> = {
-      win: { key: 'game.ui.victoryBadge', background: 'var(--bd-sun)', color: 'var(--bd-ink)', plate: barColor },
+      win: { key: 'game.ui.victoryBadge', background: 'var(--bd-sun)', color: 'var(--bd-ink-on-accent)', plate: barColor },
       loss: { key: 'game.ui.defeatBadge', background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-coral)' },
       draw: { key: 'game.ui.drawBadge', background: 'var(--bd-lav)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-lav)' },
       over: { key: 'game.ui.gameOverBadge', background: 'var(--bd-bg2)', color: 'var(--bd-ink)', plate: 'var(--bd-line)' },

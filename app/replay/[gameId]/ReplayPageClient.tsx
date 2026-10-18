@@ -181,7 +181,7 @@ export default function ReplayPageClient({ gameId }: { gameId: string }) {
   const backLink = (
     <Link
       href={backHref}
-      className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-3 text-sm font-semibold text-bd-ink hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50"
+      className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-3 text-sm font-semibold text-bd-ink hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
     >
       <Icon name="arrow-left" size={16} />
       <span className="replay-back-label hidden sm:inline">{backLabel}</span>

@@ -192,7 +192,7 @@ const THEME_OPTIONS: { value: ThemeMode; labelKey: 'header.themeLight' | 'header
   { value: 'dark', labelKey: 'header.themeDark', Icon: MoonIcon },
 ]
 
-const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 
 /**
  * Light / System / Dark as one segmented control. `compact` shows icons only, for a

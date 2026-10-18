@@ -552,7 +552,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
             style={{
               flex: 1, background: 'var(--bd-bg2)',
               border: '1.5px solid var(--bd-line)', borderRadius: 10,
-              padding: '8px 12px', fontSize: 14, color: 'var(--bd-ink)',
+              padding: '8px 12px', fontSize: 16, color: 'var(--bd-ink)',
               outline: 'none',
               fontFamily: 'inherit',
             }}

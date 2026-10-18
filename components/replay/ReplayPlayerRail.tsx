@@ -24,7 +24,7 @@ export default function ReplayPlayerRail({ seats, activeId, winnerId, viewerId }
             key={seat.userId}
             className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold ${
               winner
-                ? 'border-bd-sun-deep bg-bd-sun text-bd-ink'
+                ? 'border-bd-sun-deep bg-bd-sun text-bd-ink-on-accent'
                 : active
                   ? 'border-bd-ink bg-bd-bg text-bd-ink'
                   : 'border-bd-line bg-bd-card-warm text-bd-ink-soft'

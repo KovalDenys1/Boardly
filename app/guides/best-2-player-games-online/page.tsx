@@ -158,7 +158,7 @@ export default function Best2PlayerGamesGuide() {
                 <div className="mb-3 flex items-center gap-3">
                   <span
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-xs font-black shadow-[1px_1px_0_var(--bd-ink)]"
-                    style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-sun)', color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+                    style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-sun)', color: 'var(--bd-ink-on-accent)', fontFamily: 'var(--bd-font-display)' }}
                   >
                     {rank}
                   </span>

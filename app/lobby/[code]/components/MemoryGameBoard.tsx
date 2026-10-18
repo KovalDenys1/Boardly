@@ -683,7 +683,7 @@ export default function MemoryGameBoard({
                 {avatarSrc ? (
                   <img src={avatarSrc} alt={name} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--bd-ink)' }} />
                 ) : (
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '2px solid var(--bd-ink)', fontWeight: 700, fontSize: 14, color: 'white', fontFamily: 'var(--bd-font-display)' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '2px solid var(--bd-ink)', fontWeight: 700, fontSize: 14, color: 'var(--bd-ink-on-accent)', fontFamily: 'var(--bd-font-display)' }}>
                     {name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -730,7 +730,7 @@ export default function MemoryGameBoard({
               {avatarSrc ? (
                 <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
               ) : (
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'var(--bd-ink-on-accent)' }}>
                   {name.charAt(0).toUpperCase()}
                 </div>
               )}

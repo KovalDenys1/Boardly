@@ -260,7 +260,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                   >
                     {option === 'yearly' ? t('premium.planYearly') : t('premium.planMonthly')}
                     {option === 'yearly' && savings !== null && (
-                      <span className="bd-chip bd-chip-mint ml-2">{t('premium.save', { percent: savings })}</span>
+                      <span className="bd-chip ml-2" style={{ background: 'var(--bd-mint)', color: 'var(--bd-ink-on-accent)', borderColor: 'transparent' }}>{t('premium.save', { percent: savings })}</span>
                     )}
                   </button>
                 ))}

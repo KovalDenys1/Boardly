@@ -10,7 +10,7 @@ import { ForgetGuestButton } from './ForgetGuestButton'
 import { headerControl } from './headerControlStyles'
 
 const itemClassName =
-  'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50 disabled:opacity-60'
+  'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:opacity-60'
 
 // A Popover, not a Menu: Forget me needs a second tap and a Menu would close on the first.
 export function GuestMenu() {

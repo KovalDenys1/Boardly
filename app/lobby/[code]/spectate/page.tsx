@@ -206,7 +206,7 @@ function FloatingSpectatorChat({
                 onChange={(e) => onChatInputChange(e.target.value)}
                 placeholder={t('spectate.chatPlaceholder')}
                 maxLength={500}
-                className="bd-input min-w-0 flex-1 text-sm"
+                className="bd-input min-w-0 flex-1"
               />
               <button
                 type="submit"
@@ -864,7 +864,7 @@ export default function SpectatorLobbyPage() {
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder={t('spectate.chatPlaceholder')}
                       maxLength={500}
-                      className="bd-input min-w-0 flex-1 text-sm"
+                      className="bd-input min-w-0 flex-1"
                     />
                     <button
                       type="submit"

@@ -75,7 +75,7 @@ export default function Header() {
                   width: 34,
                   height: 34,
                   borderRadius: 9,
-                  background: 'var(--bd-ink)',
+                  background: 'var(--bd-logo-tile)',
                   color: 'var(--bd-sun)',
                   display: 'grid',
                   placeItems: 'center',
