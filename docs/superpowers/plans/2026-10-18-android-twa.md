@@ -112,4 +112,10 @@
   - the back gesture leaves the game page as on the web;
   - "Sign in with Google" opens accounts.google.com in a Custom Tab; you need not finish signing in.
 - [ ] **Step 6: Open an invite link** with `adb shell am start -a android.intent.action.VIEW -d "https://boardly.online/lobby/TEST"`. It opens in the app, and `data-app-shell` is `play`. If it is not, record the referrer seen and report DONE_WITH_CONCERNS: the deep-link referrer is unverified in the research.
+- [ ] **Step 6b: Open the app from other entry points.** In each case, buy controls must be absent:
+  - a push notification, with the app closed (`public/sw.js` `openWindow` opens a fresh tab with no parameters and no stored mark);
+  - a link from a mail (a password reset);
+  - `/profile?tab=premium` signed in with a premium test account and with a free one.
+
+  For any case that shows buy controls, report DONE_WITH_CONCERNS with the referrer and URL seen.
 - [ ] **Step 7: Shut down** with `adb emu kill`, and leave the AVD in place for later releases.
