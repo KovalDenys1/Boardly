@@ -43,6 +43,7 @@ const RESUME_GRACE_MS = 250
 const RETRY_BASE_MS = 1000
 const RETRY_MAX_MS = 30_000
 const IDLE_PRELOAD_TIMEOUT_MS = 1500
+const UNINSTALL_GRACE_MS = 1000
 
 type AudioContextCtor = new (options?: AudioContextOptions) => AudioContext
 type OfflineAudioContextCtor = new (channels: number, length: number, sampleRate: number) => OfflineAudioContext
@@ -137,6 +138,7 @@ export function createSoundEngine(): SoundEngine {
   let master: GainNode | null = null
   let gestureSeen = false
   let consumers = 0
+  let uninstallTimer: ReturnType<typeof setTimeout> | null = null
   let unsubscribeSettings: (() => void) | null = null
   let resolveContext: (context: AudioContext) => void = () => {}
   const contextCreated = new Promise<AudioContext>((resolve) => {
@@ -404,7 +406,10 @@ export function createSoundEngine(): SoundEngine {
   function retain(cues: readonly CueId[]): () => void {
     if (typeof window === 'undefined') return () => {}
     consumers += 1
-    if (consumers === 1) install()
+    if (uninstallTimer) {
+      clearTimeout(uninstallTimer)
+      uninstallTimer = null
+    } else if (consumers === 1) install()
     let cancelPreload: (() => void) | null = null
     if (cues.length > 0) {
       cancelPreload = scheduleIdle(() => {
@@ -422,7 +427,13 @@ export function createSoundEngine(): SoundEngine {
         pendingPreloads.delete(cancelPreload)
       }
       consumers -= 1
-      if (consumers === 0) uninstall()
+      // A page swapping one consumer for the next (a new cue list) must not cut what is playing.
+      if (consumers === 0) {
+        uninstallTimer = setTimeout(() => {
+          uninstallTimer = null
+          uninstall()
+        }, UNINSTALL_GRACE_MS)
+      }
     }
   }
 
@@ -437,7 +448,11 @@ export function createSoundEngine(): SoundEngine {
     dispose: () => {
       pendingPreloads.forEach((cancel) => cancel())
       pendingPreloads.clear()
-      if (consumers > 0 && typeof window !== 'undefined') uninstall()
+      if (uninstallTimer) {
+        clearTimeout(uninstallTimer)
+        uninstallTimer = null
+        uninstall()
+      } else if (consumers > 0 && typeof window !== 'undefined') uninstall()
       consumers = 0
       ctx?.close().catch(() => {})
     },

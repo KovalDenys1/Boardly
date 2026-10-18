@@ -22,9 +22,6 @@ export function legacyCue(soundName: string): CueId | undefined {
   return LEGACY_CUES[soundName]
 }
 
-/** What a page that still plays through this facade passes to `useSoundConsumer`. */
-export const LEGACY_SOUND_CUES: readonly CueId[] = [...new Set(Object.values(LEGACY_CUES))]
-
 interface LegacyPlayOptions {
   /** The old element volume, 0..1; played as attenuation relative to the master volume. */
   volume?: number

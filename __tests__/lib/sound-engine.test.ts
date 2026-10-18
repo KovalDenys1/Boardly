@@ -474,7 +474,11 @@ describe('sound engine consumers', () => {
     expect(context().suspend).not.toHaveBeenCalled()
     expect(engine.play('ui.select')).toBe(true)
 
+    jest.useFakeTimers({ doNotFake: ['performance'] })
     releaseDevPage()
+    expect(context().suspend).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(1000)
+    jest.useRealTimers()
     expect(context().suspend).toHaveBeenCalledTimes(1)
     expect(context().state).not.toBe('running')
     now += 1000
@@ -485,6 +489,25 @@ describe('sound engine consumers', () => {
 
     release = engine.retain([])
     expect(context().resume).toHaveBeenCalledTimes(resumes + 1)
+  })
+
+  it('keeps what is playing when a consumer is swapped for the next, as a lobby page re-keying its cues does (#1464)', async () => {
+    engine = createSoundEngine()
+    const releaseFirst = engine.retain([])
+    await engine.preload(['ui.select'])
+    tap()
+    await flush()
+    expect(engine.play('ui.select')).toBe(true)
+    const source = cueSources()[0]
+
+    jest.useFakeTimers({ doNotFake: ['performance'] })
+    releaseFirst()
+    release = engine.retain(['ui.select'])
+    jest.advanceTimersByTime(5000)
+    jest.useRealTimers()
+
+    expect(source.stop).not.toHaveBeenCalled()
+    expect(context().suspend).not.toHaveBeenCalled()
   })
 
   it('preloads a consumer’s cues at idle, and not at all if it leaves first', async () => {
