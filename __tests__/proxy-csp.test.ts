@@ -5,6 +5,7 @@
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { proxy } from '@/proxy'
+import { PROMO_VIDEO_ORIGIN } from '@/lib/promo-video'
 
 jest.mock('next-auth/jwt', () => ({
   getToken: jest.fn(),
@@ -66,6 +67,11 @@ describe('proxy CSP policy', () => {
     expect(scriptSrcDirective).toContain('https://fundingchoicesmessages.google.com')
     const frameSrcDirective = csp?.split(';').map((part) => part.trim()).find((part) => part.startsWith('frame-src'))
     expect(frameSrcDirective).toContain('https://googleads.g.doubleclick.net')
+  })
+
+  // #1470: the home page's promo video streams from the Blob store, and nothing else may.
+  it('allows media from the site and the promo video store only', async () => {
+    expect(sourcesFor(await cspForRequest(), 'media-src')).toEqual(["'self'", PROMO_VIDEO_ORIGIN])
   })
 
   // #1045. Each host here is one the shipped AdSense code reaches for, in the directive
