@@ -12,7 +12,7 @@ describe('i18n UI smoke checks', () => {
     })
   })
 
-  it.each(['uk', 'no', 'ru', 'de'] as const)(
+  it.each(['uk', 'no', 'ru', 'de', 'es'] as const)(
     'renders Yahtzee results actions in %s without English fallback text',
     async (locale) => {
       await act(async () => {
@@ -77,7 +77,7 @@ describe('i18n UI smoke checks', () => {
     }
   )
 
-  it.each(['uk', 'no', 'ru', 'de'] as const)(
+  it.each(['uk', 'no', 'ru', 'de', 'es'] as const)(
     'renders Spy results counters in %s without English hardcoded labels',
     async (locale) => {
       await act(async () => {

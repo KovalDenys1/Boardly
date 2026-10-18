@@ -11,6 +11,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // Section 3 has its own test (terms-premium.test.tsx); here it is a stub, so this
 // file tests the rest of the Terms around it.
@@ -71,7 +73,7 @@ describe('/terms (#1166)', () => {
       ...MODERATION_ACTIONS.map((id) => `rules.actions.${id}`),
     ]
     expect(literal.length).toBeGreaterThanOrEqual(50)
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -149,7 +151,7 @@ describe('/terms (#1166)', () => {
     expect(en.terms.moderation.reasons).toBe(
       'When we suspend or close an account, we email the owner the reason and, for a temporary suspension, the end date.'
     )
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(locale.terms.moderation.appeal).toContain('boardly.online/suspended')
       expect(locale.rules.appeal).toContain('boardly.online/suspended')
     }
@@ -177,8 +179,9 @@ describe('/terms (#1166)', () => {
   })
 
   it('claims only the name and logo, never copyright over what the MIT licence covers', () => {
-    for (const locale of [en, no, ru, uk]) {
-      expect(locale.terms.ip.body).not.toMatch(/MIT|GitHub|copy|kopier|копир|копію/i)
+    for (const locale of [en, no, ru, uk, de, es]) {
+      expect(locale.terms.ip.body).not.toMatch(/\bMIT\b/)
+      expect(locale.terms.ip.body).not.toMatch(/GitHub|copy|kopier|kopie|copia|копир|копію/i)
     }
     expect(en.terms.ip.title).toBe('7. Our name and logo')
     expect(en.terms.ip.body).toBe(
@@ -237,7 +240,7 @@ describe('/terms (#1166)', () => {
   })
 
   it('uses no em dash in any language', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(JSON.stringify(locale.terms)).not.toContain('—')
     }
   })

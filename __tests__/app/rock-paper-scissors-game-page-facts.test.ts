@@ -147,7 +147,7 @@ describe('the RPS bots against lib/bots and lib/bot-profiles.ts (#1238)', () => 
 
 describe('best of five is gone from every RPS surface (#1238 review)', () => {
   const BEST_OF_FIVE = /best[- ]of[- ](5|five)|best[- ]av[- ]5|до 5 побед|Best-of-5/i
-  const localeFiles = ['en', 'no', 'ru', 'uk'].map((loc) => source(`locales/${loc}.ts`))
+  const localeFiles = ['en', 'no', 'ru', 'uk', 'de', 'es'].map((loc) => source(`locales/${loc}.ts`))
 
   it('never appears in the rock_paper_scissors namespace of any locale', () => {
     for (const file of localeFiles) {

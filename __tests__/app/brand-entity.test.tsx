@@ -18,6 +18,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // The layout is imported for its `metadata` only. Its announcement banner
 // reaches Prisma at module load, which needs a database this test does not.
@@ -140,7 +142,7 @@ describe('site JSON-LD graph (#886)', () => {
 
 describe('home FAQ entity answer (#886)', () => {
   it('asks what Boardly is first, in all four locales', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(locale.faq.q0.question).toContain('Boardly')
       expect(locale.faq.q0.answer).toContain('boardly.online')
       expect(Object.keys(locale.faq)[Object.keys(locale.faq).indexOf('q0')]).toBe('q0')
@@ -165,7 +167,7 @@ describe('home FAQ entity answer (#886)', () => {
   })
 
   it('does not put brand misspellings on the page', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       const text = JSON.stringify(locale.faq).toLowerCase()
       for (const misspelling of ['boordly', 'borderly', 'boardle ', 'boardlify']) {
         expect(text).not.toContain(misspelling)

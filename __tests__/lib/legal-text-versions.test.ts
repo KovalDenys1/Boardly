@@ -6,6 +6,7 @@ import uk from '@/locales/uk'
 import de from '@/locales/de'
 import es from '@/locales/es'
 import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
+import type { Locale as SiteLocale } from '@/locales/meta'
 
 /**
  * TERMS_VERSION and WITHDRAWAL_INFO_VERSION are bumped by hand, and the
@@ -32,19 +33,14 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16)
 }
 
-const LOCALES = { en, no, ru, uk, de, es }
+const LOCALES = { en, no, ru, uk, de, es } satisfies Record<SiteLocale, unknown>
 type Locale = typeof en
 
 /** The same slice of every locale, keyed by locale code. */
 function everyLocale<T>(pick: (locale: Locale) => T): Record<keyof typeof LOCALES, T> {
-  return {
-    en: pick(LOCALES.en),
-    no: pick(LOCALES.no as unknown as Locale),
-    ru: pick(LOCALES.ru as unknown as Locale),
-    uk: pick(LOCALES.uk as unknown as Locale),
-    de: pick(LOCALES.de as unknown as Locale),
-    es: pick(LOCALES.es as unknown as Locale),
-  }
+  return Object.fromEntries(
+    Object.entries(LOCALES).map(([code, locale]) => [code, pick(locale as unknown as Locale)])
+  ) as Record<keyof typeof LOCALES, T>
 }
 
 /**
