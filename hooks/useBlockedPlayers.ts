@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
-import { BLOCKED_PLAYERS_CHANGED_EVENT, BLOCKED_PLAYERS_STORAGE_KEY } from '@/lib/user-blocks'
+import { getSafeLocalStorage, readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import {
+  BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX,
+  BLOCKED_PLAYERS_CHANGED_EVENT,
+  BLOCKED_PLAYERS_STORAGE_KEY,
+} from '@/lib/user-blocks'
 
 export type BlockedPlayer = { id: string; username: string; blockedAt: string }
 
@@ -11,9 +15,13 @@ export type UseBlockedPlayers = {
   /** Newest block first. Empty until `ready`. */
   blocked: BlockedPlayer[]
   blockedIds: ReadonlySet<string>
-  /** False while the session is loading, and for a signed-in user until the account list has answered. */
+  /**
+   * False while the session is loading, and for a signed-in user whose list was never read on this
+   * device until the account list has answered. A list read before (kept on the device, or held by
+   * another instance on the page) makes it true at once while the account is read again.
+   */
   ready: boolean
-  /** True while the latest read of the account list failed; `blocked` then holds what was shown before, or nothing. */
+  /** True while the latest read of the account list failed; `blocked` then holds the last list known, or nothing. */
   failed: boolean
   /** Reads the list again, in every instance on the page. */
   retry: () => void
@@ -27,9 +35,10 @@ const DEVICE_LIMIT = 200
 const BLOCKS_URL = '/api/user/blocks'
 
 type Mode = 'pending' | 'account' | 'device'
-type Snapshot = { mode: Mode; players: BlockedPlayer[]; failed?: boolean }
-/** The changed event's detail from an instance; other senders (GuestContext) send none. */
-type Change = { source: object; mode: Mode; selfId: string | undefined; players: BlockedPlayer[] }
+/** One viewer's list: `device`, or `account:<id>`. */
+type List = { key: string; players: BlockedPlayer[]; failed: boolean }
+/** The changed event's detail from an instance; other senders (GuestContext, retry) send none, which means "read again". */
+type Change = { source: object; list: List }
 
 const NO_PLAYERS: BlockedPlayer[] = []
 
@@ -73,6 +82,45 @@ function insertByRecency(players: BlockedPlayer[], entry: BlockedPlayer): Blocke
   return at === -1 ? [...players, entry] : [...players.slice(0, at), entry, ...players.slice(at)]
 }
 
+function listKey(mode: Mode, selfId: string | undefined): string | null {
+  if (mode === 'pending') return null
+  return mode === 'device' ? 'device' : `account:${selfId ?? ''}`
+}
+
+function readAccountCache(selfId: string | undefined): BlockedPlayer[] | null {
+  if (!selfId) return null
+  const raw = readLocal(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + selfId)
+  if (raw === null) return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsePlayers(parsed) : null
+  } catch {
+    return null
+  }
+}
+
+/** Removes every account's cached list but `keepId`'s: a device remembers only the account signed in on it. */
+function forgetOtherAccounts(keepId: string | undefined) {
+  const storage = getSafeLocalStorage()
+  if (!storage) return
+  try {
+    const stale: string[] = []
+    for (let index = 0; index < storage.length; index++) {
+      const name = storage.key(index)
+      if (name?.startsWith(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX) && name !== BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + keepId) {
+        stale.push(name)
+      }
+    }
+    for (const name of stale) storage.removeItem(name)
+  } catch {
+    // Storage is best-effort; the next load tries again.
+  }
+}
+
+function samePlayers(a: BlockedPlayer[], b: BlockedPlayer[]): boolean {
+  return a.length === b.length && a.every((player, index) => player.id === b[index].id)
+}
+
 async function fetchAccountPlayers(): Promise<BlockedPlayer[] | null> {
   try {
     const response = await fetch(BLOCKS_URL)
@@ -83,6 +131,11 @@ async function fetchAccountPlayers(): Promise<BlockedPlayer[] | null> {
     return null
   }
 }
+
+// Module state lives while any instance is mounted: the chat hook stays mounted while a chat tab
+// remounts its Chat, so the new Chat starts from this list instead of waiting for the server.
+let mountedInstances = 0
+let lastKnown: List | null = null
 
 // Shared by every instance on the page, so the chats and cards that mount together send one GET.
 let accountReadInFlight: { selfId: string | undefined; request: Promise<BlockedPlayer[] | null> } | null = null
@@ -128,48 +181,100 @@ function handOverDeviceList(selfId: string | undefined): Promise<void> {
   return run
 }
 
+/** An account's list plus the guest blocks on this device that have not reached it yet: they stay hidden meanwhile. */
+function withWaitingHandOver(players: BlockedPlayer[], selfId: string | undefined): BlockedPlayer[] {
+  const waiting = newestFirst(readDevice()).filter(
+    (player) => player.id !== selfId && !players.some((known) => known.id === player.id)
+  )
+  return waiting.length === 0 ? players : [...players, ...waiting]
+}
+
+/** What is known about a list without asking the server: the page's last list for it, the device list, or the account's cached list. */
+function peek(key: string, selfId: string | undefined): List | null {
+  if (lastKnown?.key === key) return lastKnown
+  if (key === 'device') return { key, players: newestFirst(readDevice()), failed: false }
+  const cached = readAccountCache(selfId)
+  return cached ? { key, players: withWaitingHandOver(cached, selfId), failed: false } : null
+}
+
 /**
  * The viewer's own block list, one API for guests and accounts (#1466).
  *
- * Signed in, it lives on the account behind /api/user/blocks. As a guest or signed
- * out it lives on this device, and the first load after sign-in moves it to the account.
+ * Signed in, it lives on the account behind /api/user/blocks, and the last list read is kept on the
+ * device so a chat never shows a blocked player while it waits. As a guest or signed out it lives
+ * on this device, and the first load after sign-in moves it to the account.
  */
 export function useBlockedPlayers(): UseBlockedPlayers {
   const { data: session, status } = useSession()
   const selfId = session?.user?.id
   const mode: Mode = status === 'loading' ? 'pending' : status === 'authenticated' ? 'account' : 'device'
+  const key = listKey(mode, selfId)
 
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
-  const current = snapshot?.mode === mode ? snapshot.players : null
+  const [snapshot, setSnapshot] = useState<List | null>(() => (key ? peek(key, selfId) : null))
+  const current = snapshot?.key === key ? snapshot : key ? peek(key, selfId) : null
   const ready = current !== null
-  const failed = ready && snapshot?.failed === true
-  const blocked = current ?? NO_PLAYERS
+  const failed = current?.failed === true
+  const blocked = current?.players ?? NO_PLAYERS
   const blockedIds = useMemo<ReadonlySet<string>>(() => new Set(blocked.map((player) => player.id)), [blocked])
 
-  const latest = useRef({ ready, blocked })
-  useEffect(() => {
-    latest.current = { ready, blocked }
-  }, [ready, blocked])
+  const latest = useRef<List | null>(current)
+  latest.current = current
 
   const loadTicket = useRef(0)
   const source = useRef({})
 
+  useEffect(() => {
+    mountedInstances++
+    return () => {
+      mountedInstances--
+      if (mountedInstances === 0) {
+        lastKnown = null
+        accountReadInFlight = null
+      }
+    }
+  }, [])
+
+  /** Shows `list` here and hands it to every other instance; an account's list is kept on the device. */
+  const publish = useCallback(
+    (list: List) => {
+      latest.current = list
+      setSnapshot(list)
+      const changed =
+        !lastKnown || lastKnown.key !== list.key || lastKnown.failed !== list.failed || !samePlayers(lastKnown.players, list.players)
+      lastKnown = list
+      if (mode === 'account' && selfId && !list.failed) {
+        writeLocal(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + selfId, JSON.stringify(list.players))
+      }
+      if (changed) {
+        const change: Change = { source: source.current, list }
+        window.dispatchEvent(new CustomEvent<Change>(BLOCKED_PLAYERS_CHANGED_EVENT, { detail: change }))
+      }
+    },
+    [mode, selfId]
+  )
+
   const load = useCallback(async () => {
-    if (mode === 'pending') return
+    if (!key) return
     const ticket = ++loadTicket.current
     if (mode === 'device') {
-      setSnapshot({ mode, players: newestFirst(readDevice()) })
+      publish({ key, players: newestFirst(readDevice()), failed: false })
       return
     }
     const players = await readAccountPlayers(selfId)
     if (ticket !== loadTicket.current) return
-    // A failed read leaves what is shown and ends the wait: chat must not hang on a list it cannot get.
-    setSnapshot((previous) =>
-      players
-        ? { mode, players }
-        : { mode, players: previous?.mode === mode ? previous.players : [], failed: true }
-    )
-  }, [mode, selfId])
+    if (players) {
+      publish({ key, players: withWaitingHandOver(players, selfId), failed: false })
+      return
+    }
+    // A failed read keeps the last list known and ends the wait: chat must not hang on a list it cannot get.
+    publish({ key, players: peek(key, selfId)?.players ?? [], failed: true })
+  }, [key, mode, selfId, publish])
+
+  useEffect(() => {
+    if (mode === 'pending') return
+    forgetOtherAccounts(mode === 'account' ? selfId : undefined)
+    if (lastKnown && lastKnown.key !== key) lastKnown = null
+  }, [mode, selfId, key])
 
   useEffect(() => {
     if (mode === 'pending') return
@@ -188,16 +293,18 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     const onChanged = (event: Event) => {
       const change = (event as CustomEvent<Change | undefined>).detail
       if (change?.source === source.current) return
-      if (mode === 'account' && change?.mode === 'account' && change.selfId === selfId) {
+      if (change) {
+        if (change.list.key !== key) return
         loadTicket.current++
-        setSnapshot({ mode, players: change.players })
+        latest.current = change.list
+        setSnapshot(change.list)
         return
       }
       void load()
     }
     window.addEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
     return () => window.removeEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
-  }, [mode, load, selfId])
+  }, [mode, key, load])
 
   useEffect(() => {
     if (mode !== 'device') return
@@ -208,39 +315,26 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     return () => window.removeEventListener('storage', onStorage)
   }, [mode, load])
 
-  const announce = useCallback(
-    (players: BlockedPlayer[]) => {
-      const change: Change = { source: source.current, mode, selfId, players }
-      window.dispatchEvent(new CustomEvent<Change>(BLOCKED_PLAYERS_CHANGED_EVENT, { detail: change }))
-    },
-    [mode, selfId]
-  )
-
-  const edit = useCallback(
-    (change: (players: BlockedPlayer[]) => BlockedPlayer[]) => {
-      setSnapshot((previous) => (previous?.mode === mode ? { ...previous, players: change(previous.players) } : previous))
-    },
-    [mode]
-  )
-
   const block = useCallback(
     async (player: { id: string; username: string }): Promise<boolean> => {
-      if (mode === 'pending') return false
+      if (!key) return false
       const entry: BlockedPlayer = { id: player.id, username: player.username, blockedAt: new Date().toISOString() }
 
       if (mode === 'device') {
         const stored = readDevice()
         if (!stored.some((existing) => existing.id === player.id)) writeDevice([...stored, entry].slice(-DEVICE_LIMIT))
         const kept = readDevice()
-        setSnapshot({ mode, players: newestFirst(kept) })
-        announce(newestFirst(kept))
+        publish({ key, players: newestFirst(kept), failed: false })
         return kept.some((existing) => existing.id === player.id)
       }
 
-      if (!latest.current.ready) return false
-      if (latest.current.blocked.some((existing) => existing.id === player.id)) return true
+      const before = latest.current
+      if (!before || before.key !== key) return false
+      if (before.players.some((existing) => existing.id === player.id)) return true
 
-      edit((players) => [entry, ...players])
+      // Every instance hides the player now, the chat hook included, before the server answers.
+      loadTicket.current++
+      publish({ ...before, players: [entry, ...before.players] })
       try {
         const response = await fetch(BLOCKS_URL, {
           method: 'POST',
@@ -248,45 +342,53 @@ export function useBlockedPlayers(): UseBlockedPlayers {
           body: JSON.stringify({ userIds: [player.id] }),
         })
         if (!response.ok) throw new Error(`block failed: ${response.status}`)
+        if (before.failed) {
+          const body: unknown = await response.json().catch(() => null)
+          const server = (body as { blocks?: unknown } | null)?.blocks
+          if (Array.isArray(server)) {
+            loadTicket.current++
+            publish({ key, players: parsePlayers(server), failed: false })
+          }
+        }
       } catch {
-        edit((players) => players.filter((existing) => existing.id !== player.id))
+        const now = latest.current?.key === key ? latest.current : before
+        publish({ ...now, players: now.players.filter((existing) => existing.id !== player.id) })
         return false
       }
-      const current = latest.current.blocked
-      announce(current.some((existing) => existing.id === player.id) ? current : [entry, ...current])
       return true
     },
-    [mode, edit, announce]
+    [key, mode, publish]
   )
 
   const unblock = useCallback(
     async (id: string): Promise<boolean> => {
-      if (mode === 'pending') return false
+      if (!key) return false
 
       if (mode === 'device') {
         writeDevice(readDevice().filter((existing) => existing.id !== id))
         const kept = readDevice()
-        setSnapshot({ mode, players: newestFirst(kept) })
-        announce(newestFirst(kept))
+        publish({ key, players: newestFirst(kept), failed: false })
         return !kept.some((existing) => existing.id === id)
       }
 
-      if (!latest.current.ready) return false
-      const removed = latest.current.blocked.find((existing) => existing.id === id)
+      const before = latest.current
+      if (!before || before.key !== key) return false
+      const removed = before.players.find((existing) => existing.id === id)
       if (!removed) return true
 
-      edit((players) => players.filter((existing) => existing.id !== id))
+      loadTicket.current++
+      publish({ ...before, players: before.players.filter((existing) => existing.id !== id) })
       try {
         const response = await fetch(`${BLOCKS_URL}/${encodeURIComponent(id)}`, { method: 'DELETE' })
         if (!response.ok) throw new Error(`unblock failed: ${response.status}`)
       } catch {
-        edit((players) => (players.some((existing) => existing.id === id) ? players : insertByRecency(players, removed)))
+        const now = latest.current?.key === key ? latest.current : before
+        if (!now.players.some((existing) => existing.id === id)) publish({ ...now, players: insertByRecency(now.players, removed) })
         return false
       }
-      announce(latest.current.blocked.filter((existing) => existing.id !== id))
       return true
     },
-    [mode, edit, announce]
+    [key, mode, publish]
   )
 
   const retry = useCallback(() => {

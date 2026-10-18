@@ -432,6 +432,104 @@ describe('useBlockedPlayers', () => {
       expect([...result.current.blockedIds]).toEqual(['u9'])
     })
 
+    describe('the block window (#1466 refuter)', () => {
+      const CACHE = 'boardly_blocked_players_account:me'
+      const OLD_FOE = { id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }
+      const neverAnswer = () => mockFetch.mockImplementation(() => new Promise<Response>(() => {}))
+
+      it('keeps the last list on the device for this account, so a later mount is ready before the server answers', async () => {
+        serveBlocks([OLD_FOE])
+        const first = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(first.result.current.blockedIds.has('u9')).toBe(true))
+        expect(JSON.parse(window.localStorage.getItem(CACHE) ?? 'null')).toEqual([OLD_FOE])
+        first.unmount()
+
+        neverAnswer()
+        const second = renderHook(() => useBlockedPlayers())
+        expect(second.result.current.ready).toBe(true)
+        expect([...second.result.current.blockedIds]).toEqual(['u9'])
+      })
+
+      it('starts a remount from the list a mounted instance holds, even when the device keeps nothing', async () => {
+        serveBlocks([OLD_FOE])
+        const holder = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(holder.result.current.blockedIds.has('u9')).toBe(true))
+        window.localStorage.clear()
+
+        neverAnswer()
+        const remount = renderHook(() => useBlockedPlayers())
+        expect(remount.result.current.ready).toBe(true)
+        expect([...remount.result.current.blockedIds]).toEqual(['u9'])
+      })
+
+      it('keeps the cached list, flagged as failed, when the read fails', async () => {
+        window.localStorage.setItem(CACHE, JSON.stringify([OLD_FOE]))
+        mockFetch.mockResolvedValue(reply({ error: 'nope' }, 500))
+
+        const { result } = renderHook(() => useBlockedPlayers())
+        expect(result.current.ready).toBe(true)
+        await waitFor(() => expect(result.current.failed).toBe(true))
+        expect([...result.current.blockedIds]).toEqual(['u9'])
+      })
+
+      it("forgets this account's cached list on sign-out, and any other account's on load", async () => {
+        window.localStorage.setItem('boardly_blocked_players_account:someone-else', JSON.stringify([OLD_FOE]))
+        serveBlocks([OLD_FOE])
+        const { result, rerender } = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(result.current.blockedIds.has('u9')).toBe(true))
+        expect(window.localStorage.getItem('boardly_blocked_players_account:someone-else')).toBeNull()
+        expect(window.localStorage.getItem(CACHE)).not.toBeNull()
+
+        setStatus('unauthenticated')
+        rerender()
+        await waitFor(() => expect(window.localStorage.getItem(CACHE)).toBeNull())
+      })
+
+      it('shows a block in every instance before the server answers, and takes it back there when refused', async () => {
+        serveBlocks()
+        const serve = mockFetch.getMockImplementation()!
+        let answerPost: (response: Response) => void = () => {}
+        mockFetch.mockImplementation((url: string, init?: RequestInit) =>
+          init?.method === 'POST' ? new Promise<Response>((resolve) => (answerPost = resolve)) : serve(url, init)
+        )
+        const first = renderHook(() => useBlockedPlayers())
+        const second = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(first.result.current.ready).toBe(true))
+        await waitFor(() => expect(second.result.current.ready).toBe(true))
+
+        let blocking: Promise<boolean> = Promise.resolve(false)
+        act(() => {
+          blocking = first.result.current.block({ id: 'u2', username: 'Rival' })
+        })
+        await waitFor(() => expect(second.result.current.blockedIds.has('u2')).toBe(true))
+
+        await act(async () => {
+          answerPost(reply({ error: 'nope' }, 500))
+          await blocking
+        })
+        expect(second.result.current.blockedIds.has('u2')).toBe(false)
+        expect(first.result.current.blockedIds.has('u2')).toBe(false)
+      })
+
+      it('after a failed read, a block takes the whole list the server answers with and clears the failure', async () => {
+        const state = serveBlocks([OLD_FOE])
+        const serve = mockFetch.getMockImplementation()!
+        mockFetch.mockImplementation(async (url: string, init?: RequestInit) =>
+          url === '/api/user/blocks' && (init?.method ?? 'GET') === 'GET' ? reply({ error: 'nope' }, 500) : serve(url, init)
+        )
+        const { result } = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(result.current.failed).toBe(true))
+
+        await act(async () => {
+          await expect(result.current.block({ id: 'u2', username: 'Rival' })).resolves.toBe(true)
+        })
+
+        expect(result.current.failed).toBe(false)
+        expect([...result.current.blockedIds].sort()).toEqual(['u2', 'u9'])
+        expect(state.rows.map((row) => row.id).sort()).toEqual(['u2', 'u9'])
+      })
+    })
+
     it('stops showing the account list once signed out', async () => {
       serveBlocks([{ id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }])
       const { result, rerender } = renderHook(() => useBlockedPlayers())
@@ -481,7 +579,7 @@ describe('useBlockedPlayers', () => {
       expect(second.result.current.blockedIds.has('a')).toBe(true)
     })
 
-    it('keeps the device list for the next load when the hand-over fails', async () => {
+    it('keeps the device list for the next load when the hand-over fails, and keeps hiding it meanwhile', async () => {
       setStatus('authenticated')
       seedDevice(['a'])
       serveBlocks([], { postStatus: 500 })
@@ -491,13 +589,13 @@ describe('useBlockedPlayers', () => {
 
       expect(postCalls()).toHaveLength(1)
       expect(stored()?.map((row) => row.id)).toEqual(['a'])
-      expect(result.current.blockedIds.size).toBe(0)
+      expect([...result.current.blockedIds]).toEqual(['a'])
 
       mockFetch.mockClear()
       serveBlocks()
       const nextLoad = renderHook(() => useBlockedPlayers())
-      await waitFor(() => expect(nextLoad.result.current.ready).toBe(true))
-      expect(postCalls()).toHaveLength(1)
+      await waitFor(() => expect(postCalls()).toHaveLength(1))
+      await waitFor(() => expect(window.localStorage.getItem(KEY)).toBeNull())
       expect(window.localStorage.getItem(KEY)).toBeNull()
       expect(nextLoad.result.current.blockedIds.has('a')).toBe(true)
     })

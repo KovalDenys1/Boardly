@@ -353,7 +353,8 @@ describe('Chat block action (#1466)', () => {
     ) as typeof fetch
     try {
       render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
-      const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+      // No message shows before the account's list has answered.
+      const blockButton = await screen.findByRole('button', { name: 'chat.blockPlayer' })
       await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
       fireEvent.click(blockButton)
       fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))

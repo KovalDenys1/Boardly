@@ -74,10 +74,13 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
   codeRef.current = code
   const chatMessagesRef = useRef<ChatMessagePayload[]>([])
   chatMessagesRef.current = chatMessages
-  // Chat hides a blocked player's messages, so they neither count as unread nor make a sound.
-  const { blockedIds } = useBlockedPlayers()
+  // Chat hides a blocked player's messages, so they neither count as unread nor make a sound;
+  // before the list is known Chat shows nothing, so nothing counts or sounds either.
+  const { blockedIds, ready: blocksReady } = useBlockedPlayers()
   const blockedIdsRef = useRef(blockedIds)
   blockedIdsRef.current = blockedIds
+  const blocksReadyRef = useRef(blocksReady)
+  blocksReadyRef.current = blocksReady
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     // The lobby's realtime topic is not private and its code is four digits, so
@@ -96,6 +99,7 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
 
           setChatMessages((prev) => [...withoutConfirmedOptimistic(prev, fresh), ...fresh])
 
+          if (!blocksReadyRef.current) return
           const audible = fresh.filter(
             (m) => m.userId !== currentUserIdRef.current && !blockedIdsRef.current.has(m.userId)
           )
@@ -110,6 +114,7 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
     }
 
     setChatMessages(prev => [...withoutConfirmedOptimistic(prev, [message]), message])
+    if (!blocksReadyRef.current) return
     if (message.userId === currentUserIdRef.current || blockedIdsRef.current.has(message.userId)) return
     if (!isChatVisibleRef.current) {
       setUnreadCount(prev => prev + 1)

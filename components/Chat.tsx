@@ -72,7 +72,7 @@ export default function Chat({
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const [reportedMessage, setReportedMessage] = useState<ChatMessage | null>(null)
-  const { blockedIds, block, ready: blocksReady } = useBlockedPlayers()
+  const { blockedIds, block, ready: blocksReady, failed: blocksFailed, retry: retryBlocks } = useBlockedPlayers()
   const visibleMessages = blockedIds.size > 0 ? messages.filter((msg) => !blockedIds.has(msg.userId)) : messages
   const [blockTarget, setBlockTarget] = useState<BlockTarget | null>(null)
   const blockConfirmId = useId()
@@ -298,7 +298,7 @@ export default function Chat({
               {t('chat.title')}
             </h3>
           </div>
-          {visibleMessages.length > 0 && (
+          {blocksReady && visibleMessages.length > 0 && (
             <span className="bd-chip shrink-0 px-2 py-0.5 text-xs" aria-label={t('chat.messageCount', { count: visibleMessages.length })}>
               {visibleMessages.length}
             </span>
@@ -365,7 +365,28 @@ export default function Chat({
         aria-labelledby="chat-title"
         aria-label={t('chat.title')}
       >
-        {visibleMessages.length === 0 ? (
+        {blocksReady && blocksFailed && blockedIds.size === 0 && (
+          <div
+            role="alert"
+            className="chat-blocks-failed sticky top-0 z-10 flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-xs text-bd-ink-soft"
+            style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+          >
+            <span>{t('blockedPlayers.loadFailed')}</span>
+            <button
+              type="button"
+              onClick={retryBlocks}
+              className="shrink-0 rounded-lg px-2 py-1 font-semibold text-bd-ink underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden"
+            >
+              {t('blockedPlayers.retry')}
+            </button>
+          </div>
+        )}
+        {/* Nothing is shown before the viewer's block list is known, so a blocked player never flashes past. */}
+        {!blocksReady ? (
+          <div role="status" className="flex h-full items-center justify-center px-4 text-center text-sm text-bd-ink-muted">
+            {t('common.loading')}
+          </div>
+        ) : visibleMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="mb-4 grid h-16 w-16 place-items-center rounded-[1.25rem] border-2 border-bd-ink bg-bd-sun text-3xl shadow-[4px_4px_0_var(--bd-ink)]">💬</div>
             <p className="mb-2 text-lg font-semibold text-bd-ink">{t('chat.noMessages')}</p>
