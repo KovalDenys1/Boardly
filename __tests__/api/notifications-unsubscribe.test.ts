@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/notifications/unsubscribe/route'
-import { getAppShellInitScript } from '@/lib/app-shell'
+import { getAppShellInitScript } from '@/lib/app-shell-script'
 import {
   upsertNotificationPreferences,
   verifyNotificationUnsubscribeToken,

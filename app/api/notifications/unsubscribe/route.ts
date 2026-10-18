@@ -5,7 +5,7 @@ import {
 } from '@/lib/notification-preferences'
 import { emailLanguageFromRequest } from '@/lib/email-language'
 import { escapeHtml, type EmailLanguage } from '@/lib/email-layout'
-import { getAppShellInitScript } from '@/lib/app-shell'
+import { getAppShellInitScript } from '@/lib/app-shell-script'
 
 type TokenType = NonNullable<ReturnType<typeof verifyNotificationUnsubscribeToken>>['type']
 

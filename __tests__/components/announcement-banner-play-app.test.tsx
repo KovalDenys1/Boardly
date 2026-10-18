@@ -3,7 +3,6 @@ import { renderToString } from 'react-dom/server'
 import { hydrateRoot } from 'react-dom/client'
 import { render, screen } from '@testing-library/react'
 import { AnnouncementBanner } from '@/components/AnnouncementBanner'
-import { AnnouncementMessage } from '@/components/AnnouncementMessage'
 import { getActiveAnnouncement } from '@/lib/runtime-config'
 
 jest.mock('@/lib/runtime-config', () => ({
@@ -58,18 +57,19 @@ describe('AnnouncementBanner in the Play app (#1465)', () => {
 
   it('marks a purchase link so the app hides it before hydration, and leaves other links unmarked', async () => {
     const { unmount } = await renderBanner('/premium')
-    expect(screen.getByRole('link')).toHaveAttribute('data-purchase-ui')
+    expect(screen.getByRole('link').closest('[data-purchase-ui]')).not.toBeNull()
     unmount()
 
     await renderBanner('/games')
-    expect(screen.getByRole('link')).not.toHaveAttribute('data-purchase-ui')
+    expect(screen.getByRole('link').closest('[data-purchase-ui]')).toBeNull()
   })
 
   it.each([
     ['/premium', false],
     ['/games', true],
   ])('hydrates server markup for %s into the app without a mismatch', async (href, linked) => {
-    const tree = <AnnouncementMessage message="Big news" href={href} />
+    mockGetActiveAnnouncement.mockResolvedValue({ id: 'a1', message: 'Big news', href, tone: 'info' })
+    const tree = <>{await AnnouncementBanner()}</>
     const container = document.createElement('div')
     container.innerHTML = renderToString(tree)
     document.body.appendChild(container)
@@ -83,6 +83,7 @@ describe('AnnouncementBanner in the Play app (#1465)', () => {
 
     expect(errorSpy).not.toHaveBeenCalled()
     expect(container).toHaveTextContent('Big news')
+    expect(container.textContent?.includes('→')).toBe(linked)
     expect(container.querySelector('a') !== null).toBe(linked)
     expect(container.querySelector('[data-purchase-ui]')).toBeNull()
     await act(async () => root?.unmount())

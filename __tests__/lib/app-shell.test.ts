@@ -1,16 +1,18 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, readdirSync } from 'fs'
+import { join, relative } from 'path'
 import {
   APP_SHELL_STORAGE_KEY,
   PLAY_APP_PACKAGE,
   PLAY_APP_SIGNUP_SOURCE,
+  isPlayApp,
+  isPurchaseHref,
+} from '@/lib/app-shell'
+import {
   addPlayLaunchParams,
   detectPlayLaunch,
   getAppShellInitScript,
-  isPlayApp,
-  isPurchaseHref,
   stripPlayLaunchParams,
-} from '@/lib/app-shell'
+} from '@/lib/app-shell-script'
 
 const LAUNCH_SEARCH = '?utm_source=android_app&utm_medium=twa'
 
@@ -395,6 +397,31 @@ describe('pages served outside the Next.js layout', () => {
     const head = html.slice(0, html.indexOf('</head>'))
 
     expect(head).toContain(`<script>${getAppShellInitScript()}</script>`)
+  })
+})
+
+describe('the head script stays out of client bundles', () => {
+  function sourceFiles(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) return sourceFiles(path)
+      return /\.tsx?$/.test(entry.name) ? [path] : []
+    })
+  }
+
+  it('is imported only by server code, never by a client module', () => {
+    const root = process.cwd()
+    const importers = ['app', 'components', 'hooks', 'lib']
+      .flatMap((dir) => sourceFiles(join(root, dir)))
+      .filter((file) => /from '(@\/lib|\.)\/app-shell-script'/.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(root, file))
+      .sort()
+
+    expect(importers).toEqual(['app/api/notifications/unsubscribe/route.ts', 'app/layout.tsx'])
+  })
+
+  it('leaves lib/app-shell.ts, which client modules import, with no imports of its own', () => {
+    expect(readFileSync(join(process.cwd(), 'lib/app-shell.ts'), 'utf8')).not.toMatch(/^import /m)
   })
 })
 

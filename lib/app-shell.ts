@@ -1,102 +1,25 @@
-import { BOARDLY_URL } from './organization-json-ld'
-
 export const PLAY_APP_PACKAGE = 'online.boardly.app'
 export const APP_SHELL_STORAGE_KEY = 'boardly:app-shell'
-
-const APP_SHELL_PLAY = 'play'
-const LAUNCH_SOURCE = 'android_app'
-const LAUNCH_MEDIUM = 'twa'
-const PLAY_REFERRER = new RegExp(`^android-app://${PLAY_APP_PACKAGE.replace(/\./g, '\\.')}(/|$)`)
-const PURCHASE_PATHS = ['/premium', '/api/stripe']
+export const APP_SHELL_PLAY = 'play'
+export const LAUNCH_SOURCE = 'android_app'
+export const LAUNCH_MEDIUM = 'twa'
 
 export const PLAY_APP_SIGNUP_SOURCE = `utm:${LAUNCH_SOURCE}/${LAUNCH_MEDIUM}`
 
-function isLaunchParams(params: URLSearchParams): boolean {
-  return params.get('utm_source') === LAUNCH_SOURCE && params.get('utm_medium') === LAUNCH_MEDIUM
-}
-
-export function detectPlayLaunch(input: {
-  search: string
-  referrer: string
-  stored: string | null
-}): boolean {
-  return (
-    input.stored === APP_SHELL_PLAY ||
-    isLaunchParams(new URLSearchParams(input.search)) ||
-    PLAY_REFERRER.test(input.referrer)
-  )
-}
-
-export function stripPlayLaunchParams(search: string): string {
-  const params = new URLSearchParams(search)
-  if (!isLaunchParams(params)) return search
-
-  params.delete('utm_source')
-  params.delete('utm_medium')
-  const rest = params.toString()
-  return rest ? `?${rest}` : ''
-}
-
-// A same-origin link with target="_blank" opens a tab whose sessionStorage starts empty.
-export function addPlayLaunchParams(href: string, origin: string): string {
-  let url: URL
-  try {
-    url = new URL(href, origin)
-  } catch {
-    return href
-  }
-  if (url.origin !== origin || isLaunchParams(url.searchParams)) return href
-
-  url.searchParams.set('utm_source', LAUNCH_SOURCE)
-  url.searchParams.set('utm_medium', LAUNCH_MEDIUM)
-  return url.href
-}
+const SITE_ORIGIN = 'https://boardly.online'
+const PURCHASE_PATHS = ['/premium', '/api/stripe']
 
 export function isPurchaseHref(href: string, origin?: string): boolean {
   let url: URL
   try {
-    url = new URL(href, BOARDLY_URL)
+    url = new URL(href, SITE_ORIGIN)
   } catch {
     return true
   }
-  if (url.origin !== BOARDLY_URL && url.origin !== origin) return true
+  if (url.origin !== SITE_ORIGIN && url.origin !== origin) return true
 
   const path = url.pathname.toLowerCase()
   return PURCHASE_PATHS.some((prefix) => path.startsWith(prefix))
-}
-
-export function getAppShellInitScript() {
-  return `(() => {
-  try {
-    let stored = null;
-    try { stored = sessionStorage.getItem('${APP_SHELL_STORAGE_KEY}'); } catch {}
-    const params = new URLSearchParams(location.search);
-    const fromUrl = params.get('utm_source') === '${LAUNCH_SOURCE}' && params.get('utm_medium') === '${LAUNCH_MEDIUM}';
-    if (stored !== '${APP_SHELL_PLAY}' && !fromUrl && !/${PLAY_REFERRER.source}/.test(document.referrer)) return;
-    document.documentElement.dataset.appShell = '${APP_SHELL_PLAY}';
-    document.addEventListener('click', (event) => {
-      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
-      if (!(link instanceof HTMLAnchorElement) || link.target.toLowerCase() !== '_blank' || link.hasAttribute('download')) return;
-      try {
-        const url = new URL(link.href, location.origin);
-        if (url.origin !== location.origin) return;
-        if (url.searchParams.get('utm_source') === '${LAUNCH_SOURCE}' && url.searchParams.get('utm_medium') === '${LAUNCH_MEDIUM}') return;
-        const original = link.getAttribute('href');
-        url.searchParams.set('utm_source', '${LAUNCH_SOURCE}');
-        url.searchParams.set('utm_medium', '${LAUNCH_MEDIUM}');
-        link.href = url.href;
-        setTimeout(() => link.setAttribute('href', original), 0);
-      } catch {}
-    }, true);
-    sessionStorage.setItem('${APP_SHELL_STORAGE_KEY}', '${APP_SHELL_PLAY}');
-    if (fromUrl) {
-      params.delete('utm_source');
-      params.delete('utm_medium');
-      const rest = params.toString();
-      history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
-    }
-  } catch {}
-})();`
 }
 
 export function isPlayApp(root?: HTMLElement): boolean {

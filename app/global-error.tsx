@@ -5,7 +5,6 @@ import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import BoardlyErrorState from "@/components/BoardlyErrorState";
 import { getThemeInitScript } from "@/lib/theme";
-import { getAppShellInitScript } from "@/lib/app-shell";
 
 export default function GlobalError({
   error,
@@ -24,10 +23,6 @@ export default function GlobalError({
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: getThemeInitScript() }}
-        />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: getAppShellInitScript() }}
         />
       </head>
       <body>
