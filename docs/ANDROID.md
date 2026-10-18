@@ -39,14 +39,16 @@ Chrome without a URL bar, so a web release reaches Android players without a new
 - **Lost key:** this is an upload key. Once Play App Signing is on, Google holds the key that
   players' installs are signed with, and a lost upload key can be reset through Play Console
   support (a new key, then its fingerprint in `assetlinks.json`).
-- **Password characters:** it must stay `[A-Za-z0-9]`. Bubblewrap hands it to a shell unescaped.
-  It is also visible in `ps` for the seconds the signer runs (single-user Mac, low risk), and the
-  build script redacts it from Bubblewrap's output because a failed signing prints that command.
+- **Never on a command line:** Bubblewrap's own signing passes the password to `jarsigner` and
+  `apksigner` as arguments, where any `ps` shows it, and prints that command when signing fails.
+  So the build script runs `bubblewrap build --skipSigning` and signs itself, with the password in
+  the environment of the signer alone (`-storepass:env`, `--ks-pass env:`). Gradle never sees it.
+  Everything the script prints still goes through a filter that replaces the password with
+  `[redacted]`. Do not run `bubblewrap build` without `--skipSigning`.
 - **The `~` in `signingKey.path`:** `twa-manifest.json` writes the path with `~` because the
-  absolute path is machine-specific, but Bubblewrap does not expand `~`. The build script therefore
-  passes `--signingKeyPath "$HOME/.config/boardly-android/upload-key.jks" --signingKeyAlias upload`;
-  a manual `bubblewrap build` must pass the same two flags and set the same two password
-  variables, or it stops at a password prompt.
+  absolute path is machine-specific. Bubblewrap does not expand `~`, but with `--skipSigning` it
+  never opens the key, and the script signs with the absolute `$HOME/.config/boardly-android/`
+  path.
 
 ## Build
 
@@ -56,14 +58,16 @@ npm run android:build
 
 Writes `android/app-release-bundle.aab` (the signed bundle for Play) and
 `android/app-release-signed.apk` (for a device), both git-ignored, and prints their paths. The
-script reads the keystore password from the keychain and hands it to Bubblewrap through its two
-password environment variables (named in the script) for that one run. It stops with a
-one-line hint when the keystore or the keychain item is missing, and when `twa-manifest.json`
-changed since `android/` was generated (run Regenerate first; Bubblewrap would otherwise ask, and
-bump the version on a yes). Gradle rewrites `android/app/src/main/res/xml/shortcuts.xml` on every
-build, so the script copies that tracked file to a temporary file first and puts it back when it
-exits, whether the build succeeded or failed; it never runs git. It also stops the Gradle daemon
-then, so the password variables do not stay in a background process.
+script has Bubblewrap build the unsigned bundle and apk (`--skipSigning`), then signs the bundle
+with the JDK's `jarsigner` and the apk with the SDK's `apksigner` (build-tools 36.1.0, the version
+Bubblewrap 1.27.0 installs), using the same algorithms Bubblewrap does. The keystore password
+comes from the keychain and reaches only the two signers, through the environment (see Signing
+key). The script stops with a one-line hint when the keystore or the keychain item is missing, and
+when `twa-manifest.json` changed since `android/` was generated (run Regenerate first; Bubblewrap
+would otherwise ask, and bump the version on a yes). Gradle rewrites
+`android/app/src/main/res/xml/shortcuts.xml` on every build, so the script copies that tracked file
+to a temporary file first and puts it back when it exits, whether the build succeeded or failed;
+it never runs git.
 
 The first run downloads Gradle and the Android dependencies, a few minutes. Check the result with
 `keytool -printcert -jarfile android/app-release-signed.apk`: its SHA-256 must be listed in
