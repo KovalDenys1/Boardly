@@ -1073,12 +1073,15 @@ describe('SketchAndGuessGame – the host\'s own words (#1086)', () => {
   it('never publishes the list, to anyone, in data or in the config copy', () => {
     const game = customGame({ customWords: twelve, customWordsOnly: false })
     expect(getData(game).customWords).toHaveLength(12)
+    // The drawer is shown this round's choices, so look for a host word that was not drawn into them.
+    const offered = new Set(getData(game).rounds[0].wordChoices.flatMap((choice) => choice.en))
+    const unoffered = twelve.find((word) => !offered.has(word))!
     for (const viewer of [null, 'player1', 'player2']) {
       const published = JSON.stringify(sanitizeSketchAndGuessStateForBroadcast(game.getState(), viewer))
-      expect(published).not.toContain('office plant')
+      expect(published).not.toContain(unoffered)
       expect(published).not.toContain('customWords')
     }
-    expect(JSON.stringify(stripSketchCustomWords(game.getState()))).not.toContain('office plant')
+    expect(JSON.stringify(stripSketchCustomWords(game.getState()))).not.toContain(unoffered)
   })
 
   it('mixed: one of the three choices is always the host\'s, and a bank word they repeat is not offered twice', () => {
