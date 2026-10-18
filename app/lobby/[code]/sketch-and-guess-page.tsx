@@ -1164,6 +1164,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="sketch_and_guess"
+                    outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentPlayer, isViewerWinner: winnerId ? iWon : null })}
                     resultKey={`${game?.id}:${gameData.finishedAt ?? game?.lastMoveAt ?? ''}`}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />

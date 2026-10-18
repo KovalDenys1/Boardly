@@ -312,7 +312,7 @@ describe('sound engine', () => {
     expect(engine.play('ui.error')).toBe(true)
   })
 
-  it('plays someone else’s action 4.5 dB under the viewer’s own, and leaves a cue with no remote level alone', async () => {
+  it('plays someone else’s action 4.5 dB under the viewer’s own, also for a cue with no remote level of its own', async () => {
     await readyEngine()
     await engine.preload(['card.skip'])
 
@@ -324,7 +324,7 @@ describe('sound engine', () => {
     const [own, remote, turn] = context().gains.slice(1).map((gain) => gain.gain.value)
     expect(20 * Math.log10(own)).toBeCloseTo(-11)
     expect(20 * Math.log10(remote / own)).toBeCloseTo(-4.5)
-    expect(20 * Math.log10(turn)).toBeCloseTo(-9)
+    expect(20 * Math.log10(turn)).toBeCloseTo(-9 - 4.5)
   })
 
   it('holds at most four voices of one cue and stops the oldest for a fifth', async () => {
@@ -474,7 +474,11 @@ describe('sound engine consumers', () => {
     expect(context().suspend).not.toHaveBeenCalled()
     expect(engine.play('ui.select')).toBe(true)
 
+    jest.useFakeTimers({ doNotFake: ['performance'] })
     releaseDevPage()
+    expect(context().suspend).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(1000)
+    jest.useRealTimers()
     expect(context().suspend).toHaveBeenCalledTimes(1)
     expect(context().state).not.toBe('running')
     now += 1000
@@ -485,6 +489,25 @@ describe('sound engine consumers', () => {
 
     release = engine.retain([])
     expect(context().resume).toHaveBeenCalledTimes(resumes + 1)
+  })
+
+  it('keeps what is playing when a consumer is swapped for the next, as a lobby page re-keying its cues does (#1464)', async () => {
+    engine = createSoundEngine()
+    const releaseFirst = engine.retain([])
+    await engine.preload(['ui.select'])
+    tap()
+    await flush()
+    expect(engine.play('ui.select')).toBe(true)
+    const source = cueSources()[0]
+
+    jest.useFakeTimers({ doNotFake: ['performance'] })
+    releaseFirst()
+    release = engine.retain(['ui.select'])
+    jest.advanceTimersByTime(5000)
+    jest.useRealTimers()
+
+    expect(source.stop).not.toHaveBeenCalled()
+    expect(context().suspend).not.toHaveBeenCalled()
   })
 
   it('preloads a consumer’s cues at idle, and not at all if it leaves first', async () => {

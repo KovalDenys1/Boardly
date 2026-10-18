@@ -19,6 +19,12 @@ import {
 } from '@/lib/server/realtime-signing'
 
 const mockToast = jest.fn()
+const mockPlayCue = jest.fn()
+const mockRetainSounds = jest.fn()
+jest.mock('@/lib/sound-engine', () => ({
+  playCue: (...args: unknown[]) => mockPlayCue(...args),
+  retainSounds: (...args: unknown[]) => mockRetainSounds(...args),
+}))
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
   default: Object.assign((...args: unknown[]) => mockToast(...args), { dismiss: jest.fn() }),
@@ -107,6 +113,7 @@ afterAll(() => {
 
 beforeEach(() => {
   mockToast.mockReset()
+  mockPlayCue.mockReset()
   mockChannels.clear()
   __resetLobbyChannelsForTests()
   __resetRealtimeVerifierForTests()
@@ -136,9 +143,10 @@ describe('SocialLoopListener', () => {
     await settle()
 
     expect(mockToast).not.toHaveBeenCalled()
+    expect(mockPlayCue).not.toHaveBeenCalled()
   })
 
-  it('shows the toast for an invite the server signed', async () => {
+  it('shows the toast for an invite the server signed, with social.invite', async () => {
     render(<SocialLoopListener />)
     await waitFor(() => expect(mockChannels.has(mockUserTopic!)).toBe(true))
 
@@ -146,6 +154,25 @@ describe('SocialLoopListener', () => {
     await settle()
 
     expect(mockToast).toHaveBeenCalledTimes(1)
+    expect(mockPlayCue.mock.calls).toEqual([['social.invite']])
+  })
+
+  it('asks with social.ask for a signed rematch request from another lobby', async () => {
+    render(<SocialLoopListener />)
+    await waitFor(() => expect(mockChannels.has(mockUserTopic!)).toBe(true))
+
+    const rematch = { lobbyCode: '7777', lobbyName: 'Rematch room', requestedById: 'friend-1', requestedByName: 'Friend' }
+    emit(mockUserTopic!, 'rematch-request', JSON.parse(JSON.stringify(sealRealtimeMessage(mockUserTopic!, 'rematch-request', rematch))))
+    await settle()
+
+    expect(mockToast).toHaveBeenCalledTimes(1)
+    expect(mockPlayCue.mock.calls).toEqual([['social.ask']])
+  })
+
+  it('holds no audio of its own, so a toast on a content page makes no sound', async () => {
+    render(<SocialLoopListener />)
+    await waitFor(() => expect(mockChannels.has(mockUserTopic!)).toBe(true))
+    expect(mockRetainSounds).not.toHaveBeenCalled()
   })
 
   it('ignores a signed invite whose lobby code is not a lobby code', async () => {

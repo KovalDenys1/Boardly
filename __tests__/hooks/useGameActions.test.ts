@@ -12,7 +12,7 @@ jest.mock('@/lib/i18n-toast', () => ({
   showToast: { error: jest.fn(), success: jest.fn(), errorFrom: jest.fn(), custom: jest.fn() },
 }))
 
-jest.mock('@/lib/sounds', () => ({ sounds: { play: jest.fn() } }))
+jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
 jest.mock('@/lib/auth-headers', () => ({ getAuthHeaders: jest.fn(() => ({})) }))
 
@@ -34,6 +34,8 @@ jest.mock('@/lib/analytics', () => ({
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { trackGameCompleted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
+import { playCue } from '@/lib/sound-engine'
+import { detectCelebration } from '@/lib/celebrations'
 
 const mockRestoreGameEngineClient = restoreGameEngineClient as jest.MockedFunction<typeof restoreGameEngineClient>
 
@@ -159,6 +161,62 @@ describe('useGameActions', () => {
 
       expect(reconcileWithServerSnapshot).toHaveBeenCalled()
       expect(showToast.errorFrom).toHaveBeenCalled()
+    })
+  })
+
+  describe('sound (#1464)', () => {
+    const cues = () => (playCue as jest.Mock).mock.calls.map(([cue]) => cue)
+    const scoreResponse = { ok: true, status: 200, json: async () => ({ game: { state: {} }, serverBroadcasted: true }) }
+
+    function scoringEngine() {
+      const gameEngine = makeEngine()
+      jest.spyOn(gameEngine, 'getScorecard').mockReturnValue({} as any)
+      jest.spyOn(gameEngine, 'getDice').mockReturnValue([6, 6, 6, 6, 6])
+      jest.spyOn(gameEngine, 'getHeld').mockReturnValue([false, false, false, false, false])
+      return gameEngine
+    }
+
+    it('throws the dice once for my roll, with no second click', async () => {
+      mockRestoreGameEngineClient.mockResolvedValue(makeRestoreEngine() as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue(makeOkRollResponse())
+      const props = makeProps()
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+      expect(cues()).toEqual(['dice.roll'])
+    })
+
+    it('plays ui.error when the server refuses my roll', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: 'x' }) })
+      const props = makeProps()
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleRollDice() })
+      expect(cues()).toEqual(['dice.roll', 'ui.error'])
+    })
+
+    it('lays the chips once when I score, and adds the celebration for a combo', async () => {
+      const restored = makeRestoreEngine()
+      jest.spyOn(restored, 'getScorecard').mockReturnValue({ yahtzee: 50 } as any)
+      mockRestoreGameEngineClient.mockResolvedValue(restored as any)
+      ;(global.fetch as jest.Mock).mockResolvedValue(scoreResponse)
+      ;(detectCelebration as jest.Mock).mockReturnValueOnce({ type: 'yahtzee' })
+      const makeMove = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+
+      const props = makeProps({ gameEngine: scoringEngine() as any })
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleScore('yahtzee') })
+      makeMove.mockRestore()
+
+      expect(cues()).toEqual(['score.add', 'yahtzee.celebrate'])
+    })
+
+    it('plays ui.error when the server refuses my score', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 409, json: async () => ({ error: 'x' }) })
+      const makeMove = jest.spyOn(YahtzeeGame.prototype, 'makeMove').mockReturnValue(true)
+      const props = makeProps({ gameEngine: scoringEngine() as any })
+      const { result } = renderHook(() => useGameActions(props))
+      await act(async () => { await result.current.handleScore('ones') })
+      makeMove.mockRestore()
+      expect(cues()).toEqual(['score.add', 'ui.error'])
     })
   })
 

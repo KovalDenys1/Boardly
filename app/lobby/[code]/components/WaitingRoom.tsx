@@ -6,7 +6,7 @@ import type { GameEngine } from '@/lib/game-engine'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
 import { hasBotSupport } from '@/lib/game-catalog'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { useInviteShare } from '@/hooks/useInviteShare'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
@@ -212,7 +212,7 @@ export default function WaitingRoom({
                       type="button"
                       disabled={addingBot}
                       onClick={async () => {
-                        sounds.play('click')
+                        playCue('ui.confirm')
                         setAddingBot(true)
                         try {
                           await onAddBot?.(difficulty)
@@ -250,7 +250,7 @@ export default function WaitingRoom({
                         <button
                           type="button"
                           onClick={() => {
-                            sounds.play('click')
+                            playCue('ui.select')
                             onInviteFriends?.()
                           }}
                           className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
@@ -263,7 +263,7 @@ export default function WaitingRoom({
                         <button
                           type="button"
                           onClick={() => {
-                            sounds.play('click')
+                            playCue('ui.select')
                             void shareInvite('waiting_room_slot')
                           }}
                           className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
@@ -276,7 +276,7 @@ export default function WaitingRoom({
                         <button
                           type="button"
                           onClick={() => {
-                            sounds.play('click')
+                            playCue('ui.select')
                             setPickingBotDifficulty(true)
                           }}
                           className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"

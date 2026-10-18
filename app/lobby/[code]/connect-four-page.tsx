@@ -30,7 +30,6 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
@@ -455,7 +454,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.connect_four.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -925,6 +923,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             inviteCode={code}
                             gameType="connect_four"
+                            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
                             resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                             isRegistered={status === 'authenticated' && !isGuest}
                         />

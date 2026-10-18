@@ -20,7 +20,7 @@ import type { Lobby, Game, GamePlayer } from '@/types/game'
 import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
-import { LEGACY_SOUND_CUES } from '@/lib/sounds'
+import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
@@ -243,10 +243,10 @@ export default function SpectatorLobbyPage() {
   const { data: session } = useSession()
   const { isGuest, guestToken, guestName, guestId } = useGuest()
   const { t } = useTranslation()
-  useSoundConsumer(LEGACY_SOUND_CUES)
   const code = String(params.code || '').toUpperCase()
 
   const [data, setData] = useState<SpectatorLobbyResponse | null>(null)
+  useSoundConsumer(lobbySoundCues(data?.lobby.gameType))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [spectators, setSpectators] = useState<SpectatorUser[]>([])

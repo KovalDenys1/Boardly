@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import YahtzeeScoreTable, { type ScoreTablePlayer } from '@/components/yahtzee/YahtzeeScoreTable'
+import { playCue } from '@/lib/sound-engine'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -7,9 +8,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
-jest.mock('@/lib/sounds', () => ({
-  sounds: { play: jest.fn() },
-}))
+jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
 const myCard = { ones: 3, twos: 6, fours: 12, onePair: 10, fullHouse: 25, smallStraight: 30 }
 const dice = [3, 3, 3, 5, 6]
@@ -94,6 +93,17 @@ describe('YahtzeeScoreTable', () => {
     expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('yahtzee.ui.tileConfirmZeroAria')
     fireEvent.click(ghost(container, 'yahtzee'))
     expect(props.onScore).toHaveBeenCalledWith('yahtzee')
+  })
+
+  it('ticks ui.select when a 0 is armed, and leaves the score sound to the score itself (#1464)', () => {
+    ;(playCue as jest.Mock).mockClear()
+    const { container } = renderTable()
+    fireEvent.click(ghost(container, 'yahtzee'))
+    expect(playCue).toHaveBeenCalledWith('ui.select')
+    ;(playCue as jest.Mock).mockClear()
+    fireEvent.click(ghost(container, 'yahtzee'))
+    fireEvent.click(ghost(container, 'threes'))
+    expect(playCue).not.toHaveBeenCalled()
   })
 
   it('disarms a 0 when the roll changes, so a stale arm never scores', () => {

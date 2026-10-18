@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
+import { playCue } from '@/lib/sound-engine'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -80,6 +82,22 @@ function formatSeconds(secs: number): string {
  */
 const IDLE_NUDGE_SECONDS = 15
 
+/** The clock ticks aloud for the last seconds of the viewer's own timed turn, rising a semitone each second. */
+const TICK_FROM_SECONDS = 5
+
+function useTurnTimerSounds(secs: number, active: boolean) {
+  const shown = Math.max(0, Math.floor(secs))
+  const previousRef = useRef<number | null>(null)
+  useEffect(() => {
+    const previous = previousRef.current
+    previousRef.current = active ? shown : null
+    // Only a second counting down: a turn starting, a resync jumping up or the banner mounting mid-countdown stays quiet.
+    if (!active || previous === null || shown >= previous) return
+    if (shown === 0) playCue('timer.expired')
+    else if (shown <= TICK_FROM_SECONDS) playCue('timer.tick', { semis: TICK_FROM_SECONDS - shown })
+  }, [shown, active])
+}
+
 export default function GameStatusBanner({
   isFinished,
   isDraw = false,
@@ -96,10 +114,17 @@ export default function GameStatusBanner({
   showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
+  // Every result overlay sits under this banner, and only the banner is mounted before the finish.
+  const finishedRef = React.useRef(isFinished)
+  useEffect(() => {
+    if (isFinished && !finishedRef.current) noteLiveFinish()
+    finishedRef.current = isFinished
+  }, [isFinished])
   // A live region announces changes, not what it mounted with: it starts empty
   // and gets the hint after mount.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  useTurnTimerSounds(secs, !isFinished && !isSpectator && isYourTurn && showTimer && turnTimerLimit > 0)
 
   if (isFinished) {
     const result: GameOutcome | 'over' =
