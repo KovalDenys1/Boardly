@@ -16,7 +16,7 @@ import { viewerOutcome } from '@/lib/game-outcome'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import SketchAndGuessGameBoard, {
     SketchScoreRows,
     emptySketchAndGuessDraft,
@@ -47,6 +47,7 @@ import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { sketchPhaseSeconds } from '@/lib/games/sketch-and-guess-phases'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
 import { useSketchSounds } from './hooks/useSketchSounds'
 import {
@@ -738,6 +739,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         moveCue: null,
         enabled: !isSpectator && !!game && !isFinished,
     })
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
     // The strokes on the canvas and the half-typed guess belong to the round,
     // not to a layout tree: the desktop, landscape and portrait trees each mount

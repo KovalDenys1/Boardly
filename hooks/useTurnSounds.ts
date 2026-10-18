@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react'
 import { playCue } from '@/lib/sound-engine'
 import type { CueId } from '@/lib/sound-map'
-import { legacyCue } from '@/lib/sounds'
 
 /**
  * Turn and move cues for the dedicated game pages.
@@ -31,9 +30,7 @@ export interface UseTurnSoundsOptions {
   opponentMoved?: boolean
   /** False to stay silent (finished game, spectator, waiting room). Defaults to true. */
   enabled?: boolean
-  /** Old sound name for someone else's move; read only when `moveCue` is left out. */
-  moveSound?: string
-  /** Cue for someone else's move, played at the remote level. `null`: the page plays the move itself. */
+  /** Cue for someone else's move, played at the remote level. `null` (the default): the page plays the move itself. */
   moveCue?: CueId | null
   /** A function is read when the turn arrives, after the page's motion has planned the move that brought it. */
   turnDelayMs?: number | (() => number)
@@ -56,12 +53,10 @@ export function useTurnSounds({
   lastMoveSignature,
   opponentMoved = false,
   enabled = true,
-  moveSound = 'click',
-  moveCue,
+  moveCue = null,
   turnDelayMs = TURN_AFTER_MOVE_MS,
 }: UseTurnSoundsOptions): void {
   const prevRef = useRef<{ isMyTurn: boolean; signature: string | number | null } | null>(null)
-  const cue = moveCue === undefined ? legacyCue(moveSound) ?? null : moveCue
   const turnDelayRef = useRef(turnDelayMs)
   turnDelayRef.current = turnDelayMs
 
@@ -72,10 +67,10 @@ export function useTurnSounds({
     // First observation, or the first one with a game: remember, never play.
     if (!prev || prev.signature === null || signature === null || !enabled) return
 
-    if (cue && opponentMoved && signature !== prev.signature) playCue(cue, { remote: true })
+    if (moveCue && opponentMoved && signature !== prev.signature) playCue(moveCue, { remote: true })
     if (isMyTurn && !prev.isMyTurn) {
       const delay = turnDelayRef.current
       playCue('turn.mine', { delayMs: typeof delay === 'function' ? delay() : delay })
     }
-  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, cue])
+  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, moveCue])
 }

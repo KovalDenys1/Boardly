@@ -147,7 +147,7 @@ export async function GET(
   const canJoinAsPlayer = (() => {
     if (isAdminView) return false
     const game = activeGame
-    if (!game) return false
+    if (!game || game.status === 'finished') return false
     const playerCount = Array.isArray(game.players) ? game.players.length : 0
     return playerCount < lobby.maxPlayers
   })()

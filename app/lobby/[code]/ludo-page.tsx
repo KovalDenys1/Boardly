@@ -26,11 +26,12 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useLudoRollSound } from './hooks/useLudoRollSound'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
@@ -563,11 +564,12 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     // The board's token list, memoised on the engine (a new engine per state) and
     // the few things that decide what is tappable. Hoisted with the other hooks.
     const boardUserId = getCurrentUserId()
+    const earlyStatus = gameEngine?.getState().status
     const canPickToken =
         !isSpectator &&
         !isMoveSubmitting &&
         !!gameEngine &&
-        gameEngine.getState().status === 'playing' &&
+        earlyStatus === 'playing' &&
         gameEngine.getCurrentPlayer()?.id === boardUserId &&
         gameEngine.getPhase() === 'move'
     const boardTokens = useMemo<BoardToken[]>(() => {
@@ -601,10 +603,13 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: soundData ? `${soundData.lastRoll?.at ?? ''}:${soundData.lastMove?.at ?? ''}` : null,
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyStatus === 'playing',
         moveCue: null,
         turnDelayMs: () => (cueEndRef.current?.data === boardMotionData ? cueEndRef.current?.inMs ?? 0 : 0) + TURN_AFTER_MOVE_MS,
     })
+    const resolvedStatus = game?.status || earlyStatus
+    const isFinished = resolvedStatus === 'finished' || earlyStatus === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -623,9 +628,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (

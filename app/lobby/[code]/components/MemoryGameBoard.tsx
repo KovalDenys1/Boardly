@@ -12,7 +12,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -24,6 +24,7 @@ import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { playCue } from '@/lib/sound-engine'
 import { useMemorySounds } from '../hooks/useMemorySounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
 import { idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
@@ -232,6 +233,7 @@ export default function MemoryGameBoard({
   const prevMatchedRef = useRef<Set<string> | null>(null)
   const [justMatchedIds, setJustMatchedIds] = useState<string[]>([])
   const { playOwnFlip, forgetOwnFlip } = useMemorySounds({ gameId, cards, currentPlayerId, viewerId: currentUserId, isSpectator })
+  useSpectatorResultCue({ isSpectator, isFinished, gameId, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
   const cardsLoaded = cards.length > 0
   useEffect(() => {
