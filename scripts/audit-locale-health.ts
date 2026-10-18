@@ -1,12 +1,12 @@
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import { locales } from '../locales'
+import { availableLocales, locales } from '../locales'
 
 /**
  * Locale health — three checks on what a player would actually receive.
  *
  * `audit-i18n.ts` asks a structural question: is there an English literal in
- * the source. `check-locales.ts` asks whether the four key sets match. Neither
+ * the source. `check-locales.ts` asks whether the locales' key sets match. Neither
  * looks at the *values*, and every i18n fault of 2026-09-21 lived in a value:
  * a Russian label that was still English, two keys holding one string, a
  * count sentence with the wrong case. This file checks the bundles themselves.
@@ -27,7 +27,7 @@ import { locales } from '../locales'
  *    exist today are baselined and only a *new* pair fails.
  *
  * 3. **Non-English values identical to English**, ratcheted. A leftover English
- *    string in ru/uk/no reads as a bug to a player. Most current matches are
+ *    string in any other locale reads as a bug to a player. Most current matches are
  *    real words in those languages - "Premium", "FAQ", "ID", "Discord", "Pause"
  *    in Norwegian - so this is baselined too.
  *
@@ -45,7 +45,10 @@ const baselinePath = path.join(repoRoot, 'scripts', 'locale-health-baseline.json
 const updateBaseline = process.argv.includes('--update-baseline')
 
 const BASE_LOCALE = 'en'
-const OTHER_LOCALES = ['no', 'ru', 'uk'] as const
+const OTHER_LOCALES = availableLocales.filter((locale) => locale !== BASE_LOCALE)
+
+// locales/es.ts is a copy of en.ts until the Spanish translation lands (#1472).
+const UNTRANSLATED_CHECK_PENDING: ReadonlySet<string> = new Set(['es'])
 
 /** Two or more letters, so "·", "1/2" and "{{count}}" alone are not copy. */
 const hasWords = /\p{L}{2,}/u
@@ -108,7 +111,7 @@ export function inspectLocales(bundles: Record<string, unknown>): LocaleHealthRe
         )
       }
 
-      if (englishValue === translated && hasWords.test(englishValue)) {
+      if (englishValue === translated && hasWords.test(englishValue) && !UNTRANSLATED_CHECK_PENDING.has(locale)) {
         untranslated.push(`${locale} ${key} = ${JSON.stringify(englishValue)}`)
       }
     }

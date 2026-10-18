@@ -31,6 +31,7 @@ import {
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
+import { availableLocales, localeNames } from '@/locales/meta'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
@@ -238,12 +239,11 @@ const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
 }
 
-const SETTINGS_LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English', badge: 'EN' },
-  { value: 'uk', label: 'Ukrainian', badge: 'UA' },
-  { value: 'no', label: 'Norwegian', badge: 'NO' },
-  { value: 'ru', label: 'Russian', badge: 'RU' },
-]
+const SETTINGS_LANGUAGE_OPTIONS = availableLocales.map((value) => ({
+  value,
+  label: localeNames[value].name,
+  badge: localeNames[value].badge,
+}))
 
 const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID]
 export default function ProfilePage() {

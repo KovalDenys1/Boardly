@@ -74,7 +74,7 @@ function getScoreValue(player: Player): number {
 }
 
 function formatOrdinalPlace(place: number, locale: string): string {
-  if (locale.startsWith('ru') || locale.startsWith('uk') || locale.startsWith('no')) {
+  if (!locale.startsWith('en')) {
     return `#${place}`
   }
 

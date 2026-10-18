@@ -51,7 +51,7 @@ behind them.
   offered only when the second one is set. Stripe Adaptive Pricing converts the charge to
   the customer's own currency, so prices render behind a "from". Plans and checkout live on
   `/premium`
-- **i18n:** 4 locales — English, Russian, Norwegian, Ukrainian
+- **i18n:** 6 locales — English, Russian, Norwegian, Ukrainian, German, Spanish
 - **Hosting:** Vercel (Next.js app)
 
 ## Architecture
@@ -135,7 +135,7 @@ Commit format: `#<issue-number> feat/fix/chore: description`
 
 ## Localization
 
-All user-visible strings go through `t()`. Locale files: `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, and all four must have identical keys – that part is enforced by `npm run check:locales`, which the pre-commit hook runs when a locale file is staged. Nothing checks mechanically that a string went through `t()` at all, so a hardcoded string is caught in review.
+All user-visible strings go through `t()`. Locale files: `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts`, and all six must have identical keys – that part is enforced by `npm run check:locales`, which the pre-commit hook runs when a locale file is staged. Nothing checks mechanically that a string went through `t()` at all, so a hardcoded string is caught in review.
 
 ## Documentation
 

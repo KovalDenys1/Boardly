@@ -105,8 +105,8 @@ describe('site JSON-LD graph (#886)', () => {
     expect(website?.name).toBe('Boardly')
   })
 
-  it('declares the four languages the site is actually served in', () => {
-    expect(website?.inLanguage).toEqual(['en', 'no', 'ru', 'uk'])
+  it('declares the languages the site is actually served in', () => {
+    expect(website?.inLanguage).toEqual(['en', 'uk', 'no', 'ru', 'de', 'es'])
   })
 
   it('has no SearchAction – Google retired the sitelinks search box', () => {
