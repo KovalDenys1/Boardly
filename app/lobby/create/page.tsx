@@ -24,6 +24,9 @@ import { AuthGateModal } from '@/components/AuthGateModal'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import GameArt from './GameArt'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
+import { playCue } from '@/lib/sound-engine'
+import type { CueId } from '@/lib/sound-map'
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -128,8 +131,11 @@ function FieldLabel({ icon, htmlFor, children }: { icon: IconName; htmlFor?: str
   )
 }
 
+const CREATE_SOUND_CUES: readonly CueId[] = ['ui.confirm', 'ui.error']
+
 function CreateLobbyPage() {
   const { t } = useTranslation()
+  useSoundConsumer(CREATE_SOUND_CUES)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { status } = useSession()
@@ -284,6 +290,7 @@ function CreateLobbyPage() {
       // The gate covers the form whenever this is true; this only stops a submit
       // that slips past it from reaching the API with no identity.
       if (needsIdentity) return
+      playCue('ui.confirm')
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
@@ -402,6 +409,7 @@ function CreateLobbyPage() {
         })
       }
       clientLogger.error('❌ Lobby creation error:', err)
+      playCue('ui.error')
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
       setError(errorMessage)
     } finally {

@@ -3,7 +3,7 @@
 import { Fragment, useMemo } from 'react'
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { availableLocales, type Locale } from '@/locales/meta'
+import { availableLocales, localeNames, type Locale } from '@/locales/meta'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 import { changeLanguageLazy } from '@/i18n'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
@@ -14,19 +14,15 @@ interface LanguageSwitcherProps {
   anchor?: 'top end' | 'bottom end'
 }
 
-// Each language's own self-name (endonym), not translated — a Russian
-// speaker who can't read the current locale still needs to recognize
-// "Русский" in the list, so these stay constant across all 4 locales.
 const LANGUAGE_OPTIONS: Array<{
   code: Locale
   shortLabel: string
   name: string
-}> = [
-  { code: 'en', shortLabel: 'EN', name: 'English' },
-  { code: 'uk', shortLabel: 'UA', name: 'Українська' },
-  { code: 'no', shortLabel: 'NO', name: 'Norsk' },
-  { code: 'ru', shortLabel: 'RU', name: 'Русский' },
-]
+}> = availableLocales.map((code) => ({
+  code,
+  shortLabel: localeNames[code].badge,
+  name: localeNames[code].name,
+}))
 
 function GlobeIcon() {
   return (

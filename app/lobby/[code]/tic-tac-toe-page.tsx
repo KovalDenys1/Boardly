@@ -31,7 +31,6 @@ import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPag
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
@@ -490,7 +489,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.tictactoe.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -1036,6 +1034,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="tic_tac_toe"
+                    outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!mySymbol, isViewerWinner: winnerSymbol && !isDraw ? winnerSymbol === mySymbol : null })}
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                     gameId={isMatchComplete ? game?.id : null}
                     isRegistered={status === 'authenticated' && !isGuest}

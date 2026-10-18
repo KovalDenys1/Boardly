@@ -8,6 +8,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 jest.mock('@/lib/analytics', () => ({
   trackPremiumCta: jest.fn(),
@@ -99,7 +101,7 @@ describe('/premium consent and withdrawal information (#1162)', () => {
         'premium.yearlyRefundNote',
       ])
     )
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }

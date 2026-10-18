@@ -1,29 +1,23 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
+import type { CueId } from '@/lib/sound-map'
+import { legacyCue } from '@/lib/sounds'
 
 /**
- * Turn and move cues for the dedicated game pages (#1111).
+ * Turn and move cues for the dedicated game pages.
  *
- * Until this hook the eight dedicated pages played only `win`: the opponent's
- * or the bot's move landed in silence and nothing said "your move". The lobby
- * page (Yahtzee, Memory, Spy) has played `turnChange` for a long time; this is
- * the same cue, shared, so each page only has to say what its state means.
- *
- * - `turnChange` when the turn comes to the viewer (`isMyTurn` false -> true).
- * - A light move cue when someone else's move arrives: `lastMoveSignature`
- *   changes while `opponentMoved` is true. When both happen in the same render
- *   (the usual two-player case: the opponent moves and hands the turn over)
- *   only `turnChange` plays, so the two sounds never stack.
+ * - Someone else's move: `moveCue` at the remote level, when `lastMoveSignature`
+ *   changes while `opponentMoved` is true.
+ * - The turn coming to the viewer (`isMyTurn` false -> true): `turn.mine`,
+ *   `turnDelayMs` after the state change. When one move does both (the usual
+ *   two-player case) the viewer hears the move, then their turn.
  *
  * Nothing plays on the first render, nor on the first render with a game
  * (signature going from null to a value is a snapshot loading in, not a move),
- * while
- * `enabled` is false (finished game — the page's own `win` stays the only end
- * cue — or a spectator), or before the user has interacted with the document
- * (browsers refuse autoplay anyway). The sound-enabled setting is honoured by
- * `sounds.play` itself.
+ * nor while `enabled` is false (finished game, spectator, waiting room). Mute,
+ * volume, a hidden tab and the missing first gesture are the engine's to check.
  */
 export interface UseTurnSoundsOptions {
   /** Whether the viewer is the one who has to act now. */
@@ -37,12 +31,24 @@ export interface UseTurnSoundsOptions {
   opponentMoved?: boolean
   /** False to stay silent (finished game, spectator, waiting room). Defaults to true. */
   enabled?: boolean
-  /** Sound for someone else's move; must be a key `lib/sounds` already loads. */
+  /** Old sound name for someone else's move; read only when `moveCue` is left out. */
   moveSound?: string
+  /** Cue for someone else's move, played at the remote level. `null`: the page plays the move itself. */
+  moveCue?: CueId | null
+  turnDelayMs?: number
 }
 
-/** Someone else's move is quieter than the viewer's own cues: a nudge, not an alert. */
-export const OPPONENT_MOVE_VOLUME_FACTOR = 0.6
+/** The gap between the opponent's move cue and the viewer's turn cue. */
+export const TURN_AFTER_MOVE_MS = 150
+
+/** The lobby shell's turn cue: when the turn comes to the viewer, never when it leaves them. */
+export function turnCameToViewer(
+  previousPlayerId: string | null | undefined,
+  currentPlayerId: string | null | undefined,
+  viewerId: string | null | undefined,
+): boolean {
+  return Boolean(previousPlayerId && currentPlayerId && viewerId && currentPlayerId !== previousPlayerId && currentPlayerId === viewerId)
+}
 
 export function useTurnSounds({
   isMyTurn,
@@ -50,8 +56,11 @@ export function useTurnSounds({
   opponentMoved = false,
   enabled = true,
   moveSound = 'click',
+  moveCue,
+  turnDelayMs = TURN_AFTER_MOVE_MS,
 }: UseTurnSoundsOptions): void {
   const prevRef = useRef<{ isMyTurn: boolean; signature: string | number | null } | null>(null)
+  const cue = moveCue === undefined ? legacyCue(moveSound) ?? null : moveCue
 
   useEffect(() => {
     const signature = lastMoveSignature ?? null
@@ -59,15 +68,8 @@ export function useTurnSounds({
     prevRef.current = { isMyTurn, signature }
     // First observation, or the first one with a game: remember, never play.
     if (!prev || prev.signature === null || signature === null || !enabled) return
-    if (!sounds.hasUserInteracted()) return
 
-    const turnArrived = isMyTurn && !prev.isMyTurn
-    const moveArrived = opponentMoved && signature !== prev.signature
-
-    if (turnArrived) {
-      sounds.play('turnChange')
-    } else if (moveArrived) {
-      sounds.play(moveSound, { volume: sounds.getVolume() * OPPONENT_MOVE_VOLUME_FACTOR })
-    }
-  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, moveSound])
+    if (cue && opponentMoved && signature !== prev.signature) playCue(cue, { remote: true })
+    if (isMyTurn && !prev.isMyTurn) playCue('turn.mine', { delayMs: turnDelayMs })
+  }, [isMyTurn, lastMoveSignature, opponentMoved, enabled, cue, turnDelayMs])
 }

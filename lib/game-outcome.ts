@@ -1,4 +1,5 @@
 import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
+import type { CueId } from '@/lib/sound-map'
 
 /**
  * The finished game as the viewer's seat sees it, for GameStatusBanner's
@@ -44,4 +45,15 @@ export function hasTopScore(
   const scoreOf = (id: string) => scores?.[id] ?? 0
   const top = Math.max(...playerIds.map(scoreOf))
   return scoreOf(viewerId) === top
+}
+
+/**
+ * The result cue for a finished game: the viewer hears their own outcome, never
+ * someone else's win. A spectator, a viewer with no seat, and a game with no
+ * known winner hear only that it is over.
+ */
+export function resultCue(outcome: GameOutcome | undefined, isSpectator = false): CueId {
+  if (isSpectator || !outcome) return 'result.over'
+  if (outcome === 'win') return 'result.win'
+  return outcome === 'loss' ? 'result.loss' : 'result.draw'
 }

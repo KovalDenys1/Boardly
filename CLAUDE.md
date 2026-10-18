@@ -248,7 +248,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
-- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
+- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
 
 ### Verify
 ```bash
@@ -290,12 +290,12 @@ read at the start of every session, whatever the session is about.*
 ## i18n — never hardcode a user-visible string
 
 Every label, message and piece of copy goes through the `t()` helper with a key defined in
-**all four** locale files (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`). Parity is enforced
+**all six** locale files (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts`). Parity is enforced
 by the pre-commit hook.
 
-Add the key to all four files first, then use `t('namespace.key')`. Never write
+Add the key to all six files first, then use `t('namespace.key')`. Never write
 `t('key', 'fallback text')` — the fallback masks a missing translation and passes the
-parity check while leaving three languages broken.
+parity check while leaving five languages broken.
 
 ## Animations — never animate height
 
@@ -480,7 +480,7 @@ sentence it must state below in `details`.
   `Cross-Origin-Resource-Policy: same-site` would stop a mail client from showing the image.
 - **Language (#1331).** Every mail is in one language: the site locale stored on the account in
   `Users.language`, which `components/AccountLanguageSync.tsx` writes through `PUT /api/user/language`
-  after sign-in and on every language switch. `no` gets Norwegian; `en`, `ru`, `uk` and none get
+  after sign-in and on every language switch. `no` gets Norwegian; `en`, `ru`, `uk`, `de`, `es` and none get
   English, because mail copy exists only in English and Norwegian. A mail sent while answering a
   request takes `emailLanguageFor(user.language, request)`, which falls back to Accept-Language only
   when nothing is stored (no account yet, or the browser has not written it). A cron, webhook or

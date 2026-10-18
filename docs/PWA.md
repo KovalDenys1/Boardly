@@ -1,13 +1,13 @@
 # PWA Support (Issue #44)
 
-Updated: 2026-09-15
+Updated: 2026-10-18
 
 Issue #44 shipped and was closed on 2026-02-25. This page tracks the current PWA
 implementation and its regression checks.
 
 ## Implemented
 
-- Web app manifest: `public/manifest.json`
+- Web app manifest: `public/manifest.json`; its `"id": "/"` also identifies the web app to the Android app (see `docs/ANDROID.md`)
 - App icons: `public/icons/*` (PNG + SVG, including maskable variants)
 - Service worker: `public/sw.js`
 - Offline fallback page: `public/offline.html`
@@ -53,6 +53,7 @@ hand when the brand changes.
 ## Notes / Remaining Limits
 
 - iOS install prompt is manual (Safari does not support `beforeinstallprompt`)
+- `public/offline.html` carries a copy of the app-shell script from `getAppShellInitScript()` in `lib/app-shell-script.ts` (#1465), because a Play app launch while offline can make it the first document of the tab, and its "Go to home" link would otherwise start a tab that is never marked; `__tests__/lib/app-shell.test.ts` fails when the copy drifts, and a change to it needs the cache version in `public/sw.js` bumped so installed copies are replaced.
 - Web push shipped after this issue and is separate from the service worker's caching:
   subscriptions live in the `PushSubscriptions` table via `/api/push-subscriptions`, are sent
   by `sendPushNotification` in `lib/push-send.ts` – from the turn-reminder cycle inside

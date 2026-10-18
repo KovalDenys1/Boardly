@@ -657,10 +657,11 @@ export default function SpyGameBoard({
   const statusMeta =
     phase === SpyGamePhase.VOTING ? `${votesSubmitted}/${seatedPlayers.length}` : undefined
 
+  const viewerResult = viewerOutcome({ isFinished: isGameOver, isDraw: gameResult.isDraw, isSpectator, isSeated: !!currentUserId && normalizedPlayers.some((p) => p.id === currentUserId), isViewerWinner: gameResult.winnerId ? iWon : null, isViewerAtTop: hasTopScore(scores, normalizedPlayers.map((p) => p.id), currentUserId) })
   const statusSection = (
     <GameStatusBanner
       isFinished={isGameOver}
-      outcome={viewerOutcome({ isFinished: isGameOver, isDraw: gameResult.isDraw, isSpectator, isSeated: !!currentUserId && normalizedPlayers.some((p) => p.id === currentUserId), isViewerWinner: gameResult.winnerId ? iWon : null, isViewerAtTop: hasTopScore(scores, normalizedPlayers.map((p) => p.id), currentUserId) })}
+      outcome={viewerResult}
       finishedMessage={finishedMessage}
       activeTitle={activeTitle}
       meta={statusMeta}
@@ -1123,6 +1124,7 @@ export default function SpyGameBoard({
           registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="guess_the_spy"
+          outcome={viewerResult}
           resultKey={`${gameId}:${state.lastMoveAt ?? ''}`}
           isRegistered={!isGuest && !!currentUserId}
         />

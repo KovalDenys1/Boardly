@@ -385,6 +385,7 @@ const no = {
     mute: 'Demp',
     unmute: 'Aktiver lyd',
     volume: 'Volum',
+    silentSwitchHint: 'På iPhone demper lydløs-bryteren også spillydene.',
     themeLabel: 'Tema',
     themeLight: 'Lys',
     themeDark: 'Mørk',
@@ -443,6 +444,12 @@ const no = {
     ctaVisitorTitle: 'Spillkvelden starter her.',
     ctaVisitorAccent: 'Ingen planlegging nødvendig.',
     ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
+    promoVideo: {
+      kicker: 'Se det i bruk',
+      title: 'Boardly på ett minutt',
+      label: 'Video om Boardly: velg et spill, send lenken og spill sammen',
+      play: 'Spill av videoen',
+    },
     howItWorks: {
       kicker: 'Slik fungerer det',
       title: 'Tre steg for å spille',
@@ -2700,7 +2707,7 @@ const no = {
         step2Title: 'Tegn ordet ditt',
         step2Desc: 'Du har 15 sekunder på å velge ett av tre ord. Deretter har du inntil 80 sekunder på å tegne det.',
         step3Title: 'Gjett før tiden går ut',
-        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
+        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på engelsk, norsk, russisk eller ukrainsk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
         step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter når alle har tegnet.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
@@ -4858,7 +4865,7 @@ const no = {
   about: {
     breadcrumb: 'Om',
     title: 'Om Boardly',
-    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
+    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk, ukrainsk, tysk og spansk.',
     originTitle: 'Hvor det kom fra',
     origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
     origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
@@ -5082,6 +5089,7 @@ const no = {
     ctaManage: 'Administrer abonnement',
     ctaLoading: 'Åpner kassen...',
     ctaNote: 'Si opp når som helst. Har du en rabattkode? Skriv den inn på betalingssiden.',
+    playAppNotice: 'Premium kan kjøpes på boardly.online i nettleseren.',
     withdrawalTitle: 'Din angrerett',
     withdrawalBody: 'Du har 14 dagers angrerett fra den dagen du kjøper Premium, uten å oppgi noen grunn. Angrer du, betaler vi tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr.',
     withdrawalHow: 'For å angre sender du en e-post til support@boardly.online, eller bruker angreskjemaet på siden om angrerett.',
@@ -5157,6 +5165,7 @@ const no = {
       q2: {
         question: 'Hva skjer hvis jeg sier opp?',
         answer: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Oppsigelse gjøres i faktureringsportalen på profilsiden din.',
+        answerApp: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Du kan si opp fra Premium-fanen på profilsiden din.',
       },
       q3: {
         question: 'Hvilken valuta blir jeg belastet i?',
@@ -5165,6 +5174,7 @@ const no = {
       q4: {
         question: 'Kan jeg bytte mellom månedlig og årlig?',
         answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Link håndterer differansen for tiden du allerede har betalt.',
+        answerApp: 'Ja, på boardly.online i nettleseren: åpne faktureringsportalen fra profilsiden din og bytt plan der. Link håndterer differansen for tiden du allerede har betalt.',
       },
       q5: {
         question: 'Tar dere imot rabattkoder?',
@@ -5183,6 +5193,7 @@ const no = {
     soldThroughLink: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link tar imot betalingen og sender kvittering, faktura og eventuelt varsel om refusjon på e-post. Du angrer hos oss slik det står nedenfor, og vi betaler tilbake gjennom Link.',
     laterTitle: 'Etter de 14 dagene',
     later: 'Du kan si opp når som helst i faktureringsportalen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
+    laterApp: 'Du kan si opp når som helst fra Premium-fanen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
     howTitle: 'Slik angrer du',
     howIntro: 'Gi oss en tydelig beskjed om at du vil gå fra avtalen, før fristen på 14 dager er ute. Du kan bruke skjemaet nedenfor, men du må ikke.',
     howEmailLabel: 'På e-post til',
@@ -5224,7 +5235,7 @@ const no = {
       title: '1. Om vilkårene',
       scope: 'Vilkårene er avtalen mellom deg og oss om bruk av boardly.online: når du spiller som gjest, når du har en konto, og når du kjøper Boardly Premium. Hvordan vi behandler personopplysninger, står i personvernerklæringen.',
       accept: 'Du godtar vilkårene når du oppretter en konto eller kjøper Premium. Spiller du som gjest, gjelder de samme reglene for deg.',
-      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
+      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. De finnes også på tysk og spansk, som oversettelser. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
       version: 'Datoen nederst viser når denne versjonen gjelder fra, og den endres bare når teksten endres. Du kan lagre eller skrive ut siden for å ta vare på en kopi.',
     },
     accounts: {
@@ -5312,7 +5323,7 @@ const no = {
       body: 'Spørsmål om vilkårene, meldinger om innhold og klager sender du til',
     },
     updated: 'Sist oppdatert: {{date}}',
-    changeNote: 'Nytt i denne versjonen: regelen i punkt 2 om kontoer som ikke brukes, som gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
+    changeNote: 'Nytt i denne versjonen: punkt 1 nevner oversettelsene til tysk og spansk. Regelen i punkt 2 om kontoer som ikke brukes, som kom i forrige versjon, gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
     premium: {
       title: '3. Boardly Premium: abonnement og angrerett',
       price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar og er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',

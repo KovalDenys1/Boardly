@@ -1,5 +1,6 @@
 import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
+import { isPlayApp } from './app-shell'
 import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
 import type { InviteShareMethod } from './invite-share'
@@ -698,6 +699,7 @@ export function trackInviteOpened(attribution: InviteAttribution, lobbyCode: str
  * /premium can be read against the checkout it did or did not become (#926).
  */
 export function trackPremiumCta(source: string, plan?: PremiumPlan): void {
+  if (isPlayApp()) return
   const payload = { source, ...(plan ? { plan } : {}) } satisfies Record<string, AnalyticsPropertyValue>
   track('feature_used', { feature: 'premium_cta', ...payload })
   emitOperationalEvent('premium_cta_clicked', payload)

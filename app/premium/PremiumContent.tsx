@@ -5,8 +5,11 @@ import { useCallback, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import { Icon, type IconName } from '@/components/icons'
+import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { trackPremiumCta } from '@/lib/analytics'
+import { isPlayApp } from '@/lib/app-shell'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import { PREMIUM_BASE_PRICE } from '@/lib/stripe'
 import {
@@ -43,6 +46,14 @@ const FREE_FEATURES: { key: string; icon: IconName }[] = [
 ]
 
 const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5'] as const
+type FaqKey = (typeof FAQ_KEYS)[number]
+
+const PURCHASE_FAQ_KEYS: ReadonlySet<FaqKey> = new Set(['q3', 'q5'])
+
+const APP_FAQ_ANSWER: Partial<Record<FaqKey, TranslationKeys>> = {
+  q2: 'premium.faq.q2.answerApp',
+  q4: 'premium.faq.q4.answerApp',
+}
 
 /**
  * `.bd-btn` is `white-space: nowrap`, and the longest label ("Sign in to get
@@ -55,6 +66,8 @@ const CTA_CLASS =
 export default function PremiumContent({ pricing }: { pricing: PremiumPricing }) {
   const { t } = useTranslation()
   const { data: session, status } = useSession()
+  const inPlayApp = useIsPlayApp()
+  const faqKeys = inPlayApp ? FAQ_KEYS.filter((key) => !PURCHASE_FAQ_KEYS.has(key)) : FAQ_KEYS
 
   // The yearly plan exists only when Stripe answered for it, so it also decides
   // whether there is anything to toggle between.
@@ -86,6 +99,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
 
   const startCheckout = useCallback(
     async (source: string) => {
+      if (isPlayApp()) return
       // The buttons are disabled until the box is ticked; this covers any path
       // that reaches here without it, and the route refuses independently.
       if (!consented) {
@@ -209,6 +223,14 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
     )
   }
 
+  const playAppNotice = (
+    <PlayAppOnly>
+      <p className="mt-5 max-w-xl text-sm font-semibold leading-relaxed" style={{ color: 'var(--bd-ink)' }}>
+        {t('premium.playAppNotice')}
+      </p>
+    </PlayAppOnly>
+  )
+
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -282,58 +304,68 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <p className="mt-1 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
               {billingNote}
             </p>
-            <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-              {yearly ? t('premium.currencyNote') : `${t('premium.monthlyOnlyNote')} ${t('premium.currencyNote')}`}
-            </p>
-            <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-              {t('premium.priceNoteTax')} {t('premium.priceNoteConversion')}
-            </p>
-            {selectedPlan === 'yearly' && (
+            <PurchaseOnly>
+              <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                {yearly ? t('premium.currencyNote') : `${t('premium.monthlyOnlyNote')} ${t('premium.currencyNote')}`}
+              </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.yearlyRefundNote')}
+                {t('premium.priceNoteTax')} {t('premium.priceNoteConversion')}
               </p>
+              {selectedPlan === 'yearly' && (
+                <p className="mt-1 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.yearlyRefundNote')}
+                </p>
+              )}
+
+              {/* The pre-contract withdrawal information (angrerettloven § 8),
+                  given above the button that starts the purchase. Prose on the
+                  card behind a hairline, not a card of its own: at 320 px a nested
+                  card would leave each line a few words wide. */}
+              <div
+                className="mt-5 max-w-xl pt-4"
+                style={{ borderTop: '1px solid var(--bd-line)' }}
+                data-testid="premium-withdrawal"
+              >
+                <h2 className="text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
+                  {t('premium.withdrawalTitle')}
+                </h2>
+                <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.withdrawalBody')}
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.withdrawalStartNow')}
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.withdrawalHow')}{' '}
+                  {/* bd-coral-deep was 3.79:1 here, below the 4.5:1 AA minimum
+                      (#1171 axe pass) — bd-ink keeps it readable without
+                      touching the brand palette. */}
+                  <Link
+                    href="/withdrawal"
+                    style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                  >
+                    {t('premium.withdrawalFormLink')}
+                  </Link>
+                </p>
+              </div>
+
+              {consentBox('premium-consent-hero')}
+
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                {cta(HERO_CTA)}
+                <span className="text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.ctaNote')}
+                </span>
+              </div>
+            </PurchaseOnly>
+            {!yearly && (
+              <PlayAppOnly>
+                <p className="mt-2 max-w-xl text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+                  {t('premium.monthlyOnlyNote')}
+                </p>
+              </PlayAppOnly>
             )}
-
-            {/* The pre-contract withdrawal information (angrerettloven § 8),
-                given above the button that starts the purchase. Prose on the
-                card behind a hairline, not a card of its own: at 320 px a nested
-                card would leave each line a few words wide. */}
-            <div
-              className="mt-5 max-w-xl pt-4"
-              style={{ borderTop: '1px solid var(--bd-line)' }}
-              data-testid="premium-withdrawal"
-            >
-              <h2 className="text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
-                {t('premium.withdrawalTitle')}
-              </h2>
-              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.withdrawalBody')}
-              </p>
-              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.withdrawalStartNow')}
-              </p>
-              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.withdrawalHow')}{' '}
-                {/* bd-coral-deep was 3.79:1 here, below the 4.5:1 AA minimum
-                    (#1171 axe pass) — bd-ink keeps it readable without
-                    touching the brand palette. */}
-                <Link
-                  href="/withdrawal"
-                  style={{ color: 'var(--bd-ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}
-                >
-                  {t('premium.withdrawalFormLink')}
-                </Link>
-              </p>
-            </div>
-
-            {consentBox('premium-consent-hero')}
-
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              {cta(HERO_CTA)}
-              <span className="text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('premium.ctaNote')}
-              </span>
-            </div>
+            {playAppNotice}
             {/* bd-coral-deep was 3.79:1 on this card, below the 4.5:1 AA
                 minimum (#1171 axe pass) — bd-ink keeps both readable
                 without touching the brand palette. */}
@@ -445,13 +477,13 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
               {t('premium.faqTitle')}
             </h2>
             <dl className="mt-4 space-y-5">
-              {FAQ_KEYS.map((key) => (
-                <div key={key}>
+              {faqKeys.map((key) => (
+                <div key={key} data-purchase-ui={PURCHASE_FAQ_KEYS.has(key) || undefined}>
                   <dt className="text-sm font-bold" style={{ color: 'var(--bd-ink)' }}>
                     {t(`premium.faq.${key}.question` as TranslationKeys)}
                   </dt>
                   <dd className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-                    {t(`premium.faq.${key}.answer` as TranslationKeys)}
+                    {t((inPlayApp && APP_FAQ_ANSWER[key]) || (`premium.faq.${key}.answer` as TranslationKeys))}
                   </dd>
                 </div>
               ))}
@@ -469,8 +501,11 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('premium.closingBody')}
             </p>
-            {consentBox('premium-consent-closing')}
-            <div className="mt-5">{cta(CLOSING_CTA)}</div>
+            <PurchaseOnly>
+              {consentBox('premium-consent-closing')}
+              <div className="mt-5">{cta(CLOSING_CTA)}</div>
+            </PurchaseOnly>
+            {playAppNotice}
           </section>
         </article>
       </div>

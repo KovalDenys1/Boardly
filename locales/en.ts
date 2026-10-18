@@ -385,6 +385,7 @@ const en = {
     mute: 'Mute',
     unmute: 'Unmute',
     volume: 'Volume',
+    silentSwitchHint: 'On iPhone, the silent switch also mutes game sounds.',
     themeLabel: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
@@ -443,6 +444,12 @@ const en = {
     ctaVisitorTitle: 'Game night starts here.',
     ctaVisitorAccent: 'No planning needed.',
     ctaVisitorBody: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account, no download.',
+    promoVideo: {
+      kicker: 'See it in action',
+      title: 'Boardly in one minute',
+      label: 'Boardly video: pick a game, send the link and play together',
+      play: 'Play the video',
+    },
     howItWorks: {
       kicker: 'How it works',
       title: 'Three steps to play',
@@ -2700,7 +2707,7 @@ const en = {
         step2Title: 'Draw your prompt',
         step2Desc: 'Pick one of three words within 15 seconds. Then draw it in up to 80 seconds.',
         step3Title: 'Guess before the clock runs out',
-        step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
+        step3Desc: 'The others can guess up to 40 times while you draw, in English, Norwegian, Russian or Ukrainian. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
         step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or once everyone has drawn the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
@@ -4870,7 +4877,7 @@ const en = {
   about: {
     breadcrumb: 'About',
     title: 'About Boardly',
-    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
+    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian, Ukrainian, German and Spanish.',
     originTitle: 'Where it came from',
     origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
     origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',
@@ -5094,6 +5101,7 @@ const en = {
     ctaManage: 'Manage subscription',
     ctaLoading: 'Opening checkout...',
     ctaNote: 'Cancel anytime. Have a promo code? Enter it on the payment page.',
+    playAppNotice: 'Premium can be bought on boardly.online in your browser.',
     withdrawalTitle: 'Your right of withdrawal',
     withdrawalBody: 'You have 14 days from the day you buy Premium to withdraw, without giving a reason. If you withdraw, we refund everything you paid for that purchase within 14 days of your notice, by the same payment method and with no fee.',
     withdrawalHow: 'To withdraw, send an email to support@boardly.online or use the withdrawal form on our withdrawal page.',
@@ -5169,6 +5177,7 @@ const en = {
       q2: {
         question: 'What happens if I cancel?',
         answer: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. Cancelling is done from the billing portal on your profile page.',
+        answerApp: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. You can cancel from the Premium tab on your profile page.',
       },
       q3: {
         question: 'Which currency am I charged in?',
@@ -5177,6 +5186,7 @@ const en = {
       q4: {
         question: 'Can I switch between monthly and yearly?',
         answer: 'Yes. Open the billing portal from your profile page and change the plan there; Link handles the difference for the time already paid.',
+        answerApp: 'Yes, on boardly.online in your browser: open the billing portal from your profile page and change the plan there. Link handles the difference for the time already paid.',
       },
       q5: {
         question: 'Do you take promo codes?',
@@ -5195,6 +5205,7 @@ const en = {
     soldThroughLink: 'Premium is sold through Link: Stripe\'s affiliate Sold through Link, LLC is the merchant of record for the purchase. Link takes the payment and emails your receipt, your invoice and any refund notice. You withdraw with us as described below, and we make the refund through Link.',
     laterTitle: 'After the 14 days',
     later: 'You can cancel at any time from the billing portal on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
+    laterApp: 'You can cancel at any time from the Premium tab on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
     howTitle: 'How to withdraw',
     howIntro: 'Tell us clearly that you want to withdraw from the contract before the 14 days are over. You can use the form below, but you do not have to.',
     howEmailLabel: 'By email to',
@@ -5236,7 +5247,7 @@ const en = {
       title: '1. About these Terms',
       scope: 'These Terms are the agreement between you and us for using boardly.online: when you play as a guest, when you have an account, and when you buy Boardly Premium. Our privacy policy explains how we handle personal data.',
       accept: 'You accept the Terms when you create an account or buy Premium. If you play as a guest, the same rules apply to you.',
-      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
+      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. They are also available in German and Spanish, as translations. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
       version: 'The date at the bottom shows when this version took effect, and it changes only when the text changes. You can save or print this page to keep a copy.',
     },
     accounts: {
@@ -5324,7 +5335,7 @@ const en = {
       body: 'Questions about these Terms, notices about content and complaints go to',
     },
     updated: 'Last updated: {{date}}',
-    changeNote: 'New in this version: the rule in section 2 on accounts that are not used, which applies from {{inactiveFrom}}. Nothing else has changed.',
+    changeNote: 'New in this version: section 1 names the German and Spanish translations. The rule in section 2 on accounts that are not used, added in the previous version, applies from {{inactiveFrom}}. Nothing else has changed.',
     premium: {
       title: '3. Boardly Premium: subscription and right of withdrawal',
       price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars and is the full price: any VAT or sales tax due in your country is included in it, and Link collects it at checkout. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',

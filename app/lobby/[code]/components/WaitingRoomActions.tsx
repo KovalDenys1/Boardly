@@ -1,5 +1,5 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { hasBotSupport } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -114,7 +114,7 @@ export default function WaitingRoomActions({
       {/* Start Game */}
       <button
         onClick={() => {
-          sounds.play('click')
+          playCue('ui.select')
           onStartGame()
         }}
         disabled={!canStartImmediately}

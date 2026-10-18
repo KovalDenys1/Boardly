@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { playCue } from '@/lib/sound-engine'
 import type { ChatMessagePayload } from '@/types/game'
 
 /**
@@ -28,8 +29,6 @@ interface UseLobbyChatOptions {
   code: string
   /** Whether the chat UI is currently on screen — suppresses unread counting. */
   isChatVisible: boolean
-  /** Optional ambient sound hook for incoming messages. */
-  onIncomingMessageSound?: () => void
 }
 
 /**
@@ -49,7 +48,7 @@ function withoutConfirmedOptimistic(
   })
 }
 
-export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: UseLobbyChatOptions) {
+export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
   const { data: session } = useSession()
   const { isGuest, guestId, guestName } = useGuest()
 
@@ -62,10 +61,8 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
   isChatVisibleRef.current = isChatVisible
   const currentUserIdRef = useRef<string | null | undefined>(undefined)
   currentUserIdRef.current = isGuest ? guestId : session?.user?.id
-  const soundRef = useRef(onIncomingMessageSound)
   const codeRef = useRef(code)
   codeRef.current = code
-  soundRef.current = onIncomingMessageSound
   const chatMessagesRef = useRef<ChatMessagePayload[]>([])
   chatMessagesRef.current = chatMessages
 
@@ -89,7 +86,7 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
           const last = fresh[fresh.length - 1]
           const isOwnMessage = last.userId === currentUserIdRef.current
           if (!isChatVisibleRef.current && !isOwnMessage) setUnreadCount((prev) => prev + 1)
-          if (!isOwnMessage) soundRef.current?.()
+          if (!isOwnMessage) playCue('chat.incoming')
         })
         .catch(() => {
           // Non-critical: history reloads on the next reconnect anyway.
@@ -103,7 +100,7 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
       setUnreadCount(prev => prev + 1)
     }
     if (!isOwnMessage) {
-      soundRef.current?.()
+      playCue('chat.incoming')
     }
   }, [])
 

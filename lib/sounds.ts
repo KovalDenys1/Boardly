@@ -1,269 +1,69 @@
-import { readLocal, writeLocal } from '@/lib/safe-storage'
-class SoundManager {
-  private sounds: Map<string, HTMLAudioElement> = new Map()
-  private enabled: boolean = true
-  private volume: number = 0.7
-  private initialized: boolean = false
-  private userInteracted: boolean = false
-  private playingSounds: Set<string> = new Set()
-  private readonly retriggerableSounds: Set<string> = new Set(['click', 'diceRoll'])
-  private readonly preloadedSounds: Set<string> = new Set(['click', 'diceRoll', 'score', 'turnChange', 'cardFlip', 'gameStart', 'win'])
+import { getSoundEngine, type PlayOptions } from '@/lib/sound-engine'
+import type { CueId } from '@/lib/sound-map'
+import { getSoundVolume, isSoundEnabled, setSoundVolume, toggleSoundEnabled } from '@/lib/sound-settings'
 
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.loadSounds()
-      const savedEnabled = readLocal('soundEnabled')
-      this.enabled = savedEnabled !== 'false'
-      const savedVolume = parseFloat(readLocal('soundVolume') ?? '')
-      if (!isNaN(savedVolume)) {
-        this.volume = Math.max(0, Math.min(1, savedVolume))
-      }
-
-      // Listen for first user interaction to enable audio playback
-      this.setupUserInteraction()
-    }
-  }
-
-  private setupUserInteraction() {
-    const enableAudio = () => {
-      if (!this.userInteracted) {
-        this.userInteracted = true
-
-        // Remove listeners after first interaction
-        document.removeEventListener('click', enableAudio)
-        document.removeEventListener('touchstart', enableAudio)
-        document.removeEventListener('keydown', enableAudio)
-      }
-    }
-
-    document.addEventListener('click', enableAudio, { once: true })
-    document.addEventListener('touchstart', enableAudio, { once: true })
-    document.addEventListener('keydown', enableAudio, { once: true })
-  }
-
-  private loadSounds() {
-    const soundFiles = {
-      diceRoll: '/sounds/dice-roll.mp3',
-      click: '/sounds/click.mp3',
-      win: '/sounds/win.mp3',
-      turnChange: '/sounds/turn-change.mp3',
-      score: '/sounds/score.mp3',
-      message: '/sounds/message.wav',
-      playerJoin: '/sounds/player-join.wav',
-      playerLeave: '/sounds/player-leave.wav',
-      gameStart: '/sounds/game-start.wav',
-      celebration: '/sounds/celebration.wav',
-      countdown: '/sounds/countdown.wav',
-      cardFlip: '/sounds/card-flip.wav',
-    }
-
-    Object.entries(soundFiles).forEach(([key, path]) => {
-      try {
-        const audio = new Audio()
-        audio.preload = this.preloadedSounds.has(key) ? 'auto' : 'metadata'
-        audio.volume = 0.7 // Set default volume to 70%
-        
-        // Set src after creating audio element to avoid immediate loading issues
-        audio.src = path
-        
-        // Enhanced error handler with retry logic
-        audio.addEventListener('error', (e) => {
-          // Silently handle cache errors (common in production)
-          const error = e.target as HTMLAudioElement
-          if (error.error?.code === 4) {
-            // MEDIA_ERR_SRC_NOT_SUPPORTED or cache error - try reloading
-            audio.load()
-          }
-          // Don't spam console with cache errors in production
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`Failed to load sound: ${path}`, e)
-          }
-        })
-        
-        // Clean up playing state when sound ends
-        audio.addEventListener('ended', () => {
-          this.playingSounds.delete(key)
-        })
-        
-        this.sounds.set(key, audio)
-      } catch (error) {
-        // Fail silently for individual sounds - app should continue working
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`Failed to create audio for ${key}:`, error)
-        }
-      }
-    })
-    
-    this.initialized = true
-  }
-
-  play(soundName: string, options: { volume?: number; loop?: boolean; force?: boolean } = {}) {
-    if (!this.enabled || !this.initialized) return
-
-    const sound = this.sounds.get(soundName)
-    if (!sound) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`Sound not found: ${soundName}`)
-      }
-      return
-    }
-
-    const isRetriggerable = this.retriggerableSounds.has(soundName)
-
-    // Prevent overlapping sounds unless forced (or retriggerable by design)
-    if (!options.force && !isRetriggerable && this.playingSounds.has(soundName)) {
-      return
-    }
-
-    try {
-      // Load sound if not loaded (lazy loading to prevent cache errors)
-      if (sound.readyState === 0) {
-        sound.load()
-      }
-      
-      // Reset sound to beginning
-      sound.currentTime = 0
-      
-      // Apply options
-      if (options.volume !== undefined) {
-        sound.volume = Math.max(0, Math.min(1, options.volume))
-      } else {
-        sound.volume = this.volume
-      }
-      
-      sound.loop = options.loop || false
-      
-      // Track playing state
-      this.playingSounds.add(soundName)
-      
-      // Play with proper error handling
-      const playPromise = sound.play()
-      
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          // Remove from playing set on error
-          this.playingSounds.delete(soundName)
-          
-          // Only warn if it's not a user interaction or cache issue
-          if (err.name !== 'NotAllowedError' && 
-              err.name !== 'NotSupportedError' && 
-              err.name !== 'AbortError' &&
-              process.env.NODE_ENV === 'development') {
-            console.warn(`Sound play failed (${soundName}):`, err.message)
-          }
-        })
-      }
-    } catch (err) {
-      this.playingSounds.delete(soundName)
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`Sound play exception (${soundName}):`, err)
-      }
-    }
-  }
-
-  stop(soundName: string) {
-    const sound = this.sounds.get(soundName)
-    if (sound) {
-      sound.pause()
-      sound.currentTime = 0
-      this.playingSounds.delete(soundName)
-    }
-  }
-
-  stopAll() {
-    this.sounds.forEach((sound, key) => {
-      sound.pause()
-      sound.currentTime = 0
-      this.playingSounds.delete(key)
-    })
-  }
-
-  toggle() {
-    this.enabled = !this.enabled
-    writeLocal('soundEnabled', String(this.enabled))
-
-    // Stop all sounds when disabling
-    if (!this.enabled) {
-      this.stopAll()
-    }
-
-    return this.enabled
-  }
-
-  setVolume(value: number) {
-    this.volume = Math.max(0, Math.min(1, value))
-    writeLocal('soundVolume', String(this.volume))
-  }
-
-  getVolume() {
-    return this.volume
-  }
-
-  isEnabled() {
-    return this.enabled
-  }
-
-  hasUserInteracted() {
-    return this.userInteracted
-  }
+const LEGACY_CUES: Record<string, CueId> = {
+  diceRoll: 'dice.roll',
+  click: 'ui.select',
+  win: 'result.win',
+  turnChange: 'turn.mine',
+  score: 'score.add',
+  message: 'chat.incoming',
+  playerJoin: 'player.join',
+  playerLeave: 'player.leave',
+  gameStart: 'game.start',
+  celebration: 'yahtzee.celebrate',
+  countdown: 'timer.tick',
+  cardFlip: 'card.flip',
 }
 
-// Lazy singleton initialization to avoid SSR issues
-let soundManagerInstance: SoundManager | null = null
+/** The cue an old sound name now plays, for the hooks that still accept one. */
+export function legacyCue(soundName: string): CueId | undefined {
+  return LEGACY_CUES[soundName]
+}
 
+interface LegacyPlayOptions {
+  /** The old element volume, 0..1; played as attenuation relative to the master volume. */
+  volume?: number
+  /** Accepted for old call sites and ignored: one-shots overlap now, and nothing loops. */
+  force?: boolean
+  loop?: boolean
+}
+
+/** The pre-#1464 API, kept so every call site works until each moves to `playCue`. */
 export const sounds = {
-  get instance(): SoundManager {
-    if (typeof window === 'undefined') {
-      // Return a dummy instance on server
-      return {
-        play: () => {},
-        stop: () => {},
-        stopAll: () => {},
-        toggle: () => false,
-        setVolume: () => {},
-        getVolume: () => 0.7,
-        isEnabled: () => false,
-        hasUserInteracted: () => false,
-      } as unknown as SoundManager
+  play(soundName: string, options: LegacyPlayOptions = {}): void {
+    const cue = legacyCue(soundName)
+    if (!cue) return
+    const playOptions: PlayOptions = {}
+    const master = getSoundVolume()
+    if (options.volume !== undefined && master > 0 && options.volume < master) {
+      playOptions.gainDb = 20 * Math.log10(Math.max(options.volume, 0.001) / master)
     }
-    
-    if (!soundManagerInstance) {
-      soundManagerInstance = new SoundManager()
-    }
-    
-    return soundManagerInstance
-  },
-  
-  // Convenience methods
-  play(soundName: string, options?: Parameters<SoundManager['play']>[1]) {
-    return this.instance.play(soundName, options)
+    getSoundEngine().play(cue, playOptions)
   },
 
-  stop(soundName: string) {
-    return this.instance.stop(soundName)
+  stopAll(): void {
+    getSoundEngine().stopAll()
   },
 
-  stopAll() {
-    return this.instance.stopAll()
+  toggle(): boolean {
+    return toggleSoundEnabled()
   },
 
-  toggle() {
-    return this.instance.toggle()
+  setVolume(value: number): void {
+    setSoundVolume(value)
   },
 
-  setVolume(value: number) {
-    return this.instance.setVolume(value)
+  getVolume(): number {
+    return getSoundVolume()
   },
 
-  getVolume() {
-    return this.instance.getVolume()
+  isEnabled(): boolean {
+    return isSoundEnabled()
   },
 
-  isEnabled() {
-    return this.instance.isEnabled()
-  },
-
-  hasUserInteracted() {
-    return this.instance.hasUserInteracted()
+  hasUserInteracted(): boolean {
+    return getSoundEngine().hasGesture()
   },
 }

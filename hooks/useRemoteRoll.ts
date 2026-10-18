@@ -16,8 +16,12 @@ export function useRemoteRoll(
   lastRoll: LastRollLike | null | undefined,
   viewerId: string | null | undefined,
   ready: boolean,
+  /** Called once per remote roll as its animation starts, so its sound lands with it. */
+  onArrival?: () => void,
 ): boolean {
   const previousRef = useRef<string | null | undefined>(undefined)
+  const onArrivalRef = useRef(onArrival)
+  onArrivalRef.current = onArrival
   const [rolling, setRolling] = useState(false)
   const signature = rollSignature(lastRoll)
 
@@ -30,6 +34,7 @@ export function useRemoteRoll(
       return
     }
     setRolling(true)
+    onArrivalRef.current?.()
     const timer = window.setTimeout(() => setRolling(false), REMOTE_ROLL_ANIMATION_MS)
     return () => window.clearTimeout(timer)
     // The signature identifies the roll; a new lastRoll object with the same one is not a roll.

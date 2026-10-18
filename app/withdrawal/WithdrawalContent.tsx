@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import Footer from '@/components/Footer'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import {
@@ -46,6 +47,7 @@ function legacyCopy(text: string): boolean {
 
 export default function WithdrawalContent() {
   const { t } = useTranslation()
+  const inPlayApp = useIsPlayApp()
   const [copyState, setCopyState] = useState<CopyState>('idle')
 
   const strings: WithdrawalFormStrings = useMemo(
@@ -141,7 +143,7 @@ export default function WithdrawalContent() {
 
             <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('withdrawal.laterTitle')}</h2>
-              <p>{t('withdrawal.later')}</p>
+              <p>{inPlayApp ? t('withdrawal.laterApp') : t('withdrawal.later')}</p>
             </section>
 
             {/* The standard form (Q-0319B / Annex I(B)), as read-only text the visitor can copy */}
@@ -192,9 +194,11 @@ export default function WithdrawalContent() {
               <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-soft)' }}>{t('withdrawal.formSource')}</p>
             </section>
 
-            <p className="pt-4" style={{ borderTop: '1px solid var(--bd-line)' }}>
-              <Link href="/premium" style={linkStyle}>{t('withdrawal.backToPremium')}</Link>
-            </p>
+            {!inPlayApp && (
+              <p data-purchase-ui className="pt-4" style={{ borderTop: '1px solid var(--bd-line)' }}>
+                <Link href="/premium" style={linkStyle}>{t('withdrawal.backToPremium')}</Link>
+              </p>
+            )}
           </div>
         </article>
       </div>

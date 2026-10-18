@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
 import { showToast } from '@/lib/i18n-toast'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -206,14 +207,21 @@ export default function AvatarPicker({
               />
             </>
           ) : (
-            <button
-              type="button"
-              onClick={onUnlockUpload}
-              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95"
-            >
-              <Icon name="star" size={14} />
-              <span>{t('profile.avatarPicker.getPremium')}</span>
-            </button>
+            <>
+              <PurchaseOnly>
+                <button
+                  type="button"
+                  onClick={onUnlockUpload}
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95"
+                >
+                  <Icon name="star" size={14} />
+                  <span>{t('profile.avatarPicker.getPremium')}</span>
+                </button>
+              </PurchaseOnly>
+              <PlayAppOnly>
+                <p className="text-sm text-bd-ink-soft">{t('premium.playAppNotice')}</p>
+              </PlayAppOnly>
+            </>
           )}
         </div>
       </div>

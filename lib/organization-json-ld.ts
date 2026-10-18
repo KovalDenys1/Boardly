@@ -7,6 +7,7 @@
 // can be unit-tested without rendering the layout, the way #925 made /about's
 // nodes testable.
 
+import { availableLocales } from '@/locales/meta'
 import { SOCIAL_PROFILES } from './social-profiles'
 
 export const BOARDLY_URL = 'https://boardly.online'
@@ -54,6 +55,7 @@ export const organizationNode = {
     '@type': 'ContactPoint',
     email: SUPPORT_EMAIL,
     contactType: 'customer support',
+    // The languages support replies in, fewer than the site is shown in (inLanguage below).
     availableLanguage: ['en', 'no', 'ru', 'uk'],
   },
 } as const
@@ -73,7 +75,7 @@ export const websiteNode = {
   alternateName: BOARDLY_ALTERNATE_NAME,
   description: ENTITY_DESCRIPTION,
   url: BOARDLY_URL,
-  inLanguage: ['en', 'no', 'ru', 'uk'],
+  inLanguage: [...availableLocales],
   publisher: { '@id': ORGANIZATION_ID },
 } as const
 

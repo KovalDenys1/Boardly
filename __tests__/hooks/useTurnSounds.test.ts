@@ -1,38 +1,27 @@
 import { renderHook } from '@testing-library/react'
-import { useTurnSounds, OPPONENT_MOVE_VOLUME_FACTOR, type UseTurnSoundsOptions } from '@/hooks/useTurnSounds'
-import { sounds } from '@/lib/sounds'
+import { useTurnSounds, TURN_AFTER_MOVE_MS, turnCameToViewer, type UseTurnSoundsOptions } from '@/hooks/useTurnSounds'
+import { playCue } from '@/lib/sound-engine'
 
-jest.mock('@/lib/sounds', () => ({
-  sounds: {
-    play: jest.fn(),
-    hasUserInteracted: jest.fn(() => true),
-    getVolume: jest.fn(() => 0.5),
-  },
-}))
+jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
-const play = sounds.play as jest.Mock
-const hasUserInteracted = sounds.hasUserInteracted as jest.Mock
+const play = playCue as jest.Mock
 
 function setup(initial: UseTurnSoundsOptions) {
   return renderHook((props: UseTurnSoundsOptions) => useTurnSounds(props), { initialProps: initial })
 }
 
-describe('useTurnSounds (#1111)', () => {
-  beforeEach(() => {
-    play.mockClear()
-    hasUserInteracted.mockReturnValue(true)
-  })
+describe('useTurnSounds (#1111, #1464)', () => {
+  beforeEach(() => play.mockClear())
 
   it('plays nothing on the first render, even when it is already my turn', () => {
     setup({ isMyTurn: true, lastMoveSignature: 3, opponentMoved: true })
     expect(play).not.toHaveBeenCalled()
   })
 
-  it('plays turnChange when the turn comes to the viewer, once', () => {
+  it('plays turn.mine when the turn comes to the viewer, once', () => {
     const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1 })
     rerender({ isMyTurn: true, lastMoveSignature: 1 })
-    expect(play).toHaveBeenCalledTimes(1)
-    expect(play).toHaveBeenCalledWith('turnChange')
+    expect(play.mock.calls).toEqual([['turn.mine', { delayMs: TURN_AFTER_MOVE_MS }]])
     rerender({ isMyTurn: true, lastMoveSignature: 1 })
     expect(play).toHaveBeenCalledTimes(1)
   })
@@ -43,23 +32,37 @@ describe('useTurnSounds (#1111)', () => {
     expect(play).not.toHaveBeenCalled()
   })
 
-  it('plays a quieter move cue for an opponent move that keeps the turn away', () => {
-    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1, opponentMoved: false })
+  it('plays the move cue at the remote level for an opponent move that keeps the turn away', () => {
+    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1, moveCue: 'tap.mark' })
+    rerender({ isMyTurn: false, lastMoveSignature: 2, opponentMoved: true, moveCue: 'tap.mark' })
+    expect(play.mock.calls).toEqual([['tap.mark', { remote: true }]])
+  })
+
+  it('plays the opponent move, then turn.mine 150 ms later, when one move does both', () => {
+    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 4, moveCue: 'piece.place' })
+    rerender({ isMyTurn: true, lastMoveSignature: 5, opponentMoved: true, moveCue: 'piece.place' })
+    expect(play.mock.calls).toEqual([
+      ['piece.place', { remote: true }],
+      ['turn.mine', { delayMs: 150 }],
+    ])
+  })
+
+  it('plays only turn.mine, after turnDelayMs, when the page plays the move itself (moveCue null)', () => {
+    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 4, moveCue: null, turnDelayMs: 450 })
+    rerender({ isMyTurn: true, lastMoveSignature: 5, opponentMoved: true, moveCue: null, turnDelayMs: 450 })
+    expect(play.mock.calls).toEqual([['turn.mine', { delayMs: 450 }]])
+  })
+
+  it('maps an old moveSound name to its cue when no moveCue is given', () => {
+    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 'a', moveSound: 'score' })
+    rerender({ isMyTurn: false, lastMoveSignature: 'b', opponentMoved: true, moveSound: 'score' })
+    expect(play).toHaveBeenCalledWith('score.add', { remote: true })
+  })
+
+  it('defaults the move cue to the old click, ui.select', () => {
+    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1 })
     rerender({ isMyTurn: false, lastMoveSignature: 2, opponentMoved: true })
-    expect(play).toHaveBeenCalledWith('click', { volume: 0.5 * OPPONENT_MOVE_VOLUME_FACTOR })
-  })
-
-  it('plays only turnChange when an opponent move also hands the turn over', () => {
-    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 4, opponentMoved: false })
-    rerender({ isMyTurn: true, lastMoveSignature: 5, opponentMoved: true })
-    expect(play).toHaveBeenCalledTimes(1)
-    expect(play).toHaveBeenCalledWith('turnChange')
-  })
-
-  it('uses a custom move sound', () => {
-    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 'a', moveSound: 'cardFlip' })
-    rerender({ isMyTurn: false, lastMoveSignature: 'b', opponentMoved: true, moveSound: 'cardFlip' })
-    expect(play).toHaveBeenCalledWith('cardFlip', expect.any(Object))
+    expect(play).toHaveBeenCalledWith('ui.select', { remote: true })
   })
 
   it('stays silent while disabled and does not replay stale changes when re-enabled', () => {
@@ -70,19 +73,29 @@ describe('useTurnSounds (#1111)', () => {
     expect(play).not.toHaveBeenCalled()
   })
 
-  it('stays silent before the user has interacted with the page', () => {
-    hasUserInteracted.mockReturnValue(false)
-    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1 })
-    rerender({ isMyTurn: true, lastMoveSignature: 2, opponentMoved: true })
-    expect(play).not.toHaveBeenCalled()
-  })
-
   it('treats the game loading in (signature from null) as a snapshot, not a move', () => {
     const { rerender } = setup({ isMyTurn: false, lastMoveSignature: null })
     rerender({ isMyTurn: true, lastMoveSignature: 7, opponentMoved: true })
     expect(play).not.toHaveBeenCalled()
     rerender({ isMyTurn: false, lastMoveSignature: 8, opponentMoved: false })
     rerender({ isMyTurn: true, lastMoveSignature: 9, opponentMoved: true })
-    expect(play).toHaveBeenCalledWith('turnChange')
+    expect(play).toHaveBeenCalledWith('turn.mine', { delayMs: TURN_AFTER_MOVE_MS })
+  })
+})
+
+describe('turnCameToViewer (the lobby shell turn cue, #1464)', () => {
+  it('is true only when the turn moves to the viewer', () => {
+    expect(turnCameToViewer('bot', 'me', 'me')).toBe(true)
+  })
+
+  it('stays silent when the turn moves away from the viewer', () => {
+    expect(turnCameToViewer('me', 'bot', 'me')).toBe(false)
+  })
+
+  it('stays silent between two other players, on the first observation and with no viewer', () => {
+    expect(turnCameToViewer('a', 'b', 'me')).toBe(false)
+    expect(turnCameToViewer(undefined, 'me', 'me')).toBe(false)
+    expect(turnCameToViewer('me', 'me', 'me')).toBe(false)
+    expect(turnCameToViewer('bot', 'me', null)).toBe(false)
   })
 })

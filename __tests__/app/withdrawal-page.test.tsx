@@ -9,6 +9,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // The footer reaches session and router state this page does not need.
 jest.mock('@/components/Footer', () => ({
@@ -66,7 +68,7 @@ describe('/withdrawal page (#1162)', () => {
   it('uses only translation keys that exist in all four locales, and never a fallback', () => {
     const keys = [...source.matchAll(/\bt\('([^']+)'/g)].map((match) => match[1])
     expect(keys.length).toBeGreaterThan(20)
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -156,5 +158,40 @@ describe('/withdrawal page (#1162)', () => {
     expect(screen.getByRole('status')).toHaveTextContent(en.withdrawal.copyFailed)
 
     Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true })
+  })
+})
+
+describe('/withdrawal in the Play app (#1465)', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('has no way back to /premium inside the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { container } = render(<WithdrawalContent />)
+
+    expect(container.querySelector('a[href="/premium"]')).toBeNull()
+    expect(screen.getByTestId('withdrawal-form')).toBeInTheDocument()
+  })
+
+  it('keeps the link back to /premium on the web', () => {
+    render(<WithdrawalContent />)
+
+    expect(screen.getByRole('link', { name: en.withdrawal.backToPremium })).toHaveAttribute('href', '/premium')
+  })
+
+  it('points to the Premium tab, not the billing portal, for cancelling inside the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<WithdrawalContent />)
+
+    expect(screen.getByText(en.withdrawal.laterApp)).toBeInTheDocument()
+    expect(screen.queryByText(en.withdrawal.later)).not.toBeInTheDocument()
+  })
+
+  it('keeps the billing portal text on the web', () => {
+    render(<WithdrawalContent />)
+
+    expect(screen.getByText(en.withdrawal.later)).toBeInTheDocument()
+    expect(screen.queryByText(en.withdrawal.laterApp)).not.toBeInTheDocument()
   })
 })

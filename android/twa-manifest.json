@@ -1,0 +1,43 @@
+{
+  "packageId": "online.boardly.app",
+  "host": "boardly.online",
+  "name": "Boardly",
+  "launcherName": "Boardly",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#1F1B16",
+  "navigationColor": "#1F1B16",
+  "backgroundColor": "#FBF6EE",
+  "enableNotifications": true,
+  "startUrl": "/?utm_source=android_app&utm_medium=twa",
+  "iconUrl": "https://boardly.online/icons/icon-512.png?v=3",
+  "maskableIconUrl": "https://boardly.online/icons/icon-maskable-512.png?v=3",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "~/.config/boardly-android/upload-key.jks",
+    "alias": "upload"
+  },
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Quick play",
+      "shortName": "Quick play",
+      "url": "/?quick=1",
+      "chosenIconUrl": "https://boardly.online/icons/icon-192.png?v=3"
+    },
+    {
+      "name": "Create lobby",
+      "shortName": "Create lobby",
+      "url": "/lobby/create",
+      "chosenIconUrl": "https://boardly.online/icons/icon-192.png?v=3"
+    }
+  ],
+  "webManifestUrl": "https://boardly.online/manifest.json",
+  "fallbackType": "customtabs",
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://boardly.online/",
+  "minSdkVersion": 24
+}

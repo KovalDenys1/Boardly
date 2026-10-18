@@ -6,10 +6,12 @@ import MarqueeStrip from '@/components/HomePage/MarqueeStrip'
 import GameRibbon from '@/components/HomePage/GameRibbon'
 import HowItWorksRedesign from '@/components/HomePage/HowItWorksRedesign'
 import CtaBanner from '@/components/HomePage/CtaBanner'
+import PromoVideo from '@/components/HomePage/PromoVideo'
 import GuidesSection from '@/components/GuidesSection'
 import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
 import { buildFaqFacts } from '@/lib/faq-facts'
 import { getPremiumPricing } from '@/lib/server/premium-pricing'
+import { buildPromoVideoJsonLd } from '@/lib/promo-video'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
@@ -65,6 +67,12 @@ export default async function HomePage() {
 
       {/* How it works */}
       <HowItWorksRedesign />
+
+      <PromoVideo />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildPromoVideoJsonLd()) }}
+      />
 
       {/* CTA banner */}
       <CtaBanner />
