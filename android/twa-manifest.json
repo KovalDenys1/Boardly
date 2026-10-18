@@ -12,6 +12,7 @@
   "startUrl": "/?utm_source=android_app&utm_medium=twa",
   "iconUrl": "https://boardly.online/icons/icon-512.png?v=3",
   "maskableIconUrl": "https://boardly.online/icons/icon-maskable-512.png?v=3",
+  "monochromeIconUrl": "https://boardly.online/icons/icon-monochrome-512.png?v=1",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "~/.config/boardly-android/upload-key.jks",
