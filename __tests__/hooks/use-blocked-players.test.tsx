@@ -1,7 +1,8 @@
 import React from 'react'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, render, renderHook, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import BlockListCacheSync from '@/components/BlockListCacheSync'
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
@@ -423,12 +424,14 @@ describe('useBlockedPlayers', () => {
       const { result } = renderHook(() => useBlockedPlayers())
       await waitFor(() => expect(result.current.ready).toBe(true))
       expect(result.current.failed).toBe(true)
+      expect(result.current.unknown).toBe(true)
       expect(result.current.blockedIds.size).toBe(0)
 
       readFails = false
       act(() => result.current.retry())
 
       await waitFor(() => expect(result.current.failed).toBe(false))
+      expect(result.current.unknown).toBe(false)
       expect([...result.current.blockedIds]).toEqual(['u9'])
     })
 
@@ -470,6 +473,42 @@ describe('useBlockedPlayers', () => {
         expect(result.current.ready).toBe(true)
         await waitFor(() => expect(result.current.failed).toBe(true))
         expect([...result.current.blockedIds]).toEqual(['u9'])
+        expect(result.current.unknown).toBe(false)
+      })
+
+      it('calls a failed read unknown only when no list was known, an empty one included', async () => {
+        window.localStorage.setItem(CACHE, '[]')
+        mockFetch.mockResolvedValue(reply({ error: 'nope' }, 500))
+
+        const { result } = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(result.current.failed).toBe(true))
+        expect(result.current.unknown).toBe(false)
+        expect(result.current.blockedIds.size).toBe(0)
+      })
+
+      it("does not write the old account's copy back when a block is answered after sign-out", async () => {
+        serveBlocks()
+        const serve = mockFetch.getMockImplementation()!
+        let answerPost: (response: Response) => void = () => {}
+        mockFetch.mockImplementation((url: string, init?: RequestInit) =>
+          init?.method === 'POST' ? new Promise<Response>((resolve) => (answerPost = resolve)) : serve(url, init)
+        )
+        const { result, rerender } = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(result.current.ready).toBe(true))
+
+        let blocking: Promise<boolean> = Promise.resolve(false)
+        act(() => {
+          blocking = result.current.block({ id: 'u2', username: 'Rival' })
+        })
+        setStatus('unauthenticated')
+        rerender()
+        await waitFor(() => expect(window.localStorage.getItem(CACHE)).toBeNull())
+
+        await act(async () => {
+          answerPost(reply({ error: 'nope' }, 500))
+          await blocking
+        })
+        expect(window.localStorage.getItem(CACHE)).toBeNull()
       })
 
       it("forgets this account's cached list on sign-out, and any other account's on load", async () => {
@@ -483,6 +522,34 @@ describe('useBlockedPlayers', () => {
         setStatus('unauthenticated')
         rerender()
         await waitFor(() => expect(window.localStorage.getItem(CACHE)).toBeNull())
+      })
+
+      it('does not write the copy back when the chat is gone and the session ended before the answer', async () => {
+        serveBlocks()
+        const serve = mockFetch.getMockImplementation()!
+        let answerPost: (response: Response) => void = () => {}
+        mockFetch.mockImplementation((url: string, init?: RequestInit) =>
+          init?.method === 'POST' ? new Promise<Response>((resolve) => (answerPost = resolve)) : serve(url, init)
+        )
+        const sync = render(<BlockListCacheSync />)
+        const chat = renderHook(() => useBlockedPlayers())
+        await waitFor(() => expect(chat.result.current.ready).toBe(true))
+
+        let blocking: Promise<boolean> = Promise.resolve(false)
+        act(() => {
+          blocking = chat.result.current.block({ id: 'u2', username: 'Rival' })
+        })
+        // The header's sign-out navigates away: the chat unmounts, the always-mounted sync stays.
+        chat.unmount()
+        setStatus('unauthenticated')
+        sync.rerender(<BlockListCacheSync />)
+        expect(window.localStorage.getItem(CACHE)).toBeNull()
+
+        await act(async () => {
+          answerPost(reply({ error: 'nope' }, 500))
+          await blocking
+        })
+        expect(window.localStorage.getItem(CACHE)).toBeNull()
       })
 
       it('shows a block in every instance before the server answers, and takes it back there when refused', async () => {

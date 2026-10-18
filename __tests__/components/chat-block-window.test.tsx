@@ -110,6 +110,17 @@ describe('Chat and the block list of a signed-in player (#1466)', () => {
     expect(screen.queryByText('blockedPlayers.loadFailed')).toBeNull()
   })
 
+  it('says nothing about a failed read when an empty list is known, as for a non-empty one', async () => {
+    window.localStorage.setItem(CACHE, '[]')
+    const fetchMock = serve({ read: () => Promise.resolve(json({ error: 'x' }, 500)) })
+
+    renderChat()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.getByText('hello there')).toBeTruthy()
+    expect(screen.queryByText('blockedPlayers.loadFailed')).toBeNull()
+  })
+
   it('says so, with Retry, when the read fails and no list is known, and shows the messages meanwhile', async () => {
     let fail = true
     const fetchMock = serve({

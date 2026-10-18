@@ -72,7 +72,7 @@ export default function Chat({
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const [reportedMessage, setReportedMessage] = useState<ChatMessage | null>(null)
-  const { blockedIds, block, ready: blocksReady, failed: blocksFailed, retry: retryBlocks } = useBlockedPlayers()
+  const { blockedIds, block, ready: blocksReady, unknown: blocksUnknown, retry: retryBlocks } = useBlockedPlayers()
   const visibleMessages = blockedIds.size > 0 ? messages.filter((msg) => !blockedIds.has(msg.userId)) : messages
   const [blockTarget, setBlockTarget] = useState<BlockTarget | null>(null)
   const blockConfirmId = useId()
@@ -376,7 +376,7 @@ export default function Chat({
         aria-labelledby="chat-title"
         aria-label={t('chat.title')}
       >
-        {blocksReady && blocksFailed && blockedIds.size === 0 && (
+        {blocksReady && blocksUnknown && (
           <div
             role="alert"
             className="chat-blocks-failed sticky top-0 z-10 flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5 text-xs text-bd-ink-soft"
@@ -636,7 +636,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input h-full pr-14 hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
+              className="bd-input h-full pr-14! hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">

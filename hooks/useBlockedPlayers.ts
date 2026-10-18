@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { getSafeLocalStorage, readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import {
-  BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX,
-  BLOCKED_PLAYERS_CHANGED_EVENT,
-  BLOCKED_PLAYERS_STORAGE_KEY,
-} from '@/lib/user-blocks'
+  isCurrentBlockCacheAccount,
+  readAccountBlockCache,
+  syncAccountBlockCache,
+  writeAccountBlockCache,
+} from '@/lib/client/blocked-players-cache'
+import { BLOCKED_PLAYERS_CHANGED_EVENT, BLOCKED_PLAYERS_STORAGE_KEY } from '@/lib/user-blocks'
 
 export type BlockedPlayer = { id: string; username: string; blockedAt: string }
 
@@ -23,6 +25,8 @@ export type UseBlockedPlayers = {
   ready: boolean
   /** True while the latest read of the account list failed; `blocked` then holds the last list known, or nothing. */
   failed: boolean
+  /** True when that failed read had no earlier list to fall back on, not even an empty one: `blocked` is empty because nothing is known. */
+  unknown: boolean
   /** Reads the list again, in every instance on the page. */
   retry: () => void
   /** Resolves true once the block is kept; false when it could not be, with nothing changed (session loading, account list not loaded, the server refused, or the device would not store it). */
@@ -36,7 +40,7 @@ const BLOCKS_URL = '/api/user/blocks'
 
 type Mode = 'pending' | 'account' | 'device'
 /** One viewer's list: `device`, or `account:<id>`. */
-type List = { key: string; players: BlockedPlayer[]; failed: boolean }
+type List = { key: string; players: BlockedPlayer[]; failed: boolean; unknown?: boolean }
 /** The changed event's detail from an instance; other senders (GuestContext, retry) send none, which means "read again". */
 type Change = { source: object; list: List }
 
@@ -89,31 +93,13 @@ function listKey(mode: Mode, selfId: string | undefined): string | null {
 
 function readAccountCache(selfId: string | undefined): BlockedPlayer[] | null {
   if (!selfId) return null
-  const raw = readLocal(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + selfId)
+  const raw = readAccountBlockCache(selfId)
   if (raw === null) return null
   try {
     const parsed: unknown = JSON.parse(raw)
     return Array.isArray(parsed) ? parsePlayers(parsed) : null
   } catch {
     return null
-  }
-}
-
-/** Removes every account's cached list but `keepId`'s: a device remembers only the account signed in on it. */
-function forgetOtherAccounts(keepId: string | undefined) {
-  const storage = getSafeLocalStorage()
-  if (!storage) return
-  try {
-    const stale: string[] = []
-    for (let index = 0; index < storage.length; index++) {
-      const name = storage.key(index)
-      if (name?.startsWith(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX) && name !== BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + keepId) {
-        stale.push(name)
-      }
-    }
-    for (const name of stale) storage.removeItem(name)
-  } catch {
-    // Storage is best-effort; the next load tries again.
   }
 }
 
@@ -214,6 +200,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
   const current = snapshot?.key === key ? snapshot : key ? peek(key, selfId) : null
   const ready = current !== null
   const failed = current?.failed === true
+  const unknown = current?.unknown === true
   const blocked = current?.players ?? NO_PLAYERS
   const blockedIds = useMemo<ReadonlySet<string>>(() => new Set(blocked.map((player) => player.id)), [blocked])
 
@@ -222,6 +209,13 @@ export function useBlockedPlayers(): UseBlockedPlayers {
 
   const loadTicket = useRef(0)
   const source = useRef({})
+  const keyRef = useRef(key)
+  keyRef.current = key
+  /** False once the session moved on from `listKey` (signed out, or another account): a late answer is then dropped. */
+  const stillCurrent = useCallback(
+    (listKey: string) => keyRef.current === listKey && (mode !== 'account' || !selfId || isCurrentBlockCacheAccount(selfId)),
+    [mode, selfId]
+  )
 
   useEffect(() => {
     mountedInstances++
@@ -237,20 +231,23 @@ export function useBlockedPlayers(): UseBlockedPlayers {
   /** Shows `list` here and hands it to every other instance; an account's list is kept on the device. */
   const publish = useCallback(
     (list: List) => {
+      if (!stillCurrent(list.key)) return
       latest.current = list
       setSnapshot(list)
       const changed =
-        !lastKnown || lastKnown.key !== list.key || lastKnown.failed !== list.failed || !samePlayers(lastKnown.players, list.players)
+        !lastKnown ||
+        lastKnown.key !== list.key ||
+        lastKnown.failed !== list.failed ||
+        lastKnown.unknown !== list.unknown ||
+        !samePlayers(lastKnown.players, list.players)
       lastKnown = list
-      if (mode === 'account' && selfId && !list.failed) {
-        writeLocal(BLOCKED_PLAYERS_ACCOUNT_CACHE_PREFIX + selfId, JSON.stringify(list.players))
-      }
+      if (mode === 'account' && selfId && !list.failed) writeAccountBlockCache(selfId, JSON.stringify(list.players))
       if (changed) {
         const change: Change = { source: source.current, list }
         window.dispatchEvent(new CustomEvent<Change>(BLOCKED_PLAYERS_CHANGED_EVENT, { detail: change }))
       }
     },
-    [mode, selfId]
+    [mode, selfId, stillCurrent]
   )
 
   const load = useCallback(async () => {
@@ -267,12 +264,13 @@ export function useBlockedPlayers(): UseBlockedPlayers {
       return
     }
     // A failed read keeps the last list known and ends the wait: chat must not hang on a list it cannot get.
-    publish({ key, players: peek(key, selfId)?.players ?? [], failed: true })
+    const known = peek(key, selfId)
+    publish({ key, players: known?.players ?? [], failed: true, unknown: !known || known.unknown === true })
   }, [key, mode, selfId, publish])
 
   useEffect(() => {
     if (mode === 'pending') return
-    forgetOtherAccounts(mode === 'account' ? selfId : undefined)
+    syncAccountBlockCache(mode === 'account' ? selfId ?? null : null)
     if (lastKnown && lastKnown.key !== key) lastKnown = null
   }, [mode, selfId, key])
 
@@ -342,12 +340,12 @@ export function useBlockedPlayers(): UseBlockedPlayers {
           body: JSON.stringify({ userIds: [player.id] }),
         })
         if (!response.ok) throw new Error(`block failed: ${response.status}`)
-        if (before.failed) {
+        if (before.failed && stillCurrent(key)) {
           const body: unknown = await response.json().catch(() => null)
           const server = (body as { blocks?: unknown } | null)?.blocks
           if (Array.isArray(server)) {
             loadTicket.current++
-            publish({ key, players: parsePlayers(server), failed: false })
+            publish({ key, players: parsePlayers(server), failed: false, unknown: false })
           }
         }
       } catch {
@@ -357,7 +355,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
       }
       return true
     },
-    [key, mode, publish]
+    [key, mode, publish, stillCurrent]
   )
 
   const unblock = useCallback(
@@ -395,5 +393,5 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     window.dispatchEvent(new CustomEvent(BLOCKED_PLAYERS_CHANGED_EVENT))
   }, [])
 
-  return { blocked, blockedIds, ready, failed, block, unblock, retry }
+  return { blocked, blockedIds, ready, failed, unknown, block, unblock, retry }
 }
