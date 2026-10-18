@@ -13,7 +13,7 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import { GamePlayer, ChatMessagePayload } from '@/types/game'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
@@ -27,6 +27,7 @@ import { useFreshOnArrival } from '@/hooks/useFreshFor'
 import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey, staggerDelayMs } from '@/lib/social-motion'
 import { playCue } from '@/lib/sound-engine'
 import { useSpySounds } from '../hooks/useSpySounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 
 interface SpyRoleInfo {
   role: string
@@ -548,6 +549,7 @@ export default function SpyGameBoard({
   const isResults = phase === SpyGamePhase.RESULTS
   const isQuestioning = phase === SpyGamePhase.QUESTIONING
   const isGameOver = isResults && currentRound >= totalRounds
+  useSpectatorResultCue({ isSpectator, isFinished: isGameOver, gameId, revealDelayMs: RESULT_REVEAL_DELAY_MS })
   // The ROUND verdict belongs to SpyResults, which owns the reveal and already
   // computes it from resolveSpyOutcome. The end of the GAME is the engine's: it ranks the
   // cumulative scores across every round and writes the top total to

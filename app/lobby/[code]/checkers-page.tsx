@@ -35,7 +35,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -51,6 +51,7 @@ import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useCheckersMotion, type CheckersCueEnd } from './hooks/useCheckersMotion'
 import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import CheckersBoard, { FILES, PIECE_DARK, PIECE_LIGHT, squareName } from '@/components/boards/CheckersBoard'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
@@ -604,10 +605,11 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     }, [code, getCurrentUserId, lobby, onGameReset, router])
 
     // Hoisted above the early returns so these hooks always run (Rules of Hooks).
-    const earlyData = gameEngine ? (gameEngine.getState().data as CheckersGameData) : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyData = earlyState ? (earlyState.data as CheckersGameData) : undefined
     const earlyMoveHistory = earlyData?.moveHistory
     // Motion (#1112): the viewer's side decides whether an arriving move is theirs.
-    const earlyViewerIndex = gameEngine ? gameEngine.getState().players.findIndex((p) => p.id === getCurrentUserId()) : -1
+    const earlyViewerIndex = earlyState ? earlyState.players.findIndex((p) => p.id === getCurrentUserId()) : -1
     const viewerSide: Side | null = earlyViewerIndex === 0 ? 1 : earlyViewerIndex === 1 ? 2 : null
     const cueEndRef = useRef<CheckersCueEnd | null>(null)
     const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide, cueEndRef)
@@ -615,15 +617,18 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
-    const myTurnNow = !isSpectator && isMyTurn() && gameEngine?.getState().status === 'playing'
+    const myTurnNow = !isSpectator && isMyTurn() && earlyState?.status === 'playing'
     // The motion plays the move; the turn cue waits for its last landing.
     useTurnSounds({
         isMyTurn: myTurnNow,
         lastMoveSignature: earlyData ? `${earlyMoveHistory?.length ?? 0}:${earlyData.lastMove?.path.length ?? 0}` : null,
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyState?.status === 'playing',
         moveCue: null,
         turnDelayMs: () => (cueEndRef.current?.data === earlyData ? cueEndRef.current?.inMs ?? 0 : 0) + TURN_AFTER_MOVE_MS,
     })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState?.lastMoveAt, revealDelayMs: RESULT_REVEAL_DELAY_MS })
     const legalSteps: CheckersStep[] = useMemo(
         () => (gameEngine && myTurnNow ? gameEngine.getLegalSteps() : []),
         [gameEngine, myTurnNow]
@@ -655,9 +660,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (

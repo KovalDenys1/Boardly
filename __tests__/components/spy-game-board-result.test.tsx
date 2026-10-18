@@ -2,6 +2,7 @@
 import { render, screen, within } from '@testing-library/react'
 import SpyGameBoard from '@/app/lobby/[code]/components/SpyGameBoard'
 import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
+import { playCue } from '@/lib/sound-engine'
 
 /**
  * #905 review, BLOCKER: the game-over overlay titled itself from
@@ -38,6 +39,11 @@ jest.mock('@/components/Chat', () => ({
   default: () => null,
 }))
 
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
+}))
+
 const SPY = 'guest-38f84943-8c99-4de1-ace8-00973711c848'
 const LEADER = 'cmuabbsne000072si1gg8rjbq'
 const THIRD = 'cmuabbsne000072si1gg8rjbr'
@@ -50,6 +56,13 @@ const NAMES: Record<string, string> = { [SPY]: 'Bob', [LEADER]: 'Alice', [THIRD]
  * top. The two answers are different, which is the whole point.
  */
 function buildFinishedGame() {
+  const { game, castLastVote } = buildFinalVoteGame()
+  castLastVote()
+  return game
+}
+
+/** The same table one vote short of the end, and the vote that ends it. */
+function buildFinalVoteGame() {
   const game = new SpyGame('game-1')
   for (const id of [LEADER, SPY, THIRD]) {
     game.addPlayer({ id, name: NAMES[id], isActive: true })
@@ -73,14 +86,18 @@ function buildFinishedGame() {
     game.makeMove({ playerId, type: 'vote', data: { targetId }, timestamp: Date.now() })
   vote(LEADER, THIRD)
   vote(SPY, THIRD)
-  vote(THIRD, LEADER)
 
-  return game
+  return { game, castLastVote: () => vote(THIRD, LEADER) }
 }
 
 function renderBoard(game: SpyGame, currentUserId: string, overrides: Record<string, unknown> = {}) {
-  const state = game.getState()
-  return render(
+  return render(boardFor(game, currentUserId, overrides))
+}
+
+function boardFor(game: SpyGame, currentUserId: string, overrides: Record<string, unknown> = {}) {
+  // A copy per render, as a fresh snapshot from the server would be.
+  const state = JSON.parse(JSON.stringify(game.getState()))
+  return (
     <SpyGameBoard
       gameId="game-1"
       lobbyCode="ABCD"
@@ -174,5 +191,41 @@ describe('SpyGameBoard game-over result (#905 review)', () => {
   it('offers no such route when the viewer is not the host', () => {
     renderBoard(buildFinishedGame(), THIRD)
     expect(screen.queryByText('game.ui.returnToLobby')).toBeNull()
+  })
+})
+
+describe('SpyGameBoard spectator result cue (#1464)', () => {
+  const play = playCue as jest.Mock
+  const resultCues = () => play.mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+
+  beforeEach(() => play.mockClear())
+
+  it('tells a spectator once that the game is over when the last vote lands while they watch', () => {
+    const { game, castLastVote } = buildFinalVoteGame()
+    const { rerender } = render(boardFor(game, 'watcher', { isSpectator: true }))
+    castLastVote()
+    rerender(boardFor(game, 'watcher', { isSpectator: true }))
+    rerender(boardFor(game, 'watcher', { isSpectator: true }))
+
+    expect(screen.queryByTestId('game-result-overlay')).toBeNull()
+    expect(resultCues()).toEqual([['result.over', { gameId: 'game-1#end', delayMs: 700 }]])
+  })
+
+  it('stays silent for a spectator who opens the game after it finished', () => {
+    const game = buildFinishedGame()
+    const { rerender } = render(boardFor(game, 'watcher', { isSpectator: true }))
+    rerender(boardFor(game, 'watcher', { isSpectator: true }))
+
+    expect(resultCues()).toEqual([])
+  })
+
+  it('leaves a seated player to the result overlay', () => {
+    const { game, castLastVote } = buildFinalVoteGame()
+    const { rerender } = render(boardFor(game, THIRD))
+    castLastVote()
+    rerender(boardFor(game, THIRD))
+
+    expect(screen.getAllByTestId('game-result-overlay').length).toBeGreaterThan(0)
+    expect(resultCues()).toEqual([])
   })
 })

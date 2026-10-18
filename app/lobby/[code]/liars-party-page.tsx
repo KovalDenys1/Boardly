@@ -32,6 +32,7 @@ import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
 import { useLiarsPartySounds } from './hooks/useLiarsPartySounds'
 import { useFreshFor } from '@/hooks/useFreshFor'
@@ -997,6 +998,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     game?.status === 'playing' || game?.status === 'finished' ? (gameEngine?.getState().data as LiarsPartyGameData | undefined) : undefined,
     { gameId: game?.id, viewerId: soundUserId, isSpectator },
   )
+  useSpectatorResultCue({ isSpectator, isFinished: game?.status === 'finished', gameId: game?.id, revealDelayMs: LIARS_RESULT_REVEAL_DELAY_MS })
 
   if (loading) {
     return <LobbyPageLoadingFallback />

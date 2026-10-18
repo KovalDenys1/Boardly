@@ -33,13 +33,14 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextDropKey, type DropKey } from '@/lib/connect-four-drop-key'
 import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
@@ -628,7 +629,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
-    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as ConnectFourGameData).moveHistory : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyMoveHistory = earlyState ? (earlyState.data as ConnectFourGameData).moveHistory : undefined
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
@@ -636,7 +638,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
     const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
-    const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
+    const soundSeat = earlyState ? earlyState.players.findIndex(p => p.id === getCurrentUserId()) : -1
     const lastC4MoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null
     // The newest disc falls once; a remount shows it landed, marker and all (#1114).
     const dropKeyRef = React.useRef<DropKey | null>(null)
@@ -648,10 +650,13 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastC4MoveSignature,
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyState?.status === 'playing',
         moveCue: null,
         turnDelayMs: (lastDropFresh && lastC4Move ? dropSound.landingMs(lastC4Move.row) : 0) + TURN_AFTER_MOVE_MS,
     })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState?.lastMoveAt, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -670,9 +675,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (

@@ -1,7 +1,9 @@
 // @ts-nocheck
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import SpectatorLobbyPage from '@/app/lobby/[code]/spectate/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { playCue } from '@/lib/sound-engine'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 
 jest.mock('next/navigation', () => ({
   useParams: () => ({ code: 'abcd' }),
@@ -55,6 +57,27 @@ jest.mock('@/app/lobby/[code]/sketch-and-guess-page', () => ({
   ),
 }))
 
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
+}))
+
+const lobbyEvents: { current: Record<string, (payload?: unknown) => void> } = { current: {} }
+jest.mock('@/lib/lobby-channel-registry', () => ({
+  acquireLobbyChannel: jest.fn((_topic: string, options: { events: Record<string, (payload?: unknown) => void> }) => {
+    lobbyEvents.current = options.events
+    return { release: jest.fn() }
+  }),
+}))
+
+// The spectate route mounts the real board for Memory; here it only has to say which state it was given.
+jest.mock('@/app/lobby/[code]/components/MemoryGameBoard', () => ({
+  __esModule: true,
+  default: ({ state, gameId }: { state: { status?: string } | null; gameId: string }) => (
+    <div data-testid="memory-board">{gameId || 'no-game'}:{state?.status ?? 'no-state'}</div>
+  ),
+}))
+
 function okResponse(body: unknown) {
   return { ok: true, status: 200, json: async () => body } as Response
 }
@@ -98,5 +121,105 @@ describe('Spectator route dispatch for Sketch & Guess (#1033)', () => {
     // Would still be true before the fix: sketch_and_guess fell through to the
     // generic fallback board's "no spectator view for this game" placeholder.
     expect(screen.queryByText('spectate.noViewForGame')).toBeNull()
+  })
+})
+
+describe('a spectator keeps the final board of the game they watched (#1464)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const memoryResponse = (game: { id: string; status: string } | null) => ({
+    lobby: { id: 'lobby-1', code: 'ABCD', name: 'Memory', gameType: 'memory', maxPlayers: 4, spectatorCount: 0 },
+    activeGame: game ? { ...game, players: [], state: JSON.stringify({ status: game.status, data: {} }) } : null,
+    canJoinAsPlayer: false,
+    isAdminView: false,
+    realtimeTopic: 'lobby:ABCD:secret',
+  })
+  /** The route as it answers: finished games only when asked for them. */
+  const routeWith = (games: Array<{ id: string; status: string }>) => async (url: string) => {
+    const includeFinished = url.includes('includeFinished=true')
+    const visible = games.filter((game) => game.status !== 'finished' || includeFinished)
+    return okResponse(memoryResponse(visible[0] ?? null))
+  }
+  const requestedUrls = () => mockFetchWithGuest.mock.calls.map(([url]) => String(url))
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    lobbyEvents.current = {}
+  })
+
+  it('asks for the finished game after a game-update and shows its final state', async () => {
+    mockFetchWithGuest.mockImplementation(routeWith([{ id: 'game-1', status: 'playing' }]) as never)
+    render(<SpectatorLobbyPage />)
+    await waitFor(() => expect(screen.getByTestId('memory-board').textContent).toBe('game-1:playing'))
+    expect(requestedUrls()[0]).not.toContain('includeFinished')
+
+    mockFetchWithGuest.mockImplementation(routeWith([{ id: 'game-1', status: 'finished' }]) as never)
+    await act(async () => {
+      lobbyEvents.current['game-update']?.()
+    })
+
+    await waitFor(() => expect(screen.getByTestId('memory-board').textContent).toBe('game-1:finished'))
+    expect(requestedUrls().at(-1)).toContain('includeFinished=true')
+  })
+
+  it('opens on no game, not on an old finished one, when nothing is running', async () => {
+    mockFetchWithGuest.mockImplementation(routeWith([{ id: 'game-0', status: 'finished' }]) as never)
+    render(<SpectatorLobbyPage />)
+
+    await waitFor(() => expect(screen.getByTestId('memory-board').textContent).toBe('no-game:no-state'))
+    expect(requestedUrls().every((url) => !url.includes('includeFinished'))).toBe(true)
+  })
+
+  it('drops a finished game that is not the one being watched', async () => {
+    mockFetchWithGuest.mockImplementation(routeWith([{ id: 'game-1', status: 'playing' }]) as never)
+    render(<SpectatorLobbyPage />)
+    await waitFor(() => expect(screen.getByTestId('memory-board').textContent).toBe('game-1:playing'))
+
+    mockFetchWithGuest.mockImplementation(routeWith([{ id: 'game-0', status: 'finished' }]) as never)
+    await act(async () => {
+      lobbyEvents.current['game-update']?.()
+    })
+
+    await waitFor(() => expect(screen.getByTestId('memory-board').textContent).toBe('no-game:no-state'))
+  })
+})
+
+describe('a Yahtzee spectator hears the end of the game (#1464)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const resultCues = () => (playCue as jest.Mock).mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+  const yahtzeeResponse = (status: 'playing' | 'finished') => {
+    const engine = new YahtzeeGame('game-1')
+    engine.addPlayer({ id: 'a', name: 'A' })
+    engine.addPlayer({ id: 'b', name: 'B' })
+    engine.startGame()
+    return {
+      lobby: { id: 'lobby-1', code: 'ABCD', name: 'Yahtzee', gameType: 'yahtzee', maxPlayers: 4, spectatorCount: 0 },
+      activeGame: { id: 'game-1', status, players: [], state: JSON.stringify({ ...engine.getState(), status }) },
+      canJoinAsPlayer: false,
+      isAdminView: false,
+      realtimeTopic: 'lobby:ABCD:secret',
+    }
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    lobbyEvents.current = {}
+  })
+
+  it('plays result.over once when the game finishes while they watch, and nothing on a finished load', async () => {
+    mockFetchWithGuest.mockResolvedValue(okResponse(yahtzeeResponse('playing')))
+    const { unmount } = render(<SpectatorLobbyPage />)
+    await waitFor(() => expect(lobbyEvents.current['game-update']).toBeDefined())
+
+    mockFetchWithGuest.mockResolvedValue(okResponse(yahtzeeResponse('finished')))
+    await act(async () => {
+      lobbyEvents.current['game-update']?.()
+    })
+    await waitFor(() => expect(resultCues()).toEqual([['result.over', { gameId: 'game-1#end', delayMs: 0 }]]))
+    unmount()
+
+    ;(playCue as jest.Mock).mockClear()
+    render(<SpectatorLobbyPage />)
+    await waitFor(() => expect(lobbyEvents.current['game-update']).toBeDefined())
+    expect(resultCues()).toEqual([])
   })
 })

@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { playCue } from '@/lib/sound-engine'
+import { RPS_RESULT_REVEAL_DELAY_MS } from '@/lib/rps-motion'
 import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
@@ -109,6 +111,11 @@ jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
   getChoiceEmoji: () => '❔',
   getChoiceIcon: () => 'rock',
   CHOICE_LABEL_KEY: { rock: 'lobby.choice.rock', paper: 'lobby.choice.paper', scissors: 'lobby.choice.scissors' },
+}))
+
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
@@ -323,6 +330,56 @@ describe('RockPaperScissorsLobbyPage', () => {
         { timeout: 2000 },
       )
       expect(mockBoardProps.current.shownScores).toEqual({ 'user-1': 2, 'user-2': 1 })
+    })
+  })
+
+  describe('a spectator hears the end of the match (#1464)', () => {
+    const resultCues = () => (playCue as jest.Mock).mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+    const finishedResponse = () => {
+      const response = buildLobbyResponse({
+        status: 'finished',
+        currentPlayerIndex: 0,
+        lastMoveAt: Date.now(),
+        players: [
+          { id: 'user-1', name: 'Alice' },
+          { id: 'user-2', name: 'Bob' },
+        ],
+        data: {
+          mode: 'best-of-3',
+          rounds: [
+            { choices: { 'user-1': 'rock', 'user-2': 'scissors' }, winner: 'user-1' },
+            { choices: { 'user-1': 'paper', 'user-2': 'rock' }, winner: 'user-1' },
+          ],
+          playerChoices: {},
+          scores: { 'user-1': 2 },
+          playersReady: [],
+          gameWinner: 'user-1',
+        },
+      })
+      response.activeGame.status = 'finished'
+      return response
+    }
+
+    it('plays result.over once when the match finishes while they watch', async () => {
+      render(<RockPaperScissorsLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse() } as Response)
+      await act(async () => {
+        broadcastHandlers['game-update']?.({ payload: {} })
+      })
+      await waitFor(() => expect(mockBoardProps.current.gameData.gameWinner).toBe('user-1'))
+
+      expect(screen.queryByTestId('game-result-overlay')).toBeNull()
+      expect(resultCues()).toEqual([['result.over', { gameId: 'game-1#end', delayMs: RPS_RESULT_REVEAL_DELAY_MS }]])
+    })
+
+    it('stays silent for a spectator who opens a match that has already finished', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse() } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(mockBoardProps.current?.gameData.gameWinner).toBe('user-1'))
+
+      expect(resultCues()).toEqual([])
     })
   })
 
