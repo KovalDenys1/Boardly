@@ -949,6 +949,12 @@ step below in order and do not flip the switch if any of steps 1–3 fails.
    this checklist exists to prevent.
 9. **After go-live, watch AdSense's Transactions page** for invalid-activity deductions in
    the days that follow.
+10. **Ads stay off inside the Play app, and the code enforces it.** In Play mode the head
+    script (`lib/app-shell-script.ts`) sets `adsbygoogle.pauseAdRequests = 1` before the
+    AdSense tag can run, which stops every ad request there, Auto ads included, while Google's
+    consent message still loads; and `AdSlot` renders nothing (`useIsPlayApp()`), whatever this
+    switch says. Turning ads on in the app changes the Play listing's "Contains ads" and Data
+    safety answers (`android/listing/store-settings.md`, `android/listing/data-safety.md`).
 
 ### CSP hardening verification (preview/production)
 

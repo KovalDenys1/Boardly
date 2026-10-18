@@ -189,6 +189,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
       <head>
+        {/* Ahead of the AdSense tag, so the Play app pauses ad requests before it can load. */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: appShellInitScript }}
+        />
         {/* AdSense site verification + loader (#784). This also delivers Google's
             EEA/UK consent message, so it stays on regardless of whether any ad
             unit renders. The units themselves are in components/AdSlot.tsx,
@@ -245,10 +250,6 @@ export default function RootLayout({
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
-        />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: appShellInitScript }}
         />
         {devServiceWorkerResetScript && (
           <script

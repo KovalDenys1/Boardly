@@ -15,6 +15,7 @@
     try { standaloneAndroid = /Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone)').matches; } catch {}
     if (stored !== 'play' && !fromUrl && !/^android-app:\/\/online\.boardly\.app(\/|$)/.test(document.referrer) && !standaloneAndroid) return;
     document.documentElement.dataset.appShell = 'play';
+    try { (window.adsbygoogle = window.adsbygoogle || []).pauseAdRequests = 1; } catch {}
     document.addEventListener('click', (event) => {
       const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
       if (!(link instanceof HTMLAnchorElement) || link.target.toLowerCase() !== '_blank' || link.hasAttribute('download')) return;

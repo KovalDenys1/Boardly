@@ -404,7 +404,7 @@ const no = {
     browseGamesArrow: 'Se spill →',
     viewLobbies: 'Se lobbyer',
     playAsGuest: 'Spill som gjest',
-    quickPlay: 'Rask spill',
+    quickPlay: 'Raskt spill',
     openProfile: 'Åpne profil',
     keepPlaying: 'Fortsett å spille',
     createFreeAccount: 'Opprett gratis konto',
@@ -2259,7 +2259,7 @@ const no = {
           },
           turnClock: {
             title: 'Klokke på hver tur',
-            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Raskt spill og Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre robotnivåer',
@@ -2361,7 +2361,7 @@ const no = {
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',
-            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Raskt spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',
@@ -2740,7 +2740,7 @@ const no = {
         modes: {
           oneRoundEach: { title: 'Én runde per spiller', desc: 'Alle tegner én gang, så fire spillere gir fire runder; det finnes ingen innstilling for antall runder.' },
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
-          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Raskt spill åpner med alle ti.' },
         },
         strategy: {
           pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
@@ -4854,7 +4854,7 @@ const no = {
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
     games: 'Spill',
     play: 'Spill',
-    quickPlay: 'Rask spilling',
+    quickPlay: 'Raskt spill',
     createRoom: 'Opprett rom',
     leaderboard: 'Resultattavle',
     guides: 'Guider',
@@ -5014,7 +5014,7 @@ const no = {
         where: 'USA. Discord er sertifisert under EU–US Data Privacy Framework og bruker EUs standard personvernbestemmelser.',
       },
       google: {
-        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne)',
+        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne). Google Play, som distribuerer Android-appen vår, behandler sine egne installasjons- og krasjdata på egne vegne; appen kjører det samme nettstedet og samler ikke inn noe mer.',
         where: 'USA. Google er sertifisert under EU–US Data Privacy Framework og bruker også EUs standard personvernbestemmelser.',
       },
       github: {
@@ -5057,7 +5057,7 @@ const no = {
       lead: 'Du har rett til innsyn i opplysningene dine, til å få dem rettet eller slettet, til å begrense behandlingen, til å få dem i et maskinlesbart format, og til å protestere mot behandling som bygger på vår berettigede interesse. Der vi bygger på samtykke, kan du trekke det tilbake når som helst; det påvirker ikke det vi gjorde før.',
       export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, spillere du har blokkert, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
       correct: 'Rett opplysningene dine: rediger profilen, også e-postadressen, på profilsiden.',
-      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres.',
+      delete: 'Slett kontoen din på profilsiden, i nettleseren eller i Android-appen: velg «Slett konto» under «Faresone», og bekreft med lenken vi sender deg på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres. Hvis du ikke lenger kan logge inn, skriv til {{email}} fra adressen kontoen er registrert med, så sletter vi den for deg.',
       forget: 'Gjester: «Glem meg» i gjestemenyen sletter gjesteoppføringen og plassene dine i spill, erstatter navnet ditt med «Deleted player» i andre spilleres historikk, og fjerner gjestedataene på denne enheten. Hvis du sitter i et pågående spill, må du fullføre eller forlate det først.',
       email: 'Alt annet, også opplysninger nedlastingen ikke inneholder, sender du til {{email}}. Vi svarer innen én måned og kan be deg bekrefte at kontoen er din.',
       required: 'Du trenger en e-postadresse og et passord, eller en innloggingstjeneste, for å opprette en konto; som gjest kan du spille uten noen av delene. Vi tar ingen avgjørelser om deg som bare bygger på automatisert behandling.',

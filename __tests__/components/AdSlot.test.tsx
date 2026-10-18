@@ -2,9 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import AdSlot from '@/components/AdSlot'
 
 const mockUseSession = jest.fn()
+const mockUseIsPlayApp = jest.fn()
 
 jest.mock('next-auth/react', () => ({
   useSession: () => mockUseSession(),
+}))
+
+jest.mock('@/hooks/useIsPlayApp', () => ({
+  useIsPlayApp: () => mockUseIsPlayApp(),
 }))
 
 jest.mock('@/lib/i18n-helpers', () => ({
@@ -29,6 +34,7 @@ describe('AdSlot', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockUseIsPlayApp.mockReturnValue(false)
     ;(window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle = []
     global.fetch = jest.fn()
   })
@@ -128,5 +134,41 @@ describe('AdSlot', () => {
     ins.setAttribute('data-ad-status', 'unfilled')
 
     await waitFor(() => expect(wrapper).toHaveAttribute('hidden'))
+  })
+
+  describe('inside the Play app', () => {
+    it('renders no slot and asks no server, even for a signed-in free account', async () => {
+      mockUseIsPlayApp.mockReturnValue(true)
+      mockUseSession.mockReturnValue({ status: 'authenticated' })
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ isPremium: false }),
+      })
+
+      const { container } = renderSlot({ adsEnabled: true })
+
+      await waitFor(() => expect(container.querySelector(insSelector)).toBeNull())
+      expect(global.fetch).not.toHaveBeenCalled()
+      expect((window as unknown as { adsbygoogle: unknown[] }).adsbygoogle).toHaveLength(0)
+    })
+
+    it('renders no slot for a signed-out visitor either', async () => {
+      mockUseIsPlayApp.mockReturnValue(true)
+      mockUseSession.mockReturnValue({ status: 'unauthenticated' })
+
+      const { container } = renderSlot({ adsEnabled: true })
+
+      await waitFor(() => expect(container.querySelector(insSelector)).toBeNull())
+      expect(screen.queryByText('Advertisement')).toBeNull()
+    })
+
+    it('still shows the slot in a browser, with the same switch and visitor', async () => {
+      mockUseIsPlayApp.mockReturnValue(false)
+      mockUseSession.mockReturnValue({ status: 'unauthenticated' })
+
+      const { container } = renderSlot({ adsEnabled: true })
+
+      await waitFor(() => expect(container.querySelector(insSelector)).not.toBeNull())
+    })
   })
 })
