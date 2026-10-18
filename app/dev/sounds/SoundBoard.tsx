@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 import { getSoundEngine, type PlayOptions } from '@/lib/sound-engine'
 import {
@@ -13,13 +13,8 @@ import {
   type CueLayer,
   type SoundGroup,
 } from '@/lib/sound-map'
-import {
-  getServerSoundSettings,
-  getSoundSettings,
-  setSoundEnabled,
-  setSoundVolume,
-  subscribeSoundSettings,
-} from '@/lib/sound-settings'
+import { setSoundEnabled, setSoundVolume } from '@/lib/sound-settings'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { CUE_NOTES } from './cue-notes'
 
 const GROUPS: { id: SoundGroup; title: string }[] = [
@@ -113,7 +108,7 @@ function CueCard({ id, onPlay, outcome }: { id: CueId; onPlay: (key: string, ste
 }
 
 export default function SoundBoard() {
-  const settings = useSyncExternalStore(subscribeSoundSettings, getSoundSettings, getServerSoundSettings)
+  const settings = useSoundSettings()
   const [state, setState] = useState<{ context: string; ready: number }>({ context: 'none', ready: 0 })
   const [outcome, setOutcome] = useState<Record<string, Outcome>>({})
   const gameCounter = useRef(0)

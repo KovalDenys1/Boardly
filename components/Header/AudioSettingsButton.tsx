@@ -1,14 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import {
-  getServerSoundSettings,
-  getSoundSettings,
-  setSoundEnabled,
-  setSoundVolume,
-  subscribeSoundSettings,
-} from '@/lib/sound-settings'
+import { setSoundEnabled, setSoundVolume } from '@/lib/sound-settings'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { headerControl } from './headerControlStyles'
 
 function VolumeIcon({ muted }: { muted: boolean }) {
@@ -33,7 +28,7 @@ function VolumeIcon({ muted }: { muted: boolean }) {
 }
 
 function useAudioSettings() {
-  const { enabled, volume } = useSyncExternalStore(subscribeSoundSettings, getSoundSettings, getServerSoundSettings)
+  const { enabled, volume } = useSoundSettings()
 
   const toggleMute = () => {
     if (!enabled) {
