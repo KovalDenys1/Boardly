@@ -1,14 +1,19 @@
 'use client'
 
 import { Fragment, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { BlockedPlayersDialog } from './BlockedPlayersDialog'
 import { ForgetGuestButton } from './ForgetGuestButton'
-import { headerControl } from './headerControlStyles'
+import { guestMenuButtonClass } from './headerControlStyles'
+
+// The header is on every page; the dialog, its focus trap and the list load on the first open.
+const BlockedPlayersDialog = dynamic(() => import('./BlockedPlayersDialog').then((mod) => mod.BlockedPlayersDialog), {
+  ssr: false,
+})
 
 const itemClassName =
   'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:opacity-60'
@@ -19,6 +24,8 @@ export function GuestMenu() {
   const router = useRouter()
   const { guestName, clearGuestMode } = useGuest()
   const [blockedOpen, setBlockedOpen] = useState(false)
+  // Stays mounted after the first open, so closing still plays the dialog's leave transition.
+  const [blockedLoaded, setBlockedLoaded] = useState(false)
 
   const handleGuestExit = () => {
     clearGuestMode()
@@ -29,7 +36,7 @@ export function GuestMenu() {
     <>
       <Popover as="div" className="relative">
         <PopoverButton
-          className={`${headerControl({ border: 'border-(--bd-sun-deep)/40', surface: 'bg-(--bd-sun)/22 hover:bg-(--bd-sun)/35 data-open:bg-(--bd-sun)/35' })} max-w-[140px] gap-2 px-3 text-[13px] font-semibold`}
+          className={guestMenuButtonClass}
           title={t('header.guestSession')}
         >
           <Icon name="user" size={14} />
@@ -53,6 +60,7 @@ export function GuestMenu() {
                   type="button"
                   onClick={() => {
                     close()
+                    setBlockedLoaded(true)
                     setBlockedOpen(true)
                   }}
                   className={itemClassName}
@@ -68,7 +76,7 @@ export function GuestMenu() {
           </PopoverPanel>
         </Transition>
       </Popover>
-      <BlockedPlayersDialog open={blockedOpen} onClose={() => setBlockedOpen(false)} />
+      {blockedLoaded && <BlockedPlayersDialog open={blockedOpen} onClose={() => setBlockedOpen(false)} />}
     </>
   )
 }
