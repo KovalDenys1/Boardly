@@ -1,8 +1,8 @@
-import { cueSamples, getCue, roundRobinTrimDb, sampleUrl, type CueId, type CueLayer, type SampleId } from '@/lib/sound-map'
+import { REMOTE_DB, cueSamples, getCue, roundRobinTrimDb, sampleUrl, type CueId, type CueLayer, type SampleId } from '@/lib/sound-map'
 import { getSoundSettings, subscribeSoundSettings, type SoundSettings } from '@/lib/sound-settings'
 
 export interface PlayOptions {
-  /** Someone else's action; ignored by a cue with no remote level. */
+  /** Someone else's action: the cue's remote level, or REMOTE_DB for a cue without one. */
   remote?: boolean
   semis?: number
   /** Attenuation only; a positive value is ignored. */
@@ -343,7 +343,7 @@ export function createSoundEngine(): SoundEngine {
     if (onceKey) gamesPlayed.add(onceKey)
 
     const jitter = def.jitterSemis ? (Math.random() * 2 - 1) * def.jitterSemis : 0
-    const remoteDb = options.remote && def.remoteDb !== undefined ? def.remoteDb : 0
+    const remoteDb = options.remote ? def.remoteDb ?? REMOTE_DB : 0
     const extraDb = Math.min(0, options.gainDb ?? 0)
     const startAt = context.currentTime + Math.max(0, options.delayMs ?? 0) / 1000
     const voice: Voice = { sources: [] }

@@ -312,7 +312,7 @@ describe('sound engine', () => {
     expect(engine.play('ui.error')).toBe(true)
   })
 
-  it('plays someone else’s action 4.5 dB under the viewer’s own, and leaves a cue with no remote level alone', async () => {
+  it('plays someone else’s action 4.5 dB under the viewer’s own, also for a cue with no remote level of its own', async () => {
     await readyEngine()
     await engine.preload(['card.skip'])
 
@@ -324,7 +324,7 @@ describe('sound engine', () => {
     const [own, remote, turn] = context().gains.slice(1).map((gain) => gain.gain.value)
     expect(20 * Math.log10(own)).toBeCloseTo(-11)
     expect(20 * Math.log10(remote / own)).toBeCloseTo(-4.5)
-    expect(20 * Math.log10(turn)).toBeCloseTo(-9)
+    expect(20 * Math.log10(turn)).toBeCloseTo(-9 - 4.5)
   })
 
   it('holds at most four voices of one cue and stops the oldest for a fifth', async () => {

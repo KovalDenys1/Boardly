@@ -17,6 +17,11 @@ const LEGACY_CUES: Record<string, CueId> = {
   cardFlip: 'card.flip',
 }
 
+/** The cue an old sound name now plays, for the hooks that still accept one. */
+export function legacyCue(soundName: string): CueId | undefined {
+  return LEGACY_CUES[soundName]
+}
+
 /** What a page that still plays through this facade passes to `useSoundConsumer`. */
 export const LEGACY_SOUND_CUES: readonly CueId[] = [...new Set(Object.values(LEGACY_CUES))]
 
@@ -31,7 +36,7 @@ interface LegacyPlayOptions {
 /** The pre-#1464 API, kept so every call site works until each moves to `playCue`. */
 export const sounds = {
   play(soundName: string, options: LegacyPlayOptions = {}): void {
-    const cue = LEGACY_CUES[soundName]
+    const cue = legacyCue(soundName)
     if (!cue) return
     const playOptions: PlayOptions = {}
     const master = getSoundVolume()
