@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { act, render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import ProfilePage from '@/app/profile/page'
@@ -599,8 +599,10 @@ describe('ProfilePage', () => {
       render(<ProfilePage />)
 
       expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'common.cancel' })).toBeTruthy()
+      const actions = screen.getByTestId('premium-status-actions')
+      expect(within(actions).getByRole('button', { name: 'common.cancel' })).toBeTruthy()
       expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
     })
 
     it('offers no reactivate control in the app while the subscription is cancelling', async () => {
@@ -611,6 +613,8 @@ describe('ProfilePage', () => {
       expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
       expect(screen.queryByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeNull()
       expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+      expect(screen.queryByTestId('premium-status-actions')).toBeNull()
+      expect(screen.getByText('premium.playAppNotice')).toBeTruthy()
     })
 
     it('opens no billing portal from the app for premium without a subscription id', async () => {
@@ -620,6 +624,7 @@ describe('ProfilePage', () => {
 
       expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
       expect(screen.queryByRole('button', { name: 'premium.ctaManage' })).toBeNull()
+      expect(screen.queryByTestId('premium-status-actions')).toBeNull()
     })
 
     it('keeps Manage billing and reactivate on the web', async () => {
@@ -628,6 +633,31 @@ describe('ProfilePage', () => {
 
       expect(await screen.findByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeTruthy()
       expect(screen.getByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeTruthy()
+      expect(screen.getByTestId('premium-status-actions')).toBeTruthy()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
+    })
+
+    it('keeps the action row on the web for premium without a subscription id', async () => {
+      withPurchases({ ...renewing, hasSubscriptionId: false })
+      render(<ProfilePage />)
+
+      const actions = await screen.findByTestId('premium-status-actions')
+      expect(within(actions).getByRole('button', { name: 'premium.ctaManage' })).toBeTruthy()
+    })
+
+    it('reaches neither Stripe route from reactivate or Manage billing once the tab is the app', async () => {
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+      const reactivate = await screen.findByRole('button', { name: /profile\.premiumTab\.reactivate/ })
+      const manageBilling = screen.getByRole('button', { name: 'profile.premiumTab.manageBilling' })
+
+      document.documentElement.dataset.appShell = 'play'
+      fireEvent.click(reactivate)
+      fireEvent.click(manageBilling)
+
+      await act(async () => {})
+      expect(mockFetch).not.toHaveBeenCalledWith('/api/stripe/reactivate', expect.anything())
+      expect(mockFetch).not.toHaveBeenCalledWith('/api/stripe/checkout', expect.anything())
     })
   })
 

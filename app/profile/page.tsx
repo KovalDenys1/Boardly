@@ -23,6 +23,7 @@ import { UserAvatar } from '@/components/Header/UserAvatar'
 import { AppearanceDevicePanels } from '@/components/profile/AppearanceDevicePanels'
 import AvatarPicker from '@/components/AvatarPicker'
 import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 import PublicProfileView from '@/components/PublicProfileView'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import { NOTIFICATION_SETTINGS_SECTION_ID, PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
@@ -277,6 +278,8 @@ export default function ProfilePage() {
   const [hasSubscriptionId, setHasSubscriptionId] = useState(false)
   const [premiumRenewal, setPremiumRenewal] = useState<PremiumRenewal | null>(null)
   const [premiumActionLoading, setPremiumActionLoading] = useState(false)
+  const inPlayApp = useIsPlayApp()
+  const canCancelSubscription = hasSubscriptionId && !premiumCancelAtPeriodEnd
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -453,6 +456,7 @@ export default function ProfilePage() {
   }, [fetchProfileSummary])
 
   const handleReactivate = useCallback(async () => {
+    if (isPlayApp()) return
     setPremiumActionLoading(true)
     try {
       const res = await fetch('/api/stripe/reactivate', { method: 'POST' })
@@ -487,6 +491,7 @@ export default function ProfilePage() {
   }, [])
 
   const handleManageBilling = useCallback(async () => {
+    if (isPlayApp()) return
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' })
       const data = await res.json()
@@ -2923,51 +2928,58 @@ export default function ProfilePage() {
                                 )
                               : t('profile.premiumTab.renewsOn', { date: formatPremiumDate(premiumUntilDate) })}
                         </p>
+                        <PlayAppOnly>
+                          {premiumCancelAtPeriodEnd && (
+                            <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{t('premium.playAppNotice')}</p>
+                          )}
+                        </PlayAppOnly>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {hasSubscriptionId && !premiumCancelAtPeriodEnd && (
-                        <button
-                          type="button"
-                          onClick={() => void handleCancelSubscription()}
-                          disabled={premiumActionLoading}
-                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
-                        >
-                          {premiumActionLoading ? '...' : t('common.cancel')}
-                        </button>
-                      )}
-                      <PurchaseOnly>
-                        {hasSubscriptionId && premiumCancelAtPeriodEnd && (
+                    {(canCancelSubscription || !inPlayApp) && (
+                      <div data-testid="premium-status-actions" className="flex flex-wrap gap-2">
+                        {canCancelSubscription && (
                           <button
                             type="button"
-                            onClick={() => void handleReactivate()}
+                            onClick={() => void handleCancelSubscription()}
                             disabled={premiumActionLoading}
-                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                            className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
                           >
-                            <Icon name="star" size={16} />
-                            <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
+                            {premiumActionLoading ? '...' : t('common.cancel')}
                           </button>
                         )}
-                        {hasSubscriptionId && (
-                          <button
-                            type="button"
-                            onClick={() => void handleManageBilling()}
-                            className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                          >
-                            {t('profile.premiumTab.manageBilling')}
-                          </button>
-                        )}
-                        {!hasSubscriptionId && (
-                          <button
-                            type="button"
-                            onClick={() => void handleManageBilling()}
-                            className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                          >
-                            {t('premium.ctaManage')}
-                          </button>
-                        )}
-                      </PurchaseOnly>
-                    </div>
+                        <PurchaseOnly>
+                          {hasSubscriptionId && premiumCancelAtPeriodEnd && (
+                            <button
+                              type="button"
+                              onClick={() => void handleReactivate()}
+                              disabled={premiumActionLoading}
+                              className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                            >
+                              <Icon name="star" size={16} />
+                              <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
+                            </button>
+                          )}
+                          {hasSubscriptionId && (
+                            <button
+                              type="button"
+                              onClick={() => void handleManageBilling()}
+                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                            >
+                              {t('profile.premiumTab.manageBilling')}
+                            </button>
+                          )}
+                          {!hasSubscriptionId && (
+                            <button
+                              type="button"
+                              onClick={() => void handleManageBilling()}
+                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                            >
+                              {t('premium.ctaManage')}
+                            </button>
+                          )}
+                        </PurchaseOnly>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
