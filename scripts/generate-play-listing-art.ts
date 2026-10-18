@@ -1,7 +1,7 @@
 // Draws the Google Play listing art into android/listing/graphics/; the README there lists every file.
 //   npx tsx scripts/generate-play-listing-art.ts                    icon + feature graphics
 //   npx tsx scripts/generate-play-listing-art.ts --screenshots      also the phone screenshots, from production
-//   ... --screenshots --langs en,no --only dice,lobby               a subset
+//   ... --screenshots --langs en,no --only checkers,lobby           a subset
 //   ... --compose-only                                              re-caption the captures in tmp/play-listing/raw
 // The two guests it plays as on production are kept in tmp/play-listing/, so a rerun reuses them.
 import { createElement } from 'react'
@@ -35,14 +35,14 @@ const DISPLAY_FONT = "'Bricolage Grotesque', Inter, sans-serif"
 const HOST_NAME = 'Mira'
 const FRIEND_NAME = 'Jonas'
 
-type ShotId = 'connect-four' | 'lobby' | 'dice' | 'games' | 'spy' | 'home'
+type ShotId = 'connect-four' | 'lobby' | 'checkers' | 'games' | 'spy' | 'tic-tac-toe'
 const SHOTS: { id: ShotId; file: string; caption: string }[] = [
   { id: 'connect-four', file: '01-connect-four', caption: 'home.statsBotsAvailable' },
   { id: 'lobby', file: '02-lobby', caption: 'auth.login.heroChipGuests' },
-  { id: 'dice', file: '03-dice', caption: 'games.yahtzee.detail.step2Title' },
+  { id: 'checkers', file: '03-checkers', caption: 'games.checkers.detail.step4Title' },
   { id: 'games', file: '04-games', caption: 'home.chooseWhatToPlay' },
   { id: 'spy', file: '05-spy-rules', caption: 'home.marquee.findTheSpy' },
-  { id: 'home', file: '06-home', caption: 'home.ctaVisitorTitle' },
+  { id: 'tic-tac-toe', file: '06-tic-tac-toe', caption: 'home.marquee.quickTicTacToe' },
 ]
 const FEATURE_GAMES = [
   { svgId: 'connect-four', accent: 'var(--bd-coral)' },
@@ -211,8 +211,47 @@ async function capture(page: Page, lang: Lang, shot: ShotId) {
   await page.mouse.move(0, 0)
   await page.addStyleTag({ content: hideCss() })
   await page.waitForTimeout(200)
+  await assertNothingForbidden(page, lang, shot)
   await page.screenshot({ path: file, animations: 'disabled', caret: 'hide' })
   console.log(`  raw ${lang} ${shot}`)
+}
+
+/** Play's IP policy: no other company's game name, and no "no download" copy inside an app listing. */
+function forbiddenPhrases(lang: Lang) {
+  return [
+    'Yahtzee',
+    'Yatzy',
+    t(lang, 'games.yahtzee.name'),
+    t(lang, 'home.marquee.playYahtzee'),
+    t(lang, 'home.marquee.noDownload'),
+    t(lang, 'home.marquee.playInBrowser'),
+    t(lang, 'home.statsBrowserNative'),
+    t(lang, 'home.heroSubtitle'),
+    t(lang, 'home.ctaVisitorBody'),
+    t(lang, 'home.howItWorks.step3.description'),
+  ]
+}
+
+async function assertNothingForbidden(page: Page, lang: Lang, shot: ShotId) {
+  const found = await page.evaluate((phrases) => {
+    const hits: string[] = []
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent?.trim() ?? ''
+      const parent = node.parentElement
+      if (text.length < 3 || !parent) continue
+      if (!phrases.some((phrase) => text.includes(phrase) || (phrase.includes(text) && text.length >= phrase.length * 0.6))) continue
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      for (const rect of range.getClientRects()) {
+        if (rect.width === 0 || rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) continue
+        const hit = document.elementFromPoint(Math.min(Math.max(rect.left + rect.width / 2, 0), window.innerWidth - 1), Math.min(Math.max(rect.top + rect.height / 2, 0), window.innerHeight - 1))
+        if (hit && (parent.contains(hit) || hit.contains(parent))) hits.push(text.slice(0, 60))
+      }
+    }
+    return hits
+  }, forbiddenPhrases(lang))
+  if (found.length > 0) throw new Error(`${shot} (${lang}) shows ${JSON.stringify([...new Set(found)])}`)
 }
 
 /** Scrolls the window by the smallest offset in [min, max] at which no line of text is cut by the top or bottom edge. */
@@ -256,35 +295,27 @@ async function captureEachLanguage(page: Page, shot: ShotId, prepare?: (lang: La
   await setLang(page, 'en')
 }
 
-async function visitorShots(browser: Browser) {
-  if (!only.has('home') && !only.has('spy')) return
+async function spyShots(browser: Browser) {
+  if (!only.has('spy')) return
   const context = await newContext(browser)
   const page = await context.newPage()
   await openPlayMode(page)
   for (const lang of langs) {
     await setLang(page, lang)
-    if (only.has('home')) {
-      await page.goto(`${SITE}/`, { waitUntil: 'domcontentloaded' })
-      await settle(page, lang)
-      await avoidCutLines(page, 0, 160)
-      await capture(page, lang, 'home')
-    }
-    if (only.has('spy')) {
-      await page.goto(`${SITE}/games/spy`, { waitUntil: 'domcontentloaded' })
-      await settle(page, lang)
-      const heading = page.getByRole('heading', { level: 2, name: t(lang, 'games.howToPlay'), exact: true }).first()
-      await heading.waitFor({ timeout: 15_000 })
-      await heading.evaluate((element) => {
-        const card = element.closest('section, .bd-card') ?? element.parentElement!
-        window.scrollTo(0, card.getBoundingClientRect().top + window.scrollY - 14)
-        // The header is sticky only while the body is in view, so on a long page it may still cover the card.
-        const header = document.querySelector('header')?.getBoundingClientRect()
-        if (header && header.bottom > 0) window.scrollBy(0, -header.bottom)
-      })
-      await page.waitForTimeout(800)
-      await avoidCutLines(page, -160, 40)
-      await capture(page, lang, 'spy')
-    }
+    await page.goto(`${SITE}/games/spy`, { waitUntil: 'domcontentloaded' })
+    await settle(page, lang)
+    const heading = page.getByRole('heading', { level: 2, name: t(lang, 'games.howToPlay'), exact: true }).first()
+    await heading.waitFor({ timeout: 15_000 })
+    await heading.evaluate((element) => {
+      const card = element.closest('section, .bd-card') ?? element.parentElement!
+      window.scrollTo(0, card.getBoundingClientRect().top + window.scrollY - 14)
+      // The header is sticky only while the body is in view, so on a long page it may still cover the card.
+      const header = document.querySelector('header')?.getBoundingClientRect()
+      if (header && header.bottom > 0) window.scrollBy(0, -header.bottom)
+    })
+    await page.waitForTimeout(800)
+    await avoidCutLines(page, -160, 40)
+    await capture(page, lang, 'spy')
   }
   await context.close()
 }
@@ -337,7 +368,8 @@ async function createLobby(page: Page, gameType: string): Promise<string> {
   await openCreatePage(page, gameType)
   // The longest turn timer the form offers, so six reloads fit inside one turn.
   await page.getByRole('button', { name: /^Lobby settings/ }).click()
-  await page.getByRole('button', { name: '120s', exact: true }).click()
+  const longestTimer = page.getByRole('button', { name: '120s', exact: true })
+  if (await longestTimer.isVisible().catch(() => false)) await longestTimer.click()
   // An unnamed lobby is called "Lobby <code>" in every language; a name keeps English out of the other five.
   await page.locator('#create-lobby-name').fill(`${HOST_NAME} & ${FRIEND_NAME}`)
   await page.getByRole('button', { name: 'Create Lobby', exact: true }).last().click()
@@ -416,52 +448,41 @@ async function connectFourShots(page: Page) {
   await captureEachLanguage(page, 'connect-four')
 }
 
-async function diceShots(page: Page) {
-  const roll = page.locator('button[aria-label^="Roll."]:visible').first()
-  const waitRollReady = (left: number) => page.waitForFunction((count) => {
-    const button = [...document.querySelectorAll<HTMLButtonElement>('button[aria-label^="Roll."]')].find((each) => each.getBoundingClientRect().width > 0)
-    return Boolean(button && !button.disabled && button.getAttribute('aria-label')?.includes(`${count} roll`))
-  }, left, { timeout: 60_000 })
-  await waitRollReady(3)
-  await roll.click()
-  await page.waitForTimeout(2500)
-  await page.locator('[data-category][data-best]:visible').first().click()
-  await page.waitForFunction(() => {
-    const button = [...document.querySelectorAll<HTMLButtonElement>('button[aria-label^="Roll."]')].find((each) => each.getBoundingClientRect().width > 0)
-    return !button || button.disabled
-  }, null, { timeout: 8_000 }).catch(() => undefined)
-  await waitRollReady(3)
-  await page.waitForTimeout(1000)
-  await roll.click()
-  await page.waitForTimeout(2500)
-  const hasPair = await page.locator('button.yz-die:visible').evaluateAll((buttons) => {
-    const values = buttons.slice(0, -1).map((button) => button.querySelectorAll('.yz-die__pip--on').length)
-    return values.some((value, index) => values.indexOf(value) !== index)
-  })
-  if (!hasPair) {
-    await roll.click()
-    await page.waitForTimeout(2500)
+async function ticTacToeShots(page: Page) {
+  const openCells = page.locator('button[aria-label^="cell "]:visible:not([disabled])')
+  const waitOpen = (open: boolean, timeout: number) =>
+    page.waitForFunction((want) => {
+      const cells = [...document.querySelectorAll<HTMLButtonElement>('button[aria-label^="cell "]')].filter((cell) => cell.getBoundingClientRect().width > 0)
+      return cells.some((cell) => !cell.disabled) === want
+    }, open, { timeout })
+  for (let move = 0; move < 2; move++) {
+    await waitOpen(true, 30_000)
+    await page.waitForTimeout(800)
+    const labels = await openCells.evaluateAll((cells) => cells.map((cell) => cell.getAttribute('aria-label')))
+    const pick = ['cell B2', 'cell A1', 'cell C3', 'cell A3', 'cell C1'].find((label) => labels.includes(label)) ?? labels[0]
+    const box = await page.locator(`button[aria-label="${pick}"]:visible`).first().boundingBox()
+    if (!box) throw new Error(`${pick} has no box`)
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+    await waitOpen(false, 8_000).catch(() => undefined)
   }
-  await holdMostCommon(page)
-  await captureEachLanguage(page, 'dice', () => holdMostCommon(page))
+  await waitOpen(true, 30_000)
+  await page.waitForTimeout(1500)
+  await captureEachLanguage(page, 'tic-tac-toe')
 }
 
-/** Holds every die showing the most common value; a die already held stays held. */
-async function holdMostCommon(page: Page) {
-  const dice = page.locator('button.yz-die:visible')
-  const faces = await dice.evaluateAll((buttons) =>
-    buttons.map((button) => ({ value: button.querySelectorAll('.yz-die__pip--on').length, held: button.getAttribute('aria-pressed') === 'true' }))
-  )
-  const counts = new Map<number, number>()
-  // The last die's Held badge overflows the bar at 360px in German, Spanish and Ukrainian, so it is never held.
-  for (const face of faces.slice(0, -1)) counts.set(face.value, (counts.get(face.value) ?? 0) + 1)
-  const [keep] = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]
-  for (let index = 0; index < faces.length - 1; index++) {
-    if (faces[index].value !== keep || faces[index].held) continue
-    await dice.nth(index).click()
-    await page.waitForTimeout(400)
+async function checkersShots(page: Page) {
+  const board = page.locator('[data-testid="checkers-board"]:visible')
+  const movable = board.locator('button[data-movable]')
+  for (let move = 0; move < 3; move++) {
+    await movable.first().waitFor({ state: 'visible', timeout: 30_000 })
+    await page.waitForTimeout(800)
+    await movable.first().click()
+    await board.locator('button[data-destination]').first().click()
+    await page.waitForFunction(() => !document.querySelector('[data-testid="checkers-board"] button[data-movable]'), null, { timeout: 8_000 }).catch(() => undefined)
   }
-  await page.waitForTimeout(1200)
+  await movable.first().waitFor({ state: 'visible', timeout: 30_000 })
+  await page.waitForTimeout(1500)
+  await captureEachLanguage(page, 'checkers')
 }
 
 /** The waiting room's player list scrolls under a fixed footer; move the fold into a gap between two lines of text. */
@@ -486,7 +507,7 @@ async function foldBetweenLines(page: Page, guideTitle: string) {
 }
 
 async function hostShots(browser: Browser) {
-  const wanted = ['games', 'lobby', 'connect-four', 'dice'].filter((id) => only.has(id as ShotId))
+  const wanted = ['games', 'lobby', 'connect-four', 'checkers', 'tic-tac-toe'].filter((id) => only.has(id as ShotId))
   if (wanted.length === 0) return
   const context = await newContext(browser, 'host')
   const page = await context.newPage()
@@ -506,10 +527,16 @@ async function hostShots(browser: Browser) {
       }
       await leaveLobby(page)
     }
-    if (only.has('dice')) {
-      await createLobby(page, 'yahtzee')
+    if (only.has('checkers')) {
+      await createLobby(page, 'checkers')
       await startGame(page)
-      await diceShots(page)
+      await checkersShots(page)
+      await leaveLobby(page)
+    }
+    if (only.has('tic-tac-toe')) {
+      await createLobby(page, 'tic_tac_toe')
+      await startGame(page)
+      await ticTacToeShots(page)
       await leaveLobby(page)
     }
   } finally {
@@ -547,7 +574,7 @@ async function main() {
     await icon()
     await featureGraphics(browser)
     if (flag('--screenshots')) {
-      await visitorShots(browser)
+      await spyShots(browser)
       await hostShots(browser)
       await composeScreenshots(browser)
     }
