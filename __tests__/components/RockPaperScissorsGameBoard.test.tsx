@@ -1,5 +1,6 @@
 import { act, render } from '@testing-library/react'
-import RockPaperScissorsGameBoard, { RPS_REVEAL_MS, RPS_SHAKE_MS } from '@/components/RockPaperScissorsGameBoard'
+import RockPaperScissorsGameBoard from '@/components/RockPaperScissorsGameBoard'
+import { RPS_REVEAL_MS, RPS_SHAKE_MS } from '@/lib/rps-motion'
 import type { RockPaperScissorsGameData } from '@/lib/games/rock-paper-scissors-game'
 
 const mockPrefersReducedMotion = jest.fn(() => false)

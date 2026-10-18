@@ -109,9 +109,6 @@ jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
   getChoiceEmoji: () => '❔',
   getChoiceIcon: () => 'rock',
   CHOICE_LABEL_KEY: { rock: 'lobby.choice.rock', paper: 'lobby.choice.paper', scissors: 'lobby.choice.scissors' },
-  // Without these the page's reveal holds were `undefined` ms, i.e. off, in this suite.
-  RPS_REVEAL_MS: 1100,
-  RPS_RESULT_REVEAL_DELAY_MS: 2000,
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
