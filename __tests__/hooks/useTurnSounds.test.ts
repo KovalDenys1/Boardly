@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useTurnSounds, OPPONENT_MOVE_VOLUME_FACTOR, type UseTurnSoundsOptions } from '@/hooks/useTurnSounds'
+import { useTurnSounds, OPPONENT_MOVE_VOLUME_FACTOR, turnCameToViewer, type UseTurnSoundsOptions } from '@/hooks/useTurnSounds'
 import { sounds } from '@/lib/sounds'
 
 jest.mock('@/lib/sounds', () => ({
@@ -84,5 +84,22 @@ describe('useTurnSounds (#1111)', () => {
     rerender({ isMyTurn: false, lastMoveSignature: 8, opponentMoved: false })
     rerender({ isMyTurn: true, lastMoveSignature: 9, opponentMoved: true })
     expect(play).toHaveBeenCalledWith('turnChange')
+  })
+})
+
+describe('turnCameToViewer (the lobby shell turn cue, #1464)', () => {
+  it('is true only when the turn moves to the viewer', () => {
+    expect(turnCameToViewer('bot', 'me', 'me')).toBe(true)
+  })
+
+  it('stays silent when the turn moves away from the viewer', () => {
+    expect(turnCameToViewer('me', 'bot', 'me')).toBe(false)
+  })
+
+  it('stays silent between two other players, on the first observation and with no viewer', () => {
+    expect(turnCameToViewer('a', 'b', 'me')).toBe(false)
+    expect(turnCameToViewer(undefined, 'me', 'me')).toBe(false)
+    expect(turnCameToViewer('me', 'me', 'me')).toBe(false)
+    expect(turnCameToViewer('bot', 'me', null)).toBe(false)
   })
 })

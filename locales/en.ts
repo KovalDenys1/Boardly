@@ -385,6 +385,7 @@ const en = {
     mute: 'Mute',
     unmute: 'Unmute',
     volume: 'Volume',
+    silentSwitchHint: 'On iPhone, the silent switch also mutes game sounds.',
     themeLabel: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',

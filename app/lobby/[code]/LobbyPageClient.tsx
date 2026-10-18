@@ -6,7 +6,10 @@ import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { sounds } from '@/lib/sounds'
+import { LEGACY_SOUND_CUES, sounds } from '@/lib/sounds'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
+import { turnCameToViewer } from '@/hooks/useTurnSounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -193,7 +196,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
-  const [soundEnabled, setSoundEnabled] = useState(true)
+  const { enabled: soundEnabled } = useSoundSettings()
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 
@@ -327,11 +330,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
-  // Sync soundEnabled state with sounds on mount
-  useEffect(() => {
-    setSoundEnabled(sounds.isEnabled())
-  }, [])
-
   const playAmbientSound = useCallback(
     (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
       if (isInitialLoadRef.current) return
@@ -461,18 +459,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const prevPlayerIdRef = React.useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    // Track changes to current player ID and play sound when turn changes
-    if (currentPlayerId && prevPlayerIdRef.current && currentPlayerId !== prevPlayerIdRef.current) {
-      const currentUserId = getCurrentUserId()
-      // Play sound for turn change
-      if (currentPlayerId === currentUserId) {
-        // It's now our turn - play turn change sound
-        playAmbientSound('turnChange')
-      } else if (prevPlayerIdRef.current === currentUserId) {
-        // Turn moved away from us to another player - play turn change sound
-        playAmbientSound('turnChange')
-      }
-    }
+    if (turnCameToViewer(prevPlayerIdRef.current, currentPlayerId, getCurrentUserId())) playAmbientSound('turnChange')
     prevPlayerIdRef.current = currentPlayerId
   }, [currentPlayerId, getCurrentUserId, playAmbientSound])
 
@@ -1781,7 +1768,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const toggleSound = () => {
     sounds.play('click', { force: true })
     const newState = sounds.toggle()
-    setSoundEnabled(newState)
     showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
       ...BELOW_HEADER_TOAST,
       duration: 2000,
@@ -2463,6 +2449,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
+  // Held here, not in LobbyPageContent: the dedicated game pages render instead of the shell.
+  useSoundConsumer(LEGACY_SOUND_CUES)
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
