@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
       notifications,
       feedback,
       reportsFiled,
+      blocks,
       achievements,
       pushSubscriptions,
     ] = await Promise.all([
@@ -279,6 +280,13 @@ export async function GET(request: NextRequest) {
           createdAt: true,
         },
       }),
+      // Blocks the user made; who blocked them is the blockers' data.
+      prisma.userBlocks.findMany({
+        where: { blockerId: userId },
+        orderBy: { createdAt: 'desc' },
+        take: MAX_ROWS,
+        select: { createdAt: true, blocked: { select: { username: true } } },
+      }),
       prisma.userAchievements.findMany({
         where: { userId },
         orderBy: { unlockedAt: 'asc' },
@@ -308,6 +316,7 @@ export async function GET(request: NextRequest) {
       notifications,
       feedback,
       reportsFiled,
+      blocks,
       achievements,
       pushSubscriptions,
     }
@@ -370,6 +379,10 @@ export async function GET(request: NextRequest) {
       notifications,
       feedback,
       reportsFiled,
+      blockedPlayers: blocks.map((block) => ({
+        username: block.blocked.username,
+        blockedAt: block.createdAt,
+      })),
       achievements,
       pushSubscriptions: pushSubscriptions.map((subscription) => ({
         service: endpointHost(subscription.endpoint),

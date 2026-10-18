@@ -4,7 +4,7 @@ import {
   Diamond, DiceFive, Eraser, FilmSlate, Flag, Flower, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm, HandPointing,
   Camera, ChatCircle, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
   MagnifyingGlass, Megaphone, Palette,
-  MapTrifold, MaskHappy, Medal, Minus, Pause, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors, SkipBack, SkipForward,
+  MapTrifold, MaskHappy, Medal, Minus, Pause, PencilSimple, Play, Plus, Prohibit, Question, Robot, RocketLaunch, Scissors, SkipBack, SkipForward,
   ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
   Trash, Trophy, User, Users, Warning, X,
 } from '@phosphor-icons/react/dist/ssr'
@@ -86,6 +86,7 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   eraser: Eraser,
   trash: Trash,
   flag: Flag,
+  prohibit: Prohibit,
   point: HandPointing,
   chart: ChartBar,
   gear: GearSix,

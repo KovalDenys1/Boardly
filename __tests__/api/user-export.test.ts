@@ -24,6 +24,7 @@ jest.mock('@/lib/db', () => {
       notifications: list(),
       feedback: list(),
       reports: list(),
+      userBlocks: list(),
       userAchievements: list(),
       pushSubscriptions: list(),
     },
@@ -48,6 +49,7 @@ const LIST_DELEGATES = [
   'notifications',
   'feedback',
   'reports',
+  'userBlocks',
   'userAchievements',
   'pushSubscriptions',
 ]
@@ -187,5 +189,19 @@ describe('GET /api/user/export (#1127)', () => {
     expect(body.friends).toEqual([{ username: 'two', since: expect.any(String) }])
     expect(body.games[0].result).toEqual({ outcome: 'win', isDraw: false, reason: null })
     expect(JSON.stringify(body.games)).not.toContain('u3')
+  })
+
+  it('exports the players the user blocked by username only, scoped to the user', async () => {
+    prisma.userBlocks.findMany.mockResolvedValue([
+      { createdAt: new Date('2026-10-01T10:00:00.000Z'), blocked: { username: 'two' } },
+    ])
+
+    const body = await (await GET(request())).json()
+
+    expect(body.blockedPlayers).toEqual([{ username: 'two', blockedAt: '2026-10-01T10:00:00.000Z' }])
+    const [args] = prisma.userBlocks.findMany.mock.calls[0]
+    expect(args.where).toEqual({ blockerId: 'u1' })
+    expect(args.select.blockedId).toBeUndefined()
+    expect(args.select.blockerId).toBeUndefined()
   })
 })

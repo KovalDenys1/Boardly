@@ -169,6 +169,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -974,6 +976,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

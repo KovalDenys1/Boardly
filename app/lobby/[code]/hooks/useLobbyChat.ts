@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { acceptTerms as postAcceptTerms, isTermsRequired } from '@/lib/client/terms-consent'
 import { playCue } from '@/lib/sound-engine'
 import type { ChatMessagePayload } from '@/types/game'
 
@@ -31,6 +33,11 @@ interface UseLobbyChatOptions {
   isChatVisible: boolean
 }
 
+/** What the chat history says about the viewer; only a seated player gets it. */
+export interface ChatHistoryViewer {
+  termsAccepted?: unknown
+}
+
 /**
  * sendChatMessage adds the sender's own message locally under a `temp-` id so it
  * appears instantly. Drop those entries once the server's copy of the same text
@@ -54,6 +61,8 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
 
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  // null until the history says, or a send is refused: the composer shows meanwhile.
+  const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null)
 
   // Read via refs so the realtime handlers stay referentially stable and
   // never force useRealtimeConnection to re-subscribe.
@@ -65,6 +74,13 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
   codeRef.current = code
   const chatMessagesRef = useRef<ChatMessagePayload[]>([])
   chatMessagesRef.current = chatMessages
+  // Chat hides a blocked player's messages, so they neither count as unread nor make a sound;
+  // before the list is known Chat shows nothing, so nothing counts or sounds either.
+  const { blockedIds, ready: blocksReady } = useBlockedPlayers()
+  const blockedIdsRef = useRef(blockedIds)
+  blockedIdsRef.current = blockedIds
+  const blocksReadyRef = useRef(blocksReady)
+  blocksReadyRef.current = blocksReady
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     // The lobby's realtime topic is not private and its code is four digits, so
@@ -83,10 +99,13 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
 
           setChatMessages((prev) => [...withoutConfirmedOptimistic(prev, fresh), ...fresh])
 
-          const last = fresh[fresh.length - 1]
-          const isOwnMessage = last.userId === currentUserIdRef.current
-          if (!isChatVisibleRef.current && !isOwnMessage) setUnreadCount((prev) => prev + 1)
-          if (!isOwnMessage) playCue('chat.incoming')
+          if (!blocksReadyRef.current) return
+          const audible = fresh.filter(
+            (m) => m.userId !== currentUserIdRef.current && !blockedIdsRef.current.has(m.userId)
+          )
+          if (audible.length === 0) return
+          if (!isChatVisibleRef.current) setUnreadCount((prev) => prev + 1)
+          playCue('chat.incoming')
         })
         .catch(() => {
           // Non-critical: history reloads on the next reconnect anyway.
@@ -95,13 +114,12 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
     }
 
     setChatMessages(prev => [...withoutConfirmedOptimistic(prev, [message]), message])
-    const isOwnMessage = message.userId === currentUserIdRef.current
-    if (!isChatVisibleRef.current && !isOwnMessage) {
+    if (!blocksReadyRef.current) return
+    if (message.userId === currentUserIdRef.current || blockedIdsRef.current.has(message.userId)) return
+    if (!isChatVisibleRef.current) {
       setUnreadCount(prev => prev + 1)
     }
-    if (!isOwnMessage) {
-      playCue('chat.incoming')
-    }
+    playCue('chat.incoming')
   }, [])
 
   const currentUserName = isGuest
@@ -110,7 +128,8 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
   const currentUserNameRef = useRef(currentUserName)
   currentUserNameRef.current = currentUserName
 
-  const sendChatMessage = useCallback((message: string) => {
+  /** Resolves to the message when the server asked for the terms first, so the composer can put it back; otherwise null. */
+  const sendChatMessage = useCallback((message: string): Promise<string | null> => {
     const currentUserId = currentUserIdRef.current
     const tempId = `temp-${Date.now()}`
     if (currentUserId) {
@@ -122,21 +141,35 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
         timestamp: Date.now(),
       }])
     }
-    void Promise.resolve(fetchWithGuest(`/api/lobby/${code}/chat`, {
+    return Promise.resolve(fetchWithGuest(`/api/lobby/${code}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     }))
-      .then((res) => {
-        if (!res || res.ok) return
+      .then(async (res) => {
+        if (!res || res.ok) return null
         // The server refused it, so nobody else will ever see it: take the
         // optimistic copy back rather than leave the sender believing it went.
         setChatMessages(prev => prev.filter(m => m.id !== tempId))
+        if (!(await isTermsRequired(res))) return null
+        setTermsAccepted(false)
+        return message
       })
-      .catch(() => {})
+      .catch(() => null)
   }, [code])
 
-  const mergeHistoryMessages = useCallback((history: ChatMessagePayload[]) => {
+  const acceptTerms = useCallback(async (): Promise<boolean> => {
+    const accepted = await postAcceptTerms()
+    if (accepted) setTermsAccepted(true)
+    return accepted
+  }, [])
+
+  const mergeHistoryMessages = useCallback((history: ChatMessagePayload[], viewer?: ChatHistoryViewer | null) => {
+    const accepted = viewer?.termsAccepted
+    if (typeof accepted === 'boolean') {
+      // A history read that left before the player accepted must not ask them again.
+      setTermsAccepted(prev => (prev === true ? true : accepted))
+    }
     setChatMessages(prev => {
       const existingIds = new Set(prev.map(m => m.id))
       const fresh = history.filter(m => !existingIds.has(m.id))
@@ -151,6 +184,9 @@ export function useLobbyChat({ code, isChatVisible }: UseLobbyChatOptions) {
     sendChatMessage,
     unreadCount,
     resetUnread,
+    /** From the history's `viewer`, or false after a send was refused for the terms; null while unknown. */
+    termsAccepted,
+    acceptTerms,
     /**
      * Always false. The indicator listened for a `player-typing` broadcast that
      * nothing has ever sent, and a client-sent one would now be dropped as
@@ -169,7 +205,7 @@ interface UseLobbyChatHistoryOptions {
   code: string
   isConnected: boolean
   isReconnecting: boolean
-  mergeHistoryMessages: (history: ChatMessagePayload[]) => void
+  mergeHistoryMessages: (history: ChatMessagePayload[], viewer?: ChatHistoryViewer | null) => void
 }
 
 /** Loads persisted chat history once per connect (re-fetches on reconnect). */
@@ -195,9 +231,9 @@ export function useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHi
     fetch(`/api/lobby/${code}/chat`, { headers })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          mergeHistoryMessages(data.messages as ChatMessagePayload[])
-        }
+        if (!data) return
+        const messages = Array.isArray(data.messages) ? (data.messages as ChatMessagePayload[]) : []
+        mergeHistoryMessages(messages, data.viewer)
       })
       .catch(() => {
         // non-critical; ignore

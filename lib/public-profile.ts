@@ -116,5 +116,8 @@ export const PRIVACY_SETTINGS_SECTION_ID = 'privacy'
 /** Id of the Notifications section in the profile settings tab; every mail's footer links to it. */
 export const NOTIFICATION_SETTINGS_SECTION_ID = 'notifications'
 
+/** Id of the Blocked players section in the profile settings tab (#1466). */
+export const BLOCKED_PLAYERS_SECTION_ID = 'blocked'
+
 /** The profile settings tab, scrolled to its Privacy section. */
 export const PRIVACY_SETTINGS_HREF = `/profile?tab=settings#${PRIVACY_SETTINGS_SECTION_ID}`

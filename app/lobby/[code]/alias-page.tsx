@@ -10,6 +10,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { acceptTerms, isTermsRequired } from '@/lib/client/terms-consent'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
@@ -20,6 +21,7 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
 import { sounds } from '@/lib/sounds'
@@ -459,7 +461,7 @@ const AliasGameHeader: React.FC<{
 }
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [] }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [], termsRequired = false, onAcceptTerms }: {
   guesses: GuessMessage[]
   /** Words the describer has marked guessed this turn; matching bubbles are celebrated (#1115). */
   guessedWords?: readonly string[]
@@ -472,8 +474,26 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   currentUserId: string | null | undefined
   /** On its own mobile tab the panel owns the pane; stacked it keeps its 220px. */
   fillHeight?: boolean
+  /** A guess came back 403 TERMS_REQUIRED (#1466): the consent panel stands in for the input. */
+  termsRequired?: boolean
+  onAcceptTerms?: () => Promise<boolean>
 }) {
   const { t } = useTranslation()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const focusInputAfterConsent = useRef(false)
+  const showTermsConsent = canType && termsRequired && !!onAcceptTerms
+  useEffect(() => {
+    if (showTermsConsent || !focusInputAfterConsent.current) return
+    focusInputAfterConsent.current = false
+    inputRef.current?.focus()
+  }, [showTermsConsent])
+  const handleAcceptTerms = async () => {
+    if (!onAcceptTerms) return false
+    focusInputAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (!accepted) focusInputAfterConsent.current = false
+    return accepted
+  }
   // Guesses arrive live only (there is no history to load), so `[]` is a
   // loaded empty feed and every guess after it is fresh.
   const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(guesses, (g) => String(g.id)))
@@ -540,9 +560,16 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
         })}
         <div ref={endRef} />
       </div>
-      {canType && (
+      {showTermsConsent ? (
+        <TermsConsentPanel
+          onAccept={handleAcceptTerms}
+          autoFocus
+          style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', flexShrink: 0 }}
+        />
+      ) : canType && (
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
           <input
+            ref={inputRef}
             type="text"
             value={guessInput}
             onChange={e => onInputChange(e.target.value)}
@@ -613,6 +640,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // Guess chat
   const [guesses, setGuesses] = useState<GuessMessage[]>([])
   const [guessInput, setGuessInput] = useState('')
+  const [guessTermsRequired, setGuessTermsRequired] = useState(false)
   const guessesEndRef = useRef<HTMLDivElement | null>(null)
 
   // Lives outside the timer effect on purpose: the effect is rebuilt whenever
@@ -765,6 +793,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const uid = getCurrentUserId()
     if (msg.userId === uid) return
     if (typeof msg.message !== 'string') return
+    // The same topic carries the lobby's chat; only the guess route's frames belong in the feed.
+    if ((msg as unknown as Record<string, unknown>).type !== 'alias-guess') return
     const rawId = (msg as unknown as Record<string, unknown>).id
     const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : Date.now()
     setGuesses(prev => prev.some(g => g.id === id) ? prev : [...prev.slice(-99), {
@@ -970,9 +1000,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text }),
     }))
-      .then((res) => {
+      .then(async (res) => {
         if (!res || res.ok) return
         setGuesses(prev => prev.filter(g => g.id !== localId))
+        if (await isTermsRequired(res)) {
+          setGuessInput(current => (current ? `${text} ${current}` : text))
+          setGuessTermsRequired(true)
+          return
+        }
         if (res.status === 429) {
           showToast.error('alias.guessRateLimited', undefined, undefined, { id: 'alias-guess-rate-limited' })
         }
@@ -981,6 +1016,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         setGuesses(prev => prev.filter(g => g.id !== localId))
       })
   }, [guessInput, getCurrentUserId, isGuest, guestName, session, code, turnStartedAt])
+
+  const acceptGuessTerms = useCallback(async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setGuessTermsRequired(false)
+    return accepted
+  }, [])
 
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1479,6 +1520,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
+    termsRequired: guessTermsRequired,
+    onAcceptTerms: acceptGuessTerms,
     guessedWords: data.currentCardResults.filter((r) => r.result === 'guessed').map((r) => r.word),
   }
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MobileMenu } from '@/components/Header/MobileMenu'
 
 const mockPush = jest.fn()
@@ -14,14 +14,17 @@ jest.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
 }))
 
+let mockIsGuest = false
+
 jest.mock('next-auth/react', () => ({
   signOut: jest.fn(),
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
 }))
 
 jest.mock('@/contexts/GuestContext', () => ({
   useGuest: () => ({
-    isGuest: false,
-    guestName: null,
+    isGuest: mockIsGuest,
+    guestName: mockIsGuest ? 'HostQ1383' : null,
     clearGuestMode: jest.fn(),
   }),
 }))
@@ -37,6 +40,7 @@ jest.mock('@/components/LanguageSwitcher', () => ({
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string) => {
       const map: Record<string, string> = {
         'header.menu': 'Open menu',
@@ -180,5 +184,20 @@ describe('MobileMenu', () => {
     openMenu()
 
     expect(screen.getByTestId('mobile-language-switcher')).toBeTruthy()
+  })
+
+  it('opens the Blocked players dialog over the drawer for a guest (#1466)', async () => {
+    mockIsGuest = true
+    try {
+      renderMenu({ isAuthenticated: false, userName: null, userEmail: null })
+      openMenu()
+
+      fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.title' }))
+
+      const dialog = await screen.findByRole('dialog', { name: 'blockedPlayers.title' })
+      expect(await within(dialog).findByText('blockedPlayers.empty')).toBeTruthy()
+    } finally {
+      mockIsGuest = false
+    }
   })
 })

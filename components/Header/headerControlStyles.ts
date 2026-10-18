@@ -31,3 +31,6 @@ export function headerControl({
     .filter(Boolean)
     .join(' ')
 }
+
+/** The guest menu's button, shared with the placeholder that holds its place while the menu loads. */
+export const guestMenuButtonClass = `${headerControl({ border: 'border-(--bd-sun-deep)/40', surface: 'bg-(--bd-sun)/22 hover:bg-(--bd-sun)/35 data-open:bg-(--bd-sun)/35' })} max-w-[140px] gap-2 px-3 text-[13px] font-semibold`

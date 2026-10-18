@@ -175,7 +175,8 @@ until its owner deletes it (`/api/user/request-deletion` → `/api/user/delete-a
 
 `Users`, `Accounts` (linked sign-in providers), `AccountPreferences`,
 `NotificationPreferences`, `PushSubscriptions`, `UserAchievements`, `FriendRequests`,
-`Friendships`, `PurchaseConsents`, `Bots`.
+`Friendships`, `UserBlocks` (the players the account blocked in chat, #1466),
+`PurchaseConsents`, `Bots`.
 
 `PasswordResetTokens` and `EmailVerificationTokens` are deleted when used, when a newer
 one replaces them, or with the account; no expired row existed on 2026-09-24.
@@ -196,7 +197,8 @@ one replaces them, or with the account; no expired row existed on 2026-09-24.
 profile, preferences, linked sign-in providers, games, lobbies created, purchases and
 purchase consents, friends and friend requests, lobby invites, notifications, feedback,
 the reports the user filed (what, why and when; not the other player or the copy of their
-content), achievements and push subscriptions (without their keys). The profile page's Account tab
+content), the players they blocked (by username, not who blocked them), achievements and
+push subscriptions (without their keys). The profile page's Account tab
 has the button. A guest, or a request covering data the export does not include
 (`AdminAuditLogs` about the user, `OperationalEvents`), is handled by email to
 support@boardly.online within one month (GDPR Art. 12(3)).

@@ -23,6 +23,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     lobbies: { findUnique: jest.fn() },
     games: { findUnique: jest.fn() },
+    users: { findUnique: jest.fn() },
   },
 }))
 
@@ -89,6 +90,7 @@ describe('POST /api/lobby/[code]/chat mutes the Sketch & Guess drawer (#1034)', 
     jest.clearAllMocks()
     mockBroadcastToLobby.mockResolvedValue(true as never)
     mockPersistChatMessage.mockResolvedValue(undefined as never)
+    ;(prisma.users.findUnique as jest.Mock).mockResolvedValue({ termsAcceptedAt: new Date(), bot: null })
   })
 
   function asUser(id: string) {
