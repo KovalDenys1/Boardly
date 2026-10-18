@@ -946,7 +946,7 @@ html.dark {
    default ring with nothing in its place. Matches .memory-tile's replacement. */
 .btn-social:focus-visible,
 .btn-social-unlink:focus-visible {
-  outline: 3px solid var(--bd-sky);
+  outline: 3px solid var(--bd-lav-deep);
   /* Inside the box: an outer outline is cut off by any overflow:auto/hidden
      ancestor (#1278). scripts/audit-focus-rings.ts fails on a positive offset. */
   outline-offset: -3px;
@@ -2338,7 +2338,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   cursor: pointer;
 }
 .game-player-avatar-button:focus-visible {
-  outline: 3px solid var(--bd-coral);
+  outline: 3px solid var(--bd-lav-deep);
   outline-offset: -3px;
 }
 /* `min-width: 0` alone let this resolve to 0px next to the unshrinkable
@@ -2935,7 +2935,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .yz-die:not(:disabled):active .yz-die__face { scale: 0.96; }
 .yz-die:focus-visible { outline: none; }
-.yz-die:focus-visible .yz-die__face { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-die:focus-visible .yz-die__face { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
 .yz-die--rolling .yz-die__face {
   animation: yz-tumble var(--bd-dur-slow) var(--bd-ease-out) both;
   animation-delay: calc(var(--i, 0) * 40ms);
@@ -2992,7 +2992,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   .yz-roll:not(:disabled):hover { box-shadow: 0 5px 0 var(--bd-coral); }
 }
 .yz-roll:not(:disabled):active { scale: 0.96; box-shadow: 0 2px 0 var(--bd-coral); }
-.yz-roll:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-roll:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
 .yz-roll:disabled {
   cursor: default;
   background: var(--bd-card);
@@ -3115,7 +3115,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   -webkit-tap-highlight-color: transparent;
 }
 .yz-sheet__cat--static { cursor: default; }
-.yz-sheet__cat:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; border-radius: 8px; }
+.yz-sheet__cat:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; border-radius: 8px; }
 .yz-sheet__cat-text { position: relative; flex: 0 1 auto; min-width: 0; }
 .yz-sheet__cat-name {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -3231,7 +3231,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 .yz-ghost:not(:disabled):active { scale: 0.96; }
-.yz-ghost:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -1px; }
+.yz-ghost:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -1px; }
 .yz-ghost:disabled { cursor: default; }
 
 .yz-cell--pop .yz-cell__num { animation: yz-cell-pop var(--bd-dur) var(--bd-ease-spring) both; }
@@ -3392,7 +3392,7 @@ button.yz-pill { font: inherit; font-size: 12px; font-weight: 700; cursor: point
   button.yz-pill:hover { border-color: var(--bd-ink); }
 }
 button.yz-pill:active { scale: 0.96; }
-button.yz-pill:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
 .yz-pill__name { max-width: 8ch; overflow: hidden; text-overflow: ellipsis; }
 .yz-pill__score { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
 .yz-pill__turn {
@@ -3416,7 +3416,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-sky); outline-offset:
   width: 40px; height: 40px; border-radius: 12px;
   border: 1.5px solid var(--bd-line); background: var(--bd-card); color: var(--bd-ink);
 }
-.yz-sound:focus-visible { outline: 3px solid var(--bd-sky); outline-offset: -3px; }
+.yz-sound:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
 .yz-status { flex-shrink: 0; padding: 8px 12px 0; }
 
 .yz-mobile {

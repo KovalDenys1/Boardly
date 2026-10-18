@@ -147,7 +147,7 @@ export default function UsernameInput({
               ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500/20'
               : status === 'taken' || status === 'invalid'
                 ? 'border-red-400 focus:ring-2 focus:ring-inset focus:ring-red-500/20'
-                : 'border-bd-line focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
+                : 'border-bd-line focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}

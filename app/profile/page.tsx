@@ -2228,7 +2228,7 @@ export default function ProfilePage() {
                             ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
                               ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20'
+                              : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2262,7 +2262,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20`}
+                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">

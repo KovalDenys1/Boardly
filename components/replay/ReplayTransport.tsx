@@ -17,7 +17,7 @@ interface ReplayTransportProps {
 }
 
 const buttonBase =
-  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] transition-colors disabled:opacity-40 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] transition-colors disabled:opacity-40 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 const buttonClass = `${buttonBase} border-bd-line bg-bd-bg text-bd-ink hover:bg-bd-bg2 disabled:hover:bg-bd-bg`
 const playButtonClass = `${buttonBase} border-bd-ink bg-bd-ink text-bd-bg`
 

@@ -58,7 +58,7 @@ const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-transform hover:-translate-y-0.5 hover:bg-bd-bg2 disabled:cursor-not-allowed disabled:opacity-50'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
-const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 
 interface Player {
   id: string

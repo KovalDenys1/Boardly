@@ -24,7 +24,7 @@ export interface NavDrawerProps {
   userImage?: string | null
 }
 
-const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav/50'
+const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 const outlineButton = `w-full rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-4 py-3 text-[15px] font-semibold text-bd-ink ${focusRing}`
 const inkButton = `w-full rounded-xl border-[1.5px] border-bd-line bg-bd-ink px-4 py-3 text-[15px] font-bold text-bd-bg ${focusRing}`
 
