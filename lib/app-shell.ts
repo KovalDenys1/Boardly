@@ -1,3 +1,5 @@
+import { BOARDLY_URL } from './organization-json-ld'
+
 export const PLAY_APP_PACKAGE = 'online.boardly.app'
 export const APP_SHELL_STORAGE_KEY = 'boardly:app-shell'
 
@@ -5,6 +7,7 @@ const APP_SHELL_PLAY = 'play'
 const LAUNCH_SOURCE = 'android_app'
 const LAUNCH_MEDIUM = 'twa'
 const PLAY_REFERRER = new RegExp(`^android-app://${PLAY_APP_PACKAGE.replace(/\./g, '\\.')}(/|$)`)
+const PURCHASE_PATHS = ['/premium', '/api/stripe']
 
 export const PLAY_APP_SIGNUP_SOURCE = `utm:${LAUNCH_SOURCE}/${LAUNCH_MEDIUM}`
 
@@ -47,6 +50,19 @@ export function addPlayLaunchParams(href: string, origin: string): string {
   url.searchParams.set('utm_source', LAUNCH_SOURCE)
   url.searchParams.set('utm_medium', LAUNCH_MEDIUM)
   return url.href
+}
+
+export function isPurchaseHref(href: string, origin?: string): boolean {
+  let url: URL
+  try {
+    url = new URL(href, BOARDLY_URL)
+  } catch {
+    return true
+  }
+  if (url.origin !== BOARDLY_URL && url.origin !== origin) return true
+
+  const path = url.pathname.toLowerCase()
+  return PURCHASE_PATHS.some((prefix) => path.startsWith(prefix))
 }
 
 export function getAppShellInitScript() {

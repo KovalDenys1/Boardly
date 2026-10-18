@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { getActiveAnnouncement } from '@/lib/runtime-config'
+import { AnnouncementMessage } from '@/components/AnnouncementMessage'
 
 /**
  * A single line above the header, when there is something to say.
@@ -24,22 +24,9 @@ export async function AnnouncementBanner() {
     warning: 'bg-amber-500/10 text-amber-100 border-amber-500/30',
   }[announcement.tone]
 
-  const body = (
-    <span className="mx-auto flex max-w-5xl items-center justify-center gap-2 px-4 py-2 text-center text-sm">
-      {announcement.message}
-      {announcement.href && <span aria-hidden="true">&rarr;</span>}
-    </span>
-  )
-
   return (
     <div role="status" className={`border-b ${tone}`}>
-      {announcement.href ? (
-        <Link href={announcement.href} className="block hover:underline">
-          {body}
-        </Link>
-      ) : (
-        body
-      )}
+      <AnnouncementMessage message={announcement.message} href={announcement.href || null} />
     </div>
   )
 }

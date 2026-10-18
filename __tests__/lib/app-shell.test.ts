@@ -8,6 +8,7 @@ import {
   detectPlayLaunch,
   getAppShellInitScript,
   isPlayApp,
+  isPurchaseHref,
   stripPlayLaunchParams,
 } from '@/lib/app-shell'
 
@@ -100,6 +101,33 @@ describe('addPlayLaunchParams', () => {
   it('leaves another origin alone', () => {
     expect(addPlayLaunchParams('https://discord.gg/boardly', origin)).toBe('https://discord.gg/boardly')
     expect(addPlayLaunchParams('https://boardly.online.evil.com/', origin)).toBe('https://boardly.online.evil.com/')
+  })
+})
+
+describe('isPurchaseHref', () => {
+  it('lets ordinary pages on the site through', () => {
+    expect(isPurchaseHref('/games')).toBe(false)
+    expect(isPurchaseHref('https://boardly.online/games/yahtzee?x=1')).toBe(false)
+  })
+
+  it('catches the Premium page and the Stripe routes', () => {
+    expect(isPurchaseHref('/premium')).toBe(true)
+    expect(isPurchaseHref('/premium?plan=yearly')).toBe(true)
+    expect(isPurchaseHref('https://boardly.online/premium')).toBe(true)
+    expect(isPurchaseHref('/api/stripe/checkout')).toBe(true)
+  })
+
+  it('catches anything off the site', () => {
+    expect(isPurchaseHref('https://buy.stripe.com/abc')).toBe(true)
+    expect(isPurchaseHref('//buy.stripe.com/abc')).toBe(true)
+    expect(isPurchaseHref('https://boardly.online.evil.com/')).toBe(true)
+    expect(isPurchaseHref('javascript:alert(1)')).toBe(true)
+  })
+
+  it('accepts the current origin when one is given', () => {
+    expect(isPurchaseHref('http://localhost:3000/games', 'http://localhost:3000')).toBe(false)
+    expect(isPurchaseHref('http://localhost:3000/premium', 'http://localhost:3000')).toBe(true)
+    expect(isPurchaseHref('http://localhost:3000/games')).toBe(true)
   })
 })
 
