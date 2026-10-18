@@ -40,9 +40,18 @@ describe('AvatarPicker in the Play app (#1465)', () => {
     expect(screen.getAllByRole('button', { name: 'profile.avatarPicker.avatarAlt' }).length).toBeGreaterThan(0)
   })
 
-  it('keeps the Get Premium button on the web', () => {
+  it('says where Premium can be bought under the Premium only label inside the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    renderFreePicker()
+
+    expect(screen.getByText('profile.avatarPicker.premiumOnly')).toBeInTheDocument()
+    expect(screen.getByText('premium.playAppNotice')).toBeInTheDocument()
+  })
+
+  it('keeps the Get Premium button on the web, without the notice', () => {
     renderFreePicker()
 
     expect(screen.getByRole('button', { name: 'profile.avatarPicker.getPremium' })).toBeInTheDocument()
+    expect(screen.queryByText('premium.playAppNotice')).toBeNull()
   })
 })
