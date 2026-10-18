@@ -5576,6 +5576,12 @@ const es: TranslationWithPlurals = {
       self: 'No puedes denunciarte a ti mismo.',
     },
   },
+  blockedPlayers: {
+    title: 'Jugadores bloqueados',
+    empty: 'No has bloqueado a nadie.',
+    unblock: 'Desbloquear',
+    blockedOn: 'Bloqueado el {{date}}',
+  },
   discordLink: {
     title: 'Vincular Boardly con Discord',
     intro: 'Al vincular tu cuenta, el servidor de Discord de Boardly puede darte roles según tu cuenta: Premium, Verified Player y Regular.',

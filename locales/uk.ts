@@ -5681,6 +5681,12 @@ const uk: TranslationWithPlurals = {
       self: 'Не можна поскаржитися на себе.',
     },
   },
+  blockedPlayers: {
+    title: 'Заблоковані гравці',
+    empty: 'Ви нікого не заблокували.',
+    unblock: 'Розблокувати',
+    blockedOn: 'Заблоковано {{date}}',
+  },
   discordLink: {
     title: 'Пов\'язати Boardly з Discord',
     intro: 'Після прив\'язки сервер Boardly у Discord зможе видавати ролі за твоїм акаунтом – Premium, Verified Player і Regular.',

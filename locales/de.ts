@@ -5561,6 +5561,12 @@ const de: TranslationWithPlurals = {
       self: 'Du kannst dich nicht selbst melden.',
     },
   },
+  blockedPlayers: {
+    title: 'Blockierte Spieler',
+    empty: 'Du hast niemanden blockiert.',
+    unblock: 'Blockierung aufheben',
+    blockedOn: 'Blockiert am {{date}}',
+  },
   discordLink: {
     title: 'Boardly mit Discord verknüpfen',
     intro: 'Durch die Verknüpfung kann der Boardly-Discord-Server dir Rollen anhand deines Kontos geben – Premium, Verified Player und Regular.',

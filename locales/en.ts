@@ -5541,6 +5541,12 @@ const en = {
       self: 'You cannot report yourself.',
     },
   },
+  blockedPlayers: {
+    title: 'Blocked players',
+    empty: "You haven't blocked anyone.",
+    unblock: 'Unblock',
+    blockedOn: 'Blocked {{date}}',
+  },
   discordLink: {
     title: 'Link Boardly to Discord',
     intro: 'Linking lets the Boardly Discord server give you roles based on your account – Premium, Verified Player and Regular.',

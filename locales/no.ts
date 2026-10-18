@@ -5529,6 +5529,12 @@ const no = {
       self: 'Du kan ikke rapportere deg selv.',
     },
   },
+  blockedPlayers: {
+    title: 'Blokkerte spillere',
+    empty: 'Du har ikke blokkert noen.',
+    unblock: 'Opphev blokkering',
+    blockedOn: 'Blokkert {{date}}',
+  },
   discordLink: {
     title: 'Koble Boardly til Discord',
     intro: 'Med koblingen kan Boardly-serveren på Discord gi deg roller ut fra kontoen din – Premium, Verified Player og Regular.',

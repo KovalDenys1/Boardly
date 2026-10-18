@@ -9,6 +9,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
+import { BlockedPlayersButton } from './BlockedPlayersDialog'
 import { ForgetGuestButton } from './ForgetGuestButton'
 import { QuickSettingsRow } from './QuickSettingsRow'
 import { UserAvatar } from './UserAvatar'
@@ -26,6 +27,7 @@ export interface NavDrawerProps {
 
 const focusRing = 'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 const outlineButton = `w-full rounded-xl border-[1.5px] border-bd-line bg-bd-bg px-4 py-3 text-[15px] font-semibold text-bd-ink ${focusRing}`
+const quietButton = `w-full rounded-xl px-3 py-2 text-sm font-medium text-bd-ink-soft ${focusRing}`
 const inkButton = `w-full rounded-xl border-[1.5px] border-bd-line bg-bd-ink px-4 py-3 text-[15px] font-bold text-bd-bg ${focusRing}`
 
 export function NavDrawer({
@@ -167,7 +169,10 @@ export function NavDrawer({
               <button type="button" onClick={handleGuestExit} className={inkButton}>
                 {t('header.exitGuest')}
               </button>
-              <ForgetGuestButton onDone={onClose} className={`w-full rounded-xl px-4 py-2 text-sm font-medium text-bd-ink-soft ${focusRing}`} />
+              <div className="grid grid-cols-2 gap-2">
+                <BlockedPlayersButton className={quietButton} />
+                <ForgetGuestButton onDone={onClose} className={quietButton} />
+              </div>
             </>
           ) : (
             <>

@@ -25,8 +25,13 @@ import AvatarPicker from '@/components/AvatarPicker'
 import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
 import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 import PublicProfileView from '@/components/PublicProfileView'
+import BlockedPlayersList from '@/components/BlockedPlayersList'
 import { buildAuthUrl } from '@/lib/auth-redirect'
-import { NOTIFICATION_SETTINGS_SECTION_ID, PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
+import {
+  BLOCKED_PLAYERS_SECTION_ID,
+  NOTIFICATION_SETTINGS_SECTION_ID,
+  PRIVACY_SETTINGS_SECTION_ID,
+} from '@/lib/public-profile'
 import { prefersReducedMotion } from '@/lib/motion'
 import {
   getStoredAppearancePreferences,
@@ -248,7 +253,7 @@ const SETTINGS_LANGUAGE_OPTIONS = availableLocales.map((value) => ({
   badge: localeNames[value].badge,
 }))
 
-const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID]
+const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID, BLOCKED_PLAYERS_SECTION_ID]
 export default function ProfilePage() {
   const { t, i18n } = useTranslation()
   const { data: session, update, status } = useSession()
@@ -2882,6 +2887,29 @@ export default function ProfilePage() {
                         </Label>
                       </div>
                     </div>
+                  </div>
+                </section>
+
+                <section
+                  id={BLOCKED_PLAYERS_SECTION_ID}
+                  aria-labelledby="profile-settings-blocked-title"
+                  className={`scroll-mt-4 xl:col-span-12 ${settingsSectionClassName}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      id="profile-settings-blocked-title"
+                      className="inline-flex items-center gap-2 text-lg font-bold text-bd-ink"
+                    >
+                      <Icon name="prohibit" size={18} />
+                      {t('blockedPlayers.title')}
+                    </h3>
+                    <span className={settingsScopeBadgeClassName}>
+                      {t('profile.settings.scope.account')}
+                    </span>
+                  </div>
+
+                  <div className={`mt-5 ${settingsSurfaceClassName}`}>
+                    <BlockedPlayersList />
                   </div>
                 </section>
               </div>

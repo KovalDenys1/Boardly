@@ -5667,6 +5667,12 @@ const ru = {
       self: 'Нельзя пожаловаться на самого себя.',
     },
   },
+  blockedPlayers: {
+    title: 'Заблокированные игроки',
+    empty: 'Вы никого не заблокировали.',
+    unblock: 'Разблокировать',
+    blockedOn: 'Дата блокировки: {{date}}',
+  },
   discordLink: {
     title: 'Связать Boardly с Discord',
     intro: 'После привязки сервер Boardly в Discord сможет выдавать роли по твоему аккаунту – Premium, Verified Player и Regular.',
