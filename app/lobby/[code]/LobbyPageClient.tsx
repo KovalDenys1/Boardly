@@ -2083,7 +2083,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               </div>
               {/* Chat - mobile only, inside card */}
               {hasMultipleHumans && waitingRoomTab === 'chat' && (
-                <div className="h-full sm:hidden">
+                <div className="waiting-room-chat h-full sm:hidden">
                   <Chat
                     lobbyCode={code}
                     messages={chatMessages}

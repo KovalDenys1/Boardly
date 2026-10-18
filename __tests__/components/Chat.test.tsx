@@ -306,6 +306,25 @@ describe('Chat block action (#1466)', () => {
     expect(window.localStorage.getItem('boardly_blocked_players')).toBeNull()
   })
 
+  it('scrolls only the message list to show the question from its first line, and never the page', async () => {
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+    const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+    const list = screen.getByRole('log')
+    const focus = jest.spyOn(HTMLElement.prototype, 'focus')
+    // A 110px list showing its last bubble; the question opens below it and is taller than the list.
+    jest.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const top = this === list ? 150 : this.getAttribute('role') === 'alertdialog' ? 240 - list.scrollTop : 0
+      const height = this === list ? 110 : this.getAttribute('role') === 'alertdialog' ? 130 : 0
+      return { top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) } as DOMRect
+    })
+
+    fireEvent.click(blockButton)
+
+    expect(list.scrollTop).toBe(90)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
   it('says so when the block could not be kept, and shows the messages still', async () => {
     jest.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError')

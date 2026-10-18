@@ -88,9 +88,18 @@ export default function Chat({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
 
+  // The list scrolls itself (see scrollToBottom): a focus that scrolls would move the page as well.
   useEffect(() => {
-    if (blockTarget) blockCancelRef.current?.focus()
-  }, [blockTarget])
+    if (!blockTarget) return
+    blockCancelRef.current?.focus({ preventScroll: true })
+    const list = messagesContainerRef.current
+    const confirm = document.getElementById(blockConfirmId)
+    if (!list || !confirm) return
+    const listBox = list.getBoundingClientRect()
+    const box = confirm.getBoundingClientRect()
+    if (box.bottom > listBox.bottom) list.scrollTop += Math.min(box.bottom - listBox.bottom, box.top - listBox.top)
+    else if (box.top < listBox.top) list.scrollTop -= listBox.top - box.top
+  }, [blockTarget, blockConfirmId])
 
   // A signed-in block hides the messages before the server answers, so a rolled-back block
   // brings back a new button: find it after that render, or fall back to the heading.
