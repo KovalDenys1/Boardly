@@ -194,3 +194,14 @@ skills-lock.json
 /e2e/.auth/
 /test-results/
 /playwright-report/
+
+# Android (TWA)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/**/*.aab
+android/**/*.apk
+android/**/*.idsig
+*.jks
+*.keystore
