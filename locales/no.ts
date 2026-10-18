@@ -483,7 +483,21 @@ const no = {
     viewLobbies: 'Se lobbyer',
     catalog: 'Katalog',
     seeGame: 'Se spillet →',
-    noGamesFound: 'Ingen spill funnet for dette filteret.',
+    noGamesFound: 'Ingen spill passer til disse filtrene.',
+    filters: {
+      reset: 'Nullstill filtre',
+      players: {
+        label: 'Spillere',
+        any: 'Alle',
+      },
+      difficulty: {
+        label: 'Vanskelighetsgrad',
+        any: 'Alle',
+        easy: 'Lett',
+        medium: 'Middels',
+        hard: 'Vanskelig',
+      },
+    },
     loading: 'Laster…',
     redirecting: 'Omdirigerer…',
     gameGuide: 'Om spillet',

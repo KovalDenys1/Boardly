@@ -527,7 +527,21 @@ const ru = {
     viewLobbies: 'Посмотреть лобби',
     catalog: 'Каталог',
     seeGame: 'Смотреть игру →',
-    noGamesFound: 'Игр по этому фильтру не найдено.',
+    noGamesFound: 'Ни одна игра не подходит под эти фильтры.',
+    filters: {
+      reset: 'Сбросить фильтры',
+      players: {
+        label: 'Игроки',
+        any: 'Любое',
+      },
+      difficulty: {
+        label: 'Сложность',
+        any: 'Любая',
+        easy: 'Лёгкая',
+        medium: 'Средняя',
+        hard: 'Сложная',
+      },
+    },
     loading: 'Загрузка…',
     redirecting: 'Перенаправление…',
     gameGuide: 'Об игре',

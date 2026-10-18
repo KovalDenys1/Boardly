@@ -483,7 +483,21 @@ const en = {
     viewLobbies: 'View Lobbies',
     catalog: 'Catalog',
     seeGame: 'See game →',
-    noGamesFound: 'No games found for this filter.',
+    noGamesFound: 'No games match these filters.',
+    filters: {
+      reset: 'Reset filters',
+      players: {
+        label: 'Players',
+        any: 'Any',
+      },
+      difficulty: {
+        label: 'Difficulty',
+        any: 'Any',
+        easy: 'Easy',
+        medium: 'Medium',
+        hard: 'Hard',
+      },
+    },
     loading: 'Loading…',
     redirecting: 'Redirecting…',
     gameGuide: 'Game guide',

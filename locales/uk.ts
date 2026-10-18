@@ -529,7 +529,21 @@ const uk: TranslationWithPlurals = {
     viewLobbies: 'Переглянути лобі',
     catalog: 'Каталог',
     seeGame: 'Дивитись гру →',
-    noGamesFound: 'Ігор за цим фільтром не знайдено.',
+    noGamesFound: 'Жодна гра не підходить під ці фільтри.',
+    filters: {
+      reset: 'Скинути фільтри',
+      players: {
+        label: 'Гравці',
+        any: 'Будь-яка',
+      },
+      difficulty: {
+        label: 'Складність',
+        any: 'Будь-яка',
+        easy: 'Легка',
+        medium: 'Середня',
+        hard: 'Складна',
+      },
+    },
     loading: 'Завантаження…',
     redirecting: 'Переадресація…',
     gameGuide: 'Про гру',

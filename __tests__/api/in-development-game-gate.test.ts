@@ -433,7 +433,7 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
       nameKey: 'games.future_game.name',
       descriptionKey: 'games.future_game.description',
       players: '2-4',
-      difficultyKey: 'games.future_game.difficulty',
+      difficulty: 'medium' as const,
       color: 'from-gray-400 to-gray-600',
       availability: 'in-development' as const,
     }
