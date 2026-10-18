@@ -47,6 +47,8 @@ import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { sketchPhaseSeconds } from '@/lib/games/sketch-and-guess-phases'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { playCue } from '@/lib/sound-engine'
+import { useSketchSounds } from './hooks/useSketchSounds'
 import {
     SKETCH_LIVE_EVENT,
     SKETCH_LIVE_RESYNC_MS,
@@ -611,7 +613,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 const errorMessage = err instanceof Error ? err.message : t('errors.generic')
                 // A rejected guess or drawing is a toast, never a page-level error screen: the
                 // round is still live and the player has to stay on the board to try again.
-                if (!options.silent) showToast.error('errors.general', undefined, { message: errorMessage })
+                if (!options.silent) {
+                    playCue('ui.error')
+                    showToast.error('errors.general', undefined, { message: errorMessage })
+                }
                 return null
             } finally {
                 submitInFlightRef.current = false
@@ -621,14 +626,27 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         [lobby, isGuest, t, loadLobbyData, locale]
     )
 
+    const soundGame = lobby?.game && lobby.game.status !== 'finished' ? lobby.game : null
+    const { playGuessResult, acceptAloud } = useSketchSounds(
+        soundGame ? { round: soundGame.data.currentRound, phase: soundGame.data.phase, guessed: [...soundGame.data.submittedPlayerIds].sort() } : null,
+        { gameId: lobby?.game?.id, viewerId: getCurrentUserId(), isSpectator },
+    )
     const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | void> => {
         const payload = await submitAction('submit-guess', { guess })
         const result = payload?.guessResult as SketchGuessResult | undefined
-        return result && typeof result.close === 'boolean' ? result : undefined
-    }, [submitAction])
+        const valid = result && typeof result.close === 'boolean' ? result : undefined
+        playGuessResult(valid)
+        return valid
+    }, [submitAction, playGuessResult])
     const handleAdvanceRound = useCallback(async () => { await submitAction('advance-round', {}) }, [submitAction])
-    const handleChooseWord = useCallback(async (wordId: string) => { await submitAction('choose-word', { wordId }) }, [submitAction])
-    const handleAcceptGuess = useCallback(async (guessId: string) => { await submitAction('accept-guess', { guessId }) }, [submitAction])
+    const handleChooseWord = useCallback(async (wordId: string) => {
+        playCue('ui.select')
+        await submitAction('choose-word', { wordId })
+    }, [submitAction])
+    const handleAcceptGuess = useCallback(async (guessId: string) => {
+        const round = soundGame?.data.rounds.find((r) => r.round === soundGame.data.currentRound)
+        await acceptAloud(round?.guesses.find((g) => g.id === guessId)?.playerId, async () => (await submitAction('accept-guess', { guessId })) !== null)
+    }, [submitAction, acceptAloud, soundGame])
     const handleHideDrawing = useCallback(async () => { await submitAction('hide-drawing', {}) }, [submitAction])
 
     const handleLeave = () => {
@@ -713,15 +731,12 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // that has only `lastMoveAt`, which was the phase start then.
     const phaseStartedAt = gameData.phaseStartedAt ?? game?.lastMoveAt
 
-    // Turn and table cues (#1111): the drawer's seat coming to the viewer, and
-    // another player's correct guess, which is the move everyone else hears.
-    const othersGuessed = gameData.submittedPlayerIds.filter((id) => id !== currentUserId).length
+    // Only the drawer's turn here: others' correct guesses play from useSketchSounds, spectators included.
     useTurnSounds({
         isMyTurn: isDrawer && !isFinished && (phase === 'choosing' || phase === 'drawing'),
-        lastMoveSignature: game ? `${gameData.currentRound}:${othersGuessed}` : null,
-        opponentMoved: othersGuessed > 0,
+        lastMoveSignature: game ? gameData.currentRound : null,
+        moveCue: null,
         enabled: !isSpectator && !!game && !isFinished,
-        moveSound: 'score',
     })
 
     // The strokes on the canvas and the half-typed guess belong to the round,
