@@ -3283,6 +3283,7 @@ const es: TranslationWithPlurals = {
         largeStraight: '¡Escalera larga! ¡Cinco seguidos!',
         fullHouse: '¡Full! ¡Trío y pareja!',
         fourOfKind: '¡Póker! ¡Cuatro dados iguales!',
+        highScore: '¡Gran puntuación!',
       },
     },
     results: {

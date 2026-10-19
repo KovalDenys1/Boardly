@@ -3339,7 +3339,8 @@ const ru = {
         yahtzee: 'ЯТЗИ! Все пять костей совпали!',
         largeStraight: 'Большой стрит! Пять подряд!',
         fullHouse: 'Фулл-хаус! Три одинаковых + пара!',
-        fourOfKind: 'Четыре одинаковых! Четыре совпавших кости!'
+        fourOfKind: 'Четыре одинаковых! Четыре совпавших кости!',
+        highScore: 'Отличный счёт!'
       }
     },
     results: {
@@ -4549,7 +4550,7 @@ const ru = {
     targetLabel: 'Цель: {{player}}.',
     waitingForAnswer: 'Ожидание ответа от {{player}}.',
     askedQuestion: '{{asker}} спрашивает у {{target}}:',
-    startVoting: 'Завершить раунд и начать голосование',
+    startVoting: 'Завершить раунд и голосовать',
     guessLocation: 'Угадать локацию',
     guessLocationWarning: 'Неправильный ответ завершит раунд — мирные выиграют. Правильный — +500 очков шпиону.',
     guessLocationConfirm: 'Подтвердить догадку',

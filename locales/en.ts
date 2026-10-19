@@ -3266,6 +3266,7 @@ const en = {
         largeStraight: 'Large Straight! Five in a row!',
         fullHouse: 'Full House! Three of a kind + pair!',
         fourOfKind: 'Four of a Kind! Four matching dice!',
+        highScore: 'Great Score!',
       },
     },
     results: {

@@ -512,7 +512,20 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
     // are visible in the rendered text.
     const line = screen.getByText(/alias\.describerTurnLine/)
     expect(line.textContent).toContain('"name":"Bob"')
-    expect(line.textContent).toContain('"team":"Team 1"')
+    expect(line.textContent).toContain('"team":"alias.team1"')
+  })
+
+  it('names the two teams in the site language, not by the English name the engine stores (#1481)', async () => {
+    const response = buildTurnResponse({ meDescribing: false })
+    response.activeGame.state.data.phase = 'team_assignment'
+    response.activeGame.state.data.turnStartedAt = null
+    response.activeGame.state.data.currentCard = null
+    mountWith(response)
+    await waitFor(() => expect(screen.getByTestId('alias-team-assignment')).toBeTruthy())
+
+    expect(screen.getAllByText('alias.team1').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('alias.team2').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Team \d/)).toBeNull()
   })
 
   it('names the player who just described on the turn results, not the next describer (#1330)', async () => {
@@ -850,7 +863,7 @@ describe('AliasLobbyPage key buttons on a phone', () => {
     })
     await waitFor(() => expect(screen.getByTestId('alias-game-over-screen')).toBeTruthy())
 
-    expect(follows(screen.getByText('alias.playAgain'), screen.getAllByText('Team 1').at(-1)!)).toBe(true)
+    expect(follows(screen.getByText('alias.playAgain'), screen.getAllByText('alias.team1').at(-1)!)).toBe(true)
   })
 })
 

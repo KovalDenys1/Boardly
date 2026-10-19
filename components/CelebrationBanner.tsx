@@ -3,7 +3,15 @@
 import React, { useEffect, useState } from 'react'
 import type { CelebrationEvent } from '@/lib/celebrations'
 import type { YahtzeeCategory } from '@/lib/yahtzee'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+
+const TITLE_KEYS: Record<CelebrationEvent['type'], TranslationKeys> = {
+  yahtzee: 'yahtzee.messages.celebrations.yahtzee',
+  largeStraight: 'yahtzee.messages.celebrations.largeStraight',
+  fullHouse: 'yahtzee.messages.celebrations.fullHouse',
+  perfectRoll: 'yahtzee.messages.celebrations.fourOfKind',
+  highScore: 'yahtzee.messages.celebrations.highScore',
+}
 
 interface CelebrationBannerProps {
   event: CelebrationEvent | null
@@ -97,7 +105,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-bd-ink-soft">{event.playerName ?? t('yahtzee.ui.hotHand')}</div>
             <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl sm:leading-7">
-              {event.title}
+              {t(TITLE_KEYS[event.type])}
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-bd-ink-soft">
               {event.category && (
