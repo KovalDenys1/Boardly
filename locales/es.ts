@@ -417,6 +417,7 @@ const es: TranslationWithPlurals = {
     keepPlaying: 'Seguir jugando',
     createFreeAccount: 'Crear cuenta gratis',
     heroSubtitle: 'Elige un juego, crea una sala y comparte el enlace. Sin descargas ni cuenta — los invitados entran en segundos.',
+    heroSubtitlePlayApp: 'Elige un juego, crea una sala y comparte el enlace. Sin cuenta — los invitados entran en segundos.',
     gamesReadyBadge: '{{count}} juegos listos para jugar',
     gamesReadyBadge_one: '{{count}} juego listo para jugar',
     moreComingLater: '{{count}} juegos más muy pronto',
@@ -455,6 +456,7 @@ const es: TranslationWithPlurals = {
     ctaVisitorTitle: 'La noche de juegos empieza aquí.',
     ctaVisitorAccent: 'Sin planificar nada.',
     ctaVisitorBody: 'Elige un juego, abre una sala y comparte el enlace. Tus amigos entran en segundos — sin cuenta y sin descargas.',
+    ctaVisitorBodyPlayApp: 'Elige un juego, abre una sala y comparte el enlace. Tus amigos entran en segundos — sin cuenta.',
     promoVideo: {
       kicker: 'Míralo en acción',
       title: 'Boardly en un minuto',
@@ -475,6 +477,7 @@ const es: TranslationWithPlurals = {
       step3: {
         title: 'Empieza a jugar',
         description: 'Todos ven el mismo tablero, los puntos y los turnos en su navegador. Sin descargas.',
+        descriptionPlayApp: 'Todos ven el mismo tablero, los puntos y los turnos al mismo tiempo.',
       },
     },
     demo: {
@@ -3402,7 +3405,7 @@ const es: TranslationWithPlurals = {
       roundOf: 'Ronda {{current}}/{{total}}',
       tabGame: 'Partida',
       pointsShort: '{{count}} pts',
-      heldLabel: 'Guardado',
+      heldLabel: 'Fijo',
       cellOpen: 'Libre',
       tabRolls: 'Tiradas',
     },
@@ -4857,6 +4860,68 @@ const es: TranslationWithPlurals = {
   celebration: {
     scorePoints: '+{{count}} puntos',
     scorePoints_one: '+{{count}} punto',
+  },
+  botNames: {
+    yahtzee: {
+      easy: 'Novato de dados',
+      medium: 'Estratega de dados',
+      hard: 'Oráculo de dados',
+    },
+    tic_tac_toe: {
+      easy: 'Novato del tablero',
+      medium: 'Táctico del tablero',
+      hard: 'Gran maestro del tablero',
+    },
+    rock_paper_scissors: {
+      easy: 'Novato del ritmo',
+      medium: 'Lector de patrones',
+      hard: 'Gambito mental',
+    },
+    guess_the_spy: {
+      easy: 'Cadete espía',
+      medium: 'Analista de inteligencia',
+      hard: 'Director en la sombra',
+    },
+    memory: {
+      easy: 'Explorador de memoria',
+      medium: 'Buscador de parejas',
+      hard: 'Maestro del recuerdo',
+    },
+    connect_four: {
+      easy: 'Novato de fichas',
+      medium: 'Táctico de columnas',
+      hard: 'Gran maestro de la gravedad',
+    },
+    checkers: {
+      easy: 'Novato de damas',
+      medium: 'Táctico diagonal',
+      hard: 'Coronador',
+    },
+    alias: {
+      easy: 'Novato de palabras',
+      medium: 'Táctico de palabras',
+      hard: 'Oráculo de palabras',
+    },
+    liars_party: {
+      easy: 'Novato honesto',
+      medium: 'Táctico del farol',
+      hard: 'Maestro del engaño',
+    },
+    sketch_and_guess: {
+      easy: 'Novato del boceto',
+      medium: 'Táctico del trazo',
+      hard: 'Maestro de la tinta',
+    },
+    ludo: {
+      easy: 'Novato de Ludo',
+      medium: 'Táctico de Ludo',
+      hard: 'Gran maestro de Ludo',
+    },
+    fallback: {
+      easy: 'IA novata',
+      medium: 'IA estratega',
+      hard: 'IA genial',
+    },
   },
   faq: {
     kicker: 'Preguntas frecuentes',

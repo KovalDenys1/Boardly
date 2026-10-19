@@ -22,7 +22,7 @@ import {
   isLobbyJoinRefusalCode,
   type LobbyJoinRefusalCode,
 } from '@/lib/lobby-join-errors'
-import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
+import { BotDifficulty, localizeBotName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import type { Game, GamePlayer, Lobby } from '@/types/game'
@@ -776,7 +776,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // turn to — was previously always crediting the wrong player in the
       // "goes first" toast/chat message, e.g. always the bot even when the
       // human host moves first).
-      const firstPlayerName = engine.getCurrentPlayer()?.name || data.game.players[0]?.name || 'Player 1'
+      const firstPlayerName = localizeBotName(
+        engine.getCurrentPlayer()?.name || data.game.players[0]?.name || 'Player 1',
+        (key) => i18n.t(key)
+      )
 
       showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 

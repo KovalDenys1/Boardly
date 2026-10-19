@@ -1,9 +1,11 @@
 'use client'
 
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function HowItWorksRedesign() {
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
 
   // The step number used to be tinted per-step (coral/mint/sun) — at 56px
   // bold on bd-card-warm none of those, nor their -deep variants, reach the
@@ -13,7 +15,7 @@ export default function HowItWorksRedesign() {
   const steps = [
     { n: '01', color: 'var(--bd-ink)', title: t('home.howItWorks.step1.title'), body: t('home.howItWorks.step1.description') },
     { n: '02', color: 'var(--bd-ink)', title: t('home.howItWorks.step2.title'), body: t('home.howItWorks.step2.description') },
-    { n: '03', color: 'var(--bd-ink)', title: t('home.howItWorks.step3.title'), body: t('home.howItWorks.step3.description') },
+    { n: '03', color: 'var(--bd-ink)', title: t('home.howItWorks.step3.title'), body: t(isPlayApp ? 'home.howItWorks.step3.descriptionPlayApp' : 'home.howItWorks.step3.description') },
   ]
 
   return (

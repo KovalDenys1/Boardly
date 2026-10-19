@@ -2985,7 +2985,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   left: 50%;
   bottom: -9px;
   translate: -50% 0;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 999px;
   border: 1.5px solid var(--bd-ink);
   background: var(--bd-sun);

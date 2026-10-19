@@ -409,6 +409,7 @@ const en = {
     keepPlaying: 'Keep playing',
     createFreeAccount: 'Create free account',
     heroSubtitle: 'Pick a game, create a room, and share the link. No download, no account required — guests can join in seconds.',
+    heroSubtitlePlayApp: 'Pick a game, create a room, and share the link. No account required — guests can join in seconds.',
     gamesReadyBadge: '{{count}} games ready to play',
     moreComingLater: '{{count}} more games coming soon',
     statsGamesReady: 'Games ready now',
@@ -444,6 +445,7 @@ const en = {
     ctaVisitorTitle: 'Game night starts here.',
     ctaVisitorAccent: 'No planning needed.',
     ctaVisitorBody: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account, no download.',
+    ctaVisitorBodyPlayApp: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account needed.',
     promoVideo: {
       kicker: 'See it in action',
       title: 'Boardly in one minute',
@@ -464,6 +466,7 @@ const en = {
       step3: {
         title: 'Start playing',
         description: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
+        descriptionPlayApp: 'Everyone sees the same board, scores, and turns at the same moment.',
       },
     },
     demo: {
@@ -4822,6 +4825,68 @@ const en = {
   },
   celebration: {
     scorePoints: '+{{count}} points',
+  },
+  botNames: {
+    yahtzee: {
+      easy: 'Dice Rookie',
+      medium: 'Dice Strategist',
+      hard: 'Dice Oracle',
+    },
+    tic_tac_toe: {
+      easy: 'Grid Rookie',
+      medium: 'Grid Tactician',
+      hard: 'Grid Grandmaster',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo Rookie',
+      medium: 'Pattern Reader',
+      hard: 'Mind Gambit',
+    },
+    guess_the_spy: {
+      easy: 'Spy Cadet',
+      medium: 'Intel Analyst',
+      hard: 'Shadow Director',
+    },
+    memory: {
+      easy: 'Memory Scout',
+      medium: 'Pattern Seeker',
+      hard: 'Recall Master',
+    },
+    connect_four: {
+      easy: 'Drop Rookie',
+      medium: 'Column Tactician',
+      hard: 'Gravity Grandmaster',
+    },
+    checkers: {
+      easy: 'Checkers Rookie',
+      medium: 'Diagonal Tactician',
+      hard: 'Kingmaker',
+    },
+    alias: {
+      easy: 'Word Rookie',
+      medium: 'Word Tactician',
+      hard: 'Word Oracle',
+    },
+    liars_party: {
+      easy: 'Honest Rookie',
+      medium: 'Bluff Tactician',
+      hard: 'Deception Master',
+    },
+    sketch_and_guess: {
+      easy: 'Sketch Rookie',
+      medium: 'Line Tactician',
+      hard: 'Ink Master',
+    },
+    ludo: {
+      easy: 'Token Rookie',
+      medium: 'Token Tactician',
+      hard: 'Ludo Grandmaster',
+    },
+    fallback: {
+      easy: 'AI Rookie',
+      medium: 'AI Strategist',
+      hard: 'AI Mastermind',
+    },
   },
   faq: {
     kicker: 'FAQ',

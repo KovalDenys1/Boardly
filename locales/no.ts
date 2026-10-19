@@ -409,6 +409,7 @@ const no = {
     keepPlaying: 'Fortsett å spille',
     createFreeAccount: 'Opprett gratis konto',
     heroSubtitle: 'Velg et spill, opprett et rom og del lenken. Ingen nedlasting, ingen konto nødvendig — gjester kan bli med på sekunder.',
+    heroSubtitlePlayApp: 'Velg et spill, opprett et rom og del lenken. Ingen konto nødvendig — gjester kan bli med på sekunder.',
     gamesReadyBadge: '{{count}} spill klare',
     moreComingLater: '{{count}} spill til på vei',
     statsGamesReady: 'Spill tilgjengelig',
@@ -444,6 +445,7 @@ const no = {
     ctaVisitorTitle: 'Spillkvelden starter her.',
     ctaVisitorAccent: 'Ingen planlegging nødvendig.',
     ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
+    ctaVisitorBodyPlayApp: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto.',
     promoVideo: {
       kicker: 'Se det i bruk',
       title: 'Boardly på ett minutt',
@@ -464,6 +466,7 @@ const no = {
       step3: {
         title: 'Begynn å spille',
         description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
+        descriptionPlayApp: 'Alle ser samme brett, poeng og trekk i samme øyeblikk.',
       },
     },
     demo: {
@@ -4810,6 +4813,68 @@ const no = {
   },
   celebration: {
     scorePoints: '+{{count}} poeng',
+  },
+  botNames: {
+    yahtzee: {
+      easy: 'Terningnybegynner',
+      medium: 'Terningstrateg',
+      hard: 'Terningorakel',
+    },
+    tic_tac_toe: {
+      easy: 'Rutenybegynner',
+      medium: 'Rutetaktiker',
+      hard: 'Rutestormester',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo-nybegynner',
+      medium: 'Mønsterleser',
+      hard: 'Tankegambit',
+    },
+    guess_the_spy: {
+      easy: 'Spionkadett',
+      medium: 'Etterretningsanalytiker',
+      hard: 'Skyggedirektør',
+    },
+    memory: {
+      easy: 'Minnespeider',
+      medium: 'Mønstersøker',
+      hard: 'Minnemester',
+    },
+    connect_four: {
+      easy: 'Slipp-nybegynner',
+      medium: 'Kolonnetaktiker',
+      hard: 'Tyngdekraft-stormester',
+    },
+    checkers: {
+      easy: 'Dam-nybegynner',
+      medium: 'Diagonaltaktiker',
+      hard: 'Kongemaker',
+    },
+    alias: {
+      easy: 'Ord-nybegynner',
+      medium: 'Ordtaktiker',
+      hard: 'Ordorakel',
+    },
+    liars_party: {
+      easy: 'Ærlig nybegynner',
+      medium: 'Blufftaktiker',
+      hard: 'Bedragermester',
+    },
+    sketch_and_guess: {
+      easy: 'Skisse-nybegynner',
+      medium: 'Streketaktiker',
+      hard: 'Blekkmester',
+    },
+    ludo: {
+      easy: 'Brikke-nybegynner',
+      medium: 'Brikketaktiker',
+      hard: 'Ludo-stormester',
+    },
+    fallback: {
+      easy: 'AI-nybegynner',
+      medium: 'AI-strateg',
+      hard: 'AI-geni',
+    },
   },
   faq: {
     kicker: 'FAQ',
