@@ -59,9 +59,9 @@ describe('/withdrawal page (#1162)', () => {
     mockI18n.locale = 'en'
   })
 
-  it('is indexable and canonical on its own URL', () => {
+  it('is noindex (#1498) and canonical on its own URL', () => {
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/withdrawal')
-    expect((metadata.robots as { index?: boolean }).index).toBe(true)
+    expect((metadata.robots as { index?: boolean }).index).toBe(false)
     expect(metadata.description).toContain('14 days')
   })
 
