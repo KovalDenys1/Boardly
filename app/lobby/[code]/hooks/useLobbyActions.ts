@@ -784,7 +784,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         id: Date.now().toString() + '_gamestart',
         userId: 'system',
         username: 'System',
-        message: `Game started! ${firstPlayerName} goes first!`,
+        message: i18n.t('toast.gameStarted', { player: firstPlayerName }),
         timestamp: Date.now(),
         type: 'system'
       }

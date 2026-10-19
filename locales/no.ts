@@ -3265,7 +3265,8 @@ const no = {
         yahtzee: 'YAHTZEE! Alle fem terninger matcher!',
         largeStraight: 'Stor straight! Fem på rad!',
         fullHouse: 'Hus! Tre like + par!',
-        fourOfKind: 'Fire like! Fire matchende terninger!'
+        fourOfKind: 'Fire like! Fire matchende terninger!',
+        highScore: 'Sterk poengsum!'
       }
     },
     results: {

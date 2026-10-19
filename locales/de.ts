@@ -3275,6 +3275,7 @@ const de: TranslationWithPlurals = {
         largeStraight: 'Große Straße! Fünf in Folge!',
         fullHouse: 'Full House! Dreierpasch + Paar!',
         fourOfKind: 'Viererpasch! Vier gleiche Würfel!',
+        highScore: 'Starke Punktzahl!',
       },
     },
     results: {

@@ -1034,7 +1034,7 @@ export default function SpyGameBoard({
                       type="button"
                       disabled={isActionLoading}
                       onClick={() => void submitAction('start-voting')}
-                      className="bd-btn bd-btn-coral w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                      className="bd-btn bd-btn-coral w-full justify-center whitespace-normal text-center leading-tight disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {t('spy.startVoting')}
                     </button>

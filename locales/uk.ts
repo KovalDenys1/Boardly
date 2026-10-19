@@ -3342,6 +3342,7 @@ const uk: TranslationWithPlurals = {
         largeStraight: 'Великий стріт! П\'ять підряд!',
         fullHouse: 'Фул-хаус! Три однакових + пара!',
         fourOfKind: 'Чотири однакових! Чотири однакові кубики!',
+        highScore: 'Чудовий рахунок!',
       },
     },
     results: {
@@ -4563,7 +4564,7 @@ const uk: TranslationWithPlurals = {
     targetLabel: 'Ціль: {{player}}.',
     waitingForAnswer: 'Очікування відповіді від {{player}}.',
     askedQuestion: '{{asker}} питає у {{target}}:',
-    startVoting: 'Завершити раунд і почати голосування',
+    startVoting: 'Завершити раунд і голосувати',
     guessLocation: 'Вгадати локацію',
     guessLocationWarning: 'Неправильна відповідь завершує раунд — мирні перемагають. Правильна — +500 очок шпигуну.',
     guessLocationConfirm: 'Підтвердити здогад',

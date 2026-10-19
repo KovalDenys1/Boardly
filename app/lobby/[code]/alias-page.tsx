@@ -6,7 +6,7 @@ import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -22,7 +22,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import TermsConsentPanel from '@/components/TermsConsentPanel'
-import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import { AliasGame, DEFAULT_TEAM_NAMES, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
 import { playCue } from '@/lib/sound-engine'
 import { viewerOutcome } from '@/lib/game-outcome'
@@ -100,6 +100,20 @@ interface GuessMessage {
  * describing in turn while the other two guess (#847). The waiting room has to
  * show that, or it promises a game that will not be played.
  */
+/** The engine stores the shared teams as "Team 1" / "Team 2"; a solo team keeps its player's name. */
+function withLocalizedTeamNames(data: AliasGameData, t: (key: TranslationKeys) => string): AliasGameData {
+  if (!data.teams) return data
+  const keys: Record<string, TranslationKeys> = { 'team-1': 'alias.team1', 'team-2': 'alias.team2' }
+  return {
+    ...data,
+    teams: data.teams.map((team) =>
+      data.teams.length === 2 && DEFAULT_TEAM_NAMES[team.id] === team.name && keys[team.id]
+        ? { ...team, name: t(keys[team.id]) }
+        : team
+    ),
+  }
+}
+
 function isSoloPlayerCount(playerCount: number): boolean {
   return playerCount === 3
 }
@@ -1081,7 +1095,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   }
 
   const resolvedStatus = game?.status ?? 'waiting'
-  const data = gameEngine?.getState()?.data as AliasGameData | undefined
+  const engineData = gameEngine?.getState()?.data as AliasGameData | undefined
+  const data = engineData ? withLocalizedTeamNames(engineData, t) : undefined
   const isHost = lobby?.creatorId === getCurrentUserId()
   const players = game?.players ?? []
   const currentUserId = getCurrentUserId()
@@ -1308,7 +1323,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           }} />
           <div className="alias-team-head" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : `Team 0${i + 1}`}</BdLabel>
+              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : t('alias.teamNumbered', { num: `0${i + 1}` })}</BdLabel>
               <div className="alias-team-name" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
                 {team.name}
               </div>
