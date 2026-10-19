@@ -204,9 +204,9 @@ export default function GuidesPage() {
             <div className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
               <p>
                 Every game on Boardly has its own page with the full rules, strategy and a FAQ. A how-to-play
-                guide is the shorter way in for someone new to a game: what you need, how a round works, the first
-                tips worth knowing and how to start a game with friends on Boardly. Read the guide before a first
-                game, and the game page when a rule is in doubt or you want to get better at it.
+                guide is the shorter way in for someone new to a game: what you need, how a round works and the
+                first tips worth knowing, and most of them say how to start a game with friends on Boardly. Read the
+                guide before a first game, and the game page when a rule is in doubt or you want to get better at it.
               </p>
               <p>
                 The best-of guides compare games instead of explaining one. They start from what a group actually
