@@ -21,8 +21,8 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
   '/games': '2026-09-07',
-  // #1472 names the six site languages.
-  '/about': '2026-10-18',
+  // #1498 adds how a game works, bots, fair play, data and how it is built.
+  '/about': '2026-10-19',
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
@@ -44,7 +44,7 @@ export const ROUTE_UPDATED = {
   '/games/checkers': '2026-09-28', // #1241 expanded the page
   // #1242 expanded the page to the Track A sections.
   '/games/ludo': '2026-09-28',
-  '/guides': '2026-09-20',
+  '/guides': '2026-10-19', // #1498 says how the guides fit the game pages
   // /privacy, /terms, /withdrawal and /rules are noindex and left out of the sitemap
   // (#1227, #1498).
 } as const satisfies Record<string, string>
