@@ -483,7 +483,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.phase = 'drawing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('1:20').length).toBeGreaterThan(0))
   })
 
   it('shows the choosing phase clock counting from 15 seconds', async () => {
@@ -499,7 +499,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.phase = 'guessing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('1:20').length).toBeGreaterThan(0))
   })
 
   it('measures the phase from phaseStartedAt, not lastMoveAt, which every guess moves', async () => {

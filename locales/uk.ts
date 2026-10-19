@@ -449,6 +449,7 @@ const uk: TranslationWithPlurals = {
     keepPlaying: 'Продовжити грати',
     createFreeAccount: 'Створити безкоштовний акаунт',
     heroSubtitle: 'Вибери гру, створи кімнату та поділися посиланням. Без завантажень, без акаунту — гості можуть приєднатися за секунди.',
+    heroSubtitlePlayApp: 'Вибери гру, створи кімнату та поділися посиланням. Без акаунту — гості можуть приєднатися за секунди.',
     gamesReadyBadge: '{{count}} ігор готові до гри',
     gamesReadyBadge_one: '{{count}} гра готова до гри',
     gamesReadyBadge_few: '{{count}} гри готові до гри',
@@ -493,6 +494,7 @@ const uk: TranslationWithPlurals = {
     ctaVisitorTitle: 'Ігровий вечір починається тут.',
     ctaVisitorAccent: 'Без планування.',
     ctaVisitorBody: 'Вибери гру, відкрий кімнату, поділися посиланням. Друзі приєднаються за секунди — без акаунту та завантажень.',
+    ctaVisitorBodyPlayApp: 'Вибери гру, відкрий кімнату, поділися посиланням. Друзі приєднаються за секунди — без акаунту.',
     promoVideo: {
       kicker: 'Подивіться самі',
       title: 'Boardly за одну хвилину',
@@ -513,6 +515,7 @@ const uk: TranslationWithPlurals = {
       step3: {
         title: 'Починайте грати',
         description: 'Всі бачать одну дошку, рахунок і ходи у своєму браузері. Завантаження не потрібне.',
+        descriptionPlayApp: 'Всі бачать одну дошку, рахунок і ходи одночасно.',
       },
     },
     demo: {
@@ -3470,7 +3473,7 @@ const uk: TranslationWithPlurals = {
       roundOf: 'Раунд {{current}}/{{total}}',
       tabGame: 'Гра',
       pointsShort: '{{count}} оч.',
-      heldLabel: 'Тримаю',
+      heldLabel: 'Взято',
       cellOpen: 'Вільно',
       tabRolls: 'Кидки',
     },
@@ -4963,6 +4966,68 @@ const uk: TranslationWithPlurals = {
     scorePoints_few: '+{{count}} бали',
     scorePoints_many: '+{{count}} балів',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Новачок кубиків',
+      medium: 'Стратег кубиків',
+      hard: 'Оракул кубиків',
+    },
+    tic_tac_toe: {
+      easy: 'Новачок клітинок',
+      medium: 'Тактик клітинок',
+      hard: 'Гросмейстер клітинок',
+    },
+    rock_paper_scissors: {
+      easy: 'Новачок темпу',
+      medium: 'Читач ходів',
+      hard: 'Гамбіт розуму',
+    },
+    guess_the_spy: {
+      easy: 'Кадет-шпигун',
+      medium: 'Аналітик розвідки',
+      hard: 'Директор тіней',
+    },
+    memory: {
+      easy: 'Розвідник пам\'яті',
+      medium: 'Шукач пар',
+      hard: 'Майстер пам\'яті',
+    },
+    connect_four: {
+      easy: 'Новачок кидків',
+      medium: 'Тактик колонок',
+      hard: 'Гросмейстер гравітації',
+    },
+    checkers: {
+      easy: 'Новачок шашок',
+      medium: 'Тактик діагоналей',
+      hard: 'Майстер дамок',
+    },
+    alias: {
+      easy: 'Новачок слів',
+      medium: 'Тактик слів',
+      hard: 'Оракул слів',
+    },
+    liars_party: {
+      easy: 'Чесний новачок',
+      medium: 'Тактик блефу',
+      hard: 'Майстер обману',
+    },
+    sketch_and_guess: {
+      easy: 'Новачок скетчу',
+      medium: 'Тактик ліній',
+      hard: 'Майстер чорнила',
+    },
+    ludo: {
+      easy: 'Новачок фішок',
+      medium: 'Тактик фішок',
+      hard: 'Гросмейстер лудо',
+    },
+    fallback: {
+      easy: 'ШІ-новачок',
+      medium: 'ШІ-стратег',
+      hard: 'ШІ-геній',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Часті запитання',
@@ -5010,6 +5075,7 @@ const uk: TranslationWithPlurals = {
     brandLine: 'настільні ігри онлайн',
     about: 'Про проєкт',
     tagline: 'Грай у настільні ігри онлайн з друзями в реальному часі. Безкоштовно, без завантаження.',
+    taglinePlayApp: 'Грай у настільні ігри онлайн з друзями в реальному часі. Безкоштовно.',
     games: 'Ігри',
     play: 'Грати',
     quickPlay: 'Швидка гра',

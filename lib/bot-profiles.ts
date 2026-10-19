@@ -94,6 +94,24 @@ export function normalizeBotDifficulty(
   return fallback
 }
 
+const BOT_NAME_KEYS: ReadonlyMap<string, string> = new Map([
+  ...Object.entries(BOT_NAMES_BY_GAME).flatMap(([game, names]) =>
+    Object.entries(names).map(([difficulty, name]) => [name, `botNames.${game}.${difficulty}`] as const)
+  ),
+  ...Object.entries(FALLBACK_NAMES).map(([difficulty, name]) => [name, `botNames.fallback.${difficulty}`] as const),
+])
+
+/**
+ * A bot's name in the site language. Bot users keep the English name they were
+ * created with; quick play numbers extra bots ("Dice Rookie 2"), and the number stays.
+ */
+export function localizeBotName(name: string, t: (key: string) => string): string {
+  const match = /^(.*?)(?: (\d+))?$/.exec(name)
+  const key = match ? BOT_NAME_KEYS.get(match[1]) : undefined
+  if (!key) return name
+  return match?.[2] ? `${t(key)} ${match[2]}` : t(key)
+}
+
 export function getBotDisplayName(
   gameType: string,
   difficulty: BotDifficulty = 'medium',

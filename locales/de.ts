@@ -413,6 +413,7 @@ const de: TranslationWithPlurals = {
     keepPlaying: 'Weiterspielen',
     createFreeAccount: 'Kostenloses Konto erstellen',
     heroSubtitle: 'Spiel auswählen, Raum erstellen, Link teilen. Kein Download, kein Konto nötig – Gäste sind in Sekunden dabei.',
+    heroSubtitlePlayApp: 'Spiel auswählen, Raum erstellen, Link teilen. Kein Konto nötig – Gäste sind in Sekunden dabei.',
     gamesReadyBadge: '{{count}} Spiele spielbereit',
     gamesReadyBadge_one: '{{count}} Spiel spielbereit',
     moreComingLater: '{{count}} weitere Spiele folgen bald',
@@ -451,6 +452,7 @@ const de: TranslationWithPlurals = {
     ctaVisitorTitle: 'Hier beginnt der Spieleabend.',
     ctaVisitorAccent: 'Ganz ohne Planung.',
     ctaVisitorBody: 'Spiel auswählen, Raum öffnen, Link teilen. Deine Freunde sind in Sekunden dabei – ohne Konto, ohne Download.',
+    ctaVisitorBodyPlayApp: 'Spiel auswählen, Raum öffnen, Link teilen. Deine Freunde sind in Sekunden dabei – ohne Konto.',
     promoVideo: {
       kicker: 'So funktioniert es',
       title: 'Boardly in einer Minute',
@@ -471,6 +473,7 @@ const de: TranslationWithPlurals = {
       step3: {
         title: 'Losspielen',
         description: 'Alle sehen in ihrem Browser dasselbe Spielfeld, dieselben Punkte und Züge. Kein Download nötig.',
+        descriptionPlayApp: 'Alle sehen im selben Moment dasselbe Spielfeld, dieselben Punkte und Züge.',
       },
     },
     demo: {
@@ -3390,7 +3393,7 @@ const de: TranslationWithPlurals = {
       roundOf: 'Runde {{current}}/{{total}}',
       tabGame: 'Spiel',
       pointsShort: '{{count}} Pkt.',
-      heldLabel: 'Behalten',
+      heldLabel: 'Fix',
       cellOpen: 'Offen',
       tabRolls: 'Würfe',
     },
@@ -4843,6 +4846,68 @@ const de: TranslationWithPlurals = {
     scorePoints: '+{{count}} Punkte',
     scorePoints_one: '+{{count}} Punkt',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Würfel-Neuling',
+      medium: 'Würfel-Stratege',
+      hard: 'Würfel-Orakel',
+    },
+    tic_tac_toe: {
+      easy: 'Raster-Neuling',
+      medium: 'Raster-Taktiker',
+      hard: 'Raster-Großmeister',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo-Neuling',
+      medium: 'Musterleser',
+      hard: 'Gedanken-Gambit',
+    },
+    guess_the_spy: {
+      easy: 'Spion-Kadett',
+      medium: 'Geheimdienst-Analyst',
+      hard: 'Schattendirektor',
+    },
+    memory: {
+      easy: 'Gedächtnis-Späher',
+      medium: 'Mustersucher',
+      hard: 'Erinnerungsmeister',
+    },
+    connect_four: {
+      easy: 'Wurf-Neuling',
+      medium: 'Spalten-Taktiker',
+      hard: 'Schwerkraft-Großmeister',
+    },
+    checkers: {
+      easy: 'Dame-Neuling',
+      medium: 'Diagonal-Taktiker',
+      hard: 'Damenmacher',
+    },
+    alias: {
+      easy: 'Wort-Neuling',
+      medium: 'Wort-Taktiker',
+      hard: 'Wort-Orakel',
+    },
+    liars_party: {
+      easy: 'Ehrlicher Neuling',
+      medium: 'Bluff-Taktiker',
+      hard: 'Meister der Täuschung',
+    },
+    sketch_and_guess: {
+      easy: 'Skizzen-Neuling',
+      medium: 'Linien-Taktiker',
+      hard: 'Tintenmeister',
+    },
+    ludo: {
+      easy: 'Figuren-Neuling',
+      medium: 'Figuren-Taktiker',
+      hard: 'Ludo-Großmeister',
+    },
+    fallback: {
+      easy: 'KI-Neuling',
+      medium: 'KI-Stratege',
+      hard: 'KI-Genie',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Häufige Fragen',
@@ -4890,6 +4955,7 @@ const de: TranslationWithPlurals = {
     brandLine: 'Online-Brettspiele',
     about: 'Über Boardly',
     tagline: 'Spiel Brettspiele online mit Freunden in Echtzeit. Kostenlos, ohne Download.',
+    taglinePlayApp: 'Spiel Brettspiele online mit Freunden in Echtzeit. Kostenlos.',
     games: 'Spiele',
     play: 'Spielen',
     quickPlay: 'Schnellspiel',

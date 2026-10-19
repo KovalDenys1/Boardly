@@ -10,6 +10,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
 import QuickPlayButton from './QuickPlayButton'
 import HeroBoard from './HeroBoard'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export type HomeHeroFacts = {
   availableGameCount: number
@@ -26,6 +27,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
   const { isGuest, guestName, setGuestMode, clearGuestMode } = useGuest()
   const [showGuestForm, setShowGuestForm] = useState(false)
   const [name, setName] = useState('')
@@ -353,7 +355,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               maxWidth: 480,
             }}
           >
-            {t('home.heroSubtitle')}
+            {t(isPlayApp ? 'home.heroSubtitlePlayApp' : 'home.heroSubtitle')}
           </p>
 
           <div className="home-cta-row">
@@ -405,7 +407,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               { label: t('home.statsGamesReady'), value: String(facts.availableGameCount) },
               { label: t('home.statsBotsAvailable'), value: String(facts.quickPlayGameCount) },
               { label: t('home.statsInCollection'), value: String(facts.catalogGameCount) },
-              { label: t('home.statsBrowserNative'), value: '0' },
+              ...(isPlayApp ? [] : [{ label: t('home.statsBrowserNative'), value: '0' }]),
             ].map((s) => (
               <div key={s.label}>
                 <div

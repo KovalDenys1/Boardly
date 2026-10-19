@@ -14,6 +14,7 @@ import {
   isAvailableGameType,
   isAvailableCatalogEntry,
 } from '@/lib/game-catalog'
+import { getGameMetadata as getRegistryMetadata } from '@/lib/game-registry'
 
 const FEATURE_ENV_KEYS = [
   'ENABLE_TELEPHONE_DOODLE',
@@ -82,6 +83,16 @@ describe('game catalog availability', () => {
       expect(game.route).toBeDefined()
       expect(game.lobbyCreateConfig).toBeDefined()
       expect(game.lobbyCreateConfig.allowedPlayers.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('never offers a smallest lobby above the game\'s own minimum (#1491)', () => {
+    for (const entry of getCatalogAvailableGames()) {
+      if (!entry.gameType || !entry.lobbyCreateConfig) continue
+      const smallest = entry.lobbyCreateConfig.allowedPlayers[0]
+      const { minPlayers } = getRegistryMetadata(entry.gameType)
+      // A bot game seats at least two even when one human may start it alone.
+      expect({ game: entry.gameType, smallest }).toEqual({ game: entry.gameType, smallest: Math.max(2, minPlayers) })
     }
   })
 

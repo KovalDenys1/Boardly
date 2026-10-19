@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import type { PlayerReportContext } from '@/components/PlayerProfileCard'
+import { localizeBotName } from '@/lib/bot-profiles'
 
 // Loaded on the first tap, so the scoreboard does not carry the card's modal.
 const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'), { ssr: false })
@@ -47,7 +48,7 @@ export interface GamePlayerCardProps {
 }
 
 export default function GamePlayerCard({
-  name,
+  name: storedName,
   isActive,
   isMe,
   isWinner,
@@ -63,6 +64,7 @@ export default function GamePlayerCard({
   reportDrawing,
 }: GamePlayerCardProps) {
   const { t } = useTranslation()
+  const name = localizeBotName(storedName, t as (key: string) => string)
   // Who the card was opened for, frozen at the tap: a seat can change hands while it
   // is open (Sketch & Guess hands the drawer's seat on every round), and a report
   // half-written about one player must not turn into a report about the next.

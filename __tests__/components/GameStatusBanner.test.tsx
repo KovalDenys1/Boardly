@@ -27,6 +27,12 @@ describe('GameStatusBanner (#736 phase 4)', () => {
     expect(screen.getByText(':45')).toBeTruthy()
   })
 
+  it('shows 96 seconds as 1:36, not :96 (#1491)', () => {
+    render(<GameStatusBanner {...base} secs={96} turnTimerLimit={120} />)
+    expect(screen.getByText('1:36')).toBeTruthy()
+    expect(screen.queryByText(':96')).toBeNull()
+  })
+
   it('renders the victory plate for the winner', () => {
     render(<GameStatusBanner {...base} isFinished outcome="win" finishedMessage="Alice wins!" />)
     expect(screen.getByText('game.ui.victoryBadge')).toBeTruthy()
