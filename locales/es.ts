@@ -4970,6 +4970,7 @@ const es: TranslationWithPlurals = {
     brandLine: 'juegos de mesa online',
     about: 'Acerca de',
     tagline: 'Juega a juegos de mesa online con amigos en tiempo real. Gratis y sin descargas.',
+    taglinePlayApp: 'Juega a juegos de mesa online con amigos en tiempo real. Gratis.',
     games: 'Juegos',
     play: 'Jugar',
     quickPlay: 'Partida rápida',

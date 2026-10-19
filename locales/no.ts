@@ -4923,6 +4923,7 @@ const no = {
     brandLine: 'brettspill på nett',
     about: 'Om Boardly',
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
+    taglinePlayApp: 'Spill brettspill online med venner i sanntid. Gratis.',
     games: 'Spill',
     play: 'Spill',
     quickPlay: 'Raskt spill',

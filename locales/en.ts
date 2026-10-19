@@ -4935,6 +4935,7 @@ const en = {
     brandLine: 'online board games',
     about: 'About',
     tagline: 'Play board games online with friends in real-time. Free, no download required.',
+    taglinePlayApp: 'Play board games online with friends in real time. Free to play.',
     games: 'Games',
     play: 'Play',
     quickPlay: 'Quick Play',

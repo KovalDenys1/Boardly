@@ -4,6 +4,7 @@ import en from '@/locales/en'
 import type { FaqFacts, FaqGame } from '@/lib/faq-facts'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 /**
  * "A, B and C". All four locales put the conjunction in the same place and none
@@ -32,6 +33,8 @@ function english(games: FaqGame[]): string {
 // because q1–q8 are keyed in four locale files and in `answerVars` below.
 const FAQ_KEYS = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const
 type FaqKey = (typeof FAQ_KEYS)[number]
+// Browser install and "nothing to download" answer a question nobody inside the Play app has.
+const WEB_ONLY_FAQ_KEYS: ReadonlySet<FaqKey> = new Set(['q6', 'q8'])
 
 /**
  * The JSON-LD stays English whatever the visitor's language is, so it is built
@@ -69,6 +72,8 @@ const FAQ_COLORS = [
 
 export default function FaqSection({ facts }: { facts: FaqFacts }) {
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
+  const shownKeys = isPlayApp ? FAQ_KEYS.filter((key) => !WEB_ONLY_FAQ_KEYS.has(key)) : FAQ_KEYS
 
   // The four answers that name games or money take their values from the
   // catalog, so the copy cannot drift from what the site actually offers.
@@ -101,7 +106,7 @@ export default function FaqSection({ facts }: { facts: FaqFacts }) {
         </div>
 
         <dl className="home-faq-list">
-          {FAQ_KEYS.map((key, index) => (
+          {shownKeys.map((key, index) => (
             <div key={key} className="home-faq-item">
               <dt>
                 <span style={{ background: FAQ_COLORS[index % FAQ_COLORS.length] }}>

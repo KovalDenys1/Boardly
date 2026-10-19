@@ -3,6 +3,8 @@ import MarqueeStrip from '@/components/HomePage/MarqueeStrip'
 import CtaBanner from '@/components/HomePage/CtaBanner'
 import HowItWorksRedesign from '@/components/HomePage/HowItWorksRedesign'
 import HeroSectionRedesign from '@/components/HomePage/HeroSectionRedesign'
+import FaqSection from '@/components/HomePage/FaqSection'
+import { buildFaqFacts } from '@/lib/faq-facts'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -24,6 +26,7 @@ function renderHome() {
       <MarqueeStrip variant="hero" />
       <HowItWorksRedesign />
       <CtaBanner />
+      <FaqSection facts={buildFaqFacts()} />
     </>
   )
 }
@@ -47,6 +50,8 @@ describe('home copy in the Play app (#1491)', () => {
     expect(screen.getByText('home.ctaVisitorBodyPlayApp')).toBeTruthy()
     expect(screen.queryByText('home.howItWorks.step3.description')).toBeNull()
     expect(screen.getByText('home.howItWorks.step3.descriptionPlayApp')).toBeTruthy()
+    expect(screen.queryByText('faq.q8.question')).toBeNull()
+    expect(screen.queryByText('faq.q6.question')).toBeNull()
   })
 
   it('keeps the no-download copy on the web', () => {
@@ -58,5 +63,6 @@ describe('home copy in the Play app (#1491)', () => {
     expect(screen.getByText('home.heroSubtitle')).toBeTruthy()
     expect(screen.getByText('home.ctaVisitorBody')).toBeTruthy()
     expect(screen.getByText('home.howItWorks.step3.description')).toBeTruthy()
+    expect(screen.getByText('faq.q8.question')).toBeTruthy()
   })
 })

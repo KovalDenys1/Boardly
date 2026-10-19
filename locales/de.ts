@@ -4955,6 +4955,7 @@ const de: TranslationWithPlurals = {
     brandLine: 'Online-Brettspiele',
     about: 'Über Boardly',
     tagline: 'Spiel Brettspiele online mit Freunden in Echtzeit. Kostenlos, ohne Download.',
+    taglinePlayApp: 'Spiel Brettspiele online mit Freunden in Echtzeit. Kostenlos.',
     games: 'Spiele',
     play: 'Spielen',
     quickPlay: 'Schnellspiel',
