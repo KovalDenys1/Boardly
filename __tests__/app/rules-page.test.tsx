@@ -64,9 +64,9 @@ describe('/rules page (#1173)', () => {
     mockI18n.locale = 'en'
   })
 
-  it('is indexable and canonical on its own URL', () => {
+  it('is noindex (#1498) and canonical on its own URL', () => {
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/rules')
-    expect(metadata.robots).toMatchObject({ index: true, follow: true })
+    expect(metadata.robots).toMatchObject({ index: false, follow: true })
   })
 
   it('uses only keys that exist in all four locales, and never a fallback string', () => {

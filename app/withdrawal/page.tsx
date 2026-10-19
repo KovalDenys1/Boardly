@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     canonical: 'https://boardly.online/withdrawal',
   },
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
 }
