@@ -4,6 +4,7 @@ import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -226,18 +227,19 @@ export async function POST(
       })
 
       if (game.lobby?.code) {
+        const broadcastState = sanitizeStateForBroadcast('fake_artist', nextState, null)
         if (emitActionEvent) {
           void broadcastToLobby(game.lobby.code, 'fake-artist-action', {
             action: emitActionEvent.action,
             playerId: emitActionEvent.playerId ?? null,
             data: emitActionEvent.data ?? {},
-            state: nextState,
+            state: broadcastState,
           })
         }
 
         void broadcastToLobby(game.lobby.code, 'game-update', {
           action: 'state-change',
-          payload: { state: nextState },
+          payload: { state: broadcastState },
         })
       }
 
@@ -327,7 +329,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: stateAfterTimeout,
+            state: sanitizeStateForBroadcast('fake_artist', stateAfterTimeout, userId),
           },
           { status: 409 }
         )
@@ -351,7 +353,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: sanitizeStateForBroadcast('fake_artist', updatedState, userId),
       timeoutFallbackApplied,
       timeoutFallback: timeoutFallbackApplied
         ? {
