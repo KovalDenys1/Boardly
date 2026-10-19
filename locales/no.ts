@@ -409,6 +409,7 @@ const no = {
     keepPlaying: 'Fortsett å spille',
     createFreeAccount: 'Opprett gratis konto',
     heroSubtitle: 'Velg et spill, opprett et rom og del lenken. Ingen nedlasting, ingen konto nødvendig — gjester kan bli med på sekunder.',
+    heroSubtitlePlayApp: 'Velg et spill, opprett et rom og del lenken. Ingen konto nødvendig — gjester kan bli med på sekunder.',
     gamesReadyBadge: '{{count}} spill klare',
     moreComingLater: '{{count}} spill til på vei',
     statsGamesReady: 'Spill tilgjengelig',
@@ -444,6 +445,7 @@ const no = {
     ctaVisitorTitle: 'Spillkvelden starter her.',
     ctaVisitorAccent: 'Ingen planlegging nødvendig.',
     ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
+    ctaVisitorBodyPlayApp: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto.',
     promoVideo: {
       kicker: 'Se det i bruk',
       title: 'Boardly på ett minutt',
@@ -464,6 +466,7 @@ const no = {
       step3: {
         title: 'Begynn å spille',
         description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
+        descriptionPlayApp: 'Alle ser samme brett, poeng og trekk i samme øyeblikk.',
       },
     },
     demo: {
@@ -3265,7 +3268,8 @@ const no = {
         yahtzee: 'YAHTZEE! Alle fem terninger matcher!',
         largeStraight: 'Stor straight! Fem på rad!',
         fullHouse: 'Hus! Tre like + par!',
-        fourOfKind: 'Fire like! Fire matchende terninger!'
+        fourOfKind: 'Fire like! Fire matchende terninger!',
+        highScore: 'Sterk poengsum!'
       }
     },
     results: {
@@ -4810,6 +4814,68 @@ const no = {
   celebration: {
     scorePoints: '+{{count}} poeng',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Terningnybegynner',
+      medium: 'Terningstrateg',
+      hard: 'Terningorakel',
+    },
+    tic_tac_toe: {
+      easy: 'Rutenybegynner',
+      medium: 'Rutetaktiker',
+      hard: 'Rutestormester',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo-nybegynner',
+      medium: 'Mønsterleser',
+      hard: 'Tankegambit',
+    },
+    guess_the_spy: {
+      easy: 'Spionkadett',
+      medium: 'Etterretningsanalytiker',
+      hard: 'Skyggedirektør',
+    },
+    memory: {
+      easy: 'Minnespeider',
+      medium: 'Mønstersøker',
+      hard: 'Minnemester',
+    },
+    connect_four: {
+      easy: 'Slipp-nybegynner',
+      medium: 'Kolonnetaktiker',
+      hard: 'Tyngdekraft-stormester',
+    },
+    checkers: {
+      easy: 'Dam-nybegynner',
+      medium: 'Diagonaltaktiker',
+      hard: 'Kongemaker',
+    },
+    alias: {
+      easy: 'Ord-nybegynner',
+      medium: 'Ordtaktiker',
+      hard: 'Ordorakel',
+    },
+    liars_party: {
+      easy: 'Ærlig nybegynner',
+      medium: 'Blufftaktiker',
+      hard: 'Bedragermester',
+    },
+    sketch_and_guess: {
+      easy: 'Skisse-nybegynner',
+      medium: 'Streketaktiker',
+      hard: 'Blekkmester',
+    },
+    ludo: {
+      easy: 'Brikke-nybegynner',
+      medium: 'Brikketaktiker',
+      hard: 'Ludo-stormester',
+    },
+    fallback: {
+      easy: 'AI-nybegynner',
+      medium: 'AI-strateg',
+      hard: 'AI-geni',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Ofte stilte spørsmål',
@@ -4857,6 +4923,7 @@ const no = {
     brandLine: 'brettspill på nett',
     about: 'Om Boardly',
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
+    taglinePlayApp: 'Spill brettspill online med venner i sanntid. Gratis.',
     games: 'Spill',
     play: 'Spill',
     quickPlay: 'Raskt spill',
@@ -4883,6 +4950,17 @@ const no = {
     originTitle: 'Hvor det kom fra',
     origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
     origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
+    howTitle: 'Slik foregår et spill',
+    how1: 'Én spiller velger et spill og oppretter en lobby. Lobbyen får en lenke og en kort kode, og alle som åpner lenken, havner i samme rom så lenge det er ledig plass og spillet ikke har startet. Ingen trenger konto. En besøkende spiller som gjest under et navn de velger selv, og kan registrere seg senere for å beholde profil, venner og statistikk.',
+    how2: 'Verten velger innstillingene før start, og en lobby kan få et passord når den opprettes, slik at bare de som kjenner det, kan bli med. Alle spill unntatt Alias har en chat ved siden av brettet – i Alias skriver de som gjetter, gjetningene sine i en egen strøm i stedet – og i en lobby uten passord kan en vert med Premium også slippe inn tilskuere.',
+    botsTitle: 'Boter og mennesker',
+    bots: 'Sju spill har boter med tre vanskelighetsgrader: Yahtzee, tre på rad, fire på rad, dam, Ludo, Memory og stein, saks, papir, så én person kan spille når som helst. Guess the Spy, Alias, Løgnerfest og Tegn og gjett har ingen boter, med vilje. Disse spillene består av samtale – spisse spørsmål, bløff og gjetting – og en bot har ingenting å bidra med der, så de trenger tre eller flere personer, og Løgnerfest fire.',
+    fairTitle: 'Rettferdig spill',
+    fair: 'Hvert trekk går til serveren, som sjekker det mot spillets regler før det teller, så en endret side kan ikke få godkjent et ulovlig trekk. Hver spiller får bare det plassen deres har lov til å vite, så spionen i Guess the Spy får ikke stedet mens runden pågår. En chatmelding, en tegning, eller en spillers navn eller bilde som bryter fellesskapsreglene, kan i de fleste spill rapporteres fra spillskjermen, og en bio fra spillerens profil. Alle rapporter når Boardly-teamet.',
+    dataTitle: 'Kontoer og data',
+    data: 'En gjest trenger ingen e-postadresse. En gjest som aldri har spilt, slettes etter tre dager uten aktivitet, og en som har spilt, etter 90 dager. Repriser av ferdige spill lagres i 90 dager. Personvernerklæringen viser alt Boardly lagrer, hvorfor og hvor lenge.',
+    builtTitle: 'Slik er det bygget',
+    built: 'Boardly er en nettapp bygget med Next.js og React, med dataene i PostgreSQL og hvert trekk levert til de andre spillerne i sanntid. Den kjører i alle moderne nettlesere på mobil, nettbrett eller datamaskin, uten noe å installere. Kildekoden er offentlig på GitHub under MIT-lisensen, og den automatiske testpakken kjøres ved hver endring.',
     notTitle: 'Hva Boardly ikke er',
     not: 'Boardly er ikke boardly.co, boardly.ai eller joinboardly.com – det er urelaterte produkter som deler navnet; brettspillnettstedet finnes bare på boardly.online.',
     fundingTitle: 'Hvordan det finansieres',

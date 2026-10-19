@@ -6,9 +6,16 @@ import { ORGANIZATION_ID } from '@/lib/organization-json-ld'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import { englishText } from '@/lib/game-seo'
 
 const howToPlayGuides = HOW_TO_PLAY_GUIDES
 const bestOfGuides = BEST_OF_GUIDES
+
+const guidedGames = new Set(howToPlayGuides.map((guide) => guide.game))
+const unguidedGames = getCatalogAvailableGames()
+  .filter((game) => !guidedGames.has(game.id) && game.route)
+  .map((game) => ({ id: game.id, name: englishText(game.nameKey), href: game.route!.replace(/\/lobbies$/, '') }))
 
 export const metadata: Metadata = {
   title: 'Board Game Guides & Tips - How to Play Online',
@@ -184,6 +191,42 @@ export default function GuidesPage() {
               {bestOfGuides.map((guide) => (
                 <GuideCard key={guide.slug} {...guide} />
               ))}
+            </div>
+          </section>
+
+          <section id="guides-and-games" className="bd-card mt-10 p-6 sm:p-8">
+            <h2
+              className="mb-3 text-lg font-bold"
+              style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+            >
+              Guides and game pages
+            </h2>
+            <div className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+              <p>
+                Every game on Boardly has its own page with the full rules, strategy and a FAQ. A how-to-play
+                guide is the shorter way in for someone new to a game: what you need, how a round works and the
+                first tips worth knowing, and most of them say how to start a game with friends on Boardly. Read the
+                guide before a first game, and the game page when a rule is in doubt or you want to get better at it.
+              </p>
+              <p>
+                The best-of guides compare games instead of explaining one. They start from what a group actually
+                has – two players, a game night with a bigger group, or friends on a video call – and point to the
+                games that fit. Every guide links to the games it mentions, and every game here is free in the
+                browser, with no download.
+              </p>
+              <p>
+                Some games have no separate guide, because their game page already covers how a turn works, the
+                strategy and the common questions:{' '}
+                {unguidedGames.map((game, index) => (
+                  <span key={game.id}>
+                    {index > 0 && (index === unguidedGames.length - 1 ? ' and ' : ', ')}
+                    <Link href={game.href} className="underline underline-offset-2" style={{ color: 'var(--bd-coral-deep)' }}>
+                      {game.name}
+                    </Link>
+                  </span>
+                ))}
+                .
+              </p>
             </div>
           </section>
 

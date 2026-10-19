@@ -79,3 +79,17 @@ describe('SpyGameBoard: a question waiting for its answer', () => {
     expect(screen.queryAllByText(/spy\.decidingQuestion/)).toHaveLength(0)
   })
 })
+
+describe('SpyGameBoard: the host start-voting button (#1481)', () => {
+  it('lets a long label wrap inside the button instead of running out of it', async () => {
+    const game = gameIn(SpyGamePhase.QUESTIONING)
+    renderBoard(game, 'user-a')
+
+    const buttons = await screen.findAllByRole('button', { name: 'spy.startVoting' })
+    // .bd-btn is nowrap, which is what pushed the Russian label past the button edge.
+    for (const button of buttons) {
+      expect(button.className).toMatch(/\bwhitespace-normal\b/)
+      expect(button.className).toMatch(/\btext-center\b/)
+    }
+  })
+})

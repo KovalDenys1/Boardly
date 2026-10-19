@@ -103,6 +103,11 @@ gh release create vX.Y.Z --generate-notes --title "Boardly vX.Y.Z"
 
 Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based on PR labels.
 
+**At most one release a day; hotfixes excepted.** Vercel builds only `main`, `release/*` and
+`hotfix/*` (Ignored Build Step), so every release is two paid builds and pushes to `develop`
+build nothing – `boardly-kappa.vercel.app` stays on its last develop build. The team has a $5
+on-demand cap that pauses every project when reached; batch the day's work into one release.
+
 ---
 
 ## Plans, costs and accounts: read the vault before answering

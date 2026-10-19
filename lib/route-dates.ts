@@ -21,8 +21,8 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 export const ROUTE_UPDATED = {
   '/': '2026-09-15',
   '/games': '2026-09-07',
-  // #1472 names the six site languages.
-  '/about': '2026-10-18',
+  // #1498 adds how a game works, bots, fair play, data and how it is built.
+  '/about': '2026-10-19',
   '/premium': '2026-09-15',
   // #1077 expanded the page and folded the strategy guide into it.
   '/games/yahtzee': '2026-09-23',
@@ -44,13 +44,9 @@ export const ROUTE_UPDATED = {
   '/games/checkers': '2026-09-28', // #1241 expanded the page
   // #1242 expanded the page to the Track A sections.
   '/games/ludo': '2026-09-28',
-  '/guides': '2026-09-20',
-  // /privacy and /terms are noindex and left out of the sitemap (#1227); their own
-  // "last updated" dates come from lib/terms-version.ts.
-  // #1162: the right-of-withdrawal page, dated the day it was written.
-  '/withdrawal': '2026-09-24',
-  // #1173: the community rules page, dated the day it was written.
-  '/rules': '2026-09-27',
+  '/guides': '2026-10-19', // #1498 says how the guides fit the game pages
+  // /privacy, /terms, /withdrawal and /rules are noindex and left out of the sitemap
+  // (#1227, #1498).
 } as const satisfies Record<string, string>
 
 export type DatedRoute = keyof typeof ROUTE_UPDATED

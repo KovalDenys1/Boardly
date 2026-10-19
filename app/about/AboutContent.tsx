@@ -39,6 +39,32 @@ export default function AboutContent() {
             </section>
 
             <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.howTitle')}</h2>
+              <p className="mb-3">{t('about.how1')}</p>
+              <p>{t('about.how2')}</p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.botsTitle')}</h2>
+              <p>{t('about.bots')}</p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.fairTitle')}</h2>
+              <p>{t('about.fair')}</p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.dataTitle')}</h2>
+              <p>{t('about.data')}</p>
+            </section>
+
+            <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.builtTitle')}</h2>
+              <p>{t('about.built')}</p>
+            </section>
+
+            <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('about.notTitle')}</h2>
               <p>{t('about.not')}</p>
             </section>

@@ -91,6 +91,18 @@ describe('Footer in the Play app (#1465)', () => {
     expect(hrefs).toContain('/guides')
   })
 
+  it('drops the no-download tagline in the app and keeps it on the web (#1491)', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { unmount } = render(<Footer />)
+    expect(screen.queryByText('Play board games online with friends in real-time. Free, no download required.')).toBeNull()
+    expect(screen.getByText('Play board games online with friends in real time. Free to play.')).toBeTruthy()
+    unmount()
+
+    delete document.documentElement.dataset.appShell
+    render(<Footer />)
+    expect(screen.getByText('Play board games online with friends in real-time. Free, no download required.')).toBeTruthy()
+  })
+
   it('marks the /premium item on the web so the app hides it before hydration', () => {
     const { container } = render(<Footer />)
 

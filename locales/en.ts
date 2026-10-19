@@ -409,6 +409,7 @@ const en = {
     keepPlaying: 'Keep playing',
     createFreeAccount: 'Create free account',
     heroSubtitle: 'Pick a game, create a room, and share the link. No download, no account required — guests can join in seconds.',
+    heroSubtitlePlayApp: 'Pick a game, create a room, and share the link. No account required — guests can join in seconds.',
     gamesReadyBadge: '{{count}} games ready to play',
     moreComingLater: '{{count}} more games coming soon',
     statsGamesReady: 'Games ready now',
@@ -444,6 +445,7 @@ const en = {
     ctaVisitorTitle: 'Game night starts here.',
     ctaVisitorAccent: 'No planning needed.',
     ctaVisitorBody: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account, no download.',
+    ctaVisitorBodyPlayApp: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account needed.',
     promoVideo: {
       kicker: 'See it in action',
       title: 'Boardly in one minute',
@@ -464,6 +466,7 @@ const en = {
       step3: {
         title: 'Start playing',
         description: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
+        descriptionPlayApp: 'Everyone sees the same board, scores, and turns at the same moment.',
       },
     },
     demo: {
@@ -3266,6 +3269,7 @@ const en = {
         largeStraight: 'Large Straight! Five in a row!',
         fullHouse: 'Full House! Three of a kind + pair!',
         fourOfKind: 'Four of a Kind! Four matching dice!',
+        highScore: 'Great Score!',
       },
     },
     results: {
@@ -4822,6 +4826,68 @@ const en = {
   celebration: {
     scorePoints: '+{{count}} points',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Dice Rookie',
+      medium: 'Dice Strategist',
+      hard: 'Dice Oracle',
+    },
+    tic_tac_toe: {
+      easy: 'Grid Rookie',
+      medium: 'Grid Tactician',
+      hard: 'Grid Grandmaster',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo Rookie',
+      medium: 'Pattern Reader',
+      hard: 'Mind Gambit',
+    },
+    guess_the_spy: {
+      easy: 'Spy Cadet',
+      medium: 'Intel Analyst',
+      hard: 'Shadow Director',
+    },
+    memory: {
+      easy: 'Memory Scout',
+      medium: 'Pattern Seeker',
+      hard: 'Recall Master',
+    },
+    connect_four: {
+      easy: 'Drop Rookie',
+      medium: 'Column Tactician',
+      hard: 'Gravity Grandmaster',
+    },
+    checkers: {
+      easy: 'Checkers Rookie',
+      medium: 'Diagonal Tactician',
+      hard: 'Kingmaker',
+    },
+    alias: {
+      easy: 'Word Rookie',
+      medium: 'Word Tactician',
+      hard: 'Word Oracle',
+    },
+    liars_party: {
+      easy: 'Honest Rookie',
+      medium: 'Bluff Tactician',
+      hard: 'Deception Master',
+    },
+    sketch_and_guess: {
+      easy: 'Sketch Rookie',
+      medium: 'Line Tactician',
+      hard: 'Ink Master',
+    },
+    ludo: {
+      easy: 'Token Rookie',
+      medium: 'Token Tactician',
+      hard: 'Ludo Grandmaster',
+    },
+    fallback: {
+      easy: 'AI Rookie',
+      medium: 'AI Strategist',
+      hard: 'AI Mastermind',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Frequently Asked Questions',
@@ -4869,6 +4935,7 @@ const en = {
     brandLine: 'online board games',
     about: 'About',
     tagline: 'Play board games online with friends in real-time. Free, no download required.',
+    taglinePlayApp: 'Play board games online with friends in real time. Free to play.',
     games: 'Games',
     play: 'Play',
     quickPlay: 'Quick Play',
@@ -4895,6 +4962,17 @@ const en = {
     originTitle: 'Where it came from',
     origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
     origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',
+    howTitle: 'How a game works',
+    how1: 'One player picks a game and creates a lobby. The lobby gets a link and a short code, and everyone who opens the link joins the same room while a seat is free and the game has not started. Nobody needs an account. A visitor plays as a guest under a name they choose, and can register later to keep a profile, friends and statistics.',
+    how2: 'The host chooses the settings before the start, and a lobby can be given a password when it is created, so only people who know it can join. Every game except Alias has a chat beside the board – in Alias the guessers type their guesses into a feed instead – and in a lobby without a password, a host with Premium can also let other people watch as spectators.',
+    botsTitle: 'Bots and people',
+    bots: 'Seven games have bots with three difficulty levels: Yahtzee, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory and Rock Paper Scissors, so one person can play at any hour. Guess the Spy, Alias, Liar\'s Party and Sketch & Guess have no bots, on purpose. Those games are made of conversation – pointed questions, bluffs and guesses – and a bot has nothing to add to that, so they need three or more people, and Liar\'s Party four.',
+    fairTitle: 'Fair play',
+    fair: 'Every move goes to the server, which checks it against the rules of the game before it counts, so an edited page cannot get an illegal move accepted. Each player receives only what their seat may know, so the spy in Guess the Spy does not receive the location while the round runs. A chat message, a drawing, or a player\'s name or picture that breaks the community rules can be reported from the game screen in most games, and a bio from the player\'s profile. Every report reaches the Boardly team.',
+    dataTitle: 'Accounts and data',
+    data: 'A guest needs no email address. A guest who has never played is deleted after three days without activity, and one who has played after 90 days. Replays of finished games are kept for 90 days. The privacy policy lists everything Boardly stores, why, and for how long.',
+    builtTitle: 'How it is built',
+    built: 'Boardly is a web app built with Next.js and React, with its data in PostgreSQL and every move delivered to the other players in real time. It runs in any modern browser on a phone, tablet or computer, with nothing to install. The source code is public on GitHub under the MIT licence, and the automated test suite runs on every change.',
     notTitle: 'What Boardly is not',
     not: 'Boardly is not boardly.co, boardly.ai or joinboardly.com – those are unrelated products that share the name; the board games website lives only at boardly.online.',
     fundingTitle: 'How it is funded',

@@ -65,7 +65,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
               </span>
             </div>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-              {t('footer.tagline')}
+              {t(inPlayApp ? 'footer.taglinePlayApp' : 'footer.tagline')}
             </p>
             {listingBadge && (
               // Launchstag publishes the listing once it finds this link on the home page; the image is a local copy, so no visitor request reaches them.

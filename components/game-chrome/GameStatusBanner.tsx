@@ -68,7 +68,7 @@ const DANGER_SECONDS = 10
  */
 function formatSeconds(secs: number): string {
   const safe = Math.max(0, Math.floor(secs))
-  if (safe < 100) return `:${String(safe).padStart(2, '0')}`
+  if (safe < 60) return `:${String(safe).padStart(2, '0')}`
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
 }
 
