@@ -678,6 +678,8 @@ export function useGameActions(props: UseGameActionsProps) {
         if (winner) {
           fireworks()
           showToast.success('toast.gameOver', undefined, { player: winner.name })
+        } else {
+          showToast.info('toast.gameTie')
         }
       }
 

@@ -55,11 +55,13 @@ export function buildTerminalFieldsAndPlayerUpdates(params: {
   // Full ordering of player ids, best first — placement source for games whose
   // engines expose a ranking instead of per-player `placement` fields.
   rankingOrder?: string[]
+  // Everyone placed first in a finish with no single winner is recorded a winner, which stats read as a draw (#1493).
+  sharedTopWins?: boolean
 }): {
   terminalFields: TerminalFields | Record<string, never>
   changedPlayerUpdates: ChangedPlayerUpdate[]
 } {
-  const { statusChanged, status, winner, startedAt, enginePlayers, dbPlayersByUserId, getScorecard, rankingOrder } = params
+  const { statusChanged, status, winner, startedAt, enginePlayers, dbPlayersByUserId, getScorecard, rankingOrder, sharedTopWins = false } = params
 
   const isTerminal = TERMINAL_STATUSES.has(status)
 
@@ -83,18 +85,20 @@ export function buildTerminalFieldsAndPlayerUpdates(params: {
       ? dbPlayersByUserId.get(winner) ?? null
       : null
 
+    const tiedLeadersWin = sharedTopWins && status === 'finished' && !winner
     playerResults = enginePlayers.map((ep, i) => {
       const explicitPlacement = (ep as { placement?: number }).placement
       const rankingIndex = rankingOrder ? rankingOrder.indexOf(ep.id) : -1
+      const placement = typeof explicitPlacement === 'number'
+        ? explicitPlacement
+        : rankingIndex >= 0
+          ? rankingIndex + 1
+          : i + 1
       return {
         userId: dbPlayersByUserId.get(ep.id)?.userId ?? ep.id,
-        placement: typeof explicitPlacement === 'number'
-          ? explicitPlacement
-          : rankingIndex >= 0
-            ? rankingIndex + 1
-            : i + 1,
+        placement,
         finalScore: typeof ep.score === 'number' ? ep.score : null,
-        isWinner: ep.id === winner,
+        isWinner: ep.id === winner || (tiedLeadersWin && placement === 1),
       }
     })
     const terminalMetadata = {

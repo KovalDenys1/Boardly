@@ -13,6 +13,7 @@ jest.mock('@/lib/db', () => ({
     users: { findUnique: jest.fn() },
     friendships: { findFirst: jest.fn() },
     friendRequests: { findFirst: jest.fn() },
+    players: { count: jest.fn(async () => 0) },
   },
 }))
 

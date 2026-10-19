@@ -22,6 +22,7 @@ import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
 const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
@@ -261,6 +262,8 @@ export default function SpectatorLobbyPage() {
   const [isAdminView, setIsAdminView] = useState(false)
   const [yahtzeeEngine, setYahtzeeEngine] = useState<YahtzeeGame | null>(null)
   const [departedIds, setDepartedIds] = useState<ReadonlySet<string>>(new Set())
+  // The game on screen: once it finishes, the route is asked for finished games so the final board stays up.
+  const watchedGameIdRef = useRef<string | null>(null)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -280,10 +283,15 @@ export default function SpectatorLobbyPage() {
       // synchronous render pass, but is always settled by the time effects run.
       const adminViewRequested = new URLSearchParams(window.location.search).get('admin') === '1'
 
-      const request = (asAdmin: boolean) =>
-        fetchWithGuest(`/api/lobby/${code}/spectate${asAdmin ? '?adminView=true' : ''}`, {
+      const request = (asAdmin: boolean) => {
+        const query = new URLSearchParams()
+        if (asAdmin) query.set('adminView', 'true')
+        if (watchedGameIdRef.current) query.set('includeFinished', 'true')
+        const search = query.toString()
+        return fetchWithGuest(`/api/lobby/${code}/spectate${search ? `?${search}` : ''}`, {
           cache: 'no-store',
         })
+      }
 
       let res = await request(adminViewRequested)
       let json = await res.json()
@@ -314,7 +322,13 @@ export default function SpectatorLobbyPage() {
         }
         throw new Error(json?.error || `HTTP ${res.status}`)
       }
-      setData(json)
+      // A finished game is only ever the end of the one being watched, never an old game to open on.
+      const finishedElsewhere = json?.activeGame?.status === 'finished' && json.activeGame.id !== watchedGameIdRef.current
+      const snapshot: SpectatorLobbyResponse = finishedElsewhere
+        ? { ...json, activeGame: null, canJoinAsPlayer: false, lobby: { ...json.lobby, activeGame: null, games: [] } }
+        : json
+      watchedGameIdRef.current = snapshot.activeGame?.id ?? null
+      setData(snapshot)
       setSpectatorCount(json?.lobby?.spectatorCount ?? 0)
       setIsAdminView(json?.isAdminView === true)
       setError('')
@@ -357,6 +371,13 @@ export default function SpectatorLobbyPage() {
       lobbyChannel.release()
     }
   }, [code, realtimeTopic, loadSnapshot])
+
+  // Memory and Spy play theirs from their boards, the dedicated pages from their own.
+  useSpectatorResultCue({
+    isSpectator: data?.lobby.gameType === 'yahtzee',
+    isFinished: data?.activeGame?.status === 'finished',
+    gameId: data?.activeGame?.id,
+  })
 
   // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat.
   // The topic carries the lobby secret (audit S3-07): it is derived from the

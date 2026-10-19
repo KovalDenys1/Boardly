@@ -69,16 +69,10 @@ describe('useTurnSounds (#1111, #1464)', () => {
     expect(play.mock.calls).toEqual([['turn.mine', { delayMs: 220 + TURN_AFTER_MOVE_MS }]])
   })
 
-  it('maps an old moveSound name to its cue when no moveCue is given', () => {
-    const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 'a', moveSound: 'score' })
-    rerender({ isMyTurn: false, lastMoveSignature: 'b', opponentMoved: true, moveSound: 'score' })
-    expect(play).toHaveBeenCalledWith('score.add', { remote: true })
-  })
-
-  it('defaults the move cue to the old click, ui.select', () => {
+  it('plays no move cue when none is given', () => {
     const { rerender } = setup({ isMyTurn: false, lastMoveSignature: 1 })
     rerender({ isMyTurn: false, lastMoveSignature: 2, opponentMoved: true })
-    expect(play).toHaveBeenCalledWith('ui.select', { remote: true })
+    expect(play).not.toHaveBeenCalled()
   })
 
   it('stays silent while disabled and does not replay stale changes when re-enabled', () => {

@@ -1,4 +1,3 @@
-import { stripSketchCustomWords } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 type JsonObject = Record<string, unknown>
@@ -68,14 +67,11 @@ export function sanitizeGameStateForSpectator(
     return parsed
   }
 
-  // A finished game has nothing left to hide, and every per-game sanitizer
-  // already encodes that rule via `status === 'finished'`. The authoritative
-  // status arrives as a separate argument here and isn't always present on the
-  // state blob itself, so apply it once up front rather than relying on each
-  // sanitizer to find it.
+  // The authoritative status is a separate argument and not always on the state blob; each per-game
+  // sanitizer reveals what a finished game reveals and still withholds what outlives it (#1086, #1088).
   if (gameStatus === 'finished') {
-    // The one secret that outlives a game: the host's word list is the next game's answers.
-    return gameType === 'sketch_and_guess' ? stripSketchCustomWords(parsed as { data?: unknown }) : parsed
+    if (typeof parsed !== 'object') return parsed
+    return sanitizeStateForBroadcast(gameType, { ...(parsed as { data?: unknown; status?: string }), status: 'finished' }, null)
   }
 
   // Spy keeps its own key-name scrubber because it also has to reach spy

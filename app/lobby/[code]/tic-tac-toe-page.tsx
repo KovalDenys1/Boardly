@@ -34,7 +34,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { TttBoard, TttMark, tttCoord } from '@/components/boards/TttBoard'
 import { reportablePlayerId } from '@/lib/reportable-player'
@@ -42,6 +42,7 @@ import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextMoveKey, type MoveKey } from '@/lib/move-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useFreshCue } from '@/hooks/useFreshCue'
 import { playCue } from '@/lib/sound-engine'
 import { tttMarkSemis } from '@/lib/board-sounds'
@@ -701,7 +702,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
-    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as TicTacToeGameData).moveHistory : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyMoveHistory = earlyState ? (earlyState.data as TicTacToeGameData).moveHistory : undefined
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
@@ -718,9 +720,12 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastTttMoveSignature,
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyState?.status === 'playing',
         moveCue: null,
     })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState ? `${(earlyState.data as TicTacToeGameData).match?.roundsPlayed ?? 0}:${earlyState.lastMoveAt ?? ''}` : null, revealDelayMs: RESULT_REVEAL_DELAY_MS })
     const playMarkCue = useCallback(() => {
         if (!lastTttMove) return
         playCue('tap.mark', { remote: isSpectator || lastTttMove.playerId !== getCurrentUserId(), semis: tttMarkSemis(lastTttMove.symbol) })
@@ -744,9 +749,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (

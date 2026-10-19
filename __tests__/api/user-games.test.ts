@@ -85,6 +85,17 @@ describe('GET /api/user/games', () => {
     expect(payload.games.map((row) => row.viewerResult)).toEqual(['lost', 'draw', 'abandoned', 'inProgress'])
   })
 
+  it('reads a Yahtzee tie as a draw for the leaders and a loss below them (#1493)', async () => {
+    const leaders = { isDraw: true, playerResults: [{ userId: 'a', isWinner: true }, { userId: 'me', isWinner: true }, { userId: 'c', isWinner: false }] }
+    const below = { isDraw: true, playerResults: [{ userId: 'a', isWinner: true }, { userId: 'b', isWinner: true }, { userId: 'me', isWinner: false }] }
+    const payload = await fetchGames([
+      game({ id: 'tied', gameType: 'yahtzee', terminalMetadata: leaders }),
+      game({ id: 'below', gameType: 'yahtzee', terminalMetadata: below, players: [{ ...game().players[0], isWinner: false }, game().players[1]] }),
+    ])
+
+    expect(payload.games.map((row) => row.viewerResult)).toEqual(['draw', 'lost'])
+  })
+
   it('offers a replay only for a finished game that has snapshots', async () => {
     const payload = await fetchGames([
       game({ id: 'with' }),

@@ -239,6 +239,50 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
   })
 
+  it('keeps a drawing the host hid out of a finished Sketch & Guess game, and offers no seat in it (#1088, #1464)', async () => {
+    const { sanitizeGameStateForSpectator: realSanitize } = jest.requireActual('@/lib/spectator-state')
+    mockSanitizeGameStateForSpectator.mockImplementation(realSanitize)
+    mockGetRequestAuthUser.mockResolvedValue(null)
+    const finishedState = {
+      status: 'finished',
+      data: {
+        phase: 'reveal',
+        currentRound: 2,
+        rounds: [
+          { round: 1, drawerId: 'host', drawingContent: '{"strokes":["secret-stroke"]}', drawingHiddenByHost: true },
+          { round: 2, drawerId: 'guest', drawingContent: '{"strokes":["kept-stroke"]}' },
+        ],
+      },
+    }
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      name: 'Sketch Lobby',
+      realtimeSecret: 'secret',
+      maxPlayers: 6,
+      allowSpectators: true,
+      maxSpectators: 10,
+      spectatorCount: 1,
+      turnTimer: 60,
+      isActive: true,
+      gameType: 'sketch_and_guess',
+      createdAt: new Date('2026-02-27T18:00:00.000Z'),
+      creator: { id: 'host', username: 'host' },
+      games: [{ id: 'game-1', status: 'finished', state: JSON.stringify(finishedState), players: [] }],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate?includeFinished=true'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.activeGame.state).not.toContain('secret-stroke')
+    expect(payload.activeGame.state).toContain('kept-stroke')
+    expect(payload.canJoinAsPlayer).toBe(false)
+  })
+
   it('gives an admitted spectator the topic name but never the raw secret (#845)', async () => {
     const SECRET = 'test-lobby-realtime-secret'
     mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })

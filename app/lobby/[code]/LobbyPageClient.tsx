@@ -10,14 +10,13 @@ import { playCue, type PlayOptions } from '@/lib/sound-engine'
 import { toggleSoundEnabled } from '@/lib/sound-settings'
 import type { CueId } from '@/lib/sound-map'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
-import { viewerOutcome } from '@/lib/game-outcome'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
-import { analyzeResults } from '@/lib/yahtzee-results'
+import { analyzeResults, yahtzeeViewerOutcome } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, BotMoveStep, Lobby } from '@/types/game'
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
@@ -99,6 +98,8 @@ import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useYahtzeeResultsHold } from './hooks/useYahtzeeResultsHold'
 import { useShellGameSounds } from './hooks/useShellGameSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -1506,12 +1507,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       ? gameEngine
       : null
   const yahtzeeResults = useYahtzeeResultsHold(game?.id, !!finishedYahtzeeEngine)
-  const yahtzeeWinnerId = finishedYahtzeeEngine
+  const finishedYahtzeeResults = finishedYahtzeeEngine
     ? analyzeResults(
         finishedYahtzeeEngine.getPlayers().map((player) => ({ ...player, score: player.score || 0 })),
         (id) => finishedYahtzeeEngine.getScorecard(id),
-      )[0]?.playerId
-    : undefined
+      )
+    : null
   useShellGameSounds({
     gameType: lobby?.gameType as string | undefined,
     gameId: game?.id,
@@ -1519,16 +1520,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     viewerId: getCurrentUserId(),
     isSpectator,
     yahtzeeFinished: gameEngine instanceof YahtzeeGame ? game?.status === 'finished' : undefined,
-    yahtzeeOutcome: finishedYahtzeeEngine
-      ? viewerOutcome({
-          isFinished: true,
-          isDraw: false,
-          isSpectator,
-          isSeated: !!isInGame,
-          isViewerWinner: yahtzeeWinnerId ? yahtzeeWinnerId === getCurrentUserId() : null,
-        })
+    yahtzeeOutcome: finishedYahtzeeResults
+      ? yahtzeeViewerOutcome(finishedYahtzeeResults, getCurrentUserId(), { isSpectator, isSeated: !!isInGame })
       : undefined,
     play: playAmbientCue,
+  })
+  // A watcher's Spy or Memory board unmounts as the game finishes (lib/lobby-surface.ts), taking its end screen with it.
+  useSpectatorResultCue({
+    isSpectator: (lobby?.gameType === 'guess_the_spy' || lobby?.gameType === 'memory') && !!game && !isInGame,
+    isFinished: game?.status === 'finished',
+    gameId: game?.id,
+    revealDelayMs: RESULT_REVEAL_DELAY_MS,
   })
   const shouldShowHeldYahtzeeResults = yahtzeeResults.showResults
   const joinViewerMode = status === 'authenticated'
@@ -1989,10 +1991,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           <YahtzeeResults
             mode={finishedYahtzeeEngine!.getMode()}
             faceCounts={finishedYahtzeeEngine!.getFaceCounts()}
-            results={analyzeResults(
-              finishedYahtzeeEngine!.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
-              (id) => finishedYahtzeeEngine!.getScorecard(id)
-            )}
+            results={finishedYahtzeeResults ?? []}
             currentUserId={getCurrentUserId() || null}
             canStartGame={!!canStartGame}
             canRequestRematch={!!isInGame}
@@ -2170,14 +2169,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
             </div>
           )}
-          {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
+          {finishedYahtzeeEngine && finishedYahtzeeResults ? (
             <YahtzeeResults
-              mode={gameEngine.getMode()}
-              faceCounts={gameEngine.getFaceCounts()}
-              results={analyzeResults(
-                gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
-                (id) => gameEngine.getScorecard(id)
-              )}
+              mode={finishedYahtzeeEngine.getMode()}
+              faceCounts={finishedYahtzeeEngine.getFaceCounts()}
+              results={finishedYahtzeeResults}
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
               canRequestRematch={!!isInGame}

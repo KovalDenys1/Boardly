@@ -1,6 +1,6 @@
 'use client'
 
-import { PlayerResults } from '@/lib/yahtzee-results'
+import { PlayerResults, leadersOf } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { YahtzeeMode, getActiveCategories } from '@/lib/yahtzee'
@@ -79,7 +79,9 @@ export default function YahtzeeResults({
   }
 
   const winner = results[0]
-  const isWinner = winner.playerId === currentUserId
+  const leaders = leadersOf(results)
+  const isTie = leaders.length > 1
+  const isWinner = !isTie && winner.playerId === currentUserId
   const secondPlace = results[1] ?? null
   const winnerMargin = secondPlace ? winner.totalScore - secondPlace.totalScore : winner.totalScore
   const winnerScoreBase = Math.max(1, winner.totalScore)
@@ -109,7 +111,7 @@ export default function YahtzeeResults({
                 <div className="bd-kicker">{t('yahtzee.results.matchComplete')}</div>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4 sm:h-20 sm:w-20">
-                    <Icon name="trophy" size={44} tone="on-accent" />
+                    <Icon name={isTie ? 'handshake' : 'trophy'} size={44} tone="on-accent" />
                   </div>
                   <div className="min-w-0">
                     <h2
@@ -128,8 +130,12 @@ export default function YahtzeeResults({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">{t('yahtzee.results.winnerScore', { score: winner.totalScore })}</span>
-                <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">{t('yahtzee.results.marginScore', { margin: winnerMargin })}</span>
+                <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">
+                  {isTie ? t('yahtzee.results.tieScore', { score: winner.totalScore }) : t('yahtzee.results.winnerScore', { score: winner.totalScore })}
+                </span>
+                {!isTie && (
+                  <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">{t('yahtzee.results.marginScore', { margin: winnerMargin })}</span>
+                )}
                 <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">{t('yahtzee.results.players', { count: results.length })}</span>
               </div>
             </div>
@@ -199,6 +205,7 @@ export default function YahtzeeResults({
             <div className="flex min-w-0 flex-col gap-4">
             <section
               className="rounded-bd-lg border p-4 sm:p-5"
+              data-testid="yahtzee-results-leader"
               style={{
                 borderColor: 'rgba(255,196,77,0.32)',
                 background:
@@ -206,11 +213,11 @@ export default function YahtzeeResults({
               }}
             >
               <div className="flex items-center gap-2 text-(--bd-coral-deep)">
-                <Icon name="crown" size={20} />
-                <span className="bd-kicker">{t('yahtzee.results.winnerLabel')}</span>
+                <Icon name={isTie ? 'handshake' : 'crown'} size={20} />
+                <span className="bd-kicker">{isTie ? t('yahtzee.results.tieLabel') : t('yahtzee.results.winnerLabel')}</span>
               </div>
               <p className="mt-3 text-2xl font-extrabold text-bd-ink sm:text-3xl">
-                {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
+                {isTie ? t('yahtzee.results.tie') : isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
               </p>
               <p
                 className="mt-2 text-4xl font-black text-bd-ink sm:text-5xl"
@@ -219,12 +226,12 @@ export default function YahtzeeResults({
                 {winner.totalScore}
               </p>
               <p className="mt-1 text-sm text-bd-ink-soft">
-                {winner.playerName}
+                {leaders.map((leader) => leader.playerName).join(', ')}
               </p>
 
               {/* Short mode scores the lower section only, so the split would
                   repeat the total printed just above (#1187). */}
-              {hasUpperSection && (
+              {hasUpperSection && !isTie && (
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
                   <div className="bd-kicker">{t('yahtzee.results.upperSectionShort')}</div>
@@ -242,7 +249,7 @@ export default function YahtzeeResults({
               </div>
               )}
 
-              {winner.achievements.length > 0 && (
+              {!isTie && winner.achievements.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {winner.achievements.map((achievement, idx) => (
                     <span
@@ -358,7 +365,7 @@ export default function YahtzeeResults({
                         )}
                         {player.rank === 0 && (
                           <span className="bd-chip bd-chip-sun px-2 py-1 text-[11px]">
-                            {t('yahtzee.results.winnerBadge')}
+                            {isTie ? t('yahtzee.results.tieBadge') : t('yahtzee.results.winnerBadge')}
                           </span>
                         )}
                       </div>

@@ -4,6 +4,7 @@ import { optionalSessionUser } from '@/lib/session-user'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getGuestClaimsFromRequest } from '@/lib/guest-auth'
 import { canViewProfile } from '@/lib/public-profile'
+import { soleWinsWhere } from '@/lib/server/sole-wins'
 
 // It ran a user lookup with every finished game joined in, per call, with no limiter (#1157).
 const limiter = rateLimit(rateLimitPresets.userCard)
@@ -32,7 +33,6 @@ export async function GET(
       players: {
         where: { game: { status: 'finished' } },
         select: {
-          isWinner: true,
           game: { select: { gameType: true } },
         },
       },
@@ -44,8 +44,6 @@ export async function GET(
   }
 
   const gamesPlayed = user.players.length
-  const wins = user.players.filter((p) => p.isWinner).length
-  const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0
 
   const gameTypeCounts: Record<string, number> = {}
   for (const p of user.players) {
@@ -128,6 +126,9 @@ export async function GET(
       relation,
     })
   }
+
+  const wins = await prisma.players.count({ where: soleWinsWhere(userId) })
+  const winRate = gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0
 
   return NextResponse.json({
     userId: user.id,

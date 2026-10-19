@@ -20,6 +20,7 @@ import ScorePop from '@/components/game-chrome/ScorePop'
 import { useHeldValue } from '@/hooks/useHeldValue'
 import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
 import { prefersReducedMotion } from '@/lib/motion'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
@@ -572,6 +573,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             : null,
         { gameId: game?.id, viewerId: currentUserId, isSeated: !isSpectator && !!currentUserId && !!game?.state.players.some((p) => p.id === currentUserId) },
     )
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, revealDelayMs: RPS_RESULT_REVEAL_DELAY_MS })
 
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0

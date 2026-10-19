@@ -142,12 +142,14 @@ describe('GET /api/user/profile', () => {
         },
       },
     })
+    // A win counts only when nobody else in the game is recorded a winner too (#1493).
     expect(mockPrisma.players.count).toHaveBeenNthCalledWith(2, {
       where: {
         userId: 'user-1',
         isWinner: true,
         game: {
           status: 'finished',
+          players: { none: { isWinner: true, userId: { not: 'user-1' } } },
         },
       },
     })

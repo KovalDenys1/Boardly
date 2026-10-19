@@ -590,6 +590,7 @@ export async function POST(
       enginePlayers: enginePlayers as Player[],
       dbPlayersByUserId,
       getScorecard,
+      sharedTopWins: game.lobby.gameType === 'yahtzee',
     })
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {

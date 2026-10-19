@@ -198,7 +198,7 @@ plus 844×390 landscape). Check before calling it done:
      - `transform` and `opacity` only (see "Animations — never animate height");
      - roughly 200–450 ms;
      - `prefers-reduced-motion` respected;
-     - a `lib/sounds` cue alongside, where one exists.
+     - a sound-map cue (`lib/sound-map.ts`) alongside, where one exists.
 
 ## Adding a new game — checklist
 
@@ -563,8 +563,9 @@ agent concluded exactly that on 2026-09-20. It is real, it is populated, and it 
 Control-Panel-only bookkeeping. Query it through the `supabase-prod` MCP.
 
 **And the guest purge erases the evidence.** `scripts/cleanup-old-guests.ts` deletes
-guests inactive for 3 days and their `Players` rows go with them, so anything older than
-that has lost the majority of its players — guests are most of the audience. Retention
+guests inactive for 3 days who never played, and guests who played after 90 idle days
+(`lib/retention-periods.ts`); their `Players` rows go with them, so older games have lost
+many of their players — guests are most of the audience. Retention
 has to be read from `AnalyticsUserFacts`, which keeps a row after the user is gone and
 marks it `missingSince`.
 
@@ -755,8 +756,8 @@ A routine created without `mcp_connections` gets every account connector — pas
 
 - **Bots are ordinary `Users` rows** (`isGuest = false`, matching `Bots` row). Every user
   metric needs the `Bots` anti-join or it counts 24 bots as users.
-- **Guests are hard-deleted after three idle days and `Players` cascades**, so most games
-  have no `Players` rows; the surviving roster is `Games.state->'players'`.
+- **Guests are hard-deleted (3 idle days if they never played, 90 if they did) and `Players`
+  cascades**, so many older games have missing `Players` rows; the surviving roster is `Games.state->'players'`.
 - **`status = 'cancelled'` means nobody ever joined** (`startedAt IS NULL`). Dropping it from
   a completion rate hides the product's largest leak.
 

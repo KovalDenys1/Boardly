@@ -9,7 +9,7 @@ import { prefersReducedMotion } from '@/lib/motion'
 import { useRematchSignal } from '@/hooks/useRematchSignal'
 import { playCue } from '@/lib/sound-engine'
 import { resultCue } from '@/lib/game-outcome'
-import { liveFinishWithin } from '@/lib/live-finish'
+import { liveFinishWithin, RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
 import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
 
 /**
@@ -94,8 +94,7 @@ export interface GameResultOverlayProps {
   outcome?: GameOutcome
 }
 
-/** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
-export const RESULT_REVEAL_DELAY_MS = 700
+export { RESULT_REVEAL_DELAY_MS }
 
 /**
  * "View board" unmounts the overlay in every adopter, and coming back mounts it

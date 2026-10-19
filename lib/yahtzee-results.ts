@@ -1,5 +1,7 @@
 import type { IconName } from '@/components/icons/names'
+import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
 
+import { viewerOutcome } from './game-outcome'
 import { YahtzeeScorecard, YahtzeeCategory } from './yahtzee'
 
 export interface PlayerResults {
@@ -11,6 +13,7 @@ export interface PlayerResults {
   bonusAchieved: boolean
   bonusPoints: number
   achievements: Achievement[]
+  /** 0 is first; a shared total shares its rank, and the next one skips (0, 0, 2). */
   rank: number
 }
 
@@ -177,11 +180,32 @@ export function analyzeResults(
   
   // Sort by total score (descending)
   results.sort((a, b) => b.totalScore - a.totalScore)
-  
-  // Assign ranks
-  results.forEach((result, index) => {
-    result.rank = index
-  })
-  
+
+  for (const result of results) {
+    result.rank = results.filter((other) => other.totalScore > result.totalScore).length
+  }
+
   return results
+}
+
+/** The players sharing first place: more than one is a tie. */
+export function leadersOf(results: PlayerResults[]): PlayerResults[] {
+  return results.filter((result) => result.rank === 0)
+}
+
+/** The finished game as the viewer's seat sees it: a shared top total is a draw for those on it and a loss below. */
+export function yahtzeeViewerOutcome(
+  results: PlayerResults[],
+  viewerId: string | null | undefined,
+  { isSpectator, isSeated }: { isSpectator: boolean; isSeated: boolean },
+): GameOutcome | undefined {
+  const leaders = leadersOf(results)
+  return viewerOutcome({
+    isFinished: results.length > 0,
+    isDraw: leaders.length > 1,
+    isSpectator,
+    isSeated,
+    isViewerWinner: leaders.length === 1 ? leaders[0].playerId === viewerId : null,
+    isViewerAtTop: leaders.some((leader) => leader.playerId === viewerId),
+  })
 }
