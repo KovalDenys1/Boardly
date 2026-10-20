@@ -72,7 +72,7 @@ export default function HowToPlayAliasGuide() {
             { mark: 'yes', text: '3–16 players – two teams from four up, three teams of one at exactly three' },
             { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
             { mark: 'yes', text: 'No account required (guest play available)' },
-            { mark: 'yes', text: 'Free — no ads, no download' },
+            { mark: 'yes', text: 'Free — no download' },
           ]} />
         </GuideSection>
 

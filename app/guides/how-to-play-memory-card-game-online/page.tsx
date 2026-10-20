@@ -71,7 +71,7 @@ export default function HowToPlayMemoryGuide() {
             { mark: 'yes', text: '2–4 players' },
             { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
             { mark: 'yes', text: 'No account required (guest play available)' },
-            { mark: 'yes', text: 'Free — no ads, no download' },
+            { mark: 'yes', text: 'Free — no download' },
           ]} />
         </GuideSection>
 
