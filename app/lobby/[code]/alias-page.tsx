@@ -22,6 +22,8 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import TermsConsentPanel from '@/components/TermsConsentPanel'
+import BlockedText from '@/components/BlockedText'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { AliasGame, DEFAULT_TEAM_NAMES, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
 import { playCue } from '@/lib/sound-engine'
@@ -477,8 +479,10 @@ const AliasGameHeader: React.FC<{
 }
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [], termsRequired = false, onAcceptTerms }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [], termsRequired = false, onAcceptTerms, blockedIds }: {
   guesses: GuessMessage[]
+  /** Players the viewer blocked: their guesses fold to one line. */
+  blockedIds: ReadonlySet<string>
   /** Words the describer has marked guessed this turn; matching bubbles are celebrated (#1115). */
   guessedWords?: readonly string[]
   guessInput: string
@@ -569,7 +573,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
                 {isHit && <Icon name="check" size={14} />}
-                {g.text}
+                <BlockedText blocked={blockedIds.has(g.userId)}>{g.text}</BlockedText>
               </span>
             </div>
           )
@@ -658,6 +662,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [guessInput, setGuessInput] = useState('')
   const [guessTermsRequired, setGuessTermsRequired] = useState(false)
   const guessesEndRef = useRef<HTMLDivElement | null>(null)
+  const { blockedIds } = useBlockedPlayers()
 
   // Lives outside the timer effect on purpose: the effect is rebuilt whenever
   // loadLobby is rebuilt, and a recovery rebuilt with it would forget how many
@@ -1558,6 +1563,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     currentUserId,
     termsRequired: guessTermsRequired,
     onAcceptTerms: acceptGuessTerms,
+    blockedIds,
     guessedWords: data.currentCardResults.filter((r) => r.result === 'guessed').map((r) => r.word),
   }
 

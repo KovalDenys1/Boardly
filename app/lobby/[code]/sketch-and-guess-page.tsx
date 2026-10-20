@@ -34,6 +34,7 @@ import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useGameTimer } from '@/app/lobby/[code]/hooks/useGameTimer'
 import { useLobbyChat, useLobbyChatHistory } from '@/app/lobby/[code]/hooks/useLobbyChat'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -245,6 +246,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         onChatMessage,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
+    const [guessTermsRefused, setGuessTermsRefused] = useState(false)
+    const handleAcceptTerms = useCallback(async () => {
+        const accepted = await acceptChatTerms()
+        if (accepted) setGuessTermsRefused(false)
+        return accepted
+    }, [acceptChatTerms])
+    const { blockedIds } = useBlockedPlayers()
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -492,7 +500,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         async (
             action: SketchAction,
             data: Record<string, unknown>,
-            options: { silent?: boolean } = {}
+            options: { silent?: boolean; onTermsRequired?: () => void } = {}
         ): Promise<Record<string, unknown> | null> => {
             if (!lobby?.game) return null
             if (submitInFlightRef.current) return null
@@ -546,6 +554,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     }
                     if (payload?.code === 'GUESS_LIMIT_REACHED') {
                         showToast.info('games.guess_my_drawing.game.guessLimitReached', undefined, undefined, { id: 'sketch-guess-limit' })
+                        return null
+                    }
+                    if (res.status === 403 && payload?.code === 'TERMS_REQUIRED' && options.onTermsRequired) {
+                        options.onTermsRequired()
                         return null
                     }
                     if (options.silent) {
@@ -632,8 +644,15 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         soundGame ? { round: soundGame.data.currentRound, phase: soundGame.data.phase, guessed: [...soundGame.data.submittedPlayerIds].sort() } : null,
         { gameId: lobby?.game?.id, viewerId: getCurrentUserId(), isSpectator },
     )
-    const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | void> => {
-        const payload = await submitAction('submit-guess', { guess })
+    const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | 'terms-required' | void> => {
+        let refusedForTerms = false
+        const payload = await submitAction('submit-guess', { guess }, {
+            onTermsRequired: () => {
+                refusedForTerms = true
+                setGuessTermsRefused(true)
+            },
+        })
+        if (refusedForTerms) return 'terms-required'
         const result = payload?.guessResult as SketchGuessResult | undefined
         const valid = result && typeof result.close === 'boolean' ? result : undefined
         playGuessResult(valid)
@@ -1149,6 +1168,9 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 playerId={isSpectator ? '' : currentPlayer!.id}
                 players={players}
                 onSubmitGuess={handleSubmitGuess}
+                termsRequired={chatTermsAccepted === false || guessTermsRefused}
+                onAcceptTerms={handleAcceptTerms}
+                blockedIds={blockedIds}
                 onAdvanceRound={handleAdvanceRound}
                 onChooseWord={handleChooseWord}
                 onAcceptGuess={handleAcceptGuess}
@@ -1240,7 +1262,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 termsAccepted={chatTermsAccepted}
-                onAcceptTerms={acceptChatTerms}
+                onAcceptTerms={handleAcceptTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}
