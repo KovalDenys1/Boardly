@@ -5757,6 +5757,8 @@ const ru = {
     blockedOn: 'Дата блокировки: {{date}}',
     loadFailed: 'Не удалось загрузить заблокированных игроков.',
     retry: 'Попробовать снова',
+    hiddenText: 'От игрока, которого вы заблокировали',
+    show: 'Показать',
   },
   discordLink: {
     title: 'Связать Boardly с Discord',

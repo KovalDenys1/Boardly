@@ -5619,6 +5619,8 @@ const no = {
     blockedOn: 'Blokkert {{date}}',
     loadFailed: 'Kunne ikke laste inn de blokkerte spillerne dine.',
     retry: 'Prøv igjen',
+    hiddenText: 'Fra en spiller du har blokkert',
+    show: 'Vis',
   },
   discordLink: {
     title: 'Koble Boardly til Discord',

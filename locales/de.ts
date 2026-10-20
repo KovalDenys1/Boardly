@@ -5651,6 +5651,8 @@ const de: TranslationWithPlurals = {
     blockedOn: 'Blockiert am {{date}}',
     loadFailed: 'Deine blockierten Spieler konnten nicht geladen werden.',
     retry: 'Erneut versuchen',
+    hiddenText: 'Von einem Spieler, den du blockiert hast',
+    show: 'Anzeigen',
   },
   discordLink: {
     title: 'Boardly mit Discord verknüpfen',

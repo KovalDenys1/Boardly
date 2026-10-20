@@ -5771,6 +5771,8 @@ const uk: TranslationWithPlurals = {
     blockedOn: 'Заблоковано {{date}}',
     loadFailed: 'Не вдалося завантажити заблокованих гравців.',
     retry: 'Спробувати ще раз',
+    hiddenText: 'Від гравця, якого ви заблокували',
+    show: 'Показати',
   },
   discordLink: {
     title: 'Пов\'язати Boardly з Discord',
