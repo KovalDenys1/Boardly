@@ -55,14 +55,6 @@ interface GameEndEvent {
   finalScores: number[]
 }
 
-interface PlayerActionEvent {
-  actionType: string
-  gameType: GameType
-  playerCount: number
-  isBot: boolean  // Keep for backwards compatibility with analytics
-  metadata?: Record<string, unknown>
-}
-
 interface AuthEvent {
   event: 'login' | 'register' | 'logout'
   method: 'email' | 'google' | 'guest'
@@ -246,24 +238,6 @@ export function trackGameCompleted(event: GameEndEvent): void {
 }
 
 /**
- * Track player actions (roll, hold, score)
- */
-export function trackPlayerAction(event: PlayerActionEvent): void {
-  // Only track significant actions to avoid noise
-  const significantActions = ['roll', 'score', 'hold']
-  
-  if (significantActions.includes(event.actionType)) {
-    track('player_action', {
-      game_type: event.gameType,
-      action: event.actionType,
-      is_bot: event.isBot,
-      player_count: event.playerCount,
-      ...(event.metadata && { metadata: JSON.stringify(event.metadata) }),
-    })
-  }
-}
-
-/**
  * Track authentication events
  */
 export function trackAuth(event: AuthEvent): void {
@@ -351,7 +325,6 @@ export function trackMoveSubmitApplied(event: MoveSubmitAppliedEvent): void {
     ...(event.source ? { source: event.source } : {}),
   } satisfies Record<string, AnalyticsPropertyValue>
 
-  track('move_submit_applied', payload)
   emitOperationalEvent('move_submit_applied', payload)
 
   if (event.applied && durationMs > MOVE_APPLY_TARGET_MS) {

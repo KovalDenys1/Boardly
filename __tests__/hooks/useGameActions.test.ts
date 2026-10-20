@@ -26,7 +26,6 @@ jest.mock('@/lib/celebrations', () => ({
 }))
 
 jest.mock('@/lib/analytics', () => ({
-  trackPlayerAction: jest.fn(),
   trackGameCompleted: jest.fn(),
   trackMoveSubmitApplied: jest.fn(),
 }))
