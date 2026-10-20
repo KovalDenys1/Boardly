@@ -24,8 +24,9 @@ const log = apiLogger('runtime-config')
  *   2. Every read is cached and every failure is swallowed into the fallback. This runs on
  *      the render path of every page; it must never be able to make one fail.
  *
- * The cache is short because the point of the feature is that a change lands quickly. Thirty
- * seconds is the compromise between "did my change take effect" and one query per render.
+ * Flags are cached for thirty seconds. The announcement is cached for an hour, because the root
+ * layout reads it and `unstable_cache` hands its revalidate to every prerendered page; the
+ * Control Panel expires its tag when it publishes or unpublishes one.
  *
  * SERVER ONLY. This file imports Prisma, and `lib/feature-flags.ts` is reachable from client
  * components, so the dependency runs one way: this file imports the env helpers, never the
@@ -34,6 +35,8 @@ const log = apiLogger('runtime-config')
  */
 
 const CACHE_SECONDS = 30
+export const ANNOUNCEMENT_CACHE_SECONDS = 3600
+export const ANNOUNCEMENTS_TAG = 'announcements'
 
 export type Announcement = {
   id: string
@@ -81,7 +84,7 @@ export const getActiveAnnouncement = unstable_cache(
     }
   },
   ['active-announcement'],
-  { revalidate: CACHE_SECONDS, tags: ['announcements'] },
+  { revalidate: ANNOUNCEMENT_CACHE_SECONDS, tags: [ANNOUNCEMENTS_TAG] },
 )
 
 /** Every flag override, as a map. Absent keys mean "the env var decides". */

@@ -103,7 +103,7 @@ function createPrismaAdapter() {
 
   if (caCertPath) {
     adapterConfig.ssl = {
-      ca: readFileSync(caCertPath, 'utf8'),
+      ca: readFileSync(/*turbopackIgnore: true*/ caCertPath, 'utf8'),
       rejectUnauthorized: true,
     }
   }
@@ -116,7 +116,8 @@ function resolveTlsCaCertPath(rawPath: string | undefined): string | null {
     return null
   }
 
-  const fullPath = resolve(process.cwd(), rawPath)
+  // An operator-supplied path read at runtime; tracing it would bundle the whole repo into every function.
+  const fullPath = resolve(/*turbopackIgnore: true*/ process.cwd(), rawPath)
   if (!existsSync(fullPath)) {
     logger.warn('[Prisma] Ignoring missing MCP_POSTGRES_CA_CERT_PATH', {
       configuredPath: rawPath,

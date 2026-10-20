@@ -62,27 +62,22 @@ describe('analytics reliability alerts', () => {
     })
   })
 
-  it('emits move_apply_timeout when move apply latency exceeds SLO target', () => {
-    trackMoveSubmitApplied({
-      gameType: 'tic_tac_toe',
+  it('sends a move to Vercel Analytics only when it is slower than the SLO target', () => {
+    const move = {
+      gameType: 'tic_tac_toe' as const,
       moveType: 'move',
-      durationMs: MOVE_APPLY_TARGET_MS + 250,
       isGuest: false,
       success: true,
       applied: true,
-      source: 'tic_tac_toe_page',
-    })
+      source: 'tic_tac_toe_page' as const,
+    }
 
-    expect(mockTrack).toHaveBeenCalledWith('move_submit_applied', {
-      game_type: 'tic_tac_toe',
-      move_type: 'move',
-      latency_ms: MOVE_APPLY_TARGET_MS + 250,
-      is_guest: false,
-      success: true,
-      applied: true,
-      source: 'tic_tac_toe_page',
-    })
+    trackMoveSubmitApplied({ ...move, durationMs: MOVE_APPLY_TARGET_MS - 1 })
+    expect(mockTrack).not.toHaveBeenCalled()
 
+    trackMoveSubmitApplied({ ...move, durationMs: MOVE_APPLY_TARGET_MS + 250 })
+
+    expect(mockTrack).toHaveBeenCalledTimes(1)
     expect(mockTrack).toHaveBeenCalledWith('move_apply_timeout', {
       game_type: 'tic_tac_toe',
       move_type: 'move',
