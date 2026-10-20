@@ -54,9 +54,9 @@ import {
     SKETCH_LIVE_EVENT,
     SKETCH_LIVE_RESYNC_MS,
     SKETCH_LIVE_THROTTLE_MS,
-    parseSketchLiveMessage,
     type Stroke as LiveStroke,
 } from '@/lib/sketch-live'
+import { createSketchLiveReceiver, createSketchLiveSender } from '@/lib/client/sketch-live-signing'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -467,8 +467,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // The live-drawing handler depends on the round and the drawer, which are
     // derived further down; the hook is called before them, so it reaches the
     // current handler through a ref.
-    const sketchLiveHandlerRef = useRef<(payload: unknown) => void>(() => {})
-    const handleSketchLive = useCallback((payload: unknown) => sketchLiveHandlerRef.current(payload), [])
+    const sketchLiveHandlerRef = useRef<(payload: unknown, topic: string) => void>(() => {})
+    const handleSketchLive = useCallback((payload: unknown, topic: string) => sketchLiveHandlerRef.current(payload, topic), [])
 
     const { isConnected: socketConnected, isReconnecting, emitWhenConnected } = useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
@@ -761,48 +761,69 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     // Live drawing. The drawing phase used to show everyone but the drawer a
     // blank square until the drawing was submitted; now the drawer's canvas is
-    // streamed over the lobby channel as it is drawn (lib/sketch-live.ts).
+    // streamed over the lobby channel as it is drawn (lib/sketch-live.ts),
+    // signed with a key the server certified for the drawer, and checked
+    // against that certificate by every page that paints it.
     const drawerIdForLive = gameData.currentDrawerId
-    const isStreamingDrawer = isDrawer && phase === 'drawing' && !isFinished
+    const gameIdForLive = game?.id ?? null
+    const isStreamingDrawer = isDrawer && phase === 'drawing' && !isFinished && !!gameIdForLive
     const [liveView, setLiveView] = useState<SketchLiveView | null>(null)
+    const [liveReceiver] = useState(createSketchLiveReceiver)
+    const [liveSender] = useState(() =>
+        createSketchLiveSender({
+            requestCert: async (gameId, publicKey) => {
+                const res = await fetchWithGuest(`/api/game/${gameId}/sketch-live-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(publicKey),
+                })
+                if (!res.ok) return null
+                const body = await res.json().catch(() => null)
+                return body?.cert ?? null
+            },
+            emit: (frame) => emitWhenConnected(SKETCH_LIVE_EVENT, frame),
+        })
+    )
 
-    sketchLiveHandlerRef.current = (payload: unknown) => {
-        if (isDrawer || phase !== 'drawing') return
-        const message = parseSketchLiveMessage(payload, { round: roundNumber, drawerId: drawerIdForLive })
-        if (!message) return
-        setLiveView((prev) => {
-            const base = prev && prev.round === message.round ? prev : { round: message.round, strokes: [], live: null }
-            return message.kind === 'strokes'
-                ? { round: message.round, strokes: message.strokes, live: null }
-                : { ...base, live: message.live }
+    sketchLiveHandlerRef.current = (payload: unknown, topic: string) => {
+        if (isDrawer || phase !== 'drawing' || !gameIdForLive) return
+        void liveReceiver.open(topic, payload, { gameId: gameIdForLive, round: roundNumber, drawerId: drawerIdForLive }).then((message) => {
+            if (!message) return
+            setLiveView((prev) => {
+                const base = prev && prev.round === message.round ? prev : { round: message.round, strokes: [], live: null }
+                return message.kind === 'strokes'
+                    ? { round: message.round, strokes: message.strokes, live: null }
+                    : { ...base, live: message.live }
+            })
         })
     }
 
     const committedStrokes = activeDraft.strokes
     useEffect(() => {
-        if (!isStreamingDrawer) return
+        if (!isStreamingDrawer || !gameIdForLive) return
         const send = () =>
-            emitWhenConnected(SKETCH_LIVE_EVENT, { kind: 'strokes', round: roundNumber, drawerId: drawerIdForLive, strokes: committedStrokes })
+            liveSender.send(gameIdForLive, { kind: 'strokes', round: roundNumber, drawerId: drawerIdForLive, strokes: committedStrokes })
         send()
         // Re-sent on a timer so a player who joins or reconnects mid-round
         // catches up; the channel keeps no history to replay.
         const timer = window.setInterval(send, SKETCH_LIVE_RESYNC_MS)
         return () => window.clearInterval(timer)
-    }, [isStreamingDrawer, committedStrokes, roundNumber, drawerIdForLive, emitWhenConnected])
+    }, [isStreamingDrawer, gameIdForLive, committedStrokes, roundNumber, drawerIdForLive, liveSender])
 
     const pendingLiveRef = useRef<LiveStroke | null>(null)
     const liveTimerRef = useRef<number | null>(null)
     const flushLiveStroke = useCallback(() => {
         liveTimerRef.current = null
+        if (!gameIdForLive) return
         const stroke = pendingLiveRef.current
-        emitWhenConnected(SKETCH_LIVE_EVENT, {
+        liveSender.send(gameIdForLive, {
             kind: 'live',
             round: roundNumber,
             drawerId: drawerIdForLive,
             // The canvas keeps pushing into the same points array; send a copy.
             live: stroke ? { ...stroke, points: stroke.points.slice() } : null,
         })
-    }, [emitWhenConnected, roundNumber, drawerIdForLive])
+    }, [liveSender, gameIdForLive, roundNumber, drawerIdForLive])
     const handleLiveStroke = useCallback(
         (stroke: LiveStroke | null) => {
             if (!isStreamingDrawer) return

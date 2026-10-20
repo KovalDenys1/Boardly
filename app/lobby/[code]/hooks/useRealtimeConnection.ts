@@ -34,8 +34,8 @@ interface UseRealtimeConnectionProps {
   onSpectatorCountChange?: (count: number) => void
   onStateSync?: () => Promise<void>
   onGameReset?: (data: GameResetPayload) => void
-  /** Sketch & Guess: the drawer's canvas as it is drawn, client to client. */
-  onSketchLive?: (payload: unknown) => void
+  /** Sketch & Guess: the drawer's canvas as it is drawn, client to client, with the topic it came on. */
+  onSketchLive?: (payload: unknown, topic: string) => void
 }
 
 export function useRealtimeConnection({
@@ -153,7 +153,7 @@ export function useRealtimeConnection({
           onGameResetRef.current?.(payload as GameResetPayload)
         },
         'sketch-live': (payload) => {
-          onSketchLiveRef.current?.(payload)
+          onSketchLiveRef.current?.(payload, topic)
         },
         // Signed by PATCH /api/lobby/[code]/spectator-count; still clamped.
         'spectator-count-update': (payload) => {
