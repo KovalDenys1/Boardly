@@ -35,8 +35,7 @@ export const metadata: Metadata = {
  * The prices come off Stripe, so the page is regenerated rather than frozen at
  * build time: a change in the Stripe dashboard reaches visitors without a
  * deploy, and nobody waits on a Stripe round trip during their own request. The
- * hour is a ceiling and matches app/page.tsx – the build already regenerates
- * every prerendered route more often than that.
+ * hour matches app/page.tsx.
  */
 export const revalidate = 3600
 
