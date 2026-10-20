@@ -103,10 +103,16 @@ gh release create vX.Y.Z --generate-notes --title "Boardly vX.Y.Z"
 
 Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based on PR labels.
 
-**At most one release a day; hotfixes excepted.** Vercel builds only `main`, `release/*` and
-`hotfix/*` (Ignored Build Step), so every release is two paid builds and pushes to `develop`
-build nothing – `boardly-kappa.vercel.app` stays on its last develop build. The team has a $5
-on-demand cap that pauses every project when reached; batch the day's work into one release.
+**At most one release a day; hotfixes excepted.** Vercel deploys only `main`, `release/*` and
+`hotfix/*` (`git.deploymentEnabled` in `vercel.json`, the Ignored Build Step behind it), so every
+release is two paid builds and pushes to `develop` create no deployment – `boardly-kappa.vercel.app`
+stays on its last develop build. The team has a $5 on-demand cap that pauses every project when
+reached; batch the day's work into one release.
+
+**Whatever the root layout caches sets every static page's ISR period (#1511).** `unstable_cache`
+hands its `revalidate` to the page that calls it, so a 30 s cache in `AnnouncementBanner` made all
+static routes rebuild every 30 s, and Sentry's one-a-minute uptime check rebuilt `/` ~1 400 times a
+day. Read the build's route table after touching anything the layout reads: static rows say `1h`.
 
 ---
 

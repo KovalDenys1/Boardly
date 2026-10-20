@@ -3,6 +3,14 @@
   "devCommand": "npm run dev",
   "installCommand": "npm ci",
   "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true,
+      "release/**": true,
+      "hotfix/**": true
+    }
+  },
   "regions": [
     "fra1"
   ],

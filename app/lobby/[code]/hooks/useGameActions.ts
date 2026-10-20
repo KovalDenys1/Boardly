@@ -11,7 +11,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
-import { trackPlayerAction, trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
+import { trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
 import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 
 interface UseGameActionsProps {
@@ -355,20 +355,6 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       }
 
-      // Track player action
-      if (newEngine) {
-        trackPlayerAction({
-          actionType: 'roll',
-          gameType: 'yahtzee',
-          playerCount: game.players.length,
-          isBot: false,
-          metadata: {
-            rollNumber: 3 - newEngine.getRollsLeft(),
-            diceHeld: held.filter(Boolean).length,
-          },
-        })
-      }
-
       // No snapshot fetch here (#861). `data.game.state` is the authoritative
       // state and it is already applied above, so `GET /api/lobby/:code` would
       // answer with what this client just installed.
@@ -612,18 +598,6 @@ export function useGameActions(props: UseGameActionsProps) {
       if (isAutoAction) {
         playCue('score.add')
       }
-
-      // Track score action
-      trackPlayerAction({
-        actionType: 'score',
-        gameType: 'yahtzee',
-        playerCount: game.players.length,
-        isBot: false,
-        metadata: {
-          category,
-          score: scoredValue,
-        },
-      })
 
       // No snapshot fetch on an ordinary score, for the reason the roll path
       // above gives (#861): the authoritative state came back on this response
