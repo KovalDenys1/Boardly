@@ -335,6 +335,54 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(JSON.stringify(await response.json())).not.toContain('test-lobby-realtime-secret')
   })
 
+  describe('viewer.termsAccepted (#1482)', () => {
+    const openLobby = {
+      ...baseLobby,
+      allowSpectators: true,
+      maxSpectators: 10,
+      realtimeSecret: 'secret',
+    }
+    const spectate = () =>
+      GET(new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'), {
+        params: Promise.resolve({ code: 'ABC123' }),
+      })
+
+    it('is true for a viewer who accepted the terms', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+      mockPrisma.users.findUnique.mockResolvedValue({ termsAcceptedAt: new Date('2026-10-01T00:00:00.000Z') } as any)
+
+      const response = await spectate()
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).viewer).toEqual({ termsAccepted: true })
+      expect(mockPrisma.users.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: { termsAcceptedAt: true },
+      })
+    })
+
+    it('is false for a viewer who has not accepted them', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+      mockPrisma.users.findUnique.mockResolvedValue({ termsAcceptedAt: null } as any)
+
+      const response = await spectate()
+
+      expect((await response.json()).viewer).toEqual({ termsAccepted: false })
+    })
+
+    it('is false for an anonymous viewer, without a user lookup', async () => {
+      mockGetRequestAuthUser.mockResolvedValue(null)
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+
+      const response = await spectate()
+
+      expect((await response.json()).viewer).toEqual({ termsAccepted: false })
+      expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
+    })
+  })
+
   it('a guest cannot use adminView even if adminView=true is requested', async () => {
     mockGetRequestAuthUser.mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
     mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)
