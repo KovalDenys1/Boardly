@@ -19,6 +19,8 @@ import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
 import { runAfterResponse } from '@/lib/after-response'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
+import { resolveSketchCustomWords } from '@/lib/sketch-custom-words'
 import {
   extractCarriedGameConfig,
   extractGameMode,
@@ -99,6 +101,17 @@ export async function POST(request: NextRequest) {
 
     if (lobby.creatorId !== userId) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
+    }
+
+    if (
+      gameType === 'sketch_and_guess' &&
+      resolveSketchCustomWords(config?.rules) &&
+      (await requiresTermsAcceptance(userId))
+    ) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
     }
 
     const metadata = getGameMetadata(gameType)

@@ -20,6 +20,7 @@ import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyThem
 import { sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 
 const log = apiLogger('/api/lobby')
 
@@ -122,6 +123,13 @@ export async function POST(request: NextRequest) {
     // Clamped rather than refused: the schema's default of 6 reaches two-player games too.
     const seatLimit = clampMaxPlayersForGame(gameType, maxPlayers)
     const normalizedLobbyName = name.trim()
+    // A lobby's name is shown to everyone on the public list, so it waits for the terms like chat (#1482).
+    if (normalizedLobbyName && (await requiresTermsAcceptance(requestUser.id))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
+    }
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined

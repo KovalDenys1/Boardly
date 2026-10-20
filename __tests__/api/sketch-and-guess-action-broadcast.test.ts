@@ -37,6 +37,7 @@ jest.mock('@/lib/db', () => ({
 }))
 
 jest.mock('@/lib/request-auth', () => ({ getRequestAuthUser: jest.fn() }))
+jest.mock('@/lib/terms-gate', () => ({ requiresTermsAcceptance: jest.fn().mockResolvedValue(false) }))
 jest.mock('@/lib/supabase-server', () => ({ broadcastToLobby: jest.fn() }))
 jest.mock('@/lib/game-replay', () => ({ appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined) }))
 jest.mock('@/lib/achievement-engine', () => ({ checkAchievementsOnStatusChange: jest.fn().mockResolvedValue(undefined) }))
