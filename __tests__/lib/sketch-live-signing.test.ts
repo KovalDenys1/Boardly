@@ -16,7 +16,7 @@ import {
   __resetRealtimeVerifierForTests,
 } from '@/lib/client/realtime-verify'
 import { createSketchLiveReceiver, createSketchLiveSender } from '@/lib/client/sketch-live-signing'
-import { SKETCH_LIVE_KEY_EVENT, sketchLiveSigningInput, type SketchLiveMessage } from '@/lib/sketch-live'
+import { SKETCH_LIVE_KEY_EVENT, SKETCH_LIVE_MAX_FRAME_AGE_MS, sketchLiveSigningInput, type SketchLiveMessage } from '@/lib/sketch-live'
 import { installSignedRealtime, signBroadcast } from '@/__tests__/fixtures/signed-realtime'
 
 installSignedRealtime()
@@ -83,6 +83,10 @@ beforeEach(() => {
   __resetRealtimeVerifierForTests()
 })
 
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 describe('Sketch & Guess live strokes', () => {
   it("delivers the drawer's strokes and the stroke in progress", async () => {
     const { sender, next } = senderWith(certify({}))
@@ -114,7 +118,8 @@ describe('Sketch & Guess live strokes', () => {
     const forger = await webcrypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify'])
     const word: SketchLiveMessage = { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [{ ...stroke, color: '#000000' }] }
     const seq = (frame.seq as number) + 1
-    const forged = { ...frame, seq, p: word, sig: await signPayload(forger.privateKey, sketchLiveSigningInput(cert.sig, seq, word)) }
+    const t = frame.t as number
+    const forged = { ...frame, seq, p: word, sig: await signPayload(forger.privateKey, sketchLiveSigningInput(cert.sig, seq, t, word)) }
     expect(await receiver.open(TOPIC, forged, expected)).toBeNull()
 
     // Nor does the drawer's genuine signature carry over to another drawing.
@@ -129,7 +134,8 @@ describe('Sketch & Guess live strokes', () => {
     const cert = { ...sealed, p: { gameId: GAME, round: 2, drawerId: DRAWER, x: jwk.x, y: jwk.y } }
 
     const message = strokes()
-    const frame = { cert, seq: 1, p: message, sig: await signPayload(spectator.privateKey, sketchLiveSigningInput(cert.sig, 1, message)) }
+    const t = Date.now()
+    const frame = { cert, seq: 1, t, p: message, sig: await signPayload(spectator.privateKey, sketchLiveSigningInput(cert.sig, 1, t, message)) }
     expect(await createSketchLiveReceiver().open(TOPIC, relay(frame), expected)).toBeNull()
   })
 
@@ -174,6 +180,57 @@ describe('Sketch & Guess live strokes', () => {
     expect(await receiver.open(TOPIC, newer, expected)).not.toBeNull()
     expect(await receiver.open(TOPIC, older, expected)).toBeNull()
     expect(await receiver.open(TOPIC, newer, expected)).toBeNull()
+  })
+
+  it("drops the drawer's own frame replayed to a page that opened after it was sent", async () => {
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    const recorded = await first
+    const sentAt = Date.now()
+
+    jest.spyOn(Date, 'now').mockReturnValue(sentAt + 2_000)
+    expect(await createSketchLiveReceiver().open(TOPIC, recorded, expected)).not.toBeNull()
+
+    jest.spyOn(Date, 'now').mockReturnValue(sentAt + SKETCH_LIVE_MAX_FRAME_AGE_MS + 1_000)
+    expect(await createSketchLiveReceiver().open(TOPIC, recorded, expected)).toBeNull()
+  })
+
+  it("drops the frames of the drawer's page once a newer certificate for the round has been seen", async () => {
+    const before = senderWith(certify({}))
+    const oldFrames = [before.next(), before.next()]
+    before.sender.send(GAME, strokes())
+    const firstOld = await oldFrames[0]
+    before.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke] })
+    const secondOld = await oldFrames[1]
+
+    // The drawer reloads: a new page, a new key, a newer certificate for the same round.
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 1_000)
+    const after = senderWith(certify({}))
+    const newFrame = after.next()
+    after.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+
+    const receiver = createSketchLiveReceiver()
+    expect(await receiver.open(TOPIC, firstOld, expected)).not.toBeNull()
+    expect(await receiver.open(TOPIC, await newFrame, expected)).not.toBeNull()
+    expect(await receiver.open(TOPIC, secondOld, expected)).toBeNull()
+  })
+
+  it("keeps the drawer's frame when a forged copy of its certificate arrives first", async () => {
+    const { sender, next } = senderWith(certify({}))
+    const frame = next()
+    sender.send(GAME, strokes())
+    const genuine = await frame
+    const cert = genuine.cert as Record<string, unknown>
+    const forged = { ...genuine, cert: { ...cert, p: { ...(cert.p as Record<string, unknown>), round: 3 } } }
+
+    const receiver = createSketchLiveReceiver()
+    const [fromForged, fromDrawer] = await Promise.all([
+      receiver.open(TOPIC, forged, expected),
+      receiver.open(TOPIC, genuine, expected),
+    ])
+    expect(fromForged).toBeNull()
+    expect(fromDrawer).toEqual(strokes())
   })
 
   it('sends nothing until the server has certified the key, then the newest finished strokes', async () => {

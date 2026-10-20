@@ -167,6 +167,11 @@ export function prefetchRealtimeVerifierKey(): void {
   })
 }
 
+/** The server's clock as this page reckons it, once the key (which carries it) has been fetched. */
+export function realtimeServerNow(): number | null {
+  return resolvedKey ? Date.now() + resolvedKey.offsetMs : null
+}
+
 /**
  * A topic was rejoined after a drop. The replay window restarts from now, so
  * the offset it is measured with should be current too – a laptop that slept

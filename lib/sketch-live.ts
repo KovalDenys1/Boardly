@@ -128,6 +128,8 @@ export interface SketchLiveFrame {
   cert: RealtimeEnvelope
   /** Counts up per sending page, so a recorded frame played back is older than one already shown. */
   seq: number
+  /** Server time when it was signed, as the drawer's page reckons it from its certificate. */
+  t: number
   /** ECDSA P-256 over SHA-256 by the certified key, IEEE P1363, base64url. */
   sig: string
   p: Record<string, unknown>
@@ -157,16 +159,25 @@ export function isSketchLiveFrame(value: unknown): value is SketchLiveFrame {
   return (
     isRealtimeEnvelope(raw.cert) &&
     typeof raw.seq === 'number' && Number.isSafeInteger(raw.seq) && raw.seq > 0 &&
+    typeof raw.t === 'number' && Number.isFinite(raw.t) &&
     typeof raw.sig === 'string' && raw.sig.length > 0 && raw.sig.length <= MAX_SIGNATURE_LENGTH &&
     !!raw.p && typeof raw.p === 'object' && !Array.isArray(raw.p)
   )
 }
 
 /**
+ * How far a frame's stamp may be from the receiver's reckoning of server time.
+ * A frame arrives within a second or so; the rest absorbs two clock estimates.
+ * A recording played back later than this is dropped even by a page that
+ * opened after it was made and so has no newer frame to compare it with.
+ */
+export const SKETCH_LIVE_MAX_FRAME_AGE_MS = 10_000
+
+/**
  * The text the drawer's key signs. The certificate's own signature stands in
  * for the certificate, so a frame cannot be moved under another one; canonical
  * JSON because the relay re-encodes the payload.
  */
-export function sketchLiveSigningInput(certSignature: string, seq: number, payload: unknown): string {
-  return canonicalJson([SKETCH_LIVE_EVENT, certSignature, seq, payload])
+export function sketchLiveSigningInput(certSignature: string, seq: number, t: number, payload: unknown): string {
+  return canonicalJson([SKETCH_LIVE_EVENT, certSignature, seq, t, payload])
 }

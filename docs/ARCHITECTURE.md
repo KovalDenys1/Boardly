@@ -142,10 +142,13 @@ make every other client apply a forged `game-update`, leave on a forged `game-ab
   signature, and `emitWhenConnected` refuses to send anything else. It still proves its sender (#1503):
   the drawer's page makes a P-256 key, `POST /api/game/[gameId]/sketch-live-key` seals it with the
   server key for the topic, game, round and drawer once it has checked the caller is that round's
-  drawer, and every frame carries that certificate, a counter and the drawer key's signature
-  (`lib/sketch-live.ts`, `lib/client/sketch-live-signing.ts`). A page paints a frame only when the
-  certificate verifies for its own topic and names the game, round and drawer it is showing, the
-  signature verifies under the certified key, and the counter is past the last one it painted. Cost:
+  drawer, and every frame carries that certificate, a counter, a server-time stamp and the drawer
+  key's signature (`lib/sketch-live.ts`, `lib/client/sketch-live-signing.ts`). A page paints a frame
+  only when the certificate verifies for its own topic and names the game, round and drawer it is
+  showing, the signature verifies under the certified key, the stamp is within ten seconds of the
+  server's clock, no newer certificate for that round has been seen (a drawer who reloads gets a new
+  key), and the counter is past the last one it painted. So a peer can at most re-show one of the
+  drawer's own frames from the last few seconds to a page that opened since. Cost:
   one request per drawing round, one signature per frame on the drawer's side and one check per frame
   on everyone else's, about 500 bytes per frame; nothing per stroke reaches the server or the limiter.
   Chat is not a peer event: Alias guesses, which used to be, go through

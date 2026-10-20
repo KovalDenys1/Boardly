@@ -1,8 +1,9 @@
 import { clientLogger } from '@/lib/client-logger'
-import { base64UrlToBytes, verifyRealtimeSeal } from '@/lib/client/realtime-verify'
-import { isRealtimeEnvelope, type RealtimeEnvelope } from '@/lib/shared/realtime-envelope'
+import { base64UrlToBytes, realtimeServerNow, verifyRealtimeSeal } from '@/lib/client/realtime-verify'
+import { canonicalJson, isRealtimeEnvelope, type RealtimeEnvelope } from '@/lib/shared/realtime-envelope'
 import {
   SKETCH_LIVE_KEY_EVENT,
+  SKETCH_LIVE_MAX_FRAME_AGE_MS,
   SKETCH_LIVE_RESYNC_MS,
   isSketchLiveFrame,
   parseSketchLiveMessage,
@@ -26,6 +27,7 @@ const ECDSA_SHA256 = { name: 'ECDSA', hash: 'SHA-256' } as const
 const SIGNATURE_BYTES = 64
 const MAX_REMEMBERED_CERTIFICATES = 16
 const MAX_REMEMBERED_SENDERS = 64
+const MAX_REMEMBERED_ROUNDS = 64
 
 let warnedInsecureContext = false
 
@@ -83,7 +85,7 @@ async function generateSigningKey(): Promise<SigningKey | null> {
 
 export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOptions): SketchLiveSender {
   let signingKey: Promise<SigningKey | null> | null = null
-  let certified: { gameId: string; claims: SketchLiveKeyClaims; cert: RealtimeEnvelope } | null = null
+  let certified: { gameId: string; claims: SketchLiveKeyClaims; cert: RealtimeEnvelope; receivedAt: number } | null = null
   let requesting = false
   let lastRequestAt = Number.NEGATIVE_INFINITY
   let pending: { gameId: string; message: SketchLiveMessage } | null = null
@@ -108,6 +110,8 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
     const { cert } = certified
     seq += 1
     const frameSeq = seq
+    // The certificate's stamp is the server's clock; this page's clock only measures time since.
+    const t = cert.iat + (Date.now() - certified.receivedAt)
     queue = queue
       .then(async () => {
         const key = await loadKey()
@@ -116,9 +120,9 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
         const signature = await subtle.sign(
           ECDSA_SHA256,
           key.privateKey,
-          new TextEncoder().encode(sketchLiveSigningInput(cert.sig, frameSeq, message))
+          new TextEncoder().encode(sketchLiveSigningInput(cert.sig, frameSeq, t, message))
         )
-        emit({ cert, seq: frameSeq, sig: bytesToBase64Url(signature), p: { ...message } })
+        emit({ cert, seq: frameSeq, t, sig: bytesToBase64Url(signature), p: { ...message } })
       })
       .catch((error) => clientLogger.warn('Live drawing frame was not signed', { error }))
   }
@@ -135,7 +139,7 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
         const cert = await requestCert(gameId, { x: key.x, y: key.y })
         const claims = isRealtimeEnvelope(cert) ? readSketchLiveKeyClaims(cert.p) : null
         if (!isRealtimeEnvelope(cert) || !claims || claims.gameId !== gameId || claims.x !== key.x || claims.y !== key.y) return
-        certified = { gameId, claims, cert }
+        certified = { gameId, claims, cert, receivedAt: Date.now() }
       } catch {
         // The next send asks again, no sooner than the resync interval.
       } finally {
@@ -170,8 +174,8 @@ export interface SketchLiveExpectation {
 export interface SketchLiveReceiver {
   /**
    * The message in `raw`, if it is the current drawer's for the round being
-   * shown on this topic, and newer than the last one accepted from that page;
-   * otherwise null.
+   * shown on this topic, signed within the last few seconds, from the drawer's
+   * newest page, and newer than the last one accepted from it; otherwise null.
    */
   open: (topic: string, raw: unknown, expected: SketchLiveExpectation) => Promise<SketchLiveMessage | null>
 }
@@ -179,6 +183,7 @@ export interface SketchLiveReceiver {
 interface CertifiedKey {
   claims: SketchLiveKeyClaims
   key: CryptoKey
+  issuedAt: number
 }
 
 export function createSketchLiveReceiver(): SketchLiveReceiver {
@@ -187,9 +192,24 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
   // work next time, and a forged one should not crowd out the drawer's.
   const certifiedKeys = new Map<string, Promise<CertifiedKey | null>>()
   const lastSeq = new Map<string, number>()
+  // The drawer's newest certificate per round: a reload makes a new key, and
+  // the old page's frames are a recording from then on.
+  const newestIssue = new Map<string, number>()
+
+  const remember = <V>(map: Map<string, V>, id: string, value: V, limit: number) => {
+    map.delete(id)
+    map.set(id, value)
+    while (map.size > limit) {
+      const oldest = map.keys().next().value
+      if (oldest === undefined) break
+      map.delete(oldest)
+    }
+  }
 
   const certifiedKeyFor = (subtle: SubtleCrypto, topic: string, cert: RealtimeEnvelope) => {
-    const id = `${topic}\n${cert.sig}`
+    // The whole certificate, not its signature alone: a forged copy that keeps
+    // the signature must not share, and fail, the genuine one's check.
+    const id = `${topic}\n${canonicalJson(cert)}`
     let entry = certifiedKeys.get(id)
     if (!entry) {
       entry = verifyRealtimeSeal(topic, SKETCH_LIVE_KEY_EVENT, cert)
@@ -197,7 +217,7 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
           const claims = readSketchLiveKeyClaims(payload)
           if (!claims) return null
           const key = await subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: claims.x, y: claims.y, ext: true }, ECDSA_P256, false, ['verify'])
-          return { claims, key }
+          return { claims, key, issuedAt: cert.iat }
         })
         .catch(() => null)
       const settled = entry
@@ -233,31 +253,32 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
       const { id, entry } = certifiedKeyFor(subtle, topic, raw.cert)
       const certified = await entry
       if (!certified) return null
-      const { claims, key } = certified
+      const { claims, key, issuedAt } = certified
       if (claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) {
         return null
       }
+
+      const serverNow = realtimeServerNow()
+      if (serverNow === null || Math.abs(serverNow - raw.t) > SKETCH_LIVE_MAX_FRAME_AGE_MS) return null
 
       const signature = base64UrlToBytes(raw.sig)
       if (!signature || signature.length !== SIGNATURE_BYTES) return null
       let valid = false
       try {
-        valid = await subtle.verify(ECDSA_SHA256, key, signature, new TextEncoder().encode(sketchLiveSigningInput(raw.cert.sig, raw.seq, raw.p)))
+        valid = await subtle.verify(ECDSA_SHA256, key, signature, new TextEncoder().encode(sketchLiveSigningInput(raw.cert.sig, raw.seq, raw.t, raw.p)))
       } catch {
         valid = false
       }
       if (!valid) return null
 
       // Checked after the await, so two frames verified side by side still count once.
+      const roundId = `${topic}\n${claims.gameId}\n${claims.round}\n${claims.drawerId}`
+      const newest = newestIssue.get(roundId)
+      if (newest !== undefined && issuedAt < newest) return null
       const last = lastSeq.get(id)
       if (last !== undefined && raw.seq <= last) return null
-      lastSeq.delete(id)
-      lastSeq.set(id, raw.seq)
-      while (lastSeq.size > MAX_REMEMBERED_SENDERS) {
-        const oldest = lastSeq.keys().next().value
-        if (oldest === undefined) break
-        lastSeq.delete(oldest)
-      }
+      remember(newestIssue, roundId, Math.max(newest ?? issuedAt, issuedAt), MAX_REMEMBERED_ROUNDS)
+      remember(lastSeq, id, raw.seq, MAX_REMEMBERED_SENDERS)
       return message
     },
   }
