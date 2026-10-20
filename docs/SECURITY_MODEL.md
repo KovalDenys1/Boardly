@@ -186,8 +186,13 @@ this change; it only makes the decision possible to make with data instead of a 
 - **Only the drawer draws on other canvases.** `sketch-live` frames go peer to peer but carry a
   server-sealed certificate for the drawer's own key, issued only to the current round's drawer, and
   the drawer key's signature; receivers drop anything else (#1503, docs/ARCHITECTURE.md).
+  A replay of the drawer's own frame is dropped too: a receiver paints a frame only within ten
+  seconds of the server's clock, under the newest certificate it has seen for the round, with a
+  counter past the last it painted for the round, and with no key beside the signed ones, so an
+  altered copy of the certificate cannot reset that counter.
 - **Residual.** Holding a topic still lets a client send frames; receivers drop them, but a flood costs
-  each receiver a signature check. Spectator chat and presence on the spectator topic are peers'
+  each receiver a signature check. A topic holder can re-show one of the drawer's frames from the last
+  few seconds to a page that opened since and has not painted a later one. Spectator chat and presence on the spectator topic are peers'
   claims by design and are validated, not authenticated.
   The players' spectator count is not one of them: the spectate page reports it to
   `PATCH /api/lobby/[code]/spectator-count`, which broadcasts the clamped value signed. Stopping the sends

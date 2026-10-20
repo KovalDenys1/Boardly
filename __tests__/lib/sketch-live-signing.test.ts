@@ -182,6 +182,65 @@ describe('Sketch & Guess live strokes', () => {
     expect(await receiver.open(TOPIC, newer, expected)).toBeNull()
   })
 
+  it("drops the drawer's earlier frame replayed under a copy of its certificate with an extra key", async () => {
+    const { sender, next } = senderWith(certify({}))
+    const receiver = createSketchLiveReceiver()
+    const first = next()
+    sender.send(GAME, strokes())
+    const older = await first
+    const second = next()
+    sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+    expect(await receiver.open(TOPIC, older, expected)).not.toBeNull()
+    expect(await receiver.open(TOPIC, await second, expected)).not.toBeNull()
+
+    const altered = { ...older, cert: { ...(older.cert as Record<string, unknown>), junk: 1 } }
+    expect(await receiver.open(TOPIC, altered, expected)).toBeNull()
+  })
+
+  it('drops a byte-identical replay after seventy altered copies of the certificate', async () => {
+    const { sender, next } = senderWith(certify({}))
+    const receiver = createSketchLiveReceiver()
+    const first = next()
+    sender.send(GAME, strokes())
+    const older = await first
+    const second = next()
+    sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+    const newer = await second
+    expect(await receiver.open(TOPIC, older, expected)).not.toBeNull()
+    expect(await receiver.open(TOPIC, newer, expected)).not.toBeNull()
+
+    const variants: unknown[] = []
+    for (let junk = 0; junk < 70; junk += 1) {
+      variants.push(await receiver.open(TOPIC, { ...older, cert: { ...(older.cert as Record<string, unknown>), junk } }, expected))
+    }
+    expect(await receiver.open(TOPIC, older, expected)).toBeNull()
+    expect(variants.every((opened) => opened === null)).toBe(true)
+  })
+
+  it("paints the drawer's next frame after a flood of altered certificates", async () => {
+    const { sender, next } = senderWith(certify({}))
+    const receiver = createSketchLiveReceiver()
+    const first = next()
+    sender.send(GAME, strokes())
+    const genuine = await first
+    expect(await receiver.open(TOPIC, genuine, expected)).not.toBeNull()
+    for (let junk = 0; junk < 70; junk += 1) {
+      await receiver.open(TOPIC, { ...genuine, cert: { ...(genuine.cert as Record<string, unknown>), junk } }, expected)
+    }
+
+    const later = next()
+    const cleared: SketchLiveMessage = { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] }
+    sender.send(GAME, cleared)
+    expect(await receiver.open(TOPIC, await later, expected)).toEqual(cleared)
+  })
+
+  it('drops a frame that carries a key outside the frame format', async () => {
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    expect(await createSketchLiveReceiver().open(TOPIC, { ...(await first), junk: 1 }, expected)).toBeNull()
+  })
+
   it("drops the drawer's own frame replayed to a page that opened after it was sent", async () => {
     const { sender, next } = senderWith(certify({}))
     const first = next()

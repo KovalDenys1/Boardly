@@ -71,6 +71,13 @@ export function isRealtimeEnvelope(value: unknown): value is RealtimeEnvelope {
   )
 }
 
+const ENVELOPE_KEYS: ReadonlySet<string> = new Set(['__rt', 'kid', 'iat', 'n', 'sig', 'p'])
+
+/** An envelope with no key beside its own, since the seal does not cover extra keys. */
+export function isExactRealtimeEnvelope(value: unknown): value is RealtimeEnvelope {
+  return isRealtimeEnvelope(value) && Object.keys(value).every((key) => ENVELOPE_KEYS.has(key))
+}
+
 /**
  * JSON with object keys sorted, recursively – the one serialisation both
  * sides can reproduce after Supabase has re-encoded the payload.

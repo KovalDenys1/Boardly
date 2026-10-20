@@ -147,8 +147,12 @@ make every other client apply a forged `game-update`, leave on a forged `game-ab
   only when the certificate verifies for its own topic and names the game, round and drawer it is
   showing, the signature verifies under the certified key, the stamp is within ten seconds of the
   server's clock, no newer certificate for that round has been seen (a drawer who reloads gets a new
-  key), and the counter is past the last one it painted. So a peer can at most re-show one of the
-  drawer's own frames from the last few seconds to a page that opened since. Cost:
+  key), and the counter is past the last one it painted for that round. Neither signature covers a
+  key added to the frame or its certificate, so a frame carrying any key beside its own is dropped,
+  and the page keeps one counter per round, named and ordered only by fields the server's seal signs:
+  a copy of a frame with an altered certificate can neither open a counter of its own nor push the
+  drawer's out. So a peer can at most re-show one of the drawer's own frames from the last few
+  seconds to a page that opened since and has not painted a later one. Cost:
   one request per drawing round, one signature per frame on the drawer's side and one check per frame
   on everyone else's, about 500 bytes per frame; nothing per stroke reaches the server or the limiter.
   Chat is not a peer event: Alias guesses, which used to be, go through
