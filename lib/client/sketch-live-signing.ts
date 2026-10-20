@@ -26,7 +26,6 @@ const ECDSA_SHA256 = { name: 'ECDSA', hash: 'SHA-256' } as const
 /** A P-256 signature in IEEE P1363 form is r || s, 32 bytes each. */
 const SIGNATURE_BYTES = 64
 const MAX_REMEMBERED_CERTIFICATES = 16
-const MAX_REMEMBERED_SENDERS = 64
 const MAX_REMEMBERED_ROUNDS = 64
 
 let warnedInsecureContext = false
@@ -183,7 +182,17 @@ export interface SketchLiveReceiver {
 interface CertifiedKey {
   claims: SketchLiveKeyClaims
   key: CryptoKey
-  issuedAt: number
+}
+
+interface ShownRound {
+  iat: number
+  n: string
+  seq: number
+}
+
+function compareIssue(a: { iat: number; n: string }, b: { iat: number; n: string }): number {
+  if (a.iat !== b.iat) return a.iat - b.iat
+  return a.n === b.n ? 0 : a.n < b.n ? -1 : 1
 }
 
 export function createSketchLiveReceiver(): SketchLiveReceiver {
@@ -191,10 +200,9 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
   // Only a verified one stays: a failed check may be a key fetch that will
   // work next time, and a forged one should not crowd out the drawer's.
   const certifiedKeys = new Map<string, Promise<CertifiedKey | null>>()
-  const lastSeq = new Map<string, number>()
   // The drawer's newest certificate per round: a reload makes a new key, and
   // the old page's frames are a recording from then on.
-  const newestIssue = new Map<string, number>()
+  const shownRounds = new Map<string, ShownRound>()
 
   const remember = <V>(map: Map<string, V>, id: string, value: V, limit: number) => {
     map.delete(id)
@@ -207,9 +215,9 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
   }
 
   const certifiedKeyFor = (subtle: SubtleCrypto, topic: string, cert: RealtimeEnvelope) => {
-    // The whole certificate, not its signature alone: a forged copy that keeps
-    // the signature must not share, and fail, the genuine one's check.
-    const id = `${topic}\n${canonicalJson(cert)}`
+    // The signed fields and the signature, not the signature alone: a forged
+    // copy that keeps the signature must not share, and fail, the genuine one's check.
+    const id = `${topic}\n${canonicalJson([cert.kid, cert.iat, cert.n, cert.sig, cert.p])}`
     let entry = certifiedKeys.get(id)
     if (!entry) {
       entry = verifyRealtimeSeal(topic, SKETCH_LIVE_KEY_EVENT, cert)
@@ -217,7 +225,7 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
           const claims = readSketchLiveKeyClaims(payload)
           if (!claims) return null
           const key = await subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: claims.x, y: claims.y, ext: true }, ECDSA_P256, false, ['verify'])
-          return { claims, key, issuedAt: cert.iat }
+          return { claims, key }
         })
         .catch(() => null)
       const settled = entry
@@ -231,7 +239,7 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
         certifiedKeys.delete(oldest)
       }
     }
-    return { id, entry }
+    return entry
   }
 
   return {
@@ -250,10 +258,9 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
         return message
       }
 
-      const { id, entry } = certifiedKeyFor(subtle, topic, raw.cert)
-      const certified = await entry
+      const certified = await certifiedKeyFor(subtle, topic, raw.cert)
       if (!certified) return null
-      const { claims, key, issuedAt } = certified
+      const { claims, key } = certified
       if (claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) {
         return null
       }
@@ -273,12 +280,12 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
 
       // Checked after the await, so two frames verified side by side still count once.
       const roundId = `${topic}\n${claims.gameId}\n${claims.round}\n${claims.drawerId}`
-      const newest = newestIssue.get(roundId)
-      if (newest !== undefined && issuedAt < newest) return null
-      const last = lastSeq.get(id)
-      if (last !== undefined && raw.seq <= last) return null
-      remember(newestIssue, roundId, Math.max(newest ?? issuedAt, issuedAt), MAX_REMEMBERED_ROUNDS)
-      remember(lastSeq, id, raw.seq, MAX_REMEMBERED_SENDERS)
+      const shown = shownRounds.get(roundId)
+      if (shown) {
+        const order = compareIssue(raw.cert, shown)
+        if (order < 0 || (order === 0 && raw.seq <= shown.seq)) return null
+      }
+      remember(shownRounds, roundId, { iat: raw.cert.iat, n: raw.cert.n, seq: raw.seq }, MAX_REMEMBERED_ROUNDS)
       return message
     },
   }

@@ -1,4 +1,4 @@
-import { canonicalJson, isRealtimeEnvelope, type RealtimeEnvelope } from '@/lib/shared/realtime-envelope'
+import { canonicalJson, isExactRealtimeEnvelope, type RealtimeEnvelope } from '@/lib/shared/realtime-envelope'
 
 /**
  * Sketch & Guess live drawing: the drawer's canvas streamed to everyone else
@@ -153,11 +153,14 @@ export function readSketchLiveKeyClaims(payload: unknown): SketchLiveKeyClaims |
   return { gameId: raw.gameId, round: raw.round, drawerId: raw.drawerId, x: raw.x, y: raw.y }
 }
 
+const FRAME_KEYS: ReadonlySet<string> = new Set(['cert', 'seq', 't', 'sig', 'p'])
+
 export function isSketchLiveFrame(value: unknown): value is SketchLiveFrame {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const raw = value as Record<string, unknown>
   return (
-    isRealtimeEnvelope(raw.cert) &&
+    Object.keys(raw).every((key) => FRAME_KEYS.has(key)) &&
+    isExactRealtimeEnvelope(raw.cert) &&
     typeof raw.seq === 'number' && Number.isSafeInteger(raw.seq) && raw.seq > 0 &&
     typeof raw.t === 'number' && Number.isFinite(raw.t) &&
     typeof raw.sig === 'string' && raw.sig.length > 0 && raw.sig.length <= MAX_SIGNATURE_LENGTH &&
