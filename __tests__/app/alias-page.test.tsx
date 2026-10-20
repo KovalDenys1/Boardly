@@ -114,6 +114,24 @@ jest.mock('@/hooks/useIsMobileViewport', () => ({
   useIsMobileViewport: () => mockIsMobileViewport,
 }))
 
+let mockBlockedIds: ReadonlySet<string> = new Set()
+jest.mock('@/hooks/useBlockedPlayers', () => ({
+  useBlockedPlayers: () => ({
+    blocked: [],
+    blockedIds: mockBlockedIds,
+    ready: true,
+    failed: false,
+    unknown: false,
+    retry: () => {},
+    block: async () => true,
+    unblock: async () => true,
+  }),
+}))
+
+afterEach(() => {
+  mockBlockedIds = new Set()
+})
+
 jest.mock('@/lib/supabase-client', () => ({
   getSupabaseClient: jest.fn(() => ({
     channel: jest.fn(() => mockChannel),
@@ -665,6 +683,30 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     await waitFor(() => expect(screen.getByText('pear')).toBeTruthy())
     expect(screen.queryByText('lobby chatter')).toBeNull()
     expect(screen.queryByText('untyped chatter')).toBeNull()
+  })
+
+  it('folds a guess from a blocked player to one line under their name', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    mockBlockedIds = new Set(['user-3'])
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-3', userId: 'user-3', username: 'Carol', message: 'meanie', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-4', userId: 'user-4', username: 'Dan', message: 'pear', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+    })
+
+    await waitFor(() => expect(screen.getByText('pear')).toBeTruthy())
+    expect(screen.queryByText('meanie')).toBeNull()
+    expect(screen.getByText('Carol')).toBeTruthy()
+    expect(screen.getByText('blockedPlayers.hiddenText')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.show' }))
+    expect(screen.getByText('meanie')).toBeTruthy()
   })
 
   it('takes a rate-limited guess back and says why, instead of dropping it silently', async () => {

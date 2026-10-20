@@ -923,6 +923,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleGuestJoinLobby,
     joinRefusalCode,
     handleStartGame,
+    startTermsRequired,
+    acceptStartTerms,
     updateLobbySettings,
     guestNameInput,
     setGuestNameInput,
@@ -953,6 +955,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    acceptTerms: acceptChatTerms,
   })
 
   // Update ref with loadLobby function
@@ -2126,6 +2129,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             startingGame={startingGame}
             onStartGame={handleStartGame}
             reserveChatButton={isInGame && hasMultipleHumans}
+            termsRequired={startTermsRequired}
+            onAcceptTerms={acceptStartTerms}
           />
           </div>
         </div>

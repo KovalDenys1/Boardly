@@ -11,6 +11,7 @@ import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persis
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
 import { commitGameState, GameStateConflictError } from '@/lib/game-state-lock'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 
 const spyActionSchema = z.object({
   action: z.enum([
@@ -89,6 +90,13 @@ export async function POST(
     const player = game.players.find((p) => p.userId === userId)
     if (!player) {
       return NextResponse.json({ error: 'Player not in this game' }, { status: 403 })
+    }
+
+    if ((action === 'ask-question' || action === 'answer-question') && (await requiresTermsAcceptance(userId))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
     }
 
     // Creator-only actions: verify against DB, not client payload

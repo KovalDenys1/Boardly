@@ -18,6 +18,7 @@ import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -363,6 +364,13 @@ export async function POST(
     // here against the lobby row. The host passes to another player when they
     // leave (lib/lobby-leave.ts); a lobby with no host at all (its creator's
     // account deleted) lets anyone seated go on rather than end the series.
+    if (game.lobby.gameType === 'liars_party' && move.type === 'submit-claim' && (await requiresTermsAcceptance(userId))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
+    }
+
     if (move.type === 'next-round' && game.lobby.creatorId && game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only the host can start the next round', code: 'HOST_ONLY_MOVE' },

@@ -5666,6 +5666,8 @@ const es: TranslationWithPlurals = {
     blockedOn: 'Bloqueado el {{date}}',
     loadFailed: 'No se pudieron cargar tus jugadores bloqueados.',
     retry: 'Intentar de nuevo',
+    hiddenText: 'De un jugador que bloqueaste',
+    show: 'Mostrar',
   },
   discordLink: {
     title: 'Vincular Boardly con Discord',

@@ -5631,6 +5631,8 @@ const en = {
     blockedOn: 'Blocked {{date}}',
     loadFailed: 'Could not load your blocked players.',
     retry: 'Try again',
+    hiddenText: 'From a player you blocked',
+    show: 'Show',
   },
   discordLink: {
     title: 'Link Boardly to Discord',

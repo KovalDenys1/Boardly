@@ -28,6 +28,10 @@ import { latestEntryKey, onOwnAnimationEnd, spyTurnPassKey, staggerDelayMs } fro
 import { playCue } from '@/lib/sound-engine'
 import { useSpySounds } from '../hooks/useSpySounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import BlockedText from '@/components/BlockedText'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import { acceptTerms, isTermsRequired } from '@/lib/client/terms-consent'
 
 interface SpyRoleInfo {
   role: string
@@ -143,6 +147,49 @@ function computeVoteLeader(votes: Record<string, string>): string {
   return leaders.length === 1 ? leaders[0] : ''
 }
 
+/** Each layout tree mounts its own box, so focus returns to the one in the tree where the terms were accepted. */
+function SpyTextBox({ value, onChange, placeholder, termsRequired, autoFocusTerms, onAcceptTerms }: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  termsRequired: boolean
+  autoFocusTerms: boolean
+  onAcceptTerms: () => Promise<boolean>
+}) {
+  const textRef = React.useRef<HTMLTextAreaElement>(null)
+  const focusTextAfterConsent = React.useRef(false)
+  React.useEffect(() => {
+    if (termsRequired || !focusTextAfterConsent.current) return
+    focusTextAfterConsent.current = false
+    textRef.current?.focus()
+  }, [termsRequired])
+  const handleAcceptTerms = async () => {
+    focusTextAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (!accepted) focusTextAfterConsent.current = false
+    return accepted
+  }
+
+  if (termsRequired) {
+    return (
+      <TermsConsentPanel
+        onAccept={handleAcceptTerms}
+        autoFocus={autoFocusTerms}
+        className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4"
+      />
+    )
+  }
+  return (
+    <textarea
+      ref={textRef}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      className="bd-input min-h-28 resize-none"
+    />
+  )
+}
+
 export default function SpyGameBoard({
   gameId,
   lobbyCode,
@@ -175,6 +222,7 @@ export default function SpyGameBoard({
   onProfileClick,
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
+  const { blockedIds } = useBlockedPlayers()
   const showActionError = React.useCallback((message: string) => {
     showToast.error('errors.general', message, { message })
   }, [])
@@ -184,6 +232,7 @@ export default function SpyGameBoard({
   const [questionTargetId, setQuestionTargetId] = React.useState('')
   const [questionText, setQuestionText] = React.useState('')
   const [answerText, setAnswerText] = React.useState('')
+  const [textTermsRefused, setTextTermsRefused] = React.useState(false)
   const [timeRemaining, setTimeRemaining] = React.useState(0)
   const [isRoleLoading, setIsRoleLoading] = React.useState(false)
   const [guessLocation, setGuessLocation] = React.useState('')
@@ -245,6 +294,7 @@ export default function SpyGameBoard({
     data.currentQuestionerId ? playersById.get(data.currentQuestionerId) : null
   const currentTarget =
     data.currentTargetId ? playersById.get(data.currentTargetId) : null
+  const questionerBlocked = !!data.currentQuestionerId && blockedIds.has(data.currentQuestionerId)
   const phaseLabel =
     phase === SpyGamePhase.WAITING
       ? t('spy.phases.waiting')
@@ -378,21 +428,31 @@ export default function SpyGameBoard({
   )
 
   const submitAction = React.useCallback(
-    async (action: string, actionData: Record<string, unknown> = {}): Promise<boolean> => {
+    async (
+      action: string,
+      actionData: Record<string, unknown> = {},
+      options?: { onTermsRequired?: () => void }
+    ): Promise<boolean> => {
       setIsActionLoading(true)
       const submitStartedAt = Date.now()
       let responseStatus: number | undefined
       let moveMetricTracked = false
+      let termsRequired = false
 
       try {
-        const sendAction = () => fetch(`/api/game/${gameId}/spy-action`, {
-          method: 'POST',
-          headers: getAuthHeaders(isGuest, guestId, guestName, guestToken),
-          body: JSON.stringify({
-            action,
-            data: actionData,
-          }),
-        })
+        const sendAction = async () => {
+          const response = await fetch(`/api/game/${gameId}/spy-action`, {
+            method: 'POST',
+            headers: getAuthHeaders(isGuest, guestId, guestName, guestToken),
+            body: JSON.stringify({
+              action,
+              data: actionData,
+            }),
+          })
+          // A clone, because the body is read again below for the STATE_CONFLICT retry and the error.
+          termsRequired = response.status === 403 && (await isTermsRequired(response.clone()))
+          return response
+        }
 
         let res = await sendAction()
         responseStatus = res.status
@@ -427,7 +487,7 @@ export default function SpyGameBoard({
         moveMetricTracked = true
         return true
       } catch (error) {
-        playCue('ui.error')
+        if (!termsRequired) playCue('ui.error')
         if (!moveMetricTracked) {
           trackMoveSubmitApplied({
             gameType: 'guess_the_spy',
@@ -439,7 +499,12 @@ export default function SpyGameBoard({
             statusCode: responseStatus,
           })
         }
-        showActionError(String((error as Error)?.message || 'Failed to submit action'))
+        if (termsRequired) {
+          setTextTermsRefused(true)
+          options?.onTermsRequired?.()
+        } else {
+          showActionError(String((error as Error)?.message || 'Failed to submit action'))
+        }
         return false
       } finally {
         setIsActionLoading(false)
@@ -447,6 +512,16 @@ export default function SpyGameBoard({
     },
     [gameId, guestId, guestName, guestToken, isGuest, refreshAfterAction, showActionError]
   )
+
+  const showTextTerms = chatTermsAccepted === false || textTermsRefused
+  const acceptTextTerms = React.useCallback(async () => {
+    const accepted = await (onAcceptChatTerms ?? acceptTerms)()
+    if (accepted) setTextTermsRefused(false)
+    return accepted
+  }, [onAcceptChatTerms])
+  React.useEffect(() => {
+    if (chatTermsAccepted) setTextTermsRefused(false)
+  }, [chatTermsAccepted])
 
   React.useEffect(() => {
     if (phase !== SpyGamePhase.QUESTIONING) return
@@ -941,27 +1016,33 @@ export default function SpyGameBoard({
                     </div>
 
                     <label className="block text-sm font-bold text-(--bd-ink)">{t('spy.questionLabel')}</label>
-                    <textarea
+                    <SpyTextBox
                       value={questionText}
-                      onChange={(event) => setQuestionText(event.target.value)}
+                      onChange={setQuestionText}
                       placeholder={t('spy.askQuestion')}
-                      className="bd-input min-h-28 resize-none"
+                      termsRequired={showTextTerms}
+                      autoFocusTerms={textTermsRefused}
+                      onAcceptTerms={acceptTextTerms}
                     />
 
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        disabled={!questionTargetId || !questionText.trim() || isActionLoading}
-                        onClick={() => {
-                          const question = questionText.trim()
-                          if (!question || !questionTargetId) return
-                          setQuestionText('')
-                          void submitAction('ask-question', { targetId: questionTargetId, question }).then((ok) => ok && playCue('card.place'))
-                        }}
-                        className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {t('spy.askButton')}
-                      </button>
+                      {!showTextTerms && (
+                        <button
+                          type="button"
+                          disabled={!questionTargetId || !questionText.trim() || isActionLoading}
+                          onClick={() => {
+                            const question = questionText.trim()
+                            if (!question || !questionTargetId) return
+                            setQuestionText('')
+                            void submitAction('ask-question', { targetId: questionTargetId, question }, {
+                              onTermsRequired: () => setQuestionText((current) => (current ? `${question} ${current}` : question)),
+                            }).then((ok) => ok && playCue('card.place'))
+                          }}
+                          className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {t('spy.askButton')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         disabled={isActionLoading}
@@ -977,27 +1058,34 @@ export default function SpyGameBoard({
                 {shouldAnswerNow && !isSpectator && (
                   <div className="mt-5 space-y-3">
                     <div className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-soft)">
-                      <strong className="text-(--bd-ink)">{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
+                      <strong className="text-(--bd-ink)">{t('spy.questionPrompt')}</strong>{' '}
+                      <BlockedText blocked={questionerBlocked}>{data.pendingQuestion}</BlockedText>
                     </div>
-                    <textarea
+                    <SpyTextBox
                       value={answerText}
-                      onChange={(event) => setAnswerText(event.target.value)}
+                      onChange={setAnswerText}
                       placeholder={t('spy.answerQuestion')}
-                      className="bd-input min-h-28 resize-none"
+                      termsRequired={showTextTerms}
+                      autoFocusTerms={textTermsRefused}
+                      onAcceptTerms={acceptTextTerms}
                     />
-                    <button
-                      type="button"
-                      disabled={!answerText.trim() || isActionLoading}
-                      onClick={() => {
-                        const answer = answerText.trim()
-                        if (!answer) return
-                        setAnswerText('')
-                        void submitAction('answer-question', { answer }).then((ok) => ok && playCue('card.place'))
-                      }}
-                      className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {t('spy.submitAnswer')}
-                    </button>
+                    {!showTextTerms && (
+                      <button
+                        type="button"
+                        disabled={!answerText.trim() || isActionLoading}
+                        onClick={() => {
+                          const answer = answerText.trim()
+                          if (!answer) return
+                          setAnswerText('')
+                          void submitAction('answer-question', { answer }, {
+                            onTermsRequired: () => setAnswerText((current) => (current ? `${answer} ${current}` : answer)),
+                          }).then((ok) => ok && playCue('card.place'))
+                        }}
+                        className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {t('spy.submitAnswer')}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -1007,7 +1095,9 @@ export default function SpyGameBoard({
                     {currentTarget && data.pendingQuestion ? (
                       <>
                         <p>{t('spy.askedQuestion', { asker: currentQuestioner?.name ?? '', target: currentTarget.name })}</p>
-                        <p className="mt-1 text-base font-bold text-(--bd-ink)">{data.pendingQuestion}</p>
+                        <p className="mt-1 text-base font-bold text-(--bd-ink)">
+                          <BlockedText blocked={questionerBlocked}>{data.pendingQuestion}</BlockedText>
+                        </p>
                         <p className="mt-1">{t('spy.waitingForAnswer', { player: currentTarget.name })}</p>
                       </>
                     ) : (
@@ -1059,8 +1149,14 @@ export default function SpyGameBoard({
                       <p className="font-black text-(--bd-ink)">
                         {entry.askerName} - {entry.targetName}
                       </p>
-                      <p className="mt-2 text-(--bd-ink-soft)"><strong>{t('spy.questionPrefix')}</strong> {entry.question}</p>
-                      <p className="mt-1 text-(--bd-ink-soft)"><strong>{t('spy.answerPrefix')}</strong> {entry.answer}</p>
+                      <p className="mt-2 text-(--bd-ink-soft)">
+                        <strong>{t('spy.questionPrefix')}</strong>{' '}
+                        <BlockedText blocked={blockedIds.has(entry.askerId)}>{entry.question}</BlockedText>
+                      </p>
+                      <p className="mt-1 text-(--bd-ink-soft)">
+                        <strong>{t('spy.answerPrefix')}</strong>{' '}
+                        <BlockedText blocked={blockedIds.has(entry.targetId)}>{entry.answer}</BlockedText>
+                      </p>
                     </div>
                     )
                   })}

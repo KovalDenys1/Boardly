@@ -2734,6 +2734,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
+/* A blocked player's text, opened with Show (#1482). */
+.blocked-text-reveal {
+  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both;
+}
 /* A new entry that matters (a correct guess): lands with a small overshoot. */
 .social-entry-hit {
   animation: social-entry-hit var(--bd-dur-slow) var(--bd-ease-spring) both;
