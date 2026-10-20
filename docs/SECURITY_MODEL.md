@@ -174,7 +174,7 @@ this change; it only makes the decision possible to make with data instead of a 
   `NEXTAUTH_SECRET`), and `lib/lobby-channel-registry.ts` hands a handler nothing whose signature does
   not verify for that topic and event, whose nonce it has seen, or that was stamped before the page
   joined. Game pages that apply a broadcast `state-change` directly therefore apply only server state.
-  Details and the two peer events that remain unsigned by design: docs/ARCHITECTURE.md, "Signed
+  Details and the peer events that carry no server signature by design: docs/ARCHITECTURE.md, "Signed
   broadcasts".
 - **Per-user topics are not guessable.** Invites, rematch requests and notification pokes go to
   `user:{userId}:{tag}`, the tag an HMAC under a server key, handed only to that user by
@@ -183,9 +183,12 @@ this change; it only makes the decision possible to make with data instead of a 
 - **A snapshot from the future cannot freeze a board.** `decideFreshness` still applies a snapshot
   stamped more than a minute ahead of the client clock but no longer lets it raise the watermark, so
   the next real move is not rejected as stale.
+- **Only the drawer draws on other canvases.** `sketch-live` frames go peer to peer but carry a
+  server-sealed certificate for the drawer's own key, issued only to the current round's drawer, and
+  the drawer key's signature; receivers drop anything else (#1503, docs/ARCHITECTURE.md).
 - **Residual.** Holding a topic still lets a client send frames; receivers drop them, but a flood costs
-  each receiver a signature check. Peer events (`sketch-live` on the lobby topic, spectator chat and
-  presence on the spectator topic) are peers' claims by design and are validated, not authenticated.
+  each receiver a signature check. Spectator chat and presence on the spectator topic are peers'
+  claims by design and are validated, not authenticated.
   The players' spectator count is not one of them: the spectate page reports it to
   `PATCH /api/lobby/[code]/spectator-count`, which broadcasts the clamped value signed. Stopping the sends
   themselves needs Supabase Realtime Authorization (private channels plus a Supabase JWT per client,

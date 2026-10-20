@@ -133,9 +133,9 @@ export function realtimeSigningInput(
  *
  * - `sketch-live`: the Sketch & Guess drawer's canvas while it is being drawn.
  *   Non-authoritative by design (lib/sketch-live.ts): the drawing that is
- *   scored is the one `submit-drawing` stores, and `parseSketchLiveMessage`
- *   drops anything that is not the current drawer's, for the current round,
- *   within the canvas' own size limits.
+ *   scored is the one `submit-drawing` stores. Each frame is signed by the
+ *   drawer's own key, which the server certified for that round, and the page
+ *   checks both before painting it (lib/client/sketch-live-signing.ts).
  *
  * `chat-message` is not here on purpose: chat, Alias guesses included, goes
  * through a server route that knows who is speaking. Nor is
