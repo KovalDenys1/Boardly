@@ -84,6 +84,32 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     }
   }
 
+  decideSecondCard(decision: MemoryBotDecision): MemoryBotDecision {
+    if (decision.firstCardAlreadyFlipped || decision.strategy !== 'guess') {
+      return decision
+    }
+
+    const gameData = this.gameEngine.getState().data as MemoryGameData
+    const firstCard = gameData.cards.find((card) => card.id === decision.firstCardId)
+    if (!firstCard?.isFlipped) {
+      return decision
+    }
+
+    const profile = MEMORY_BOT_PROFILES[this.config.difficulty]
+    const seenMates = gameData.cards.filter(
+      (card) => !card.isFlipped && !card.isMatched && card.seen && card.value === firstCard.value,
+    )
+    if (seenMates.length === 0 || Math.random() >= profile.mateRecallChance) {
+      return decision
+    }
+
+    return {
+      ...decision,
+      secondCardId: this.pickRandom(seenMates).id,
+      strategy: 'remembered-mate',
+    }
+  }
+
   decisionToMove(decision: MemoryBotDecision): Move {
     const cardId = decision.firstCardAlreadyFlipped ? decision.secondCardId : decision.firstCardId
     return this.createFlipMove(cardId)

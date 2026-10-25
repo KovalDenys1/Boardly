@@ -72,8 +72,14 @@ export class MemoryBotExecutor {
 
       await botDelay(difficulty, 260)
 
-      const decision = await bot.makeDecision()
-      await this.executeDecision(decision, bot, botPlayer.name, difficulty, onMove, onBotAction)
+      const decision = await this.executeDecision(
+        await bot.makeDecision(),
+        bot,
+        botPlayer.name,
+        difficulty,
+        onMove,
+        onBotAction,
+      )
       attempts += 1
 
       const stateAfterPair = gameEngine.getState()
@@ -127,7 +133,7 @@ export class MemoryBotExecutor {
     difficulty: BotDifficulty,
     onMove: MoveCallback,
     onBotAction?: (event: MemoryBotActionEvent) => void,
-  ): Promise<void> {
+  ): Promise<MemoryBotDecision> {
     if (!decision.firstCardAlreadyFlipped) {
       const firstMove = bot.decisionToMove(decision)
       await onMove(firstMove)
@@ -145,20 +151,23 @@ export class MemoryBotExecutor {
       await botDelay(difficulty, 360)
     }
 
-    const secondMove = bot.decisionToSecondMove(decision)
+    const finalDecision = bot.decideSecondCard(decision)
+    const secondMove = bot.decisionToSecondMove(finalDecision)
     await onMove(secondMove)
 
     onBotAction?.({
       type: 'flip',
       botName,
       data: {
-        cardId: decision.secondCardId,
-        firstCardId: decision.firstCardId,
-        secondCardId: decision.secondCardId,
-        strategy: decision.strategy,
+        cardId: finalDecision.secondCardId,
+        firstCardId: finalDecision.firstCardId,
+        secondCardId: finalDecision.secondCardId,
+        strategy: finalDecision.strategy,
       },
       message: `${botName} flipped a second card`,
     })
+
+    return finalDecision
   }
 
   private static async resolveMismatch(
