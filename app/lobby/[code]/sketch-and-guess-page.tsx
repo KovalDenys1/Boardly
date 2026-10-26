@@ -805,7 +805,11 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     )
 
     sketchLiveHandlerRef.current = (payload: unknown, topic: string) => {
-        if (isDrawer || phase !== 'drawing' || !gameIdForLive) return
+        if (phase !== 'drawing' || !gameIdForLive) return
+        if (isDrawer) {
+            void liveSender.hear(topic, payload)
+            return
+        }
         void liveReceiver.open(topic, payload, { gameId: gameIdForLive, round: roundNumber, drawerId: drawerIdForLive }).then((message) => {
             if (!message) return
             setLiveView((prev) => {
@@ -816,6 +820,16 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             })
         })
     }
+
+    // A page that was hidden or lost its channel may have missed another of the drawer's pages taking the round.
+    useEffect(() => {
+        if (!socketConnected) liveSender.renewOnNextStroke()
+    }, [socketConnected, liveSender])
+    useEffect(() => {
+        const renew = () => liveSender.renewOnNextStroke()
+        document.addEventListener('visibilitychange', renew)
+        return () => document.removeEventListener('visibilitychange', renew)
+    }, [liveSender])
 
     const committedStrokes = activeDraft.strokes
     useEffect(() => {
