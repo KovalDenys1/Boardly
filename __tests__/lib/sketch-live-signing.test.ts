@@ -139,6 +139,28 @@ describe('Sketch & Guess live strokes', () => {
       .toEqual({ kind: 'live', round: 2, drawerId: DRAWER, live: stroke })
   })
 
+  it('delivers frames heard back to back in the order they came, whichever check finishes first', async () => {
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    const finished = await first
+    const second = next()
+    sender.send(GAME, { kind: 'live', round: 2, drawerId: DRAWER, live: stroke })
+    const inProgress = await second
+
+    const subtle = globalThis.crypto.subtle
+    const verify = subtle.verify.bind(subtle)
+    jest.spyOn(subtle, 'verify').mockImplementation(async (...args: Parameters<SubtleCrypto['verify']>) => {
+      const text = new TextDecoder().decode(args[3] as ArrayBuffer)
+      if (text.includes('"strokes"')) await new Promise((resolve) => setTimeout(resolve, 30))
+      return verify(...args)
+    })
+
+    const receiver = createSketchLiveReceiver()
+    const opened = await Promise.all([receiver.open(TOPIC, finished, expected), receiver.open(TOPIC, inProgress, expected)])
+    expect(opened).toEqual([strokes(), { kind: 'live', round: 2, drawerId: DRAWER, live: stroke }])
+  })
+
   it("drops another player's stroke that only names the drawer, as every stroke used to", async () => {
     const receiver = createSketchLiveReceiver()
     expect(await receiver.open(TOPIC, strokes(), expected)).toBeNull()
