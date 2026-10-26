@@ -386,7 +386,7 @@ function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, term
   if (termsRequired) {
     return (
       <LiarsCard>
-        <TermsConsentPanel onAccept={handleAcceptTerms} autoFocus={autoFocusTerms} />
+        <TermsConsentPanel onAccept={handleAcceptTerms} autoFocus={autoFocusTerms} context="play" />
       </LiarsCard>
     )
   }

@@ -33,9 +33,9 @@ describe('WaitingRoomActions – Start after a custom-words refusal (#1482)', ()
     const onAcceptTerms = renderBar(true)
 
     expect(screen.queryByRole('button', { name: 'game.ui.startGame' })).toBeNull()
-    expect(screen.getByText('chat.termsPrompt')).toBeInTheDocument()
+    expect(screen.getByText('chat.termsPromptPlay')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(screen.getByRole('button', { name: 'chat.termsAcceptPlay' }))
     expect(onAcceptTerms).toHaveBeenCalledTimes(1)
   })
 
@@ -43,6 +43,6 @@ describe('WaitingRoomActions – Start after a custom-words refusal (#1482)', ()
     renderBar(false)
 
     expect(screen.getByRole('button', { name: 'game.ui.startGame' })).toBeInTheDocument()
-    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    expect(screen.queryByText('chat.termsPromptPlay')).toBeNull()
   })
 })

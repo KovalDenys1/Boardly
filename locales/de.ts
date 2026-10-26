@@ -3427,6 +3427,8 @@ const de: TranslationWithPlurals = {
     termsTerms: 'Nutzungsbedingungen',
     termsRules: 'Community-Regeln',
     termsAccept: 'Akzeptieren und chatten',
+    termsPromptPlay: 'Bevor andere Spieler sehen, was du schreibst, akzeptiere die Nutzungsbedingungen und die Community-Regeln.',
+    termsAcceptPlay: 'Akzeptieren',
     termsFailed: 'Das konnte nicht gespeichert werden. Bitte versuch es noch einmal.',
   },
   auth: {

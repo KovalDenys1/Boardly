@@ -174,6 +174,7 @@ function SpyTextBox({ value, onChange, placeholder, termsRequired, autoFocusTerm
       <TermsConsentPanel
         onAccept={handleAcceptTerms}
         autoFocus={autoFocusTerms}
+        context="play"
         className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4"
       />
     )

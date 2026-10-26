@@ -584,6 +584,8 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
         <TermsConsentPanel
           onAccept={handleAcceptTerms}
           autoFocus
+          context="play"
+          compact
           style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', flexShrink: 0 }}
         />
       ) : canType && (

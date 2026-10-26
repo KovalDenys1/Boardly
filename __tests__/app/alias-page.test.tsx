@@ -759,8 +759,8 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     fireEvent.change(screen.getByPlaceholderText('alias.guessPlaceholder'), { target: { value: 'banana' } })
     fireEvent.keyDown(screen.getByPlaceholderText('alias.guessPlaceholder'), { key: 'Enter' })
 
-    const accept = await screen.findByRole('button', { name: 'chat.termsAccept' })
-    expect(screen.getByText('chat.termsPrompt')).toBeTruthy()
+    const accept = await screen.findByRole('button', { name: 'chat.termsAcceptPlay' })
+    expect(screen.getByText('chat.termsPromptPlay')).toBeTruthy()
     expect(screen.queryByPlaceholderText('alias.guessPlaceholder')).toBeNull()
     expect(screen.queryByText('banana')).toBeNull()
 
@@ -774,7 +774,7 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
       expect(mockFetchWithGuest.mock.calls.filter(([url]) => String(url).endsWith('/alias-guess'))).toHaveLength(2)
     })
     expect(screen.getByText('banana')).toBeTruthy()
-    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    expect(screen.queryByText('chat.termsPromptPlay')).toBeNull()
   })
 
   it('keeps a refused guess and what was typed after it, in that order', async () => {
@@ -801,7 +801,7 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     fireEvent.change(input, { target: { value: 'apple' } })
     await act(async () => refuseGuess())
 
-    fireEvent.click(await screen.findByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'chat.termsAcceptPlay' }))
     expect(((await screen.findByPlaceholderText('alias.guessPlaceholder')) as HTMLInputElement).value).toBe('banana apple')
   })
 

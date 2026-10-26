@@ -3509,6 +3509,8 @@ const uk: TranslationWithPlurals = {
     termsTerms: 'Умови використання',
     termsRules: 'Правила спільноти',
     termsAccept: 'Прийняти й спілкуватися',
+    termsPromptPlay: 'Перш ніж інші гравці побачать ваш текст, прийміть Умови використання та Правила спільноти.',
+    termsAcceptPlay: 'Прийняти',
     termsFailed: 'Не вдалося зберегти. Спробуйте ще раз.',
   },
   auth: {

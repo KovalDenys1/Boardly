@@ -683,7 +683,7 @@ function CreateLobbyPage() {
                   {error}
                 </div>
               )}
-              {termsRequired && <TermsConsentPanel onAccept={acceptCreateTerms} autoFocus className="mb-3" />}
+              {termsRequired && <TermsConsentPanel onAccept={acceptCreateTerms} autoFocus context="play" className="mb-3" />}
               <div className="flex items-center gap-3">
                 <button
                   type="button"

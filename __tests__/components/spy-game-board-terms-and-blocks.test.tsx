@@ -106,7 +106,7 @@ describe('SpyGameBoard: the terms before a question or an answer (#1482)', () =>
     fireEvent.change(board().getByPlaceholderText('spy.askQuestion'), { target: { value: 'Is the food good here?' } })
     fireEvent.click(board().getByRole('button', { name: 'spy.askButton' }))
 
-    await waitFor(() => expect(board().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy())
+    await waitFor(() => expect(board().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy())
     expect(spyActions).toEqual([{ action: 'ask-question', data: { targetId: 'user-b', question: 'Is the food good here?' } }])
     expect(board().queryByPlaceholderText('spy.askQuestion')).toBeNull()
     expect(board().queryByRole('button', { name: 'spy.askButton' })).toBeNull()
@@ -114,7 +114,7 @@ describe('SpyGameBoard: the terms before a question or an answer (#1482)', () =>
     expect(board().getByRole('button', { name: 'spy.skipTurn' })).toBeTruthy()
     expect(showToast.error).not.toHaveBeenCalled()
 
-    fireEvent.click(board().getByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(board().getByRole('button', { name: 'chat.termsAcceptPlay' }))
 
     await waitFor(() => expect(board().getByPlaceholderText('spy.askQuestion')).toBeTruthy())
     expect(onAcceptChatTerms).toHaveBeenCalledTimes(1)
@@ -131,13 +131,13 @@ describe('SpyGameBoard: the terms before a question or an answer (#1482)', () =>
     fireEvent.change(board().getByPlaceholderText('spy.answerQuestion'), { target: { value: 'Somewhere warm' } })
     fireEvent.click(board().getByRole('button', { name: 'spy.submitAnswer' }))
 
-    await waitFor(() => expect(board().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy())
+    await waitFor(() => expect(board().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy())
     expect(spyActions).toEqual([{ action: 'answer-question', data: { answer: 'Somewhere warm' } }])
     expect(board().queryByPlaceholderText('spy.answerQuestion')).toBeNull()
     expect(board().queryByRole('button', { name: 'spy.submitAnswer' })).toBeNull()
     expect(showToast.error).not.toHaveBeenCalled()
 
-    fireEvent.click(board().getByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(board().getByRole('button', { name: 'chat.termsAcceptPlay' }))
 
     await waitFor(() => expect(board().getByPlaceholderText('spy.answerQuestion')).toBeTruthy())
     expect(acceptTerms).toHaveBeenCalledTimes(1)
@@ -147,14 +147,14 @@ describe('SpyGameBoard: the terms before a question or an answer (#1482)', () =>
   it('asks for the terms up front when the chat already knows they are not accepted', async () => {
     const onAcceptChatTerms = jest.fn().mockResolvedValue(true)
     const { unmount } = renderBoard(questioningGame(), 'user-a', { chatTermsAccepted: false, onAcceptChatTerms })
-    expect(board().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy()
+    expect(board().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy()
     expect(board().queryByPlaceholderText('spy.askQuestion')).toBeNull()
     unmount()
 
     const game = questioningGame()
     Object.assign(game.getState().data, { currentTargetId: 'user-c', pendingQuestion: 'Where are you right now?' })
     renderBoard(game, 'user-c', { chatTermsAccepted: false, onAcceptChatTerms })
-    expect(board().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy()
+    expect(board().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy()
     expect(board().queryByPlaceholderText('spy.answerQuestion')).toBeNull()
     expect(spyActions).toEqual([])
   })

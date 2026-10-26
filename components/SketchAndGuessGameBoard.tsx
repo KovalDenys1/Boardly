@@ -743,7 +743,9 @@ function GuesserDrawingView({
         <TermsConsentPanel
           onAccept={handleAcceptTerms}
           autoFocus={focusTermsConsent}
-          className="rounded-xl border border-(--bd-line) bg-(--bd-bg2) px-3 py-2.5"
+          context="play"
+          compact
+          className="rounded-xl border border-(--bd-line) bg-(--bd-bg2) px-3 py-2"
         />
       ) : (
         <div className="sketch-guess-form">

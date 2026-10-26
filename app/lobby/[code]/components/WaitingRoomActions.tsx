@@ -118,7 +118,7 @@ export default function WaitingRoomActions({
       )}
 
       {termsRequired && onAcceptTerms ? (
-        <TermsConsentPanel onAccept={onAcceptTerms} autoFocus />
+        <TermsConsentPanel onAccept={onAcceptTerms} autoFocus context="play" />
       ) : (
         <button
           onClick={() => {

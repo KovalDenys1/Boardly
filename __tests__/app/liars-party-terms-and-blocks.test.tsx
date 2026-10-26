@@ -175,12 +175,12 @@ describe("Liar's Party: the terms before a claim (#1482)", () => {
     fireEvent.click(phaseRegion().getByRole('button', { name: /liarsParty\.bluff/ }))
     fireEvent.click(phaseRegion().getByRole('button', { name: 'liarsParty.submitClaim' }))
 
-    await waitFor(() => expect(phaseRegion().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy())
+    await waitFor(() => expect(phaseRegion().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy())
     expect(moves.map((move) => move.type)).toEqual(['submit-claim'])
     expect(phaseRegion().queryByPlaceholderText('liarsParty.claimPlaceholder')).toBeNull()
     expect(phaseRegion().queryByRole('button', { name: 'liarsParty.submitClaim' })).toBeNull()
 
-    fireEvent.click(phaseRegion().getByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(phaseRegion().getByRole('button', { name: 'chat.termsAcceptPlay' }))
 
     await waitFor(() => expect(phaseRegion().getByPlaceholderText('liarsParty.claimPlaceholder')).toBeTruthy())
     expect(mockFetch).toHaveBeenCalledWith('/api/user/accept-terms', expect.objectContaining({ method: 'POST' }))
@@ -201,7 +201,7 @@ describe("Liar's Party: the terms before a claim (#1482)", () => {
     fireEvent.change(chatInput, { target: { value: 'hello table' } })
     fireEvent.submit(chatInput.closest('form') as HTMLFormElement)
 
-    await waitFor(() => expect(phaseRegion().getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy())
+    await waitFor(() => expect(phaseRegion().getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy())
     expect(phaseRegion().queryByPlaceholderText('liarsParty.claimPlaceholder')).toBeNull()
     expect(moves).toEqual([])
   })

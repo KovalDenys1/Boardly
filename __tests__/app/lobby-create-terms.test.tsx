@@ -68,16 +68,16 @@ describe('/lobby/create with a lobby name before the terms (#1482)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'lobby.create.create' }))
     })
 
-    expect(screen.getByText('chat.termsPrompt')).toBeInTheDocument()
+    expect(screen.getByText('chat.termsPromptPlay')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('lobby.create.lobbyNamePlaceholder')).toHaveValue('Friday night')
     expect(screen.queryByRole('alert')).toBeNull()
     expect(pushMock).not.toHaveBeenCalled()
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'chat.termsAccept' }))
+      fireEvent.click(screen.getByRole('button', { name: 'chat.termsAcceptPlay' }))
     })
     expect(acceptTermsMock).toHaveBeenCalledTimes(1)
-    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    expect(screen.queryByText('chat.termsPromptPlay')).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     await act(async () => {

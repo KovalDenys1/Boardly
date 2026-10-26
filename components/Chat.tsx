@@ -614,7 +614,8 @@ export default function Chat({
         <TermsConsentPanel
           onAccept={handleAcceptTerms}
           autoFocus={focusTermsConsent}
-          className={`chat-composer shrink-0 border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-bd-lg'}`}
+          compact={!fullScreen}
+          className={`chat-composer shrink-0 border-t ${fullScreen ? 'rounded-none p-4' : 'rounded-b-bd-lg px-3 py-2.5'}`}
           style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
         />
       )}

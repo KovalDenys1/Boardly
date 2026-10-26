@@ -181,14 +181,14 @@ describe('Sketch & Guess guess box and the terms', () => {
     await renderPage(buildResponse({ drawerId: 'user-2' }))
 
     expect(screen.queryAllByPlaceholderText(GUESS_BOX)).toHaveLength(0)
-    expect(screen.getAllByText('chat.termsPrompt').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('chat.termsPromptPlay').length).toBeGreaterThan(0)
 
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'chat.termsAccept' })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: 'chat.termsAcceptPlay' })[0])
     })
 
     expect(mockAcceptTerms).toHaveBeenCalledTimes(1)
-    expect(screen.queryAllByText('chat.termsPrompt')).toHaveLength(0)
+    expect(screen.queryAllByText('chat.termsPromptPlay')).toHaveLength(0)
     expect(screen.getAllByPlaceholderText(GUESS_BOX).length).toBeGreaterThan(0)
   })
 
@@ -201,12 +201,12 @@ describe('Sketch & Guess guess box and the terms', () => {
       fireEvent.keyDown(boxes[boxes.length - 1], { key: 'Enter' })
     })
 
-    await waitFor(() => expect(screen.getAllByText('chat.termsPrompt').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('chat.termsPromptPlay').length).toBeGreaterThan(0))
     expect(screen.queryAllByPlaceholderText(GUESS_BOX)).toHaveLength(0)
     expect(showToast.error).not.toHaveBeenCalled()
 
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'chat.termsAccept' })[0])
+      fireEvent.click(screen.getAllByRole('button', { name: 'chat.termsAcceptPlay' })[0])
     })
 
     expect(mockAcceptTerms).toHaveBeenCalledTimes(1)
