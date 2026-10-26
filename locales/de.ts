@@ -4657,6 +4657,7 @@ const de: TranslationWithPlurals = {
     rules: 'Regeln',
     voteBreakdown: 'Stimmen im Detail',
     scoreDelta: 'Punkte in dieser Runde',
+    strikeAdded: '+1 Verwarnung',
     totalScores: 'Gesamtpunkte',
     eliminatedThisRound: 'In dieser Runde ausgeschieden',
     claimingNow: 'Behauptet gerade',

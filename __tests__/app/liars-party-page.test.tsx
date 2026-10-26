@@ -271,10 +271,9 @@ function buildStalledPlayingResponse(staleSeconds: number) {
 }
 
 /**
- * A reveal phase exactly as the engine leaves it: the claim is in, everyone has
- * voted, the phase is `reveal` – and `roundResults` is still empty, because the
- * engine resolves the round inside `advanceAfterReveal`, on the way out of this
- * screen. `bluffCaught` is false here (one challenger out of three is not the
+ * A reveal saved before the engine scored the round on entering it (#1379): the
+ * claim is in, everyone has voted, the phase is `reveal` – and `roundResults` is
+ * still empty, with no hold stamped. `bluffCaught` is false here (one challenger out of three is not the
  * strict majority rule 3 needs) while `isBluff` is true, which is the case that
  * separates "did the table catch it" from "was the voter right".
  */
@@ -305,6 +304,37 @@ function buildRevealResponse() {
  * that cost the same three voters 3 points each. Read the wrong entry and this
  * screen marks all three wrong and prints round 1's -3 beside their names.
  */
+/**
+ * The same reveal as the engine now leaves it (#1379): scored as it began, the
+ * totals already moved, and Next Round shut until `advanceOpensAt`.
+ */
+function buildScoredRevealResponse({ opensInMs = 3_000 } = {}) {
+  const response = buildRevealResponse()
+  Object.assign(response.activeGame.state.data, {
+    currentRoundResolved: true,
+    advanceOpensAt: Date.now() + opensInMs,
+    roundResults: [
+      {
+        round: 1,
+        claimantId: 'user-2',
+        claimText: 'I have never lost at chess',
+        wasBluff: true,
+        challengedBy: ['user-1'],
+        believedBy: ['user-3', 'user-4'],
+        bluffCaught: false,
+        fooledPlayers: 2,
+        claimantScoreDelta: 32,
+        voterScoreDeltas: { 'user-1': 14, 'user-3': -8, 'user-4': -8 },
+        claimantStrikeDelta: 0,
+        resolvedAt: Date.now(),
+      },
+    ],
+    scores: { 'user-1': 14, 'user-2': 32, 'user-3': 0, 'user-4': 0 },
+    strikes: { 'user-1': 0, 'user-2': 0, 'user-3': 0, 'user-4': 0 },
+  })
+  return response
+}
+
 function buildSecondRoundRevealResponse() {
   const response = buildPlayingResponse()
   Object.assign(response.activeGame.state.data, {
@@ -597,8 +627,8 @@ describe('LiarsPartyLobbyPage', () => {
     })
   })
 
-  // The reveal screen read `roundResults[length - 1]`, which the engine has not
-  // written yet while this phase is on screen (lib/games/liars-party-game.ts:479).
+  // The reveal screen read `roundResults[length - 1]`, which is the previous
+  // round's entry – and a reveal saved before #1379 has none for its own round.
   describe('the reveal screen reads the round it is revealing (#1040)', () => {
     it('shows the vote breakdown and the scores during reveal, not just the verdict', async () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildRevealResponse() } as Response)
@@ -668,6 +698,150 @@ describe('LiarsPartyLobbyPage', () => {
       expect(contentRegion().textContent ?? '').toContain('liarsParty.wasTruth')
     })
 
+  })
+
+  describe('the reveal shows what the round was worth and holds it (#1379)', () => {
+    const rowsOf = (testId: string) => [...desktop().getByTestId(testId).querySelectorAll('.space-y-2 > div')]
+
+    it('puts each vote\'s points and the claimant\'s beside their names, and in the standings', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildScoredRevealResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-vote-breakdown')).toBeTruthy())
+
+      expect(rowsOf('liars-vote-breakdown').map((row) => row.querySelector('.liars-delta')?.textContent)).toEqual(['+14', '-8', '-8'])
+      const claimant = desktop().getByTestId('liars-claimant-result')
+      expect(claimant.textContent).toContain('liarsParty.claimedBy:{"name":"Bob"}')
+      expect(claimant.querySelector('.liars-delta')?.textContent).toBe('+32')
+      expect(claimant.textContent).not.toContain('liarsParty.strikeAdded')
+
+      const seats = [...desktop().getByTestId('liars-standings').querySelectorAll('.liars-seat')]
+      const deltaOf = (name: string) => seats.find((seat) => seat.textContent?.includes(name))?.querySelector('.liars-delta')?.textContent
+      expect([deltaOf('Alice'), deltaOf('Bob'), deltaOf('Carol'), deltaOf('Dave')]).toEqual(['+14', '+32', '-8', '-8'])
+      expect(seats.find((seat) => seat.textContent?.includes('Bob'))?.textContent).toContain('liarsParty.points:{"count":32}')
+    })
+
+    it('keeps the round on screen out of the history card under it', async () => {
+      const response = buildScoredRevealResponse()
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+      const { unmount } = render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-vote-breakdown')).toBeTruthy())
+      // Round 1 is the reveal's own card; with no earlier round, the rules take the slot.
+      expect(desktop().queryByTestId('liars-round-history')).toBeNull()
+      expect(desktop().getByTestId('liars-rules')).toBeTruthy()
+      unmount()
+
+      const earlier = { ...response.activeGame.state.data.roundResults[0], round: 1, claimText: 'Round one was about cats' }
+      Object.assign(response.activeGame.state.data, {
+        currentRound: 2,
+        roundResults: [earlier, { ...response.activeGame.state.data.roundResults[0], round: 2 }],
+      })
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-round-history')).toBeTruthy())
+      const history = desktop().getByTestId('liars-round-history').textContent ?? ''
+      expect(history).toContain('Round one was about cats')
+      expect(history).not.toContain('I have never lost at chess')
+    })
+
+    it('shows a caught claimant\'s strike, and a silent claimant\'s lost points', async () => {
+      const caught = buildScoredRevealResponse()
+      Object.assign(caught.activeGame.state.data.roundResults[0], { bluffCaught: true, claimantScoreDelta: -12, claimantStrikeDelta: 1 })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => caught } as Response)
+      const { unmount } = render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-claimant-result')).toBeTruthy())
+      expect(desktop().getByTestId('liars-claimant-result').textContent).toContain('liarsParty.strikeAdded')
+      expect(desktop().getByTestId('liars-claimant-result').querySelector('.liars-delta')?.textContent).toBe('-12')
+      unmount()
+
+      const silent = buildScoredRevealResponse()
+      Object.assign(silent.activeGame.state.data, {
+        claim: { playerId: 'user-2', text: '', isBluff: false, submittedAt: Date.now(), autoSubmitted: true },
+        challengeVotes: [],
+      })
+      Object.assign(silent.activeGame.state.data.roundResults[0], { claimTimedOut: true, claimantScoreDelta: -4, voterScoreDeltas: {} })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => silent } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-claim-timed-out')).toBeTruthy())
+      expect(desktop().getByTestId('liars-claim-timed-out').querySelector('.liars-delta')?.textContent).toBe('-4')
+    })
+
+    it('keeps Next Round shut, with a countdown, for the hold', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildScoredRevealResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-next-round')).toBeTruthy())
+
+      const button = desktop().getByTestId('liars-next-round') as HTMLButtonElement
+      expect(button.disabled).toBe(true)
+      expect(desktop().getByTestId('liars-next-round-countdown').textContent).toBe('liarsParty.timeLeft:{"seconds":3}')
+      expect(button.querySelector('.liars-next__fill')).toBeTruthy()
+
+      mockFetchWithGuest.mockClear()
+      fireEvent.click(button)
+      expect(mockFetchWithGuest).not.toHaveBeenCalled()
+    })
+
+    it('offers the final results when a strike-out leaves one player in, not another round', async () => {
+      const response = buildScoredRevealResponse({ opensInMs: -1 })
+      Object.assign(response.activeGame.state.data, {
+        activePlayerIds: ['user-1'],
+        eliminatedPlayerIds: ['user-3', 'user-4', 'user-2'],
+        eliminatedAtRound: { 'user-1': null, 'user-2': 1, 'user-3': 1, 'user-4': 1 },
+      })
+      Object.assign(response.activeGame.state.data.roundResults[0], { bluffCaught: true, claimantScoreDelta: -12, claimantStrikeDelta: 1 })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-next-round')).toBeTruthy())
+
+      expect(response.activeGame.state.data.currentRound).toBeLessThan(response.activeGame.state.data.maxRounds)
+      expect(desktop().getByTestId('liars-next-round').textContent).toContain('liarsParty.seeResults')
+      expect(desktop().getByTestId('liars-next-round').textContent).not.toContain('liarsParty.nextRound')
+    })
+
+    it('pops the header seats\' points when the reveal moves them, as the players panel does', async () => {
+      const voting = buildScoredRevealResponse()
+      Object.assign(voting.activeGame.state.data, {
+        phase: 'challenge',
+        currentRoundResolved: false,
+        advanceOpensAt: null,
+        roundResults: [],
+        scores: { 'user-1': 0, 'user-2': 0, 'user-3': 0, 'user-4': 0 },
+        challengeVotes: voting.activeGame.state.data.challengeVotes.slice(0, 2),
+      })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => voting } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
+      const sublines = () => [...document.querySelectorAll('.ttt-desktop-layout .game-player-subline')]
+      expect(sublines().some((line) => line.querySelector('.score-pop'))).toBe(false)
+
+      const scored = buildScoredRevealResponse()
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => scored } as Response)
+      act(() => {
+        broadcastHandlers['game-update']?.({ payload: {} })
+      })
+      await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+      await waitFor(() => {
+        const popped = sublines().map((line) => line.querySelector('.score-pop')?.textContent)
+        expect(popped).toEqual(['liarsParty.points:{"count":32}', 'liarsParty.points:{"count":14}'])
+      }, { timeout: 3_000 })
+    })
+
+    it('opens Next Round when the hold is over and sends advance-round', async () => {
+      const response = buildScoredRevealResponse({ opensInMs: 300 })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-next-round')).toBeTruthy())
+      const button = desktop().getByTestId('liars-next-round') as HTMLButtonElement
+      expect(button.disabled).toBe(true)
+
+      await waitFor(() => expect(button.disabled).toBe(false), { timeout: 2_000 })
+      expect(desktop().queryByTestId('liars-next-round-countdown')).toBeNull()
+      expect(button.querySelector('.liars-next__fill')).toBeNull()
+
+      mockFetchWithGuest.mockClear()
+      fireEvent.click(button)
+      await waitFor(() => expect(mockFetchWithGuest).toHaveBeenCalledWith('/api/game/game-1/state', expect.objectContaining({ method: 'POST' })))
+      const body = JSON.parse((mockFetchWithGuest.mock.calls[0][1] as RequestInit).body as string)
+      expect(body.move.type).toBe('advance-round')
+    })
   })
 
   // #1041: the page had no GameScoreboardHeader, no GameResultOverlay, no
