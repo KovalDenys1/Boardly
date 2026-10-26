@@ -31,7 +31,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LIARS_REVEAL_HOLD_MS, LiarsPartyGame, liarsPartyAdvanceEndsGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, lobbyFromRead, resetFreshnessWatermark, rosterForRead, takeMissedSnapshot, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
@@ -866,6 +866,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
     try {
+      const read = beginLobbyRead(freshnessRef.current)
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
 
@@ -890,19 +891,19 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       const parsedState = activeGame?.state
         ? (typeof activeGame.state === 'string' ? JSON.parse(activeGame.state || '{}') : activeGame.state)
         : null
-      const freshness = decideFreshness(freshnessRef.current, parsedState, { snapshot: true, trusted: options.reconcile, moveInFlight: isMoveSubmittingRef.current })
+      const freshness = decideFreshness(freshnessRef.current, parsedState, { snapshot: true, read, roster: activeGame?.players, gameId: activeGame?.id, trusted: options.reconcile, moveInFlight: isMoveSubmittingRef.current })
       if (!freshness.accept) {
         clientLogger.debug("Ignoring stale Liar's Party lobby snapshot", { gameId: activeGame?.id, reason: freshness.reason })
         // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
-        if (freshness.reason === 'move-in-flight') setLobby(lobbyData)
-        else if (!options.followUp) void loadLobby({ followUp: true })
+        if (freshness.reason === 'move-in-flight' || freshness.reason === 'superseded-read') setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyData, prev))
+        else if (freshness.lobby && !options.followUp) void loadLobby({ followUp: true })
         setGame(prev => keepBoardFromDroppedSnapshot(prev, activeGame, freshness))
         setLoading(false)
         return
       }
 
-      setLobby(lobbyData)
-      setGame(activeGame ?? null)
+      setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyData, prev))
+      setGame((prev) => rosterForRead(activeGame ?? null, prev, freshness))
       if (activeGame && parsedState && typeof parsedState === 'object') {
         const fresh = new LiarsPartyGame(activeGame.id)
         fresh.restoreState(parsedState as Parameters<LiarsPartyGame['restoreState']>[0])
@@ -953,10 +954,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     clientLogger.log('📡 LiarsParty player left', payload)
     if (isLeavingLobbyRef.current) return
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (payload.nextCreatorId) {
-      const nextCreatorId = payload.nextCreatorId
+    const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, payload)
+    if (nextCreatorId) {
       setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
-      if (payload.nextCreatorId === getCurrentUserId()) {
+      if (nextCreatorId === getCurrentUserId()) {
         showToast.success('toast.youAreNowHost')
       } else if (payload.nextCreatorName) {
         showToast.info('toast.hostReassigned', undefined, { player: payload.nextCreatorName })

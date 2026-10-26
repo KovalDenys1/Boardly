@@ -46,6 +46,7 @@ import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/(site)/lobby/[code]/components/LobbyPageFallbacks'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, lobbyFromRead, readUpdatedAt, resetFreshnessWatermark, rosterForRead, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 import { sketchPhaseSeconds } from '@/lib/games/sketch-and-guess-phases'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
@@ -77,6 +78,8 @@ interface SketchAndGuessGame {
     data: SketchAndGuessGameData
     /** When the current phase started; the engine stamps it on every phase change (#1022). */
     lastMoveAt?: number
+    /** The state's own `updatedAt`, which breaks a tie on `lastMoveAt`. */
+    updatedAt?: number
 }
 
 interface LobbyData {
@@ -139,17 +142,19 @@ function defaultSketchState(): SketchAndGuessGameData {
     }
 }
 
-/** The phase deadline is measured from `lastMoveAt`, which arrives as a string or an object. */
-function readLastMoveAt(raw: unknown): number | undefined {
-    let parsed: unknown = raw
-    if (typeof raw === 'string') {
-        try {
-            parsed = JSON.parse(raw)
-        } catch {
-            return undefined
-        }
+/** A game state arrives as a string or an object. */
+function parseRawState(raw: unknown): unknown {
+    if (typeof raw !== 'string') return raw
+    try {
+        return JSON.parse(raw)
+    } catch {
+        return undefined
     }
-    const value = (parsed as Record<string, unknown>)?.lastMoveAt
+}
+
+/** The phase deadline is measured from `lastMoveAt`. */
+function readLastMoveAt(raw: unknown): number | undefined {
+    const value = (parseRawState(raw) as Record<string, unknown> | undefined)?.lastMoveAt
     return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
@@ -231,6 +236,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // sends anyway. The ref is the guard; the state is only for the spinner
     // (#1006, the same pattern as tic-tac-toe and RPS).
     const submitInFlightRef = useRef(false)
+    // Lobby reads, broadcast-triggered refetches and the move answers are judged against one watermark (#1528).
+    const freshnessRef = useRef(createFreshnessWatermark())
 
     const lifecycleRedirectInFlightRef = useRef(false)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'sketch_and_guess').minPlayersRequired
@@ -353,6 +360,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             players,
             data: parseSketchState(activeGame.state),
             lastMoveAt: readLastMoveAt(activeGame.state),
+            updatedAt: readUpdatedAt(parseRawState(activeGame.state)) ?? undefined,
         }
 
         return {
@@ -368,8 +376,9 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         }
     }, [])
 
-    const loadLobbyData = useCallback(async () => {
+    const loadLobbyData = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
         try {
+            const read = beginLobbyRead(freshnessRef.current)
             // `locale` is what the server builds the word hint in for a guesser (#1082).
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true&locale=${encodeURIComponent(locale)}`, {
                 method: 'GET',
@@ -389,8 +398,36 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             }
             const normalizedLobby = normalizeLobbyResponse(data)
             if (!normalizedLobby) throw new Error('Invalid lobby response')
-            setLobby(normalizedLobby)
             finalizePendingLobbyCreateMetric({ lobbyCode: normalizedLobby.code, fallbackGameType: normalizedLobby.gameType })
+            const freshness = decideFreshness(freshnessRef.current, normalizedLobby.game ?? null, {
+                snapshot: true,
+                read,
+                roster: normalizeLobbySnapshotResponse(data, { includeFinished: true }).activeGame?.players,
+                gameId: normalizedLobby.gameId,
+                trusted: options.reconcile,
+                moveInFlight: submitInFlightRef.current,
+            })
+            if (!freshness.accept) {
+                clientLogger.debug('Ignoring stale Sketch & Guess lobby snapshot', { gameId: normalizedLobby.gameId, reason: freshness.reason })
+                // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
+                if (freshness.lobby && freshness.reason === 'move-in-flight') {
+                    setLobby((prev) => prev && lobbyFromRead(freshnessRef.current, freshness, read, {
+                        ...normalizedLobby,
+                        status: prev.status,
+                        gameId: prev.gameId,
+                        game: keepBoardFromDroppedSnapshot(prev.game ?? null, normalizedLobby.game, freshness) ?? undefined,
+                    }, prev))
+                } else if (freshness.reason === 'superseded-read') {
+                    setLobby((prev) => prev && lobbyFromRead(freshnessRef.current, freshness, read, normalizedLobby, prev))
+                } else if (freshness.lobby && !options.followUp) void loadLobbyData({ followUp: true })
+                return
+            }
+            setLobby((prev) => {
+                const next = lobbyFromRead(freshnessRef.current, freshness, read, normalizedLobby, prev)
+                if (!next || freshness.lobby !== false) return next
+                const game = rosterForRead(normalizedLobby.game ?? null, prev?.game ?? null, freshness) ?? undefined
+                return { ...next, status: normalizedLobby.status, gameId: normalizedLobby.gameId, game }
+            })
         } catch (err) {
             // A network blip is not a dead lobby, so a game in progress stays on screen. One
             // toast id, because every realtime broadcast calls this and N failures are still one
@@ -432,8 +469,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
             const departedPlayerName = data.username || data.playerName
             if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
-            if (data.nextCreatorId) {
-                if (data.nextCreatorId === getCurrentUserId()) {
+            const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, data)
+            if (nextCreatorId) {
+                setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
+                if (nextCreatorId === getCurrentUserId()) {
                     showToast.success('toast.youAreNowHost')
                 } else if (data.nextCreatorName) {
                     showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
@@ -466,6 +505,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     }, [loadLobbyData])
 
     const handleGameReset = useCallback(() => {
+        resetFreshnessWatermark(freshnessRef.current)
         stuckPhaseRecoveryRef.current.reset()
         setOverlayInspecting(false)
         if (onGameReset) onGameReset()
@@ -571,7 +611,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 }
 
                 const authoritativeState = payload?.state
-                if (authoritativeState) {
+                const answer = authoritativeState ? decideFreshness(freshnessRef.current, authoritativeState, { trusted: true }) : null
+                if (answer && !answer.accept) {
+                    clientLogger.debug('Ignoring stale Sketch & Guess move answer', { gameId: lobby.game.id, reason: answer.reason })
+                } else if (authoritativeState) {
                     const normalizedData = parseSketchState(authoritativeState)
                     setLobby((prevLobby) => {
                         if (!prevLobby?.game) return prevLobby
@@ -598,6 +641,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                                 players: responsePlayers,
                                 data: normalizedData,
                                 lastMoveAt: readLastMoveAt(authoritativeState) ?? prevLobby.game.lastMoveAt,
+                                updatedAt: readUpdatedAt(authoritativeState) ?? prevLobby.game.updatedAt,
                             },
                         }
                     })
@@ -717,7 +761,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             if (!res.ok) throw new Error((typeof data?.error === 'string' && data.error) || 'Failed to start rematch')
             stuckPhaseRecoveryRef.current.reset()
             setOverlayInspecting(false)
-            await loadLobbyData()
+            resetFreshnessWatermark(freshnessRef.current)
+            await loadLobbyData({ reconcile: true })
             showToast.success('lobby.game.playAgain')
         } catch (err) {
             clientLogger.error('Failed to start Sketch & Guess rematch:', err)

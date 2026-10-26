@@ -16,7 +16,7 @@ import {
 } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
-import { advanceLifecycleStatus, decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
+import { advanceLifecycleStatus, beginLobbyRead, decideFreshness, lobbyFromRead, rosterForRead, type FreshnessWatermark } from '@/lib/game-state-freshness'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import {
   getLobbyJoinRefusalMessageKey,
@@ -47,7 +47,7 @@ interface UseLobbyActionsProps {
   /** Shared with the broadcast handler and the move submits, so all three sources of state are judged against one watermark (#994). */
   freshnessRef: React.MutableRefObject<FreshnessWatermark>
   setGame: React.Dispatch<React.SetStateAction<Game | null>>
-  setLobby: (lobby: Lobby | null) => void
+  setLobby: React.Dispatch<React.SetStateAction<Lobby | null>>
   setGameEngine: (engine: GameEngine | null) => void
   setTimerActive: (active: boolean) => void
   setTimeLeft: (time: number) => void
@@ -96,9 +96,20 @@ interface LobbySettingsUpdatePayload {
   gameType?: string
 }
 
+/**
+ * `fresh` sends a request of its own rather than sharing one already in flight; it is trusted as a
+ * reconcile unless `trusted: false`, as the read a player-left frame asks for is (#1528).
+ */
+export interface LoadLobbyOptions {
+  fresh?: boolean
+  trusted?: boolean
+}
+
 interface LobbySnapshotResult {
   lobby: Lobby | null
   game: Game | null
+  /** The read's number from `beginLobbyRead`, taken as the request left. */
+  read: number
 }
 
 // This copy was two games behind the union – `connect_four` and `sketch_and_guess`
@@ -178,7 +189,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   const [startTermsRequired, setStartTermsRequired] = useState(false)
 
   // Use ref to avoid circular dependencies
-  const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
+  const loadLobbyRef = useRef<((options?: LoadLobbyOptions) => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
   const lobbySnapshotRequestRef = useRef<Promise<LobbySnapshotResult> | null>(null)
 
@@ -197,19 +208,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     const normalizedLobby = snapshot.lobby
     const normalizedGame = snapshot.game
 
-    setLobby(normalizedLobby)
-    if (normalizedLobby?.code) {
-      finalizePendingLobbyCreateMetric({
-        lobbyCode: normalizedLobby.code,
-        fallbackGameType: normalizedLobby.gameType || DEFAULT_GAME_TYPE,
-      })
-    }
-
-    if (!normalizedGame) return
-
     let parsedState: unknown = null
     let parseFailed = false
-    if (normalizedGame.state) {
+    if (normalizedGame?.state) {
       try {
         parsedState =
           typeof normalizedGame.state === 'string'
@@ -222,12 +223,29 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
     }
 
-    // The lobby itself is always worth applying - players join and leave
-    // independently of the board. The game is not: a snapshot answers with the
-    // state as of when its request left, which a broadcast or this player's own
-    // move response may already have overtaken (#994). A reconcile asks for its
-    // own snapshot and passes `trusted`, so it can still unstick the board.
-    const freshness = decideFreshness(freshnessRef.current, parsedState, { trusted: options.trusted })
+    // The lobby is worth applying whatever the board says - players join and
+    // leave independently of it - unless a read sent after this one already put
+    // its lobby on screen (#1528). The game is judged on its own: a snapshot
+    // answers with the state as of when its request left, which a broadcast or
+    // this player's own move response may already have overtaken (#994). A
+    // reconcile asks for its own snapshot and passes `trusted`, so it can still
+    // unstick the board.
+    const freshness = decideFreshness(freshnessRef.current, parsedState, {
+      trusted: options.trusted && normalizedGame !== null,
+      read: snapshot.read,
+      roster: normalizedGame?.players,
+      gameId: normalizedGame?.id,
+    })
+    setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, snapshot.read, normalizedLobby, prev))
+    if (freshness.lobby && normalizedLobby?.code) {
+      finalizePendingLobbyCreateMetric({
+        lobbyCode: normalizedLobby.code,
+        fallbackGameType: normalizedLobby.gameType || DEFAULT_GAME_TYPE,
+      })
+    }
+
+    if (!normalizedGame) return
+
     if (!freshness.accept) {
       clientLogger.debug('Ignoring stale lobby snapshot', {
         gameId: normalizedGame.id,
@@ -239,17 +257,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Nor is the lifecycle: the start broadcast can move the watermark to
       // this very stamp, and then this is the only thing saying 'playing'
       // (#1183). Forward only, so a stale snapshot never rewinds it.
+      if (freshness.reason === 'superseded-read') return
       setGame((prevGame) => (prevGame && prevGame.id === normalizedGame.id
         ? {
             ...prevGame,
-            players: normalizedGame.players,
+            players: freshness.lobby ? normalizedGame.players : prevGame.players,
             status: advanceLifecycleStatus(prevGame.status, normalizedGame.status),
           }
         : prevGame))
       return
     }
 
-    setGame(normalizedGame)
+    setGame((prev) => rosterForRead(normalizedGame, prev, freshness))
 
     if (parseFailed || !parsedState) return
 
@@ -276,6 +295,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
 
     const request = (async (): Promise<LobbySnapshotResult> => {
+      const read = beginLobbyRead(freshnessRef.current)
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken, {
         includeContentType: false,
       })
@@ -297,6 +317,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       return {
         lobby: normalizedLobby,
         game: normalizedGame,
+        read,
       }
     })()
 
@@ -310,6 +331,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
   }, [
     code,
+    freshnessRef,
     guestId,
     guestName,
     guestToken,
@@ -317,14 +339,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   ])
 
   const fetchLobbySnapshot = useCallback(async (
-    options: { applyState?: boolean; fresh?: boolean } = {}
+    options: { applyState?: boolean } & LoadLobbyOptions = {}
   ): Promise<LobbySnapshotResult> => {
     const applyState = options.applyState !== false
     const fresh = options.fresh === true
     const snapshot = await requestLobbySnapshot({ fresh })
 
     if (applyState) {
-      await applyLobbySnapshot(snapshot, { trusted: fresh })
+      await applyLobbySnapshot(snapshot, { trusted: options.trusted ?? fresh })
     }
 
     return snapshot
@@ -333,9 +355,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     requestLobbySnapshot,
   ])
 
-  const loadLobby = useCallback(async (options: { fresh?: boolean } = {}) => {
+  const loadLobby = useCallback(async (options: LoadLobbyOptions = {}) => {
     try {
-      await fetchLobbySnapshot({ applyState: true, fresh: options.fresh })
+      await fetchLobbySnapshot({ applyState: true, fresh: options.fresh, trusted: options.trusted })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

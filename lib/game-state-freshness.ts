@@ -31,6 +31,31 @@ export interface FreshnessWatermark {
   overtookMove?: boolean
   /** A snapshot newer than the board was dropped for a move in flight, so the page reads again once it settles. */
   missedDuringMove?: boolean
+  /** How many lobby reads the page has sent; each is numbered as it leaves (#1528). */
+  readsSent?: number
+  /** The newest read whose board was applied: a read behind it gives nothing. */
+  boardRead?: ReadPlace
+  /** The newest read whose lobby facts are on screen: a read behind it brings none, and only a reconcile still brings its board. */
+  lobbyRead?: ReadPlace
+  /** Players a frame or a read reported gone. */
+  departed?: Record<string, Departure>
+  /** The host the newest player-left frame handed the lobby to, and that frame's leave time. */
+  frameHost?: string
+  frameHostAt?: number
+}
+
+/** Where a read stands: its game-state age first; its number orders only reads that are as old. */
+export interface ReadPlace {
+  read: number
+  lastMoveAt: number | null
+  updatedAt: number | null
+  gameId?: string
+}
+
+/** When a player left by the server's clock, if known, and how many reads had been sent when the page learned it. */
+export interface Departure {
+  at?: number
+  read: number
 }
 
 export function createFreshnessWatermark(): FreshnessWatermark {
@@ -62,7 +87,130 @@ export interface FreshnessDecision {
   /** Whether the caller should apply this snapshot. */
   accept: boolean
   /** Why it was rejected, for the log line. */
-  reason?: 'older-than-applied' | 'move-in-flight'
+  reason?: 'older-than-applied' | 'move-in-flight' | 'superseded-read'
+  /** For a numbered read: no read sent after it has put its lobby facts (host, roster, settings) on screen. */
+  lobby?: boolean
+  /** A read dropped for its place that is of the game on screen: its host may still replace a host on screen who has left. */
+  hostOnly?: boolean
+}
+
+/**
+ * Numbers a lobby read as it leaves (#1528). Two reads can carry the same game
+ * state and still differ in what the stamps cannot see – a leave sweeps a seat
+ * and moves the host without restamping – so only the order they were sent in
+ * tells which is newer. Pass the number to `decideFreshness` when it lands.
+ */
+export function beginLobbyRead(watermark: FreshnessWatermark): number {
+  watermark.readsSent = (watermark.readsSent ?? 0) + 1
+  return watermark.readsSent
+}
+
+function readTime(value: unknown): number | undefined {
+  const time = value instanceof Date ? value.getTime() : typeof value === 'string' ? Date.parse(value) : value
+  return typeof time === 'number' && Number.isFinite(time) ? time : undefined
+}
+
+function noteDeparted(watermark: FreshnessWatermark, userId: string, at: number | undefined): void {
+  const departed = (watermark.departed ??= {})
+  const known = departed[userId]
+  if (known && (at === undefined || (known.at !== undefined && at <= known.at))) return
+  departed[userId] = { at, read: watermark.readsSent ?? 0 }
+}
+
+/** Whether `host` may be shown as host: nobody reported them gone, or `read` was sent after the page learned it and names them, so they came back. */
+function isLiveHost(watermark: FreshnessWatermark, host: unknown, read?: number): host is string {
+  if (typeof host !== 'string' || host.length === 0) return false
+  const gone = watermark.departed?.[host]
+  return gone === undefined || (read !== undefined && read > gone.read)
+}
+
+/**
+ * A player-left frame (#1528). Records the player who left, and returns the host
+ * the frame hands the lobby to, or null. A frame carries the server's leave
+ * time, and the host only changes when the host leaves, so a frame is refused
+ * when it is older than the newest one taken, or names a host who left after
+ * it – the older of two leaves whose frames arrived newest first. A host who
+ * left before it was in the room again when the server chose them. A frame
+ * without a time is refused whenever its host has been reported gone.
+ */
+export function takePlayerLeftFrame(
+  watermark: FreshnessWatermark,
+  frame: { userId?: unknown; nextCreatorId?: unknown; leftAt?: unknown }
+): string | null {
+  const at = readTime(frame.leftAt)
+  if (typeof frame.userId === 'string' && frame.userId.length > 0) noteDeparted(watermark, frame.userId, at)
+  const next = frame.nextCreatorId
+  if (typeof next !== 'string' || next.length === 0) return null
+  if (at !== undefined && watermark.frameHostAt !== undefined && at < watermark.frameHostAt) return null
+  const gone = watermark.departed?.[next]
+  if (gone && (at === undefined || (gone.at !== undefined && gone.at > at))) return null
+  if (gone) delete watermark.departed?.[next]
+  watermark.frameHost = next
+  if (at !== undefined) watermark.frameHostAt = at
+  return next
+}
+
+/**
+ * The lobby to show once read number `read` lands, given the decision on it and
+ * the lobby on screen. A read whose lobby facts are older than the ones on
+ * screen keeps the lobby on screen; and no read puts back a host who has left –
+ * it keeps the host on screen, or the one the newest frame named.
+ */
+export function lobbyFromRead<L extends { creatorId?: string | null }>(
+  watermark: FreshnessWatermark,
+  decision: FreshnessDecision,
+  read: number,
+  incoming: L | null,
+  onScreen: L | null
+): L | null {
+  const superseded = decision.reason === 'superseded-read'
+  const base = superseded || (decision.lobby === false && onScreen) ? onScreen : incoming
+  if (!base || base.creatorId == null || isLiveHost(watermark, base.creatorId, base === incoming ? read : undefined)) return base
+  let host: string | undefined
+  if (base === incoming) host = [onScreen?.creatorId, watermark.frameHost].find((candidate) => isLiveHost(watermark, candidate))
+  else if (isLiveHost(watermark, watermark.frameHost)) host = watermark.frameHost
+  else if ((!superseded || decision.hostOnly) && isLiveHost(watermark, incoming?.creatorId, read)) host = incoming?.creatorId ?? undefined
+  return host ? { ...base, creatorId: host } : base
+}
+
+/** A reconcile whose lobby facts are older than the ones on screen brings its board, never its roster. */
+export function rosterForRead<G extends { id: string; players?: unknown }>(
+  incoming: G | null,
+  onScreen: G | null,
+  decision: FreshnessDecision
+): G | null {
+  if (decision.lobby !== false || !incoming || !onScreen || onScreen.id !== incoming.id) return incoming
+  return { ...incoming, players: onScreen.players }
+}
+
+/** A roster row with `leftAt` is a departure; one with `leftAt: null` in a read sent after the page learned of it is a return. */
+function noteRoster(watermark: FreshnessWatermark, roster: unknown, read: number, departuresOnly = false): void {
+  if (!Array.isArray(roster)) return
+  for (const row of roster) {
+    const userId = (row as { userId?: unknown } | null)?.userId
+    if (typeof userId !== 'string' || userId.length === 0) continue
+    const leftAt = (row as { leftAt?: unknown }).leftAt
+    if (leftAt) noteDeparted(watermark, userId, readTime(leftAt))
+    else if (!departuresOnly && leftAt === null && (watermark.departed?.[userId]?.read ?? read) < read) delete watermark.departed?.[userId]
+  }
+}
+
+function compareAge(
+  a: { lastMoveAt: number | null; updatedAt: number | null },
+  b: { lastMoveAt: number | null; updatedAt: number | null }
+): 'older' | 'same' | 'newer' {
+  if (a.lastMoveAt === null || b.lastMoveAt === null) return 'same'
+  if (a.lastMoveAt !== b.lastMoveAt) return a.lastMoveAt < b.lastMoveAt ? 'older' : 'newer'
+  if (a.updatedAt === null || b.updatedAt === null || a.updatedAt === b.updatedAt) return 'same'
+  return a.updatedAt < b.updatedAt ? 'older' : 'newer'
+}
+
+/** Whether `place` stands behind, level with or ahead of `mark`: by game-state age, and by send order when the ages match. */
+function placeAgainst(place: ReadPlace, mark: ReadPlace | undefined): 'older' | 'same' | 'newer' {
+  if (!mark) return 'newer'
+  const byAge = compareAge(place, mark)
+  if (byAge !== 'same') return byAge
+  return place.read === mark.read ? 'same' : place.read < mark.read ? 'older' : 'newer'
 }
 
 /**
@@ -85,8 +233,47 @@ export const MAX_WATERMARK_LEAD_MS = 60 * 1000
  * that window an unsolicited snapshot cannot have seen the move, so it is
  * dropped rather than compared.
  * `snapshot` is a lobby read: its equal stamp may carry an unstamped timeout or sweep, unless a move is in flight on that board.
+ * `read` is that read's number from `beginLobbyRead`. Reads are placed by game-state
+ * age, and by the order they left only when their ages match: a strictly newer
+ * board always applies, whenever its read left. A read placed behind the newest
+ * one whose board was applied gives nothing, a reconcile included; one placed
+ * behind the newest one whose lobby facts are on screen gives nothing either,
+ * unless it is a reconcile: that one has its board judged as usual and
+ * `lobby: false`. An older snapshot (`snapshot` and `older-than-applied`) puts
+ * no lobby facts on screen, so it moves no mark.
+ * `roster` is the read's player rows; only a read that keeps its place teaches the page who left,
+ * or one dropped for its place that is of the game on screen (`gameId`): a leave after the game
+ * ended writes no game state, so the reads on either side of it are as old, and the one that left
+ * first can be the one answered after it. A read stamped beyond MAX_WATERMARK_LEAD_MS is placed by
+ * its send order alone, so it cannot put every read after it behind.
  */
 export function decideFreshness(
+  watermark: FreshnessWatermark,
+  incoming: unknown,
+  options?: { trusted?: boolean; moveInFlight?: boolean; snapshot?: boolean; read?: number; roster?: unknown; gameId?: unknown; now?: number }
+): FreshnessDecision {
+  const read = options?.read
+  if (read === undefined) return judgeBoard(watermark, incoming, options)
+  const gameId = typeof options?.gameId === 'string' && options.gameId.length > 0 ? options.gameId : undefined
+  const place: ReadPlace = { read, lastMoveAt: readLastMoveAt(incoming), updatedAt: readUpdatedAt(incoming), gameId }
+  const behindBoard = placeAgainst(place, watermark.boardRead) === 'older'
+  const behindLobby = placeAgainst(place, watermark.lobbyRead) === 'older'
+  if (behindLobby && (behindBoard || !options?.trusted)) {
+    const ofGameOnScreen = gameId !== undefined && gameId === watermark.boardRead?.gameId
+    if (ofGameOnScreen) noteRoster(watermark, options?.roster, read, true)
+    return { accept: false, reason: 'superseded-read', lobby: false, ...(ofGameOnScreen ? { hostOnly: true } : {}) }
+  }
+  noteRoster(watermark, options?.roster, read)
+  const decision: FreshnessDecision = behindBoard ? { accept: false, reason: 'older-than-applied' } : judgeBoard(watermark, incoming, options)
+  const lobby = !behindLobby
+  const beyondLead = place.lastMoveAt !== null && place.lastMoveAt > (options?.now ?? Date.now()) + MAX_WATERMARK_LEAD_MS
+  const mark: ReadPlace = beyondLead ? { read, lastMoveAt: null, updatedAt: null, gameId } : place
+  if (lobby && !(options?.snapshot && decision.reason === 'older-than-applied')) watermark.lobbyRead = mark
+  if (decision.accept) watermark.boardRead = mark
+  return { ...decision, lobby }
+}
+
+function judgeBoard(
   watermark: FreshnessWatermark,
   incoming: unknown,
   options?: { trusted?: boolean; moveInFlight?: boolean; snapshot?: boolean; now?: number }
@@ -146,6 +333,9 @@ export function resetFreshnessWatermark(watermark: FreshnessWatermark): void {
   watermark.updatedAt = null
   watermark.overtookMove = false
   watermark.missedDuringMove = false
+  watermark.departed = {}
+  watermark.frameHost = undefined
+  watermark.frameHostAt = undefined
 }
 
 /**
@@ -195,12 +385,12 @@ export function advanceLifecycleStatus<T extends string>(current: T, incoming: u
   return LIFECYCLE_ORDER[incomingRank]
 }
 
-/** Only a snapshot dropped as old as the board, for the move in flight, still brings its roster; the status stays the move's own. */
+/** Only a snapshot dropped as old as the board, for the move in flight, still brings its roster, unless a newer one is on screen; the status stays the move's own. */
 export function keepBoardFromDroppedSnapshot<G extends { id: string; status: string; players?: unknown }>(
   current: G | null,
   dropped: { id?: unknown; status?: unknown; players?: unknown } | null | undefined,
   decision: FreshnessDecision
 ): G | null {
-  if (decision.reason !== 'move-in-flight' || !current || !dropped || dropped.id !== current.id) return current
+  if (decision.reason !== 'move-in-flight' || decision.lobby === false || !current || !dropped || dropped.id !== current.id) return current
   return dropped.players !== undefined ? { ...current, players: dropped.players } : current
 }
