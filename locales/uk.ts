@@ -4768,6 +4768,7 @@ const uk: TranslationWithPlurals = {
     rules: 'Правила',
     voteBreakdown: 'Результати голосування',
     scoreDelta: 'Очки за раунд',
+    strikeAdded: '+1 страйк',
     totalScores: 'Підсумковий рахунок',
     eliminatedThisRound: 'Вибули в цьому раунді',
     claimingNow: 'Зараз робить заяву',

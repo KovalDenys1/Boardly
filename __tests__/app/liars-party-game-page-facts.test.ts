@@ -20,6 +20,17 @@ const entry = getCatalogGames().find((game) => game.gameType === 'liars_party')!
 const config = entry.lobbyCreateConfig!
 const PLAYERS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']
 
+let clock = 1_000_000
+let nowSpy: jest.SpyInstance<number, []>
+beforeEach(() => {
+  clock = 1_000_000
+  nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => clock)
+})
+afterEach(() => nowSpy.mockRestore())
+
+/** Next Round is taken once the reveal's hold is over (#1379). */
+const REVEAL_HOLD_MS = 3_000
+
 /** '+20' → 20, '−12' (U+2212) → -12. */
 function points(value: string): number {
   return Number(value.replace('−', '-').replace('+', ''))
@@ -43,6 +54,7 @@ function playRound(engine: LiarsPartyGame, isBluff: boolean, votes: Record<strin
   expect(move(engine, claimant, 'submit-claim', { claim: 'I once met a famous chef', isBluff })).toBe(true)
   for (const [voter, decision] of Object.entries(votes)) expect(move(engine, voter, 'submit-challenge', { decision })).toBe(true)
   expect(data(engine).phase).toBe('reveal')
+  clock += REVEAL_HOLD_MS
   expect(move(engine, Object.keys(votes)[0], 'advance-round')).toBe(true)
   return data(engine).roundResults.at(-1)!
 }
@@ -198,6 +210,7 @@ describe('the Liar\'s Party clock against the engine (#1240)', () => {
     const startedAt = engine.getState().lastMoveAt as number
     engine.applyTimeoutFallback(60, startedAt + 60_000)
     expect(data(engine).phase).toBe('reveal')
+    clock = startedAt + 60_000 + REVEAL_HOLD_MS
     expect(move(engine, 'p2', 'advance-round')).toBe(true)
     const result = data(engine).roundResults[0]
     expect(result.claimTimedOut).toBe(true)
@@ -214,6 +227,7 @@ describe('the Liar\'s Party clock against the engine (#1240)', () => {
     engine.applyTimeoutFallback(60, claimedAt + 60_000)
     const votes = data(engine).challengeVotes
     expect(votes.filter((vote) => vote.autoSubmitted).map((vote) => vote.decision)).toEqual(['believe', 'believe'])
+    clock = claimedAt + 60_000 + REVEAL_HOLD_MS
     expect(move(engine, 'p2', 'advance-round')).toBe(true)
     const result = data(engine).roundResults[0]
     expect(result.voterScoreDeltas.p3).toBe(points(detail.scoring.voters.rows.believeTruth.value) + points(detail.scoring.voters.rows.noVoteInTime.value))
