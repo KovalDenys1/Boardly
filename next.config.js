@@ -1,4 +1,4 @@
-const { withSentryConfig } = require("@sentry/nextjs")
+const { withSentryConfig } = require("@sentry/nextjs/config")
 const { withBotId } = require("botid/next/config")
 const path = require("path")
 const { socialShortLinkRedirects } = require("./lib/social-short-links")
@@ -110,6 +110,8 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['react-hot-toast', 'next-auth', '@phosphor-icons/react'],
+    // There is no app/layout.tsx to draw a 404 for a URL no route matches: app/global-not-found.tsx does.
+    globalNotFound: true,
     // Note: optimizeCss requires critters package, disabled to avoid build issues
     // optimizeCss: true,
   },
@@ -162,8 +164,6 @@ const sentryWebpackOptions = {
   sourcemaps: {
     deleteFilesAfterUpload: ['**/*.js.map', '**/*.css.map'],
   },
-
-  automaticVercelMonitors: true,
 }
 
 // The VAPID public key is inlined into the client bundle at build time, so a

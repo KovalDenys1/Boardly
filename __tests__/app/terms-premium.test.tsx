@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen } from '@testing-library/react'
-import PremiumTerms from '@/app/terms/PremiumTerms'
+import PremiumTerms from '@/app/(site)/terms/PremiumTerms'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { LINK_SUPPORT_URL, LINK_TERMS_URL } from '@/lib/sold-through-link'
 import en from '@/locales/en'
@@ -33,9 +33,9 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/terms/PremiumTerms.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/terms/PremiumTerms.tsx'), 'utf8')
 // The page is a thin server wrapper since #1166; the sections live in TermsContent.
-const page = readFileSync(path.join(root, 'app/terms/TermsContent.tsx'), 'utf8')
+const page = readFileSync(path.join(root, 'app/(site)/terms/TermsContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key

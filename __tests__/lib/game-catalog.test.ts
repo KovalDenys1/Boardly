@@ -104,7 +104,7 @@ describe('game catalog availability', () => {
 
     expect(routed.length).toBeGreaterThan(0)
     for (const game of routed) {
-      const page = path.join(process.cwd(), 'app', `${game.route}/page.tsx`)
+      const page = path.join(process.cwd(), 'app', '(site)', `${game.route}/page.tsx`)
       expect({ id: game.id, hasPage: existsSync(page) }).toEqual({ id: game.id, hasPage: true })
     }
   })

@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useMemo } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { availableLocales, localeNames, type Locale } from '@/locales/meta'
@@ -8,6 +9,7 @@ import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 import { changeLanguageLazy } from '@/i18n'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { headerControl } from '@/components/Header/headerControlStyles'
+import { localeSwitchHref, pathLocale } from '@/lib/seo-locales'
 
 interface LanguageSwitcherProps {
   /** Portals the list and pins it to the button, for a parent that clips overflow. */
@@ -53,6 +55,7 @@ function CheckIcon() {
 
 export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
   const { t, i18n } = useTranslation()
+  const pathname = usePathname() ?? '/'
 
   const currentLocale = useMemo<Locale>(() => {
     const normalizedLanguage = i18n.language.toLowerCase()
@@ -73,7 +76,13 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
       return
     }
 
-    void changeLanguageLazy(setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale)
+    const stored = setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale
+    // A /ru or /uk page is in its URL's language, so another language is another URL.
+    if (pathLocale(pathname)) {
+      window.location.assign(localeSwitchHref(pathname, stored))
+      return
+    }
+    void changeLanguageLazy(stored)
   }
 
   return (

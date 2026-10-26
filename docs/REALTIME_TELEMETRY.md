@@ -6,8 +6,8 @@ This document defines the production reliability telemetry path, alert rules, KP
 
 - Source emitters:
   - `lib/analytics.ts`
-  - `app/lobby/[code]/hooks/useRealtimeConnection.ts`
-  - `app/lobby/[code]/hooks/useLobbyActions.ts`
+  - `app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts`
+  - `app/(site)/lobby/[code]/hooks/useLobbyActions.ts`
 - Ingestion API: `POST /api/ops/events`
 - Storage:
   - `OperationalEvents` (telemetry events)
@@ -124,7 +124,7 @@ Baseline is computed from the previous `baselineDays` window (default 7 days), s
 ### If `rejoin_timeout` breaches
 
 - Check the Supabase project's realtime status and any Vercel cold-start window
-- Check the subscribe path in `app/lobby/[code]/hooks/useRealtimeConnection.ts`
+- Check the subscribe path in `app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts`
 - Check DB latency on lobby/member queries
 
 ### If `auth_refresh_failed` breaches

@@ -22,29 +22,29 @@ import uk from '@/locales/uk'
 const root = process.cwd()
 
 const CONTENT_FILES = {
-  alias: path.join(root, 'app/games/alias/AliasDetailContent.tsx'),
-  'liars-party': path.join(root, 'app/games/liars-party/LiarsPartyDetailContent.tsx'),
+  alias: path.join(root, 'app/(site)/games/alias/AliasDetailContent.tsx'),
+  'liars-party': path.join(root, 'app/(site)/games/liars-party/LiarsPartyDetailContent.tsx'),
   'rock-paper-scissors': path.join(
     root,
-    'app/games/rock-paper-scissors/RockPaperScissorsDetailContent.tsx'
+    'app/(site)/games/rock-paper-scissors/RockPaperScissorsDetailContent.tsx'
   ),
   // #1077: the first page with the long-form sections, which are plain object
   // properties too – every row of its scorecard has to be a t() call.
-  yahtzee: path.join(root, 'app/games/yahtzee/YahtzeeDetailContent.tsx'),
+  yahtzee: path.join(root, 'app/(site)/games/yahtzee/YahtzeeDetailContent.tsx'),
   // #1235: the same long-form sections.
-  'tic-tac-toe': path.join(root, 'app/games/tic-tac-toe/TicTacToeDetailContent.tsx'),
+  'tic-tac-toe': path.join(root, 'app/(site)/games/tic-tac-toe/TicTacToeDetailContent.tsx'),
   // #1241: the same long-form sections.
-  checkers: path.join(root, 'app/games/checkers/CheckersDetailContent.tsx'),
+  checkers: path.join(root, 'app/(site)/games/checkers/CheckersDetailContent.tsx'),
   // #1239: the same long-form sections, scoring rows included.
-  'sketch-and-guess': path.join(root, 'app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx'),
+  'sketch-and-guess': path.join(root, 'app/(site)/games/sketch-and-guess/SketchAndGuessDetailContent.tsx'),
   // #1242: the same long-form sections.
-  ludo: path.join(root, 'app/games/ludo/LudoDetailContent.tsx'),
+  ludo: path.join(root, 'app/(site)/games/ludo/LudoDetailContent.tsx'),
 } as const
 
 const PAGE_FILES = {
-  alias: path.join(root, 'app/games/alias/page.tsx'),
-  'liars-party': path.join(root, 'app/games/liars-party/page.tsx'),
-  'rock-paper-scissors': path.join(root, 'app/games/rock-paper-scissors/page.tsx'),
+  alias: path.join(root, 'app/(site)/games/alias/page.tsx'),
+  'liars-party': path.join(root, 'app/(site)/games/liars-party/page.tsx'),
+  'rock-paper-scissors': path.join(root, 'app/(site)/games/rock-paper-scissors/page.tsx'),
 } as const
 
 /** Props whose value the visitor reads. Each one has to be a `t()` call. */
@@ -133,7 +133,7 @@ describe('the i18n allowlist no longer excuses these pages (#1061)', () => {
     ) as { files: Record<string, string> }
 
     for (const slug of Object.keys(PAGE_FILES)) {
-      expect(Object.keys(allowlist.files)).not.toContain(`app/games/${slug}/page.tsx`)
+      expect(Object.keys(allowlist.files)).not.toContain(`app/(site)/games/${slug}/page.tsx`)
     }
   })
 })

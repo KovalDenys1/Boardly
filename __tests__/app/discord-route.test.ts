@@ -9,7 +9,7 @@
  * unset env still reaches the server rather than dead-ending.
  */
 
-import { GET } from '@/app/discord/route'
+import { GET } from '@/app/(site)/discord/route'
 import { DEFAULT_DISCORD_INVITE_URL } from '@/lib/discord'
 
 const ENV_KEY = 'NEXT_PUBLIC_DISCORD_INVITE'

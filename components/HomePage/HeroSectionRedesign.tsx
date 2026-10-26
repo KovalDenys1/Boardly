@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
@@ -27,6 +28,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const isPlayApp = useIsPlayApp()
   const { isGuest, guestName, setGuestMode, clearGuestMode } = useGuest()
   const [showGuestForm, setShowGuestForm] = useState(false)
@@ -68,7 +70,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
       await setGuestMode(name.trim())
       showToast.success('guest.welcome', undefined, { name: name.trim() })
       // Quick play was asked for: stay on the hero, whose guest branch opens the picker.
-      if (!quickRequested) router.push('/games')
+      if (!quickRequested) router.push(localize('/games'))
     } catch (error) {
       const err = error as Error & { translationKey?: string; statusCode?: number }
       if (err.translationKey) {
@@ -133,7 +135,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
           <QuickPlayButton autoOpen={quickRequested} />
           <button
-            onClick={() => router.push('/games')}
+            onClick={() => router.push(localize('/games'))}
             style={{
               padding: '14px 28px',
               background: 'var(--bd-ink)',
@@ -363,7 +365,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               <>
                 <QuickPlayButton className="home-cta-button home-cta-button-primary" autoOpen={quickRequested} />
                 <button
-                  onClick={() => router.push('/games')}
+                  onClick={() => router.push(localize('/games'))}
                   className="home-cta-button home-cta-button-outline"
                 >
                   {t('home.browseGames')}
@@ -378,7 +380,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             ) : (
               <>
                 <button
-                  onClick={() => router.push('/games')}
+                  onClick={() => router.push(localize('/games'))}
                   className="home-cta-button home-cta-button-primary"
                 >
                   {t('home.browseGamesArrow')}

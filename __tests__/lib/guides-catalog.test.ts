@@ -10,7 +10,7 @@ import { ALL_GUIDES } from '@/lib/guides-catalog'
 // added without a catalog entry is invisible on both listings and passed the old test
 // happily. The assertions below are on the property rather than on a number, so adding
 // a guide correctly needs no edit here and adding one incorrectly fails.
-const GUIDES_DIR = join(process.cwd(), 'app', 'guides')
+const GUIDES_DIR = join(process.cwd(), 'app', '(site)', 'guides')
 
 describe('guides catalog', () => {
   it('lists every guide exactly once', () => {

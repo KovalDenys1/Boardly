@@ -400,6 +400,10 @@ const de: TranslationWithPlurals = {
     openUserMenu: 'Kontomenü',
   },
   home: {
+    seo: {
+      title: 'Boardly – kostenlose Brettspiele online mit Freunden',
+      description: 'Boardly (boardly.online) bietet kostenlose Brettspiele online. Spiele Yahtzee, Tic-Tac-Toe, Vier gewinnt und Finde den Spion mit Freunden in Echtzeit, ohne Anmeldung.',
+    },
     welcomeBack: 'Willkommen zurück, {{name}}!',
     browseGames: 'Spiele ansehen',
     guidesTitle: 'Anleitungen & Tipps',
@@ -489,6 +493,10 @@ const de: TranslationWithPlurals = {
     },
   },
   games: {
+    catalogSeo: {
+      title: 'Alle kostenlosen Brettspiele online – Mehrspieler',
+      description: 'Alle kostenlosen Brettspiele online auf Boardly: Yahtzee, Tic-Tac-Toe, Memory, Finde den Spion und mehr, mit Freunden in Echtzeit. Kein Download, kein Konto.',
+    },
     title: 'Verfügbare Spiele',
     subtitle: 'Wähle dein Lieblingsspiel',
     players: 'Spieler',
@@ -561,6 +569,8 @@ const de: TranslationWithPlurals = {
       description: 'Der Würfelklassiker mit taktischer Punktewertung. Würfle mit fünf Würfeln Kombinationen und hol dir viele Punkte!',
       difficulty: 'Leicht',
       seo: {
+        title: 'Yahtzee kostenlos online spielen – mit Freunden oder Bots',
+        description: 'Spiele Yahtzee kostenlos online im Browser. Wirf fünf Würfel, fülle den Block aus und spiele mit bis zu drei Freunden in Echtzeit oder gegen einen Bot.',
         question: 'Kann man Yahtzee online kostenlos mit Freunden spielen?',
         answer: 'Ja. Öffne eine Lobby, teile den vierstelligen Code, und bis zu vier von euch spielen in Echtzeit – kostenlos, im Browser, mit einem Gastnamen statt eines Kontos. Der kurze Modus hat neun Kategorien, der klassische alle fünfzehn, und ein Bot kann einen freien Platz besetzen.',
       },
@@ -825,6 +835,8 @@ const de: TranslationWithPlurals = {
       description: 'Ein Deduktionsspiel, bei dem eine Person der Spion ist. Entlarvt ihn, bevor die Zeit abläuft!',
       difficulty: 'Mittel',
       seo: {
+        title: 'Finde den Spion kostenlos online spielen – Deduktionsspiel',
+        description: 'Spiele Finde den Spion kostenlos online mit 3 bis 10 Spielern. Alle kennen den Ort außer dem Spion: Fragen stellen, Bluff entlarven, abstimmen. Kein Download.',
         question: 'Wie spielt man Finde den Spion online?',
         answer: 'Alle im Raum bekommen denselben geheimen Ort und eine Rolle darin – außer einer Person, die nur weiß, dass sie der Spion ist. Ihr stellt euch reihum Fragen, bis die Gruppe abstimmt – oder der Spion den Ort nennt und 500 Punkte kassiert. Drei bis zehn Spieler, kostenlos, im Browser.',
       },
@@ -1046,6 +1058,8 @@ const de: TranslationWithPlurals = {
       description: 'Schnell und einfach. Drei in einer Reihe gewinnen!',
       difficulty: 'Leicht',
       seo: {
+        title: 'Tic-Tac-Toe kostenlos online spielen mit Freunden',
+        description: 'Spiele Tic-Tac-Toe kostenlos online gegen einen Freund oder einen Bot, endlos mit laufendem Punktestand oder als Best of 3, 5 oder 10. Im Browser, ohne Konto.',
         question: 'Kann man Tic-Tac-Toe online kostenlos mit Freunden spielen?',
         answer: 'Ja. Teile einen Lobby-Code, und ihr setzt abwechselnd in Echtzeit auf dem 3×3-Raster, oder hol dir einen Bot auf Leicht, Mittel oder Schwer, wenn gerade niemand da ist. Eine Lobby spielt Runde um Runde mit laufendem Punktestand, außer du stellst Best of 3, 5 oder 10 ein. Kostenlos, im Browser, ein Gastname reicht.',
       },
@@ -1292,6 +1306,8 @@ const de: TranslationWithPlurals = {
       description: 'Finde alle passenden Paare. Teste dein Gedächtnis!',
       difficulty: 'Leicht',
       seo: {
+        title: 'Memory kostenlos online spielen – Mehrspieler',
+        description: 'Spiele Memory kostenlos online mit 2 bis 4 Spielern. Karten aufdecken, Paare sammeln und auf Feldern mit 4×4, 5×4 oder 6×6 Karten gewinnen. Kein Download.',
         question: 'Kann man das Kartenspiel Memory online mit Freunden spielen?',
         answer: 'Ja. Zwei bis vier Leute teilen sich ein Brett im Browser: Deck in deinem Zug zwei Karten auf, behalte das Paar und mach weiter, wenn sie zusammenpassen, und wer am Ende die meisten Paare hat, gewinnt. Leicht ist 4×4 mit 8 Paaren, Mittel 5×4 mit 10, Schwer 6×6 mit 18.',
       },
@@ -1556,6 +1572,8 @@ const de: TranslationWithPlurals = {
       description: 'Wirf Steine ein und bring als Erster vier in eine Reihe!',
       difficulty: 'Mittel',
       seo: {
+        title: 'Vier gewinnt kostenlos online spielen mit einem Freund',
+        description: 'Spiele Vier gewinnt kostenlos online. Wirf Steine in ein Feld mit sieben mal sechs Plätzen und bilde als Erster eine Viererreihe, gegen Freund oder Bot.',
         question: 'Kann man Vier gewinnt online kostenlos mit Freunden spielen?',
         answer: 'Ja. Gespielt wird auf dem Standardbrett mit sieben Spalten und sechs Reihen, live im Browser: Schick Freunden deinen Lobby-Code oder wähle Leicht, Mittel oder Schwer und wirf Steine gegen einen Bot ein. Kostenlos, nichts zu installieren, und ein Gastname ist alles, was du an Konto brauchst.',
       },
@@ -1795,6 +1813,8 @@ const de: TranslationWithPlurals = {
       description: 'Überspringen, schlagen und Damen krönen – der Klassiker auf den dunklen Feldern.',
       difficulty: 'Mittel',
       seo: {
+        title: 'Dame kostenlos online spielen – mit Freund oder Bot',
+        description: 'Spiele Dame kostenlos online: englische Dame auf 8×8 mit Schlagzwang, Mehrfachsprüngen und Damen, gegen einen Freund oder einen Bot. Im Browser, ohne Download.',
         question: 'Kann man Dame online kostenlos mit Freunden spielen?',
         answer: 'Ja. Gespielt wird die englische Variante (Checkers) auf einem 8×8-Brett im Browser: Schick Freunden deinen Lobby-Code oder spiel gegen einen Bot auf Leicht, Mittel oder Schwer. Ein Gastname ist alles, was du an Konto brauchst.',
       },
@@ -2015,6 +2035,8 @@ const de: TranslationWithPlurals = {
       description: 'Gleichzeitiges Wahlspiel: Stein schlägt Schere, Schere schlägt Papier und Papier schlägt Stein',
       difficulty: 'Leicht',
       seo: {
+        title: 'Schere, Stein, Papier kostenlos online spielen',
+        description: 'Spiele Schere, Stein, Papier kostenlos online gegen einen Freund oder einen Bot. Beide wählen gleichzeitig, das Ergebnis erscheint sofort. Im Browser, ohne Download.',
         question: 'Kann man Schere, Stein, Papier online gegen einen Freund spielen?',
         answer: 'Ja. Beide wählen gleichzeitig, und beide Hände werden zusammen aufgedeckt – niemand sieht den Zug des anderen zuerst. Spiel gegen einen Freund über einen gemeinsamen Lobby-Code oder gegen einen Bot auf Leicht, Mittel oder Schwer; das Match gewinnt, wer zuerst zwei Runden holt. Kostenlos, im Browser.',
       },
@@ -2211,6 +2233,8 @@ const de: TranslationWithPlurals = {
       description: 'Würfle, jag deine Figuren übers Brett und bring als Erster alle ins Ziel.',
       difficulty: 'Leicht',
       seo: {
+        title: 'Ludo kostenlos online spielen mit Freunden oder Bots',
+        description: 'Spiele Ludo kostenlos online mit 2 bis 4 Spielern. Würfeln, die Figuren ums Brett ziehen und Gegner zurück ins Haus schicken, mit Freunden oder Bots.',
         question: 'Kann man Ludo kostenlos online mit Freunden spielen?',
         answer: 'Ja. Eröffne eine Lobby und schick den Code an bis zu drei Freunde oder besetze freie Plätze mit Bots auf Leicht, Mittel oder Schwer. Unser Server würfelt, und alles ist kostenlos, ganz ohne Installation.',
       },
@@ -2457,6 +2481,8 @@ const de: TranslationWithPlurals = {
       description: 'Erkläre deinem Team Begriffe, ohne das Wort selbst zu sagen!',
       difficulty: 'Mittel',
       seo: {
+        title: 'Alias kostenlos online spielen – Wortspiel im Team',
+        description: 'Spiele Alias kostenlos online mit 3 bis 16 Spielern. Erkläre das Wort, ohne es zu sagen, rate gegen die Uhr – das Team mit mehr Punkten gewinnt. Kein Download.',
         question: 'Kann man Alias kostenlos online in der Gruppe spielen?',
         answer: 'Ja, mit drei bis sechzehn Leuten und ohne Bots – bei Alias reden Teams miteinander, also braucht der Raum echte Spieler. Eine Person im Team beschreibt den Begriff, ohne ihn zu sagen, die anderen raten gegen die Uhr, Überspringen kostet einen Punkt, und die höhere Punktzahl gewinnt.',
       },
@@ -2699,6 +2725,8 @@ const de: TranslationWithPlurals = {
       description: 'Zeichne einen geheimen Begriff und errate um die Wette die Skizzen der anderen!',
       difficulty: 'Mittel',
       seo: {
+        title: 'Zeichnen & Raten kostenlos online spielen',
+        description: 'Spiele Zeichnen & Raten kostenlos online mit 3 bis 10 Spielern. Einer zeichnet ein geheimes Wort, alle anderen raten um die Wette. Im Browser, ohne Download.',
         question: 'Kann man online mit Freunden ein Zeichen- und Ratespiel spielen?',
         answer: 'Ja, mit drei bis zehn Leuten im Browser. In jeder Runde zeichnet eine Person einen geheimen Begriff auf einer gemeinsamen Zeichenfläche, und alle anderen tippen gegen die Uhr ihre Antworten. Schnelle Antworten bringen mehr Punkte, und ein Gastname ist das einzige Konto, das du brauchst.',
       },
@@ -2884,6 +2912,8 @@ const de: TranslationWithPlurals = {
         time: '15 Min.',
       },
       seo: {
+        title: 'Lügnerparty kostenlos online spielen – Bluffspiel',
+        description: 'Spiele Lügnerparty kostenlos online mit 4 bis 12 Spielern. Stelle eine Behauptung auf, entscheide, wer blufft, und lass die Abstimmung entscheiden. Im Browser.',
         question: 'Kann man Lügnerparty online in der Gruppe spielen?',
         answer: 'Ja, mit vier bis zwölf Leuten. Wer dran ist, stellt eine Behauptung auf, wahr oder geblufft, und sie gilt nur dann als entlarvt, wenn eine echte Mehrheit sie anzweifelt – wer genug entlarvte Bluffs sammelt, scheidet aus. Bots gibt es nicht: Die Leute in der Runde zu durchschauen, ist das ganze Spiel.',
       },
@@ -4657,6 +4687,7 @@ const de: TranslationWithPlurals = {
     rules: 'Regeln',
     voteBreakdown: 'Stimmen im Detail',
     scoreDelta: 'Punkte in dieser Runde',
+    strikeAdded: '+1 Verwarnung',
     totalScores: 'Gesamtpunkte',
     eliminatedThisRound: 'In dieser Runde ausgeschieden',
     claimingNow: 'Behauptet gerade',

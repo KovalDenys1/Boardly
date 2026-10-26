@@ -6,6 +6,7 @@ import GameIcon from '@/components/GameIcon'
 import { getCatalogGames, isAvailableCatalogEntry, getGameMetadata, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 
 type CardStatus = GameCatalogEntry['availability']
 
@@ -157,6 +158,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
  */
 function MoreGamesCard({ count }: { count: number }) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
 
   return (
     <div
@@ -211,7 +213,7 @@ function MoreGamesCard({ count }: { count: number }) {
         </p>
 
         <Link
-          href="/games"
+          href={localize('/games')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -296,6 +298,7 @@ function getIllustration(gameId: string, accentColor: string) {
 
 export default function GameRibbon() {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const catalogGames = getCatalogGames()
   const availableGames = catalogGames.filter(isAvailableCatalogEntry)
   const inDevelopmentCount = catalogGames.filter((game) => game.availability === 'in-development').length
@@ -408,7 +411,7 @@ export default function GameRibbon() {
       desc: '',
     }
     const href = game.route ?? getGameLobbiesRoute(game.gameType)
-    const detailHref = game.route ? game.route.replace('/lobbies', '') : undefined
+    const detailHref = game.route ? localize(game.route.replace('/lobbies', '')) : undefined
     const meta = getGameMetadata(game.gameType)
     const accentBg = meta
       ? `color-mix(in srgb, ${meta.accentColor} 15%, transparent)`
@@ -465,7 +468,7 @@ export default function GameRibbon() {
           </p>
         </div>
         <Link
-          href="/games"
+          href={localize('/games')}
           style={{
             padding: '12px 20px',
             borderRadius: 14,

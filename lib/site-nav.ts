@@ -1,4 +1,5 @@
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import { unlocalizedPath } from '@/lib/seo-locales'
 
 export type SiteNavAccess = 'public' | 'member'
 
@@ -22,7 +23,8 @@ export const SITE_NAV_ITEMS: readonly SiteNavItem[] = [
 
 export function isNavItemActive(item: SiteNavItem, pathname: string | null | undefined): boolean {
   if (!pathname) return false
-  return item.match === 'exact' ? pathname === item.href : pathname.startsWith(item.href)
+  const path = unlocalizedPath(pathname)
+  return item.match === 'exact' ? path === item.href : path.startsWith(item.href)
 }
 
 export function visibleNavItems(viewer: { isAuthenticated: boolean }): SiteNavItem[] {

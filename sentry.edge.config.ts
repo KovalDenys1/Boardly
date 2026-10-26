@@ -4,6 +4,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { SENTRY_DATA_COLLECTION, stripQueryStrings, stripSpanQueryStrings } from "./lib/sentry-data-collection";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -14,11 +15,16 @@ Sentry.init({
   // Adjust sample rate based on environment
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  // v11 streams spans by default; keep sending v10's transactions
+  traceLifecycle: 'static',
 
-  // Don't send PII in production for privacy
-  sendDefaultPii: process.env.NODE_ENV !== 'production',
+  dataCollection: SENTRY_DATA_COLLECTION,
+
+  beforeSend: stripQueryStrings,
+
+  beforeSendTransaction: stripQueryStrings,
+
+  beforeSendSpan: Sentry.withStaticSpan(stripSpanQueryStrings),
 
   // Environment tag
   environment: process.env.NODE_ENV || 'development',

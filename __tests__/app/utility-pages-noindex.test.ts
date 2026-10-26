@@ -6,11 +6,11 @@
 
 import type { Metadata } from 'next'
 import sitemap from '@/app/sitemap'
-import { metadata as withdrawalMetadata } from '@/app/withdrawal/page'
-import { metadata as rulesMetadata } from '@/app/rules/page'
-import { metadata as discordLinkMetadata } from '@/app/discord/link/layout'
-import { metadata as suspendedMetadata } from '@/app/suspended/layout'
-import { generateMetadata as profileMetadata } from '@/app/u/[publicProfileId]/page'
+import { metadata as withdrawalMetadata } from '@/app/(site)/withdrawal/page'
+import { metadata as rulesMetadata } from '@/app/(site)/rules/page'
+import { metadata as discordLinkMetadata } from '@/app/(site)/discord/link/layout'
+import { metadata as suspendedMetadata } from '@/app/(site)/suspended/layout'
+import { generateMetadata as profileMetadata } from '@/app/(site)/u/[publicProfileId]/page'
 import { prisma } from '@/lib/db'
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }))

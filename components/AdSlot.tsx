@@ -17,7 +17,7 @@ import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 //      guests are free by definition and skip the lookup entirely.
 //   4. Not the Play app — its Google Play listing declares that it contains no ads.
 //
-// The AdSense loader itself lives in app/layout.tsx and is site verification,
+// The AdSense loader itself lives in app/root-document.tsx and is site verification,
 // not an ad; it can stay on regardless of this switch. It only loads in
 // production (#1152) — preview and development never carry it.
 

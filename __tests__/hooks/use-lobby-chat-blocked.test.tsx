@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useLobbyChat } from '@/app/lobby/[code]/hooks/useLobbyChat'
+import { useLobbyChat } from '@/app/(site)/lobby/[code]/hooks/useLobbyChat'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { playCue } from '@/lib/sound-engine'
 import type { ChatMessagePayload } from '@/types/game'

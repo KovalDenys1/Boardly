@@ -6,7 +6,7 @@
 // owner always sees it in full.
 
 import { getServerSession } from 'next-auth'
-import PublicProfilePage from '@/app/u/[publicProfileId]/page'
+import PublicProfilePage from '@/app/(site)/u/[publicProfileId]/page'
 import { prisma } from '@/lib/db'
 
 jest.mock('next-auth', () => ({ getServerSession: jest.fn() }))

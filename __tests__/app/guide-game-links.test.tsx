@@ -9,7 +9,7 @@ jest.mock('@/components/AdSlot', () => ({ __esModule: true, default: () => null 
 jest.mock('@/components/Footer', () => ({ __esModule: true, default: () => null }))
 
 function renderedHrefs(slug: string): string[] {
-  const Page = require(`../../app/guides/${slug}/page`).default as ComponentType
+  const Page = require(`../../app/(site)/guides/${slug}/page`).default as ComponentType
   const { container } = render(<Page />)
   return Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href') ?? '')
 }

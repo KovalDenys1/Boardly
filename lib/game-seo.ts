@@ -3,11 +3,14 @@ import type { Metadata } from 'next'
 import en from '../locales/en'
 import {
   getCatalogEntryById,
+  getCatalogGames,
   getGameMetadata,
   hasBotSupport,
   type GameSeo,
 } from './game-catalog'
 import { OG_SITE_DEFAULTS, gameSocialCardKey, socialImages } from './social-preview'
+import { OG_LOCALES, languageAlternates, localizedPath, type SeoLocale } from './seo-locales'
+import { serverTranslator } from './server-i18n'
 
 /**
  * One builder for every `/games/<game>` page's metadata and structured data
@@ -28,6 +31,9 @@ export function renderedTitle(seo: GameSeo): string {
 
 type ResolvedGame = {
   seo: GameSeo
+  /** `games.alias` – the locale namespace the game's text lives under. */
+  namespace: string
+  nameKey: string
   /** `/games/connect-four` – the detail page, not the lobbies list under it. */
   path: string
   /** English display name, from the engine's own metadata. */
@@ -53,6 +59,8 @@ function resolveGame(id: string): ResolvedGame {
 
   return {
     seo: entry.seo,
+    namespace: entry.seo.questionKey.replace(/\.seo\.question$/, ''),
+    nameKey: entry.nameKey,
     path: entry.route.replace(/\/lobbies$/, ''),
     name: meta.name,
     minPlayers: min,
@@ -74,27 +82,40 @@ export function getGameCanonical(id: string): string {
   return `${BASE}${resolveGame(id).path}`
 }
 
+/** The catalog id behind `/games/<slug>`: `rock-paper-scissors` is `rps`. */
+export function gameIdForSlug(slug: string): string {
+  const entry = getCatalogGames().find((game) => game.seo && game.route === `/games/${slug}/lobbies`)
+  if (!entry) throw new Error(`No catalog game has a page at /games/${slug}`)
+  return entry.id
+}
+
 /**
  * `index: false` keeps a game out of the index while it is in development –
  * the page still exists and still carries its canonical, the way
  * `/games/liars-party` has since it shipped behind the flag.
  */
-export function buildGameMetadata(id: string, options?: { index?: boolean }): Metadata {
-  const { seo, path } = resolveGame(id)
-  const url = `${BASE}${path}`
-  const title = renderedTitle(seo)
+export function buildGameMetadata(id: string, options?: { index?: boolean; locale?: SeoLocale }): Metadata {
+  const { seo, path, namespace } = resolveGame(id)
+  const locale = options?.locale ?? 'en'
+  const pagePath = localizedPath(path, locale)
+  const url = `${BASE}${pagePath}`
+  const t = locale === 'en' ? null : serverTranslator(locale)
+  const pageTitle = t ? t(`${namespace}.seo.title`) : seo.title
+  const description = t ? t(`${namespace}.seo.description`) : seo.description
+  const title = `${pageTitle}${TITLE_SUFFIX}`
 
   const images = socialImages(gameSocialCardKey(id))
 
   return {
-    title: seo.title,
-    description: seo.description,
-    keywords: seo.synonyms,
+    title: pageTitle,
+    description,
+    ...(t ? {} : { keywords: seo.synonyms }),
     openGraph: {
       ...OG_SITE_DEFAULTS,
+      locale: OG_LOCALES[locale],
       images,
       title,
-      description: seo.description,
+      description,
       url,
       type: 'website',
     },
@@ -102,9 +123,9 @@ export function buildGameMetadata(id: string, options?: { index?: boolean }): Me
       card: 'summary_large_image',
       images,
       title,
-      description: seo.description,
+      description,
     },
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages: languageAlternates(path) },
     robots: { index: options?.index ?? true, follow: true },
   }
 }
@@ -116,16 +137,23 @@ export function buildGameMetadata(id: string, options?: { index?: boolean }): Me
  * structured data whose answer a visitor cannot find on the page is a
  * violation (#923).
  */
-export function buildGameJsonLd(id: string): Record<string, unknown>[] {
-  const { seo, path, name, minPlayers, maxPlayers, supportsBots } = resolveGame(id)
-  const url = `${BASE}${path}`
+export function buildGameJsonLd(id: string, locale: SeoLocale = 'en'): Record<string, unknown>[] {
+  const { seo, path, namespace, nameKey, name, minPlayers, maxPlayers, supportsBots } = resolveGame(id)
+  const t = locale === 'en' ? null : serverTranslator(locale)
+  const text = (key: string) => (t ? t(key) : englishText(key))
+  const at = (pagePath: string) => {
+    const localized = localizedPath(pagePath, locale)
+    return localized === '/' ? BASE : `${BASE}${localized}`
+  }
+  const url = at(path)
+  const gameName = t ? t(nameKey) : name
 
   return [
     {
       '@context': 'https://schema.org',
       '@type': 'VideoGame',
-      name,
-      description: seo.schemaDescription,
+      name: gameName,
+      description: t ? t(`${namespace}.seo.description`) : seo.schemaDescription,
       url,
       image: `${BASE}/opengraph-image`,
       genre: seo.genre,
@@ -144,9 +172,9 @@ export function buildGameJsonLd(id: string): Record<string, unknown>[] {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: BASE },
-        { '@type': 'ListItem', position: 2, name: 'Games', item: `${BASE}/games` },
-        { '@type': 'ListItem', position: 3, name, item: url },
+        { '@type': 'ListItem', position: 1, name: t ? t('breadcrumbs.home') : 'Home', item: at('/') },
+        { '@type': 'ListItem', position: 2, name: t ? t('breadcrumbs.games') : 'Games', item: at('/games') },
+        { '@type': 'ListItem', position: 3, name: gameName, item: url },
       ],
     },
     {
@@ -157,8 +185,8 @@ export function buildGameJsonLd(id: string): Record<string, unknown>[] {
       mainEntity: [{ questionKey: seo.questionKey, answerKey: seo.answerKey }, ...(seo.faq ?? [])].map(
         ({ questionKey, answerKey }) => ({
           '@type': 'Question',
-          name: englishText(questionKey),
-          acceptedAnswer: { '@type': 'Answer', text: englishText(answerKey) },
+          name: text(questionKey),
+          acceptedAnswer: { '@type': 'Answer', text: text(answerKey) },
         })
       ),
     },

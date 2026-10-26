@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { ROLE_FLIP_DELAY_MS, useSpySounds, type SpySnapshot } from '@/app/lobby/[code]/hooks/useSpySounds'
+import { ROLE_FLIP_DELAY_MS, useSpySounds, type SpySnapshot } from '@/app/(site)/lobby/[code]/hooks/useSpySounds'
 import { SpyGamePhase } from '@/lib/games/spy-game'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'
 import { prefersReducedMotion } from '@/lib/motion'

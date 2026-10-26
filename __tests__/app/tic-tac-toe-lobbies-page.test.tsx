@@ -1,6 +1,6 @@
 import { act, render, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
-import TicTacToeLobbiesPage from '@/app/games/tic-tac-toe/lobbies/page'
+import TicTacToeLobbiesPage from '@/app/(site)/games/tic-tac-toe/lobbies/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 const mockPush = jest.fn()

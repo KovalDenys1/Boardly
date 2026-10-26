@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { act, fireEvent, render } from '@testing-library/react'
-import MemoryGameBoard from '@/app/lobby/[code]/components/MemoryGameBoard'
+import MemoryGameBoard from '@/app/(site)/lobby/[code]/components/MemoryGameBoard'
 import { MemoryGame } from '@/lib/games/memory-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { trackMoveSubmitApplied } from '@/lib/analytics'

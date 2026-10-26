@@ -1,0 +1,294 @@
+import './globals.css'
+import { AnnouncementBanner } from '@/components/AnnouncementBanner'
+import SkipToContentLink from '@/components/SkipToContentLink'
+import type { Metadata, Viewport } from 'next'
+import Providers from './providers'
+import dynamic from 'next/dynamic'
+import { getThemeInitScript } from '@/lib/theme'
+import { getAppShellInitScript } from '@/lib/app-shell-script'
+import { siteJsonLd } from '@/lib/organization-json-ld'
+import { isProductionDeployment } from '@/lib/feature-flags'
+import { Bricolage_Grotesque, Inter } from 'next/font/google'
+import type { PrefixedLocale } from '@/lib/seo-locales'
+import { siteCardImages } from '@/lib/site-social-image'
+
+const bricolageFont = Bricolage_Grotesque({
+  subsets: ['latin'],
+  axes: ['opsz'],
+  variable: '--bd-font-display',
+  display: 'swap',
+})
+
+const interFont = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+const FeedbackWidget = dynamic(() => import('@/components/FeedbackWidget'), {
+  loading: () => null,
+})
+
+const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry'), {
+  loading: () => null,
+})
+
+// Dev only – Agentation's licence does not cover shipping it inside a product we sell.
+const AgentationToolbar =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(() => import('agentation').then((m) => m.Agentation))
+    : null
+
+// Header Skeleton with fixed dimensions to prevent CLS
+function HeaderSkeleton() {
+  return (
+    <header className="site-header sticky top-0 z-50" style={{ height: '64px', minHeight: '64px', background: 'var(--bd-bg)', borderBottom: '1.5px solid var(--bd-line)' }}>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
+        <div className="flex justify-between items-center" style={{ height: '100%' }}>
+          <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)' }}>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--bd-ink)', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
+            boardly
+          </div>
+          <div className="flex items-center gap-4" style={{ minWidth: '200px' }}>
+            <div className="w-20 h-8 rounded-xl animate-pulse" style={{ background: '#E8DDC8' }}></div>
+            <div className="w-24 h-10 rounded-xl animate-pulse" style={{ background: '#1F1B16', opacity: 0.15 }}></div>
+          </div>
+        </div>
+      </nav>
+    </header>
+  )
+}
+
+const Header = dynamic(() => import('@/components/Header'), {
+  loading: () => <HeaderSkeleton />,
+})
+
+export const siteMetadata: Metadata = {
+  metadataBase: new URL('https://boardly.online'),
+  // Brand first, then what the product is: for a navigational query like
+  // "boardly official website" the searcher has to recognise the right Boardly
+  // in the result itself, and the description is where that happens – it now
+  // names the brand and the domain instead of opening with category copy (#886).
+  title: {
+    default: 'Boardly – Free Online Board Games with Friends',
+    template: '%s | Boardly'
+  },
+  description: 'Boardly (boardly.online) is a free online board games site. Play Yahtzee, Tic Tac Toe, Connect Four and Guess the Spy with friends in real time, no signup.',
+  keywords: ['free online board games', 'online board games with friends', 'multiplayer board games', 'tabletop games online', 'browser games', 'yahtzee online', 'tic tac toe online', 'memory game online', 'boardly'],
+  authors: [{ name: 'Boardly' }],
+  creator: 'Boardly',
+  publisher: 'Boardly',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://boardly.online',
+    title: 'Boardly – Free Online Board Games with Friends',
+    description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
+    siteName: 'Boardly',
+    images: siteCardImages('/opengraph-image'),
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Boardly – Free Online Board Games with Friends',
+    description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
+    images: siteCardImages('/twitter-image'),
+    // No `creator`: @boardly on X is not an account Boardly owns, and the tag
+    // attributed every share of the site to whoever does own it (#886).
+  },
+  // No canonical here: the root layout would hand it to every page that
+  // forgot its own, pointing them all at "/". Each indexable page sets its own (#922).
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: ['4IgITqkIlvPBjp9SVRkOkHz0sbcd0sXdvkFu1pBkQFs', 'e7Fz9dSgP7CAGNcWP_Yg4rJCXto7GMYBlHwi9jAOBik'],
+  },
+}
+
+export const siteViewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  minimumScale: 1,
+  viewportFit: 'cover',
+  userScalable: true,
+  themeColor: '#1F1B16',
+}
+
+/** `<html>` and everything around a page, shared by every root layout. */
+export function RootDocument({
+  lang,
+  pathLocale,
+  LocaleProvider,
+  children,
+}: {
+  lang: string
+  /** A /ru or /uk page: the language comes from the URL, and `LocaleProvider` renders it. */
+  pathLocale?: PrefixedLocale
+  LocaleProvider?: (props: { children: React.ReactNode }) => React.ReactNode
+  children: React.ReactNode
+}) {
+  const isProduction = process.env.NODE_ENV === 'production'
+  // Distinct from isProduction above: `next build` sets NODE_ENV=production for a Vercel
+  // Preview deployment too, so that alone cannot keep the AdSense/consent loader off
+  // Preview (#1152). This checks VERCEL_ENV first and only falls back to NODE_ENV when
+  // Vercel hasn't declared an environment at all (e.g. `pnpm dev`, jest).
+  const adSenseLoaderEnabled = isProductionDeployment()
+  const themeInitScript = getThemeInitScript()
+  const appShellInitScript = getAppShellInitScript()
+  const devServiceWorkerResetScript = !isProduction
+    ? `(() => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const reloadKey = '__boardly_dev_sw_reset__';
+
+  const reset = async () => {
+    let changed = false;
+
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      if (registrations.length > 0) {
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        changed = true;
+      }
+    } catch {}
+
+    try {
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        const boardlyCacheKeys = cacheKeys.filter((key) => key.startsWith('boardly-pwa-'));
+        if (boardlyCacheKeys.length > 0) {
+          await Promise.all(boardlyCacheKeys.map((key) => caches.delete(key)));
+          changed = true;
+        }
+      }
+    } catch {}
+
+    if (!changed) {
+      window.sessionStorage.removeItem(reloadKey);
+      return;
+    }
+
+    if (window.sessionStorage.getItem(reloadKey) === '1') {
+      window.sessionStorage.removeItem(reloadKey);
+      return;
+    }
+
+    window.sessionStorage.setItem(reloadKey, '1');
+    window.location.reload();
+  };
+
+  void reset();
+})();`
+    : null
+
+  const body = (
+    <>
+      <Providers pathLocale={pathLocale}>
+        <SkipToContentLink />
+        {/* Renders nothing unless the control panel has a live announcement. */}
+        <AnnouncementBanner />
+        <Header />
+        <main id="main">{children}</main>
+        <FeedbackWidget />
+      </Providers>
+      {isProduction && <DeferredTelemetry />}
+      {AgentationToolbar && <AgentationToolbar endpoint="http://localhost:4747" />}
+    </>
+  )
+
+  return (
+    <html lang={lang} suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
+      <head>
+        {/* Ahead of the AdSense tag, so the Play app pauses ad requests before it can load. */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: appShellInitScript }}
+        />
+        {/* AdSense site verification + loader (#784). This also delivers Google's
+            EEA/UK consent message, so it stays on regardless of whether any ad
+            unit renders. The units themselves are in components/AdSlot.tsx,
+            gated to free users and off until NEXT_PUBLIC_ADS_ENABLED is set.
+            Production only (#1152): a fresh-profile measurement of boardly.online
+            showed the loader firing a request to fundingchoicesmessages.google.com
+            and writing a first-party `FCCDCF` cookie before any consent existed —
+            that is Google's own consent-message plumbing, not an ad, and is the
+            reason it stays on in production; preview and development serve no
+            AdSense verification purpose and gain nothing from carrying it. */}
+        {adSenseLoaderEnabled && (
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044"
+            crossOrigin="anonymous"
+          />
+        )}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Boardly" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icons/icon-192.svg?v=3" sizes="192x192" type="image/svg+xml" />
+        <link rel="icon" href="/icons/icon-512.svg?v=3" sizes="512x512" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=3" />
+        <link rel="mask-icon" href="/icons/icon-maskable-512.svg?v=3" color="#1F1B16" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1536x2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1668x2224.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+        <link rel="apple-touch-startup-image" href="/splash/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+
+        {isProduction && (
+          <>
+            <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
+            <link rel="dns-prefetch" href="https://va.vercel-scripts.com" />
+          </>
+        )}
+        
+        {/* Critical CSS inline for faster FCP */}
+        <style 
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: 'body{margin:0;background:#FBF6EE}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}html.dark body{background:#1E1B17}html.dark .site-header{background:#1E1B17;border-bottom:1.5px solid #3A3530}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+          }} 
+        />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+        {devServiceWorkerResetScript && (
+          <script
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{ __html: devServiceWorkerResetScript }}
+          />
+        )}
+        
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
+      </head>
+      <body className="antialiased">{LocaleProvider ? <LocaleProvider>{body}</LocaleProvider> : body}</body>
+    </html>
+  )
+}

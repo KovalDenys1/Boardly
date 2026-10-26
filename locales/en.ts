@@ -396,6 +396,10 @@ const en = {
     openUserMenu: 'Account menu',
   },
   home: {
+    seo: {
+      title: 'Boardly – Free Online Board Games with Friends',
+      description: 'Boardly (boardly.online) is a free online board games site. Play Yahtzee, Tic Tac Toe, Connect Four and Guess the Spy with friends in real time, no signup.',
+    },
     welcomeBack: 'Welcome back, {{name}}!',
     browseGames: 'Browse Games',
     guidesTitle: 'Guides & tips',
@@ -482,6 +486,10 @@ const en = {
     },
   },
   games: {
+    catalogSeo: {
+      title: 'All Free Online Board Games - Multiplayer',
+      description: 'Browse all free online board games on Boardly. Play Yahtzee, Tic Tac Toe, Memory, Guess the Spy and more with friends in real time. No download, no account needed.',
+    },
     title: 'Available Games',
     subtitle: 'Choose your favorite game to play',
     players: 'players',
@@ -554,6 +562,8 @@ const en = {
       description: 'Classic dice game with strategic scoring. Roll five dice to make combinations and score big!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Yahtzee Online Free with Friends or Bots',
+        description: 'Play Yahtzee online free in your browser. Roll five dice, fill the scorecard and play with up to three friends in real time, or against a bot.',
         question: 'Can you play Yahtzee online for free with friends?',
         answer: 'Yes. Open a lobby, share the four-digit code, and up to four of you play in real time – free, in the browser, with a guest name instead of an account. Short mode runs nine scoring categories, classic runs all fifteen, and a bot can fill an empty seat.',
       },
@@ -818,6 +828,8 @@ const en = {
       description: 'Social deduction game where one player is the spy. Find them before time runs out!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Guess the Spy Online Free – Social Deduction',
+        description: 'Play Guess the Spy online free with 3 to 10 players. Everyone gets the location except the spy: ask questions, catch the bluff and vote. No download needed.',
         question: 'How do you play Guess the Spy online?',
         answer: 'Everyone in the room gets the same secret location and a role in it, except one player who only knows they are the spy. You take turns asking each other questions until the group calls a vote – or the spy names the location and takes 500 points. Three to ten players, free, in the browser.',
       },
@@ -1039,6 +1051,8 @@ const en = {
       description: 'Simple and fast game. Get three in a row to win!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Tic Tac Toe Online Free with Friends',
+        description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
         question: 'Can you play Tic Tac Toe online with a friend for free?',
         answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby keeps playing rounds with a running score unless you set a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
       },
@@ -1285,6 +1299,8 @@ const en = {
       description: 'Find all the matching pairs. Test your memory skills!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Memory Game Online Free – Multiplayer',
+        description: 'Play the Memory matching game online free with 2 to 4 players. Flip cards, keep the pairs you match and race on 4×4, 5×4 or 6×6 boards. No download needed.',
         question: 'Can you play the Memory card game online with friends?',
         answer: 'Yes. Two to four of you share one board in the browser: flip two cards on your turn, keep the pair and go again when they match, and whoever holds the most pairs at the end wins. Easy is 4×4 with 8 pairs, medium 5×4 with 10, hard 6×6 with 18.',
       },
@@ -1548,6 +1564,8 @@ const en = {
       description: 'Drop discs and be the first to connect four in a row!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Connect 4 Online Free with a Friend',
+        description: 'Play Connect 4 online free. Drop discs on a seven by six board and be first to line up four, against a friend or a bot. Real time in the browser, no download.',
         question: 'Can you play Connect 4 online for free with a friend?',
         answer: 'Yes. The board is the standard seven columns by six rows, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and drop discs against a bot. Free, nothing to install, and a guest name is all the account you need.',
       },
@@ -1787,6 +1805,8 @@ const en = {
       description: 'Jump, capture and crown your kings in the classic game of draughts.',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Checkers Online Free with a Friend or Bot',
+        description: 'Play checkers online free. Classic 8×8 English draughts with forced captures, multi-jumps and kings, against a friend or a bot. In the browser, no download.',
         question: 'Can you play checkers online for free with a friend?',
         answer: 'Yes. It is standard English checkers on an 8×8 board in the browser: send a friend your lobby code or play a bot on easy, medium or hard. A guest name is all the account you need.',
       },
@@ -2007,6 +2027,8 @@ const en = {
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Rock Paper Scissors Online Free',
+        description: 'Play Rock Paper Scissors online free against a friend or a bot. Both players pick at the same time and the reveal is instant. In the browser, no download.',
         question: 'Can you play Rock Paper Scissors online against a friend?',
         answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
@@ -2202,6 +2224,8 @@ const en = {
       description: 'Roll the die, race your tokens round the board and bring them all home first.',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Ludo Online Free with Friends or Bots',
+        description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
         question: 'Can you play Ludo online for free with friends?',
         answer: 'Yes. Open a lobby and send the code to up to three friends, or fill empty seats with bots on easy, medium or hard. Our server rolls the die, and it is free with nothing to install.',
       },
@@ -2448,6 +2472,8 @@ const en = {
       description: 'Explain words to your team without using the word itself!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Alias Online Free – Team Word Game',
+        description: 'Play Alias online free with 3 to 16 players. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
         question: 'Can you play Alias online with a group for free?',
         answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
@@ -2690,6 +2716,8 @@ const en = {
       description: 'Draw a secret prompt and race to guess each other\'s sketches!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Sketch & Guess Online Free – Draw and Guess',
+        description: 'Play Sketch & Guess online free with 3 to 10 players. One player draws a secret prompt, everyone else races to guess it. In the browser, no download.',
         question: 'Can you play a drawing and guessing game online with friends?',
         answer: 'Yes, with three to ten people in the browser. Each round one player draws a secret prompt on a shared canvas and everyone else types guesses against the clock. Quick guesses score more, and a guest name is all the account you need.',
       },
@@ -2875,6 +2903,8 @@ const en = {
         time: '15 min',
       },
       seo: {
+        title: 'Play Liar\'s Party Online Free – Bluffing Game',
+        description: 'Play Liar\'s Party online free with 4 to 12 players. Make a claim, decide who is bluffing and let the vote settle it. In the browser, no download needed.',
         question: "Can you play Liar's Party online with a group?",
         answer: 'Yes, with four to twelve people. One player makes a claim, true or bluffed, and it only counts as caught when a strict majority challenges it – collect enough caught bluffs and you are out. There are no bots: reading the people in the room is the whole game.',
       },
@@ -4640,6 +4670,7 @@ const en = {
     rules: 'Rules',
     voteBreakdown: 'Vote Breakdown',
     scoreDelta: 'Points this round',
+    strikeAdded: '+1 strike',
     totalScores: 'Total Scores',
     eliminatedThisRound: 'Eliminated this round',
     claimingNow: 'Making a claim now',

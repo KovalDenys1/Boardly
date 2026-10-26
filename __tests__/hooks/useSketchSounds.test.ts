@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useSketchSounds, type SketchSnapshot } from '@/app/lobby/[code]/hooks/useSketchSounds'
+import { useSketchSounds, type SketchSnapshot } from '@/app/(site)/lobby/[code]/hooks/useSketchSounds'
 import { playCue } from '@/lib/sound-engine'
 
 jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))

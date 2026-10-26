@@ -404,6 +404,10 @@ const es: TranslationWithPlurals = {
     openUserMenu: 'Menú de la cuenta',
   },
   home: {
+    seo: {
+      title: 'Boardly – juegos de mesa online gratis con amigos',
+      description: 'Boardly (boardly.online) es un sitio de juegos de mesa online gratis. Juega a Yahtzee, tres en raya, cuatro en raya y Encuentra al espía con amigos en tiempo real, sin registro.',
+    },
     welcomeBack: '¡Hola de nuevo, {{name}}!',
     browseGames: 'Ver juegos',
     guidesTitle: 'Guías y consejos',
@@ -493,6 +497,10 @@ const es: TranslationWithPlurals = {
     },
   },
   games: {
+    catalogSeo: {
+      title: 'Todos los juegos de mesa online gratis – multijugador',
+      description: 'Todos los juegos de mesa online gratis de Boardly: Yahtzee, tres en raya, Memoria, Encuentra al espía y más, con amigos en tiempo real. Sin descargas ni cuenta.',
+    },
     title: 'Juegos disponibles',
     subtitle: 'Elige tu juego favorito',
     players: 'jugadores',
@@ -565,6 +573,8 @@ const es: TranslationWithPlurals = {
       description: 'El clásico juego de dados con puntuación estratégica. ¡Tira cinco dados, forma combinaciones y suma muchos puntos!',
       difficulty: 'Fácil',
       seo: {
+        title: 'Juega a Yahtzee online gratis con amigos o bots',
+        description: 'Juega a Yahtzee online gratis en el navegador. Tira cinco dados, completa la hoja de puntos y juega con hasta tres amigos en tiempo real o contra un bot.',
         question: '¿Se puede jugar a Yahtzee online gratis con amigos?',
         answer: 'Sí. Abre una sala, comparte el código de cuatro dígitos y hasta cuatro personas juegan en tiempo real – gratis, en el navegador y con un nombre de invitado en lugar de una cuenta. El modo corto usa nueve categorías de puntuación, el clásico las quince, y un bot puede ocupar un asiento vacío.',
       },
@@ -829,6 +839,8 @@ const es: TranslationWithPlurals = {
       description: 'Juego de deducción social en el que un jugador es el espía. ¡Encuéntralo antes de que se acabe el tiempo!',
       difficulty: 'Media',
       seo: {
+        title: 'Juega a Encuentra al espía online gratis – deducción social',
+        description: 'Juega a Encuentra al espía online gratis con 3 a 10 jugadores. Todos conocen el lugar menos el espía: pregunta, descubre el farol y vota. Sin descargas.',
         question: '¿Cómo se juega a Encuentra al espía online?',
         answer: 'Todos en la sala reciben el mismo lugar secreto y un rol dentro de él, salvo un jugador que solo sabe que es el espía. Se turnan para hacerse preguntas hasta que el grupo pide una votación, o hasta que el espía nombra el lugar y se lleva 500 puntos. De tres a diez jugadores, gratis y en el navegador.',
       },
@@ -1050,6 +1062,8 @@ const es: TranslationWithPlurals = {
       description: 'Un juego sencillo y rápido. ¡Haz tres en raya para ganar!',
       difficulty: 'Fácil',
       seo: {
+        title: 'Juega al tres en raya online gratis con amigos',
+        description: 'Juega al tres en raya online gratis contra un amigo o un bot, sin fin con marcador o al mejor de 3, 5 o 10. En el navegador, sin descargas ni cuenta.',
         question: '¿Se puede jugar al tres en raya online con un amigo gratis?',
         answer: 'Sí. Comparte un código de sala y juega por turnos en la cuadrícula de 3×3 en tiempo real, o añade un bot fácil, medio o difícil cuando no haya nadie. Una sala sigue jugando rondas con un marcador acumulado salvo que fijes un mejor de 3, 5 o 10. Gratis, en el navegador, basta con un nombre de invitado.',
       },
@@ -1297,6 +1311,8 @@ const es: TranslationWithPlurals = {
       description: 'Encuentra todas las parejas. ¡Pon a prueba tu memoria!',
       difficulty: 'Fácil',
       seo: {
+        title: 'Juega a Memoria online gratis – multijugador',
+        description: 'Juega a Memoria online gratis con 2 a 4 jugadores. Gira cartas, guarda las parejas que encuentres y compite en tableros de 4×4, 5×4 o 6×6. Sin descargas.',
         question: '¿Se puede jugar al juego de memoria online con amigos?',
         answer: 'Sí. De dos a cuatro jugadores comparten un tablero en el navegador: en tu turno volteas dos cartas, si son pareja te la quedas y vuelves a jugar, y gana quien tenga más parejas al final. Fácil es 4×4 con 8 parejas, medio 5×4 con 10 y difícil 6×6 con 18.',
       },
@@ -1561,6 +1577,8 @@ const es: TranslationWithPlurals = {
       description: '¡Suelta fichas y sé el primero en conectar cuatro en línea!',
       difficulty: 'Media',
       seo: {
+        title: 'Juega a cuatro en raya online gratis con un amigo',
+        description: 'Juega a cuatro en raya online gratis. Suelta fichas en un tablero de siete por seis y alinea cuatro antes que nadie, contra un amigo o un bot. Sin descargas.',
         question: '¿Se puede jugar al cuatro en raya online gratis con un amigo?',
         answer: 'Sí. El tablero es el estándar de siete columnas por seis filas y se juega en directo en el navegador: envía a un amigo el código de tu sala, o elige fácil, medio o difícil y suelta fichas contra un bot. Gratis, sin nada que instalar, y un nombre de invitado es toda la cuenta que necesitas.',
       },
@@ -1800,6 +1818,8 @@ const es: TranslationWithPlurals = {
       description: 'Salta, captura y corona tus damas en el clásico juego de damas.',
       difficulty: 'Media',
       seo: {
+        title: 'Juega a las damas online gratis con un amigo o un bot',
+        description: 'Juega a las damas online gratis: damas inglesas de 8×8 con captura obligatoria, saltos múltiples y reinas, contra un amigo o un bot. Sin descargas.',
         question: '¿Se puede jugar a las damas online gratis con un amigo?',
         answer: 'Sí. Son las damas inglesas estándar en un tablero de 8×8 en el navegador: envía a un amigo el código de tu sala o juega contra un bot fácil, medio o difícil. Un nombre de invitado es toda la cuenta que necesitas.',
       },
@@ -2021,6 +2041,8 @@ const es: TranslationWithPlurals = {
       description: 'Juego de elección simultánea: Piedra gana a Tijera, Tijera gana a Papel y Papel gana a Piedra',
       difficulty: 'Fácil',
       seo: {
+        title: 'Juega a piedra, papel o tijera online gratis',
+        description: 'Juega a piedra, papel o tijera online gratis contra un amigo o un bot. Los dos eligen a la vez y el resultado se ve al instante. En el navegador, sin descargas.',
         question: '¿Se puede jugar a piedra, papel o tijera online contra un amigo?',
         answer: 'Sí. Los dos jugadores eligen a la vez y las dos manos se muestran juntas, así que nadie ve antes la jugada del otro. Juega contra un amigo con el código de una sala compartida o contra un bot en nivel fácil, medio o difícil; gana la partida quien gane primero dos rondas. Gratis, en el navegador.',
       },
@@ -2218,6 +2240,8 @@ const es: TranslationWithPlurals = {
       description: 'Tira el dado, haz correr tus fichas por el tablero y llévalas todas a la meta antes que nadie.',
       difficulty: 'Fácil',
       seo: {
+        title: 'Juega al Ludo online gratis con amigos o bots',
+        description: 'Juega al Ludo online gratis con 2 a 4 jugadores. Tira el dado, mueve tus fichas por el tablero y manda a los rivales de vuelta a casa, con amigos o bots.',
         question: '¿Se puede jugar al ludo online gratis con amigos?',
         answer: 'Sí. Abre una sala y envía el código a hasta tres amigos, o llena los asientos vacíos con bots en nivel fácil, medio o difícil. Nuestro servidor tira el dado, y es gratis, sin instalar nada.',
       },
@@ -2464,6 +2488,8 @@ const es: TranslationWithPlurals = {
       description: '¡Explica palabras a tu equipo sin decir la palabra!',
       difficulty: 'Media',
       seo: {
+        title: 'Juega a Alias online gratis – juego de palabras en equipo',
+        description: 'Juega a Alias online gratis con 3 a 16 jugadores. Describe la palabra sin decirla, adivina contra el reloj y gana el equipo con más puntos. Sin descargas.',
         question: '¿Se puede jugar a Alias online en grupo y gratis?',
         answer: 'Sí, de tres a dieciséis personas y sin bots: Alias consiste en que los equipos hablen entre sí, así que la sala necesita jugadores de verdad. Un compañero describe la palabra sin decirla, los demás adivinan contra el reloj, pasar cuesta un punto y gana la puntuación más alta.',
       },
@@ -2706,6 +2732,8 @@ const es: TranslationWithPlurals = {
       description: '¡Dibuja una palabra secreta y compite por adivinar los dibujos de los demás!',
       difficulty: 'Media',
       seo: {
+        title: 'Juega a Dibuja y adivina online gratis',
+        description: 'Juega a Dibuja y adivina online gratis con 3 a 10 jugadores. Uno dibuja una palabra secreta y los demás compiten por adivinarla. En el navegador, sin descargas.',
         question: '¿Se puede jugar online a un juego de dibujar y adivinar con amigos?',
         answer: 'Sí, de tres a diez personas en el navegador. En cada ronda, un jugador dibuja una palabra secreta en un lienzo compartido y los demás escriben sus respuestas contra el reloj. Las respuestas rápidas puntúan más, y no necesitas más cuenta que un nombre de invitado.',
       },
@@ -2891,6 +2919,8 @@ const es: TranslationWithPlurals = {
         time: '15 min',
       },
       seo: {
+        title: 'Juega a Fiesta de mentirosos online gratis – juego de faroles',
+        description: 'Juega a Fiesta de mentirosos online gratis con 4 a 12 jugadores. Haz una afirmación, decide quién va de farol y que la votación lo resuelva. Sin descargas.',
         question: '¿Se puede jugar a Fiesta de mentirosos online en grupo?',
         answer: 'Sí, de cuatro a doce personas. Un jugador hace una afirmación, verdadera o de farol, y el farol solo queda descubierto cuando una mayoría estricta la desafía; acumula suficientes faroles descubiertos y quedas eliminado. No hay bots: leer a las personas de la sala es todo el juego.',
       },
@@ -4672,6 +4702,7 @@ const es: TranslationWithPlurals = {
     rules: 'Reglas',
     voteBreakdown: 'Desglose de votos',
     scoreDelta: 'Puntos de esta ronda',
+    strikeAdded: '+1 falta',
     totalScores: 'Puntuación total',
     eliminatedThisRound: 'Eliminado en esta ronda',
     claimingNow: 'Haciendo una afirmación',

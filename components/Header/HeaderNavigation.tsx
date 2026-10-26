@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
 
 interface HeaderNavigationProps {
@@ -12,6 +13,7 @@ interface HeaderNavigationProps {
 export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
   const pathname = usePathname()
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
 
   const navBtn = (active: boolean) =>
     `rounded-xl font-medium transition-all duration-150 ${
@@ -27,7 +29,7 @@ export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
       {visibleNavItems({ isAuthenticated }).map((item) => (
         <Link
           key={item.id}
-          href={item.href}
+          href={localize(item.href)}
           className={navBtn(isNavItemActive(item, pathname))}
           style={navStyle}
         >

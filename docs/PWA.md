@@ -13,7 +13,7 @@ implementation and its regression checks.
 - Offline fallback page: `public/offline.html`
 - Service worker registration: `components/PwaServiceWorker.tsx`
 - Install prompt UI: `components/InstallPrompt.tsx`
-- Root layout PWA meta tags + iOS splash screen links: `app/layout.tsx`
+- Root layout PWA meta tags + iOS splash screen links: `app/root-document.tsx`
 
 ## Current Caching Strategy
 

@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { MATCH_POP_DELAY_MS, useMemorySounds, type UseMemorySoundsOptions } from '@/app/lobby/[code]/hooks/useMemorySounds'
+import { MATCH_POP_DELAY_MS, useMemorySounds, type UseMemorySoundsOptions } from '@/app/(site)/lobby/[code]/hooks/useMemorySounds'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'
 import { prefersReducedMotion } from '@/lib/motion'
 import { playCue } from '@/lib/sound-engine'

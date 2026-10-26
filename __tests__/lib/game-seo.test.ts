@@ -26,9 +26,9 @@ const root = process.cwd()
  * joined them in #1036; the slug is the one in the catalog entry's `route`, not
  * the entry's id, which for this game is `guess-my-drawing`.
  */
-const PAGE_SLUGS = readdirSync(path.join(root, 'app/games'))
-  .filter((entry) => statSync(path.join(root, 'app/games', entry)).isDirectory())
-  .filter((entry) => existsSync(path.join(root, 'app/games', entry, 'page.tsx')))
+const PAGE_SLUGS = readdirSync(path.join(root, 'app/(site)/games'))
+  .filter((entry) => statSync(path.join(root, 'app/(site)/games', entry)).isDirectory())
+  .filter((entry) => existsSync(path.join(root, 'app/(site)/games', entry, 'page.tsx')))
 
 const SEO_GAMES = getCatalogGames().filter((game) => game.seo)
 
@@ -148,7 +148,7 @@ describe('game FAQ sections (#1077)', () => {
   })
 
   it('renders the FAQ section from the catalog on the game page', () => {
-    const source = readFileSync(path.join(root, 'app/games/components/GameDetailPage.tsx'), 'utf8')
+    const source = readFileSync(path.join(root, 'app/(site)/games/components/GameDetailPage.tsx'), 'utf8')
     expect(source).toContain('seo?.faq')
     expect(source).toContain('id="faq"')
   })
@@ -174,7 +174,7 @@ describe('game direct answers (#929)', () => {
   })
 
   it('renders the answer above the facts on every game page', () => {
-    const source = readFileSync(path.join(root, 'app/games/components/GameDetailPage.tsx'), 'utf8')
+    const source = readFileSync(path.join(root, 'app/(site)/games/components/GameDetailPage.tsx'), 'utf8')
     expect(source).toContain('t(seo.questionKey)')
     expect(source).toContain('t(seo.answerKey)')
     expect(source.indexOf('t(seo.answerKey)')).toBeLessThan(source.indexOf('facts.map'))
@@ -204,7 +204,7 @@ describe('game metadata and JSON-LD (#929)', () => {
     // line that asks it for the noindex.
     for (const game of SEO_GAMES) {
       const slug = game.route!.replace(/\/lobbies$/, '')
-      const source = readFileSync(path.join(root, 'app', `${slug}/page.tsx`), 'utf8')
+      const source = readFileSync(path.join(root, 'app', '(site)', `${slug}/page.tsx`), 'utf8')
       expect({ slug, noindex: source.includes('{ index: false }') }).toEqual({
         slug,
         noindex: game.availability !== 'available',

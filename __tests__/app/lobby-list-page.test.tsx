@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
-import LobbyListPage from '@/app/lobby/page'
+import LobbyListPage from '@/app/(site)/lobby/page'
 
 const mockPush = jest.fn()
 const mockFetch = jest.fn()

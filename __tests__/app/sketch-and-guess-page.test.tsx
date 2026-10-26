@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import SketchAndGuessLobbyPage from '@/app/lobby/[code]/sketch-and-guess-page'
+import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { frameFor, installSignedRealtime, settleRealtime, signBroadcast } from '@/__tests__/fixtures/signed-realtime'
@@ -948,5 +948,84 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     })
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(actionBodies()).toHaveLength(0)
+  })
+})
+
+// #1528: Sketch & Guess applied every lobby read it got, in the order the answers landed, so a
+// read that left before the board on screen, or before the host moved, put the older one back.
+describe('SketchAndGuessLobbyPage lobby reads that land out of order (#1528)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const T0 = Date.now() - 20_000
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  async function renderHoldingReads(response: ReturnType<typeof buildLobbyResponse>, onAction: () => unknown = () => ({})) {
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+    const reads: Array<(r: Response) => void> = []
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { reads.push(resolve) })
+      if (String(url).includes('/sketch-and-guess-action')) return okResponse(onAction())
+      return okResponse({})
+    })
+    return reads
+  }
+
+  const chatsReadOnly = () => screen.getAllByTestId('sketch-chat').map((chat) => chat.getAttribute('data-readonly'))
+
+  it('drops a refetch older than the board on screen', async () => {
+    const before = buildLobbyResponse()
+    before.activeGame.state.lastMoveAt = T0
+    const afterGuess = { ...before.activeGame.state, lastMoveAt: T0 + 1_000, status: 'playing', data: { ...before.activeGame.state.data, submittedPlayerIds: ['user-1'] } }
+    const reads = await renderHoldingReads(before, () => ({ success: true, state: afterGuess, guessResult: { correct: true, close: false } }))
+
+    // A read leaves, then Alice's correct guess is answered: she has the word, so her composer closes.
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(1))
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
+    })
+    await waitFor(() => expect(chatsReadOnly().every((value) => value === 'true')).toBe(true))
+
+    // The read lands now with the board from before the guess.
+    await act(async () => reads[0](okResponse(before)))
+    await act(async () => { await settleRealtime() })
+
+    expect(chatsReadOnly().every((value) => value === 'true')).toBe(true)
+  })
+
+  it('keeps the host on the player who inherited it when a read sent before the host left lands last', async () => {
+    const seated = buildLobbyResponse()
+    seated.lobby.creatorId = 'user-2'
+    seated.activeGame.state.lastMoveAt = T0
+    seated.activeGame.players.push({ id: 'player-4', userId: 'user-4', name: 'Dan', user: { username: 'Dan' } })
+    const reads = await renderHoldingReads(seated)
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('false')
+
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(1))
+    // Bob, the host, leaves; Alice inherits it. The page reads again.
+    await act(async () => {
+      broadcastHandlers['player-left']?.({ payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-1', nextCreatorName: 'Alice' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(2))
+
+    const afterLeave = JSON.parse(JSON.stringify(seated))
+    afterLeave.lobby.creatorId = 'user-1'
+    afterLeave.activeGame.players = afterLeave.activeGame.players.filter((p: { userId: string }) => p.userId !== 'user-2')
+    await act(async () => reads[1](okResponse(afterLeave)))
+    await act(async () => reads[0](okResponse(seated)))
+    await act(async () => { await settleRealtime() })
+
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('true')
   })
 })

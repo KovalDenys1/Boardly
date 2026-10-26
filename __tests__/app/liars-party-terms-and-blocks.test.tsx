@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
+import LiarsPartyLobbyPage from '@/app/(site)/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 

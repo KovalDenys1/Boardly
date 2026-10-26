@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import WithdrawalContent from '@/app/withdrawal/WithdrawalContent'
-import { metadata } from '@/app/withdrawal/page'
+import WithdrawalContent from '@/app/(site)/withdrawal/WithdrawalContent'
+import { metadata } from '@/app/(site)/withdrawal/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { LINK_SUPPORT_URL } from '@/lib/sold-through-link'
 import en from '@/locales/en'
@@ -46,7 +46,7 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/withdrawal/WithdrawalContent.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/withdrawal/WithdrawalContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key

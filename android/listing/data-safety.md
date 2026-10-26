@@ -27,7 +27,7 @@ sharing (answer/10787469):
 > "based on a specific user-initiated action, where the user reasonably expects the data to be shared"
 
 The site's processors – Supabase, Vercel, Upstash, Resend, Sentry, Stripe, and our own Discord
-channels – are service providers (`app/privacy/PrivacyNotice.tsx` recipients, `locales/en.ts`
+channels – are service providers (`app/(site)/privacy/PrivacyNotice.tsx` recipients, `locales/en.ts`
 `privacyPolicy.recipients.lead`: "The providers below process it for us, except where we say they
 act on their own account"). Signing in with Google, GitHub or Discord and linking Discord roles are
 user-initiated. The one transfer left is Google's AdSense script, which the notice says Google
@@ -40,16 +40,16 @@ processes "on its own account" – see Sharing below.
 | Does your app collect or share any of the required user data types? | **Yes** | the table below |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** | `curl -sI http://boardly.online` answers `308` to `https://`; `https://boardly.online` sends `strict-transport-security: max-age=63072000; includeSubDomains` (both checked 2026-10-18). Realtime is Supabase over WSS, push payloads are Web Push encrypted (`lib/push-send.ts`). Privacy notice § 9: "all traffic uses HTTPS". |
 | Which methods of account creation does your app support? | **Username and password** (email address + password) and **OAuth** (Google, GitHub, Discord). Playing needs no account: guests play with a name only. | `app/api/auth/register/route.ts`, `lib/next-auth.ts`, `app/api/auth/guest-session/route.ts` |
-| Delete account URL | `https://boardly.online/privacy#delete-account`: the item in section 7, "Your rights", that gives the path in the profile (browser or app: Danger Zone → Delete Account, confirmed by email) and, for anyone who cannot sign in, writing to support@boardly.online from the account's address; the next item is the guests' "Forget me" | `locales/*.ts` `privacyPolicy.rights.delete` and `.forget`; the anchor in `app/privacy/PrivacyNotice.tsx`, pinned by `__tests__/app/privacy-notice.test.tsx` |
+| Delete account URL | `https://boardly.online/privacy#delete-account`: the item in section 7, "Your rights", that gives the path in the profile (browser or app: Danger Zone → Delete Account, confirmed by email) and, for anyone who cannot sign in, writing to support@boardly.online from the account's address; the next item is the guests' "Forget me" | `locales/*.ts` `privacyPolicy.rights.delete` and `.forget`; the anchor in `app/(site)/privacy/PrivacyNotice.tsx`, pinned by `__tests__/app/privacy-notice.test.tsx` |
 | Do you provide a way for users to request that some or all of their data is deleted, without requiring them to delete their account? | **Yes**, `https://boardly.online/privacy#delete-account` – guests delete everything with "Forget me"; account holders edit or clear profile fields themselves and ask support@boardly.online for anything else; chat deletes itself after 24 h | `app/api/user/forget-guest/route.ts`, `components/Header/ForgetGuestButton.tsx`, `lib/retention-periods.ts` `CHAT_RETENTION_HOURS` |
 | Independent security review | No | – |
 
 **In-app deletion path** (Play's account deletion policy, answer/13327111, requires "an in-app path to
 delete their app accounts and associated data" and "a web link resource"): Profile → **Profile**
 tab → **Danger Zone** → **Delete Account** → **Send Deletion Email** → the link in the email opens
-`/auth/delete-account?token=…` → type `DELETE` (`app/profile/page.tsx` around the
+`/auth/delete-account?token=…` → type `DELETE` (`app/(site)/profile/page.tsx` around the
 `profile.dangerZone` block, `app/api/user/request-deletion/route.ts`,
-`app/auth/delete-account/page.tsx`). It is not wrapped in `PurchaseOnly`, so Play mode shows it.
+`app/(site)/auth/delete-account/page.tsx`). It is not wrapped in `PurchaseOnly`, so Play mode shows it.
 The Danger Zone sits on the **Profile** tab, the one the profile page opens on; the Settings tab holds
 notifications, privacy and blocked players. Guests: header guest menu → **Forget me**
 (`components/Header/ForgetGuestButton.tsx`).
@@ -138,7 +138,7 @@ personal attribute.
 **Purchase history.** The app sells nothing (#1465: `components/PurchaseOnly.tsx` removes every
 checkout and billing-portal entry in Play mode). It still declares this: an account that bought Premium on the web sees its status
 and renewal in the profile's Premium tab and can cancel it there, and that cancel request changes the
-purchase record from inside the app (`app/profile/page.tsx`, `handleCancelSubscription`). The app
+purchase record from inside the app (`app/(site)/profile/page.tsx`, `handleCancelSubscription`). The app
 names the website as the place to buy in plain text without a link, which the Payments FAQ allows a
 consumption-only app (`store-settings.md`, "Why the in-app Premium notice is allowed"). The account
 keeps "your Stripe customer and subscription ids, your Premium status and dates"
@@ -174,7 +174,10 @@ gameplay". Moves, scores, results, replays, friends, blocks, invites and achieve
 
 **Crash logs.** Sentry error reports: "the error, the page, browser and operating system"
 (`privacyPolicy.purposes.security.data`; `instrumentation-client.ts`, `sentry.server.config.ts`,
-`sentry.edge.config.ts`, `sendDefaultPii: false` in production, Session Replay off since #1151).
+`sentry.edge.config.ts`; `dataCollection` in `lib/sentry-data-collection.ts` sends no user info,
+cookies or HTTP bodies, and `stripQueryStrings` cuts the query and fragment off every web address
+in an error report, trace or span before it is sent, so page addresses arrive without tokens or
+codes; Session Replay off since #1151).
 
 **Diagnostics.** Speed Insights load times (`privacyPolicy.purposes.analytics.data`) and Sentry
 performance traces at a 10 % sample (`tracesSampleRate: 0.1` in `instrumentation-client.ts`).
@@ -192,7 +195,7 @@ requests its AdSense script makes (Sharing). Required, because the guest token i
 
 ## Sharing: only Google's AdSense script
 
-**What the script does inside the app.** `app/layout.tsx` puts
+**What the script does inside the app.** `app/root-document.tsx` puts
 `pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471518400402044` into the
 `<head>` of every production page (`adSenseLoaderEnabled = isProductionDeployment()`). It is rendered
 on the server, and the server cannot tell the app from a browser (Play mode is detected in the browser,
@@ -268,4 +271,4 @@ boardly.online only, which is App interactions.
 - the first marketing email goes out: add Advertising or marketing to Email address;
 - the AdSense script stops loading inside the app: drop the two Shared answers;
 - a new processor, SDK or data type appears in the privacy notice: `docs/PRIVACY-RETENTION.md` and
-  `app/privacy/PrivacyNotice.tsx` are where that change lands first.
+  `app/(site)/privacy/PrivacyNotice.tsx` are where that change lands first.

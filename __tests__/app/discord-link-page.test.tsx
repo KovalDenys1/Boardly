@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import DiscordLinkPage from '@/app/discord/link/page'
+import DiscordLinkPage from '@/app/(site)/discord/link/page'
 
 /**
  * #1218: the link start answers RECENT_SIGN_IN_REQUIRED for a session that signed in more than

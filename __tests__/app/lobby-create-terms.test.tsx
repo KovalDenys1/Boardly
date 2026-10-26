@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import CreateLobbyPage from '@/app/lobby/create/page'
+import CreateLobbyPage from '@/app/(site)/lobby/create/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { acceptTerms } from '@/lib/client/terms-consent'
 

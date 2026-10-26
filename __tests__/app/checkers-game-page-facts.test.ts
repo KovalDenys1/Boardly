@@ -211,7 +211,7 @@ describe('the checkers variant against the engine (#1241)', () => {
 
 describe('who does what outside the engine (#1241)', () => {
   it('lets only the host press Play Again', () => {
-    expect(source('app/lobby/[code]/checkers-page.tsx')).toMatch(
+    expect(source('app/(site)/lobby/[code]/checkers-page.tsx')).toMatch(
       /if \(lobby\.creatorId !== userId\) \{ showToast\.info\('game\.ui\.waitingForHost'\); return \}/
     )
     expect(ck.detail.modes.rematches.desc).toMatch(/The host's Play Again/)
@@ -238,7 +238,7 @@ describe('the checkers clock against the catalog and the routes (#1241)', () => 
     const config = getCatalogGames().find((game) => game.gameType === 'checkers')!.lobbyCreateConfig!
     expect(config.turnTimer!.default).toBe(60)
     expect(source('app/api/lobby/route.ts')).toMatch(/turnTimer: z\.number\(\)\.int\(\)\.min\(30\)\.max\(180\)\.default\(60\)/)
-    expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
+    expect(source('app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(config.turnTimer!.options).toEqual([30, 60, 90, 120])
     expect(ck.detail.modes.moveClock.desc).toMatch(/60 seconds a move by default\. The host picks 30 to 120 when creating the lobby, or 30 to 180 in 30-second steps in the lobby settings before the start\. Play vs Bot gives 45/)

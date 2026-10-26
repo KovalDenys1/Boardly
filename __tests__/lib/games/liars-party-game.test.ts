@@ -1,5 +1,5 @@
 import { Move } from '@/lib/game-engine'
-import { LiarsPartyGame, LiarsPartyGameData } from '@/lib/games/liars-party-game'
+import { LIARS_REVEAL_HOLD_MS, LiarsPartyGame, LiarsPartyGameData, sanitizeLiarsPartyStateForBroadcast } from '@/lib/games/liars-party-game'
 
 const createMove = (playerId: string, type: string, data: Record<string, unknown>): Move => ({
   playerId,
@@ -16,6 +16,23 @@ const addDefaultPlayers = (game: LiarsPartyGame): void => {
   game.addPlayer({ id: 'player2', name: 'Player 2' })
   game.addPlayer({ id: 'player3', name: 'Player 3' })
   game.addPlayer({ id: 'player4', name: 'Player 4' })
+}
+
+let clock = 1_000_000
+let nowSpy: jest.SpyInstance<number, []>
+
+beforeEach(() => {
+  clock = 1_000_000
+  nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => clock)
+})
+
+afterEach(() => {
+  nowSpy.mockRestore()
+})
+
+/** The reveal holds about three seconds before Next Round is taken (#1379). */
+const pastRevealHold = (): void => {
+  clock += 3_000
 }
 
 describe("LiarsPartyGame (MVP scaffold)", () => {
@@ -76,6 +93,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
     expect(game.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))).toBe(true)
 
     expect(getData(game).phase).toBe('reveal')
+    pastRevealHold()
     expect(game.makeMove(createMove('player3', 'advance-round', {}))).toBe(true)
 
     const data = getData(game)
@@ -117,17 +135,22 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
 
     const phaseStartAt = oneRoundGame.getState().lastMoveAt as number
     const timeoutResult = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000)
-    const data = getData(oneRoundGame)
 
     // #1202: a claimant who times out has made no claim, so there is
     // nothing to vote on – claim goes straight to reveal, and nobody is scored
     // for a vote that never happened.
     expect(timeoutResult.changed).toBe(true)
-    expect(timeoutResult.timeoutWindowsConsumed).toBe(2)
+    expect(timeoutResult.timeoutWindowsConsumed).toBe(1)
     expect(timeoutResult.phaseTransitions).toBe(1)
-    expect(timeoutResult.revealAdvances).toBe(1)
     expect(timeoutResult.autoSubmittedClaims).toBe(1)
     expect(timeoutResult.autoSubmittedChallenges).toBe(0)
+    // A late run stops at the reveal it made, which holds from the run (#1379).
+    expect(timeoutResult.revealAdvances).toBe(0)
+    expect(getData(oneRoundGame).phase).toBe('reveal')
+
+    const finish = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000 + 3_000)
+    const data = getData(oneRoundGame)
+    expect(finish.revealAdvances).toBe(1)
     expect(oneRoundGame.getState().status).toBe('finished')
     expect(data.completionReason).toBe('max-rounds-reached')
     expect(data.scores.player1).toBe(0)
@@ -219,6 +242,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
       game5.makeMove(createMove('p3', 'submit-challenge', { decision: 'challenge' }))
       game5.makeMove(createMove('p4', 'submit-challenge', { decision: 'believe' }))
       game5.makeMove(createMove('p5', 'submit-challenge', { decision: 'believe' }))
+      pastRevealHold()
       game5.makeMove(createMove('p2', 'advance-round', {}))
       const data = getData(game5)
       // Bluff NOT caught: claimant should have positive score from successful bluff
@@ -241,6 +265,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
       game2.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
       game2.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
       game2.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
+      pastRevealHold()
       game2.makeMove(createMove('player2', 'advance-round', {}))
       expect(getData(game2).scores.player2).toBe(getData(game2).scores.player3)
       const before = { ...getData(game2).scores }
@@ -263,6 +288,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
       game.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
       game.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
       game.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
+      pastRevealHold()
       game.makeMove(createMove('player2', 'advance-round', {}))
       expect(getData(game).currentClaimantId).toBe('player2')
     })
@@ -280,6 +306,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
       oneRound.makeMove(createMove('player2', 'submit-challenge', { decision: 'challenge' }))
       oneRound.makeMove(createMove('player3', 'submit-challenge', { decision: 'challenge' }))
       oneRound.makeMove(createMove('player4', 'submit-challenge', { decision: 'challenge' }))
+      pastRevealHold()
       oneRound.makeMove(createMove('player2', 'advance-round', {}))
       const data = getData(oneRound)
       const ranking = data.ranking
@@ -310,6 +337,7 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
     expect(eliminationGame.makeMove(createMove('player2', 'submit-challenge', { decision: 'challenge' }))).toBe(true)
     expect(eliminationGame.makeMove(createMove('player3', 'submit-challenge', { decision: 'challenge' }))).toBe(true)
     expect(eliminationGame.makeMove(createMove('player4', 'submit-challenge', { decision: 'challenge' }))).toBe(true)
+    pastRevealHold()
     expect(eliminationGame.makeMove(createMove('player2', 'advance-round', {}))).toBe(true)
 
     const data = getData(eliminationGame)
@@ -331,5 +359,424 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
     expect(
       eliminationGame.validateMove(createMove('player1', 'submit-challenge', { decision: 'challenge' }))
     ).toBe(false)
+  })
+})
+
+describe("LiarsPartyGame scores the round at the reveal and holds it (#1379)", () => {
+  const newGame = (rules: Record<string, unknown> = { maxRounds: 3, eliminationStrikes: 2 }): LiarsPartyGame => {
+    const created = new LiarsPartyGame('liars-reveal', { maxPlayers: 12, minPlayers: 4, rules })
+    addDefaultPlayers(created)
+    expect(created.startGame()).toBe(true)
+    return created
+  }
+  const claim = (target: LiarsPartyGame, playerId: string, isBluff: boolean) =>
+    target.makeMove(createMove(playerId, 'submit-claim', { claim: 'I have exactly five points', isBluff }))
+  const vote = (target: LiarsPartyGame, playerId: string, decision: 'challenge' | 'believe') =>
+    target.makeMove(createMove(playerId, 'submit-challenge', { decision }))
+  const advance = (target: LiarsPartyGame, playerId = 'player3') =>
+    target.makeMove(createMove(playerId, 'advance-round', {}))
+  const snapshot = (target: LiarsPartyGame) => JSON.parse(JSON.stringify(target.getState()))
+  const restored = (state: unknown): LiarsPartyGame => {
+    const copy = new LiarsPartyGame('liars-reveal')
+    copy.restoreState(state as Parameters<LiarsPartyGame['restoreState']>[0])
+    return copy
+  }
+
+  /** Round 1: player1 bluffs, one challenge and two believes – the bluff gets through. */
+  const toReveal = (target: LiarsPartyGame): void => {
+    expect(claim(target, 'player1', true)).toBe(true)
+    expect(vote(target, 'player2', 'challenge')).toBe(true)
+    expect(vote(target, 'player3', 'believe')).toBe(true)
+    expect(vote(target, 'player4', 'believe')).toBe(true)
+  }
+  const ROUND_ONE_SCORES = { player1: 32, player2: 14, player3: 0, player4: 0 }
+
+  const expectScoredOnEntry = (target: LiarsPartyGame, revealAt: number): void => {
+    const data = getData(target)
+    expect(data.phase).toBe('reveal')
+    expect(data.currentRoundResolved).toBe(true)
+    expect(data.roundResults).toHaveLength(1)
+    expect(data.roundResults[0]).toEqual(expect.objectContaining({ round: data.currentRound, resolvedAt: revealAt }))
+    expect(data.advanceOpensAt).toBe(revealAt + LIARS_REVEAL_HOLD_MS)
+  }
+
+  it('applies the round score as the last vote lands, before anyone presses Next Round', () => {
+    const game = newGame()
+    toReveal(game)
+
+    expectScoredOnEntry(game, clock)
+    const data = getData(game)
+    expect(data.scores).toEqual(ROUND_ONE_SCORES)
+    expect(data.roundResults[0].voterScoreDeltas).toEqual({ player2: 14, player3: -8, player4: -8 })
+    expect(data.roundResults[0].claimantScoreDelta).toBe(32)
+    expect(game.getState().players.find((player) => player.id === 'player1')?.score).toBe(32)
+  })
+
+  it('strikes a caught bluffer out at the reveal, not on the way out of it', () => {
+    const game = newGame({ maxRounds: 3, eliminationStrikes: 1 })
+    expect(claim(game, 'player1', true)).toBe(true)
+    for (const voter of ['player2', 'player3', 'player4']) expect(vote(game, voter, 'challenge')).toBe(true)
+
+    expectScoredOnEntry(game, clock)
+    const data = getData(game)
+    expect(data.roundResults[0]).toEqual(expect.objectContaining({ bluffCaught: true, claimantScoreDelta: -12, claimantStrikeDelta: 1 }))
+    expect(data.strikes.player1).toBe(1)
+    expect(data.eliminatedPlayerIds).toEqual(['player1'])
+    expect(data.eliminatedAtRound.player1).toBe(1)
+  })
+
+  it('scores the round when the vote clock runs out', () => {
+    const game = newGame()
+    expect(claim(game, 'player1', false)).toBe(true)
+    expect(vote(game, 'player2', 'challenge')).toBe(true)
+    const revealAt = (game.getState().lastMoveAt as number) + 60_000
+    game.applyTimeoutFallback(60, revealAt)
+
+    expectScoredOnEntry(game, revealAt)
+    // player3 and player4 said nothing: counted as Believe, 4 down.
+    expect(getData(game).roundResults[0].voterScoreDeltas).toEqual({ player2: -6, player3: 6, player4: 6 })
+    expect(getData(game).scores).toEqual({ player1: 12, player2: 0, player3: 6, player4: 6 })
+  })
+
+  it('scores a claim that timed out as it goes to the reveal', () => {
+    const game = newGame()
+    const revealAt = (game.getState().lastMoveAt as number) + 60_000
+    game.applyTimeoutFallback(60, revealAt)
+
+    expectScoredOnEntry(game, revealAt)
+    expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({ claimTimedOut: true, claimantScoreDelta: -4 }))
+  })
+
+  it('scores the round when the last voter still owing a vote leaves', () => {
+    const game = newGame()
+    expect(claim(game, 'player1', false)).toBe(true)
+    expect(vote(game, 'player2', 'believe')).toBe(true)
+    expect(vote(game, 'player3', 'believe')).toBe(true)
+    expect(game.handlePlayerLeave('player4')).toBe(true)
+
+    expectScoredOnEntry(game, clock)
+    expect(getData(game).roundResults[0].voterScoreDeltas).toEqual({ player2: 10, player3: 10 })
+  })
+
+  describe('a voter who has voted and then leaves (#1527)', () => {
+    const claimVoteAndLeave = (target: LiarsPartyGame): void => {
+      expect(claim(target, 'player1', true)).toBe(true)
+      expect(vote(target, 'player2', 'challenge')).toBe(true)
+      expect(target.handlePlayerLeave('player2')).toBe(true)
+    }
+
+    it('waits for every voter still in the game before the reveal', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+
+      expect(vote(game, 'player3', 'believe')).toBe(true)
+      expect(getData(game).phase).toBe('challenge')
+      expect(game.getPendingChallengePlayerIds()).toEqual(['player4'])
+      expect(getData(game).challengeVotes.map((entry) => entry.playerId)).toEqual(['player3'])
+
+      expect(vote(game, 'player4', 'challenge')).toBe(true)
+      expectScoredOnEntry(game, clock)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: ['player4'],
+        believedBy: ['player3'],
+        voterScoreDeltas: { player3: -8, player4: 14 },
+      }))
+    })
+
+    it('still reveals when the last voter owing a vote leaves too', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+      expect(vote(game, 'player3', 'believe')).toBe(true)
+      expect(game.handlePlayerLeave('player4')).toBe(true)
+
+      expectScoredOnEntry(game, clock)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: [],
+        believedBy: ['player3'],
+        voterScoreDeltas: { player3: -8 },
+      }))
+    })
+
+    it('leaves their vote out of a round the vote clock ends', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+      const revealAt = (game.getState().lastMoveAt as number) + 60_000
+      game.applyTimeoutFallback(60, revealAt)
+
+      expectScoredOnEntry(game, revealAt)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: [],
+        believedBy: ['player3', 'player4'],
+        voterScoreDeltas: { player3: -12, player4: -12 },
+      }))
+    })
+  })
+
+  describe('a leave after the vote clock ran out, before anything applied it', () => {
+    const SIX = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']
+    const TIMER = { turnTimerSeconds: 60 }
+    const sixPlayerGame = (ids = SIX, rules: Record<string, unknown> = { maxRounds: 10, eliminationStrikes: 2 }) => {
+      const created = new LiarsPartyGame('liars-late-leave', { maxPlayers: 12, minPlayers: 4, rules })
+      for (const id of ids) created.addPlayer({ id, name: id })
+      expect(created.startGame()).toBe(true)
+      return created
+    }
+    /** p1 bluffs; p2, p3, p4 challenge, p6 believes, p5 says nothing. Returns the vote's deadline. */
+    const bluffWithOneSilentVoter = (target: LiarsPartyGame): number => {
+      expect(claim(target, 'p1', true)).toBe(true)
+      for (const voter of ['p2', 'p3', 'p4']) expect(vote(target, voter, 'challenge')).toBe(true)
+      expect(vote(target, 'p6', 'believe')).toBe(true)
+      return (target.getState().lastMoveAt as number) + 60_000
+    }
+    const expectCaughtAtDeadline = (target: LiarsPartyGame, deadline: number, believedBy: string[]) => {
+      expect(getData(target).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: ['p2', 'p3', 'p4'],
+        believedBy,
+        bluffCaught: true,
+        claimantScoreDelta: -12,
+        claimantStrikeDelta: 1,
+        resolvedAt: deadline,
+      }))
+    }
+
+    it('scores the vote the clock closed when the clock is applied first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      game.applyTimeoutFallback(60, deadline)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('scores the same vote when a voter who voted leaves first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+      game.applyTimeoutFallback(60, deadline + 2_000)
+
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('scores the same vote when the voter who owed a vote leaves first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p5', TIMER)).toBe(true)
+
+      expect(getData(game).phase).toBe('reveal')
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('still drops the vote of a voter who leaves before the deadline', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline - 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+
+      expect(getData(game).phase).toBe('challenge')
+      expect(getData(game).challengeVotes.map((entry) => entry.playerId)).toEqual(['p3', 'p4', 'p6'])
+    })
+
+    it('drops a leaver\'s vote even when the leave leaves one player in the game', () => {
+      const game = sixPlayerGame(['e1', 'e2', 'e3', 'c', 'v1', 'v2'], { maxRounds: 10, eliminationStrikes: 1 })
+      for (const claimant of ['e1', 'e2', 'e3']) {
+        expect(claim(game, claimant, true)).toBe(true)
+        for (const voter of getData(game).activePlayerIds.filter((id) => id !== claimant)) {
+          expect(vote(game, voter, 'challenge')).toBe(true)
+        }
+        pastRevealHold()
+        expect(advance(game, 'c')).toBe(true)
+      }
+      expect(getData(game).activePlayerIds).toEqual(['c', 'v1', 'v2'])
+      expect(claim(game, 'c', true)).toBe(true)
+      expect(vote(game, 'v1', 'challenge')).toBe(true)
+
+      expect(game.handlePlayerLeave('c')).toBe(true)
+      expect(game.handlePlayerLeave('v1')).toBe(true)
+
+      expect(getData(game).challengeVotes).toEqual([])
+      expect(getData(game).submittedPlayerIds).toEqual([])
+    })
+  })
+
+  it('refuses Next Round from anyone until the hold is over, then takes it', () => {
+    const game = newGame()
+    toReveal(game)
+    const revealAt = clock
+    expect(LIARS_REVEAL_HOLD_MS).toBeGreaterThanOrEqual(2_000)
+    expect(LIARS_REVEAL_HOLD_MS).toBeLessThanOrEqual(3_000)
+
+    clock = revealAt + LIARS_REVEAL_HOLD_MS - 1
+    for (const playerId of ['player1', 'player2', 'player3', 'player4']) {
+      expect(game.validateMove(createMove(playerId, 'advance-round', {}))).toBe(false)
+    }
+    expect(advance(game)).toBe(false)
+    expect(getData(game).phase).toBe('reveal')
+
+    clock = revealAt + LIARS_REVEAL_HOLD_MS
+    expect(advance(game)).toBe(true)
+    expect(getData(game).phase).toBe('claim')
+    expect(getData(game).currentRound).toBe(2)
+    expect(getData(game).advanceOpensAt).toBeNull()
+  })
+
+  it('holds a reveal reached by a timed-out claim as well', () => {
+    const game = newGame()
+    const revealAt = (game.getState().lastMoveAt as number) + 60_000
+    game.applyTimeoutFallback(60, revealAt)
+
+    clock = revealAt + 1_000
+    expect(advance(game)).toBe(false)
+    clock = revealAt + LIARS_REVEAL_HOLD_MS
+    expect(advance(game)).toBe(true)
+  })
+
+  it('does not score the round again when Next Round is pressed', () => {
+    const game = newGame()
+    toReveal(game)
+    pastRevealHold()
+    expect(advance(game)).toBe(true)
+
+    const data = getData(game)
+    expect(data.roundResults).toHaveLength(1)
+    expect(data.scores).toEqual(ROUND_ONE_SCORES)
+    expect(data.currentRoundResolved).toBe(false)
+  })
+
+  it('scores a reveal the old code left unresolved exactly once, on Next Round', () => {
+    // What a game saved before #1379 looks like: every vote in, phase reveal, nothing scored, no hold stamped.
+    const game = newGame()
+    expect(claim(game, 'player1', true)).toBe(true)
+    expect(vote(game, 'player2', 'challenge')).toBe(true)
+    expect(vote(game, 'player3', 'believe')).toBe(true)
+    const legacy = snapshot(game)
+    legacy.data.challengeVotes.push({ playerId: 'player4', decision: 'believe', submittedAt: clock })
+    legacy.data.submittedPlayerIds = []
+    legacy.data.phase = 'reveal'
+    delete legacy.data.advanceOpensAt
+    expect(legacy.data.currentRoundResolved).toBe(false)
+
+    const first = restored(legacy)
+    const second = restored(legacy)
+    expect(advance(first)).toBe(true)
+    expect(advance(second, 'player4')).toBe(true)
+
+    for (const copy of [first, second]) {
+      const data = getData(copy)
+      expect(data.roundResults).toHaveLength(1)
+      expect(data.roundResults[0].round).toBe(1)
+      expect(data.scores).toEqual(ROUND_ONE_SCORES)
+      expect(data.currentRound).toBe(2)
+      expect(data.phase).toBe('claim')
+    }
+    expect(advance(first)).toBe(false)
+    expect(getData(first).scores).toEqual(ROUND_ONE_SCORES)
+  })
+
+  it('scores the round once when two clients press Next Round on the same reveal', () => {
+    const game = newGame()
+    toReveal(game)
+    const atReveal = snapshot(game)
+    pastRevealHold()
+
+    const first = restored(atReveal)
+    const second = restored(atReveal)
+    expect(advance(first, 'player2')).toBe(true)
+    expect(advance(second, 'player4')).toBe(true)
+    expect(getData(first)).toEqual(getData(second))
+    expect(getData(first).roundResults).toHaveLength(1)
+    expect(getData(first).scores).toEqual(ROUND_ONE_SCORES)
+
+    // The later of the two lands on the next claim, where Next Round means nothing.
+    expect(advance(first, 'player4')).toBe(false)
+    expect(getData(first).scores).toEqual(ROUND_ONE_SCORES)
+    expect(getData(first).currentRound).toBe(2)
+  })
+
+  it('lets the reveal clock advance after the hold without scoring the round twice', () => {
+    const game = newGame()
+    toReveal(game)
+    const revealAt = clock
+    const result = game.applyTimeoutFallback(60, revealAt + 60_000)
+
+    expect(result.revealAdvances).toBe(1)
+    const data = getData(game)
+    expect(data.phase).toBe('claim')
+    expect(data.currentRound).toBe(2)
+    expect(data.roundResults).toHaveLength(1)
+    expect(data.scores).toEqual(ROUND_ONE_SCORES)
+  })
+
+  it('changes nothing when the reveal clock fires after somebody already pressed Next Round', () => {
+    const game = newGame()
+    toReveal(game)
+    const revealAt = clock
+    clock = revealAt + LIARS_REVEAL_HOLD_MS + 1_000
+    expect(advance(game)).toBe(true)
+    const afterAdvance = snapshot(game)
+
+    // A stale reader that saw the reveal would have fired at revealAt + 60 s; the next claim began at the press.
+    const result = game.applyTimeoutFallback(60, revealAt + 60_000)
+    expect(result.changed).toBe(false)
+    expect(snapshot(game).data).toEqual(afterAdvance.data)
+    expect(getData(game).roundResults).toHaveLength(1)
+  })
+
+  describe.each([
+    ['the vote clock', (target: LiarsPartyGame): number => {
+      expect(claim(target, 'player1', false)).toBe(true)
+      expect(vote(target, 'player2', 'challenge')).toBe(true)
+      return (target.getState().lastMoveAt as number) + 60_000
+    }],
+    ['a silent claimant', (target: LiarsPartyGame): number => (target.getState().lastMoveAt as number) + 60_000],
+  ])('a reveal made by %s', (_path, toDeadline) => {
+    it.each([0, 1_000, 3_500, 10_000, 90_000])('holds from the moment the timeout runs, %i ms after the deadline, and stops there', (lateMs) => {
+      const game = newGame()
+      const deadline = toDeadline(game)
+      const runAt = deadline + lateMs
+      clock = runAt
+      game.applyTimeoutFallback(60, runAt)
+
+      const data = getData(game)
+      expect(data.phase).toBe('reveal')
+      expect(data.currentRound).toBe(1)
+      expect(data.roundResults).toHaveLength(1)
+      expect(data.roundResults[0].resolvedAt).toBe(deadline)
+      expect(data.advanceOpensAt).toBe(runAt + LIARS_REVEAL_HOLD_MS)
+
+      clock = runAt + LIARS_REVEAL_HOLD_MS - 1
+      expect(advance(game)).toBe(false)
+      clock = runAt + LIARS_REVEAL_HOLD_MS
+      expect(advance(game)).toBe(true)
+    })
+  })
+
+  it('never ends a reveal before its hold, even on a clock shorter than the hold', () => {
+    const game = newGame()
+    toReveal(game)
+    const revealAt = clock
+
+    game.applyTimeoutFallback(1, revealAt + 1_500)
+    expect(getData(game).phase).toBe('reveal')
+
+    game.applyTimeoutFallback(1, revealAt + LIARS_REVEAL_HOLD_MS)
+    expect(getData(game).phase).toBe('claim')
+    expect(getData(game).roundResults).toHaveLength(1)
+  })
+
+  it('keeps the round result out of every payload until the reveal', () => {
+    const game = newGame()
+    expect(claim(game, 'player1', true)).toBe(true)
+    expect(vote(game, 'player2', 'challenge')).toBe(true)
+    expect(vote(game, 'player3', 'believe')).toBe(true)
+
+    for (const viewer of ['player1', 'player2', 'player4', null]) {
+      const sanitized = sanitizeLiarsPartyStateForBroadcast(snapshot(game), viewer)
+      expect(sanitized.data.roundResults).toEqual([])
+      expect(sanitized.data.scores).toEqual({ player1: 0, player2: 0, player3: 0, player4: 0 })
+      expect(sanitized.data.currentRoundResolved).toBe(false)
+    }
   })
 })

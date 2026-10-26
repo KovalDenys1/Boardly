@@ -48,7 +48,7 @@ jest.mock('@/lib/supabase-client', () => ({
 // The chat hook holds the viewer's answer to the terms; accepting there is what the chat composer sees too.
 let mockTermsAccepted: boolean | null = null
 const mockAcceptTerms = jest.fn(async () => true)
-jest.mock('@/app/lobby/[code]/hooks/useLobbyChat', () => {
+jest.mock('@/app/(site)/lobby/[code]/hooks/useLobbyChat', () => {
   const React = require('react')
   const noop = () => {}
   const send = async () => null
@@ -91,7 +91,7 @@ jest.mock('@/hooks/useBlockedPlayers', () => ({
   }),
 }))
 
-import SketchAndGuessLobbyPage from '@/app/lobby/[code]/sketch-and-guess-page'
+import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 

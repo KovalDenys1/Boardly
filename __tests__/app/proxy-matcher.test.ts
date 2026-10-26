@@ -62,6 +62,11 @@ describe('proxy matcher', () => {
     expect(runsOn('/email-preferences')).toBe(true)
   })
 
+  it('skips the Sentry tunnel, so error reports never wait on a session check', () => {
+    expect(runsOn('/monitoring')).toBe(false)
+    expect(runsOn('/monitoring-status')).toBe(true)
+  })
+
   it('skips the IndexNow key file by shape, not by its current value', () => {
     expect(runsOn('/ffffffffffffffffffffffffffffffff.txt')).toBe(false)
     // too short to be a key: a real page, and the proxy should run on it

@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import AboutPage from '@/app/about/page'
+import AboutPage from '@/app/(site)/about/page'
 import en from '@/locales/en'
 import no from '@/locales/no'
 

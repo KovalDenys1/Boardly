@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
-import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
-import { createFreshnessWatermark } from '@/lib/game-state-freshness'
+import { useLobbyActions } from '@/app/(site)/lobby/[code]/hooks/useLobbyActions'
+import { createFreshnessWatermark, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 
 jest.mock('@/lib/client-logger', () => ({
   clientLogger: { log: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() },
@@ -295,6 +295,77 @@ describe('useLobbyActions', () => {
 
       expect(setGame).toHaveBeenCalled()
       expect(setGameEngine).toHaveBeenCalled()
+    })
+  })
+
+  // #1528: a read takes its lobby from the moment it left, so one that left before another and
+  // lands after it carries the older host and roster, whatever its game stamp says.
+  describe('lobby reads that land out of order (#1528)', () => {
+    const snapshotWith = (creatorId: string) => ({
+      lobby: { id: 'lobby-1', code: 'ABCD12', gameType: 'yahtzee', creatorId },
+      activeGame: {
+        id: 'game-123',
+        status: 'playing',
+        players: [{ userId: 'player-1', name: 'Alice', user: { bot: null } }],
+        state: JSON.stringify({ id: 'game-123', lastMoveAt: 1_000 }),
+      },
+    })
+
+    afterEach(() => {
+      mockNormalizeLobbySnapshot.mockImplementation(() => ({ lobby: null, activeGame: null }))
+    })
+
+    // The lobby the page shows, kept the way React keeps it.
+    const lobbyState = () => {
+      const screen: { lobby: any } = { lobby: null }
+      const setLobby = jest.fn((next: any) => { screen.lobby = typeof next === 'function' ? next(screen.lobby) : next })
+      return { screen, setLobby }
+    }
+
+    it('a refresh that left before a reconcile and lands after it leaves the lobby alone', async () => {
+      const resolvers: Array<(value: unknown) => void> = []
+      ;(global.fetch as jest.Mock).mockImplementation(() => new Promise((resolve) => { resolvers.push(resolve) }))
+      mockNormalizeLobbySnapshot.mockImplementation((data: any) => data)
+      mockRestoreGameEngineClient.mockResolvedValue({} as any)
+      const { screen, setLobby } = lobbyState()
+      const { result } = renderHook(() => useLobbyActions(makeProps({ setLobby })))
+
+      await act(async () => {
+        const refresh = result.current.loadLobby()
+        const reconcile = result.current.loadLobby({ fresh: true })
+        resolvers[1]({ ok: true, status: 200, json: async () => snapshotWith('player-2') })
+        await reconcile
+        resolvers[0]({ ok: true, status: 200, json: async () => snapshotWith('player-1') })
+        await refresh
+      })
+
+      expect(screen.lobby.creatorId).toBe('player-2')
+    })
+
+    // The page takes the host from the player-left frame and sends a read of its own, which the
+    // lobby GET's rate limit may refuse; the read already in flight was answered before the leave.
+    it('the read a leave asks for is its own, and the host the frame named survives a read from before the leave', async () => {
+      const resolvers: Array<(value: unknown) => void> = []
+      ;(global.fetch as jest.Mock).mockImplementation(() => new Promise((resolve) => { resolvers.push(resolve) }))
+      mockNormalizeLobbySnapshot.mockImplementation((data: any) => data)
+      mockRestoreGameEngineClient.mockResolvedValue({} as any)
+      const { screen, setLobby } = lobbyState()
+      const freshnessRef = { current: createFreshnessWatermark() }
+      const { result } = renderHook(() => useLobbyActions(makeProps({ setLobby, freshnessRef })))
+
+      await act(async () => {
+        const beforeTheLeave = result.current.loadLobby()
+        const host = takePlayerLeftFrame(freshnessRef.current, { userId: 'old-host', nextCreatorId: 'player-1' })
+        if (host) setLobby((prev: any) => (prev ? { ...prev, creatorId: host } : prev))
+        const leaveRead = result.current.loadLobby({ fresh: true, trusted: false })
+        resolvers[0]({ ok: true, status: 200, json: async () => snapshotWith('old-host') })
+        await beforeTheLeave
+        resolvers[1]?.({ ok: false, status: 429, json: async () => ({ error: 'Too many requests' }) })
+        await leaveRead
+      })
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(screen.lobby.creatorId).toBe('player-1')
     })
   })
 })

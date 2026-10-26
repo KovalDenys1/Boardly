@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
+import { useLobbyActions } from '@/app/(site)/lobby/[code]/hooks/useLobbyActions'
 import { showToast } from '@/lib/i18n-toast'
 import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 import { readSketchCustomWordsSetting, writeSketchCustomWordsSetting } from '@/lib/sketch-custom-words'

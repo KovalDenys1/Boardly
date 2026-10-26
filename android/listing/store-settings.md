@@ -18,7 +18,7 @@ Checked against the code on `develop` at a3bcab7b (2026-10-18).
 
 | Declaration | Answer | Where |
 |---|---|---|
-| Privacy policy | **https://boardly.online/privacy** | `app/privacy/page.tsx` |
+| Privacy policy | **https://boardly.online/privacy** | `app/(site)/privacy/page.tsx` |
 | Ads | **No, my app does not contain ads** | See below |
 | App access | **All or some functionality is restricted** | See below |
 | Content rating | Game, see `content-rating.md` | – |
@@ -32,7 +32,7 @@ Checked against the code on `develop` at a3bcab7b (2026-10-18).
 Play: "You must declare whether or not your app contains ads. This includes ads delivered through
 third-party ad SDKs", and "Google may verify this at any time and display the 'Contains ads' label if
 appropriate" (answer/9859455). The code keeps every ad out of the app, now and after ads go live on
-the web. The AdSense script that `app/layout.tsx` loads also runs in the app, because the server
+the web. The AdSense script that `app/root-document.tsx` loads also runs in the app, because the server
 cannot tell the app from a browser, but in Play mode the head script sets `pauseAdRequests = 1`
 before it can run, so it sends no ad request at all, Auto ads included, and is left doing site
 verification and Google's EEA/UK consent message. And `components/AdSlot.tsx`, the only place an
@@ -82,7 +82,7 @@ credentials into the Console.
 
 Inside the app, where the website offers checkout, the app shows one plain sentence instead, with no
 link: "Premium can be bought on boardly.online in your browser" (`premium.playAppNotice`, rendered as
-a `<p>` in `app/premium/PremiumContent.tsx`, the profile's Premium tab in `app/profile/page.tsx` and
+a `<p>` in `app/(site)/premium/PremiumContent.tsx`, the profile's Premium tab in `app/(site)/profile/page.tsx` and
 `components/AvatarPicker.tsx`; every checkout and billing-portal control is in `PurchaseOnly`, #1465).
 
 The Payments policy forbids leading users to another payment method "via … In-app webviews, buttons,

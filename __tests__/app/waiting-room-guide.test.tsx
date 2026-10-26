@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { fireEvent, render, screen } from '@testing-library/react'
-import WaitingRoomGuide from '@/app/lobby/[code]/components/WaitingRoomGuide'
+import WaitingRoomGuide from '@/app/(site)/lobby/[code]/components/WaitingRoomGuide'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({ t: (key: string) => key }),

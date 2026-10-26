@@ -363,13 +363,18 @@ export async function proxy(request: NextRequest) {
  * them from another site, which the proxy's `Cross-Origin-Resource-Policy: same-site`
  * forbids, so they must be served without it.
  *
+ * `monitoring` is the Sentry tunnel (`tunnelRoute` in next.config.js): the browser's error
+ * reports, which carry no session and need none of the proxy's headers. `$` keeps a page
+ * whose path merely starts with it under the proxy.
+ *
  * Excluded, in order: Next's own static and image routes, the favicon, the
- * public folder, the mail images, `robots.txt`, `sitemap.xml`, `ads.txt`, `manifest.json`,
- * `sw.js`, `offline.html`, the IndexNow key file (32 hex characters at the site
- * root, fetched by Bing to verify a submission) and `.well-known`.
+ * public folder, the mail images, the Sentry tunnel, `robots.txt`, `sitemap.xml`,
+ * `ads.txt`, `manifest.json`, `sw.js`, `offline.html`, the IndexNow key file
+ * (32 hex characters at the site root, fetched by Bing to verify a submission)
+ * and `.well-known`.
  */
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|public/|email/|robots\\.txt|sitemap\\.xml|ads\\.txt|manifest\\.json|sw\\.js|offline\\.html|[0-9a-f]{32}\\.txt|\\.well-known/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|public/|email/|monitoring$|robots\\.txt|sitemap\\.xml|ads\\.txt|manifest\\.json|sw\\.js|offline\\.html|[0-9a-f]{32}\\.txt|\\.well-known/).*)',
   ],
 }

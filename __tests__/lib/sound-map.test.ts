@@ -10,7 +10,7 @@ import {
   roundRobinTrimDb,
   type SampleId,
 } from '@/lib/sound-map'
-import { CUE_NOTES } from '@/app/dev/sounds/cue-notes'
+import { CUE_NOTES } from '@/app/(site)/dev/sounds/cue-notes'
 
 const KENNEY_DIR = path.join(process.cwd(), 'public', 'sounds', 'kenney')
 const filesOnDisk = readdirSync(KENNEY_DIR).filter((name) => name.endsWith('.mp3'))

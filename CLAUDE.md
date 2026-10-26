@@ -114,6 +114,13 @@ hands its `revalidate` to the page that calls it, so a 30 s cache in `Announceme
 static routes rebuild every 30 s, and Sentry's one-a-minute uptime check rebuilt `/` ~1 400 times a
 day. Read the build's route table after touching anything the layout reads: static rows say `1h`.
 
+**There are three root layouts since #1394: `app/(site)/layout.tsx`, `app/ru/layout.tsx` and
+`app/uk/layout.tsx`, all rendering `app/root-document.tsx`.** Next attaches a file-based
+`opengraph-image` only to metadata set at its own segment level, so when the layouts moved, `/`
+and 20 static pages lost their share image while every test stayed green. The site card is now a
+route handler named in `siteMetadata` (`lib/site-card.tsx`). After touching layouts or metadata,
+compare `og:image` across the prerendered HTML of a develop build and yours: no route may lose it.
+
 ---
 
 ## Plans, costs and accounts: read the vault before answering
@@ -251,15 +258,17 @@ plus 844×390 landscape). Check before calling it done:
       slots, pre-translated titles) — a hand-rolled player card, result
       overlay, status banner, tab strip, or chat in a game page is a review
       blocker.
-- [ ] `app/games/<game>/page.tsx` — detail page with SEO metadata + JSON-LD
-- [ ] `app/games/<game>/ConnectFourDetailContent.tsx` (or similar) — client content component
-- [ ] `app/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
-- [ ] `app/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
-- [ ] `app/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
+- [ ] `app/(site)/games/<game>/page.tsx` — detail page with SEO metadata + JSON-LD
+- [ ] `app/(site)/games/<game>/ConnectFourDetailContent.tsx` (or similar) — client content component
+- [ ] `app/(site)/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
+- [ ] `app/(site)/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
+- [ ] `app/(site)/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
+- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/ru/games/<game>` and `/uk/games/<game>` exist (#1394); `localized-pages.test.tsx` fails without it
+- [ ] Every new page goes under `app/(site)/`: outside every root layout, Next writes a bare layout for it
 - [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
-- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
+- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the /ru and /uk page titles (parity enforced by pre-commit hook)
 
 ### Verify
 ```bash
@@ -636,7 +645,7 @@ type `Secret` for a `NEXT_PUBLIC_*` key, correctly: those values are inlined int
 
 ## Ads — what is already true, and the one place they must not go
 
-`app/layout.tsx` loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`, **in
+`app/root-document.tsx` (the document every root layout renders) loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`, **in
 production only** (#1152 — a fresh-profile measurement of boardly.online showed the loader
 firing a request to `fundingchoicesmessages.google.com` and writing a first-party `FCCDCF`
 cookie before any consent existed; preview and development gained nothing from carrying it,
@@ -644,8 +653,8 @@ so it no longer loads there). That script is **three things at once**, which is 
 stays on in production even with no ad showing: site verification, the ad loader, and
 **Google's EEA/UK consent message**. The consent message has been published for
 boardly.online in 32 languages since 2026-09-02 and is delivered by that loader. So the
-privacy notice's promise of consent-gated personalised ads (`app/privacy/PrivacyNotice.tsx`,
-rewritten in #1126 — `app/privacy/page.tsx` is now a thin wrapper, not the line to cite) is
+privacy notice's promise of consent-gated personalised ads (`app/(site)/privacy/PrivacyNotice.tsx`,
+rewritten in #1126 — `app/(site)/privacy/page.tsx` is now a thin wrapper, not the line to cite) is
 backed.
 
 **The absence of a CMP, TCF shim or cookie banner in the tree is conditional, not settled
@@ -661,7 +670,7 @@ message via the `googlefc` revocation API for anyone who wants to change their c
 Google is the holder of the consent record itself (its CMP, its TC string), and the
 2026-09-24 privacy notice rewrite (#1126) names it: the AdSense/Funding Choices script, the
 `FCCDCF` cookie, and Google as an independent controller for that data are in
-`app/privacy/PrivacyNotice.tsx` / `locales/*.ts` `privacyPolicy.recipients`.
+`app/(site)/privacy/PrivacyNotice.tsx` / `locales/*.ts` `privacyPolicy.recipients`.
 
 Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
 open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.

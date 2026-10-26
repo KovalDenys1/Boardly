@@ -305,52 +305,61 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
     return entry
   }
 
-  return {
-    async open(topic, raw, expected) {
-      if (!expected.gameId || !isSketchLiveFrame(raw)) return null
-      const message = parseSketchLiveMessage(raw.p, expected)
-      if (!message) return null
+  const openOne: SketchLiveReceiver['open'] = async (topic, raw, expected) => {
+    if (!expected.gameId || !isSketchLiveFrame(raw)) return null
+    const message = parseSketchLiveMessage(raw.p, expected)
+    if (!message) return null
 
-      const subtle = getSubtle()
-      if (!subtle) {
-        // Same carve-out as signed broadcasts (lib/client/realtime-verify.ts):
-        // `next dev` from a phone over the LAN is not a secure context. A
-        // production build inlines NODE_ENV, so this never accepts there.
-        if (process.env.NODE_ENV === 'production') return null
-        warnInsecureContextOnce()
-        return message
-      }
-
-      // canonicalJson throws on a certificate nested too deep to serialise.
-      const certified = await Promise.resolve(raw.cert).then((cert) => certifiedKeyFor(subtle, topic, cert)).catch(() => null)
-      if (!certified) return null
-      const { claims, key } = certified
-      if (claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) {
-        return null
-      }
-
-      const serverNow = realtimeServerNow()
-      if (serverNow === null || Math.abs(serverNow - raw.t) > SKETCH_LIVE_MAX_FRAME_AGE_MS) return null
-
-      const signature = base64UrlToBytes(raw.sig)
-      if (!signature || signature.length !== SIGNATURE_BYTES) return null
-      let valid = false
-      try {
-        valid = await subtle.verify(ECDSA_SHA256, key, signature, new TextEncoder().encode(sketchLiveSigningInput(raw.cert.sig, raw.seq, raw.t, raw.p)))
-      } catch {
-        valid = false
-      }
-      if (!valid) return null
-
-      // Checked after the await, so two frames verified side by side still count once.
-      const roundId = `${topic}\n${claims.gameId}\n${claims.round}\n${claims.drawerId}`
-      const shown = shownRounds.get(roundId)
-      if (shown) {
-        const order = compareIssue(raw.cert, shown)
-        if (order < 0 || (order === 0 && raw.seq <= shown.seq)) return null
-      }
-      remember(shownRounds, roundId, { iat: raw.cert.iat, n: raw.cert.n, seq: raw.seq }, MAX_REMEMBERED_ROUNDS)
+    const subtle = getSubtle()
+    if (!subtle) {
+      // Same carve-out as signed broadcasts (lib/client/realtime-verify.ts):
+      // `next dev` from a phone over the LAN is not a secure context. A
+      // production build inlines NODE_ENV, so this never accepts there.
+      if (process.env.NODE_ENV === 'production') return null
+      warnInsecureContextOnce()
       return message
+    }
+
+    // canonicalJson throws on a certificate nested too deep to serialise.
+    const certified = await Promise.resolve(raw.cert).then((cert) => certifiedKeyFor(subtle, topic, cert)).catch(() => null)
+    if (!certified) return null
+    const { claims, key } = certified
+    if (claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) {
+      return null
+    }
+
+    const serverNow = realtimeServerNow()
+    if (serverNow === null || Math.abs(serverNow - raw.t) > SKETCH_LIVE_MAX_FRAME_AGE_MS) return null
+
+    const signature = base64UrlToBytes(raw.sig)
+    if (!signature || signature.length !== SIGNATURE_BYTES) return null
+    let valid = false
+    try {
+      valid = await subtle.verify(ECDSA_SHA256, key, signature, new TextEncoder().encode(sketchLiveSigningInput(raw.cert.sig, raw.seq, raw.t, raw.p)))
+    } catch {
+      valid = false
+    }
+    if (!valid) return null
+
+    // Checked after the await, so two frames verified side by side still count once.
+    const roundId = `${topic}\n${claims.gameId}\n${claims.round}\n${claims.drawerId}`
+    const shown = shownRounds.get(roundId)
+    if (shown) {
+      const order = compareIssue(raw.cert, shown)
+      if (order < 0 || (order === 0 && raw.seq <= shown.seq)) return null
+    }
+    remember(shownRounds, roundId, { iat: raw.cert.iat, n: raw.cert.n, seq: raw.seq }, MAX_REMEMBERED_ROUNDS)
+    return message
+  }
+
+  // One frame at a time, in the order heard: checked side by side, a later frame
+  // could finish first and make the earlier one look like a replay.
+  let queue: Promise<unknown> = Promise.resolve()
+  return {
+    open(topic, raw, expected) {
+      const opened = queue.then(() => openOne(topic, raw, expected))
+      queue = opened.catch(() => null)
+      return opened
     },
   }
 }

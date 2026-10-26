@@ -72,7 +72,7 @@ describe('the Guess the Spy table against the catalog and the registry (#1243)',
     expect([meta.minPlayers, meta.maxPlayers]).toEqual([3, 10])
     expect(config.allowedPlayers).toEqual([3, 4, 5, 6, 7, 8])
     expect(config.defaultMaxPlayers).toBe(6)
-    expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toContain('const maxByGameType = Math.min(10, gameMeta?.maxPlayers ?? 10)')
+    expect(source('app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx')).toContain('const maxByGameType = Math.min(10, gameMeta?.maxPlayers ?? 10)')
     // The settings route refuses every change once the game is playing.
     expect(source('app/api/lobby/[code]/route.ts')).toContain("'Lobby settings cannot be changed after game start'")
     expect(detail.modes.tableSize.desc).toBe('3 to 8 seats on the create form, 6 by default, up to 10 before the start.')

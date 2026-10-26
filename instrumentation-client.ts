@@ -5,6 +5,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { initBotId } from "botid/client/core";
 import { BOTID_PROTECTED_ROUTES } from "./lib/botid-routes";
+import { SENTRY_DATA_COLLECTION, stripQueryStrings, stripSpanQueryStrings } from "./lib/sentry-data-collection";
 import { DENY_URLS, THIRD_PARTY_NOISE, dropThirdPartyEvent } from "./lib/sentry-noise";
 
 // Vercel BotID (#1157): attaches the invisible challenge to the fetches that mint an account
@@ -20,7 +21,14 @@ Sentry.init({
 
   denyUrls: DENY_URLS,
 
-  beforeSend: dropThirdPartyEvent,
+  beforeSend: (event) => {
+    const kept = dropThirdPartyEvent(event);
+    return kept && stripQueryStrings(kept);
+  },
+
+  beforeSendTransaction: stripQueryStrings,
+
+  beforeSendSpan: Sentry.withStaticSpan(stripSpanQueryStrings),
 
   // Only enable Sentry in production or when explicitly enabled
   enabled: process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true',
@@ -32,11 +40,10 @@ Sentry.init({
   // `sentryReplaySession` to sessionStorage for every visitor before any
   // consent existed (ekomloven § 3-15). Error capture above is unaffected.
 
-  // Don't send PII in production for privacy
-  sendDefaultPii: process.env.NODE_ENV !== 'production',
+  // v11 streams spans by default; keep sending v10's transactions
+  traceLifecycle: 'static',
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  dataCollection: SENTRY_DATA_COLLECTION,
 
   // Environment tag
   environment: process.env.NODE_ENV || 'development',
