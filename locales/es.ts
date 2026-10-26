@@ -3439,6 +3439,9 @@ const es: TranslationWithPlurals = {
     termsTerms: 'Condiciones del servicio',
     termsRules: 'Normas de la comunidad',
     termsAccept: 'Aceptar y chatear',
+    termsPromptPlay: 'Antes de que otros jugadores vean lo que escribes, acepta las Condiciones del servicio y las Normas de la comunidad.',
+    termsAcceptPlay: 'Aceptar',
+    termsCompactLead: 'Necesario antes de escribir:',
     termsFailed: 'No se pudo guardar. Inténtalo de nuevo.',
   },
   auth: {
@@ -5666,6 +5669,8 @@ const es: TranslationWithPlurals = {
     blockedOn: 'Bloqueado el {{date}}',
     loadFailed: 'No se pudieron cargar tus jugadores bloqueados.',
     retry: 'Intentar de nuevo',
+    hiddenText: 'De un jugador que bloqueaste',
+    show: 'Mostrar',
   },
   discordLink: {
     title: 'Vincular Boardly con Discord',

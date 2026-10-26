@@ -38,6 +38,10 @@ import { useLiarsPartySounds } from './hooks/useLiarsPartySounds'
 import { useFreshFor } from '@/hooks/useFreshFor'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs, staggerStyle } from '@/lib/social-motion'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import BlockedText from '@/components/BlockedText'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import { isTermsRequired } from '@/lib/client/terms-consent'
 
 interface LiarsPartyPageProps {
   code: string
@@ -182,10 +186,11 @@ function LiarsRules({ rules, t, fill = false }: { rules: string[]; t: (key: Tran
  * take the slot instead: the DoD's "when a panel is hidden its space is taken
  * by something useful".
  */
-function LiarsRoundHistory({ data, players, rules, t }: {
+function LiarsRoundHistory({ data, players, rules, blockedIds, t }: {
   data: LiarsPartyGameData
   players: GamePlayer[]
   rules: string[]
+  blockedIds: ReadonlySet<string>
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
   const results = data.roundResults
@@ -217,7 +222,9 @@ function LiarsRoundHistory({ data, players, rules, t }: {
                 <div className="text-bd-ink-soft">
                   {t('liarsParty.claimedBy', { name: playerNameById(players, result.claimantId, t) })}
                 </div>
-                <div className="truncate text-bd-ink" title={result.claimText}>&ldquo;{result.claimText}&rdquo;</div>
+                <div className="truncate text-bd-ink">
+                  <BlockedText blocked={blockedIds.has(result.claimantId)} from={result.claimantId} title={result.claimText}>&ldquo;{result.claimText}&rdquo;</BlockedText>
+                </div>
               </>
             )}
           </div>
@@ -319,8 +326,12 @@ interface ClaimContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
   rules: string[]
+  blockedIds: ReadonlySet<string>
   isMoveSubmitting: boolean
   onSubmitClaim: (claim: string, isBluff: boolean) => void
+  termsRequired: boolean
+  autoFocusTerms: boolean
+  onAcceptTerms: () => Promise<boolean>
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
@@ -340,11 +351,14 @@ export interface LiarsClaimDraft {
  * hand the claimant a blank box with the round clock still running (the same
  * trap Sketch & Guess hit with its canvas, #1034).
  */
-function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, t }: {
+function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, termsRequired, autoFocusTerms, onAcceptTerms, t }: {
   draft: LiarsClaimDraft
   onDraftChange: (next: LiarsClaimDraft) => void
   isMoveSubmitting: boolean
   onSubmitClaim: (claim: string, isBluff: boolean) => void
+  termsRequired: boolean
+  autoFocusTerms: boolean
+  onAcceptTerms: () => Promise<boolean>
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
   const claimText = draft.text
@@ -354,11 +368,35 @@ function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, t }:
   const charCount = claimText.length
   const canSubmit = charCount >= 5 && charCount <= 180 && isBluffSelected !== null && !isMoveSubmitting
 
+  // Each layout tree mounts its own form, so focus returns to the box in the tree where the terms were accepted.
+  const claimRef = React.useRef<HTMLTextAreaElement>(null)
+  const focusClaimAfterConsent = React.useRef(false)
+  useEffect(() => {
+    if (termsRequired || !focusClaimAfterConsent.current) return
+    focusClaimAfterConsent.current = false
+    claimRef.current?.focus()
+  }, [termsRequired])
+  const handleAcceptTerms = async () => {
+    focusClaimAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (!accepted) focusClaimAfterConsent.current = false
+    return accepted
+  }
+
+  if (termsRequired) {
+    return (
+      <LiarsCard>
+        <TermsConsentPanel onAccept={handleAcceptTerms} autoFocus={autoFocusTerms} context="play" />
+      </LiarsCard>
+    )
+  }
+
   return (
     // No heading: the status banner above already reads "Your turn to make a
     // claim", and the placeholder says what goes in the box.
     <LiarsCard>
       <textarea
+        ref={claimRef}
         className="bd-input resize-none"
         rows={3}
         placeholder={t('liarsParty.claimPlaceholder')}
@@ -400,7 +438,7 @@ function ClaimForm({ draft, onDraftChange, isMoveSubmitting, onSubmitClaim, t }:
   )
 }
 
-function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, isClaimant, eliminatedRound, draft, onDraftChange, animate = false, t }: ClaimContentProps & {
+function ClaimContent({ data, players, rules, blockedIds, isMoveSubmitting, onSubmitClaim, termsRequired, autoFocusTerms, onAcceptTerms, isClaimant, eliminatedRound, draft, onDraftChange, animate = false, t }: ClaimContentProps & {
   isClaimant: boolean
   eliminatedRound: number | null | undefined
   draft: LiarsClaimDraft
@@ -414,16 +452,28 @@ function ClaimContent({ data, players, rules, isMoveSubmitting, onSubmitClaim, i
   return (
     <>
       {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} animate={bannerIsNews} t={t} />}
-      {isClaimant && <ClaimForm draft={draft} onDraftChange={onDraftChange} isMoveSubmitting={isMoveSubmitting} onSubmitClaim={onSubmitClaim} t={t} />}
-      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+      {isClaimant && (
+        <ClaimForm
+          draft={draft}
+          onDraftChange={onDraftChange}
+          isMoveSubmitting={isMoveSubmitting}
+          onSubmitClaim={onSubmitClaim}
+          termsRequired={termsRequired}
+          autoFocusTerms={autoFocusTerms}
+          onAcceptTerms={onAcceptTerms}
+          t={t}
+        />
+      )}
+      <LiarsRoundHistory data={data} players={players} rules={rules} blockedIds={blockedIds} t={t} />
     </>
   )
 }
 
 /** The claim under vote, plus how many votes are in. */
-function ClaimUnderVote({ data, players, heading, animate = false, t }: {
+function ClaimUnderVote({ data, players, blockedIds, heading, animate = false, t }: {
   data: LiarsPartyGameData
   players: GamePlayer[]
+  blockedIds: ReadonlySet<string>
   heading?: string
   /** The claim just arrived while the page was open: it lands instead of appearing (#1115). */
   animate?: boolean
@@ -433,7 +483,9 @@ function ClaimUnderVote({ data, players, heading, animate = false, t }: {
   return (
     <LiarsCard>
       {heading && <div className="liars-card__title">{heading}</div>}
-      <blockquote className={`liars-claim${animate ? ' social-reveal' : ''}`} data-testid="liars-claim-text">&ldquo;{data.claim?.text}&rdquo;</blockquote>
+      <blockquote className={`liars-claim${animate ? ' social-reveal' : ''}`} data-testid="liars-claim-text">
+        <BlockedText blocked={!!data.claim && blockedIds.has(data.claim.playerId)} from={data.claim?.playerId}>&ldquo;{data.claim?.text}&rdquo;</BlockedText>
+      </blockquote>
       <div className="text-sm text-bd-ink-soft" data-testid="liars-claim-by">
         {t('liarsParty.claimedBy', { name: playerNameById(players, data.currentClaimantId, t) })}
       </div>
@@ -448,20 +500,21 @@ interface ChallengeContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
   rules: string[]
+  blockedIds: ReadonlySet<string>
   currentUserId: string
   isClaimant: boolean
   eliminatedRound: number | null | undefined
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eliminatedRound, animate = false, t }: ChallengeContentProps & { animate?: boolean }) {
+function ChallengeContent({ data, players, rules, blockedIds, currentUserId, isClaimant, eliminatedRound, animate = false, t }: ChallengeContentProps & { animate?: boolean }) {
   const myVote = data.challengeVotes.find(v => v.playerId === currentUserId)
   const canVote = !isClaimant && !myVote && eliminatedRound === undefined
 
   return (
     <>
       {eliminatedRound !== undefined && <EliminatedBanner round={eliminatedRound} t={t} />}
-      <ClaimUnderVote data={data} players={players} heading={t('liarsParty.challengeOrBelieve')} animate={animate} t={t} />
+      <ClaimUnderVote data={data} players={players} blockedIds={blockedIds} heading={t('liarsParty.challengeOrBelieve')} animate={animate} t={t} />
 
       {!canVote && myVote && (
         <LiarsCard className="text-center">
@@ -470,7 +523,7 @@ function ChallengeContent({ data, players, rules, currentUserId, isClaimant, eli
         </LiarsCard>
       )}
 
-      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+      <LiarsRoundHistory data={data} players={players} rules={rules} blockedIds={blockedIds} t={t} />
     </>
   )
 }
@@ -484,10 +537,11 @@ interface RevealContentProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
   rules: string[]
+  blockedIds: ReadonlySet<string>
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function RevealContent({ data, players, rules, animate = false, t }: RevealContentProps & {
+function RevealContent({ data, players, rules, blockedIds, animate = false, t }: RevealContentProps & {
   /** The reveal just started while the page was open: play it in order (#1115). */
   animate?: boolean
 }) {
@@ -522,7 +576,9 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
 
       {data.claim && !data.claim.autoSubmitted && (
         <LiarsCard>
-          <blockquote className="liars-claim">&ldquo;{data.claim.text}&rdquo;</blockquote>
+          <blockquote className="liars-claim">
+            <BlockedText blocked={blockedIds.has(data.claim.playerId)} from={data.claim.playerId}>&ldquo;{data.claim.text}&rdquo;</BlockedText>
+          </blockquote>
           <div
             className={`liars-verdict${animate ? ' social-stamp' : ''}`}
             data-testid="liars-verdict"
@@ -581,7 +637,7 @@ function RevealContent({ data, players, rules, animate = false, t }: RevealConte
       {/* The vote breakdown is four to eleven rows; measured at 390 it left
           450px of empty card under it when it was the stretching one. What
           belongs in that space is the same thing the other phases put there. */}
-      <LiarsRoundHistory data={data} players={players} rules={rules} t={t} />
+      <LiarsRoundHistory data={data} players={players} rules={rules} blockedIds={blockedIds} t={t} />
     </>
   )
 }
@@ -653,6 +709,8 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const [mobileTab, setMobileTab] = useState<LiarsMobileTab>('game')
   const [overlayInspecting, setOverlayInspecting] = useState(false)
   const [claimDraft, setClaimDraft] = useState<LiarsClaimDraft>({ round: 0, text: '', isBluff: null })
+  const [claimTermsRefused, setClaimTermsRefused] = useState(false)
+  const { blockedIds } = useBlockedPlayers()
 
   // #1038: leaving used to be a bare router.push('/games'), so the server never
   // heard about it. The seat stayed occupied and the table kept waiting on a
@@ -677,6 +735,15 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     onChatMessage,
     mergeHistoryMessages,
   } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
+
+  const acceptClaimTerms = useCallback(async () => {
+    const accepted = await acceptChatTerms()
+    if (accepted) setClaimTermsRefused(false)
+    return accepted
+  }, [acceptChatTerms])
+  useEffect(() => {
+    if (chatTermsAccepted) setClaimTermsRefused(false)
+  }, [chatTermsAccepted])
 
   // Timer tick – forces re-render every second for countdown displays
   const [timerTick, setTimerTick] = useState(0)
@@ -899,6 +966,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           applyAuthoritativeState(game.id, authoritativeState)
         }
         return true
+      }
+      if (await isTermsRequired(res)) {
+        setClaimTermsRefused(true)
+        return false
       }
       clientLogger.error('LiarsParty move failed', { type })
       await loadLobby()
@@ -1222,8 +1293,12 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         eliminatedRound={eliminatedRound}
         draft={activeClaimDraft}
         onDraftChange={setClaimDraft}
+        blockedIds={blockedIds}
         isMoveSubmitting={isMoveSubmitting}
         onSubmitClaim={(claim, isBluff) => void handleMove('submit-claim', { claim, isBluff }).then((ok) => ok && playCue('card.place'))}
+        termsRequired={chatTermsAccepted === false || claimTermsRefused}
+        autoFocusTerms={claimTermsRefused}
+        onAcceptTerms={acceptClaimTerms}
         animate={phaseFresh}
         t={t}
       />
@@ -1235,6 +1310,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         data={data!}
         players={players}
         rules={rules}
+        blockedIds={blockedIds}
         currentUserId={currentUserId}
         isClaimant={isClaimant}
         eliminatedRound={eliminatedRound}
@@ -1264,7 +1340,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     }
   } else if (isPlaying && phase === 'reveal') {
     phaseTestId = 'liars-party-reveal-screen'
-    phaseContent = <RevealContent data={data!} players={players} rules={rules} animate={phaseFresh} t={t} />
+    phaseContent = <RevealContent data={data!} players={players} rules={rules} blockedIds={blockedIds} animate={phaseFresh} t={t} />
     // Open to every player, not just the host – the engine's validateMove for
     // advance-round has no player-ownership check (any known player can legally
     // advance). Gating this to isHost made the game permanently soft-lock for
@@ -1310,7 +1386,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           onReturnToLobby={handleReturnToWaiting}
           onLeave={() => setShowLeaveConfirmModal(true)}
           isGuest={isGuest}
-          registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
           inviteCode={code}
           gameType="liars_party"
           outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: players.some(p => p.userId === currentUserId || p.id === currentUserId), isViewerWinner: winnerId ? iWon : null })}

@@ -3509,6 +3509,9 @@ const uk: TranslationWithPlurals = {
     termsTerms: 'Умови використання',
     termsRules: 'Правила спільноти',
     termsAccept: 'Прийняти й спілкуватися',
+    termsPromptPlay: 'Перш ніж інші гравці побачать ваш текст, прийміть Умови використання та Правила спільноти.',
+    termsAcceptPlay: 'Прийняти',
+    termsCompactLead: 'Потрібно, перш ніж писати:',
     termsFailed: 'Не вдалося зберегти. Спробуйте ще раз.',
   },
   auth: {
@@ -5771,6 +5774,8 @@ const uk: TranslationWithPlurals = {
     blockedOn: 'Заблоковано {{date}}',
     loadFailed: 'Не вдалося завантажити заблокованих гравців.',
     retry: 'Спробувати ще раз',
+    hiddenText: 'Від гравця, якого ви заблокували',
+    show: 'Показати',
   },
   discordLink: {
     title: 'Пов\'язати Boardly з Discord',

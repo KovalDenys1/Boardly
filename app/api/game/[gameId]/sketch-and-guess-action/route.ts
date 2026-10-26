@@ -16,6 +16,7 @@ import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persis
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
 import { commitGameState, GameStateConflictError, type GameRowRevision } from '@/lib/game-state-lock'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -108,6 +109,13 @@ export async function POST(
     const player = game.players.find((entry) => entry.userId === userId)
     if (!player) {
       return NextResponse.json({ error: 'Player not in this game' }, { status: 403 })
+    }
+
+    if (parsedBody.data.action === 'submit-guess' && (await requiresTermsAcceptance(userId))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
     }
 
     let parsedState: RestorableGameState

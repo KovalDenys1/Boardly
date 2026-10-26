@@ -144,6 +144,10 @@ export async function GET(
   const { creator, realtimeSecret, ...safeLobbyWithoutCreator } = lobby
   const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
+  const viewer = requestUser
+    ? await prisma.users.findUnique({ where: { id: requestUser.id }, select: { termsAcceptedAt: true } })
+    : null
+
   const canJoinAsPlayer = (() => {
     if (isAdminView) return false
     const game = activeGame
@@ -162,6 +166,7 @@ export async function GET(
     activeGame: sanitizedActiveGame,
     canJoinAsPlayer,
     isAdminView,
+    viewer: { termsAccepted: Boolean(viewer?.termsAcceptedAt) },
     // Everything above already passed the allowSpectators, password and
     // spectator-limit gates, so this is the point at which a spectator has
     // earned the topic name. A lobby with spectators switched off never gets

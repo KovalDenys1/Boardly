@@ -564,7 +564,7 @@ export function trackUserRetention(data: {
 }
 
 /**
- * Guest → account nudge shown on result screens (GuestConversionNudge).
+ * Guest → account nudge (GuestConversionNudge), not placed anywhere since it left the end screen.
  * Together with `signupSource` on Users this is the guest→registered funnel.
  */
 export function trackSignupPrompt(

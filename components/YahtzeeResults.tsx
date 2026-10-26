@@ -20,7 +20,6 @@ interface YahtzeeResultsProps {
   onReturnToLobbyRoom?: () => void
   onReturnToWaiting?: () => void
   isGuest?: boolean
-  registerUrl?: string
   /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
   lobbyCode?: string
   /** `status === 'authenticated' && !isGuest`, decided by the caller (#982). */
@@ -63,7 +62,6 @@ export default function YahtzeeResults({
   onReturnToLobbyRoom,
   onReturnToWaiting,
   isGuest = false,
-  registerUrl = '/auth/register',
   lobbyCode,
   isRegistered = false,
   gameId,
@@ -433,7 +431,6 @@ export default function YahtzeeResults({
             isGuest={isGuest}
             isRegistered={isRegistered}
             gameId={gameId}
-            registerUrl={registerUrl}
           />
         </div>
       </div>

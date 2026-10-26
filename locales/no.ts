@@ -3415,6 +3415,9 @@ const no = {
     termsTerms: 'Bruksvilkår',
     termsRules: 'Fellesskapsregler',
     termsAccept: 'Godta og chat',
+    termsPromptPlay: 'Før andre spillere ser det du skriver, må du godta bruksvilkårene og fellesskapsreglene.',
+    termsAcceptPlay: 'Godta',
+    termsCompactLead: 'Kreves før du skriver:',
     termsFailed: 'Kunne ikke lagre det. Prøv igjen.',
   },
   auth: {
@@ -5619,6 +5622,8 @@ const no = {
     blockedOn: 'Blokkert {{date}}',
     loadFailed: 'Kunne ikke laste inn de blokkerte spillerne dine.',
     retry: 'Prøv igjen',
+    hiddenText: 'Fra en spiller du har blokkert',
+    show: 'Vis',
   },
   discordLink: {
     title: 'Koble Boardly til Discord',

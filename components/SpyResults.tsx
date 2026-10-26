@@ -37,7 +37,6 @@ interface SpyResultsProps {
   onReturnToWaiting?: () => void
   isReturningToWaiting?: boolean
   isGuest?: boolean
-  registerUrl?: string
   /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
   lobbyCode?: string
   /** Decided by the caller — a spectator is neither registered here nor a guest (#982). */
@@ -78,7 +77,6 @@ export default function SpyResults({
   onReturnToWaiting,
   isReturningToWaiting = false,
   isGuest = false,
-  registerUrl = '/auth/register',
   lobbyCode,
   isRegistered = false,
   reveal = false,
@@ -302,7 +300,6 @@ export default function SpyResults({
               gameType="guess_the_spy"
               isGuest={isGuest}
               isRegistered={isRegistered}
-              registerUrl={registerUrl}
             />
           </div>
         )}

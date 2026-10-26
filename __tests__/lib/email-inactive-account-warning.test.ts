@@ -4,7 +4,7 @@
  * email-subscription-notice.test.ts.
  */
 
-export {}
+import { visibleText } from '../fixtures/email-visible-text'
 
 const mockSend = jest.fn()
 
@@ -54,16 +54,6 @@ async function sendEach(overrides: Partial<Details> = {}) {
   const en = (await send({ ...overrides, language: 'en' })).mail
   const nb = (await send({ ...overrides, language: 'nb' })).mail
   return { en, nb, mail: { ...en, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` } }
-}
-
-function visibleText(html: string): string {
-  return html
-    .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/\s+/g, ' ')
 }
 
 describe('sendInactiveAccountWarningEmail (#1130)', () => {

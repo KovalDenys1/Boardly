@@ -61,6 +61,13 @@ describe('redactEmailsInText', () => {
   it('leaves text without an address alone', () => {
     expect(redactEmailsInText('@sentry/nextjs failed at 12:00')).toBe('@sentry/nextjs failed at 12:00')
   })
+
+  it('stays linear on a long run of local-part characters', () => {
+    const text = `${'%'.repeat(50_000)}@`
+    const started = Date.now()
+    expect(redactEmailsInText(text)).toBe(text)
+    expect(Date.now() - started).toBeLessThan(1000)
+  })
 })
 
 describe('redactLogValue', () => {

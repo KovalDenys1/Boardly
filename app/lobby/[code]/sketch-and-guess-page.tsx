@@ -34,6 +34,7 @@ import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useGameTimer } from '@/app/lobby/[code]/hooks/useGameTimer'
 import { useLobbyChat, useLobbyChatHistory } from '@/app/lobby/[code]/hooks/useLobbyChat'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -54,9 +55,9 @@ import {
     SKETCH_LIVE_EVENT,
     SKETCH_LIVE_RESYNC_MS,
     SKETCH_LIVE_THROTTLE_MS,
-    parseSketchLiveMessage,
     type Stroke as LiveStroke,
 } from '@/lib/sketch-live'
+import { createSketchLiveReceiver, createSketchLiveSender } from '@/lib/client/sketch-live-signing'
 
 type SketchLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -245,6 +246,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         onChatMessage,
         mergeHistoryMessages,
     } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
+    const [guessTermsRefused, setGuessTermsRefused] = useState(false)
+    const handleAcceptTerms = useCallback(async () => {
+        const accepted = await acceptChatTerms()
+        if (accepted) setGuessTermsRefused(false)
+        return accepted
+    }, [acceptChatTerms])
+    const { blockedIds } = useBlockedPlayers()
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -467,8 +475,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     // The live-drawing handler depends on the round and the drawer, which are
     // derived further down; the hook is called before them, so it reaches the
     // current handler through a ref.
-    const sketchLiveHandlerRef = useRef<(payload: unknown) => void>(() => {})
-    const handleSketchLive = useCallback((payload: unknown) => sketchLiveHandlerRef.current(payload), [])
+    const sketchLiveHandlerRef = useRef<(payload: unknown, topic: string) => void>(() => {})
+    const handleSketchLive = useCallback((payload: unknown, topic: string) => sketchLiveHandlerRef.current(payload, topic), [])
 
     const { isConnected: socketConnected, isReconnecting, emitWhenConnected } = useRealtimeConnection({
         // #987: Supabase Broadcast has no replay buffer, so every event that
@@ -492,7 +500,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         async (
             action: SketchAction,
             data: Record<string, unknown>,
-            options: { silent?: boolean } = {}
+            options: { silent?: boolean; onTermsRequired?: () => void } = {}
         ): Promise<Record<string, unknown> | null> => {
             if (!lobby?.game) return null
             if (submitInFlightRef.current) return null
@@ -546,6 +554,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     }
                     if (payload?.code === 'GUESS_LIMIT_REACHED') {
                         showToast.info('games.guess_my_drawing.game.guessLimitReached', undefined, undefined, { id: 'sketch-guess-limit' })
+                        return null
+                    }
+                    if (res.status === 403 && payload?.code === 'TERMS_REQUIRED' && options.onTermsRequired) {
+                        options.onTermsRequired()
                         return null
                     }
                     if (options.silent) {
@@ -632,8 +644,15 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         soundGame ? { round: soundGame.data.currentRound, phase: soundGame.data.phase, guessed: [...soundGame.data.submittedPlayerIds].sort() } : null,
         { gameId: lobby?.game?.id, viewerId: getCurrentUserId(), isSpectator },
     )
-    const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | void> => {
-        const payload = await submitAction('submit-guess', { guess })
+    const handleSubmitGuess = useCallback(async (guess: string): Promise<SketchGuessResult | 'terms-required' | void> => {
+        let refusedForTerms = false
+        const payload = await submitAction('submit-guess', { guess }, {
+            onTermsRequired: () => {
+                refusedForTerms = true
+                setGuessTermsRefused(true)
+            },
+        })
+        if (refusedForTerms) return 'terms-required'
         const result = payload?.guessResult as SketchGuessResult | undefined
         const valid = result && typeof result.close === 'boolean' ? result : undefined
         playGuessResult(valid)
@@ -761,48 +780,83 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     // Live drawing. The drawing phase used to show everyone but the drawer a
     // blank square until the drawing was submitted; now the drawer's canvas is
-    // streamed over the lobby channel as it is drawn (lib/sketch-live.ts).
+    // streamed over the lobby channel as it is drawn (lib/sketch-live.ts),
+    // signed with a key the server certified for the drawer, and checked
+    // against that certificate by every page that paints it.
     const drawerIdForLive = gameData.currentDrawerId
-    const isStreamingDrawer = isDrawer && phase === 'drawing' && !isFinished
+    const gameIdForLive = game?.id ?? null
+    const isStreamingDrawer = isDrawer && phase === 'drawing' && !isFinished && !!gameIdForLive
     const [liveView, setLiveView] = useState<SketchLiveView | null>(null)
+    const [liveReceiver] = useState(createSketchLiveReceiver)
+    const [liveSender] = useState(() =>
+        createSketchLiveSender({
+            requestCert: async (gameId, publicKey) => {
+                const res = await fetchWithGuest(`/api/game/${gameId}/sketch-live-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(publicKey),
+                })
+                if (!res.ok) return null
+                const body = await res.json().catch(() => null)
+                return body?.cert ?? null
+            },
+            emit: (frame) => emitWhenConnected(SKETCH_LIVE_EVENT, frame),
+        })
+    )
 
-    sketchLiveHandlerRef.current = (payload: unknown) => {
-        if (isDrawer || phase !== 'drawing') return
-        const message = parseSketchLiveMessage(payload, { round: roundNumber, drawerId: drawerIdForLive })
-        if (!message) return
-        setLiveView((prev) => {
-            const base = prev && prev.round === message.round ? prev : { round: message.round, strokes: [], live: null }
-            return message.kind === 'strokes'
-                ? { round: message.round, strokes: message.strokes, live: null }
-                : { ...base, live: message.live }
+    sketchLiveHandlerRef.current = (payload: unknown, topic: string) => {
+        if (phase !== 'drawing' || !gameIdForLive) return
+        if (isDrawer) {
+            void liveSender.hear(topic, payload)
+            return
+        }
+        void liveReceiver.open(topic, payload, { gameId: gameIdForLive, round: roundNumber, drawerId: drawerIdForLive }).then((message) => {
+            if (!message) return
+            setLiveView((prev) => {
+                const base = prev && prev.round === message.round ? prev : { round: message.round, strokes: [], live: null }
+                return message.kind === 'strokes'
+                    ? { round: message.round, strokes: message.strokes, live: null }
+                    : { ...base, live: message.live }
+            })
         })
     }
 
+    // A page that was hidden or lost its channel may have missed another of the drawer's pages taking the round.
+    useEffect(() => {
+        if (!socketConnected) liveSender.renewOnNextStroke()
+    }, [socketConnected, liveSender])
+    useEffect(() => {
+        const renew = () => liveSender.renewOnNextStroke()
+        document.addEventListener('visibilitychange', renew)
+        return () => document.removeEventListener('visibilitychange', renew)
+    }, [liveSender])
+
     const committedStrokes = activeDraft.strokes
     useEffect(() => {
-        if (!isStreamingDrawer) return
+        if (!isStreamingDrawer || !gameIdForLive) return
         const send = () =>
-            emitWhenConnected(SKETCH_LIVE_EVENT, { kind: 'strokes', round: roundNumber, drawerId: drawerIdForLive, strokes: committedStrokes })
+            liveSender.send(gameIdForLive, { kind: 'strokes', round: roundNumber, drawerId: drawerIdForLive, strokes: committedStrokes })
         send()
         // Re-sent on a timer so a player who joins or reconnects mid-round
         // catches up; the channel keeps no history to replay.
         const timer = window.setInterval(send, SKETCH_LIVE_RESYNC_MS)
         return () => window.clearInterval(timer)
-    }, [isStreamingDrawer, committedStrokes, roundNumber, drawerIdForLive, emitWhenConnected])
+    }, [isStreamingDrawer, gameIdForLive, committedStrokes, roundNumber, drawerIdForLive, liveSender])
 
     const pendingLiveRef = useRef<LiveStroke | null>(null)
     const liveTimerRef = useRef<number | null>(null)
     const flushLiveStroke = useCallback(() => {
         liveTimerRef.current = null
+        if (!gameIdForLive) return
         const stroke = pendingLiveRef.current
-        emitWhenConnected(SKETCH_LIVE_EVENT, {
+        liveSender.send(gameIdForLive, {
             kind: 'live',
             round: roundNumber,
             drawerId: drawerIdForLive,
             // The canvas keeps pushing into the same points array; send a copy.
             live: stroke ? { ...stroke, points: stroke.points.slice() } : null,
         })
-    }, [emitWhenConnected, roundNumber, drawerIdForLive])
+    }, [liveSender, gameIdForLive, roundNumber, drawerIdForLive])
     const handleLiveStroke = useCallback(
         (stroke: LiveStroke | null) => {
             if (!isStreamingDrawer) return
@@ -1149,6 +1203,9 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 playerId={isSpectator ? '' : currentPlayer!.id}
                 players={players}
                 onSubmitGuess={handleSubmitGuess}
+                termsRequired={chatTermsAccepted === false || guessTermsRefused}
+                onAcceptTerms={handleAcceptTerms}
+                blockedIds={blockedIds}
                 onAdvanceRound={handleAdvanceRound}
                 onChooseWord={handleChooseWord}
                 onAcceptGuess={handleAcceptGuess}
@@ -1180,7 +1237,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="sketch_and_guess"
                     outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentPlayer, isViewerWinner: winnerId ? iWon : null })}
@@ -1240,7 +1296,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
                 termsAccepted={chatTermsAccepted}
-                onAcceptTerms={acceptChatTerms}
+                onAcceptTerms={handleAcceptTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}

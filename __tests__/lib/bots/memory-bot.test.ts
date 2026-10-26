@@ -1,6 +1,7 @@
 import { Move, Player } from '@/lib/game-engine'
 import { createBot, executeBotTurn } from '@/lib/bots'
 import { MemoryBot } from '@/lib/bots/memory/memory-bot'
+import type { MemoryBotActionEvent } from '@/lib/bots/memory/memory-bot-executor'
 import { MemoryCard, MemoryGame, MemoryGameData } from '@/lib/games/memory-game'
 
 const HUMAN: Player = { id: 'human', name: 'Human' }
@@ -190,6 +191,66 @@ describe('MemoryBot', () => {
 
     expect(decision.strategy).toBe('remembered-mate')
     expect(decision.secondCardId).toBe('a2')
+  })
+
+  it('hard difficulty recalls the seen mate of a first card it turned by guessing', async () => {
+    process.env.BOT_UX_DELAY_MS = '0'
+    const game = createGame(0, boardOfPairs(['A', 'B', 'C']))
+    missPair(game, HUMAN, 'a2', 'b1')
+    jest
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.01)
+      .mockReturnValueOnce(0.99)
+      .mockReturnValue(0.01)
+    const moves: Move[] = []
+    const events: MemoryBotActionEvent[] = []
+
+    await executeBotTurn(
+      'memory',
+      game,
+      BOT.id,
+      'hard',
+      async (move) => {
+        moves.push(move)
+        expect(game.makeMove(move)).toBe(true)
+      },
+      (event) => events.push(event as MemoryBotActionEvent),
+    )
+
+    expect(moves.slice(0, 2).map((move) => (move.data as { cardId: string }).cardId)).toEqual(['a1', 'a2'])
+    expect(events.find((event) => event.type === 'match')?.data?.strategy).toBe('remembered-mate')
+  })
+
+  it('finds the never-turned mate of a guessed first card only by a guess', async () => {
+    process.env.BOT_UX_DELAY_MS = '0'
+    const game = createGame(0, [
+      faceDown('a1', 'A'),
+      faceDown('b1', 'B'),
+      faceDown('b2', 'B'),
+      faceDown('c1', 'C'),
+      faceDown('c2', 'C'),
+      faceDown('a2', 'A'),
+    ])
+    missPair(game, HUMAN, 'b1', 'c1')
+    jest.spyOn(Math, 'random').mockReturnValueOnce(0.5).mockReturnValue(0.01)
+    const moves: Move[] = []
+    const events: MemoryBotActionEvent[] = []
+
+    await executeBotTurn(
+      'memory',
+      game,
+      BOT.id,
+      'hard',
+      async (move) => {
+        moves.push(move)
+        expect(game.makeMove(move)).toBe(true)
+      },
+      (event) => events.push(event as MemoryBotActionEvent),
+    )
+
+    expect(moves.slice(0, 2).map((move) => (move.data as { cardId: string }).cardId)).toEqual(['a1', 'b1'])
+    expect(events.find((event) => event.type === 'mismatch')?.data?.strategy).toBe('guess')
   })
 
   it('hard difficulty still has a chance to make a non-matching mistake', async () => {

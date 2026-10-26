@@ -1,4 +1,4 @@
-export {}
+import { visibleText } from '../fixtures/email-visible-text'
 
 const mockSend = jest.fn()
 
@@ -29,16 +29,6 @@ function loadEmailModule(): EmailModule {
 }
 
 type SentMail = { to: string; replyTo: string; subject: string; html: string; text: string }
-
-function visibleText(html: string): string {
-  return html
-    .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/\s+/g, ' ')
-}
 
 describe('Terms change notice email (#1224)', () => {
   const originalKey = process.env.RESEND_API_KEY

@@ -114,6 +114,24 @@ jest.mock('@/hooks/useIsMobileViewport', () => ({
   useIsMobileViewport: () => mockIsMobileViewport,
 }))
 
+let mockBlockedIds: ReadonlySet<string> = new Set()
+jest.mock('@/hooks/useBlockedPlayers', () => ({
+  useBlockedPlayers: () => ({
+    blocked: [],
+    blockedIds: mockBlockedIds,
+    ready: true,
+    failed: false,
+    unknown: false,
+    retry: () => {},
+    block: async () => true,
+    unblock: async () => true,
+  }),
+}))
+
+afterEach(() => {
+  mockBlockedIds = new Set()
+})
+
 jest.mock('@/lib/supabase-client', () => ({
   getSupabaseClient: jest.fn(() => ({
     channel: jest.fn(() => mockChannel),
@@ -667,6 +685,30 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     expect(screen.queryByText('untyped chatter')).toBeNull()
   })
 
+  it('folds a guess from a blocked player to one line under their name', async () => {
+    Element.prototype.scrollIntoView = jest.fn()
+    mockBlockedIds = new Set(['user-3'])
+    mountWith(buildTurnResponse({ meDescribing: false }))
+    await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-3', userId: 'user-3', username: 'Carol', message: 'meanie', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+      broadcastHandlers['chat-message']?.({
+        payload: { id: 'g-4', userId: 'user-4', username: 'Dan', message: 'pear', type: 'alias-guess', lobbyCode: 'ABCD' },
+      })
+    })
+
+    await waitFor(() => expect(screen.getByText('pear')).toBeTruthy())
+    expect(screen.queryByText('meanie')).toBeNull()
+    expect(screen.getByText('Carol')).toBeTruthy()
+    expect(screen.getByText('blockedPlayers.hiddenText')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.show' }))
+    expect(screen.getByText('meanie')).toBeTruthy()
+  })
+
   it('takes a rate-limited guess back and says why, instead of dropping it silently', async () => {
     Element.prototype.scrollIntoView = jest.fn()
     const response = buildTurnResponse({ meDescribing: false })
@@ -717,8 +759,8 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     fireEvent.change(screen.getByPlaceholderText('alias.guessPlaceholder'), { target: { value: 'banana' } })
     fireEvent.keyDown(screen.getByPlaceholderText('alias.guessPlaceholder'), { key: 'Enter' })
 
-    const accept = await screen.findByRole('button', { name: 'chat.termsAccept' })
-    expect(screen.getByText('chat.termsPrompt')).toBeTruthy()
+    const accept = await screen.findByRole('button', { name: 'chat.termsAcceptPlay' })
+    expect(screen.getByText('chat.termsPromptPlay')).toBeTruthy()
     expect(screen.queryByPlaceholderText('alias.guessPlaceholder')).toBeNull()
     expect(screen.queryByText('banana')).toBeNull()
 
@@ -732,7 +774,7 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
       expect(mockFetchWithGuest.mock.calls.filter(([url]) => String(url).endsWith('/alias-guess'))).toHaveLength(2)
     })
     expect(screen.getByText('banana')).toBeTruthy()
-    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    expect(screen.queryByText('chat.termsPromptPlay')).toBeNull()
   })
 
   it('keeps a refused guess and what was typed after it, in that order', async () => {
@@ -759,7 +801,7 @@ describe('AliasLobbyPage mobile turn tabs (#905 review)', () => {
     fireEvent.change(input, { target: { value: 'apple' } })
     await act(async () => refuseGuess())
 
-    fireEvent.click(await screen.findByRole('button', { name: 'chat.termsAccept' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'chat.termsAcceptPlay' }))
     expect(((await screen.findByPlaceholderText('alias.guessPlaceholder')) as HTMLInputElement).value).toBe('banana apple')
   })
 

@@ -21,6 +21,8 @@ import {
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { resolveRequestedMaxPlayers } from '@/lib/lobby-create-query'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import { acceptTerms } from '@/lib/client/terms-consent'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import GameArt from './GameArt'
@@ -182,6 +184,7 @@ function CreateLobbyPage() {
   )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [termsRequired, setTermsRequired] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
@@ -339,6 +342,10 @@ function CreateLobbyPage() {
           statusCode: responseStatus,
         })
         createMetricTracked = true
+        if (res.status === 403 && data?.code === 'TERMS_REQUIRED') {
+          setTermsRequired(true)
+          return
+        }
         throw new Error(data.error || 'Failed to create lobby')
       }
 
@@ -415,6 +422,12 @@ function CreateLobbyPage() {
     } finally {
       if (!navigating) setLoading(false)
     }
+  }
+
+  const acceptCreateTerms = async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setTermsRequired(false)
+    return accepted
   }
 
   if (status === 'loading') {
@@ -670,6 +683,7 @@ function CreateLobbyPage() {
                   {error}
                 </div>
               )}
+              {termsRequired && <TermsConsentPanel onAccept={acceptCreateTerms} autoFocus context="play" className="mb-3" />}
               <div className="flex items-center gap-3">
                 <button
                   type="button"

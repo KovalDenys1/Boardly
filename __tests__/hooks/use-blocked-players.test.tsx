@@ -392,6 +392,20 @@ describe('useBlockedPlayers', () => {
       expect(second.result.current.blockedIds.has('u9')).toBe(true)
     })
 
+    it('follows the list another instance reads, asking nothing itself, when told not to load', async () => {
+      serveBlocks([{ id: 'u9', username: 'Old foe', blockedAt: '2026-10-01T00:00:00.000Z' }])
+      const follower = renderHook(() => useBlockedPlayers({ load: false }))
+      await act(async () => {})
+
+      expect(getCalls()).toHaveLength(0)
+      expect(follower.result.current.ready).toBe(false)
+      expect(follower.result.current.accountId).toBe('me')
+
+      renderHook(() => useBlockedPlayers())
+      await waitFor(() => expect(follower.result.current.blockedIds.has('u9')).toBe(true))
+      expect(getCalls()).toHaveLength(1)
+    })
+
     it('hands another instance the new list, so it updates without asking the server again', async () => {
       serveBlocks()
       const first = renderHook(() => useBlockedPlayers())

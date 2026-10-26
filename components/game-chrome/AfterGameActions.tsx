@@ -3,7 +3,6 @@
 import React from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 import PushOptInNudge from '@/components/PushOptInNudge'
 import { Icon } from '@/components/icons'
 import { useInviteShare } from '@/hooks/useInviteShare'
@@ -38,7 +37,6 @@ export interface AfterGameActionsProps {
    * Slot 3 — the push opt-in ask (#984) — is gated on it.
    */
   isRegistered?: boolean
-  registerUrl?: string
   /** The finished game; with it a registered player gets "Watch replay" for a game the replay page can draw. */
   gameId?: string | null
   /** 'overlay' = white-on-dark inside GameResultOverlay; 'card' = light tokens on a bespoke end screen. */
@@ -86,7 +84,6 @@ export default function AfterGameActions({
   gameType,
   isGuest = false,
   isRegistered = false,
-  registerUrl,
   gameId,
   variant = 'overlay',
   className,
@@ -156,13 +153,6 @@ export default function AfterGameActions({
         inside 30 days), so this gate is only about who it makes sense to ask.
       */}
       {canAskForPush && <PushOptInNudge source="after_game" gameType={gameType} />}
-
-      {/* 4 — guest → account. Mutually exclusive with slot 3, so at most one box appears. */}
-      {isGuest && registerUrl && (
-        <div style={{ width: '100%' }}>
-          <GuestConversionNudge registerUrl={registerUrl} gameType={gameType} lobbyCode={inviteCode} hasReplay={replayHref !== null} />
-        </div>
-      )}
     </div>
   )
 }

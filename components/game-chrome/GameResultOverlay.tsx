@@ -60,7 +60,6 @@ export interface GameResultOverlayProps {
   /** Replaces the host/non-host action block entirely (e.g. TTT's "Returning to lobby…" plate when a series completes). */
   actionsReplacement?: React.ReactNode
   isGuest?: boolean
-  registerUrl?: string
   /**
    * Lobby code for "Play again with friends" (#927). The end of a game is the highest-intent
    * moment in the product and used to be a dead end; the button shares the same
@@ -138,7 +137,6 @@ export default function GameResultOverlay({
   onLeave,
   actionsReplacement,
   isGuest = false,
-  registerUrl,
   inviteCode,
   gameType,
   isRegistered = false,
@@ -332,7 +330,6 @@ export default function GameResultOverlay({
                 gameType={gameType}
                 isGuest={isGuest}
                 isRegistered={isRegistered}
-                registerUrl={registerUrl}
                 gameId={gameId}
               />
             </div>

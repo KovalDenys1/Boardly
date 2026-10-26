@@ -3427,6 +3427,9 @@ const de: TranslationWithPlurals = {
     termsTerms: 'Nutzungsbedingungen',
     termsRules: 'Community-Regeln',
     termsAccept: 'Akzeptieren und chatten',
+    termsPromptPlay: 'Bevor andere Spieler sehen, was du schreibst, akzeptiere die Nutzungsbedingungen und die Community-Regeln.',
+    termsAcceptPlay: 'Akzeptieren',
+    termsCompactLead: 'Nötig, bevor du schreibst:',
     termsFailed: 'Das konnte nicht gespeichert werden. Bitte versuch es noch einmal.',
   },
   auth: {
@@ -5651,6 +5654,8 @@ const de: TranslationWithPlurals = {
     blockedOn: 'Blockiert am {{date}}',
     loadFailed: 'Deine blockierten Spieler konnten nicht geladen werden.',
     retry: 'Erneut versuchen',
+    hiddenText: 'Von einem Spieler, den du blockiert hast',
+    show: 'Anzeigen',
   },
   discordLink: {
     title: 'Boardly mit Discord verknüpfen',

@@ -13,6 +13,10 @@ import { getSupabaseClient } from '@/lib/supabase-client'
 import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
 import { spectatorTopicFor } from '@/lib/lobby-realtime-topic'
 import { readSpectatorChatMessage, type SpectatorChatMessage } from '@/lib/spectator-chat'
+import { acceptTerms } from '@/lib/client/terms-consent'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import BlockedText from '@/components/BlockedText'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
@@ -53,6 +57,7 @@ type SpectatorLobbyResponse = {
   // never returns one, so its state is no longer readable by guessing the
   // four-digit code (#845).
   realtimeTopic?: string
+  viewer?: { termsAccepted?: boolean }
 }
 
 function SpectatorTopBar({
@@ -128,6 +133,68 @@ function SpectatorTopBar({
   )
 }
 
+function SpectatorChatLog({
+  chatMessages,
+  blockedIds,
+}: {
+  chatMessages: SpectatorChatMessage[]
+  blockedIds: ReadonlySet<string>
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
+      {chatMessages.length === 0 && (
+        <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
+      )}
+      {chatMessages.map((message) => (
+        <div key={message.id} className="text-sm">
+          <span className="font-semibold text-bd-ink">{message.username}: </span>
+          <span className="text-bd-ink-soft">
+            <BlockedText blocked={blockedIds.has(message.userId)} from={message.userId}>{message.message}</BlockedText>
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Spectator chat goes browser to browser with no server check, so the composer itself waits for the terms. */
+function SpectatorChatComposer({
+  termsAccepted,
+  onAcceptTerms,
+  chatInput,
+  onChatInputChange,
+  onSendMessage,
+}: {
+  termsAccepted: boolean
+  onAcceptTerms: () => Promise<boolean>
+  chatInput: string
+  onChatInputChange: (value: string) => void
+  onSendMessage: (e: React.FormEvent) => void
+}) {
+  const { t } = useTranslation()
+  if (!termsAccepted) return <TermsConsentPanel onAccept={onAcceptTerms} />
+  return (
+    <form onSubmit={onSendMessage} className="flex gap-2">
+      <input
+        type="text"
+        value={chatInput}
+        onChange={(e) => onChatInputChange(e.target.value)}
+        placeholder={t('spectate.chatPlaceholder')}
+        maxLength={500}
+        className="bd-input min-w-0 flex-1"
+      />
+      <button
+        type="submit"
+        disabled={!chatInput.trim()}
+        className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {t('chat.send')}
+      </button>
+    </form>
+  )
+}
+
 /**
  * Chat for spectate paths that render a real game board full-page (the 6
  * DEDICATED_SPECTATOR_GAMES plus memory/yahtzee/guess_the_spy since #672
@@ -140,6 +207,9 @@ function FloatingSpectatorChat({
   isAuthenticated,
   isAdminView,
   chatMessages,
+  blockedIds,
+  termsAccepted,
+  onAcceptTerms,
   chatInput,
   onChatInputChange,
   onSendMessage,
@@ -147,6 +217,9 @@ function FloatingSpectatorChat({
   isAuthenticated: boolean
   isAdminView: boolean
   chatMessages: SpectatorChatMessage[]
+  blockedIds: ReadonlySet<string>
+  termsAccepted: boolean
+  onAcceptTerms: () => Promise<boolean>
   chatInput: string
   onChatInputChange: (value: string) => void
   onSendMessage: (e: React.FormEvent) => void
@@ -190,35 +263,15 @@ function FloatingSpectatorChat({
           }}
         >
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
-          <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
-            {chatMessages.length === 0 && (
-              <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
-            )}
-            {chatMessages.map((message) => (
-              <div key={message.id} className="text-sm">
-                <span className="font-semibold text-bd-ink">{message.username}: </span>
-                <span className="text-bd-ink-soft">{message.message}</span>
-              </div>
-            ))}
-          </div>
+          <SpectatorChatLog chatMessages={chatMessages} blockedIds={blockedIds} />
           {!isAdminView && (
-            <form onSubmit={onSendMessage} className="flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => onChatInputChange(e.target.value)}
-                placeholder={t('spectate.chatPlaceholder')}
-                maxLength={500}
-                className="bd-input min-w-0 flex-1"
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim()}
-                className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t('chat.send')}
-              </button>
-            </form>
+            <SpectatorChatComposer
+              termsAccepted={termsAccepted}
+              onAcceptTerms={onAcceptTerms}
+              chatInput={chatInput}
+              onChatInputChange={onChatInputChange}
+              onSendMessage={onSendMessage}
+            />
           )}
         </div>
       )}
@@ -255,6 +308,8 @@ export default function SpectatorLobbyPage() {
   const [joiningAsPlayer, setJoiningAsPlayer] = useState(false)
   const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const { blockedIds } = useBlockedPlayers()
   const channelRef = useRef<RealtimeChannel | null>(null)
   const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPlayerInGame, setIsPlayerInGame] = useState(false)
@@ -331,6 +386,7 @@ export default function SpectatorLobbyPage() {
       setData(snapshot)
       setSpectatorCount(json?.lobby?.spectatorCount ?? 0)
       setIsAdminView(json?.isAdminView === true)
+      setTermsAccepted((accepted) => accepted || json?.viewer?.termsAccepted === true)
       setError('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load spectator view')
@@ -450,7 +506,7 @@ export default function SpectatorLobbyPage() {
     (e: FormEvent) => {
       e.preventDefault()
       const message = chatInput.trim()
-      if (!message || isAdminView) return
+      if (!message || isAdminView || !termsAccepted) return
       const channel = channelRef.current
       if (!channel) {
         setError('Spectator chat is unavailable while disconnected')
@@ -472,8 +528,14 @@ export default function SpectatorLobbyPage() {
       })
       setChatInput('')
     },
-    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView]
+    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView, termsAccepted]
   )
+
+  const acceptSpectatorTerms = useCallback(async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setTermsAccepted(true)
+    return accepted
+  }, [])
 
   // Restore Yahtzee engine whenever game state updates (for spectator board display)
   useEffect(() => {
@@ -576,6 +638,19 @@ export default function SpectatorLobbyPage() {
   }
 
   const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
+  const floatingChat = (
+    <FloatingSpectatorChat
+      isAuthenticated={isAuthenticated}
+      isAdminView={isAdminView}
+      chatMessages={chatMessages}
+      blockedIds={blockedIds}
+      termsAccepted={termsAccepted}
+      onAcceptTerms={acceptSpectatorTerms}
+      chatInput={chatInput}
+      onChatInputChange={setChatInput}
+      onSendMessage={sendSpectatorChatMessage}
+    />
+  )
 
   // ── Dedicated game types: render real game component with isSpectator prop ──
   if (DEDICATED_SPECTATOR_GAMES.has(data.lobby.gameType)) {
@@ -599,14 +674,7 @@ export default function SpectatorLobbyPage() {
         {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
         {gameType === 'sketch_and_guess' && <SketchAndGuessLobbyPage code={code} isSpectator />}
         {gameType === 'checkers' && <CheckersLobbyPage code={code} isSpectator />}
-        <FloatingSpectatorChat
-          isAuthenticated={isAuthenticated}
-          isAdminView={isAdminView}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          onChatInputChange={setChatInput}
-          onSendMessage={sendSpectatorChatMessage}
-        />
+        {floatingChat}
       </>
     )
   }
@@ -636,14 +704,7 @@ export default function SpectatorLobbyPage() {
           turnTimerLimit={data.lobby.turnTimer ?? undefined}
           isSpectator
         />
-        <FloatingSpectatorChat
-          isAuthenticated={isAuthenticated}
-          isAdminView={isAdminView}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          onChatInputChange={setChatInput}
-          onSendMessage={sendSpectatorChatMessage}
-        />
+        {floatingChat}
       </>
     )
   }
@@ -675,14 +736,7 @@ export default function SpectatorLobbyPage() {
           onRefresh={loadSnapshot}
           isSpectator
         />
-        <FloatingSpectatorChat
-          isAuthenticated={isAuthenticated}
-          isAdminView={isAdminView}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          onChatInputChange={setChatInput}
-          onSendMessage={sendSpectatorChatMessage}
-        />
+        {floatingChat}
       </>
     )
   }
@@ -745,14 +799,7 @@ export default function SpectatorLobbyPage() {
             <LoadingSpinner size="lg" />
           </div>
         )}
-        <FloatingSpectatorChat
-          isAuthenticated={isAuthenticated}
-          isAdminView={isAdminView}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          onChatInputChange={setChatInput}
-          onSendMessage={sendSpectatorChatMessage}
-        />
+        {floatingChat}
       </>
     )
   }
@@ -869,35 +916,15 @@ export default function SpectatorLobbyPage() {
             {isAuthenticated && (
               <section className="bd-card flex flex-col p-4">
                 <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
-                <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
-                  {chatMessages.length === 0 && (
-                    <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
-                  )}
-                  {chatMessages.map((message) => (
-                    <div key={message.id} className="text-sm">
-                      <span className="font-semibold text-bd-ink">{message.username}: </span>
-                      <span className="text-bd-ink-soft">{message.message}</span>
-                    </div>
-                  ))}
-                </div>
+                <SpectatorChatLog chatMessages={chatMessages} blockedIds={blockedIds} />
                 {!isAdminView && (
-                  <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder={t('spectate.chatPlaceholder')}
-                      maxLength={500}
-                      className="bd-input min-w-0 flex-1"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!chatInput.trim()}
-                      className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('chat.send')}
-                    </button>
-                  </form>
+                  <SpectatorChatComposer
+                    termsAccepted={termsAccepted}
+                    onAcceptTerms={acceptSpectatorTerms}
+                    chatInput={chatInput}
+                    onChatInputChange={setChatInput}
+                    onSendMessage={sendSpectatorChatMessage}
+                  />
                 )}
               </section>
             )}

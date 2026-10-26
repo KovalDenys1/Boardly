@@ -1043,7 +1043,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         </div>
                     ) : undefined}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="tic_tac_toe"
                     outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!mySymbol, isViewerWinner: winnerSymbol && !isDraw ? winnerSymbol === mySymbol : null })}

@@ -3415,6 +3415,9 @@ const en = {
     termsTerms: 'Terms of Use',
     termsRules: 'Community Rules',
     termsAccept: 'Accept and chat',
+    termsPromptPlay: 'Before other players see what you type, accept the Terms of Use and the Community Rules.',
+    termsAcceptPlay: 'Accept',
+    termsCompactLead: 'Needed before you type:',
     termsFailed: 'Could not save that. Try again.',
   },
   auth: {
@@ -5631,6 +5634,8 @@ const en = {
     blockedOn: 'Blocked {{date}}',
     loadFailed: 'Could not load your blocked players.',
     retry: 'Try again',
+    hiddenText: 'From a player you blocked',
+    show: 'Show',
   },
   discordLink: {
     title: 'Link Boardly to Discord',

@@ -923,6 +923,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleGuestJoinLobby,
     joinRefusalCode,
     handleStartGame,
+    startTermsRequired,
+    acceptStartTerms,
     updateLobbySettings,
     guestNameInput,
     setGuestNameInput,
@@ -953,6 +955,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    acceptTerms: acceptChatTerms,
   })
 
   // Update ref with loadLobby function
@@ -2002,7 +2005,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onReturnToLobbyRoom={yahtzeeResults.release}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
             isGuest={isGuest}
-            registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             lobbyCode={code}
             isRegistered={status === 'authenticated' && !isGuest}
             gameId={game?.id}
@@ -2126,6 +2128,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             startingGame={startingGame}
             onStartGame={handleStartGame}
             reserveChatButton={isInGame && hasMultipleHumans}
+            termsRequired={startTermsRequired}
+            onAcceptTerms={acceptStartTerms}
           />
           </div>
         </div>
@@ -2183,7 +2187,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
-              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               lobbyCode={code}
               isRegistered={status === 'authenticated' && !isGuest}
               gameId={game?.id}
@@ -2321,7 +2324,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isRestarting={startingGame || isReturningToWaiting}
               onLeave={() => setShowLeaveConfirmModal(true)}
-              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? sendChatMessage : undefined}
               chatTermsAccepted={chatTermsAccepted}
@@ -2355,7 +2357,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               playerProfiles={chatPlayerProfiles}
               onProfileClick={setProfileUserId}
               isGuest={isGuest}
-              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
               reconcileWithServerSnapshot={reconcileWithServerSnapshot}
             />
           ) : gameEngine ? (

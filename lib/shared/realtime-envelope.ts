@@ -71,6 +71,13 @@ export function isRealtimeEnvelope(value: unknown): value is RealtimeEnvelope {
   )
 }
 
+const ENVELOPE_KEYS: ReadonlySet<string> = new Set(['__rt', 'kid', 'iat', 'n', 'sig', 'p'])
+
+/** An envelope with no key beside its own, since the seal does not cover extra keys. */
+export function isExactRealtimeEnvelope(value: unknown): value is RealtimeEnvelope {
+  return isRealtimeEnvelope(value) && Object.keys(value).every((key) => ENVELOPE_KEYS.has(key))
+}
+
 /**
  * JSON with object keys sorted, recursively – the one serialisation both
  * sides can reproduce after Supabase has re-encoded the payload.
@@ -133,9 +140,9 @@ export function realtimeSigningInput(
  *
  * - `sketch-live`: the Sketch & Guess drawer's canvas while it is being drawn.
  *   Non-authoritative by design (lib/sketch-live.ts): the drawing that is
- *   scored is the one `submit-drawing` stores, and `parseSketchLiveMessage`
- *   drops anything that is not the current drawer's, for the current round,
- *   within the canvas' own size limits.
+ *   scored is the one `submit-drawing` stores. Each frame is signed by the
+ *   drawer's own key, which the server certified for that round, and the page
+ *   checks both before painting it (lib/client/sketch-live-signing.ts).
  *
  * `chat-message` is not here on purpose: chat, Alias guesses included, goes
  * through a server route that knows who is speaking. Nor is

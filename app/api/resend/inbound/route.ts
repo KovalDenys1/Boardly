@@ -6,6 +6,7 @@ import { claimOnce, release } from '@/lib/webhook-dedupe'
 const log = apiLogger('/api/resend/inbound')
 
 const RESEND_API_URL = 'https://api.resend.com'
+const EMAIL_ID = /^[A-Za-z0-9_-]{1,128}$/
 
 // Longer than the signature's own 5-minute freshness window (verifySignature
 // below), so a claim outlives every replay the signature check would still
@@ -55,17 +56,22 @@ function isTransient(status: number): boolean {
 // security boundary.
 function htmlToPlainText(html: string | null | undefined): string | null {
   if (!html) return null
-  const text = html
+  let text = html
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
+  let previous: string
+  do {
+    previous = text
+    text = text.replace(/<[^>]*>/g, '')
+  } while (text !== previous)
+  text = text
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
+    .replace(/&amp;/g, '&')
     .trim()
   return text || null
 }
@@ -97,6 +103,12 @@ export async function POST(req: NextRequest) {
   if (event.type !== 'email.received' || !event.data?.email_id) {
     return NextResponse.json({ received: true, ignored: true })
   }
+  // The id becomes a path segment of an authenticated request to Resend's API.
+  const emailId = event.data.email_id
+  if (typeof emailId !== 'string' || !EMAIL_ID.test(emailId)) {
+    log.error('Inbound webhook carried a malformed email_id')
+    return NextResponse.json({ received: true, ignored: true })
+  }
 
   const forwardTo = process.env.SUPPORT_FORWARD_TO
   const apiKey = process.env.RESEND_API_KEY
@@ -107,12 +119,12 @@ export async function POST(req: NextRequest) {
 
   // The webhook payload is metadata only; the body must be fetched separately.
   const emailRes = await fetch(
-    `${RESEND_API_URL}/emails/receiving/${event.data.email_id}`,
+    `${RESEND_API_URL}/emails/receiving/${encodeURIComponent(emailId)}`,
     { headers: { Authorization: `Bearer ${apiKey}` } }
   )
   if (!emailRes.ok) {
     log.error('Failed to fetch received email', undefined, {
-      emailId: event.data.email_id,
+      emailId,
       status: emailRes.status,
     })
     const transient = isTransient(emailRes.status)
@@ -159,7 +171,7 @@ export async function POST(req: NextRequest) {
 
   if (!sendRes.ok) {
     log.error('Failed to forward received email', undefined, {
-      emailId: event.data.email_id,
+      emailId,
       status: sendRes.status,
     })
     const transient = isTransient(sendRes.status)
@@ -170,7 +182,7 @@ export async function POST(req: NextRequest) {
   }
 
   log.info('Inbound email forwarded', {
-    emailId: event.data.email_id,
+    emailId,
     from: email.from,
     to: email.to,
   })
