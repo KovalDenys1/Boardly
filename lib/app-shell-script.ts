@@ -1,6 +1,6 @@
 import { APP_SHELL_PLAY, APP_SHELL_STORAGE_KEY, LAUNCH_MEDIUM, LAUNCH_SOURCE, PLAY_APP_PACKAGE } from './app-shell'
 
-const PLAY_REFERRER = new RegExp(`^android-app://${PLAY_APP_PACKAGE.replace(/\./g, '\\.')}(/|$)`)
+const PLAY_REFERRER = new RegExp(`^android-app://${PLAY_APP_PACKAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/|$)`)
 
 function isLaunchParams(params: URLSearchParams): boolean {
   return params.get('utm_source') === LAUNCH_SOURCE && params.get('utm_medium') === LAUNCH_MEDIUM

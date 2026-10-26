@@ -118,7 +118,7 @@ describe('/premium consent and withdrawal information (#1162)', () => {
     expect(block).toHaveTextContent(en.premium.withdrawalHow)
     expect(screen.getByRole('link', { name: en.premium.withdrawalFormLink })).toHaveAttribute('href', '/withdrawal')
 
-    expect(screen.getByText(new RegExp(en.premium.priceNoteTax.replace(/[.;]/g, '\\$&')))).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(en.premium.priceNoteTax.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument()
     expect(screen.getByText(/conversion fee of 2 to 4%/)).toBeInTheDocument()
 
     // The information comes before the purchase, in document order.
