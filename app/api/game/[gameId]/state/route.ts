@@ -20,6 +20,8 @@ import { runAfterResponse } from '@/lib/after-response'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
 import { requiresTermsAcceptance } from '@/lib/terms-gate'
 import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
+import { LiarsPartyGame, liarsPartyTimeoutRecord } from '@/lib/games/liars-party-game'
+import { commitTimeoutFallback } from '@/lib/party-timeout-commit'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -426,6 +428,28 @@ export async function POST(
         { error: 'This move is only made by the turn timer', code: 'TIMER_ONLY_MOVE' },
         { status: 400 }
       )
+    }
+
+    // The lobby read applies a lapsed Liar's Party clock only when it next runs; a move landing first must not reopen the round it closed.
+    if (gameEngine instanceof LiarsPartyGame && game.status === 'playing') {
+      const turnTimerSeconds = resolveTurnTimerMs(game.lobby?.turnTimer) / 1000
+      const lapsed = turnTimerSeconds > 0 ? gameEngine.closeLapsedPhase(turnTimerSeconds) : null
+      if (lapsed?.changed) {
+        const record = liarsPartyTimeoutRecord(lapsed)
+        const committed = await commitTimeoutFallback({
+          activeGame: game,
+          nextState: gameEngine.getState(),
+          ...record,
+          lobbyCode: game.lobby.code,
+          gameType: 'liars_party',
+          gameSocketEvent: 'liars-party-action',
+          gameSocketData: record.actionPayload,
+          source: 'move',
+        })
+        return committed
+          ? NextResponse.json({ error: 'Turn already ended', code: 'TURN_ALREADY_ENDED', skipped: true }, { status: 409 })
+          : NextResponse.json({ error: 'Game state changed, please retry', code: 'STATE_CONFLICT', skipped: false }, { status: 409 })
+      }
     }
 
     if (isAutoAction) {
