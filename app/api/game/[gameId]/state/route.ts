@@ -19,6 +19,7 @@ import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/val
 import { runAfterResponse } from '@/lib/after-response'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
 import { requiresTermsAcceptance } from '@/lib/terms-gate'
+import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -333,7 +334,22 @@ export async function POST(
         { status: 400 }
       )
     }
-    
+
+    if (game.lobby.gameType === 'guess_the_spy') {
+      const spyMove = spyActionSchema.safeParse({ action: move.type, data: move.data })
+      if (!spyMove.success) {
+        return NextResponse.json({ error: 'Invalid action', details: spyMove.error.flatten() }, { status: 400 })
+      }
+      return applySpyAction({
+        gameId,
+        userId,
+        username: requestUser.username || 'Guest',
+        action: spyMove.data.action,
+        data: spyMove.data.data,
+        log,
+      })
+    }
+
     log.debug('Game fetched successfully', { gameId, status: game.status })
 
     interface GamePlayer {

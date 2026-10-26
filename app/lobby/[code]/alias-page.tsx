@@ -573,7 +573,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
                 {isHit && <Icon name="check" size={14} />}
-                <BlockedText blocked={blockedIds.has(g.userId)}>{g.text}</BlockedText>
+                <BlockedText blocked={blockedIds.has(g.userId)} from={g.userId}>{g.text}</BlockedText>
               </span>
             </div>
           )

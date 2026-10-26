@@ -44,6 +44,20 @@ jest.mock('next-auth/react', () => ({
   }),
 }))
 
+jest.mock('@/hooks/useBlockedPlayers', () => ({
+  useBlockedPlayers: () => ({
+    blocked: [],
+    blockedIds: new Set(),
+    ready: true,
+    failed: false,
+    unknown: false,
+    accountId: 'user-1',
+    retry: jest.fn(),
+    block: jest.fn(),
+    unblock: jest.fn(),
+  }),
+}))
+
 jest.mock('@/contexts/GuestContext', () => ({
   useGuest: () => ({
     isGuest: false,

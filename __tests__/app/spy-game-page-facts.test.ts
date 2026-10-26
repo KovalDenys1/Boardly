@@ -139,7 +139,7 @@ describe('the Guess the Spy rules against the engine (#1243)', () => {
   })
 
   it('lets only the host end the questions early', () => {
-    expect(source('app/api/game/[gameId]/spy-action/route.ts')).toContain("action === 'start-voting' && game.lobby.creatorId !== userId")
+    expect(source('lib/spy-action.ts')).toContain("action === 'start-voting' && game.lobby.creatorId !== userId")
     expect(detail.faq.whoStartsVote.a).toMatch(/^Only the host/)
   })
 

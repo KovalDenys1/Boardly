@@ -421,7 +421,7 @@ function GuessFeed({
                     {g.guess ? (
                       <span className="sketch-feed__guess">
                         {' '}
-                        <BlockedText blocked={blockedIds.has(g.playerId)}>“{g.guess}”</BlockedText>
+                        <BlockedText blocked={blockedIds.has(g.playerId)} from={g.playerId}>“{g.guess}”</BlockedText>
                       </span>
                     ) : null}
                     {g.acceptedByHost ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.acceptedByHost')}</span> : null}
@@ -436,7 +436,7 @@ function GuessFeed({
                     <strong>{name}</strong>
                     <span className="sketch-feed__guess">
                       {' '}
-                      <BlockedText blocked={blockedIds.has(g.playerId)}>{g.guess}</BlockedText>
+                      <BlockedText blocked={blockedIds.has(g.playerId)} from={g.playerId}>{g.guess}</BlockedText>
                     </span>
                     {g.nearMiss ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.closeGuess')}</span> : null}
                   </span>

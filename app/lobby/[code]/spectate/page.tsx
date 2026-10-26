@@ -150,7 +150,7 @@ function SpectatorChatLog({
         <div key={message.id} className="text-sm">
           <span className="font-semibold text-bd-ink">{message.username}: </span>
           <span className="text-bd-ink-soft">
-            <BlockedText blocked={blockedIds.has(message.userId)}>{message.message}</BlockedText>
+            <BlockedText blocked={blockedIds.has(message.userId)} from={message.userId}>{message.message}</BlockedText>
           </span>
         </div>
       ))}

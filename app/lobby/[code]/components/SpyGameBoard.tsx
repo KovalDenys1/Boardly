@@ -1059,7 +1059,7 @@ export default function SpyGameBoard({
                   <div className="mt-5 space-y-3">
                     <div className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-soft)">
                       <strong className="text-(--bd-ink)">{t('spy.questionPrompt')}</strong>{' '}
-                      <BlockedText blocked={questionerBlocked}>{data.pendingQuestion}</BlockedText>
+                      <BlockedText blocked={questionerBlocked} from={data.currentQuestionerId}>{data.pendingQuestion}</BlockedText>
                     </div>
                     <SpyTextBox
                       value={answerText}
@@ -1096,7 +1096,7 @@ export default function SpyGameBoard({
                       <>
                         <p>{t('spy.askedQuestion', { asker: currentQuestioner?.name ?? '', target: currentTarget.name })}</p>
                         <p className="mt-1 text-base font-bold text-(--bd-ink)">
-                          <BlockedText blocked={questionerBlocked}>{data.pendingQuestion}</BlockedText>
+                          <BlockedText blocked={questionerBlocked} from={data.currentQuestionerId}>{data.pendingQuestion}</BlockedText>
                         </p>
                         <p className="mt-1">{t('spy.waitingForAnswer', { player: currentTarget.name })}</p>
                       </>
@@ -1151,11 +1151,11 @@ export default function SpyGameBoard({
                       </p>
                       <p className="mt-2 text-(--bd-ink-soft)">
                         <strong>{t('spy.questionPrefix')}</strong>{' '}
-                        <BlockedText blocked={blockedIds.has(entry.askerId)}>{entry.question}</BlockedText>
+                        <BlockedText blocked={blockedIds.has(entry.askerId)} from={entry.askerId}>{entry.question}</BlockedText>
                       </p>
                       <p className="mt-1 text-(--bd-ink-soft)">
                         <strong>{t('spy.answerPrefix')}</strong>{' '}
-                        <BlockedText blocked={blockedIds.has(entry.targetId)}>{entry.answer}</BlockedText>
+                        <BlockedText blocked={blockedIds.has(entry.targetId)} from={entry.targetId}>{entry.answer}</BlockedText>
                       </p>
                     </div>
                     )
