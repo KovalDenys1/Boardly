@@ -195,16 +195,12 @@ export function advanceLifecycleStatus<T extends string>(current: T, incoming: u
   return LIFECYCLE_ORDER[incomingRank]
 }
 
-/** Only a snapshot dropped as old as the board, for the move in flight, still brings its roster and a forward lifecycle step. */
+/** Only a snapshot dropped as old as the board, for the move in flight, still brings its roster; the status stays the move's own. */
 export function keepBoardFromDroppedSnapshot<G extends { id: string; status: string; players?: unknown }>(
   current: G | null,
   dropped: { id?: unknown; status?: unknown; players?: unknown } | null | undefined,
   decision: FreshnessDecision
 ): G | null {
   if (decision.reason !== 'move-in-flight' || !current || !dropped || dropped.id !== current.id) return current
-  return {
-    ...current,
-    ...(dropped.players !== undefined ? { players: dropped.players } : {}),
-    status: advanceLifecycleStatus(current.status, dropped.status),
-  }
+  return dropped.players !== undefined ? { ...current, players: dropped.players } : current
 }

@@ -31,7 +31,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
@@ -790,7 +790,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     return true
   }, [])
 
-  const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
+  const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
@@ -819,7 +819,9 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       const freshness = decideFreshness(freshnessRef.current, parsedState, { snapshot: true, trusted: options.reconcile, moveInFlight: isMoveSubmittingRef.current })
       if (!freshness.accept) {
         clientLogger.debug("Ignoring stale Liar's Party lobby snapshot", { gameId: activeGame?.id, reason: freshness.reason })
+        // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
         if (freshness.reason === 'move-in-flight') setLobby(lobbyData)
+        else if (!options.followUp) void loadLobby({ followUp: true })
         setGame(prev => keepBoardFromDroppedSnapshot(prev, activeGame, freshness))
         setLoading(false)
         return
@@ -857,7 +859,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     const activeGameId = activeGameIdRef.current
-    if (payload?.action === 'state-change' && activeGameId) {
+    if (payload?.action === 'state-change' && activeGameId && !isUpdateForAnotherGame(payload, activeGameId)) {
       const state = (payload?.payload as Record<string, unknown>)?.state
       if (state && applyAuthoritativeState(activeGameId, state)) return
     }
@@ -878,6 +880,8 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     if (isLeavingLobbyRef.current) return
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
     if (payload.nextCreatorId) {
+      const nextCreatorId = payload.nextCreatorId
+      setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
       if (payload.nextCreatorId === getCurrentUserId()) {
         showToast.success('toast.youAreNowHost')
       } else if (payload.nextCreatorName) {

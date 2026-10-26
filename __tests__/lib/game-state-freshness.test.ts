@@ -210,13 +210,14 @@ describe('keepBoardFromDroppedSnapshot (#1521)', () => {
     expect(keepBoardFromDroppedSnapshot(onScreen, finishedRound, older)).toBe(onScreen)
   })
 
-  it('takes the roster and a forward lifecycle step from an answer as old as the board under a move in flight', () => {
-    const current = { id: 'game-1', status: 'finished', players: ['a'], state: 'board-the-move-was-made-on' }
-    expect(keepBoardFromDroppedSnapshot(onScreen, current, sameAge)).toEqual({ id: 'game-1', status: 'finished', players: ['a'], state: 'board-on-screen' })
+  it('takes the roster from an answer as old as the board under a move in flight', () => {
+    const current = { id: 'game-1', status: 'playing', players: ['a'], state: 'board-the-move-was-made-on' }
+    expect(keepBoardFromDroppedSnapshot(onScreen, current, sameAge)).toEqual({ id: 'game-1', status: 'playing', players: ['a'], state: 'board-on-screen' })
   })
 
-  it('never steps the lifecycle back', () => {
-    expect(keepBoardFromDroppedSnapshot(onScreen, { id: 'game-1', status: 'waiting', players: ['a', 'b'] }, sameAge)?.status).toBe('playing')
+  it('keeps the status the move in flight put on screen – an accepted undo of the winning move stays in play', () => {
+    const beforeTheUndo = { id: 'game-1', status: 'finished', players: ['a', 'b'], state: 'board-the-move-was-made-on' }
+    expect(keepBoardFromDroppedSnapshot(onScreen, beforeTheUndo, sameAge)?.status).toBe('playing')
   })
 
   it('leaves the game alone when the snapshot is of another game or of none', () => {

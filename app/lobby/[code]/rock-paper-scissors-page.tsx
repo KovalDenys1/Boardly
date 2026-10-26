@@ -41,7 +41,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
-import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { playCue } from '@/lib/sound-engine'
@@ -312,7 +312,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         return true
     }, [getCurrentUserId])
 
-    const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
+    const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
@@ -349,7 +349,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     })
                     if (!freshness.accept) {
                         clientLogger.debug('Ignoring stale RPS lobby snapshot', { gameId: activeGame.id, reason: freshness.reason })
+                        // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
                         if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
+                        else if (!options.followUp) void loadLobby({ followUp: true })
                         setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, { id: activeGame.id, status: resolvedStatus, players }, freshness))
                         setLoading(false)
                         return
@@ -388,7 +390,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
         const activeGameId = activeGameIdRef.current
         const directState = extractStateFromGameUpdate(payload)
-        if (directState && activeGameId && applyAuthoritativeState(activeGameId, directState)) return
+        if (directState && activeGameId && !isUpdateForAnotherGame(payload, activeGameId) && applyAuthoritativeState(activeGameId, directState)) return
         void loadLobby()
     }, [applyAuthoritativeState, loadLobby])
 
@@ -408,6 +410,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         const departedPlayerName = data.username || data.playerName
         if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
         if (data.nextCreatorId) {
+            const nextCreatorId = data.nextCreatorId
+            setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
             if (data.nextCreatorId === getCurrentUserId()) showToast.success('toast.youAreNowHost')
             else if (data.nextCreatorName) showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
         }

@@ -50,7 +50,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
-import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -260,7 +260,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     useEffect(() => { activeGameIdRef.current = game?.id ?? null }, [game?.id])
 
-    const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
+    const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
             const data = await res.json()
@@ -288,7 +288,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             })
             if (!freshness.accept) {
                 clientLogger.debug('Ignoring stale lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
+                // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
                 if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
+                else if (!options.followUp) void loadLobby({ followUp: true })
                 setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, activeGame, freshness))
                 setLoading(false)
                 return
@@ -337,6 +339,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         const departedPlayerName = data.username || data.playerName
         if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
         if (data.nextCreatorId) {
+            const nextCreatorId = data.nextCreatorId
+            setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
             const currentUserId = isGuest ? guestId : session?.user?.id
             if (data.nextCreatorId === currentUserId) {
                 showToast.success('toast.youAreNowHost')
@@ -361,7 +365,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         clientLogger.log('📡 Game update received:', payload)
         const activeGameId = activeGameIdRef.current
         const directState = extractAuthoritativeStateFromGameUpdate(payload)
-        if (directState && activeGameId) { applyAuthoritativeState(activeGameId, directState); return }
+        if (directState && activeGameId && !isUpdateForAnotherGame(payload, activeGameId)) { applyAuthoritativeState(activeGameId, directState); return }
         void loadLobby()
     }, [applyAuthoritativeState, loadLobby])
 
