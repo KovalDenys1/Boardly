@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import GuidesPage from '@/app/guides/page'
+import GuidesPage from '@/app/(site)/guides/page'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { HOW_TO_PLAY_GUIDES } from '@/lib/guides-catalog'
 

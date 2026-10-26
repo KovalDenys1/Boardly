@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import JoinPrompt from '@/app/lobby/[code]/components/JoinPrompt'
+import JoinPrompt from '@/app/(site)/lobby/[code]/components/JoinPrompt'
 
 const mockPush = jest.fn()
 

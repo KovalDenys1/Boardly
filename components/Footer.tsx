@@ -18,7 +18,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
   // it would do nothing anywhere else. `NODE_ENV === 'production'` alone
   // can't tell a Vercel Preview build from Production (Next.js builds both
   // with NODE_ENV=production), so this goes through the VERCEL_ENV-aware
-  // helper that app/layout.tsx's loader gate uses.
+  // helper that app/root-document.tsx's loader gate uses.
   const canReopenConsentMessage = isProductionDeployment()
 
   return (

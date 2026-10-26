@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import GameIcon from '@/components/GameIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
-import type { ActiveLobbyInfo } from '@/app/lobby/use-my-active-lobby'
+import type { ActiveLobbyInfo } from '@/app/(site)/lobby/use-my-active-lobby'
 import { getGameMetadata } from '@/lib/game-catalog'
 
 interface RejoinLobbyBannerProps {

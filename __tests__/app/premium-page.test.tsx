@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { metadata } from '@/app/premium/page'
-import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/premium/premium-json-ld'
-import PremiumContent from '@/app/premium/PremiumContent'
+import { metadata } from '@/app/(site)/premium/page'
+import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/(site)/premium/premium-json-ld'
+import PremiumContent from '@/app/(site)/premium/PremiumContent'
 import { trackPremiumCta } from '@/lib/analytics'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
 import en from '@/locales/en'
@@ -123,7 +123,7 @@ describe('/premium prices', () => {
   it('shows only amounts that came off a Stripe price', () => {
     // No price literal in the page or its entity nodes: every figure on screen
     // is the one the checkout would charge.
-    for (const file of ['app/premium/PremiumContent.tsx', 'app/premium/premium-json-ld.ts']) {
+    for (const file of ['app/(site)/premium/PremiumContent.tsx', 'app/(site)/premium/premium-json-ld.ts']) {
       expect(read(file)).not.toMatch(/[$€£]\s?\d/)
       expect(read(file)).not.toMatch(/\d+([.,]\d+)?\s?(kr|NOK|USD|EUR)\b/)
     }

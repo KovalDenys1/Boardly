@@ -74,19 +74,19 @@ describe('link previews (#1091)', () => {
   })
 
   it.each([
-    ['app/games/page.tsx', 'games'],
-    ['app/games/layout.tsx', 'games'],
-    ['app/guides/page.tsx', 'guides'],
-    ['app/about/page.tsx', 'about'],
-    ['app/premium/page.tsx', 'premium'],
-    ['app/leaderboard/page.tsx', 'leaderboard'],
+    ['app/(site)/games/page.tsx', 'games'],
+    ['app/(site)/games/layout.tsx', 'games'],
+    ['app/(site)/guides/page.tsx', 'guides'],
+    ['app/(site)/about/page.tsx', 'about'],
+    ['app/(site)/premium/page.tsx', 'premium'],
+    ['app/(site)/leaderboard/page.tsx', 'leaderboard'],
   ])('%s names its card', async (file, key) => {
     const mod = (await import(`@/${file.replace(/\.tsx$/, '')}`)) as { metadata: Metadata }
     expectFullPreview(mod.metadata, key)
   })
 
   it('does not hand the /games url to every lobbies list under it', async () => {
-    const mod = (await import('@/app/games/layout')) as { metadata: Metadata }
+    const mod = (await import('@/app/(site)/games/layout')) as { metadata: Metadata }
     expect((mod.metadata.openGraph as { url?: string }).url).toBeUndefined()
   })
 

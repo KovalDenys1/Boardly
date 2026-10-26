@@ -51,7 +51,7 @@ jest.mock('@/lib/supabase-client', () => ({
   })),
 }))
 
-import SketchAndGuessLobbyPage from '@/app/lobby/[code]/sketch-and-guess-page'
+import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 const UNDO = 'games.guess_my_drawing.game.undo'

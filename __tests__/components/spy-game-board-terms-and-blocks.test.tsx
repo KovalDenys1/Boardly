@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import SpyGameBoard from '@/app/lobby/[code]/components/SpyGameBoard'
+import SpyGameBoard from '@/app/(site)/lobby/[code]/components/SpyGameBoard'
 import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
 import { showToast } from '@/lib/i18n-toast'
 import { acceptTerms } from '@/lib/client/terms-consent'

@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
-import { useCheckersMotion, type CheckersCueEnd } from '@/app/lobby/[code]/hooks/useCheckersMotion'
-import { useLudoMotion, type LudoCueEnd } from '@/app/lobby/[code]/hooks/useLudoMotion'
+import { useCheckersMotion, type CheckersCueEnd } from '@/app/(site)/lobby/[code]/hooks/useCheckersMotion'
+import { useLudoMotion, type LudoCueEnd } from '@/app/(site)/lobby/[code]/hooks/useLudoMotion'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'
 import { Move } from '@/lib/game-engine'
 import { CheckersGame, type CheckersGameData, type Side } from '@/lib/games/checkers-game'

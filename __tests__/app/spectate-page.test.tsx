@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, render, screen, waitFor } from '@testing-library/react'
-import SpectatorLobbyPage from '@/app/lobby/[code]/spectate/page'
+import SpectatorLobbyPage from '@/app/(site)/lobby/[code]/spectate/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { playCue } from '@/lib/sound-engine'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
@@ -48,7 +48,7 @@ jest.mock('@/lib/supabase-client', () => ({
 // itself is already covered (isSpectator behaviour) by
 // __tests__/app/sketch-and-guess-page.test.tsx, so it's stubbed out here —
 // this suite is only about which branch the spectate route takes.
-jest.mock('@/app/lobby/[code]/sketch-and-guess-page', () => ({
+jest.mock('@/app/(site)/lobby/[code]/sketch-and-guess-page', () => ({
   __esModule: true,
   default: ({ code, isSpectator }: { code: string; isSpectator?: boolean }) => (
     <div data-testid="sketch-and-guess-dedicated-page">
@@ -71,7 +71,7 @@ jest.mock('@/lib/lobby-channel-registry', () => ({
 }))
 
 // The spectate route mounts the real board for Memory; here it only has to say which state it was given.
-jest.mock('@/app/lobby/[code]/components/MemoryGameBoard', () => ({
+jest.mock('@/app/(site)/lobby/[code]/components/MemoryGameBoard', () => ({
   __esModule: true,
   default: ({ state, gameId }: { state: { status?: string } | null; gameId: string }) => (
     <div data-testid="memory-board">{gameId || 'no-game'}:{state?.status ?? 'no-state'}</div>

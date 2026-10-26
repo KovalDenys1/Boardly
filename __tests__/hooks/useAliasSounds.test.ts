@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useAliasSounds, type UseAliasSoundsOptions } from '@/app/lobby/[code]/hooks/useAliasSounds'
+import { useAliasSounds, type UseAliasSoundsOptions } from '@/app/(site)/lobby/[code]/hooks/useAliasSounds'
 import type { AliasGameData } from '@/lib/games/alias'
 import { playCue } from '@/lib/sound-engine'
 

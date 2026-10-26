@@ -61,7 +61,7 @@ describe('sitemap (#922)', () => {
   })
 
   it('gives every URL a self canonical on its own page, none on the root layout', () => {
-    expect(read('app/layout.tsx')).not.toMatch(/canonical:/)
+    expect(read('app/root-document.tsx')).not.toMatch(/canonical:/)
     // #929: a game page's canonical comes from its catalog entry, so the page
     // names its game and lib/game-seo.ts builds the URL. Everything else still
     // carries the literal.
@@ -72,7 +72,7 @@ describe('sitemap (#922)', () => {
     )
     for (const entry of entries) {
       const route = pathOf(entry.url)
-      const source = read(route === '/' ? 'app/page.tsx' : `app${route}/page.tsx`)
+      const source = read(route === '/' ? 'app/(site)/page.tsx' : `app/(site)${route}/page.tsx`)
       const gameId = gameIdByRoute.get(route)
       if (gameId) {
         expect(source).toContain(`buildGameMetadata('${gameId}'`)
@@ -94,7 +94,7 @@ describe('sitemap (#922)', () => {
 
   it('derives every guide Article node from the catalog, dates included', () => {
     for (const guide of ALL_GUIDES) {
-      const source = read(`app/guides/${guide.slug}/page.tsx`)
+      const source = read(`app/(site)/guides/${guide.slug}/page.tsx`)
       expect(source).toContain(`buildGuideArticleJsonLd('${guide.slug}')`)
       expect(source).toContain(`buildGuideBreadcrumbJsonLd('${guide.slug}')`)
       // no hand-typed date of either kind survives in a guide page

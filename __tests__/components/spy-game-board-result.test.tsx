@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { render, screen, within } from '@testing-library/react'
-import SpyGameBoard from '@/app/lobby/[code]/components/SpyGameBoard'
+import SpyGameBoard from '@/app/(site)/lobby/[code]/components/SpyGameBoard'
 import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
 import { playCue } from '@/lib/sound-engine'
 

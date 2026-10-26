@@ -16,8 +16,8 @@ import uk from '@/locales/uk'
  */
 
 const root = process.cwd()
-const PAGE = path.join(root, 'app/games/sketch-and-guess/page.tsx')
-const CONTENT = path.join(root, 'app/games/sketch-and-guess/SketchAndGuessDetailContent.tsx')
+const PAGE = path.join(root, 'app/(site)/games/sketch-and-guess/page.tsx')
+const CONTENT = path.join(root, 'app/(site)/games/sketch-and-guess/SketchAndGuessDetailContent.tsx')
 
 const FEATURE_ENV_KEYS = ['ENABLE_SKETCH_AND_GUESS', 'NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS'] as const
 

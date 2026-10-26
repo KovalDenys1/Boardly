@@ -13,7 +13,7 @@ AI-agent reference for all visual decisions in this codebase.
 - In SVG `stroke`/`fill` attributes → convert to `style` prop: `style={{ stroke: 'var(--bd-coral)' }}`
 - In Tailwind arbitrary values → CSS variables work: `shadow-[0_4px_0_var(--bd-ink)]`
 
-The only legitimate exception is `app/layout.tsx` — the `<style dangerouslySetInnerHTML>` block contains a critical inline CSS string for SSR first-paint performance. **Do not change it.**
+The only legitimate exception is `app/root-document.tsx` — the `<style dangerouslySetInnerHTML>` block contains a critical inline CSS string for SSR first-paint performance. **Do not change it.**
 
 ---
 
@@ -277,7 +277,7 @@ Never use `rgba` as a replacement for a solid color that has a token.
 
 Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwind variants in any component** — the CSS variable override in `globals.css` (`html.dark { }`) handles the entire app automatically.
 
-- `html.dark` is applied by the theme init script in `app/layout.tsx` (runs in `<head>` before paint — no flash)
+- `html.dark` is applied by the theme init script in `app/root-document.tsx` (runs in `<head>` before paint — no flash)
 - User preference is stored in `localStorage` under key `theme` (`light` | `dark` | `system`)
 - `system` (default) follows `prefers-color-scheme` automatically
 - Toggle UI: `ThemeToggle` (desktop header icon), `ThemeSegmented` (the drawer's quick-settings row, compact; Profile → Settings → Appearance in full through `ThemeSettingsPanel`)

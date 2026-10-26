@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import CreateLobbyPage from '@/app/lobby/create/page'
+import CreateLobbyPage from '@/app/(site)/lobby/create/page'
 
 const pushMock = jest.fn()
 const setGuestModeMock = jest.fn()

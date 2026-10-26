@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render } from '@testing-library/react'
-import { metadata } from '@/app/layout'
+import { metadata } from '@/app/(site)/layout'
 import FaqSection from '@/components/HomePage/FaqSection'
 import { buildFaqFacts } from '@/lib/faq-facts'
 import {
@@ -79,7 +79,7 @@ describe('home metadata (#886)', () => {
 
   it('claims no X handle, because none of them is ours', () => {
     expect((metadata.twitter as { creator?: string })?.creator).toBeUndefined()
-    expect(readFileSync(path.join(process.cwd(), 'app/layout.tsx'), 'utf8')).not.toContain("'@boardly'")
+    expect(readFileSync(path.join(process.cwd(), 'app/root-document.tsx'), 'utf8')).not.toContain("'@boardly'")
   })
 })
 

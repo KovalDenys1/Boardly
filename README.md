@@ -63,7 +63,7 @@ Client action → API route → DB update → Supabase Realtime Broadcast → cl
 Server state is always authoritative. Clients may apply optimistic updates for UX only.
 
 - **Broadcast**: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)` – stateless REST POST, works in Vercel serverless functions. It **should** be `await`ed before the response returns, because Vercel kills pending promises after `return` – but most call sites still fire it with `void`.
-- **Postgres Changes**: auto-broadcast when `prisma.lobbies.update()` runs – subscribed client-side via `app/lobby/[code]/hooks/useRealtimeConnection.ts`.
+- **Postgres Changes**: auto-broadcast when `prisma.lobbies.update()` runs – subscribed client-side via `app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts`.
 - **Social events** (rematch, invite): `user:{userId}` Broadcast channel via `SocialLoopListener`.
 - **Chat**: persisted to Redis (Upstash), broadcast via Supabase Broadcast after write.
 - **Spectators**: Supabase Presence (spectator list/count) + Broadcast (spectator chat).

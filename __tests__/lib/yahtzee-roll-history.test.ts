@@ -102,8 +102,8 @@ describe('scoreHistoryEntry', () => {
 
 describe('the lobby page wiring', () => {
   const root = path.join(__dirname, '..', '..')
-  const page = fs.readFileSync(path.join(root, 'app/lobby/[code]/LobbyPageClient.tsx'), 'utf8')
-  const actions = fs.readFileSync(path.join(root, 'app/lobby/[code]/hooks/useGameActions.ts'), 'utf8')
+  const page = fs.readFileSync(path.join(root, 'app/(site)/lobby/[code]/LobbyPageClient.tsx'), 'utf8')
+  const actions = fs.readFileSync(path.join(root, 'app/(site)/lobby/[code]/hooks/useGameActions.ts'), 'utf8')
 
   it('restores the stored history for the game instead of wiping it on mount', () => {
     expect(page).toContain('useStoredRollHistory(')

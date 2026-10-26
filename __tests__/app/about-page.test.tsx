@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import AboutPage, { metadata } from '@/app/about/page'
-import { aboutPageJsonLd, organizationJsonLd } from '@/app/about/about-json-ld'
+import AboutPage, { metadata } from '@/app/(site)/about/page'
+import { aboutPageJsonLd, organizationJsonLd } from '@/app/(site)/about/about-json-ld'
 import { organizationNode } from '@/lib/organization-json-ld'
-import { ABOUT_DESCRIPTION } from '@/app/about/about-json-ld'
+import { ABOUT_DESCRIPTION } from '@/app/(site)/about/about-json-ld'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import en from '@/locales/en'
 

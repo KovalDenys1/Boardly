@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useLobbyRouteState } from '@/app/lobby/[code]/hooks/useLobbyRouteState'
+import { useLobbyRouteState } from '@/app/(site)/lobby/[code]/hooks/useLobbyRouteState'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-registry'

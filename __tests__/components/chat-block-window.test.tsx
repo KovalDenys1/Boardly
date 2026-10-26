@@ -7,7 +7,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import Chat from '@/components/Chat'
-import { useLobbyChat } from '@/app/lobby/[code]/hooks/useLobbyChat'
+import { useLobbyChat } from '@/app/(site)/lobby/[code]/hooks/useLobbyChat'
 import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { playCue } from '@/lib/sound-engine'
 import type { ChatMessagePayload } from '@/types/game'

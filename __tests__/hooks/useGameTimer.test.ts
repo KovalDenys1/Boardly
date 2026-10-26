@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useGameTimer } from '@/app/lobby/[code]/hooks/useGameTimer'
+import { useGameTimer } from '@/app/(site)/lobby/[code]/hooks/useGameTimer'
 
 describe('useGameTimer race guards', () => {
   const advanceAndFlush = async (ms: number) => {

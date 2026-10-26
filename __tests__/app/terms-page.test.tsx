@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen, within } from '@testing-library/react'
-import TermsContent from '@/app/terms/TermsContent'
-import { metadata } from '@/app/terms/page'
+import TermsContent from '@/app/(site)/terms/TermsContent'
+import { metadata } from '@/app/(site)/terms/page'
 import { COMMUNITY_RULES_BANNED, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_DAYS } from '@/lib/retention-periods'
@@ -16,7 +16,7 @@ import es from '@/locales/es'
 
 // Section 3 has its own test (terms-premium.test.tsx); here it is a stub, so this
 // file tests the rest of the Terms around it.
-jest.mock('@/app/terms/PremiumTerms', () => ({
+jest.mock('@/app/(site)/terms/PremiumTerms', () => ({
   __esModule: true,
   default: () => <section data-testid="terms-premium" />,
 }))
@@ -45,8 +45,8 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/terms/TermsContent.tsx'), 'utf8')
-const pageSource = readFileSync(path.join(root, 'app/terms/page.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/terms/TermsContent.tsx'), 'utf8')
+const pageSource = readFileSync(path.join(root, 'app/(site)/terms/page.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key

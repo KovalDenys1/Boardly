@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
-import GameLobbiesPage from '@/app/games/components/GameLobbiesPage'
-import SketchAndGuessLobbiesPage from '@/app/games/sketch-and-guess/lobbies/page'
+import GameLobbiesPage from '@/app/(site)/games/components/GameLobbiesPage'
+import SketchAndGuessLobbiesPage from '@/app/(site)/games/sketch-and-guess/lobbies/page'
 import { canCreateLobbyForGameType, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 

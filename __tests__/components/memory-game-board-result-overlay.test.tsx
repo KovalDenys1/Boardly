@@ -3,7 +3,7 @@
  */
 import { act, render } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import MemoryGameBoard from '@/app/lobby/[code]/components/MemoryGameBoard'
+import MemoryGameBoard from '@/app/(site)/lobby/[code]/components/MemoryGameBoard'
 import { MemoryGame, type MemoryGameData } from '@/lib/games/memory-game'
 import { MOBILE_MAX_MEDIA_QUERY, PHONE_LANDSCAPE_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { playCue } from '@/lib/sound-engine'

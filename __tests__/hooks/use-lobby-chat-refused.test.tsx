@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useLobbyChat, useLobbyChatHistory } from '@/app/lobby/[code]/hooks/useLobbyChat'
+import { useLobbyChat, useLobbyChatHistory } from '@/app/(site)/lobby/[code]/hooks/useLobbyChat'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 jest.mock('next-auth/react', () => ({

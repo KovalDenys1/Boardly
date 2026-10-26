@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import i18n from '@/i18n'
-import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
+import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/(site)/lobby/[code]/components/LobbyPageFallbacks'
 
 describe('LobbyPage fallback components', () => {
   it('renders loading fallback container', () => {

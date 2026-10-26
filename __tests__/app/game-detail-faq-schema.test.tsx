@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 
-import YahtzeePage from '@/app/games/yahtzee/page'
+import YahtzeePage from '@/app/(site)/games/yahtzee/page'
 import { getCatalogGames } from '@/lib/game-catalog'
 
 // Resolve keys against the real English bundle – the only one a crawler reads
@@ -22,8 +22,8 @@ jest.mock('@/lib/i18n-helpers', () => {
 jest.mock('next-auth/react', () => ({ useSession: () => ({ status: 'unauthenticated', data: null }) }))
 jest.mock('@/contexts/GuestContext', () => ({ useGuest: () => ({ isGuest: false }) }))
 jest.mock('@/components/Footer', () => ({ __esModule: true, default: () => null }))
-jest.mock('@/app/games/components/PlayVsBotButton', () => ({ __esModule: true, default: () => null }))
-jest.mock('@/app/games/components/GameScreenshot', () => ({ __esModule: true, default: () => null, hasScreenshot: () => false }))
+jest.mock('@/app/(site)/games/components/PlayVsBotButton', () => ({ __esModule: true, default: () => null }))
+jest.mock('@/app/(site)/games/components/GameScreenshot', () => ({ __esModule: true, default: () => null, hasScreenshot: () => false }))
 
 type Question = { name: string; acceptedAnswer: { text: string } }
 

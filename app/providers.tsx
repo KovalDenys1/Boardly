@@ -47,7 +47,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   /**
    * Keep `<html lang>` on the language actually being rendered.
    *
-   * `app/layout.tsx` hardcodes `lang="en"` because it is a server component
+   * `app/root-document.tsx` hardcodes `lang="en"` because it is a server component
    * that cannot know the viewer's stored preference, and nothing updated it
    * afterwards - so a Russian-speaking player read a fully Russian site that
    * claimed, permanently, to be English. That is not cosmetic: a screen reader

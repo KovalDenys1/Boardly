@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen } from '@testing-library/react'
-import WaitingRoom from '@/app/lobby/[code]/components/WaitingRoom'
+import WaitingRoom from '@/app/(site)/lobby/[code]/components/WaitingRoom'
 
 // WaitingRoom reaches lib/analytics through WaitingRoomDiscordHint (#982), and
 // @vercel/analytics ships ESM that jest does not transform.
@@ -17,7 +17,7 @@ jest.mock('@/components/LobbyThemeBanner', () => ({
   default: () => null,
   RICH_BANNER_THEMES: [],
 }))
-jest.mock('@/app/lobby/[code]/components/TryBotGamesBanner', () => ({
+jest.mock('@/app/(site)/lobby/[code]/components/TryBotGamesBanner', () => ({
   __esModule: true,
   default: () => null,
 }))
